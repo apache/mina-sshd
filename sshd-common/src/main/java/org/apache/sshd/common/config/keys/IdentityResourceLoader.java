@@ -21,14 +21,13 @@ package org.apache.sshd.common.config.keys;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Collection;
 
 /**
  * @param <PUB> Type of {@link PublicKey}
  * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface IdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey> {
+public interface IdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey> extends KeyTypeNamesSupport {
     /**
      * A reasonable max. number of octets used for a {@link BigInteger} in the
      * context of keys based on such numbers
@@ -36,21 +35,14 @@ public interface IdentityResourceLoader<PUB extends PublicKey, PRV extends Priva
     int MAX_BIGINT_OCTETS_COUNT = Short.MAX_VALUE;
 
     /**
-     * @return The {@link Class} of the {@link PublicKey} that is the result
-     * of decoding
+     * @return The {@link Class} of the {@link PublicKey} that is
+     * the result of decoding
      */
     Class<PUB> getPublicKeyType();
 
     /**
-     * @return The {@link Class} of the {@link PrivateKey} that matches the
-     * public one
+     * @return The {@link Class} of the {@link PrivateKey} that
+     * matches the public one
      */
     Class<PRV> getPrivateKeyType();
-
-    /**
-     * @return The {@link Collection} of {@code OpenSSH} key type names that
-     * are supported by this decoder - e.g., ECDSA keys have several curve names.
-     * <B>Caveat:</B> this collection may be un-modifiable...
-     */
-    Collection<String> getSupportedTypeNames();
 }

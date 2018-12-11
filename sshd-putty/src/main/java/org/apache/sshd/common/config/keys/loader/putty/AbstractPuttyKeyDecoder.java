@@ -77,7 +77,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 return false;
             }
 
-            Collection<String> supported = getSupportedTypeNames();
+            Collection<String> supported = getSupportedKeyTypes();
             String typeValue = l.substring(pos + 1).trim();
             return supported.contains(typeValue);
         }

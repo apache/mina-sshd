@@ -51,7 +51,7 @@ public final class PuttyKeyUtils {
         }
         NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (PuttyKeyPairResourceParser<?, ?> p : parsers) {
-            Collection<String> supported = p.getSupportedTypeNames();
+            Collection<String> supported = p.getSupportedKeyTypes();
             for (String k : supported) {
                 map.put(k, p);
             }

@@ -54,6 +54,6 @@ public abstract class AbstractKeyEntryResolver<PUB extends PublicKey, PRV extend
 
     @Override
     public String toString() {
-        return getPublicKeyType().getSimpleName() + ": " + getSupportedTypeNames();
+        return getPublicKeyType().getSimpleName() + ": " + getSupportedKeyTypes();
     }
 }

@@ -90,6 +90,10 @@ block size.
     * See [SSHD-873](https://issues.apache.org/jira/browse/SSHD-873) enhancement remark below
     for the cipher block size information.
 
+* `IdentityResourceLoader` exposes `getSupportedKeyTypes()` instead of `getSupportedTypeNames()`
+
+    * This method is now also implemented by the `Identity` interface as well
+
 ## Behavioral changes and enhancements
 
 * [SSHD-708](https://issues.apache.org/jira/browse/SSHD-708) - Add support for password encrypted OpenSSH private key files

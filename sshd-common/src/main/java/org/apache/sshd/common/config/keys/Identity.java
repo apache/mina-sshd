@@ -32,7 +32,11 @@ import org.apache.sshd.common.OptionalFeature;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Identity extends AlgorithmNameProvider, NamedResource, OptionalFeature {
+public interface Identity
+        extends AlgorithmNameProvider,
+        NamedResource,
+        OptionalFeature,
+        KeyTypeNamesSupport {
     Class<? extends PublicKey> getPublicKeyType();
 
     Class<? extends PrivateKey> getPrivateKeyType();

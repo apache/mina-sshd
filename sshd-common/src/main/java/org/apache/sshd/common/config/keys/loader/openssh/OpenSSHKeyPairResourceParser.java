@@ -340,7 +340,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
      * @throws IllegalArgumentException if no decoder or not key type or no
      * supported names for the decoder
      * @see PrivateKeyEntryDecoder#getPublicKeyType()
-     * @see PrivateKeyEntryDecoder#getSupportedTypeNames()
+     * @see PrivateKeyEntryDecoder#getSupportedKeyTypes()
      */
     public static void registerPrivateKeyEntryDecoder(PrivateKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
@@ -353,7 +353,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         }
 
         Collection<String> names =
-            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type");
+            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key type");
         synchronized (BY_KEY_TYPE_DECODERS_MAP) {
             for (String n : names) {
                 PrivateKeyEntryDecoder<?, ?> prev = BY_KEY_TYPE_DECODERS_MAP.put(n, decoder);

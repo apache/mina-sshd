@@ -24,8 +24,11 @@ import java.lang.reflect.Modifier;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -112,5 +115,32 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
         assertSame(expected + "[pair]", expected, BuiltinIdentities.fromKeyPair(kp));
         assertSame(expected + "[public]", expected, BuiltinIdentities.fromKey(kp.getPublic()));
         assertSame(expected + "[private]", expected, BuiltinIdentities.fromKey(kp.getPrivate()));
+    }
+
+    @Test
+    public void testNonEmptySupportedKeyTypeNames() {
+        assertTrue(GenericUtils.isNotEmpty(expected.getSupportedKeyTypes()));
+    }
+
+    @Test
+    public void testNoOverlappingKeyTypeNamesWithOtherIdentities() {
+        Collection<String> current = expected.getSupportedKeyTypes();
+        for (BuiltinIdentities identity : BuiltinIdentities.VALUES) {
+            if (GenericUtils.isSameReference(expected, identity)) {
+                continue;
+            }
+
+            Collection<String> other = identity.getSupportedKeyTypes();
+            if (!Collections.disjoint(current, other)) {
+                fail("Overlapping key type names found for"
+                    + " " + expected + " (" + current + ")"
+                    + " and " + identity + " (" + other + ")");
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + expected + "]";
     }
 }

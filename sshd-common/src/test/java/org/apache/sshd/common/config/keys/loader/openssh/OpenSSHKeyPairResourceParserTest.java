@@ -28,10 +28,10 @@ import java.util.List;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -109,11 +109,23 @@ public class OpenSSHKeyPairResourceParserTest extends JUnitTestSupport {
 
         Class<? extends PublicKey> pubType = identity.getPublicKeyType();
         Class<? extends PrivateKey> prvType = identity.getPrivateKeyType();
+        Collection<String> supportedTypeNames = identity.getSupportedKeyTypes();
         for (KeyPair kp : pairs) {
-            PublicKey pubKey = ValidateUtils.checkInstanceOf(kp.getPublic(), pubType, "Mismatched public key type");
+            PublicKey pubKey = kp.getPublic();
+            assertObjectInstanceOf("Mismatched public key type", pubType, pubKey);
             assertKeyEquals("Mismatched identity public key", pubEntry, pubKey);
 
-            PrivateKey prvKey = ValidateUtils.checkInstanceOf(kp.getPrivate(), prvType, "Mismatched private key type");
+            PrivateKey prvKey = kp.getPrivate();
+            assertObjectInstanceOf("Mismatched private key type", prvType, prvKey);
+
+            String pubName = KeyUtils.getKeyType(pubKey);
+            String prvName = KeyUtils.getKeyType(prvKey);
+            assertEquals("Mismatched reported key type names", pubName, prvName);
+
+            if (!supportedTypeNames.contains(pubName)) {
+                fail("Unsupported key type name (" + pubName + "): " + supportedTypeNames);
+            }
+
             @SuppressWarnings("rawtypes")
             PrivateKeyEntryDecoder decoder =
                 OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);

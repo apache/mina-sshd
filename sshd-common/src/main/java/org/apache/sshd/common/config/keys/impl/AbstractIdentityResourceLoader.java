@@ -21,9 +21,12 @@ package org.apache.sshd.common.config.keys.impl;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.NavigableSet;
 import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.IdentityResourceLoader;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -37,12 +40,14 @@ public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV 
         implements IdentityResourceLoader<PUB, PRV> {
     private final Class<PUB> pubType;
     private final Class<PRV> prvType;
-    private final Collection<String> names;
+    private final NavigableSet<String> types;
 
-    protected AbstractIdentityResourceLoader(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+    protected AbstractIdentityResourceLoader(Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
         this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
         this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
-        this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided");
+        this.types = Collections.unmodifiableNavigableSet(
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
     }
 
     @Override
@@ -56,7 +61,7 @@ public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV 
     }
 
     @Override
-    public Collection<String> getSupportedTypeNames() {
-        return names;
+    public NavigableSet<String> getSupportedKeyTypes() {
+        return types;
     }
 }

@@ -296,7 +296,7 @@ public final class KeyUtils {
      * @param decoder The decoder to register
      * @throws IllegalArgumentException if no decoder or not key type or no supported names for the decoder
      * @see PublicKeyEntryDecoder#getPublicKeyType()
-     * @see PublicKeyEntryDecoder#getSupportedTypeNames()
+     * @see PublicKeyEntryDecoder#getSupportedKeyTypes()
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
@@ -312,7 +312,7 @@ public final class KeyUtils {
     }
 
     /**
-     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedTypeNames() supports}
+     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supports}
      *
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
      * @see #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder)
@@ -321,7 +321,7 @@ public final class KeyUtils {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names =
-            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key types");
+            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key types");
         for (String n : names) {
             PublicKeyEntryDecoder<?, ?> prev = registerPublicKeyEntryDecoderForKeyType(n, decoder);
             if (prev != null) {
@@ -348,7 +348,7 @@ public final class KeyUtils {
     /**
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
      * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     * out of all the {@link PublicKeyEntryDecoder#getSupportedTypeNames() supported} ones.
+     * out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
      * @see #unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder)
      */
     public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
@@ -369,14 +369,14 @@ public final class KeyUtils {
      *
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
      * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     * out of all the {@link PublicKeyEntryDecoder#getSupportedTypeNames() supported} ones.
+     * out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
      * @see #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
     public static NavigableSet<String> unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
-            decoder.getSupportedTypeNames(), "No supported key types");
+            decoder.getSupportedKeyTypes(), "No supported key types");
         NavigableSet<String> removed = Collections.emptyNavigableSet();
         for (String n : names) {
             PublicKeyEntryDecoder<?, ?> prev = unregisterPublicKeyEntryDecoderForKeyType(n);

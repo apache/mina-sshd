@@ -29,29 +29,39 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinIdentities implements Identity {
-    RSA(Constants.RSA, RSAPublicKey.class, RSAPrivateKey.class),
-    DSA(Constants.DSA, DSAPublicKey.class, DSAPrivateKey.class),
-    ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class) {
+    RSA(Constants.RSA, RSAPublicKey.class, RSAPrivateKey.class, KeyPairProvider.SSH_RSA),
+    DSA(Constants.DSA, DSAPublicKey.class, DSAPrivateKey.class, KeyPairProvider.SSH_DSS),
+    ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class,
+            ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())) {
         @Override
         public boolean isSupported() {
             return SecurityUtils.isECCSupported();
         }
     },
-    ED25119(Constants.ED25519, SecurityUtils.EDDSA, SecurityUtils.getEDDSAPublicKeyType(), SecurityUtils.getEDDSAPrivateKeyType()) {
+    ED25119(Constants.ED25519, SecurityUtils.EDDSA,
+            SecurityUtils.getEDDSAPublicKeyType(),
+            SecurityUtils.getEDDSAPrivateKeyType(),
+            KeyPairProvider.SSH_ED25519) {
         @Override
         public boolean isSupported() {
             return SecurityUtils.isEDDSACurveSupported();
@@ -73,16 +83,32 @@ public enum BuiltinIdentities implements Identity {
     private final String algorithm;
     private final Class<? extends PublicKey> pubType;
     private final Class<? extends PrivateKey> prvType;
+    private final NavigableSet<String> types;
 
-    BuiltinIdentities(String type, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        this(type, type, pubType, prvType);
+    BuiltinIdentities(String type, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType, String keyType) {
+        this(type, type, pubType, prvType, keyType);
     }
 
-    BuiltinIdentities(String name, String algorithm, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+    BuiltinIdentities(String name, String algorithm,
+            Class<? extends PublicKey> pubType,
+            Class<? extends PrivateKey> prvType,
+            String keyType) {
+        this(name, algorithm, pubType, prvType,
+            Collections.singletonList(
+                ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified")));
+    }
+
+    BuiltinIdentities(String name, String algorithm,
+            Class<? extends PublicKey> pubType,
+            Class<? extends PrivateKey> prvType,
+            Collection<String> keyTypes) {
         this.name = name.toLowerCase();
         this.algorithm = algorithm.toUpperCase();
         this.pubType = pubType;
         this.prvType = prvType;
+        this.types = Collections.unmodifiableNavigableSet(
+            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
     }
 
     @Override
@@ -93,6 +119,11 @@ public enum BuiltinIdentities implements Identity {
     @Override
     public boolean isSupported() {
         return true;
+    }
+
+    @Override
+    public NavigableSet<String> getSupportedKeyTypes() {
+        return types;
     }
 
     @Override
@@ -198,6 +229,18 @@ public enum BuiltinIdentities implements Identity {
         }
 
         return null;
+    }
+
+    /**
+     * @param typeName The {@code OpenSSH} key type  e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}.
+     * Ignored if {@code null}/empty.
+     * @return The {@link BuiltinIdentities} that reported the type name
+     * as its {@link #getSupportedKeyTypes()} (case <U>insensitive</U>) - {@code null}
+     * if no match found
+     * @see KeyTypeNamesSupport#findSupporterByKeyTypeName(String, Collection)
+     */
+    public static BuiltinIdentities fromKeyTypeName(String typeName) {
+        return KeyTypeNamesSupport.findSupporterByKeyTypeName(typeName, VALUES);
     }
 
     /**

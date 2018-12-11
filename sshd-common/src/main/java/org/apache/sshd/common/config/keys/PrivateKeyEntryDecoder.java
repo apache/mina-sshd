@@ -48,7 +48,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
     @Override
     default PrivateKey resolve(SessionContext session, String keyType, byte[] keyData) throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
-        Collection<String> supported = getSupportedTypeNames();
+        Collection<String> supported = getSupportedKeyTypes();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
             return decodePrivateKey(session, FilePasswordProvider.EMPTY, keyData);
         }
@@ -95,7 +95,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             throw new StreamCorruptedException("Missing key type string");
         }
 
-        Collection<String> supported = getSupportedTypeNames();
+        Collection<String> supported = getSupportedKeyTypes();
         if (GenericUtils.isEmpty(supported) || (!supported.contains(type))) {
             throw new InvalidKeySpecException("Reported key type (" + type + ") not in supported list: " + supported);
         }
@@ -126,7 +126,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      *
      * @param s   The {@link OutputStream} to write the data to
      * @param key The {@link PrivateKey} - may not be {@code null}
-     * @return The key type value - one of the {@link #getSupportedTypeNames()} or
+     * @return The key type value - one of the {@link #getSupportedKeyTypes()} or
      * {@code null} if encoding not supported
      * @throws IOException If failed to generate the encoding
      */
