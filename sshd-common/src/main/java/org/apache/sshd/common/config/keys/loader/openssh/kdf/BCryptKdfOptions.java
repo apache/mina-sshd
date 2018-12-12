@@ -27,12 +27,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
@@ -45,36 +47,25 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BCryptKdfOptions implements OpenSSHKdfOptions {
     public static final String NAME = "bcrypt";
-    /*
-     * Since each round doubles its predecessor, the Java implementation
-     * of BCrypt cannot handle rounds > (2^31) - 1
+
+    /**
+     * Various discussions on the net seem to indicate that 64 is the value
+     * at which many computers seem to slow down noticeably, so we are rather
+     * generous here. The default value (unless overridden by the {@code -a}
+     * parameter to the {@code ssh-keygen} command) is usually 16.
      */
-    public static final int MAX_ROUNDS = 31;
+    public static final int DEFAULT_MAX_ROUNDS = 0xFF;
+    private static final AtomicInteger MAX_ROUNDS_HOLDER = new AtomicInteger(DEFAULT_MAX_ROUNDS);
 
     private byte[] salt;
     private int numRounds;
 
     public BCryptKdfOptions() {
         super();
-    }
-
-    /**
-     * @param stream <P>Assumed to contain the encoded KDF options:</P></BR>
-     * <pre><code>
-     *      string salt
-     *      uint32 rounds
-     * </code></pre>
-     * @throws IOException If failed to decode
-     * @see <A HREF="http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup">Section 2</A>
-     */
-    public BCryptKdfOptions(InputStream stream) throws IOException {
-        initialize(stream);
     }
 
     @Override
@@ -88,7 +79,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
         }
 
         // Minus 8: 4 bytes for the RLE of the salt itself, plus 4 bytes for the rounds
-        int expectedSaltLength = kdfOptions.length - 8;
+        int expectedSaltLength = kdfOptions.length - 2 * Integer.BYTES;
         try (InputStream stream = new ByteArrayInputStream(kdfOptions)) {
             initialize(stream, expectedSaltLength);
         }
@@ -99,19 +90,6 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
             throw new StreamCorruptedException("Mismatched salt data length:"
                 + " expected=" + expectedSaltLength + ", actual=" + actualSaltLength);
         }
-    }
-
-    /**
-     * @param stream <P>Assumed to contain the encoded KDF options:</P></BR>
-     * <PRE><CODE>
-     *      string salt
-     *      uint32 rounds
-     * </CODE></PRE>
-     * @throws IOException If failed to decode
-     * @see <A HREF="http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup">Section 2</A>
-     */
-    public void initialize(InputStream stream) throws IOException {
-        initialize(stream, OpenSSHKdfOptions.MAX_KDF_OPTIONS_SIZE);
     }
 
     protected void initialize(InputStream stream, int maxSaltSize) throws IOException {
@@ -212,7 +190,12 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
     }
 
     public void setNumRounds(int numRounds) {
-        ValidateUtils.checkTrue((numRounds >= 0) && (numRounds <= MAX_ROUNDS), "Invalid rounds count: %d", numRounds);
+        int maxAllowed = getMaxAllowedRounds();
+        if ((numRounds <= 0) || (numRounds > maxAllowed)) {
+            throw new BCryptBadRoundsException(
+                numRounds, "Bad rounds value (" + numRounds + ") - max. allowed " + maxAllowed);
+        }
+
         this.numRounds = numRounds;
     }
 
@@ -243,4 +226,34 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
         return getName() + ": rounds=" + getNumRounds() + ", salt=" + BufferUtils.toHex(':', getSalt());
     }
 
+    public static int getMaxAllowedRounds() {
+        return MAX_ROUNDS_HOLDER.get();
+    }
+
+    public static void setMaxAllowedRounds(int value) {
+        ValidateUtils.checkTrue(value > 0, "Invalid max. rounds value: %d", value);
+        MAX_ROUNDS_HOLDER.set(value);
+    }
+
+    public static class BCryptBadRoundsException extends RuntimeSshException {
+        private static final long serialVersionUID = 1724985268892193553L;
+        private final int rounds;
+
+        public BCryptBadRoundsException(int rounds) {
+            this(rounds, "Bad rounds value: " + rounds);
+        }
+
+        public BCryptBadRoundsException(int rounds, String message) {
+            this(rounds, message, null);
+        }
+
+        public BCryptBadRoundsException(int rounds, String message, Throwable reason) {
+            super(message, reason);
+            this.rounds = rounds;
+        }
+
+        public int getRounds() {
+            return rounds;
+        }
+    }
 }

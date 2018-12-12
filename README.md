@@ -247,22 +247,51 @@ detect and use the identity files residing in the user's *~/.ssh* folder (e.g., 
 **Note:** if the identity files are encrypted via a password, one must configure a `FilePasswordProvider` so that the code can decrypt them before using
 and presenting them to the server as part of the authentication process. Reading key files in PEM format (including encrypted ones) is supported by default
 for the standard keys and formats. Using additional non-standard special features requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting
-artifacts be available in the code's classpath. One can also read files in
-[OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup) format without any specific extra
-artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support artifacts). **Note:** for the time being, password
-encrypted _ed25519_ private key files are not supported.
+artifacts be available in the code's classpath.
 
-The `FilePasswordProvider` has support for a retry mechanism via its `handleDecodeAttemptResult`. When the code detects an encrypted private key,
+#### Providing passwords for encrypted key files
+
+The `FilePasswordProvider` is required for all private key files that are encrypted and being loaded (not just the "identity" ones). If the user
+knows ahead of time that the file being currently decoded is not encrypted, a *null* provider may be used (if the file turns out to be encrypted
+though an exception will be thrown in this case).
+
+The `FilePasswordProvider`has support for a **retry mechanism** via its `handleDecodeAttemptResult`. When the code detects an encrypted private key,
 it will start a loop where it prompts for the password, attempts to decode the key using the provided password and then informs the provider of
 the outcome - success or failure. If failure is signaled, then the provider can decide whether to retry using a new password, abort (with exception)
 or ignore. If the provider chooses to ignore the failure, then the code will make a best effort to proceed without the (undecoded) key.
 
-The methods are provided with a `NamedResource` that provides an indication of the key source "name" that is being attempted. This name can
-be used in order to prompt the user interactively and provide a useful "hint" as to the password that needs to be provided. Furthermore, the
+The invoked methods are provided with a `NamedResource` that provides an indication of the key source "name" that is being attempted. This name
+can be used in order to prompt the user interactively and provide a useful "hint" as to the password that needs to be provided. Furthermore, the
 vast majority of the provided `NamedResource`-s also implement `IoResource` - which means that the code can find out what type of resource
 is being attempted - e.g., a file [Path](https://docs.oracle.com/javase/8/docs/api/index.html?java/nio/file/Path.html),
 a [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html), a [URI](https://docs.oracle.com/javase/8/docs/api/java/net/URI.html),
 etc. - and modify it's behavior accordingly.
+
+#### OpenSSH file format support
+
+The code supports [OpenSSH](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup)
+formatted files without any specific extra artifacts (although for reading _ed25519_ keys one needs to add the _EdDSA_ support artifacts). For
+**encrypted** files only the the `bcrypt` key derivation function (KDF) is [currently supported](https://issues.apache.org/jira/browse/SSHD-708).
+In this context, the maximum allowed number of rounds has been set to ~255 in order to protect the decryption process from
+malformed or malicious data. However, since the protocol allows for 2^31 values, it is possible to modify the default by
+calling `BCryptKdfOptions#setMaxAllowedRounds()` **programmatically** at any time - please note that
+
+* The setting is **global** - i.e., affects all decryption attempts from then on and not just for the current SSH session or thread.
+
+* The setting value is never allowed to be non-positive - any attempt to set such a value programmatically
+throws an exception.
+
+The usual _OpenSSH_ default seems to be 16, but users can ask for more (or less) by generating an encrypted key via
+[`ssh-keygen -a NNN`](http://man7.org/linux/man-pages/man1/ssh-keygen.1.html). However, this comes at a cost:
+
+>> -a rounds
+>>
+>>    When saving a private key this option specifies the number of
+>>    KDF (key derivation function) rounds used.  Higher numbers
+>>    result in slower passphrase verification
+
+Various discussions on the net seem to indicate that 64 is the value at which many computers start to slow down noticeably, so
+our default limit seems quite suitable (and beyond) for most cases we are likely to encounter "in the wild".
 
 ### UserInteraction
 
@@ -291,7 +320,9 @@ sessions depends on the actual changed configuration. Here is how a typical usag
     client.start();
 
         // using the client for multiple sessions...
-        try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
+        try (ClientSession session = client.connect(user, host, port)
+                    .verify(...timeout...)
+                    .getSession()) {
             session.addPasswordIdentity(...password..); // for password-based authentication
             // or
             session.addPublicKeyIdentity(...key-pair...); // for password-less authentication
@@ -303,7 +334,9 @@ sessions depends on the actual changed configuration. Here is how a typical usag
 
         // NOTE: this is just an example - one can open multiple concurrent sessions using the same client.
         //      No need to close the previous session before establishing a new one
-        try (ClientSession anotherSession = client.connect(otherUser, otherHost, port).verify(...timeout...).getSession()) {
+        try (ClientSession anotherSession = client.connect(otherUser, otherHost, port)
+                    .verify(...timeout...)
+                    .getSession()) {
             anotherSession.addPasswordIdentity(...password..); // for password-based authentication
             anotherSession.addPublicKeyIdentity(...key-pair...); // for password-less authentication
             anotherSession.auth().verify(...timeout...);

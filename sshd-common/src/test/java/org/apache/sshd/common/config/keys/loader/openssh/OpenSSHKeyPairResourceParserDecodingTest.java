@@ -47,7 +47,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairResourceParserTestSupport {
-
     public OpenSSHKeyPairResourceParserDecodingTest(BuiltinIdentities identity) {
         super(identity);
     }
