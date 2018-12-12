@@ -65,7 +65,18 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
             assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
         }
 
-        Collection<KeyPair> pairs = PARSER.loadKeyPairs(null, urlKeyPair, passwordProvider);
+        Collection<KeyPair> pairs;
+        try {
+            pairs = PARSER.loadKeyPairs(null, urlKeyPair, passwordProvider);
+        } catch (Exception e) {
+            e = handleResourceLoadException(resourceKey, urlKeyPair, e);
+            if (e == null) {
+                return;
+            }
+
+            throw e;
+        }
+
         URL urlPubKey = getClass().getResource(resourceKey + ".pub");
         assertNotNull("Missing public key resource: " + resourceKey, urlPubKey);
 
@@ -77,6 +88,11 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
         assertNotNull("Cannot retrieve public key", pubEntry);
 
         testLoadKeyPairs(encrypted, resourceKey, pairs, pubEntry);
+    }
+
+    protected Exception handleResourceLoadException(
+            String resourceKey, URL urlKeyPair, Exception reason) {
+        return reason;
     }
 
     protected abstract void testLoadKeyPairs(
