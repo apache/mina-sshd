@@ -20,6 +20,7 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -51,11 +52,12 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
     @Override
     public HostConfigEntry resolveEffectiveHost(
-            String host, int port, String username, AttributeRepository context)
+            String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
                 throws IOException {
         try {
-            HostConfigEntryResolver delegate = Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
-            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, username, context);
+            HostConfigEntryResolver delegate =
+                Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
+            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, localAddress, username, context);
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) => {}", username, host, port, entry);
             }
@@ -84,7 +86,8 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
             Path path = getPath();
             if (exists()) {
-                Collection<HostConfigEntry> entries = reloadHostConfigEntries(path, host, port, username);
+                Collection<HostConfigEntry> entries =
+                    reloadHostConfigEntries(path, host, port, username);
                 if (GenericUtils.size(entries) > 0) {
                     delegateHolder.set(HostConfigEntry.toHostConfigEntryResolver(entries));
                 }
@@ -96,7 +99,9 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
         return delegateHolder.get();
     }
 
-    protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username) throws IOException {
+    protected List<HostConfigEntry> reloadHostConfigEntries(
+            Path path, String host, int port, String username)
+                throws IOException {
         List<HostConfigEntry> entries = HostConfigEntry.readHostConfigEntries(path);
         log.info("resolveEffectiveResolver({}@{}:{}) loaded {} entries from {}", username, host, port, GenericUtils.size(entries), path);
         updateReloadAttributes();

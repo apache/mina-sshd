@@ -669,7 +669,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(entries)) {
             return HostConfigEntryResolver.EMPTY;
         } else {
-            return (host1, port1, username1, ctx) -> {
+            return (host1, port1, lclAddress, username1, ctx) -> {
                 List<HostConfigEntry> matches = findMatchingEntries(host1, entries);
                 int numMatches = GenericUtils.size(matches);
                 if (numMatches <= 0) {
@@ -699,7 +699,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @see #resolveUsername(String)
      * @see #resolveIdentityFilePath(String, String, int, String)
      */
-    public static HostConfigEntry normalizeEntry(HostConfigEntry entry, String host, int port, String username) throws IOException {
+    public static HostConfigEntry normalizeEntry(
+            HostConfigEntry entry, String host, int port, String username)
+                throws IOException {
         if (entry == null) {
             return null;
         }

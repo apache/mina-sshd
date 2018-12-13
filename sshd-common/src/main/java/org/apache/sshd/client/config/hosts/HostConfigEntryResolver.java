@@ -20,6 +20,7 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 
 import org.apache.sshd.common.AttributeRepository;
 
@@ -36,7 +37,7 @@ public interface HostConfigEntryResolver {
     HostConfigEntryResolver EMPTY = new HostConfigEntryResolver() {
         @Override
         public HostConfigEntry resolveEffectiveHost(
-                String host, int port, String username, AttributeRepository context)
+                String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
                     throws IOException {
             return null;
         }
@@ -53,6 +54,7 @@ public interface HostConfigEntryResolver {
      *
      * @param host The requested host - never {@code null}/empty
      * @param port The requested port
+     * @param localAddress Optional binding endpoint for the local peer
      * @param username The requested username
      * @param context An optional &quot;context&quot; provided during the connection
      * request (to be attached to the established session if successfully connected)
@@ -64,6 +66,6 @@ public interface HostConfigEntryResolver {
      * @throws IOException If failed to resolve the configuration
      */
     HostConfigEntry resolveEffectiveHost(
-        String host, int port, String username, AttributeRepository context)
+        String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
             throws IOException;
 }

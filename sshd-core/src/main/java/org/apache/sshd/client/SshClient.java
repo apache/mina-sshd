@@ -458,7 +458,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
                 throws IOException {
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username, context);
+        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
         if (entry == null) {
             // generate a synthetic entry
             if (log.isDebugEnabled()) {
@@ -493,7 +493,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
 
             HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-            HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username, context);
+            HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
             if (entry == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
@@ -505,7 +505,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
                 }
 
-                return connect(entry);
+                return connect(entry, context, localAddress);
             }
         } else {
             if (log.isDebugEnabled()) {
