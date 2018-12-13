@@ -114,7 +114,7 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
 
         for (int index = 1; index < Byte.SIZE; index++) {
             HostConfigEntry actual =
-                    resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), query.getUsername());
+                resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), query.getUsername(), null);
 
             if (entries == null) {
                 assertEquals(phase + "[" + index + "]: mismatched reload count", 0, reloadCount.get());

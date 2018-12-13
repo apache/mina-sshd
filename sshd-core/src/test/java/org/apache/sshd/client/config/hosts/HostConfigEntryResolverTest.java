@@ -93,8 +93,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testEffectiveHostConfigResolution() throws Exception {
-        final HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
-        client.setHostConfigEntryResolver((host, portValue, username) -> entry);
+        HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
+        client.setHostConfigEntryResolver((host, portValue, username, context) -> entry);
         client.start();
 
         try (ClientSession session = client.connect(
@@ -113,13 +113,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     public void testNegatedHostEntriesResolution() throws Exception {
         HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
         HostConfigEntry negativeEntry = new HostConfigEntry(
-                Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
-                positiveEntry.getHostName(),
-                getMovedPortNumber(positiveEntry.getPort()),
-                getClass().getPackage().getName());
+            Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
+            positiveEntry.getHostName(),
+            getMovedPortNumber(positiveEntry.getPort()),
+            getClass().getPackage().getName());
         client.setHostConfigEntryResolver(
-                HostConfigEntry.toHostConfigEntryResolver(
-                    Arrays.asList(negativeEntry, positiveEntry)));
+            HostConfigEntry.toHostConfigEntryResolver(
+                Arrays.asList(negativeEntry, positiveEntry)));
         client.start();
 
         try (ClientSession session = client.connect(
@@ -171,7 +171,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         String host = getClass().getSimpleName();
         HostConfigEntry entry = new HostConfigEntry(host, TEST_LOCALHOST, port, user);
         entry.addIdentity(clientIdentity);
-        client.setHostConfigEntryResolver((host1, portValue, username) -> entry);
+        client.setHostConfigEntryResolver((host1, portValue, username, context) -> entry);
 
         client.start();
         try (ClientSession session = client.connect(

@@ -21,18 +21,23 @@ package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.AttributeRepository;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config">ssh_config</A>
  */
 @FunctionalInterface
 public interface HostConfigEntryResolver {
-
     /**
-     * An &quot;empty&quot; implementation that does not resolve any entry
+     * An &quot;empty&quot; implementation that does not resolve any entry - i.e.,
+     * uses the original entry as-is
      */
     HostConfigEntryResolver EMPTY = new HostConfigEntryResolver() {
         @Override
-        public HostConfigEntry resolveEffectiveHost(String host, int port, String username) throws IOException {
+        public HostConfigEntry resolveEffectiveHost(
+                String host, int port, String username, AttributeRepository context)
+                    throws IOException {
             return null;
         }
 
@@ -49,6 +54,8 @@ public interface HostConfigEntryResolver {
      * @param host The requested host - never {@code null}/empty
      * @param port The requested port
      * @param username The requested username
+     * @param context An optional &quot;context&quot; provided during the connection
+     * request (to be attached to the established session if successfully connected)
      * @return A {@link HostConfigEntry} for the actual target - {@code null} if use
      * original parameters. <B>Note:</B> if any identity files are attached to the
      * configuration then they must point to <U>existing</U> locations. This means
@@ -56,5 +63,7 @@ public interface HostConfigEntryResolver {
      * to returning the value
      * @throws IOException If failed to resolve the configuration
      */
-    HostConfigEntry resolveEffectiveHost(String host, int port, String username) throws IOException;
+    HostConfigEntry resolveEffectiveHost(
+        String host, int port, String username, AttributeRepository context)
+            throws IOException;
 }

@@ -20,12 +20,16 @@
 and is called both for `SSH_MSG_UNIMPLEMENTED` as well as for any other unexpected/unrecognized
 command encountered during the session message processing loop.
 
-* `ClientSessionCreator` has extra `connect` methods with an `AttributeRepository`
-connection context argument
+* `AttributeRepository` optional context propagated during initial connection establishment
 
-* `connectionEstablished` and `abortEstablishedConnection` methods of `IoServiceEventListener`
-accept also an `AttributeRepository` connection context argument (propagated from the
-`ClientSessionCreator#connect` invocation).
+    * `ClientSessionCreator` has extra `connect` methods with an `AttributeRepository`
+    connection context argument
+
+    * The context is also propagated to `HostConfigEntryResolver#resolveEffectiveHost` method
+
+    * `connectionEstablished` and `abortEstablishedConnection` methods of `IoServiceEventListener`
+    accept also an `AttributeRepository` connection context argument (propagated from the
+    `ClientSessionCreator#connect` invocation).
 
 * `FilePasswordProvider`
 

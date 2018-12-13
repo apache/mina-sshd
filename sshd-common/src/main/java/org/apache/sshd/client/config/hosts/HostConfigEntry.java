@@ -669,7 +669,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(entries)) {
             return HostConfigEntryResolver.EMPTY;
         } else {
-            return (host1, port1, username1) -> {
+            return (host1, port1, username1, ctx) -> {
                 List<HostConfigEntry> matches = findMatchingEntries(host1, entries);
                 int numMatches = GenericUtils.size(matches);
                 if (numMatches <= 0) {

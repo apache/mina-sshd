@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
@@ -49,10 +50,12 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
     }
 
     @Override
-    public HostConfigEntry resolveEffectiveHost(String host, int port, String username) throws IOException {
+    public HostConfigEntry resolveEffectiveHost(
+            String host, int port, String username, AttributeRepository context)
+                throws IOException {
         try {
             HostConfigEntryResolver delegate = Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
-            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, username);
+            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, username, context);
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) => {}", username, host, port, entry);
             }
@@ -61,7 +64,7 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
         } catch (Throwable e) {
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) failed ({}) to resolve: {}",
-                          username, host, port, e.getClass().getSimpleName(), e.getMessage());
+                    username, host, port, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
