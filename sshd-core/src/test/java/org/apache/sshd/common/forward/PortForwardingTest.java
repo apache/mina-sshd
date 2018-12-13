@@ -52,6 +52,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
@@ -173,10 +174,10 @@ public class PortForwardingTest extends BaseTestSupport {
         sshd.setForwarderFactory(new ForwardingFilterFactory() {
             private final Class<?>[] interfaces = {ForwardingFilter.class};
             private final Map<String, String> method2req =
-                    GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
-                        .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
-                        .put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST)
-                        .build();
+                NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+                    .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
+                    .put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST)
+                    .build();
 
             @Override
             public ForwardingFilter create(ConnectionService service) {

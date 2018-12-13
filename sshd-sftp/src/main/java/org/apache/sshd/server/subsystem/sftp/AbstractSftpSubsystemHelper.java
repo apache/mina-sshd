@@ -90,6 +90,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionPa
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
@@ -132,12 +133,12 @@ public abstract class AbstractSftpSubsystemHelper
     public static final String CLIENT_EXTENSIONS_PROP = "sftp-client-extensions";
 
     /**
-     * The default reported supported client extensions
+     * The default reported supported client extensions (case <U>insensitive</U>)
      */
-    public static final Map<String, OptionalFeature> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
+    public static final NavigableMap<String, OptionalFeature> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
         // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
         // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-        GenericUtils.<String, OptionalFeature>mapBuilder()
+        NavigableMapBuilder.<String, OptionalFeature>builder()
             .put(SftpConstants.EXT_VERSION_SELECT, OptionalFeature.TRUE)
             .put(SftpConstants.EXT_COPY_FILE, OptionalFeature.TRUE)
             .put(SftpConstants.EXT_MD5_HASH, BuiltinDigests.md5)

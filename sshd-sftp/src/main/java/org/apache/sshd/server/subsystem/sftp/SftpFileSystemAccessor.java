@@ -32,10 +32,10 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -46,19 +46,19 @@ public interface SftpFileSystemAccessor {
     List<String> DEFAULT_UNIX_VIEW = Collections.singletonList("unix:*");
 
     /**
-     * A {@link Map} of {@link FileInfoExtractor}s to be used to complete
-     * attributes that are deemed important enough to warrant an extra
-     * effort if not accessible via the file system attributes views
+     * A case <U>insensitive</U> {@link NavigableMap} of {@link FileInfoExtractor}s to
+     * be used to complete attributes that are deemed important enough to warrant an
+     * extra effort if not accessible via the file system attributes views
      */
-    Map<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS =
-            GenericUtils.<String, FileInfoExtractor<?>>mapBuilder(String.CASE_INSENSITIVE_ORDER)
-                .put("isRegularFile", FileInfoExtractor.ISREG)
-                .put("isDirectory", FileInfoExtractor.ISDIR)
-                .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
-                .put("permissions", FileInfoExtractor.PERMISSIONS)
-                .put("size", FileInfoExtractor.SIZE)
-                .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
-                .immutable();
+    NavigableMap<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS =
+        NavigableMapBuilder.<String, FileInfoExtractor<?>>builder(String.CASE_INSENSITIVE_ORDER)
+            .put("isRegularFile", FileInfoExtractor.ISREG)
+            .put("isDirectory", FileInfoExtractor.ISDIR)
+            .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
+            .put("permissions", FileInfoExtractor.PERMISSIONS)
+            .put("size", FileInfoExtractor.SIZE)
+            .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
+            .immutable();
 
     SftpFileSystemAccessor DEFAULT = new SftpFileSystemAccessor() {
         @Override

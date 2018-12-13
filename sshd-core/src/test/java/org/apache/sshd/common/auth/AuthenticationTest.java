@@ -61,6 +61,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.resource.URLResource;
@@ -416,11 +417,12 @@ public class AuthenticationTest extends BaseTestSupport {
         challenge.setInteractionInstruction(anchor.getPackage().getName());
         challenge.setLanguageTag(Locale.getDefault().getLanguage());
 
-        Map<String, String> rspMap = GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
-            .put("class", anchor.getSimpleName())
-            .put("package", anchor.getPackage().getName())
-            .put("test", getCurrentTestName())
-            .build();
+        Map<String, String> rspMap =
+            NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+                .put("class", anchor.getSimpleName())
+                .put("package", anchor.getPackage().getName())
+                .put("test", getCurrentTestName())
+                .build();
         for (String prompt : rspMap.keySet()) {
             challenge.addPrompt(prompt, (GenericUtils.size(challenge.getPrompts()) & 0x1) != 0);
         }

@@ -65,6 +65,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
@@ -642,11 +643,11 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
 
         Map<String, String> expected =
-                GenericUtils.<String, String>mapBuilder(String.CASE_INSENSITIVE_ORDER)
-                    .put("test", getCurrentTestName())
-                    .put("port", Integer.toString(sshd.getPort()))
-                    .put("user", OsUtils.getCurrentUser())
-                    .build();
+            NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+                .put("test", getCurrentTestName())
+                .put("port", Integer.toString(sshd.getPort()))
+                .put("user", OsUtils.getCurrentUser())
+                .build();
 
         client.start();
         try (ClientSession s = createTestClientSession(sshd);

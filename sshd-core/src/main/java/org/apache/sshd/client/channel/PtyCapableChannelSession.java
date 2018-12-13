@@ -30,6 +30,7 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.EnumMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -80,15 +81,15 @@ public class PtyCapableChannelSession extends ChannelSession {
     public static final int DEFAULT_WIDTH = 640;
     public static final int DEFAULT_HEIGHT = 480;
     public static final Map<PtyMode, Integer> DEFAULT_PTY_MODES =
-            GenericUtils.<PtyMode, Integer>mapBuilder()
-                .put(PtyMode.ISIG, 1)
-                .put(PtyMode.ICANON, 1)
-                .put(PtyMode.ECHO, 1)
-                .put(PtyMode.ECHOE, 1)
-                .put(PtyMode.ECHOK, 1)
-                .put(PtyMode.ECHONL, 0)
-                .put(PtyMode.NOFLSH, 0)
-                .immutable();
+        EnumMapBuilder.<PtyMode, Integer>builder(PtyMode.class)
+            .put(PtyMode.ISIG, 1)
+            .put(PtyMode.ICANON, 1)
+            .put(PtyMode.ECHO, 1)
+            .put(PtyMode.ECHOE, 1)
+            .put(PtyMode.ECHOK, 1)
+            .put(PtyMode.ECHONL, 0)
+            .put(PtyMode.NOFLSH, 0)
+            .immutable();
 
     private boolean agentForwarding;
     private boolean usePty;

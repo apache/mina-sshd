@@ -51,6 +51,7 @@ import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -714,7 +715,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
         Map<String, String> props = entry.getProperties();
         if (GenericUtils.size(props) > 0) {
-            normal.setProperties(new TreeMap<>(props));
+            normal.setProperties(
+                NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+                    .putAll(props)
+                    .build());
         }
 
         Collection<String> ids = entry.getIdentities();

@@ -71,6 +71,7 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
@@ -127,10 +128,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystem() throws Exception {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                GenericUtils.<String, Object>mapBuilder()
-                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
-                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
-                        .build())) {
+                MapBuilder.<String, Object>builder()
+                    .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                    .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                    .build())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
@@ -170,7 +171,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                GenericUtils.<String, Object>mapBuilder()
+                MapBuilder.<String, Object>builder()
                     .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, SftpClient.MIN_READ_BUFFER_SIZE)
                     .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, SftpClient.MIN_WRITE_BUFFER_SIZE)
                     .build())) {

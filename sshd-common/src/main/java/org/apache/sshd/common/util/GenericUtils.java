@@ -31,7 +31,6 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -936,38 +935,5 @@ public final class GenericUtils {
     public static <T> Iterable<T> multiIterableSuppliers(
             Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
         return () -> stream(providers).<T>flatMap(s -> stream(s.get())).map(Function.identity()).iterator();
-    }
-
-    public static <K, V> MapBuilder<K, V> mapBuilder() {
-        return new MapBuilder<>();
-    }
-
-    public static <K, V> MapBuilder<K, V> mapBuilder(Comparator<K> comparator) {
-        return new MapBuilder<>(comparator);
-    }
-
-    public static class MapBuilder<K, V> {
-        private Map<K, V> map;
-
-        public MapBuilder() {
-            this.map = new LinkedHashMap<>();
-        }
-
-        public MapBuilder(Comparator<? super K> comparator) {
-            this.map = new TreeMap<>(comparator);
-        }
-
-        public MapBuilder<K, V> put(K k, V v) {
-            map.put(k, v);
-            return this;
-        }
-
-        public Map<K, V> build() {
-            return map;
-        }
-
-        public Map<K, V> immutable() {
-            return Collections.unmodifiableMap(map);
-        }
     }
 }

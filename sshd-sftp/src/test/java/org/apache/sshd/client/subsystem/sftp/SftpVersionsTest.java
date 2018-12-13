@@ -53,6 +53,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
@@ -348,8 +349,9 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @Test   // see SSHD-575
     public void testSftpExtensionsEncodeDecode() throws Exception {
-        final Class<?> anchor = getClass();
-        final Map<String, String> expExtensions = GenericUtils.<String, String>mapBuilder()
+        Class<?> anchor = getClass();
+        Map<String, String> expExtensions =
+            NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
                 .put("class", anchor.getSimpleName())
                 .put("package", anchor.getPackage().getName())
                 .put("method", getCurrentTestName())
