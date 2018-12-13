@@ -260,7 +260,7 @@ public interface FactoryManager
     String NIO2_READ_BUFFER_SIZE = "nio2-read-buf-size";
 
     /**
-     * The default reported version of {@link #getVersion()} if the built-in
+     * The default {@value #REPORTED_VERSION} of {@link #getVersion()} if the built-in
      * version information cannot be accessed
      */
     String DEFAULT_VERSION = "SSHD-UNKNOWN";

@@ -190,7 +190,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     @Override
     public String getVersion() {
-        return PropertyResolverUtils.getStringProperty(VersionProperties.getVersionProperties(), "sshd-version", DEFAULT_VERSION).toUpperCase();
+        String version = PropertyResolverUtils.getStringProperty(
+            VersionProperties.getVersionProperties(), VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
+        return version.toUpperCase();
     }
 
     @Override
