@@ -18,14 +18,15 @@
  */
 package org.apache.sshd.common.util.threads;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Utility class for thread pools.
@@ -64,27 +65,34 @@ public final class ThreadUtils {
     }
 
     public static ClassLoader resolveDefaultClassLoader(Object anchor) {
-        return resolveDefaultClassLoader(anchor == null ? null : anchor.getClass());
+        return resolveDefaultClassLoader((anchor == null) ? null : anchor.getClass());
     }
 
     public static Iterable<ClassLoader> resolveDefaultClassLoaders(Object anchor) {
-        return resolveDefaultClassLoaders(anchor == null ? null : anchor.getClass());
+        return resolveDefaultClassLoaders((anchor == null) ? null : anchor.getClass());
     }
 
-    public static <T> T createDefaultInstance(Class<?> anchor, Class<T> targetType, String className)
-            throws ReflectiveOperationException {
+    public static Iterable<ClassLoader> resolveDefaultClassLoaders(Class<?> anchor) {
+        return () -> iterateDefaultClassLoaders(anchor);
+    }
+
+    public static <T> T createDefaultInstance(
+            Class<?> anchor, Class<T> targetType, String className)
+                throws ReflectiveOperationException {
         return createDefaultInstance(resolveDefaultClassLoaders(anchor), targetType, className);
     }
 
-    public static <T> T createDefaultInstance(ClassLoader cl, Class<T> targetType, String className)
-            throws ReflectiveOperationException {
+    public static <T> T createDefaultInstance(
+            ClassLoader cl, Class<T> targetType, String className)
+                throws ReflectiveOperationException {
         Class<?> instanceType = cl.loadClass(className);
         Object instance = instanceType.newInstance();
         return targetType.cast(instance);
     }
 
-    public static <T> T createDefaultInstance(Iterable<ClassLoader> cls, Class<T> targetType, String className)
-            throws ReflectiveOperationException {
+    public static <T> T createDefaultInstance(
+            Iterable<? extends ClassLoader> cls, Class<T> targetType, String className)
+                throws ReflectiveOperationException {
         for (ClassLoader cl : cls) {
             try {
                 return createDefaultInstance(cl, targetType, className);
@@ -98,24 +106,26 @@ public final class ThreadUtils {
     /**
      * <P>Attempts to find the most suitable {@link ClassLoader} as follows:</P>
      * <UL>
-     * <LI><P>
-     * Check the {@link Thread#getContextClassLoader()} value
-     * </P></LI>
+     *      <LI><P>
+     *      Check the {@link Thread#getContextClassLoader()} value
+     *      </P></LI>
      *
-     * <LI><P>
-     * If no thread context class loader then check the anchor
-     * class (if given) for its class loader
-     * </P></LI>
+     *      <LI><P>
+     *      If no thread context class loader then check the anchor
+     *      class (if given) for its class loader
+     *      </P></LI>
      *
-     * <LI><P>
-     * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
-     * </P></LI>
+     *      <LI><P>
+     *      If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
+     *      </P></LI>
      * </UL>
      *
-     * @param anchor The anchor {@link Class} to use if no current thread
-     *               - ignored if {@code null}
-     *               context class loader
-     * @return The resolver {@link ClassLoader}
+     * @param anchor The anchor {@link Class} to use if no current thread context
+     * class loader - ignored if {@code null}
+     *
+     * @return The resolved {@link ClassLoader} - <B>Note:</B> might still be {@code null}
+     * if went all the way &quot;down&quot; to the system class loader and it was also
+     * {@code null}.
      */
     public static ClassLoader resolveDefaultClassLoader(Class<?> anchor) {
         Thread thread = Thread.currentThread();
@@ -135,21 +145,50 @@ public final class ThreadUtils {
         return cl;
     }
 
-    public static Iterable<ClassLoader> resolveDefaultClassLoaders(Class<?> anchor) {
-        Set<ClassLoader> cls = new LinkedHashSet<>();
-        Thread thread = Thread.currentThread();
-        ClassLoader cl = thread.getContextClassLoader();
-        if (cl != null) {
-            cls.add(cl);
-        }
-        if (anchor != null) {
-            cls.add(anchor.getClassLoader());
-        }
-        cls.add(ClassLoader.getSystemClassLoader());
-        return cls;
+    public static Iterator<ClassLoader> iterateDefaultClassLoaders(Class<?> anchor) {
+        Class<?> effectiveAnchor = (anchor == null) ? ThreadUtils.class : anchor;
+        return new Iterator<ClassLoader>() {
+            @SuppressWarnings({ "unchecked", "checkstyle:Indentation" })
+            private final Supplier<? extends ClassLoader>[] suppliers =
+                new Supplier[] {
+                    () -> {
+                        Thread thread = Thread.currentThread();
+                        return thread.getContextClassLoader();
+                    },
+                    () -> effectiveAnchor.getClassLoader(),
+                    ClassLoader::getSystemClassLoader
+                };
+
+            private int index;
+
+            @Override
+            public boolean hasNext() {
+                for (; index < suppliers.length; index++) {
+                    Supplier<? extends ClassLoader> scl = suppliers[index];
+                    ClassLoader cl = scl.get();
+                    if (cl != null) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            @Override
+            public ClassLoader next() {
+                if (index >= suppliers.length) {
+                    throw new NoSuchElementException("All elements exhausted");
+                }
+
+                Supplier<? extends ClassLoader> scl = suppliers[index];
+                index++;
+                return scl.get();
+            }
+        };
     }
 
-    public static CloseableExecutorService newFixedThreadPoolIf(CloseableExecutorService executorService, String poolName, int nThreads) {
+    public static CloseableExecutorService newFixedThreadPoolIf(
+            CloseableExecutorService executorService, String poolName, int nThreads) {
         return executorService == null ? newFixedThreadPool(poolName, nThreads) : executorService;
     }
 
@@ -162,7 +201,8 @@ public final class ThreadUtils {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    public static CloseableExecutorService newCachedThreadPoolIf(CloseableExecutorService executorService, String poolName) {
+    public static CloseableExecutorService newCachedThreadPoolIf(
+            CloseableExecutorService executorService, String poolName) {
         return executorService == null ? newCachedThreadPool(poolName) : executorService;
     }
 

@@ -19,9 +19,9 @@
 
 package org.apache.sshd.common.config;
 
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -35,6 +35,11 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class VersionProperties {
+    /**
+     * Property used to hold the reported version
+     */
+    public static final String REPORTED_VERSION = "sshd-version";
+
     private static final class LazyVersionPropertiesHolder {
         private static final NavigableMap<String, String> PROPERTIES =
             Collections.unmodifiableNavigableMap(
@@ -45,24 +50,32 @@ public final class VersionProperties {
         }
 
         private static NavigableMap<String, String> loadVersionProperties(Class<?> anchor) {
-            return loadVersionProperties(anchor, ThreadUtils.resolveDefaultClassLoader(anchor));
+            return loadVersionProperties(anchor, ThreadUtils.iterateDefaultClassLoaders(anchor));
         }
 
-        private static NavigableMap<String, String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
-            NavigableMap<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            try {
-                InputStream input = loader.getResourceAsStream("org/apache/sshd/sshd-version.properties");
-                if (input == null) {
-                    throw new FileNotFoundException("Version resource does not exist");
-                }
+        private static NavigableMap<String, String> loadVersionProperties(
+                Class<?> anchor, Iterator<? extends ClassLoader> loaders) {
+            while ((loaders != null) && loaders.hasNext()) {
+                ClassLoader cl = loaders.next();
+                Properties props;
+                try (InputStream input = cl.getResourceAsStream("org/apache/sshd/sshd-version.properties")) {
+                    if (input == null) {
+                        continue;
+                    }
 
-                Properties props = new Properties();
-                try {
+                    props = new Properties();
                     props.load(input);
-                } finally {
-                    input.close();
+                } catch (Exception e) {
+                    Logger log = LoggerFactory.getLogger(anchor);
+                    log.warn("Failed ({}) to load version properties from {}: {}",
+                        e.getClass().getSimpleName(), cl, e.getMessage());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Version property failure details for loader=" + cl, e);
+                    }
+                    continue;
                 }
 
+                NavigableMap<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                 for (String key : props.stringPropertyNames()) {
                     String propValue = props.getProperty(key);
                     String value = GenericUtils.trimToEmpty(propValue);
@@ -76,12 +89,11 @@ public final class VersionProperties {
                         log.warn("Multiple values for key=" + key + ": current=" + value + ", previous=" + prev);
                     }
                 }
-            } catch (Exception e) {
-                Logger log = LoggerFactory.getLogger(anchor);
-                log.warn("Failed (" + e.getClass().getSimpleName() + ") to load version properties: " + e.getMessage());
+
+                return result;
             }
 
-            return result;
+            return Collections.emptyNavigableMap();
         }
     }
 

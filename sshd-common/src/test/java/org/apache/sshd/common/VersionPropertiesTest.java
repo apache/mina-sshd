@@ -45,4 +45,11 @@ public class VersionPropertiesTest extends JUnitTestSupport {
         Map<?, ?> props = VersionProperties.getVersionProperties();
         assertTrue(GenericUtils.isNotEmpty(props));
     }
+
+    @Test
+    public void testReportedVersionAvailable() {
+        Map<String, String> props = VersionProperties.getVersionProperties();
+        String version = props.get(VersionProperties.REPORTED_VERSION);
+        assertTrue(GenericUtils.isNotEmpty(version));
+    }
 }
