@@ -84,7 +84,7 @@
                 <executions>
                     <execution>
                         <id>unpack-dependencies</id>
-                        <phase>compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>unpack-dependencies</goal>
                         </goals>
