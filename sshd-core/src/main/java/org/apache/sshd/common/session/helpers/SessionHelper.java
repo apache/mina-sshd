@@ -623,7 +623,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * <U>appended</U> to the standard {@link SessionContext#DEFAULT_SSH_VERSION_PREFIX}.
      * Otherwise a default value is returned consisting of the prefix and
      * the core artifact name + version in <U>uppercase</U> - e.g.,'
-     * &quot;SSH-2.0-SSHD-CORE-1.2.3.4&quot;
+     * &quot;SSH-2.0-APACHE-SSHD-1.2.3.4&quot;
      *
      * @param configPropName The property used to query the factory manager
      * @return The resolved identification value
