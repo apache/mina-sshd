@@ -92,7 +92,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
                 }
             }
 
-            super.sessionCreated(session);
+            sessionCreated(session, null);
         } catch (Exception e) {
             if (listener != null) {
                 try {

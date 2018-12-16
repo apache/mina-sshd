@@ -61,10 +61,13 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected ChannelFuture prev;
     protected final ChannelInboundHandlerAdapter adapter = new Adapter();
 
-    public NettyIoSession(NettyIoService service, IoHandler handler) {
+    private final SocketAddress acceptanceAddress;
+
+    public NettyIoSession(NettyIoService service, IoHandler handler, SocketAddress acceptanceAddress) {
         this.service = service;
         this.handler = handler;
         this.id = service.sessionSeq.incrementAndGet();
+        this.acceptanceAddress = acceptanceAddress;
     }
 
     @Override
@@ -109,6 +112,11 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     public SocketAddress getLocalAddress() {
         Channel channel = context.channel();
         return channel.localAddress();
+    }
+
+    @Override
+    public SocketAddress getAcceptanceAddress() {
+        return acceptanceAddress;
     }
 
     @Override

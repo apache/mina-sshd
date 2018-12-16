@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.io;
 
+import java.net.SocketAddress;
+
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
@@ -28,6 +30,12 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
      * ID which is different from any other.
      */
     long getId();
+
+    /**
+     * @return The service address through which this session was accepted - {@code null}
+     * if session was initiated by this peer instead of being accepted
+     */
+    SocketAddress getAcceptanceAddress();
 
     /**
      * Returns the value of the user-defined attribute of this session.

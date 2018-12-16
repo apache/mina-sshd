@@ -375,6 +375,11 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
+        public SocketAddress getAcceptanceAddress() {
+            return null;
+        }
+
+        @Override
         public IoWriteFuture writePacket(Buffer buffer) throws IOException {
             if (!isOpen()) {
                 throw new EOFException("Not open");

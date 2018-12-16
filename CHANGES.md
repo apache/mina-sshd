@@ -101,6 +101,9 @@ block size.
 * `HostConfigEntryResolver#resolveEffectiveHost` accepts also an (optional) initial connection
 context and/or local peer binding address - propagated from the `ClientSessionCreator#connect` invocation.
 
+* `connectionAccepted/abortAcceptedConnection` methods of `IoServiceEventListener` accept an extra
+argument - the service listen endpoint through which the connection was accepted.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-708](https://issues.apache.org/jira/browse/SSHD-708) - Add support for password encrypted OpenSSH private key files.

@@ -35,6 +35,7 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.common.util.GenericUtils;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -75,10 +76,11 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
                     IoServiceEventListener listener = getIoServiceEventListener();
                     SocketAddress local = ch.localAddress();
                     SocketAddress remote = ch.remoteAddress();
+                    SocketAddress service = GenericUtils.head(boundAddresses.keySet());
                     try {
                         if (listener != null) {
                             try {
-                                listener.connectionAccepted(NettyIoAcceptor.this, local, remote);
+                                listener.connectionAccepted(NettyIoAcceptor.this, local, remote, service);
                             } catch (Exception e) {
                                 ch.close();
                                 throw e;
@@ -87,12 +89,12 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
 
                         ChannelPipeline p = ch.pipeline();
                         @SuppressWarnings("resource")
-                        NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler);
+                        NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler, service);
                         p.addLast(nettyIoSession.adapter);
                     } catch (Exception e) {
                         if (listener != null) {
                             try {
-                                listener.abortAcceptedConnection(NettyIoAcceptor.this, local, remote, e);
+                                listener.abortAcceptedConnection(NettyIoAcceptor.this, local, remote, service, e);
                             } catch (Exception exc) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);

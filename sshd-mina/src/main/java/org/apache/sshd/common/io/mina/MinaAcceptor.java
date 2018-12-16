@@ -73,7 +73,9 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
             acceptorHolder.set(acceptor);
         }
 
-        log.debug("Created IoAcceptor");
+        if (log.isDebugEnabled()) {
+            log.debug("Created IoAcceptor: {}", this);
+        }
         return acceptor;
     }
 
@@ -82,21 +84,22 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
         IoServiceEventListener listener = getIoServiceEventListener();
         SocketAddress local = session.getLocalAddress();
         SocketAddress remote = session.getRemoteAddress();
+        SocketAddress service = session.getServiceAddress();
         try {
             if (listener != null) {
                 try {
-                    listener.connectionAccepted(this, local, remote);
+                    listener.connectionAccepted(this, local, remote, service);
                 } catch (Exception e) {
                     session.closeNow();
                     throw e;
                 }
             }
 
-            super.sessionCreated(session);
+            sessionCreated(session, service);
         } catch (Exception e) {
             if (listener != null) {
                 try {
-                    listener.abortAcceptedConnection(this, local, remote, e);
+                    listener.abortAcceptedConnection(this, local, remote, service, e);
                 } catch (Exception exc) {
                     if (log.isDebugEnabled()) {
                         log.debug("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);

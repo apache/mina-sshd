@@ -60,20 +60,23 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final Map<Object, Object> attributes = new HashMap<>();
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
+    private final SocketAddress acceptanceAddress;
     private final FactoryManager manager;
     private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<>();
     private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
 
-    public Nio2Session(Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket)
-            throws IOException {
+    public Nio2Session(
+            Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket, SocketAddress acceptanceAddress)
+                throws IOException {
         this.service = Objects.requireNonNull(service, "No service instance");
         this.manager = Objects.requireNonNull(manager, "No factory manager");
         this.ioHandler = Objects.requireNonNull(handler, "No IoHandler");
         this.socketChannel = Objects.requireNonNull(socket, "No socket channel");
         this.localAddress = socket.getLocalAddress();
         this.remoteAddress = socket.getRemoteAddress();
+        this.acceptanceAddress = acceptanceAddress;
         if (log.isDebugEnabled()) {
-            log.debug("Creating IoSession on {} from {}", localAddress, remoteAddress);
+            log.debug("Creating IoSession on {} from {} via {}", localAddress, remoteAddress, acceptanceAddress);
         }
     }
 
@@ -118,6 +121,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     @Override
     public SocketAddress getLocalAddress() {
         return localAddress;
+    }
+
+    @Override
+    public SocketAddress getAcceptanceAddress() {
+        return acceptanceAddress;
     }
 
     public AsynchronousSocketChannel getSocket() {

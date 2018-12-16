@@ -24,7 +24,6 @@ import org.apache.sshd.common.util.Readable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoHandler {
-
     void sessionCreated(IoSession session) throws Exception;
 
     void sessionClosed(IoSession session) throws Exception;

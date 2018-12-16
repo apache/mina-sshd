@@ -204,7 +204,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 if (listener != null) {
                     SocketAddress localAddress = result.getLocalAddress();
                     SocketAddress remoteAddress = result.getRemoteAddress();
-                    listener.connectionAccepted(Nio2Acceptor.this, localAddress, remoteAddress);
+                    listener.connectionAccepted(Nio2Acceptor.this, localAddress, remoteAddress, address);
                 }
 
                 // Create a session
@@ -232,7 +232,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                     try {
                         SocketAddress localAddress = result.getLocalAddress();
                         SocketAddress remoteAddress = result.getRemoteAddress();
-                        listener.abortAcceptedConnection(Nio2Acceptor.this, localAddress, remoteAddress, exc);
+                        listener.abortAcceptedConnection(Nio2Acceptor.this, localAddress, remoteAddress, address, exc);
                     } catch (Exception e) {
                         if (log.isDebugEnabled()) {
                             log.debug("onCompleted(" + address + ") listener=" + listener + " ignoring abort event exception", e);
@@ -274,7 +274,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             if (log.isTraceEnabled()) {
                 log.trace("createNio2Session({}) address={}", acceptor, address);
             }
-            return new Nio2Session(acceptor, getFactoryManager(), handler, channel);
+            return new Nio2Session(acceptor, getFactoryManager(), handler, channel, address);
         }
 
         @Override

@@ -146,21 +146,23 @@ public abstract class CliSupport {
             }
 
             @Override
-            public void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote)
+            public void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service)
                     throws IOException {
                 out.append("Connection accepted via ").append(Objects.toString(acceptor))
                     .append(" - local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
+                    .append(", service=").append(Objects.toString(service))
                     .println();
             }
 
             @Override
             public void abortAcceptedConnection(
-                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote, Throwable reason)
+                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service, Throwable reason)
                         throws IOException {
                 out.append("Abort accepted connection ").append(Objects.toString(acceptor))
                     .append(" - local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
+                    .append(", service=").append(Objects.toString(service))
                     .append(": (").append(reason.getClass().getSimpleName()).append(')')
                     .append(" ").println(reason.getMessage());
                 reason.printStackTrace(out);

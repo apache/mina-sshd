@@ -209,7 +209,6 @@ public class SshdSocketAddress extends SocketAddress {
         return GenericUtils.hashCode(getHostName(), Boolean.FALSE) + getPort();
     }
 
-
     /**
      * Returns the first external network address assigned to this
      * machine or null if one is not found.

@@ -78,7 +78,7 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                         }
 
                         @SuppressWarnings("resource")
-                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler);
+                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler, null);
                         if (context != null) {
                             session.setAttribute(AttributeRepository.class, context);
                         }

@@ -73,9 +73,10 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         }
     }
 
+    protected final SshdSocketAddress remote;
+    protected final IoSession serverSession;
+
     private final Type typeEnum;
-    private final IoSession serverSession;
-    private final SshdSocketAddress remote;
     private final ClientChannelPendingMessagesQueue messagesQueue;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;

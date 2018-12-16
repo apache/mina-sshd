@@ -73,9 +73,12 @@ public interface IoServiceEventListener extends SshdEventListener {
      * @param acceptor The {@link IoAcceptor} through which the connection was accepted
      * @param local The local connection endpoint
      * @param remote The remote connection endpoint
+     * @param service The service listen endpoint through which the connection was accepted
      * @throws IOException If failed to handle the event - in which case connection will be aborted
      */
-    default void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote) throws IOException {
+    default void connectionAccepted(
+            IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service)
+                throws IOException {
         // Do nothing
     }
 
@@ -86,13 +89,14 @@ public interface IoServiceEventListener extends SshdEventListener {
      * @param acceptor The {@link IoAcceptor} through which the connection was accepted
      * @param local The local connection endpoint
      * @param remote The remote connection endpoint
+     * @param service The service listen endpoint through which the connection was accepted
      * @param reason The reason for aborting - may be an exception thrown by
      * {@link #connectionAccepted(IoAcceptor, SocketAddress, SocketAddress) connectionAccepted}
      * @throws IOException If failed to handle the event - the exception is logged but does not
      * prevent further connections from being accepted
      */
     default void abortAcceptedConnection(
-            IoAcceptor acceptor, SocketAddress local, SocketAddress remote, Throwable reason)
+            IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service, Throwable reason)
                 throws IOException {
         // Do nothing
     }

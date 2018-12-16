@@ -212,7 +212,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     protected Nio2Session createSession(
             FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket)
                 throws Throwable {
-        return new Nio2Session(this, manager, handler, socket);
+        return new Nio2Session(this, manager, handler, socket, null);
     }
 
     public static class DefaultIoConnectFuture extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {

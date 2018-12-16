@@ -44,11 +44,13 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     private final MinaService service;
     private final org.apache.mina.core.session.IoSession session;
     private final Object sessionWriteId;
+    private final SocketAddress acceptanceAddress;
 
-    public MinaSession(MinaService service, org.apache.mina.core.session.IoSession session) {
+    public MinaSession(MinaService service, org.apache.mina.core.session.IoSession session, SocketAddress acceptanceAddress) {
         this.service = service;
         this.session = session;
         this.sessionWriteId = Objects.toString(session);
+        this.acceptanceAddress = acceptanceAddress;
     }
 
     public org.apache.mina.core.session.IoSession getSession() {
@@ -88,6 +90,11 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     @Override
     public SocketAddress getLocalAddress() {
         return session.getLocalAddress();
+    }
+
+    @Override
+    public SocketAddress getAcceptanceAddress() {
+        return acceptanceAddress;
     }
 
     @Override

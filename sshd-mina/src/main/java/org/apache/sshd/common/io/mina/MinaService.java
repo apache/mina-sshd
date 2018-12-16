@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.io.mina;
 
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -119,15 +120,14 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
         session.closeNow();
     }
 
-    @Override
-    public void sessionCreated(IoSession session) throws Exception {
-        org.apache.sshd.common.io.IoSession ioSession = new MinaSession(this, session);
+    protected void sessionCreated(IoSession session, SocketAddress acceptanceAddress) throws Exception {
+        org.apache.sshd.common.io.IoSession ioSession = new MinaSession(this, session, acceptanceAddress);
         try {
             session.setAttribute(org.apache.sshd.common.io.IoSession.class, ioSession);
             handler.sessionCreated(ioSession);
         } catch (Exception e) {
             log.warn("sessionCreated({}) failed {} to handle creation event: {}",
-                    session, e.getClass().getSimpleName(), e.getMessage());
+                session, e.getClass().getSimpleName(), e.getMessage());
             ioSession.close(true);
             throw e;
         }
