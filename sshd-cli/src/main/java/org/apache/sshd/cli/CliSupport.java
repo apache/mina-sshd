@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
@@ -49,6 +50,15 @@ public abstract class CliSupport {
 
     public static boolean showError(PrintStream stderr, String message) {
         stderr.append("ERROR: ").println(message);
+        return true;
+    }
+
+    public static boolean isEnabledVerbosityLogging(Level level) {
+        if ((level == null) || Level.OFF.equals(level) || Level.CONFIG.equals(level)
+                || Level.SEVERE.equals(level) || Level.WARNING.equals(level)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -98,7 +108,7 @@ public abstract class CliSupport {
     }
 
     public static <M extends AbstractFactoryManager> M setupIoServiceFactory(
-            M manager, Map<String, ?> options, PrintStream stdout, PrintStream stderr, String... args) {
+            M manager, Map<String, ?> options, Level level, PrintStream stdout, PrintStream stderr, String... args) {
         BuiltinIoServiceFactoryFactories factory = resolveIoServiceFactory(stderr, args);
         if (factory == null) {
             return null;
@@ -106,22 +116,12 @@ public abstract class CliSupport {
 
         manager.setIoServiceFactoryFactory(factory.create());
 
-        String levelValue = (options == null) ? null : Objects.toString(options.get(ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP), null);
-        if (GenericUtils.isEmpty(levelValue)) {
-            return manager;
-        }
-
-        LogLevelValue level = LogLevelValue.fromName(levelValue);
-        if (level == null) {
-            throw new IllegalArgumentException("Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
-        }
-
-        if ((level != LogLevelValue.FATAL) && (level != LogLevelValue.ERROR) && (level != LogLevelValue.INFO)) {
+        if (!isEnabledVerbosityLogging(level)) {
             return manager;
         }
 
         manager.setIoServiceEventListener(new IoServiceEventListener() {
-            private final PrintStream out = (level == LogLevelValue.INFO) ? stdout : stderr;
+            private final PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
 
             @Override
             public void connectionEstablished(
@@ -168,6 +168,50 @@ public abstract class CliSupport {
                 reason.printStackTrace(out);
             }
         });
+
         return manager;
+    }
+
+    public static Level resolveLoggingVerbosity(String... args) {
+        return resolveLoggingVerbosity(args, GenericUtils.length(args));
+    }
+
+    public static Level resolveLoggingVerbosity(String[] args, int maxIndex) {
+        for (int index = 0; index < maxIndex; index++) {
+            String argName = args[index];
+            if ("-v".equals(argName)) {
+                return Level.INFO;
+            } else if ("-vv".equals(argName)) {
+                return Level.FINE;
+            } else if ("-vvv".equals(argName)) {
+                return Level.FINEST;
+            }
+        }
+
+        return Level.CONFIG;
+    }
+
+    /**
+     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options.
+     * If found, then uses it as the result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
+     *
+     * @param options The {@code -o} options specified by the user
+     * @param args The command line arguments
+     * @return The resolved verbosity level
+     */
+    public static Level resolveLoggingVerbosity(Map<String, ?> options, String... args) {
+        String levelValue = (options == null)
+            ? null
+            : Objects.toString(options.get(ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP), null);
+        if (GenericUtils.isEmpty(levelValue)) {
+            return resolveLoggingVerbosity(args);
+        }
+
+        LogLevelValue level = LogLevelValue.fromName(levelValue);
+        if (level == null) {
+            throw new IllegalArgumentException("Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+        }
+
+        return level.getLoggingLevel();
     }
 }

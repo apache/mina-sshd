@@ -33,10 +33,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.cli.CliSupport;
+import org.apache.sshd.cli.server.helper.ServerPortForwardingEventListener;
 import org.apache.sshd.cli.server.helper.SftpServerSubSystemEventListener;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
@@ -105,7 +107,6 @@ public abstract class SshServerCliSupport extends CliSupport {
                 keyAlgorithm = KeyUtils.EC_ALGORITHM;
             } else if (BuiltinIdentities.Constants.ED25519.equals(keyAlgorithm)) {
                 keyAlgorithm = SecurityUtils.EDDSA;
-                // TODO change the hostKeyProvider to one that supports read/write of EDDSA keys - see SSHD-703
             }
 
             // force re-generation of host key if not same algorithm
@@ -150,9 +151,13 @@ public abstract class SshServerCliSupport extends CliSupport {
         }
     }
 
-    public static ForwardingFilter setupServerForwarding(SshServer server, PropertyResolver options) {
+    public static ForwardingFilter setupServerForwarding(
+            SshServer server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options) {
         ForwardingFilter forwardFilter = SshServerConfigFileReader.resolveServerForwarding(options);
         server.setForwardingFilter(forwardFilter);
+        if (isEnabledVerbosityLogging(level)) {
+            server.addPortForwardingEventListener(new ServerPortForwardingEventListener(stdout, stderr));
+        }
         return forwardFilter;
     }
 
@@ -163,7 +168,7 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static List<NamedFactory<Command>> resolveServerSubsystems(
-            PrintStream stdout, PrintStream stderr, PropertyResolver options)
+            Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
                 throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
@@ -174,7 +179,7 @@ public abstract class SshServerCliSupport extends CliSupport {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
-                    factory = registerSubsystemFactoryListeners(stdout, stderr, options, factory);
+                    factory = registerSubsystemFactoryListeners(level, stdout, stderr, options, factory);
                     subsystems.add(factory);
                 } catch (Exception e) {
                     stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
@@ -207,7 +212,7 @@ public abstract class SshServerCliSupport extends CliSupport {
                 continue;
             }
 
-            factory = registerSubsystemFactoryListeners(stdout, stderr, options, factory);
+            factory = registerSubsystemFactoryListeners(level, stdout, stderr, options, factory);
             subsystems.add(factory);
         }
 
@@ -215,9 +220,9 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static <F extends SubsystemFactory> F registerSubsystemFactoryListeners(
-            PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
+            Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
                 throws Exception {
-        if (factory instanceof SftpSubsystemFactory) {
+        if ((factory instanceof SftpSubsystemFactory) && isEnabledVerbosityLogging(level)) {
             SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
             ((SftpSubsystemFactory) factory).addSftpEventListener(listener);
         }

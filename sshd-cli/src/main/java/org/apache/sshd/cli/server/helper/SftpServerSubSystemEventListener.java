@@ -19,36 +19,22 @@
 
 package org.apache.sshd.cli.server.helper;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpServerSubSystemEventListener implements SftpEventListener {
-    private final Appendable stdout;
-    private final Appendable stderr;
-
+public class SftpServerSubSystemEventListener extends ServerEventListenerHelper implements SftpEventListener {
     public SftpServerSubSystemEventListener(Appendable stdout, Appendable stderr) {
-        this.stdout = Objects.requireNonNull(stdout, "No output target");
-        this.stderr = Objects.requireNonNull(stderr, "No error target");
-    }
-
-    public Appendable getStdout() {
-        return stdout;
-    }
-
-    public Appendable getStderr() {
-        return stderr;
+        super(SftpConstants.SFTP_SUBSYSTEM_NAME,  stdout, stderr);
     }
 
     @Override
@@ -94,24 +80,5 @@ public class SftpServerSubSystemEventListener implements SftpEventListener {
             outputErrorMessage("Failed (%s) to remove %s in session %s: %s",
                 thrown.getClass().getSimpleName(), path, session, thrown.getMessage());
         }
-    }
-
-    protected String outputErrorMessage(String format, Object... args) throws IOException {
-        return outputMessage(getStderr(), format, args);
-    }
-
-    protected String outputDebugMessage(String format, Object... args) throws IOException {
-        return outputMessage(getStdout(), format, args);
-    }
-
-    protected String outputMessage(Appendable out, String format, Object... args) throws IOException {
-        String message = String.format(format, args);
-        out.append(SftpSubsystemFactory.NAME)
-            .append(": ").append(message)
-            .append(System.lineSeparator());
-        if (out instanceof Flushable) {
-            ((Flushable) out).flush();
-        }
-        return message;
     }
 }

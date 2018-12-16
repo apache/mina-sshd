@@ -106,7 +106,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
     public static ClientSession setupClientSession(
-            String portOption, BufferedReader stdin, PrintStream stdout, PrintStream stderr, String... args)
+            String portOption, BufferedReader stdin, Level level, PrintStream stdout, PrintStream stderr, String... args)
                 throws Exception {
         int port = -1;
         String host = null;
@@ -224,7 +224,9 @@ public abstract class SshClientCliSupport extends CliSupport {
             return null;
         }
 
-        SshClient client = setupClient(options, ciphers, macs, compressions, identities, stdin, stdout, stderr, args);
+        SshClient client = setupClient(
+            options, ciphers, macs, compressions, identities,
+            stdin, stdout, stderr, level, args);
         if (client == null) {
             return null;
         }
@@ -269,8 +271,9 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
     }
 
-    public static SshClient setupDefaultClient(Map<String, ?> options, PrintStream stdout, PrintStream stderr, String... args) {
-        return setupIoServiceFactory(SshClient.setUpDefaultClient(), options, stdout, stderr, args);
+    public static SshClient setupDefaultClient(
+            Map<String, ?> options, Level level, PrintStream stdout, PrintStream stderr, String... args) {
+        return setupIoServiceFactory(SshClient.setUpDefaultClient(), options, level, stdout, stderr, args);
     }
 
     // returns null if error encountered
@@ -282,7 +285,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             List<NamedFactory<Compression>> compressions,
             Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr,
-            String[] args)
+            Level level, String[] args)
                 throws Exception {
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         if (GenericUtils.isEmpty(ciphers)) {
@@ -306,7 +309,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
         }
 
-        SshClient client = setupDefaultClient(options, stdout, stderr, args);
+        SshClient client = setupDefaultClient(options, level, stdout, stderr, args);
         if (client == null) {
             return null;
         }
@@ -459,25 +462,6 @@ public abstract class SshClientCliSupport extends CliSupport {
         return current;
     }
 
-    public static Level resolveLoggingVerbosity(String... args) {
-        return resolveLoggingVerbosity(args, GenericUtils.length(args));
-    }
-
-    public static Level resolveLoggingVerbosity(String[] args, int maxIndex) {
-        for (int index = 0; index < maxIndex; index++) {
-            String argName = args[index];
-            if ("-v".equals(argName)) {
-                return Level.INFO;
-            } else if ("-vv".equals(argName)) {
-                return Level.FINE;
-            } else if ("-vvv".equals(argName)) {
-                return Level.FINEST;
-            }
-        }
-
-        return Level.WARNING;
-    }
-
     public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String... args) {
         return resolveLoggingTargetStream(stdout, stderr, args, GenericUtils.length(args));
     }
@@ -603,7 +587,7 @@ public abstract class SshClientCliSupport extends CliSupport {
         return new ArrayList<>(available);
     }
 
-    public static Handler setupLogging(Level level, final PrintStream stdout, final PrintStream stderr, final OutputStream outputStream) {
+    public static Handler setupLogging(Level level, PrintStream stdout, PrintStream stderr, OutputStream outputStream) {
         Handler fh = new ConsoleHandler() {
             {
                 setOutputStream(outputStream); // override the default (stderr)

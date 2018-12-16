@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -99,7 +100,7 @@ public class SshClientMain extends SshClientCliSupport {
             } else if (GenericUtils.isEmpty(command) && "-a".equals(argName)) {
                 agentForward = false;
             } else {
-                level = resolveLoggingVerbosity(args, i);
+                level = CliSupport.resolveLoggingVerbosity(args, i);
                 logStream = resolveLoggingTargetStream(stdout, stderr, args, i);
                 if (logStream == null) {
                     error = true;
@@ -122,7 +123,7 @@ public class SshClientMain extends SshClientCliSupport {
             if (!error) {
                 setupLogging(level, stdout, stderr, logStream);
 
-                session = setupClientSession(SSH_CLIENT_PORT_OPTION, stdin, stdout, stderr, args);
+                session = setupClientSession(SSH_CLIENT_PORT_OPTION, stdin, level, stdout, stderr, args);
                 if (session == null) {
                     error = true;
                 }

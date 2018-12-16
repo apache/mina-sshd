@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClient.Option;
 import org.apache.sshd.client.scp.ScpClientCreator;
@@ -165,10 +166,12 @@ public class ScpCommandMain extends SshClientCliSupport {
         try (BufferedReader stdin = new BufferedReader(
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             args = normalizeCommandArguments(stdout, stderr, args);
+
+            Level level = Level.SEVERE;
             int numArgs = GenericUtils.length(args);
             // see the way normalizeCommandArguments works...
             if (numArgs >= 2) {
-                Level level = resolveLoggingVerbosity(args, numArgs - 2);
+                level = CliSupport.resolveLoggingVerbosity(args, numArgs - 2);
                 logStream = resolveLoggingTargetStream(stdout, stderr, args, numArgs - 2);
                 if (logStream != null) {
                     setupLogging(level, stdout, stderr, logStream);
@@ -177,7 +180,7 @@ public class ScpCommandMain extends SshClientCliSupport {
 
             ScpClientCreator creator = resolveScpClientCreator(stderr, args);
             ClientSession session = ((logStream == null) || (creator == null) || GenericUtils.isEmpty(args))
-                ? null : setupClientSession(SCP_PORT_OPTION, stdin, stdout, stderr, args);
+                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args);
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity] [-io nio2|mina|netty]"
                          + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-o creator=class name]"

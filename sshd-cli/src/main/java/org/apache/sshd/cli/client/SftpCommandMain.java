@@ -42,6 +42,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
@@ -317,7 +318,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         PrintStream stderr = System.err;
         OutputStream logStream = stderr;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
-            Level level = resolveLoggingVerbosity(args);
+            Level level = CliSupport.resolveLoggingVerbosity(args);
             logStream = resolveLoggingTargetStream(stdout, stderr, args);
             if (logStream != null) {
                 setupLogging(level, stdout, stderr, logStream);
@@ -325,7 +326,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             ClientSession session = (logStream == null)
                 ? null
-                : setupClientSession(SFTP_PORT_OPTION, stdin, stdout, stderr, args);
+                : setupClientSession(SFTP_PORT_OPTION, stdin, level, stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
                         + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"

@@ -297,7 +297,9 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         SshServer sshd = error ? null : setupIoServiceFactory(
-            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), options, System.out, System.err, args);
+            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), options,
+            resolveLoggingVerbosity(options, args),
+            System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }

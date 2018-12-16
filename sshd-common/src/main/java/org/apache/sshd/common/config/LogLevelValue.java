@@ -22,6 +22,7 @@ package org.apache.sshd.common.config;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -35,18 +36,28 @@ public enum LogLevelValue {
      * 1. DEBUG and DEBUG1 are EQUIVALENT
      * 2. Order is important (!!!)
      */
-    QUIET,
-    FATAL,
-    ERROR,
-    INFO,
-    VERBOSE,
-    DEBUG,
-    DEBUG1,
-    DEBUG2,
-    DEBUG3;
+    QUIET(Level.OFF),
+    FATAL(Level.SEVERE),
+    ERROR(Level.SEVERE),
+    INFO(Level.INFO),
+    VERBOSE(Level.FINE),
+    DEBUG(Level.FINE),
+    DEBUG1(Level.FINE),
+    DEBUG2(Level.FINER),
+    DEBUG3(Level.FINEST);
 
     public static final Set<LogLevelValue> VALUES =
         Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
+
+    private final Level level;
+
+    LogLevelValue(Level level) {
+        this.level = level;
+    }
+
+    public Level getLoggingLevel() {
+        return level;
+    }
 
     public static LogLevelValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

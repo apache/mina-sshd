@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -76,7 +77,7 @@ public class ChannelExecMain extends BaseTestSupport {
         PrintStream stderr = System.err;
         try (BufferedReader stdin = new BufferedReader(
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
-            ClientSession session = SshClientCliSupport.setupClientSession("-P", stdin, stdout, stderr, args);
+            ClientSession session = SshClientCliSupport.setupClientSession("-P", stdin, CliSupport.resolveLoggingVerbosity(args), stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: channelExec [-i identity] [-l login] [-P port] [-o option=value]"
                         + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
