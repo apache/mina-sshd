@@ -1272,6 +1272,7 @@
                         <java.awt.headless>true</java.awt.headless>
                         <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
                     </systemPropertyVariables>
+                    <argLine>@{argLine}</argLine>
                 </configuration>
                 <dependencies>
                     <!-- make sure using OUR version -->
@@ -1307,6 +1308,51 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <haltOnFailure>false</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>50%</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>CLASS</counter>
+                                            <value>MISSEDCOUNT</value>
+                                            <maximum>10</maximum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -1316,16 +1362,39 @@
             <name>Dummy to avoid accidental deploys</name>
             <url />
         </repository>
+        <site>
+            <id>default</id>
+            <name>Mina SSHD</name>
+            <url>file://${project.build.directory}/deploy</url>
+        </site>
     </distributionManagement>
 
     <reporting>
-       <plugins>
-           <plugin>    <!-- used by PMD to create a source XREF -->
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-jxr-plugin</artifactId>
-               <version>3.0.0</version>
-           </plugin>
-       </plugins>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>3.0.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                    <reportSet>
+                        <id>aggregate</id>
+                        <inherited>false</inherited>
+                        <reports>
+                            <report>report-aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
     </reporting>
 
     <modules>
