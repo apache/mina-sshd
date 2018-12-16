@@ -63,7 +63,7 @@ public class TcpipForwardHandler extends AbstractConnectionServiceRequestHandler
         SshdSocketAddress bound = forwarder.localPortForwardingRequested(socketAddress);
         if (log.isDebugEnabled()) {
             log.debug("process({})[{}][want-reply-{}] {} => {}",
-                      connectionService, request, wantReply, socketAddress, bound);
+                  connectionService, request, wantReply, socketAddress, bound);
         }
 
         if (bound == null) {

@@ -1008,13 +1008,38 @@ public class DefaultForwardingFilter
             InetSocketAddress local = (InetSocketAddress) session.getLocalAddress();
             int localPort = local.getPort();
             SshdSocketAddress remote = localToRemote.get(localPort);
-            if (debugEnabled) {
-                log.debug("sessionCreated({}) remote={}", session, remote);
-            }
-
-            TcpipClientChannel.Type channelType = (remote == null) ? TcpipClientChannel.Type.Forwarded : TcpipClientChannel.Type.Direct;
+            TcpipClientChannel.Type channelType = (remote == null)
+                ? TcpipClientChannel.Type.Forwarded
+                : TcpipClientChannel.Type.Direct;
             TcpipClientChannel channel = new TcpipClientChannel(channelType, session, remote);
             session.setAttribute(TcpipClientChannel.class, channel);
+
+            // Propagate original requested host name - see SSHD-792
+            if (channelType == TcpipClientChannel.Type.Forwarded) {
+                SocketAddress accepted = session.getAcceptanceAddress();
+                LocalForwardingEntry localEntry = null;
+                if (accepted instanceof InetSocketAddress) {
+                    synchronized (localForwards) {
+                        localEntry = LocalForwardingEntry.findMatchingEntry(
+                            ((InetSocketAddress) accepted).getHostString(), localPort, localForwards);
+                    }
+                }
+
+                if (localEntry != null) {
+                    if (debugEnabled) {
+                        log.debug("sessionCreated({})[local={}, remote={}, accepted={}] localEntry={}",
+                            session, local, remote, accepted, localEntry);
+                    }
+                    channel.updateLocalForwardingEntry(localEntry);
+                } else {
+                    log.warn("sessionCreated({})[local={}, remote={}] cannot locate original local entry for accepted={}",
+                        session, local, remote, accepted);
+                }
+            } else {
+                if (debugEnabled) {
+                    log.debug("sessionCreated({}) local={}, remote={}", session, local, remote);
+                }
+            }
 
             service.registerChannel(channel);
             channel.open().addListener(future -> {

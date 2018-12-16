@@ -19,7 +19,6 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -75,6 +74,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     protected final SshdSocketAddress remote;
     protected final IoSession serverSession;
+    protected SshdSocketAddress localEntry;
 
     private final Type typeEnum;
     private final ClientChannelPendingMessagesQueue messagesQueue;
@@ -85,6 +85,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         super(Objects.requireNonNull(type, "No type specified").getName());
         this.typeEnum = type;
         this.serverSession = Objects.requireNonNull(serverSession, "No server session provided");
+        this.localEntry = new SshdSocketAddress((InetSocketAddress) serverSession.getLocalAddress());
         this.remote = remote;
         this.messagesQueue = new ClientChannelPendingMessagesQueue(this);
     }
@@ -101,25 +102,29 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         return messagesQueue;
     }
 
+    public void updateLocalForwardingEntry(LocalForwardingEntry entry) {
+        Objects.requireNonNull(entry, "No local forwarding entry provided");
+        localEntry = new SshdSocketAddress(entry.getAlias(), entry.getPort());
+    }
+
     @Override
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src;
-        InetSocketAddress dst;
+        SshdSocketAddress dst;
+        InetSocketAddress loc = (InetSocketAddress) serverSession.getLocalAddress();
         Type openType = getTcpipChannelType();
         switch (openType) {
-            case Direct: {
+            case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
-                dst = this.remote.toInetSocketAddress();
-                InetSocketAddress loc = (InetSocketAddress) serverSession.getLocalAddress();
+                dst = this.remote;
                 tunnelEntrance = new SshdSocketAddress(loc.getHostString(), loc.getPort());
-                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
+                tunnelExit = new SshdSocketAddress(dst.getHostName(), dst.getPort());
                 break;
-            }
             case Forwarded:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
-                dst = (InetSocketAddress) serverSession.getLocalAddress();
+                dst = localEntry;
                 tunnelEntrance = new SshdSocketAddress(src.getHostString(), src.getPort());
-                tunnelExit = new SshdSocketAddress(dst.getHostString(), dst.getPort());
+                tunnelExit = new SshdSocketAddress(loc.getHostString(), loc.getPort());
                 break;
             default:
                 throw new SshException("Unknown client channel type: " + openType);
@@ -137,10 +142,8 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         }
 
         Session session = getSession();
-        InetAddress srcAddress = src.getAddress();
-        String srcHost = srcAddress.getHostAddress();
-        InetAddress dstAddress = dst.getAddress();
-        String dstHost = dstAddress.getHostAddress();
+        String srcHost = src.getHostString();
+        String dstHost = dst.getHostName();
         Window wLocal = getLocalWindow();
         String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
