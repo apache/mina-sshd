@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface WaitableFuture {
     /**
-     * @return Some identifier useful as {@link #toString()} value
+     * @return Some identifier useful as {@code toString()} value
      */
     Object getId();
 

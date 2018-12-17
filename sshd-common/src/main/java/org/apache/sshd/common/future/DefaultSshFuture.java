@@ -42,7 +42,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     /**
      * Creates a new instance.
      *
-     * @param id Some identifier useful as {@link #toString()} value
+     * @param id Some identifier useful as {@code toString()} value
      * @param lock A synchronization object for locking access - if {@code null}
      * then synchronization occurs on {@code this} instance
      */

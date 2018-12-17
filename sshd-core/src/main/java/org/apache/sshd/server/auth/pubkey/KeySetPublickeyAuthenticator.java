@@ -41,7 +41,7 @@ public class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements
     }
 
     /**
-     * @return Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
+     * @return Some kind of mnemonic identifier for the authenticator - used also in {@code toString()}
      */
     public Object getId() {
         return id;

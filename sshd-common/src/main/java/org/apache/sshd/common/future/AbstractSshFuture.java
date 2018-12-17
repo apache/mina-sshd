@@ -43,7 +43,7 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     private final Object id;
 
     /**
-     * @param id Some identifier useful as {@link #toString()} value
+     * @param id Some identifier useful as {@code toString()} value
      */
     protected AbstractSshFuture(Object id) {
         this.id = id;

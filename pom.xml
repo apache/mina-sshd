@@ -88,6 +88,7 @@
 
         <java.major.version>1</java.major.version>
         <java.minor.version>8</java.minor.version>
+        <java.sdk.version>8</java.sdk.version>
         <sniffer.signatures.version>1.0</sniffer.signatures.version>
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
@@ -729,7 +730,12 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.0.1</version>
                     <configuration>
-                        <additionalOptions>-Xdoclint:none </additionalOptions>
+                        <additionalOptions>-Xdoclint:-missing</additionalOptions>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <quiet>true</quiet>
+                        <links>
+                            <link>http://docs.oracle.com/javase/${java.sdk.version}/docs/api</link>
+                        </links>                        
                     </configuration>
                     <dependencies>
                         <dependency>

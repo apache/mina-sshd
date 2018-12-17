@@ -91,7 +91,7 @@ public interface IoServiceEventListener extends SshdEventListener {
      * @param remote The remote connection endpoint
      * @param service The service listen endpoint through which the connection was accepted
      * @param reason The reason for aborting - may be an exception thrown by
-     * {@link #connectionAccepted(IoAcceptor, SocketAddress, SocketAddress) connectionAccepted}
+     * {@link #connectionAccepted(IoAcceptor, SocketAddress, SocketAddress, SocketAddress) connectionAccepted}
      * @throws IOException If failed to handle the event - the exception is logged but does not
      * prevent further connections from being accepted
      */

@@ -227,7 +227,7 @@ public interface Channel
      * @param key The attribute key - never {@code null}
      * @return Associated value - {@code null} if not found
      * @see #getSession()
-     * @see Session#resolveAttribute(Session, AttributeKey)
+     * @see Session#resolveAttribute(Session, AttributeRepository.AttributeKey)
      */
     static <T> T resolveAttribute(Channel channel, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");

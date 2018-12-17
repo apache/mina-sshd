@@ -83,7 +83,7 @@ public final class PropertyResolverUtils {
      *      </LI>
      *
      *      <LI>
-     *      Otherwise, the value's {@link #toString()} is parsed as a {@code long}
+     *      Otherwise, the value's {@code toString()} is parsed as a {@code long}
      *      </LI>
      * </UL>
      *
@@ -135,7 +135,7 @@ public final class PropertyResolverUtils {
      *      </LI>
      *
      *      <LI>
-     *      Otherwise, the value's {@link #toString()} is parsed as a {@link Long}
+     *      Otherwise, the value's {@code toString()} is parsed as a {@link Long}
      *      </LI>
      * </UL>
      *

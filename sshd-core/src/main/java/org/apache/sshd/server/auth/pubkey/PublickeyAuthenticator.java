@@ -51,7 +51,7 @@ public interface PublickeyAuthenticator {
     boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;
 
     /**
-     * @param id Some kind of mnemonic identifier for the authenticator - used also in {@link #toString()}
+     * @param id Some kind of mnemonic identifier for the authenticator - used also in {@code toString()}
      * @param session The {@link ServerSession} that triggered this call - may be {@code null} if invoked
      * by offline tool (e.g., unit test) or session context unknown to caller.
      * @param entries The entries to parse - ignored if {@code null}/empty
