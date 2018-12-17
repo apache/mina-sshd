@@ -155,7 +155,10 @@ for exposing the cipher's block size. **Note:** for the time being we declare a 
 * [SSHD-876](https://issues.apache.org/jira/browse/SSHD-873) - Looking through the resolvable class-loaders "hierarchy"
 (thread-context => anchor => system) for `sshd-version.properties` file instead of just in the thread context class loader.
 
-    * In this context, the default reported client/server SSH version string has been set to `APACHE-SSHD-...version...`
+    * In this context, the default reported client/server SSH version string has been set to `APACHE-SSHD-...version...`.
+    Reminder: the user can override this default via configuration properties set on the client/server instance
+    (see `AbstractSession#resolveIdentificationString`, `ClientFactoryManager#CLIENT_IDENTIFICATION`, and
+    `ServerFactoryManager#SERVER_IDENTIFICATION`).
 
 * `SftpCommandMain` shows by default `get/put` command progress using the hash sign (`#`) marker. The marker
 can be enabled/disabled via the `progress` command:

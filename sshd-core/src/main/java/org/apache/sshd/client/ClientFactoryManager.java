@@ -42,8 +42,8 @@ public interface ClientFactoryManager
      * Key used to retrieve the value of the client identification string.
      * If set, then it is <U>appended</U> to the (standard) &quot;SSH-2.0-&quot;
      * prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot;
-     * plus the current SSHD core artifact name and version in uppercase - e.g.,
-     * &quot;SSH-2.0-SSHD-CORE-1.0.0&quot;
+     * plus the current SSHD artifact name and version in uppercase - e.g.,
+     * &quot;SSH-2.0-APACHE-SSHD-1.0.0&quot;
      */
     String CLIENT_IDENTIFICATION = "client-identification";
 
