@@ -112,7 +112,7 @@
         <bouncycastle.version>1.60</bouncycastle.version>
         <slf4j.version>1.7.25</slf4j.version>
         <spring.version>5.1.2.RELEASE</spring.version>
-        <jgit.version>5.1.3.201810200350-r</jgit.version>
+        <jgit.version>5.2.0.201812061821-r</jgit.version>
         <junit.version>4.12</junit.version>
         <bytebuddy.version>1.9.6</bytebuddy.version>
 
@@ -588,6 +588,7 @@
                 <artifactId>ganymed-ssh2</artifactId>
                 <version>262</version>
             </dependency>
+
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
@@ -595,9 +596,26 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
+                <version>${jgit.version}</version>
+                    <!-- Do not include ourselves -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.sshd</groupId>
+                        <artifactId>sshd-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.sshd</groupId>
+                        <artifactId>sshd-sftp</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit.pgm</artifactId>
                 <version>${jgit.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.servicemix.bundles</groupId>
                 <artifactId>org.apache.servicemix.bundles.not-yet-commons-ssl</artifactId>
