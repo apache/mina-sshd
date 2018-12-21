@@ -23,7 +23,9 @@ import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,7 +39,9 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -53,24 +57,105 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
+        if (GenericUtils.isEmpty(addresses)) {
+            return;
+        }
+
         AsynchronousChannelGroup group = getChannelGroup();
-        for (SocketAddress address : addresses) {
-            if (log.isDebugEnabled()) {
-                log.debug("Binding Nio2Acceptor to address {}", address);
+        Collection<java.io.Closeable> bound = new ArrayList<>(addresses.size());
+        try {
+            boolean debugEnabled = log.isDebugEnabled();
+            for (SocketAddress address : addresses) {
+                if (debugEnabled) {
+                    log.debug("bind({}) binding to address", address);
+                }
+
+                try {
+                    AsynchronousServerSocketChannel asyncChannel =
+                        openAsynchronousServerSocketChannel(address, group);
+                    // In case it or the other bindings fail
+                    java.io.Closeable protector =
+                        protectInProgressBinding(address, asyncChannel);
+                    bound.add(protector);
+
+                    AsynchronousServerSocketChannel socket = setSocketOptions(asyncChannel);
+                    socket.bind(address, backlog);
+
+                    SocketAddress local = socket.getLocalAddress();
+                    if (debugEnabled) {
+                        log.debug("bind({}) bound to {}", address, local);
+                    }
+
+                    AsynchronousServerSocketChannel prev = channels.put(local, socket);
+                    if (prev != null) {
+                        if (debugEnabled) {
+                            log.debug("bind({}) replaced previous channel ({}) for {}",
+                                address, prev.getLocalAddress(), local);
+                        }
+                    }
+
+                    CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> handler =
+                        ValidateUtils.checkNotNull(createSocketCompletionHandler(channels, socket),
+                            "No completion handler created for address=%s[%s]",
+                            address, local);
+                    socket.accept(local, handler);
+                } catch (IOException | RuntimeException e) {
+                    log.error("bind({}) - failed ({}) to bind: {}",
+                        address, e.getClass().getSimpleName(), e.getMessage());
+                    if (debugEnabled) {
+                        log.debug("bind(" + address + ") failure details", e);
+                    }
+                    throw e;
+                }
             }
 
-            AsynchronousServerSocketChannel asyncChannel = openAsynchronousServerSocketChannel(address, group);
-            AsynchronousServerSocketChannel socket = setSocketOptions(asyncChannel);
-            socket.bind(address, backlog);
-            SocketAddress local = socket.getLocalAddress();
-            channels.put(local, socket);
-
-            CompletionHandler<AsynchronousSocketChannel, ? super SocketAddress> handler =
-                ValidateUtils.checkNotNull(createSocketCompletionHandler(channels, socket),
-                    "No completion handler created for address=%s",
-                    address);
-            socket.accept(local, handler);
+            bound.clear();  // avoid auto-close at finally clause
+        } finally {
+            IOException err = IoUtils.closeQuietly(bound);
+            if (err != null) {
+                throw err;
+            }
         }
+    }
+
+    protected java.io.Closeable protectInProgressBinding(
+            SocketAddress address, AsynchronousServerSocketChannel asyncChannel) {
+        boolean debugEnabled = log.isDebugEnabled();
+
+        return new java.io.Closeable() {
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void close() throws IOException {
+                try {
+                    try {
+                        SocketAddress local = asyncChannel.getLocalAddress();
+                        // make sure bound channel
+                        if (local != null) {
+                            if (debugEnabled) {
+                                log.debug("protectInProgressBinding({}) remove {} binding", address, local);
+                            }
+                            channels.remove(local);
+                        }
+                    } finally {
+                        if (debugEnabled) {
+                            log.debug("protectInProgressBinding({}) auto-close", address);
+                        }
+
+                        asyncChannel.close();
+                    }
+                } catch (ClosedChannelException e) {
+                    // ignore if already closed
+                    if (debugEnabled) {
+                        log.debug("protectInProgressBinding(" + address + ") ignore close channel exception", e);
+                    }
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "protectInProgressBinding(" + address + ")";
+            }
+        };
     }
 
     protected AsynchronousServerSocketChannel openAsynchronousServerSocketChannel(

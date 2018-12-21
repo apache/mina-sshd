@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -110,26 +111,79 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
 
     @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
-        for (SocketAddress address : addresses) {
-            bind(address);
+        if (GenericUtils.isEmpty(addresses)) {
+            return;
+        }
+
+        Collection<Channel> bound = new ArrayList<>(addresses.size());
+        try {
+            for (SocketAddress address : addresses) {
+                Channel channel = bindInternal(address);
+                bound.add(channel);
+            }
+
+            bound.clear();  // disable auto close at finally clause
+        } finally {
+            for (Channel channel : bound) {
+                closeChannel(channel);
+            }
         }
     }
 
     @Override
     public void bind(SocketAddress address) throws IOException {
+        bindInternal(address);
+    }
+
+    protected Channel bindInternal(SocketAddress address) throws IOException {
         InetSocketAddress inetAddress = (InetSocketAddress) address;
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("bindInternal({}) binding", address);
+        }
+
         ChannelFuture f = bootstrap.bind(inetAddress);
         Channel channel = f.channel();
         channelGroup.add(channel);
         try {
             f.sync();
+
             SocketAddress bound = channel.localAddress();
-            boundAddresses.put(bound, channel);
+            if (debugEnabled) {
+                log.debug("bindInternal({}) bound to {}", address, bound);
+            }
+
+            Channel prev = boundAddresses.put(bound, channel);
+            if (prev != null) {
+                if (debugEnabled) {
+                    log.debug("bindInternal({}) replaced entry of {} - previous={}",
+                        address, bound, prev.localAddress());
+                }
+            }
+
             channel.closeFuture().addListener(fut -> boundAddresses.remove(bound));
+
+            // disable auto close at finally clause
+            Channel returnValue = channel;
+            channel = null;
+            return returnValue;
         } catch (InterruptedException e) {
-            throw (InterruptedIOException) new InterruptedIOException().initCause(e);
-        } catch (Exception e) {
-            throw new IOException(e);
+            log.error("bindInternal({}) interrupted ({}): {}",
+                address, e.getClass().getSimpleName(), e.getMessage());
+            if (debugEnabled) {
+                log.debug("bindInternal(" + address + ") failure details", e);
+            }
+
+            throw (InterruptedIOException) new InterruptedIOException(e.getMessage()).initCause(e);
+        } finally {
+            closeChannel(channel);
+        }
+    }
+
+    protected void closeChannel(Channel channel) {
+        if (channel != null) {
+            channelGroup.remove(channel);
+            channel.close();
         }
     }
 

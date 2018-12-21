@@ -45,7 +45,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     @Override
-    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
+    public IoConnectFuture connect(
+            SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}", address);

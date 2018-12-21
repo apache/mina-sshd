@@ -139,12 +139,31 @@ public final class IoUtils {
      *
      * @param closeables The {@link Closeable}s to close
      * @return The <U>first</U> {@link IOException} that occurred during closing
-     * of a resource - if more than one exception occurred, they are added as
-     * suppressed exceptions to the first one
+     * of a resource - {@code null} if not exception. If more than one exception
+     * occurred, they are added as suppressed exceptions to the first one
      * @see Throwable#getSuppressed()
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static IOException closeQuietly(Closeable... closeables) {
+        return closeQuietly(GenericUtils.isEmpty(closeables) ? Collections.emptyList() : Arrays.asList(closeables));
+    }
+
+    /**
+     * Closes a bunch of resources suppressing any {@link IOException}s their
+     * {@link Closeable#close()} method may have thrown
+     *
+     * @param closeables The {@link Closeable}s to close
+     * @return The <U>first</U> {@link IOException} that occurred during closing
+     * of a resource - {@code null} if not exception. If more than one exception
+     * occurred, they are added as suppressed exceptions to the first one
+     * @see Throwable#getSuppressed()
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static IOException closeQuietly(Collection<? extends Closeable> closeables) {
+        if (GenericUtils.isEmpty(closeables)) {
+            return null;
+        }
+
         IOException err = null;
         for (Closeable c : closeables) {
             try {
