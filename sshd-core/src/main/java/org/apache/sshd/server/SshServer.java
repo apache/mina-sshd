@@ -351,10 +351,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             return;
         }
 
-        long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
-        boolean successful = close(immediately).await(maxWait);
-        if (!successful) {
-            throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+        try {
+            long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
+            boolean successful = close(immediately).await(maxWait);
+            if (!successful) {
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+            }
+        } finally {
+            // clear the attributes since we close stop the server
+            clearAttributes();
         }
     }
 

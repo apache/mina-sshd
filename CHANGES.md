@@ -10,6 +10,10 @@
 
     * Added `attributeKeys` enumeration method to `AttributeRepository`.
 
+    * In this context, please note that all associated session/channel/client/server attributes
+    are cleared when entity is closed. The clearing usually occurs as after all relevant registered
+    event listeners have been invoked.
+
 * `DEFAULT_PORT` moved from `SshConfigFileReader` to `SshConstants`.
 
 * Moved some session "summary" related definitions from `Session` to `SessionContext` (which `Session` extends).

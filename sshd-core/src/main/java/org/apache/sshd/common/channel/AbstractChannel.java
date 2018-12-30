@@ -694,6 +694,8 @@ public abstract class AbstractChannel
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
+            // clear the attributes since we close the channel
+            clearAttributes();
         }
 
         IOException err = IoUtils.closeQuietly(getLocalWindow(), getRemoteWindow());

@@ -426,6 +426,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isTraceEnabled()) {
                 log.trace("Stop exception details", e);
             }
+        } finally {
+            // clear the attributes since we close stop the client
+            clearAttributes();
         }
     }
 

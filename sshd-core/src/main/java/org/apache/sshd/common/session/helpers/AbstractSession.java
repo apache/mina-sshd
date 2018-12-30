@@ -663,6 +663,8 @@ public abstract class AbstractSession extends SessionHelper {
             this.sessionListeners.clear();
             this.channelListeners.clear();
             this.tunnelListeners.clear();
+            // clear the attributes since we close the session
+            clearAttributes();
         }
 
         super.preClose();
