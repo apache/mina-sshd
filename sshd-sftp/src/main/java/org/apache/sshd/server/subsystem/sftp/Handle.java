@@ -20,19 +20,28 @@ package org.apache.sshd.server.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
+import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class Handle implements java.nio.channels.Channel {
+public abstract class Handle implements java.nio.channels.Channel, AttributeStore {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Path file;
     private final String handle;
+    private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     protected Handle(Path file, String handle) {
         this.file = Objects.requireNonNull(file, "No local file path");
@@ -57,6 +66,48 @@ public abstract class Handle implements java.nio.channels.Channel {
 
     public String getFileHandle() {
         return handle;
+    }
+
+    @Override
+    public int getAttributesCount() {
+        return attributes.size();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(AttributeRepository.AttributeKey<T> key) {
+        return (T) attributes.get(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    public Collection<AttributeKey<?>> attributeKeys() {
+        return attributes.isEmpty() ? Collections.emptySet() : new HashSet<>(attributes.keySet());
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <T> T computeAttributeIfAbsent(
+            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
+        return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T setAttribute(AttributeRepository.AttributeKey<T> key, T value) {
+        return (T) attributes.put(
+                Objects.requireNonNull(key, "No key"),
+                Objects.requireNonNull(value, "No value"));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T removeAttribute(AttributeRepository.AttributeKey<T> key) {
+        return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    public void clearAttributes() {
+        attributes.clear();
     }
 
     @Override

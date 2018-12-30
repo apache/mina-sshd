@@ -77,5 +77,10 @@ public interface AttributeStore extends AttributeRepository {
      * @return The removed value; {@code null} if no previous value
      */
     <T> T removeAttribute(AttributeKey<T> key);
+
+    /**
+     * Removes all currently stored user-defined attributes
+     */
+    void clearAttributes();
 }
 

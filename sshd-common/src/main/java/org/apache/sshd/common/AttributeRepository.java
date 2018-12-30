@@ -63,6 +63,11 @@ public interface AttributeRepository {
     // CHECKSTYLE:ON
 
     /**
+     * @return Current number of user-defined attributes stored in the repository
+     */
+    int getAttributesCount();
+
+    /**
      * Returns the value of the user-defined attribute.
      *
      * @param <T> The generic attribute type
@@ -98,6 +103,11 @@ public interface AttributeRepository {
 
     static AttributeRepository ofAttributesMap(Map<AttributeKey<?>, ?> attributes) {
         return new AttributeRepository() {
+            @Override
+            public int getAttributesCount() {
+                return attributes.size();
+            }
+
             @Override
             @SuppressWarnings("unchecked")
             public <T> T getAttribute(AttributeKey<T> key) {

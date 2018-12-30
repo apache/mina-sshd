@@ -29,7 +29,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DirectoryHandle extends Handle implements Iterator<Path> {
-
     private boolean done;
     private boolean sendDotDot = true;
     private boolean sendDot = true;
@@ -39,6 +38,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     public DirectoryHandle(SftpSubsystem subsystem, Path dir, String handle) throws IOException {
         super(dir, handle);
+
         signalHandleOpening(subsystem);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();

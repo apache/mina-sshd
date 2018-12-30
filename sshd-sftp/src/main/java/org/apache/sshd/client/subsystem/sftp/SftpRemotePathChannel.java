@@ -360,7 +360,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     protected void implCloseChannel() throws IOException {
         try {
-            final Thread thread = blockingThreadHolder.get();
+            Thread thread = blockingThreadHolder.get();
             if (thread != null) {
                 thread.interrupt();
             }

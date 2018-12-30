@@ -152,13 +152,17 @@ for exposing the cipher's block size. **Note:** for the time being we declare a 
 (e.g., RC4) in order to facilitate the automatic re-keying mechanism described in [RFC 4253 - section 9](https://tools.ietf.org/html/rfc4253#section-9)
  and [RFC 4344 - section 3.2](https://tools.ietf.org/html/rfc4344#section-3.2).
 
-* [SSHD-876](https://issues.apache.org/jira/browse/SSHD-873) - Looking through the resolvable class-loaders "hierarchy"
+* [SSHD-876](https://issues.apache.org/jira/browse/SSHD-876) - Looking through the resolvable class-loaders "hierarchy"
 (thread-context => anchor => system) for `sshd-version.properties` file instead of just in the thread context class loader.
 
     * In this context, the default reported client/server SSH version string has been set to `APACHE-SSHD-...version...`.
     Reminder: the user can override this default via configuration properties set on the client/server instance
     (see `AbstractSession#resolveIdentificationString`, `ClientFactoryManager#CLIENT_IDENTIFICATION`, and
     `ServerFactoryManager#SERVER_IDENTIFICATION`).
+
+* [SSHD-878](https://issues.apache.org/jira/browse/SSHD-876) - The `File/DirectoryHandle`(s) used by the SFTP subsystem
+implement `AttributeStore` interface - which means that `SftpEventListener`(s) can now attach user-defined attributes
+to the generated handle(s).
 
 * `SftpCommandMain` shows by default `get/put` command progress using the hash sign (`#`) marker. The marker
 can be enabled/disabled via the `progress` command:

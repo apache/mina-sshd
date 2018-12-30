@@ -86,7 +86,7 @@ import org.apache.sshd.server.session.ServerSession;
 public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
         implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier,
-                    AsyncCommand, ChannelSessionAware, ChannelDataReceiver {
+        AsyncCommand, ChannelSessionAware, ChannelDataReceiver {
 
     /**
      * Properties key for the maximum of available open handles per session.
@@ -162,8 +162,9 @@ public class SftpSubsystem
      * use when generating failed commands error messages
      * @see ThreadUtils#newSingleThreadExecutor(String)
      */
-    public SftpSubsystem(CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
-                 SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
+    public SftpSubsystem(
+            CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
+            SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
         super(policy, accessor, errorStatusDataHandler);
 
         if (executorService == null) {
@@ -850,6 +851,8 @@ public class SftpSubsystem
             listener.closed(session, handle, nodeHandle, null);
         } catch (IOException | RuntimeException e) {
             listener.closed(session, handle, nodeHandle, e);
+        } finally {
+            nodeHandle.clearAttributes();
         }
     }
 
@@ -1024,6 +1027,8 @@ public class SftpSubsystem
             } catch (IOException e) {
                 log.error("closeAllHandles({}) failed ({}) to close handle={}[{}]: {}",
                     session, e.getClass().getSimpleName(), id, handle, e.getMessage());
+            } finally {
+                handle.clearAttributes();
             }
         });
         handles.clear();

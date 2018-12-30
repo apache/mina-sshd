@@ -1108,7 +1108,7 @@ the (default) password-based one:
 
 ```
 
-#### Tracking accessed location via `SftpFileSystemAccessor`
+#### Tracking accessed locations via `SftpFileSystemAccessor`
 
 One can override the default `SftpFileSystemAccessor` and thus be able to track all opened files and folders
 throughout the SFTP server subsystem code. The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
@@ -1518,10 +1518,30 @@ in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
 
 ### `SftpEventListener`
 
-Provides information about major SFTP protocol events. The listener is registered at the `SftpSubsystemFactory`:
+Provides information about major SFTP protocol events. The provided `File/DirectoryHandle` to the various callbacks an also be used to
+store user-defined attributes via its `AttributeStore` implementation. The listener is registered at the `SftpSubsystemFactory`:
 
 
 ```java
+    public class MySfpEventListener implements SftpEventListener {
+        private static final AttributeKey<SomeType> MY_SPECIAL_KEY = new Attribute<SomeType>();
+
+        ...
+        @Override
+        public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
+            localHandle.setAttribute(MY_SPECIAL_KEY, instanceOfSomeType);
+        }
+
+        @Override
+        public void writing(
+                ServerSession session, String remoteHandle, FileHandle localHandle,
+                long offset, byte[] data, int dataOffset, int dataLen)
+                    throws IOException {
+            SomeType myData = localHandle.getAttribute(MY_SPECIAL_KEY);
+            ...do something based on my data...
+        }
+    }
+
 
     SftpSubsystemFactory factory = new SftpSubsystemFactory();
     factory.addSftpEventListener(new MySftpEventListener());
@@ -1529,6 +1549,9 @@ Provides information about major SFTP protocol events. The listener is registere
 
 ```
 
+**Note:** the attached attributed are automatically removed once handle has been closed - regardless of
+whether the close attempt was successful or not. In other words, after `SftpEventListener#closed` has been
+called, all attributes associated with the handle are cleared.
 
 ### `PortForwardingEventListener`
 

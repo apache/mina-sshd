@@ -84,7 +84,7 @@ public interface SftpFileSystemAccessor {
     default SeekableByteChannel openFile(
             ServerSession session, SftpEventListenerManager subsystem,
             Path file, String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
-                    throws IOException {
+                throws IOException {
         return FileChannel.open(file, options, attrs);
     }
 
@@ -107,7 +107,7 @@ public interface SftpFileSystemAccessor {
      */
     default FileLock tryLock(ServerSession session, SftpEventListenerManager subsystem,
             Path file, String handle, Channel channel, long position, long size, boolean shared)
-                    throws IOException {
+                throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to lock: " + channel);
         }
@@ -127,8 +127,8 @@ public interface SftpFileSystemAccessor {
      * @see FileChannel#force(boolean)
      * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH -  section 10</A>
      */
-    default void syncFileData(ServerSession session, SftpEventListenerManager subsystem,
-            Path file, String handle, Channel channel)
+    default void syncFileData(
+            ServerSession session, SftpEventListenerManager subsystem, Path file, String handle, Channel channel)
                 throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to sync: " + channel);
@@ -149,7 +149,7 @@ public interface SftpFileSystemAccessor {
      */
     default DirectoryStream<Path> openDirectory(
             ServerSession session, SftpEventListenerManager subsystem, Path dir, String handle)
-                    throws IOException {
+                throws IOException {
         return Files.newDirectoryStream(dir);
     }
 }

@@ -55,6 +55,7 @@ public class FileHandle extends Handle {
 
     public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
         super(file, handle);
+
         this.subsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.access = access;
         this.openOptions = Collections.unmodifiableSet(getOpenOptions(flags, access));
@@ -62,8 +63,9 @@ public class FileHandle extends Handle {
         signalHandleOpening(subsystem);
 
         FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(fileAttributes)
-                ? IoUtils.EMPTY_FILE_ATTRIBUTES
-                : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
+            ? IoUtils.EMPTY_FILE_ATTRIBUTES
+            : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
+
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
@@ -91,7 +93,7 @@ public class FileHandle extends Handle {
         return fileAttributes;
     }
 
-    public final SeekableByteChannel getFileChannel() {
+    public SeekableByteChannel getFileChannel() {
         return fileChannel;
     }
 

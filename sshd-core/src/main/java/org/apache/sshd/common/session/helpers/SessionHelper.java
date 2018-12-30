@@ -149,6 +149,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
+    public int getAttributesCount() {
+        return attributes.size();
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.get(Objects.requireNonNull(key, "No key"));
@@ -178,6 +183,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @SuppressWarnings("unchecked")
     public <T> T removeAttribute(AttributeRepository.AttributeKey<T> key) {
         return (T) attributes.remove(Objects.requireNonNull(key, "No key"));
+    }
+
+    @Override
+    public void clearAttributes() {
+        attributes.clear();
     }
 
     @Override
