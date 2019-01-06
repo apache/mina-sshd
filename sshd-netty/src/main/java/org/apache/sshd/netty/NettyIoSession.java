@@ -186,7 +186,11 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     protected void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
-        handler.messageReceived(NettyIoSession.this, NettySupport.asReadable(buf));
+        try {
+            handler.messageReceived(NettyIoSession.this, NettySupport.asReadable(buf));
+        } finally {
+            buf.release();
+        }
     }
 
     protected void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
