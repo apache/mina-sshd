@@ -206,14 +206,29 @@ public class ByteArrayBuffer extends Buffer {
         int curPos = wpos();
         int remaining = maxSize - curPos;
         if (remaining < capacity) {
-            int minimum = curPos + capacity;
-            int actual = growthFactor.applyAsInt(minimum);
-            if (actual < minimum) {
-                throw new IllegalStateException("ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
+            if (maxSize < MAX_LEN) {
+                //increase data by growthFactor
+                int minimum = curPos + capacity;
+                int actual = growthFactor.applyAsInt(minimum);
+                if (actual < minimum) {
+                    throw new IllegalStateException("ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
+                }
+                byte[] tmp = new byte[actual];
+                System.arraycopy(data, 0, tmp, 0, data.length);
+                data = tmp;
+            } else {
+                //if data increased to max size, compact
+                compact();
+                int maxSizeAfterCompact = size();   //shoul same as maxSize
+                int curPosAfterCompact = wpos();
+                int remainingAfterCompact = maxSizeAfterCompact - curPosAfterCompact;
+                if (remainingAfterCompact < capacity) {
+                    //after compact, if remaining still less than capacity, throws exception
+                    throw new IllegalStateException("remaining still less than capacity after compact, please decrease capacity, remainingAfterCompact(" + remainingAfterCompact
+                            + "), capacity(" + capacity + "), max buffer size(" + maxSizeAfterCompact + ")");
+                }
             }
-            byte[] tmp = new byte[actual];
-            System.arraycopy(data, 0, tmp, 0, data.length);
-            data = tmp;
+
         }
     }
 
