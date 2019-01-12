@@ -73,9 +73,9 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
-        <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
-        <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
+        <connection>scm:git:http://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
+        <developerConnection>scm:git:http://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf?p=mina-sshd.git</url>
         <tag>HEAD</tag>
     </scm>
 
