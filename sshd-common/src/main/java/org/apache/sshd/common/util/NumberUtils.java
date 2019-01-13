@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -37,40 +36,29 @@ public final class NumberUtils {
         GenericUtils.unmodifiableList(
             Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE);
 
-    /**
-     * A {@link List} containing all the pure powers of 2 for a {@code long}
-     * value. The value at index <I>n</I> is 2 to the power of <I>n</I>
-     */
-    public static final List<Long> POWERS_OF_TWO =
-        GenericUtils.unmodifiableList(IntStream.range(0, 64).mapToObj(i -> 1L << i));
-
     private NumberUtils() {
         throw new UnsupportedOperationException("No instance");
     }
 
-    public static boolean isPowerOf2(long value) {
-        for (Long l : POWERS_OF_TWO) {
-            if (value == l) {
-                return true;
+    /**
+     * @param value The original (non-negative) value
+     * @return The closest <U>positive</U> power of 2 that is greater or equal to the value.
+     * If none can be found then returns the original value
+     */
+    public static int getNextPowerOf2(int value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Negative value N/A: " + value);
+        }
+
+        int j = 1;
+        while (j < value) {
+            j <<= 1;
+            // Did we stumble onto the realm of values beyond 2GB ?
+            if (j <= 0) {
+                return value;
             }
         }
 
-        return false;
-    }
-
-    public static long getNextPowerOf2(long value) {
-        long j = 1L;
-        while (j < value && j > 0) {
-            j <<= 1;
-        }
-        return j;
-    }
-
-    public static int getNextPowerOf2(int value) {
-        int j = 1;
-        while (j < value && j > 0) {
-            j <<= 1;
-        }
         return j;
     }
 

@@ -37,32 +37,24 @@ public class NumberUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testPowersOf2List() {
-        assertEquals("Mismatched values size for " + NumberUtils.POWERS_OF_TWO, Long.SIZE, GenericUtils.size(NumberUtils.POWERS_OF_TWO));
-        long expected = 1L;
-        for (int index = 0; index < Long.SIZE; index++, expected <<= 1) {
-            Long actual = NumberUtils.POWERS_OF_TWO.get(index);
-            assertEquals("Mismatched value at index=" + index, Long.toHexString(expected), Long.toHexString(actual));
-        }
-    }
-
-    @Test
-    public void testNextPowerOf2() {
-        for (Long v : NumberUtils.POWERS_OF_TWO) {
-            long expected = v;
-            if (expected > 2L) {
-                assertEquals("Mismatched lower bound value", expected, NumberUtils.getNextPowerOf2(expected - 1L));
+    public void testIntNextPowerOf2() {
+        int expected = 1;
+        for (int index = 0; index < Integer.SIZE; expected <<= 1, index++) {
+            if (expected > 2) {
+                assertEquals("Mismatched lower bound value", expected, NumberUtils.getNextPowerOf2(expected - 1));
             }
 
-            if (expected > 0L) {    // avoid the negative value
+            if (expected > 0) {    // avoid the negative value
                 assertEquals("Mismatched exact value", expected, NumberUtils.getNextPowerOf2(expected));
             }
         }
     }
 
     @Test
-    public void testNextPowerOf2Max() {
-        assertTrue(NumberUtils.getNextPowerOf2(1073741872) < 0);
+    public void testIntNextPowerOf2Overflow() {
+        int expected = Integer.MAX_VALUE - Byte.SIZE;
+        int actual = NumberUtils.getNextPowerOf2(expected);
+        assertEquals(expected, actual);
     }
 
     @Test
