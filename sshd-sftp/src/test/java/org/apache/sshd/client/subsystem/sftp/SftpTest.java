@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
@@ -64,11 +65,13 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
+import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -85,7 +88,6 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHE
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
@@ -836,14 +838,19 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 uploadAndVerifyFile(sftp, clientFolder, dir, 0, "emptyFile.txt");
                 uploadAndVerifyFile(sftp, clientFolder, dir, 1000, "smallFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, ByteArrayBuffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, ByteArrayBuffer.MAX_LEN, "bufferMaxLenFile.txt");
-                // were chunking not implemented, these would fail. these sizes should invoke our internal chunking mechanism
-                uploadAndVerifyFile(sftp, clientFolder, dir, ByteArrayBuffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (int) (1.5 * ByteArrayBuffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * ByteArrayBuffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, 2 * ByteArrayBuffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * ByteArrayBuffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+
+                // Make sure sizes should invoke our internal chunking mechanism
+                ClientChannel clientChannel = sftp.getClientChannel();
+                PropertyResolverUtils.updateProperty(clientChannel, AbstractSftpClient.WRITE_CHUNK_SIZE,
+                    Math.min(SftpClient.DEFAULT_WRITE_BUFFER_SIZE, AbstractSftpClient.DEFAULT_WRITE_CHUNK_SIZE) - Byte.MAX_VALUE);
+
+                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "bufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT + 1, "bufferMaxLenPlusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, (int) (1.5 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT), "1point5BufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, 2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "2TimesBufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
                 uploadAndVerifyFile(sftp, clientFolder, dir, 200000, "largerFile.txt");
 
                 // test erroneous calls that check for negative values

@@ -38,6 +38,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -50,11 +51,21 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
+    /**
+     * Property used to avoid large buffers when {@link #write(Handle, long, byte[], int, int)} is invoked
+     * with a large buffer size.
+     */
+    public static final String WRITE_CHUNK_SIZE = "sftp-client-write-chunk-size";
+
+    /**
+     * Default value for {@value #WRITE_CHUNK_SIZE}
+     */
+    public static final int DEFAULT_WRITE_CHUNK_SIZE = SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT - Long.SIZE;
+
     private final Attributes fileOpenAttributes = new Attributes();
     private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 
@@ -870,17 +881,32 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             throw new IOException("write(" + handle + "/" + fileOffset + ")[" + srcOffset + "/" + len + "] client is closed");
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("write({}) handle={}, file-offset={}, buf-offset={}, len={}",
-                  getClientChannel(), handle, fileOffset, srcOffset, len);
-        }
+        boolean traceEnabled = log.isTraceEnabled();
+        Channel clientChannel = getClientChannel();
+        int chunkSize = PropertyResolverUtils.getIntProperty(clientChannel, WRITE_CHUNK_SIZE, DEFAULT_WRITE_CHUNK_SIZE);
+        ValidateUtils.checkState(chunkSize > ByteArrayBuffer.DEFAULT_SIZE, "Write chunk size too small: %d", chunkSize);
 
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
-        Buffer buffer = new ByteArrayBuffer(id.length + len + Long.SIZE /* some extra fields */, false);
-        buffer.putBytes(id);
-        buffer.putLong(fileOffset);
-        buffer.putBytes(src, srcOffset, len);
-        checkCommandStatus(SftpConstants.SSH_FXP_WRITE, buffer);
+        // NOTE: we don't want to filter out zero-length write requests
+        int remLen = len;
+        do {
+            int writeSize = Math.min(remLen, chunkSize);
+            Buffer buffer = new ByteArrayBuffer(id.length + writeSize + Long.SIZE /* some extra fields */, false);
+            buffer.putBytes(id);
+            buffer.putLong(fileOffset);
+            buffer.putBytes(src, srcOffset, writeSize);
+
+            if (traceEnabled) {
+                log.trace("write({}) handle={}, file-offset={}, buf-offset={}, writeSize={}, remLen={}",
+                      clientChannel, handle, fileOffset, srcOffset, writeSize, remLen - writeSize);
+            }
+
+            checkCommandStatus(SftpConstants.SSH_FXP_WRITE, buffer);
+
+            fileOffset += writeSize;
+            srcOffset += writeSize;
+            remLen -= writeSize;
+        } while (remLen > 0);
     }
 
     @Override
