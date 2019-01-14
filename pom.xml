@@ -633,6 +633,7 @@
                     <artifactId>apache-rat-plugin</artifactId>
                     <version>0.13</version>
                     <configuration>
+                        <consoleOutput>true</consoleOutput>
                         <excludes>
                             <exclude>README.md</exclude>
                             <exclude>CHANGES.md</exclude>
@@ -661,6 +662,10 @@
                             <exclude>.springBeans</exclude>
                             <exclude>.settings/**</exclude>
                             <exclude>.repository/**</exclude>
+                            <exclude>.gitignore</exclude>
+                            <exclude>.gitattributes</exclude>
+                            <exclude>.git/**</exclude>
+                            <exclude>.attach_pid*</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
@@ -735,7 +740,7 @@
                         <quiet>true</quiet>
                         <links>
                             <link>http://docs.oracle.com/javase/${java.sdk.version}/docs/api</link>
-                        </links>                        
+                        </links>
                     </configuration>
                     <dependencies>
                         <dependency>
