@@ -36,37 +36,80 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ByteArrayBuffer extends Buffer {
+    /**
+     * Initial default allocated buffer size if none specified
+     */
     public static final int DEFAULT_SIZE = 256;
-    public static final int MAX_LEN = 65536;
 
     private byte[] data;
     private int rpos;
     private int wpos;
 
+    /**
+     * Allocates a buffer for writing purposes with {@value #DEFAULT_SIZE} bytes
+     */
     public ByteArrayBuffer() {
-        this(DEFAULT_SIZE);
+        this(DEFAULT_SIZE, false);
     }
 
+    /**
+     * Allocates a buffer for writing purposes
+     *
+     * @param size Initial buffer size - <B>Note:</B> it is <U>rounded</U> to the
+     * closest power of 2 that is greater or equal to it.
+     * @see #ByteArrayBuffer(int, boolean)
+     */
     public ByteArrayBuffer(int size) {
         this(size, true);
     }
 
+    /**
+     * Allocates a buffer for writing purposes
+     *
+     * @param size Initial buffer size
+     * @param roundOff Whether to round it to closest power of 2 that is greater or
+     * equal to the specified size
+     */
     public ByteArrayBuffer(int size, boolean roundOff) {
         this(new byte[roundOff ? BufferUtils.getNextPowerOf2(size) : size], false);
     }
 
+    /**
+     * Wraps data bytes for reading
+     *
+     * @param data Data bytes to read from
+     * @see #ByteArrayBuffer(byte[], boolean)
+     */
     public ByteArrayBuffer(byte[] data) {
         this(data, 0, data.length, true);
     }
 
+    /**
+     * @param data Data bytes to use
+     * @param read Whether the data bytes are for reading or writing
+     */
     public ByteArrayBuffer(byte[] data, boolean read) {
         this(data, 0, data.length, read);
     }
 
+    /**
+     * Wraps data bytes for reading
+     *
+     * @param data Data bytes to read from
+     * @param off Offset to read from
+     * @param len Available bytes from given offset
+     * @see #ByteArrayBuffer(byte[], int, int, boolean)
+     */
     public ByteArrayBuffer(byte[] data, int off, int len) {
         this(data, off, len, true);
     }
 
+    /**
+     * @param data Data bytes to use
+     * @param off Offset to read/write (according to <tt>read</tt> parameter)
+     * @param len Available bytes from given offset
+     * @param read Whether the data bytes are for reading or writing
+     */
     public ByteArrayBuffer(byte[] data, int off, int len, boolean read) {
         if ((off < 0) || (len < 0)) {
             throw new IndexOutOfBoundsException("Invalid offset(" + off + ")/length(" + len + ")");
@@ -176,7 +219,8 @@ public class ByteArrayBuffer extends Buffer {
     public String getString(Charset charset) {
         Objects.requireNonNull(charset, "No charset specified");
 
-        int len = ensureAvailable(getInt());
+        int reqLen = getInt();
+        int len = ensureAvailable(reqLen);
         String s = new String(data, rpos, len, charset);
         rpos += len;
         return s;

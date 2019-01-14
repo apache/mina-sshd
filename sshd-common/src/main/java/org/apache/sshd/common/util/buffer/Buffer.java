@@ -80,18 +80,43 @@ public abstract class Buffer implements Readable {
         super();
     }
 
+    /**
+     * @return Current reading position
+     */
     public abstract int rpos();
 
+    /**
+     * @param rpos Set current reading position
+     */
     public abstract void rpos(int rpos);
 
+    /**
+     * @return Current writing position
+     */
     public abstract int wpos();
 
+    /**
+     * @param wpos Set current writing position - <B>Note:</B> if necessary, the
+     * underlying data buffer will be increased so as to allow writing from the
+     * new position
+     */
     public abstract void wpos(int wpos);
 
+    /**
+     * @return Number of bytes that can still be written without re-sizing
+     * the internal buffer
+     */
     public abstract int capacity();
 
+    /**
+     * @return The <U>raw</U> underlying data bytes
+     */
     public abstract byte[] array();
 
+    /**
+     * &quot;Shift&quot; the internal data so that reading starts from
+     * position zero.
+     */
     public abstract void compact();
 
     public byte[] getCompactData() {
@@ -105,10 +130,21 @@ public abstract class Buffer implements Readable {
         }
     }
 
+    /**
+     * Reset read/write positions to zero - <B>Note:</B> zeroes
+     * any previously existing data
+     *
+     * @see #clear(boolean)
+     */
     public void clear() {
         clear(true);
     }
 
+    /**
+     * Reset read/write positions to zero
+     *
+     * @param wipeData Whether to zero any previously existing data
+     */
     public abstract void clear(boolean wipeData);
 
     public boolean isValidMessageStructure(Class<?>... fieldTypes) {
@@ -239,15 +275,18 @@ public abstract class Buffer implements Readable {
         return getByte() != 0;
     }
 
+    /**
+     * @return Reads a UTF-8 encoded string
+     */
     public String getString() {
         return getString(StandardCharsets.UTF_8);
     }
 
     /**
      * @param usePrependedLength If {@code true} then there is a 32-bit
-     *                           value indicating the number of strings to read. Otherwise, the
-     *                           method will use a &quot;greedy&quot; reading of strings while more
-     *                           data available
+     * value indicating the number of strings to read. Otherwise, the
+     * method will use a &quot;greedy&quot; reading of strings while more
+     * data available.
      * @return A {@link Collection} of the read strings
      * @see #getStringList(boolean, Charset)
      */
@@ -257,10 +296,10 @@ public abstract class Buffer implements Readable {
 
     /**
      * @param usePrependedLength If {@code true} then there is a 32-bit
-     *                           value indicating the number of strings to read. Otherwise, the
-     *                           method will use a &quot;greedy&quot; reading of strings while more
-     *                           data available
-     * @param charset            The {@link Charset} to use for the string
+     * value indicating the number of strings to read. Otherwise, the
+     * method will use a &quot;greedy&quot; reading of strings while more
+     * data available.
+     * @param charset The {@link Charset} to use for the strings
      * @return A {@link Collection} of the read strings
      * @see #getStringList(int, Charset)
      * @see #getAvailableStrings()
@@ -330,6 +369,12 @@ public abstract class Buffer implements Readable {
         return list;
     }
 
+    /**
+     * Reads a string using a given charset.
+     *
+     * @param charset The {@link Charset} to use for the string bytes
+     * @return The read string
+     */
     public abstract String getString(Charset charset);
 
     public BigInteger getMPInt() {
@@ -341,7 +386,8 @@ public abstract class Buffer implements Readable {
     }
 
     public byte[] getBytes() {
-        int len = ensureAvailable(getInt());
+        int reqLen = getInt();
+        int len = ensureAvailable(reqLen);
         byte[] b = new byte[len];
         getRawBytes(b);
         return b;
@@ -589,10 +635,9 @@ public abstract class Buffer implements Readable {
     /**
      * Encodes the {@link Objects#toString(Object, String) toString} value of each member.
      *
-     * @param objects       The objects to be encoded in the buffer - OK if
-     *                      {@code null}/empty
-     * @param prependLength If {@code true} then the list is preceded by
-     *                      a 32-bit count of the number of members in the list
+     * @param objects The objects to be encoded in the buffer - OK if {@code null}/empty
+     * @param prependLength If {@code true} then the list is preceded by a 32-bit count
+     * of the number of members in the list
      * @see #putStringList(Collection, Charset, boolean)
      */
     public void putStringList(Collection<?> objects, boolean prependLength) {
@@ -619,7 +664,10 @@ public abstract class Buffer implements Readable {
             return;
         }
 
-        objects.forEach(o -> putString(Objects.toString(o, null), charset));
+        for (Object o : objects) {
+            String s = Objects.toString(o, null);
+            putString(s, charset);
+        }
     }
 
     public void putString(String string) {
@@ -630,7 +678,8 @@ public abstract class Buffer implements Readable {
         if (GenericUtils.isEmpty(string)) {
             putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
         } else {
-            putBytes(string.getBytes(charset));
+            byte[] bytes = string.getBytes(charset);
+            putBytes(bytes);
         }
     }
 
@@ -677,7 +726,9 @@ public abstract class Buffer implements Readable {
         if (len <= 0) {
             putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
         } else {
-            putBuffer(charset.encode(CharBuffer.wrap(chars, offset, len)));
+            CharBuffer charBuf = CharBuffer.wrap(chars, offset, len);
+            ByteBuffer byteBuf = charset.encode(charBuf);
+            putBuffer(byteBuf);
         }
     }
 
@@ -737,9 +788,10 @@ public abstract class Buffer implements Readable {
                 throw new BufferException("Unsupported EC curve parameters");
             }
 
+            byte[] ecPoint = ECCurves.encodeECPoint(ecKey.getW(), ecParams);
             putString(curve.getKeyType());
             putString(curve.getName());
-            putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams));
+            putBytes(ecPoint);
         } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm())) {
             SecurityUtils.putRawEDDSAPublicKey(this, key);
         } else {
@@ -781,9 +833,10 @@ public abstract class Buffer implements Readable {
                 throw new BufferException("Unsupported EC curve parameters");
             }
 
+            byte[] ecPoint = ECCurves.encodeECPoint(ecPub.getW(), ecParams);
             putString(curve.getKeyType());
             putString(curve.getName());
-            putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams));
+            putBytes(ecPoint);
             putMPInt(ecPriv.getS());
         } else if (SecurityUtils.EDDSA.equals(pubKey.getAlgorithm())) {
             SecurityUtils.putEDDSAKeyPair(this, pubKey, prvKey);
@@ -797,19 +850,25 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param capacity     The requires capacity
-     * @param growthFactor An {@link IntUnaryOperator} that is invoked
-     *                     if the current capacity is insufficient. The argument is the minimum
-     *                     required new data length, the function result should be the
-     *                     effective new data length to be allocated - if less than minimum
-     *                     then an exception is thrown
+     * @param capacity The required capacity
+     * @param growthFactor An {@link IntUnaryOperator} that is invoked if the current
+     * capacity is insufficient. The argument is the minimum required new data length,
+     * the function result should be the effective new data length to be allocated - if
+     * less than minimum then an exception is thrown
      */
     public abstract void ensureCapacity(int capacity, IntUnaryOperator growthFactor);
 
+    /**
+     * @return Current size of underlying backing data bytes array
+     */
     protected abstract int size();
 
     @Override
     public String toString() {
-        return "Buffer [rpos=" + rpos() + ", wpos=" + wpos() + ", size=" + size() + "]";
+        return getClass().getSimpleName()
+            + "[rpos=" + rpos()
+            + ", wpos=" + wpos()
+            + ", size=" + size()
+            + "]";
     }
 }
