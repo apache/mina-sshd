@@ -151,6 +151,7 @@ public class TtyFilterInputStream extends FilterInputStream {
         }
 
         if (buffer.available() == 0) {
+            buffer.compact();
             int nb = this.in.read(b, off, len);
             if (nb == -1) {
                 return nb;

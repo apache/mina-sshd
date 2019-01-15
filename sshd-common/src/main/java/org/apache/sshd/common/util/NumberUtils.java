@@ -60,7 +60,7 @@ public final class NumberUtils {
 
     public static long getNextPowerOf2(long value) {
         long j = 1L;
-        while (j < value) {
+        while (j < value && j > 0) {
             j <<= 1;
         }
         return j;
@@ -68,7 +68,7 @@ public final class NumberUtils {
 
     public static int getNextPowerOf2(int value) {
         int j = 1;
-        while (j < value) {
+        while (j < value && j > 0) {
             j <<= 1;
         }
         return j;

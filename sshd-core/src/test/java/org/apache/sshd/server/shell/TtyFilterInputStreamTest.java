@@ -21,7 +21,9 @@ package org.apache.sshd.server.shell;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +38,7 @@ import java.util.stream.Stream;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -99,6 +102,34 @@ public class TtyFilterInputStreamTest extends BaseTestSupport {
             }
 
             assertCRLFCounts(mode, lines.size() - 1 /* last line has no NL */, crCount.get(), lfCount.get());
+        }
+    }
+
+    @Test
+    public void testInternalBufferSizeDoesNotGrow() throws Exception {
+        try (TtyFilterInputStream is = new TtyFilterInputStream(new InputStream() {
+            int next;
+            @Override
+            public int read() {
+                next = (next + 1) & 0xFF;
+                return next;
+            }
+        }, EnumSet.of(mode))) {
+            Field f = is.getClass().getDeclaredField("buffer");
+            f.setAccessible(true);
+            ByteArrayBuffer buffer = (ByteArrayBuffer) f.get(is);
+
+            byte[] b = new byte[256];
+            for (int i = 0; i < 10; i++) {
+                is.read(b, 0, b.length);
+            }
+
+            int size = buffer.capacity();
+
+            for (int i = 0; i < 10; i++) {
+                is.read(b, 0, b.length);
+            }
+            assertEquals(size, buffer.capacity());
         }
     }
 

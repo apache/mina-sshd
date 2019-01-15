@@ -61,6 +61,11 @@ public class NumberUtilsTest extends JUnitTestSupport {
     }
 
     @Test
+    public void testNextPowerOf2Max() {
+        assertTrue(NumberUtils.getNextPowerOf2(1073741872) < 0);
+    }
+
+    @Test
     public void testToInteger() {
         assertNull("Unexpected null value", NumberUtils.toInteger(null));
         for (Number n : new Number[]{
