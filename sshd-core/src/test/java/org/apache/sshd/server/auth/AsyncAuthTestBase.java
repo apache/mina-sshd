@@ -37,9 +37,8 @@ import com.jcraft.jsch.JSchException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AsyncAuthTestBase extends BaseTestSupport {
-
-    SshServer server;
-    int port;
+    protected SshServer server;
+    protected int port;
 
     private PasswordAuthenticator authenticator;
 

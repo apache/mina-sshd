@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth;
 
+import org.apache.sshd.common.channel.Channel;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -39,10 +40,7 @@ public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
     @Override
     protected boolean authenticate() throws Exception {
         JSch jsch = new JSch();
-        Session session;
-        ChannelShell channel;
-
-        session = jsch.getSession("whatever", "localhost", port);
+        Session session = jsch.getSession("whatever", "localhost", port);
         session.setUserInfo(new UserInfo() {
             @Override
             public String getPassphrase() {
@@ -77,7 +75,8 @@ public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
         try {
             session.connect();
         } catch (JSchException e) {
-            switch (e.getMessage()) {
+            String reason = e.getMessage();
+            switch (reason) {
                 case "Auth cancel":
                 case "Auth fail":
                     return false;
@@ -85,19 +84,22 @@ public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
                     throw e;
             }
         }
-        channel = (ChannelShell) session.openChannel("shell");
-        channel.connect();
 
         try {
-            channel.disconnect();
-        } catch (Exception ignore) {
-            // ignore
-        }
+            ChannelShell channel = (ChannelShell) session.openChannel(Channel.CHANNEL_SHELL);
+            channel.connect();
 
-        try {
-            session.disconnect();
-        } catch (Exception ignore) {
-            // ignore
+            try {
+                channel.disconnect();
+            } catch (Exception ignore) {
+                // ignore
+            }
+        } finally {
+            try {
+                session.disconnect();
+            } catch (Exception ignore) {
+                // ignore
+            }
         }
 
         return true;

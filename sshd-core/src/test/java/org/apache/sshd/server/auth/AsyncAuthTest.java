@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.server.auth;
 
+import java.util.Objects;
+
+import org.apache.sshd.common.channel.Channel;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -32,7 +35,6 @@ import com.jcraft.jsch.UserInfo;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AsyncAuthTest extends AsyncAuthTestBase {
-
     public AsyncAuthTest() {
         super();
     }
@@ -40,10 +42,7 @@ public class AsyncAuthTest extends AsyncAuthTestBase {
     @Override
     protected boolean authenticate() throws Exception {
         JSch jsch = new JSch();
-        Session session;
-        ChannelShell channel;
-
-        session = jsch.getSession("whatever", "localhost", port);
+        Session session = jsch.getSession("whatever", "localhost", port);
         session.setPassword("whocares");
         session.setUserInfo(new UserInfo() {
             @Override
@@ -76,28 +75,33 @@ public class AsyncAuthTest extends AsyncAuthTestBase {
                 // Do nothing
             }
         });
+
         try {
             session.connect();
         } catch (JSchException e) {
-            if (e.getMessage().equals("Auth cancel")) {
+            String reason = e.getMessage();
+            if (Objects.equals(reason, "Auth cancel")) {
                 return false;
             } else {
                 throw e;
             }
         }
-        channel = (ChannelShell) session.openChannel("shell");
-        channel.connect();
 
         try {
-            channel.disconnect();
-        } catch (Exception ignore) {
-            // ignored
-        }
+            ChannelShell channel = (ChannelShell) session.openChannel(Channel.CHANNEL_SHELL);
+            channel.connect();
 
-        try {
-            session.disconnect();
-        } catch (Exception ignore) {
-            // ignored
+            try {
+                channel.disconnect();
+            } catch (Exception ignore) {
+                // ignored
+            }
+        } finally {
+            try {
+                session.disconnect();
+            } catch (Exception ignore) {
+                // ignored
+            }
         }
 
         return true;
