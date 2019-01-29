@@ -96,7 +96,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <reportsDirectory>${project.build.directory}/surefire-reports-putty</reportsDirectory>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-openpgp</reportsDirectory>
                 </configuration>
             </plugin>
         </plugins>
