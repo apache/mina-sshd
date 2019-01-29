@@ -40,6 +40,8 @@
                 <include>**/*.bin</include>
                 <include>**/*.jnilib</include>
                 <include>**/*.cert</include>
+
+                <include>sshd-openpgp/src/test/resources/**/*</include>
             </includes>
             <excludes>
                 <exclude>**/eclipse-classes/**</exclude>
@@ -86,6 +88,7 @@
                 <exclude>**/key.pem</exclude>
 
                 <exclude>sshd-core/src/docs/*.txt</exclude>
+                <exclude>sshd-openpgp/src/test/resources/**/*</exclude>
             </excludes>
             <lineEnding>unix</lineEnding>
         </fileSet>
