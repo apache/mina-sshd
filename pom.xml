@@ -178,7 +178,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>3.3.4</version>
+                        <version>4.0.2</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
