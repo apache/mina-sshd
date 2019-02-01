@@ -34,5 +34,4 @@ public interface IoWriteFuture extends SshFuture<IoWriteFuture>, VerifiableFutur
      * between the two.
      */
     Throwable getException();
-
 }

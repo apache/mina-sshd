@@ -60,10 +60,12 @@ public interface ReservedSessionMessagesHandler extends SshdEventListener {
      * @param session The {@code Session} through which the message was received
      * @param cmd The received (un-implemented) command
      * @param buffer The {@code Buffer} containing the data - positioned just beyond the command
+     * @return {@code true} if message handled internally, {@code false} if should
+     * return a {@code SSH_MSG_UNIMPLEMENTED} reply (default behavior)
      * @throws Exception If failed to handle the message
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.4">RFC 4253 - section 11.4</A>
      */
-    default void handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
-        // ignored
+    default boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
+        return false;
     }
 }

@@ -61,7 +61,9 @@ public class ReservedSessionMessagesHandlerAdapter
         handleDebugMessage(session, buffer.getBoolean(), buffer.getString(), buffer.getString(), buffer);
     }
 
-    public void handleDebugMessage(Session session, boolean display, String msg, String lang, Buffer buffer) throws Exception {
+    public void handleDebugMessage(
+            Session session, boolean display, String msg, String lang, Buffer buffer)
+                throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleDebugMessage({}) SSH_MSG_DEBUG (display={}) [lang={}] '{}'",
                       session, display, lang, msg);
@@ -69,7 +71,7 @@ public class ReservedSessionMessagesHandlerAdapter
     }
 
     @Override
-    public void handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
+    public boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             if (cmd == SshConstants.SSH_MSG_UNIMPLEMENTED) {
@@ -79,5 +81,7 @@ public class ReservedSessionMessagesHandlerAdapter
                 log.debug("handleUnimplementedMessage({}): {}", session, SshConstants.getCommandMessageName(cmd));
             }
         }
+
+        return false;
     }
 }

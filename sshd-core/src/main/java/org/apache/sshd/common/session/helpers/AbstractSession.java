@@ -1368,13 +1368,18 @@ public abstract class AbstractSession extends SessionHelper {
      * @param cmd The un-implemented command value
      * @param buffer The {@link Buffer} that contains the command. <b>Note:</b> the
      * buffer's read position is just beyond the command.
-     * @return An {@link IoWriteFuture} that can be used to wait for packet write completion
+     * @return An {@link IoWriteFuture} that can be used to wait for packet write
+     * completion - {@code null} if the registered {@link ReservedSessionMessagesHandler}
+     * decided to handle the command internally
      * @throws Exception if an error occurred while handling the packet.
      * @see #sendNotImplemented(long)
      */
     protected IoWriteFuture notImplemented(int cmd, Buffer buffer) throws Exception {
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
-        handler.handleUnimplementedMessage(this, cmd, buffer);
+        if (handler.handleUnimplementedMessage(this, cmd, buffer)) {
+            return null;
+        }
+
         return sendNotImplemented(seqi - 1L);
     }
 

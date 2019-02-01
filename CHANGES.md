@@ -168,6 +168,9 @@ for exposing the cipher's block size. **Note:** for the time being we declare a 
 implement `AttributeStore` interface - which means that `SftpEventListener`(s) can now attach user-defined attributes
 to the generated handle(s).
 
+* [SSHD-886](https://issues.apache.org/jira/browse/SSHD-886) - Do not send `SSH_MSG_UNIMPLEMENTED` reply if registered
+`ReservedSessionMessagesHandler` signals that it has handled the unknown packet type.
+
 * `SftpCommandMain` shows by default `get/put` command progress using the hash sign (`#`) marker. The marker
 can be enabled/disabled via the `progress` command:
 

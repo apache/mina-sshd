@@ -1637,6 +1637,22 @@ message received in the session as well.
 
 ```java
 
+    class MyClientSideReservedSessionMessagesHandler implements ReservedSessionMessagesHandler {
+        @Override
+        public boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
+            switch(cmd) {
+                case MY_SPECIAL_CMD1:
+                    ....
+                    return true;
+                case MY_SPECIAL_CMD2:
+                    ....
+                    return true;
+                default:
+                    return false;    // send SSH_MSG_UNIMPLEMENTED reply if necessary
+            }
+        }
+    }
+
     // client side
     SshClient client = SshClient.setupDefaultClient();
     // This is the default for ALL sessions unless specifically overridden
