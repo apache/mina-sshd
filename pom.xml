@@ -28,7 +28,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.1.1-SNAPSHOT</version>
+    <version>2.2.0</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -76,7 +76,7 @@
         <connection>scm:git:http://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:http://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=mina-sshd.git</url>
-        <tag>HEAD</tag>
+        <tag>sshd-2.2.0</tag>
     </scm>
 
     <properties>
@@ -1110,7 +1110,7 @@
                             <onlyWhenRelease>true</onlyWhenRelease>
                             <message>No Snapshot Dependencies Allowed</message>
                         </requireReleaseDeps>
-                        <dependencyConvergence/>
+                        <dependencyConvergence />
                     </rules>
                 </configuration>
             </plugin>
