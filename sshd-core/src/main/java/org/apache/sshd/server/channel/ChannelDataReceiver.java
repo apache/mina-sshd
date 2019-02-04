@@ -43,7 +43,8 @@ import java.io.IOException;
 public interface ChannelDataReceiver extends Closeable {
     /**
      * <p>
-     * Called when the server receives additional bytes from the client.
+     * Called when the server receives additional bytes from the client. When {@link #close()}-d
+     * then indicates EOF - The client will no longer send us any more data.
      * </p>
      *
      * <p>
@@ -104,12 +105,4 @@ public interface ChannelDataReceiver extends Closeable {
      * @throws IOException if failed to consume the data
      */
     int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException;
-
-    /**
-     * Called to indicate EOF. The client will no longer send us any more data.
-     *
-     * @throws IOException if failed
-     */
-    @Override
-    void close() throws IOException;
 }

@@ -184,3 +184,8 @@ can be enabled/disabled via the `progress` command:
     ... set the progress marker indicator  ...
 
 ```
+
+# Since version 2.2.0
+
+* [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer
+for STDERR data sent via the `ChannelSession` - especially for the SFTP subsystem.

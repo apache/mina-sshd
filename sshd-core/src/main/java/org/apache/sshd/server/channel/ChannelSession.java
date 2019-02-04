@@ -83,7 +83,14 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ChannelSession extends AbstractServerChannel {
     public static final List<ChannelRequestHandler> DEFAULT_HANDLERS =
-            Collections.<ChannelRequestHandler>singletonList(PuttyRequestHandler.INSTANCE);
+        Collections.<ChannelRequestHandler>singletonList(PuttyRequestHandler.INSTANCE);
+
+    /**
+     * Maximum amount of extended (a.k.a. STDERR) data allowed to be accumulated
+     * until a {@link ChannelDataReceiver} for the data is registered
+     */
+    public static final String MAX_EXTDATA_BUFSIZE = "channel-session-max-extdata-bufsize";
+    public static final int DEFAULT_MAX_EXTDATA_BUFSIZE = 0;
 
     protected String type;
     protected ChannelAsyncOutputStream asyncOut;
@@ -92,7 +99,9 @@ public class ChannelSession extends AbstractServerChannel {
     protected OutputStream err;
     protected Command commandInstance;
     protected ChannelDataReceiver receiver;
-    protected Buffer tempBuffer;
+    protected ChannelDataReceiver extendedDataWriter;
+    protected Buffer receiverBuffer;
+    protected Buffer extendedDataBuffer;
     protected final AtomicBoolean commandStarted = new AtomicBoolean(false);
     protected final StandardEnvironment env = new StandardEnvironment();
     protected final CloseFuture commandExitFuture;
@@ -159,11 +168,11 @@ public class ChannelSession extends AbstractServerChannel {
             if (immediately || (commandInstance == null)) {
                 commandExitFuture.setClosed();
             } else if (!commandExitFuture.isClosed()) {
-                IOException e = IoUtils.closeQuietly(receiver);
+                IOException e = IoUtils.closeQuietly(receiver, extendedDataWriter);
                 boolean debugEnabled = log.isDebugEnabled();
                 if (e != null) {
                     if (debugEnabled) {
-                        log.debug("close({})[immediately={}] failed ({}) to close receiver: {}",
+                        log.debug("close({})[immediately={}] failed ({}) to close receiver(s): {}",
                               this, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
                 }
@@ -208,7 +217,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
 
-        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver);
+        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
         if (e != null) {
             if (debugEnabled) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
@@ -230,10 +239,10 @@ public class ChannelSession extends AbstractServerChannel {
     public void handleEof() throws IOException {
         super.handleEof();
 
-        IOException e = IoUtils.closeQuietly(receiver);
+        IOException e = IoUtils.closeQuietly(receiver, extendedDataWriter);
         if (e != null) {
             if (log.isDebugEnabled()) {
-                log.debug("handleEof({}) failed ({}) to close receiver: {}",
+                log.debug("handleEof({}) failed ({}) to close receiver(s): {}",
                       this, e.getClass().getSimpleName(), e.getMessage());
             }
 
@@ -251,24 +260,47 @@ public class ChannelSession extends AbstractServerChannel {
         }
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
 
+        int reqLen = (int) len;
         if (receiver != null) {
-            int r = receiver.data(this, data, off, (int) len);
+            int r = receiver.data(this, data, off, reqLen);
             if (r > 0) {
                 Window wLocal = getLocalWindow();
                 wLocal.consumeAndCheck(r);
             }
         } else {
             ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE), "Temporary data length exceeds int boundaries: %d", len);
-            if (tempBuffer == null) {
-                tempBuffer = new ByteArrayBuffer((int) len + Long.SIZE, false);
+            if (receiverBuffer == null) {
+                receiverBuffer = new ByteArrayBuffer(reqLen + Long.SIZE, false);
             }
-            tempBuffer.putRawBytes(data, off, (int) len);
+            receiverBuffer.putRawBytes(data, off, reqLen);
         }
     }
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException("Server channel does not support extended data");
+        ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE), "Extended data length exceeds int boundaries: %d", len);
+
+        if (extendedDataWriter != null) {
+            extendedDataWriter.data(this, data, off, (int) len);
+            return;
+        }
+
+        int reqSize = (int) len;
+        int maxBufSize = PropertyResolverUtils.getIntProperty(this, MAX_EXTDATA_BUFSIZE, DEFAULT_MAX_EXTDATA_BUFSIZE);
+        int curBufSize = (extendedDataBuffer == null) ? 0 : extendedDataBuffer.available();
+        int totalSize = curBufSize + reqSize;
+        if (totalSize > maxBufSize) {
+            if ((curBufSize <= 0) && (maxBufSize <= 0)) {
+                throw new UnsupportedOperationException("Session channel does not support extended data");
+            }
+
+            throw new IndexOutOfBoundsException("Extended data buffer size (" + maxBufSize + ") exceeded");
+        }
+
+        if (extendedDataBuffer == null) {
+            extendedDataBuffer = new ByteArrayBuffer(totalSize + Long.SIZE, false);
+        }
+        extendedDataBuffer.putRawBytes(data, off, reqSize);
     }
 
     @Override
@@ -616,6 +648,21 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     /**
+     * A special {@link ChannelDataReceiver} that can be used to receive
+     * data sent as &quot;extended&quot; - usually STDERR. <B>Note:</B> by
+     * default any such data sent to the channel session causes an exception,
+     * but specific implementations may choose to register such a receiver
+     * (e.g., for custom usage of the STDERR stream). A good place in the
+     * code to register such a writer would be in commands that also
+     * implement {@code ChannelSessionAware}.
+     *
+     * @param extendedDataWriter The {@link ChannelDataReceiver}.
+     */
+    public void setExtendedDataWriter(ChannelDataReceiver extendedDataWriter) {
+        this.extendedDataWriter = extendedDataWriter;
+    }
+
+    /**
      * Called by {@link #prepareChannelCommand(String, Command)} in order to set
      * up the command's streams, session, file-system, exit callback, etc..
      *
@@ -666,6 +713,7 @@ public class ChannelSession extends AbstractServerChannel {
             command.setOutputStream(out);
             command.setErrorStream(err);
         }
+
         if (this.receiver == null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
@@ -679,11 +727,23 @@ public class ChannelSession extends AbstractServerChannel {
                 command.setInputStream(recv.getIn());
             }
         }
-        if (tempBuffer != null) {
-            Buffer buffer = tempBuffer;
-            tempBuffer = null;
+
+        if (receiverBuffer != null) {
+            Buffer buffer = receiverBuffer;
+            receiverBuffer = null;
             doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
+
+        if (extendedDataBuffer != null) {
+            if (extendedDataWriter == null) {
+                throw new UnsupportedOperationException("No extended data writer available though " + extendedDataBuffer.available() + " bytes accumulated");
+            }
+
+            Buffer buffer = extendedDataBuffer;
+            extendedDataBuffer = null;
+            doWriteExtendedData(buffer.array(), buffer.rpos(), buffer.available());
+        }
+
         command.setExitCallback((exitValue, exitMessage) -> {
             try {
                 closeShell(exitValue);

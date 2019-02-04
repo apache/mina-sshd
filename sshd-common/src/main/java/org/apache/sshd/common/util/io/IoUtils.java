@@ -149,6 +149,27 @@ public final class IoUtils {
     }
 
     /**
+     * Closes the specified {@link Closeable} resource
+     *
+     * @param c The resource to close - ignored if {@code null}
+     * @return The thrown {@link IOException} when {@code close()} was
+     * called - {@code null} if no exception was thrown (or no resource
+     * to close to begin with)
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static IOException closeQuietly(Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (IOException e) {
+                return e;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Closes a bunch of resources suppressing any {@link IOException}s their
      * {@link Closeable#close()} method may have thrown
      *

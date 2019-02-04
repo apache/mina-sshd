@@ -219,6 +219,11 @@ public class SftpSubsystem
     public void setChannelSession(ChannelSession session) {
         this.channelSession = session;
         session.setDataReceiver(this);
+
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof ChannelSessionAware) {
+            ((ChannelSessionAware) errHandler).setChannelSession(session);
+        }
     }
 
     @Override

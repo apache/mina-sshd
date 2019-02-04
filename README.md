@@ -1267,6 +1267,20 @@ using a registered `SftpErrorStatusDataHandler`. The default implementation prov
 exception type. However, users may override it when creating the `SftpSubsystemFactory` and provide their own codes and/or messages - e.g.,
 for debugging one can register a `DetailedSftpErrorStatusDataHandler` (see `sshd-contrib`) that "leaks" more information in the generated message.
 
+If the registered handler implements `ChannelSessionAware` then it will also be informed of the registered `ChannelSession` when it is
+provided to the `SftpSubsystem` itself. This can be used to register an extended data writer that can handle data sent via the STDERR
+channel. **Note:** this feature is allowed according to [SFTP version 4 - section 3.1](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#section-3.1):
+
+>> Packets are sent and received on stdout and stdin. Data sent on stderr by the server SHOULD be considered debug
+>> or supplemental error information, and MAY be displayed to the user.
+
+however, the current code provides no built-in support for this feature.
+
+If registering an extended data writer then one should take care of any race conditions that may occur where (extended) data
+may arrive before the handler is informed of the existence of the `ChannelSession`. For this purpose one should configure a
+reasonable buffer size by setting the `channel-session-max-extdata-bufsize` property. This way, if any data arrives before the
+extended data handler is registered it will be buffered (up to the specified max. size). **Note:** if a buffer size is configured
+but no extended data handler is registered when channel is spawning the command then an exception will occur.
 
 ## Port forwarding
 
