@@ -635,9 +635,8 @@
                     <configuration>
                         <consoleOutput>true</consoleOutput>
                         <excludes>
-                            <exclude>README.md</exclude>
-                            <exclude>CHANGES.md</exclude>
-                            <exclude>src/docs/**</exclude>
+                            <exclude>*.md</exclude>
+                            <exclude>docs/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
