@@ -46,6 +46,7 @@
             <excludes>
                 <exclude>**/eclipse-classes/**</exclude>
                 <exclude>**/target/**</exclude>
+                <exclude>*RemoteSystemsTempFiles*</exclude>
             </excludes>
         </fileSet>
 
@@ -74,6 +75,7 @@
                 <exclude>**/target/**</exclude>
                 <exclude>**/build/**</exclude>
                 <exclude>**/eclipse-classes/**</exclude>
+                <exclude>*RemoteSystemsTempFiles*</exclude>
                 <exclude>**/.*</exclude>
                 <exclude>**/.*/**</exclude>
 
