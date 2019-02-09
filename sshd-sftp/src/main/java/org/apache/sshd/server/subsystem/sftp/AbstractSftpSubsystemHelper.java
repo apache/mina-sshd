@@ -497,7 +497,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendHandle(prepareReply(buffer), id, handle);
+        sendHandle(buffer, id, handle);
     }
 
     /**
@@ -707,7 +707,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendHandle(prepareReply(buffer), id, handle);
+        sendHandle(buffer, id, handle);
     }
 
     protected abstract String doOpenDir(int id, String path, Path p, LinkOption... options) throws IOException;
@@ -1975,6 +1975,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void sendHandle(Buffer buffer, int id, String handle) throws IOException {
+        prepareReply(buffer);
         buffer.putByte((byte) SftpConstants.SSH_FXP_HANDLE);
         buffer.putInt(id);
         buffer.putString(handle);
