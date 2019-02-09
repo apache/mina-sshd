@@ -947,7 +947,7 @@ public class SftpSubsystem
     @Override
     protected Buffer prepareReply(Buffer buffer) {
         buffer.clear();
-        buffer.putInt(0);
+        buffer.putInt(0);   // reserve space for actual packet length
         return buffer;
     }
 

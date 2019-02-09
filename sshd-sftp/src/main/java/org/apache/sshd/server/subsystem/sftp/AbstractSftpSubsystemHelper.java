@@ -1651,7 +1651,7 @@ public abstract class AbstractSftpSubsystemHelper
         if (log.isDebugEnabled()) {
             log.debug("executeExtendedCommand({}) received unsupported SSH_FXP_EXTENDED({})", getServerSession(), extension);
         }
-        sendStatus(buffer, id, SftpConstants.SSH_FX_OP_UNSUPPORTED,
+        sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED,
             "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
     }
 
