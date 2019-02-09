@@ -1409,7 +1409,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendPath(prepareReply(buffer), id, result.getKey(), attrs);
+        sendPath(buffer, id, result.getKey(), attrs);
     }
 
     protected SimpleImmutableEntry<Path, Boolean> doRealPathV6(
@@ -2018,6 +2018,8 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void sendPath(Buffer buffer, int id, Path f, Map<String, ?> attrs) throws IOException {
+        prepareReply(buffer);
+
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);   // one reply
