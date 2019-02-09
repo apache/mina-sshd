@@ -508,7 +508,7 @@ public class SftpSubsystem
          * channel.
          */
         if (requestsCount.get() > 0L) {
-            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_FAILURE,
+            sendStatus(buffer, id, SftpConstants.SSH_FX_FAILURE,
                 "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
             return;
@@ -524,9 +524,9 @@ public class SftpSubsystem
         }
         if (result) {
             version = Integer.parseInt(proposed);
-            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
+            sendStatus(buffer, id, SftpConstants.SSH_FX_OK, "");
         } else {
-            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
+            sendStatus(buffer, id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
             session.close(true);
         }
     }
@@ -661,7 +661,7 @@ public class SftpSubsystem
         try {
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
-                sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
                 return;
             }
 
@@ -708,13 +708,13 @@ public class SftpSubsystem
             } else {
                 // empty directory
                 dh.markDone();
-                sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
+                sendStatus(buffer, id, SftpConstants.SSH_FX_EOF, "Empty directory");
                 return;
             }
 
             Objects.requireNonNull(reply, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
+            sendStatus(buffer, id, e, SftpConstants.SSH_FXP_READDIR, handle);
             return;
         }
 
