@@ -1115,7 +1115,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendLink(prepareReply(buffer), id, l);
+        sendLink(buffer, id, l);
     }
 
     protected String doReadLink(int id, String path) throws IOException {
@@ -1991,6 +1991,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void sendLink(Buffer buffer, int id, String link) throws IOException {
+        prepareReply(buffer);
         //in case we are running on Windows
         String unixPath = link.replace(File.separatorChar, '/');
 
