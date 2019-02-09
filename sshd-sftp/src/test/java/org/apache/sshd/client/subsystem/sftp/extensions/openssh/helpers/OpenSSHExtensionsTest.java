@@ -81,7 +81,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -167,7 +169,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -190,7 +194,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private static void assertOpenSSHStatExtensionInfoEquals(String extension, OpenSSHStatExtensionInfo expected, OpenSSHStatExtensionInfo actual) throws Exception {
+    private static void assertOpenSSHStatExtensionInfoEquals(
+            String extension, OpenSSHStatExtensionInfo expected, OpenSSHStatExtensionInfo actual)
+                throws Exception {
         Field[] fields = expected.getClass().getFields();
         for (Field f : fields) {
             String name = f.getName();

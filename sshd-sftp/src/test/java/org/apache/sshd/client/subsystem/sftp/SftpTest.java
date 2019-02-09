@@ -119,7 +119,8 @@ import com.jcraft.jsch.JSch;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpTest extends AbstractSftpClientTestSupport {
-    private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS = AbstractSftpSubsystemHelper.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
+    private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS =
+        AbstractSftpSubsystemHelper.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
     private com.jcraft.jsch.Session session;
 
@@ -157,7 +158,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expectedRandom);
 
         byte[] expectedText = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -203,7 +206,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expected);
         Files.write(testFile, expected);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -238,10 +243,12 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test   // see extra fix for SSHD-538
     public void testNavigateBeyondRootFolder() throws Exception {
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
-        final FileSystem fsRoot = rootLocation.getFileSystem();
+        FileSystem fsRoot = rootLocation.getFileSystem();
         sshd.setFileSystemFactory(session1 -> fsRoot);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -269,7 +276,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertHierarchyTargetFolderExists(lclSftp);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(lclSftp));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -293,15 +302,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         ? SftpConstants.SSH_FX_INVALID_FILENAME
                         : SftpConstants.SSH_FX_NO_SUCH_FILE;
                 assertEquals("Mismatched status for " + escapePath,
-                             SftpConstants.getStatusName(expected),
-                             SftpConstants.getStatusName(e.getStatus()));
+                     SftpConstants.getStatusName(expected),
+                     SftpConstants.getStatusName(e.getStatus()));
             }
         }
     }
 
     @Test
     public void testNormalizeRemoteRootValues() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -336,7 +347,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         Factory<? extends Random> factory = client.getRandomFactory();
         Random rnd = factory.create();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -389,7 +402,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         File javaFile = testFile.toFile();
         assertHierarchyTargetFolderExists(javaFile.getParentFile());
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -483,7 +498,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Files.createDirectories(localFile.getParent());
         byte[] data = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
         Files.write(localFile, data, StandardOpenOption.CREATE);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -543,9 +560,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             AtomicReference<Path> dirHolder = new AtomicReference<>();
             factory.setFileSystemAccessor(new SftpFileSystemAccessor() {
                 @Override
-                public SeekableByteChannel openFile(ServerSession session, SftpEventListenerManager subsystem, Path file,
+                public SeekableByteChannel openFile(
+                        ServerSession session, SftpEventListenerManager subsystem, Path file,
                         String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
-                                throws IOException {
+                            throws IOException {
                     fileHolder.set(file);
                     return SftpFileSystemAccessor.super.openFile(session, subsystem, file, handle, options, attrs);
                 }
@@ -569,7 +587,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             Files.createDirectories(localFile.getParent());
             byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
             Files.write(localFile, expected, StandardOpenOption.CREATE);
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -623,18 +643,18 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
-        final AtomicInteger versionHolder = new AtomicInteger(-1);
-        final AtomicInteger openCount = new AtomicInteger(0);
-        final AtomicInteger closeCount = new AtomicInteger(0);
-        final AtomicLong readSize = new AtomicLong(0L);
-        final AtomicLong writeSize = new AtomicLong(0L);
-        final AtomicInteger entriesCount = new AtomicInteger(0);
-        final AtomicInteger creatingCount = new AtomicInteger(0);
-        final AtomicInteger createdCount = new AtomicInteger(0);
-        final AtomicInteger removingCount = new AtomicInteger(0);
-        final AtomicInteger removedCount = new AtomicInteger(0);
-        final AtomicInteger modifyingCount = new AtomicInteger(0);
-        final AtomicInteger modifiedCount = new AtomicInteger(0);
+        AtomicInteger versionHolder = new AtomicInteger(-1);
+        AtomicInteger openCount = new AtomicInteger(0);
+        AtomicInteger closeCount = new AtomicInteger(0);
+        AtomicLong readSize = new AtomicLong(0L);
+        AtomicLong writeSize = new AtomicLong(0L);
+        AtomicInteger entriesCount = new AtomicInteger(0);
+        AtomicInteger creatingCount = new AtomicInteger(0);
+        AtomicInteger createdCount = new AtomicInteger(0);
+        AtomicInteger removingCount = new AtomicInteger(0);
+        AtomicInteger removedCount = new AtomicInteger(0);
+        AtomicInteger modifyingCount = new AtomicInteger(0);
+        AtomicInteger modifiedCount = new AtomicInteger(0);
         SftpEventListener listener = new AbstractSftpEventListenerAdapter() {
             @Override
             public void initialized(ServerSession session, int version) {
@@ -788,7 +808,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         };
         factory.addSftpEventListener(listener);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -821,7 +843,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
      */
     @Test
     public void testWriteChunking() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -1036,7 +1060,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -1076,7 +1102,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testServerExtensionsDeclarations() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -1159,8 +1187,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private static void assertSupportedVersions(Versions vers) {
         List<String> values = vers.getVersions();
         assertEquals("Mismatched reported versions size: " + values,
-                     1 + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL - SftpSubsystemEnvironment.LOWER_SFTP_IMPL,
-                     GenericUtils.size(values));
+             1 + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL - SftpSubsystemEnvironment.LOWER_SFTP_IMPL,
+             GenericUtils.size(values));
         for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL, index = 0; expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; expected++, index++) {
             String e = Integer.toString(expected);
             String a = values.get(index);
@@ -1170,20 +1198,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private static void assertNewlineValue(Newline nl) {
         assertEquals("Mismatched NL value",
-                     BufferUtils.toHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
-                     BufferUtils.toHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
+             BufferUtils.toHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
+             BufferUtils.toHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
     }
 
     private static void assertSupportedAclCapabilities(AclCapabilities caps) {
         Set<Integer> actual = AclCapabilities.deconstructAclCapabilities(caps.getCapabilities());
         assertEquals("Mismatched ACL capabilities count", AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK.size(), actual.size());
         assertTrue("Missing capabilities - expected=" + AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK + ", actual=" + actual,
-                   actual.containsAll(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK));
+           actual.containsAll(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK));
     }
 
     @Test
     public void testSftpVersionSelector() throws Exception {
-        final AtomicInteger selected = new AtomicInteger(-1);
+        AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = (session, current, available) -> {
             int value = GenericUtils.stream(available)
                     .mapToInt(Integer::intValue)
@@ -1194,7 +1222,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             return value;
         };
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -1211,7 +1241,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         sshd.setSubsystemFactories(null);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -1331,7 +1363,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
-        final AtomicReference<LinkData> linkDataHolder = new AtomicReference<>();
+        AtomicReference<LinkData> linkDataHolder = new AtomicReference<>();
         SftpEventListener listener = new AbstractSftpEventListenerAdapter() {
             @Override
             public void linking(ServerSession session, Path src, Path target, boolean symLink) {
@@ -1417,7 +1449,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(lclFile);
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 

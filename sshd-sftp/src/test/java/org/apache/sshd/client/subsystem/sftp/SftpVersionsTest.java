@@ -228,21 +228,22 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         final List<AclEntry> aclExpected = new ArrayList<>(types.length);
         for (AclEntryType t : types) {
             aclExpected.add(AclEntry.newBuilder()
-                                .setType(t)
-                                .setFlags(EnumSet.allOf(AclEntryFlag.class))
-                                .setPermissions(EnumSet.allOf(AclEntryPermission.class))
-                                .setPrincipal(new DefaultGroupPrincipal(getCurrentTestName() + "@" + getClass().getPackage().getName()))
-                                .build());
+                .setType(t)
+                .setFlags(EnumSet.allOf(AclEntryFlag.class))
+                .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+                .setPrincipal(new DefaultGroupPrincipal(getCurrentTestName() + "@" + getClass().getPackage().getName()))
+                .build());
         }
 
-        final AtomicInteger numInvocations = new AtomicInteger(0);
+        AtomicInteger numInvocations = new AtomicInteger(0);
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command create() {
                 SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
-                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
+                            throws IOException {
                         NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
                         if (GenericUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -257,7 +258,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     }
 
                     @Override
-                    protected void setFileAccessControl(Path file, List<AclEntry> aclActual, LinkOption... options) throws IOException {
+                    protected void setFileAccessControl(Path file, List<AclEntry> aclActual, LinkOption... options)
+                            throws IOException {
                         if (aclActual != null) {
                             assertListEquals("Mismatched ACL set for file=" + file, aclExpected, aclActual);
                             numInvocations.incrementAndGet();
@@ -364,7 +366,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
-                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
+                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
+                            throws IOException {
                         NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
                         if (GenericUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -379,7 +382,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     }
 
                     @Override
-                    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption... options) throws IOException {
+                    protected void setFileExtensions(Path file, Map<String, byte[]> extensions, LinkOption... options)
+                            throws IOException {
                         assertExtensionsMapEquals("setFileExtensions(" + file + ")", expExtensions, extensions);
                         numInvocations.incrementAndGet();
 
