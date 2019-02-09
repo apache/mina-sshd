@@ -613,7 +613,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendAttrs(prepareReply(buffer), id, attrs);
+        sendAttrs(buffer, id, attrs);
     }
 
     protected Map<String, Object> doLStat(int id, String path, int flags) throws IOException {
@@ -668,7 +668,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendAttrs(prepareReply(buffer), id, attrs);
+        sendAttrs(buffer, id, attrs);
     }
 
     protected abstract Map<String, Object> doFStat(int id, String handle, int flags) throws IOException;
@@ -1291,7 +1291,7 @@ public abstract class AbstractSftpSubsystemHelper
             return;
         }
 
-        sendAttrs(prepareReply(buffer), id, attrs);
+        sendAttrs(buffer, id, attrs);
     }
 
     protected Map<String, Object> doStat(int id, String path, int flags) throws IOException {
@@ -1983,6 +1983,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void sendAttrs(Buffer buffer, int id, Map<String, ?> attributes) throws IOException {
+        prepareReply(buffer);
         buffer.putByte((byte) SftpConstants.SSH_FXP_ATTRS);
         buffer.putInt(id);
         writeAttrs(buffer, attributes);
