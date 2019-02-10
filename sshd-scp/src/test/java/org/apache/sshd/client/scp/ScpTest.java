@@ -590,6 +590,49 @@ public class ScpTest extends BaseTestSupport {
     }
 
     @Test
+    public void testScpVirtualOnDirWithPattern() throws Exception {
+        Path remoteDir = assertHierarchyTargetFolderExists(getTempTargetFolder());
+
+        sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+
+            ScpClient scp = createScpClient(session);
+
+            Path targetPath = detectTargetFolder();
+
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                    ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+            CommonTestSupportUtils.deleteRecursive(scpRoot);
+
+            Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+            Path local1 = localDir.resolve("file-1.txt");
+            byte[] data = CommonTestSupportUtils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+            Path local2 = localDir.resolve("file-2.txt");
+            Files.write(local2, data);
+
+            scp.upload(localDir.toString() + File.separator + "*", "/");
+
+            Path remote1 = remoteDir.resolve(local1.getFileName());
+            Path remote2 = remoteDir.resolve(local2.getFileName());
+
+            assertFileLength(remote1, data.length, TimeUnit.SECONDS.toMillis(11L));
+            assertFileLength(remote2, data.length, TimeUnit.SECONDS.toMillis(11L));
+
+            Files.delete(local1);
+            Files.delete(local2);
+
+            scp.download("/*", localDir);
+            assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(11L));
+            assertFileLength(local2, data.length, TimeUnit.SECONDS.toMillis(11L));
+        }
+    }
+
+    @Test
     public void testScpNativeOnMixedDirAndFiles() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)

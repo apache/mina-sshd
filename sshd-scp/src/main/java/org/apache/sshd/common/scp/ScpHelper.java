@@ -401,9 +401,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 }
 
                 Session session = getSession();
-                Iterable<String> included = opener.getMatchingFilesToSend(session, basedir, pattern);
+                Path basePath = resolveLocalPath(basedir);
+                Iterable<String> included = opener.getMatchingFilesToSend(session, basePath.toFile().getAbsolutePath(), pattern);
+
                 for (String path : included) {
-                    Path file = resolveLocalPath(basedir, path);
+                    Path file = basePath.resolve(path);
                     if (opener.sendAsRegularFile(session, file, options)) {
                         sendFile(file, preserve, bufferSize);
                     } else if (opener.sendAsDirectory(session, file, options)) {
