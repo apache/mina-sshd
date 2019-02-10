@@ -56,6 +56,7 @@ import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.session.helpers.AbstractSessionFactory;
@@ -94,6 +95,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
+    private SessionDisconnectHandler sessionDisconnectHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
     private IoServiceEventListener eventListener;
@@ -307,6 +309,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler) {
         reservedSessionMessagesHandler = handler;
+    }
+
+    @Override
+    public SessionDisconnectHandler getSessionDisconnectHandler() {
+        return sessionDisconnectHandler;
+    }
+
+    @Override
+    public void setSessionDisconnectHandler(SessionDisconnectHandler sessionDisconnectHandler) {
+        this.sessionDisconnectHandler = sessionDisconnectHandler;
     }
 
     @Override

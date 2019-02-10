@@ -483,7 +483,7 @@ public abstract class AbstractSession extends SessionHelper {
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
 
         try {
-            startService(serviceName);
+            startService(serviceName, buffer);
         } catch (Throwable e) {
             if (debugEnabled) {
                 log.debug("handleServiceRequest({}) Service {} rejected: {} = {}",

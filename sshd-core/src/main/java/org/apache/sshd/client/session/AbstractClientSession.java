@@ -61,6 +61,7 @@ import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -373,7 +374,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public void startService(String name) throws Exception {
+    public void startService(String name, Buffer buffer) throws Exception {
+        SessionDisconnectHandler handler = getSessionDisconnectHandler();
+        if ((handler != null)
+                && handler.handleUnsupportedServiceDisconnectReason(this, SshConstants.SSH_MSG_SERVICE_REQUEST, name, buffer)) {
+            if (log.isDebugEnabled()) {
+                log.debug("startService({}) ignore unknown service={} by handler", this, name);
+            }
+            return;
+        }
+
         throw new IllegalStateException("Starting services is not supported on the client side: " + name);
     }
 

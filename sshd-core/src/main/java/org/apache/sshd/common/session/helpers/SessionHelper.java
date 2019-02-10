@@ -61,6 +61,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.GenericUtils;
@@ -99,6 +100,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     private final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<>(TimeoutStatus.NoTimeout);
 
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
+    private SessionDisconnectHandler sessionDisconnectHandler;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
     private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
 
@@ -238,6 +240,25 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return;
         }
 
+        SessionDisconnectHandler handler = getSessionDisconnectHandler();
+        if ((handler != null) && handler.handleTimeoutDisconnectReason(this, status)) {
+            if (log.isDebugEnabled()) {
+                log.debug("checkForTimeouts({}) cancel {} due to handler intervention", this, status);
+            }
+
+            switch(status) {
+                case AuthTimeout:
+                    resetAuthTimeout();
+                    break;
+                case IdleTimeout:
+                    resetIdleTimeout();
+                    break;
+
+                default:    // ignored
+            }
+            return;
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("checkForTimeouts({}) disconnect - reason={}", this, status);
         }
@@ -328,6 +349,17 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @Override
     public void setReservedSessionMessagesHandler(ReservedSessionMessagesHandler handler) {
         reservedSessionMessagesHandler = handler;
+    }
+
+    @Override
+    public SessionDisconnectHandler getSessionDisconnectHandler() {
+        return resolveEffectiveProvider(SessionDisconnectHandler.class,
+            sessionDisconnectHandler, getFactoryManager().getSessionDisconnectHandler());
+    }
+
+    @Override
+    public void setSessionDisconnectHandler(SessionDisconnectHandler sessionDisconnectHandler) {
+        this.sessionDisconnectHandler = sessionDisconnectHandler;
     }
 
     protected void handleIgnore(Buffer buffer) throws Exception {

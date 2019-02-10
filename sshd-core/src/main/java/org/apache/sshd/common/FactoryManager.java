@@ -37,6 +37,7 @@ import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesManager;
+import org.apache.sshd.common.session.SessionDisconnectHandlerManager;
 import org.apache.sshd.common.session.SessionListenerManager;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandlerManager;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
@@ -54,6 +55,7 @@ public interface FactoryManager
         extends KexFactoryManager,
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
+                SessionDisconnectHandlerManager,
                 ChannelListenerManager,
                 ChannelStreamPacketWriterResolverManager,
                 UnknownChannelReferenceHandlerManager,

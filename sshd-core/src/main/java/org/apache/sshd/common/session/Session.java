@@ -57,6 +57,7 @@ public interface Session
                 KexFactoryManager,
                 SessionListenerManager,
                 ReservedSessionMessagesManager,
+                SessionDisconnectHandlerManager,
                 ChannelListenerManager,
                 ChannelStreamPacketWriterResolverManager,
                 PortForwardingEventListenerManager,
@@ -304,9 +305,10 @@ public interface Session
 
     /**
      * @param name Service name
+     * @param buffer Extra information provided when the service start request was received
      * @throws Exception If failed to start it
      */
-    void startService(String name) throws Exception;
+    void startService(String name, Buffer buffer) throws Exception;
 
     @Override
     default <T> T resolveAttribute(AttributeRepository.AttributeKey<T> key) {

@@ -158,6 +158,15 @@ message received in the session as well.
 rather than being accumulated. However, one can use the `EventListenerUtils` and create a cumulative listener - see how
 `SessionListener` or `ChannelListener` proxies were implemented.
 
+### `SessionDisconnectHandler`
+
+This handler can be registered in order to monitor session disconnect initiated by the internal code due to various
+protocol requirements - e.g., unknown service, idle timeout, etc.. In many cases the implementor can intervene and
+cancel the disconnect by handling the problem somehow and then signaling to the code that there is no longer any need
+to disconnect. The handler can be registered globally at the `SshClient/Server` instance or per-session (via a `SessionListener`).
+
+**NOTE:** this handler is non-cumulative - i.e., setting it replaces any existing previous handler instance.
+
 ### `SignalListener`
 
 Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), break requests

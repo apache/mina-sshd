@@ -60,7 +60,9 @@ import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.Session.TimeoutStatus;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
@@ -199,24 +201,64 @@ public class ServerTest extends BaseTestSupport {
         final long testAuthTimeout = TimeUnit.SECONDS.toMillis(5L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, testAuthTimeout);
 
+        AtomicReference<TimeoutStatus> timeoutHolder = new AtomicReference<>();
+        sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
+            @Override
+            public boolean handleTimeoutDisconnectReason(Session session, TimeoutStatus timeoutStatus)
+                    throws IOException {
+                outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
+                TimeoutStatus prev = timeoutHolder.getAndSet(timeoutStatus);
+                if (prev != null) {
+                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                }
+                return false;
+            }
+
+            @Override
+            public String toString() {
+                return SessionDisconnectHandler.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
+        });
         sshd.start();
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
-            Collection<ClientSession.ClientSessionEvent> res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testAuthTimeout);
-            assertTrue("Session should be closed: " + res,
-                       res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
+        Collection<ClientSession.ClientSessionEvent> res;
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
+            res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testAuthTimeout);
         } finally {
             client.stop();
         }
+
+        assertTrue("Session should be closed: " + res,
+            res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
+        assertSame("Mismatched timeout status reported", TimeoutStatus.AuthTimeout, timeoutHolder.getAndSet(null));
     }
 
     @Test
     public void testIdleTimeout() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        TestEchoShell.latch = new CountDownLatch(1);
         final long testIdleTimeout = 2500L;
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, testIdleTimeout);
+        AtomicReference<TimeoutStatus> timeoutHolder = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        TestEchoShell.latch = new CountDownLatch(1);
+        sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
+            @Override
+            public boolean handleTimeoutDisconnectReason(Session session, TimeoutStatus timeoutStatus)
+                    throws IOException {
+                outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
+                TimeoutStatus prev = timeoutHolder.getAndSet(timeoutStatus);
+                if (prev != null) {
+                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                }
+                return false;
+            }
 
+            @Override
+            public String toString() {
+                return SessionDisconnectHandler.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
+        });
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -235,7 +277,8 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
-            public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
+            public void sessionDisconnect(
+                    Session session, int reason, String msg, String language, boolean initiator) {
                 outputDebugMessage("Session %s disconnected (sender=%s): reason=%d, message=%s",
                     session, initiator, reason, msg);
             }
@@ -245,6 +288,11 @@ public class ServerTest extends BaseTestSupport {
                 outputDebugMessage("Session closed: %s", session);
                 latch.countDown();
             }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
         });
 
         TestChannelListener channelListener = new TestChannelListener(getCurrentTestName());
@@ -252,6 +300,7 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
 
         client.start();
+        Collection<ClientSession.ClientSessionEvent> res;
         try (ClientSession s = createTestClientSession(sshd);
              ChannelShell shell = s.createShellChannel();
              ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -263,16 +312,16 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
-            Collection<ClientSession.ClientSessionEvent> res =
-                s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
-            assertTrue("Session should be closed and authenticated: " + res,
-                res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
+            res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
         } finally {
             client.stop();
         }
 
+        assertTrue("Session should be closed and authenticated: " + res,
+            res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         assertTrue("Session latch not signalled in time", latch.await(1L, TimeUnit.SECONDS));
         assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
+        assertSame("Mismatched timeout status", TimeoutStatus.IdleTimeout, timeoutHolder.getAndSet(null));
     }
 
     /*
@@ -284,16 +333,14 @@ public class ServerTest extends BaseTestSupport {
      */
     @Test
     public void testServerIdleTimeoutWithForce() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        sshd.setCommandFactory(StreamCommand::new);
-
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, idleTimeoutValue);
 
         final long disconnectTimeoutValue = TimeUnit.SECONDS.toMillis(2L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
 
+        CountDownLatch latch = new CountDownLatch(1);
+        sshd.setCommandFactory(StreamCommand::new);
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -314,6 +361,11 @@ public class ServerTest extends BaseTestSupport {
             public void sessionClosed(Session session) {
                 outputDebugMessage("Session closed: %s", session);
                 latch.countDown();
+            }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
             }
         });
 
@@ -386,7 +438,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
 
-        final Semaphore sigSem = new Semaphore(0, true);
+        Semaphore sigSem = new Semaphore(0, true);
         client.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -415,10 +467,17 @@ public class ServerTest extends BaseTestSupport {
             public void sessionClosed(Session session) {
                 outputDebugMessage("Session closed: %s", session);
             }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
         });
 
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             assertTrue("Failed to receive signal on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
         } finally {
             client.stop();
@@ -458,7 +517,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
 
-        final Semaphore sigSem = new Semaphore(0, true);
+        Semaphore sigSem = new Semaphore(0, true);
         client.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -479,11 +538,18 @@ public class ServerTest extends BaseTestSupport {
             public void sessionClosed(Session session) {
                 sigSem.release();
             }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
         });
 
         client.start();
         try {
-            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 assertTrue("Session closing not signalled on time", sigSem.tryAcquire(5L, TimeUnit.SECONDS));
                 for (boolean incoming : new boolean[]{true, false}) {
                     assertNull("Unexpected compression information for incoming=" + incoming, s.getCompressionInformation(incoming));
@@ -497,7 +563,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testKexCompletedEvent() throws Exception {
-        final AtomicInteger serverEventCount = new AtomicInteger(0);
+        AtomicInteger serverEventCount = new AtomicInteger(0);
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
@@ -505,16 +571,26 @@ public class ServerTest extends BaseTestSupport {
                     serverEventCount.incrementAndGet();
                 }
             }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
         });
         sshd.start();
 
-        final AtomicInteger clientEventCount = new AtomicInteger(0);
+        AtomicInteger clientEventCount = new AtomicInteger(0);
         client.addSessionListener(new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
                 if (event == Event.KexCompleted) {
                     clientEventCount.incrementAndGet();
                 }
+            }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
             }
         });
         client.start();
@@ -530,7 +606,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test   // see SSHD-645
     public void testChannelStateChangeNotifications() throws Exception {
-        final Semaphore exitSignal = new Semaphore(0);
+        Semaphore exitSignal = new Semaphore(0);
         sshd.setCommandFactory(command -> new Command() {
             private ExitCallback cb;
 
@@ -568,7 +644,7 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
         client.start();
 
-        final Collection<String> stateChangeHints = new CopyOnWriteArrayList<>();
+        Collection<String> stateChangeHints = new CopyOnWriteArrayList<>();
         try (ClientSession s = createTestClientSession(sshd);
              ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
             shell.addChannelListener(new ChannelListener() {
@@ -583,7 +659,7 @@ public class ServerTest extends BaseTestSupport {
 
             assertTrue("Timeout while wait for exit signal", exitSignal.tryAcquire(15L, TimeUnit.SECONDS));
             Collection<ClientChannelEvent> result =
-                    shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(13L));
+                shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(13L));
             assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
 
             Integer status = shell.getExitStatus();
@@ -599,7 +675,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
-        final AtomicReference<Environment> envHolder = new AtomicReference<>(null);
+        AtomicReference<Environment> envHolder = new AtomicReference<>(null);
         sshd.setCommandFactory(command -> new Command() {
             private ExitCallback cb;
 
@@ -663,7 +739,7 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             Collection<ClientChannelEvent> result =
-                    shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
+                shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
             assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
 
             Integer status = shell.getExitStatus();
@@ -691,17 +767,20 @@ public class ServerTest extends BaseTestSupport {
     public void testImmediateAuthFailureOpcode() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
-        final AtomicInteger challengeCount = new AtomicInteger(0);
+        AtomicInteger challengeCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
-            public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+            public InteractiveChallenge generateChallenge(
+                    ServerSession session, String username, String lang, String subMethods) {
                 challengeCount.incrementAndGet();
                 outputDebugMessage("generateChallenge(%s@%s) count=%s", username, session, challengeCount);
                 return null;
             }
 
             @Override
-            public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+            public boolean authenticate(
+                    ServerSession session, String username, List<String> responses)
+                        throws Exception {
                 return false;
             }
         });
@@ -709,11 +788,13 @@ public class ServerTest extends BaseTestSupport {
 
         // order is important
         String authMethods = GenericUtils.join(
-                Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
+            Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
 
         client.start();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             AuthFuture auth = session.auth();
             assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
             assertFalse("Unexpected authentication success", auth.isSuccess());
@@ -728,20 +809,24 @@ public class ServerTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
 
-        final InteractiveChallenge challenge = new InteractiveChallenge();
+        InteractiveChallenge challenge = new InteractiveChallenge();
         challenge.setInteractionInstruction(getCurrentTestName());
         challenge.setInteractionName(getClass().getSimpleName());
         challenge.setLanguageTag("il-heb");
         challenge.addPrompt(new PromptEntry("Password", false));
-        final AtomicInteger serverCount = new AtomicInteger(0);
+
+        AtomicInteger serverCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
-            public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+            public InteractiveChallenge generateChallenge(
+                    ServerSession session, String username, String lang, String subMethods) {
                 return challenge;
             }
 
             @Override
-            public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+            public boolean authenticate(
+                    ServerSession session, String username, List<String> responses)
+                        throws Exception {
                 outputDebugMessage("authenticate(%s@%s) count=%s", username, session, serverCount);
                 serverCount.incrementAndGet();
                 return false;
@@ -751,10 +836,10 @@ public class ServerTest extends BaseTestSupport {
 
         // order is important
         String authMethods = GenericUtils.join(
-                Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
+            Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY, UserAuthMethodFactory.PUBLIC_KEY), ',');
         PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
-        final AtomicInteger clientCount = new AtomicInteger(0);
-        final String[] replies = {getCurrentTestName()};
+        AtomicInteger clientCount = new AtomicInteger(0);
+        String[] replies = {getCurrentTestName()};
         client.setUserInteraction(new UserInteraction() {
             @Override
             public boolean isInteractionAllowed(ClientSession session) {
@@ -762,7 +847,8 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 clientCount.incrementAndGet();
                 return replies;
             }
@@ -774,12 +860,16 @@ public class ServerTest extends BaseTestSupport {
         });
 
         client.start();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             AuthFuture auth = session.auth();
             assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
             assertFalse("Unexpected authentication success", auth.isSuccess());
-            assertEquals("Mismatched interactive server challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
-            assertEquals("Mismatched interactive client challenge calls", ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, clientCount.get());
+            assertEquals("Mismatched interactive server challenge calls",
+                ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
+            assertEquals("Mismatched interactive client challenge calls",
+                ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, clientCount.get());
         } finally {
             client.stop();
         }
@@ -789,8 +879,7 @@ public class ServerTest extends BaseTestSupport {
     public void testIdentificationStringsOverrides() throws Exception {
         String clientIdent = getCurrentTestName() + "-client";
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.CLIENT_IDENTIFICATION, clientIdent);
-        final String expClientIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
-
+        String expClientIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
         String serverIdent = getCurrentTestName() + "-server";
         PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_IDENTIFICATION, serverIdent);
         String expServerIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
@@ -817,6 +906,11 @@ public class ServerTest extends BaseTestSupport {
             public void sessionClosed(Session session) {
                 // ignored
             }
+
+            @Override
+            public String toString() {
+                return SessionListener.class.getSimpleName() + "[" + getCurrentTestName() + "]";
+            }
         };
 
         sshd.addSessionListener(listener);
@@ -825,7 +919,9 @@ public class ServerTest extends BaseTestSupport {
         client.addSessionListener(listener);
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(9L, TimeUnit.SECONDS);
             assertEquals("Mismatched client identification", expClientIdent, session.getClientVersion());
@@ -842,7 +938,7 @@ public class ServerTest extends BaseTestSupport {
                 getClass().getSimpleName(),
                 getCurrentTestName());
         PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES,
-                GenericUtils.join(expected, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
+            GenericUtils.join(expected, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
         sshd.start();
 
         AtomicReference<List<String>> actualHolder = new AtomicReference<>();
@@ -860,7 +956,8 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 return null;
             }
 
@@ -871,7 +968,9 @@ public class ServerTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(9L, TimeUnit.SECONDS);
             assertTrue("No signal received in time", signal.tryAcquire(11L, TimeUnit.SECONDS));
@@ -885,7 +984,9 @@ public class ServerTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession(SshServer server) throws Exception {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort()).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

@@ -460,7 +460,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public void startService(String name) throws Exception {
+        public void startService(String name, Buffer buffer) throws Exception {
             // ignored
         }
 

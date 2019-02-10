@@ -47,6 +47,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyRandomArt;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -173,20 +174,35 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                       session, username, service, method);
             }
 
-            if (this.authUserName == null || this.authService == null) {
+            if ((this.authUserName == null) || (this.authService == null)) {
                 this.authUserName = username;
                 this.authService = service;
             } else if (this.authUserName.equals(username) && this.authService.equals(service)) {
                 nbAuthRequests++;
                 if (nbAuthRequests > maxAuthRequests) {
-                    session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Too many authentication failures: " + nbAuthRequests);
-                    return;
+                    SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
+                    if ((handler == null)
+                            || (!handler.handleAuthCountDisconnectReason(
+                                    session, this, service, method, username, nbAuthRequests, maxAuthRequests))) {
+                        session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Too many authentication failures: " + nbAuthRequests);
+                        return;
+                    }
                 }
             } else {
-                session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                    "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ") -> ("
-                        + username + ", " + service + ")");
+                SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
+                if ((handler != null)
+                        && handler.handleAuthParamsDisconnectReason(
+                            session, this, this.authUserName, username, this.authService, service)) {
+                    if (debugEnabled) {
+                        log.debug("process({}) ignore mismatched authentication parameters: user={}/{}, service={}/{}",
+                                session, this.authUserName, username, this.authService, service);
+                    }
+                } else {
+                    session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ") -> ("
+                            + username + ", " + service + ")");
+                }
                 return;
             }
 
@@ -287,7 +303,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("handleAuthenticationSuccess({}@{}) {}",
-                  username, session, SshConstants.getCommandMessageName(cmd));
+                username, session, SshConstants.getCommandMessageName(cmd));
         }
 
         boolean success = false;
@@ -303,9 +319,19 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             if (maxSessionCount != null) {
                 int currentSessionCount = session.getActiveSessionCountForUser(username);
                 if (currentSessionCount >= maxSessionCount) {
-                    session.disconnect(SshConstants.SSH2_DISCONNECT_TOO_MANY_CONNECTIONS,
-                        "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
-                    return;
+                    SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
+                    if ((handler == null)
+                            || (!handler.handleSessionsCountDisconnectReason(
+                                    session, this, username, currentSessionCount, maxSessionCount))) {
+                        session.disconnect(SshConstants.SSH2_DISCONNECT_TOO_MANY_CONNECTIONS,
+                            "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
+                        return;
+                    } else {
+                        if (debugEnabled) {
+                            log.debug("handleAuthenticationSuccess({}@{}) ignore {}/{} sessions count due to handler intervention",
+                                username, session, currentSessionCount, maxSessionCount);
+                        }
+                    }
                 }
             }
 
@@ -313,11 +339,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 sendWelcomeBanner(session);
             }
 
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
-            session.writePacket(buffer);
+            Buffer response = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
+            session.writePacket(response);
             session.setUsername(username);
             session.setAuthenticated();
-            session.startService(authService);
+            session.startService(authService, buffer);
             session.resetIdleTimeout();
             log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
         } else {
@@ -330,10 +356,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
             }
 
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
-            buffer.putString(remaining);
-            buffer.putBoolean(true);    // partial success ...
-            session.writePacket(buffer);
+            Buffer response = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
+            response.putString(remaining);
+            response.putBoolean(true);    // partial success ...
+            session.writePacket(response);
         }
 
         try {
