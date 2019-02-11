@@ -120,7 +120,7 @@ public interface ScpFileOpener {
      * @return The matching <U>relative paths</U> of the children to send
      * @throws IOException If failed to scan the directory
      */
-    default Iterable<String> getMatchingFilesToSend(Session session, Path basedir, String pattern) throws IOException {
+    default Iterable<Path> getMatchingFilesToSend(Session session, Path basedir, String pattern) throws IOException {
         DirectoryScanner ds = new DirectoryScanner(basedir, pattern);
         return ds.scan();
     }

@@ -74,6 +74,14 @@ ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   /
 **Note:** due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
 **before** the file opener is invoked - so there are a few limitations on what one can do within this interface implementation.
 
+In this context, note that patterns used in `ScpFileOpener#getMatchingFilesToSend` are matched using case sensitivity derived from the O/S:
+
+* `Windows` - case insensitive
+* `Unix=true` - case sensitive
+
+as detected by the internal `OsUtils`. If a different behavior is required, then one needs to replace the default opener with one
+that uses a different sensitivity via `DirectoryScanner#setCaseSensitive` call (or executes the pattern matching in another way).
+
 #### ScpTransferEventListener(s)
 
 The `ScpClientCreator` can also be used to attach a default `ScpTransferEventListener` that will be attached to

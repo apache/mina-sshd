@@ -53,23 +53,21 @@ public class DirectoryScannerTest extends JUnitTestSupport {
         Path rootDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(rootDir);    // start fresh
 
-        List<String> expected = new ArrayList<>();
+        List<Path> expected = new ArrayList<>();
         Path curLevel = rootDir;
         for (int level = 1; level <= 3; level++) {
             Path dir = Files.createDirectories(curLevel.resolve(Integer.toString(level)));
-            Path name = rootDir.relativize(dir);
-            expected.add(name.toString());
+            expected.add(dir);
             Path file = dir.resolve(Integer.toString(level) + ".txt");
             Files.write(file, Collections.singletonList(file.toString()), StandardCharsets.UTF_8);
 
-            name = rootDir.relativize(file);
-            expected.add(name.toString());
+            expected.add(file);
             curLevel = dir;
         }
         Collections.sort(expected);
 
         DirectoryScanner ds = new DirectoryScanner(rootDir, "**/*");
-        List<String> actual = ds.scan(ArrayList::new);
+        List<Path> actual = ds.scan(ArrayList::new);
         Collections.sort(actual);
         assertListEquals(getCurrentTestName(), expected, actual);
     }
@@ -80,19 +78,19 @@ public class DirectoryScannerTest extends JUnitTestSupport {
         CommonTestSupportUtils.deleteRecursive(rootDir);    // start fresh
         Files.createDirectories(rootDir);
 
-        List<String> expected = new ArrayList<>();
+        List<Path> expected = new ArrayList<>();
         for (int level = 1; level <= Byte.SIZE; level++) {
             Path file = rootDir.resolve(Integer.toString(level) + (((level & 0x03) == 0) ? ".csv" : ".txt"));
             Files.write(file, Collections.singletonList(file.toString()), StandardCharsets.UTF_8);
             String name = Objects.toString(file.getFileName());
             if (name.endsWith(".txt")) {
-                expected.add(name);
+                expected.add(file);
             }
         }
         Collections.sort(expected);
 
         DirectoryScanner ds = new DirectoryScanner(rootDir, "*.txt");
-        List<String> actual = ds.scan(ArrayList::new);
+        List<Path> actual = ds.scan(ArrayList::new);
         Collections.sort(actual);
         assertListEquals(getCurrentTestName(), expected, actual);
     }
