@@ -19,10 +19,21 @@
 package org.apache.sshd.common.util.io;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 
 /**
@@ -115,49 +126,37 @@ import org.apache.sshd.common.util.SelectorUtils;
  * @author <a href="mailto:levylambert@tiscali-dsl.de">Antoine Levy-Lambert</a>
  */
 public class DirectoryScanner {
-
     /**
      * The base directory to be scanned.
      */
-    protected File basedir;
+    private Path basedir;
 
     /**
      * The patterns for the files to be included.
      */
-    protected String[] includes;
+    private List<String> includePatterns;
 
     /**
-     * The files which matched at least one include and no excludes
-     * and were selected.
+     * Whether or not the file system should be treated as
+     * a case sensitive one.
      */
-    protected List<String> filesIncluded;
-
-    /**
-     * Whether or not the file system should be treated as a case sensitive
-     * one.
-     */
-    protected boolean isCaseSensitive = true;
+    private boolean caseSensitive = OsUtils.isUNIX();
 
     public DirectoryScanner() {
         super();
     }
 
-    public DirectoryScanner(String basedir, String... includes) {
-        setBasedir(basedir);
-        setIncludes(includes);
+    public DirectoryScanner(Path dir) {
+        this(dir, Collections.emptyList());
     }
 
-    /**
-     * Sets the base directory to be scanned. This is the directory which is
-     * scanned recursively. All '/' and '\' characters are replaced by
-     * <code>File.separatorChar</code>, so the separator used need not match
-     * <code>File.separatorChar</code>.
-     *
-     * @param basedir The base directory to scan.
-     *                Must not be {@code null}.
-     */
-    public void setBasedir(String basedir) {
-        setBasedir(new File(basedir.replace('/', File.separatorChar).replace('\\', File.separatorChar)));
+    public DirectoryScanner(Path dir, String... includes) {
+        this(dir, GenericUtils.isEmpty(includes) ? Collections.emptyList() : Arrays.asList(includes));
+    }
+
+    public DirectoryScanner(Path dir, Collection<String> includes) {
+        setBasedir(dir);
+        setIncludes(includes);
     }
 
     /**
@@ -167,7 +166,7 @@ public class DirectoryScanner {
      * @param basedir The base directory for scanning.
      *                Should not be {@code null}.
      */
-    public void setBasedir(File basedir) {
+    public void setBasedir(Path basedir) {
         this.basedir = basedir;
     }
 
@@ -177,7 +176,7 @@ public class DirectoryScanner {
      *
      * @return the base directory to be scanned
      */
-    public File getBasedir() {
+    public Path getBasedir() {
         return basedir;
     }
 
@@ -188,21 +187,36 @@ public class DirectoryScanner {
      *
      * <p>When a pattern ends with a '/' or '\', "**" is appended.</p>
      *
-     * @param includes A list of include patterns.
-     *                 May be {@code null}, indicating that all files
-     *                 should be included. If a non-{@code null}
-     *                 list is given, all elements must be
-     *                 non-{@code null}.
+     * @param includes A list of include patterns. May be {@code null}, indicating
+     * that all files should be included. If a non-{@code null} list is given, all
+     * elements must be non-{@code null}.
      */
-    public void setIncludes(String[] includes) {
-        if (includes == null) {
-            this.includes = null;
-        } else {
-            this.includes = new String[includes.length];
-            for (int i = 0; i < includes.length; i++) {
-                this.includes[i] = normalizePattern(includes[i]);
-            }
-        }
+    public void setIncludes(String... includes) {
+        setIncludes(GenericUtils.isEmpty(includes) ? Collections.emptyList() : Arrays.asList(includes));
+    }
+
+    /**
+     * @return Un-modifiable list of the inclusion patterns
+     */
+    public List<String> getIncludes() {
+        return includePatterns;
+    }
+
+    public void setIncludes(Collection<String> includes) {
+        this.includePatterns = GenericUtils.isEmpty(includes)
+            ? Collections.emptyList()
+            : Collections.unmodifiableList(
+                    includes.stream()
+                        .map(v -> normalizePattern(v))
+                        .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
+    }
+
+    public boolean isCaseSensitive() {
+        return caseSensitive;
+    }
+
+    public void setCaseSensitive(boolean caseSensitive) {
+        this.caseSensitive = caseSensitive;
     }
 
     /**
@@ -211,31 +225,30 @@ public class DirectoryScanner {
      * then the files must pass muster there, as well.
      *
      * @return the matching files
-     * @throws IllegalStateException if the base directory was set
-     *                               incorrectly (i.e. if it is {@code null}, doesn't exist,
-     *                               or isn't a directory).
+     * @throws IllegalStateException if the base directory was set incorrectly
+     * (i.e. if it is {@code null}, doesn't exist, or isn't a directory).
+     * @throws IOExcepion if failed to scan the directory (e.g., access denied)
      */
-    public String[] scan() throws IllegalStateException {
-        if (basedir == null) {
+    public Collection<String> scan() throws IOException, IllegalStateException {
+        return scan(LinkedList::new);
+    }
+
+    public <C extends Collection<String>> C scan(Supplier<? extends C> factory) throws IOException, IllegalStateException {
+        Path dir = getBasedir();
+        if (dir == null) {
             throw new IllegalStateException("No basedir set");
         }
-        if (!basedir.exists()) {
-            throw new IllegalStateException("basedir " + basedir
-                    + " does not exist");
+        if (!Files.exists(dir)) {
+            throw new IllegalStateException("basedir " + dir + " does not exist");
         }
-        if (!basedir.isDirectory()) {
-            throw new IllegalStateException("basedir " + basedir
-                    + " is not a directory");
+        if (!Files.isDirectory(dir)) {
+            throw new IllegalStateException("basedir " + dir + " is not a directory");
         }
-        if (includes == null || includes.length == 0) {
-            throw new IllegalStateException("No includes set ");
+        if (GenericUtils.isEmpty(getIncludes())) {
+            throw new IllegalStateException("No includes set for " + dir);
         }
 
-        filesIncluded = new ArrayList<>();
-
-        scandir(basedir, "");
-
-        return getIncludedFiles();
+        return scandir(dir, "", factory.get());
     }
 
     /**
@@ -244,46 +257,35 @@ public class DirectoryScanner {
      * matching of includes, excludes, and the selectors. When a directory
      * is found, it is scanned recursively.
      *
-     * @param dir   The directory to scan. Must not be {@code null}.
-     * @param vpath The path relative to the base directory (needed to
-     *              prevent problems with an absolute path when using
-     *              dir). Must not be {@code null}.
+     * @param <C> Target matches collection type
+     * @param dir The directory to scan. Must not be {@code null}.
+     * @param vpath The path relative to the base directory (needed to prevent
+     * problems with an absolute path when using <tt>dir</tt>). Must not be {@code null}.
+     * @param filesList Target {@link Collection} to accumulate the relative
+     * path matches
+     * @throws IOException if failed to scan the directory
      */
-    protected void scandir(File dir, String vpath) {
-        String[] newfiles = dir.list();
-        if (GenericUtils.isEmpty(newfiles)) {
-            newfiles = GenericUtils.EMPTY_STRING_ARRAY;
-        }
-
-        for (String newfile : newfiles) {
-            String name = vpath + newfile;
-            File file = new File(dir, newfile);
-            if (file.isDirectory()) {
-                if (isIncluded(name)) {
-                    filesIncluded.add(name);
-                    scandir(file, name + File.separator);
-                } else if (couldHoldIncluded(name)) {
-                    scandir(file, name + File.separator);
-                }
-            } else if (file.isFile()) {
-                if (isIncluded(name)) {
-                    filesIncluded.add(name);
+    protected <C extends Collection<String>> C scandir(Path dir, String vpath, C filesList) throws IOException {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+            for (Path p : ds) {
+                Path n = p.getFileName();
+                String name = vpath + n;
+                if (Files.isDirectory(p)) {
+                    if (isIncluded(name)) {
+                        filesList.add(name);
+                        scandir(p, name + File.separator, filesList);
+                    } else if (couldHoldIncluded(name)) {
+                        scandir(p, name + File.separator, filesList);
+                    }
+                } else if (Files.isRegularFile(p)) {
+                    if (isIncluded(name)) {
+                        filesList.add(name);
+                    }
                 }
             }
         }
-    }
 
-    /**
-     * Returns the names of the files which matched at least one of the
-     * include patterns and none of the exclude patterns.
-     * The names are relative to the base directory.
-     *
-     * @return the names of the files which matched at least one of the
-     * include patterns and none of the exclude patterns.
-     */
-    public String[] getIncludedFiles() {
-        String[] files = new String[filesIncluded.size()];
-        return filesIncluded.toArray(files);
+        return filesList;
     }
 
     /**
@@ -295,11 +297,18 @@ public class DirectoryScanner {
      * include pattern, or <code>false</code> otherwise.
      */
     protected boolean isIncluded(String name) {
+        Collection<String> includes = getIncludes();
+        if (GenericUtils.isEmpty(includes)) {
+            return false;
+        }
+
+        boolean cs = isCaseSensitive();
         for (String include : includes) {
-            if (SelectorUtils.matchPath(include, name, isCaseSensitive)) {
+            if (SelectorUtils.matchPath(include, name, cs)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -312,11 +321,18 @@ public class DirectoryScanner {
      * least one include pattern, or <code>false</code> otherwise.
      */
     protected boolean couldHoldIncluded(String name) {
+        Collection<String> includes = getIncludes();
+        if (GenericUtils.isEmpty(includes)) {
+            return false;
+        }
+
+        boolean cs = isCaseSensitive();
         for (String include : includes) {
-            if (SelectorUtils.matchPatternStart(include, name, isCaseSensitive)) {
+            if (SelectorUtils.matchPatternStart(include, name, cs)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -326,7 +342,7 @@ public class DirectoryScanner {
      * @param pattern The pattern to normalize, must not be {@code null}.
      * @return The normalized pattern, never {@code null}.
      */
-    private String normalizePattern(String pattern) {
+    public static String normalizePattern(String pattern) {
         pattern = pattern.trim();
 
         if (pattern.startsWith(SelectorUtils.REGEX_HANDLER_PREFIX)) {
@@ -364,8 +380,8 @@ public class DirectoryScanner {
             return text;
         }
 
-        StringBuilder buf = new StringBuilder(text.length());
         int start = 0;
+        StringBuilder buf = new StringBuilder(text.length());
         for (int end = text.indexOf(repl, start); end != -1; end = text.indexOf(repl, start)) {
             buf.append(text.substring(start, end)).append(with);
             start = end + repl.length();

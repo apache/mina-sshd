@@ -124,11 +124,11 @@ public class ScpTest extends BaseTestSupport {
             }
             StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
             sb.append("    ").append(type)
-                    .append('[').append(s).append(']')
-                    .append('[').append(op).append(']')
-                    .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
-                    .append(' ').append("length=").append(length)
-                    .append(' ').append("perms=").append(perms);
+                .append('[').append(s).append(']')
+                .append('[').append(op).append(']')
+                .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
+                .append(' ').append("length=").append(length)
+                .append(' ').append("perms=").append(perms);
             if (t != null) {
                 sb.append(' ').append("ERROR=").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
             }
@@ -554,7 +554,7 @@ public class ScpTest extends BaseTestSupport {
         }
     }
 
-    @Test
+    @Test   // see SSHD-893
     public void testScpNativeOnDirWithPattern() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
@@ -586,6 +586,56 @@ public class ScpTest extends BaseTestSupport {
             scp.download(remotePath + "/*", localDir);
             assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(11L));
             assertFileLength(local2, data.length, TimeUnit.SECONDS.toMillis(11L));
+        }
+    }
+
+    @Test
+    public void testScpVirtualOnDirWithPattern() throws Exception {
+        Path remoteDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName(), ScpHelper.SCP_COMMAND_PREFIX, "virtual");
+        CommonTestSupportUtils.deleteRecursive(remoteDir);  // start fresh
+        Files.createDirectories(remoteDir);
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+
+            sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
+
+            ScpClient scp = createScpClient(session);
+            Path targetPath = detectTargetFolder();
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+            CommonTestSupportUtils.deleteRecursive(scpRoot);
+
+            Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+            Path local1 = localDir.resolve("file-1.txt");
+            byte[] data = CommonTestSupportUtils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+            Path local2 = localDir.resolve("file-2.txt");
+            Files.write(local2, data);
+
+            scp.upload(localDir.toString() + File.separator + "*", "/");
+
+            Path remote1 = remoteDir.resolve(local1.getFileName());
+            Path remote2 = remoteDir.resolve(local2.getFileName());
+
+            assertFileLength(remote1, data.length, TimeUnit.SECONDS.toMillis(11L));
+            assertFileLength(remote2, data.length, TimeUnit.SECONDS.toMillis(11L));
+
+            Files.delete(local1);
+            Files.delete(local2);
+
+            scp.download("/*", localDir);
+            assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(11L));
+            assertFileLength(local2, data.length, TimeUnit.SECONDS.toMillis(11L));
+
+            Files.delete(remote1);
+            Files.delete(remote2);
+
+            CommonTestSupportUtils.deleteRecursive(remoteDir);
+        } finally {
+            sshd.setFileSystemFactory(fileSystemFactory);   // restore original
         }
     }
 
