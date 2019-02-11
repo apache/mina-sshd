@@ -35,14 +35,11 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -121,14 +118,11 @@ public interface ScpFileOpener {
      * @param basedir The base directory - may be {@code null}/empty to indicate CWD
      * @param pattern The required pattern
      * @return The matching <U>relative paths</U> of the children to send
+     * @throws IOException If failed to scan the directory
      */
-    default Iterable<String> getMatchingFilesToSend(Session session, String basedir, String pattern) {
-        String[] matches = new DirectoryScanner(basedir, pattern).scan();
-        if (GenericUtils.isEmpty(matches)) {
-            return Collections.emptyList();
-        }
-
-        return Arrays.asList(matches);
+    default Iterable<String> getMatchingFilesToSend(Session session, Path basedir, String pattern) throws IOException {
+        DirectoryScanner ds = new DirectoryScanner(basedir, pattern);
+        return ds.scan();
     }
 
     /**
