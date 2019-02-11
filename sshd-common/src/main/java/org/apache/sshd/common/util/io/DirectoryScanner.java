@@ -227,13 +227,13 @@ public class DirectoryScanner {
      * @return the matching files
      * @throws IllegalStateException if the base directory was set incorrectly
      * (i.e. if it is {@code null}, doesn't exist, or isn't a directory).
-     * @throws IOExcepion if failed to scan the directory (e.g., access denied)
+     * @throws IOException if failed to scan the directory (e.g., access denied)
      */
-    public Collection<String> scan() throws IOException, IllegalStateException {
+    public Collection<Path> scan() throws IOException, IllegalStateException {
         return scan(LinkedList::new);
     }
 
-    public <C extends Collection<String>> C scan(Supplier<? extends C> factory) throws IOException, IllegalStateException {
+    public <C extends Collection<Path>> C scan(Supplier<? extends C> factory) throws IOException, IllegalStateException {
         Path dir = getBasedir();
         if (dir == null) {
             throw new IllegalStateException("No basedir set");
@@ -248,7 +248,7 @@ public class DirectoryScanner {
             throw new IllegalStateException("No includes set for " + dir);
         }
 
-        return scandir(dir, "", factory.get());
+        return scandir(dir, dir, factory.get());
     }
 
     /**
@@ -265,21 +265,21 @@ public class DirectoryScanner {
      * path matches
      * @throws IOException if failed to scan the directory
      */
-    protected <C extends Collection<String>> C scandir(Path dir, String vpath, C filesList) throws IOException {
+    protected <C extends Collection<Path>> C scandir(Path rootDir, Path dir, C filesList) throws IOException {
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
             for (Path p : ds) {
-                Path n = p.getFileName();
-                String name = vpath + n;
+                Path rel = rootDir.relativize(p);
+                String name = rel.toString();
                 if (Files.isDirectory(p)) {
                     if (isIncluded(name)) {
-                        filesList.add(name);
-                        scandir(p, name + File.separator, filesList);
+                        filesList.add(p);
+                        scandir(rootDir, p, filesList);
                     } else if (couldHoldIncluded(name)) {
-                        scandir(p, name + File.separator, filesList);
+                        scandir(rootDir, p, filesList);
                     }
                 } else if (Files.isRegularFile(p)) {
                     if (isIncluded(name)) {
-                        filesList.add(name);
+                        filesList.add(p);
                     }
                 }
             }

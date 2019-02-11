@@ -591,17 +591,17 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpVirtualOnDirWithPattern() throws Exception {
-        Path remoteDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName(), ScpHelper.SCP_COMMAND_PREFIX, "virtual");
+        Path remoteDir = getTempTargetRelativeFile(
+            getClass().getSimpleName(), getCurrentTestName(), ScpHelper.SCP_COMMAND_PREFIX, "virtual");
         CommonTestSupportUtils.deleteRecursive(remoteDir);  // start fresh
         Files.createDirectories(remoteDir);
+        sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
                 .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
-
-            sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
 
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
@@ -634,8 +634,6 @@ public class ScpTest extends BaseTestSupport {
             Files.delete(remote2);
 
             CommonTestSupportUtils.deleteRecursive(remoteDir);
-        } finally {
-            sshd.setFileSystemFactory(fileSystemFactory);   // restore original
         }
     }
 

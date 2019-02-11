@@ -402,25 +402,26 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
                 Session session = getSession();
                 Path basePath = resolveLocalPath(basedir);
-                Iterable<String> included =
+                Iterable<Path> included =
                     opener.getMatchingFilesToSend(session, basePath, pattern);
-                for (String path : included) {
-                    Path file = basePath.resolve(path);
+                for (Path file : included) {
                     if (opener.sendAsRegularFile(session, file, options)) {
                         sendFile(file, preserve, bufferSize);
                     } else if (opener.sendAsDirectory(session, file, options)) {
                         if (!recursive) {
                             if (debugEnabled) {
-                                log.debug("send({}) {}: not a regular file", this, path);
+                                log.debug("send({}) {}: not a regular file", this, file);
                             }
+                            String path = basePath.relativize(file).toString();
                             sendWarning(path.replace(File.separatorChar, '/') + " not a regular file");
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
                     } else {
                         if (debugEnabled) {
-                            log.debug("send({}) {}: unknown file type", this, path);
+                            log.debug("send({}) {}: unknown file type", this, file);
                         }
+                        String path = basePath.relativize(file).toString();
                         sendWarning(path.replace(File.separatorChar, '/') + " unknown file type");
                     }
                 }
