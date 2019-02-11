@@ -771,7 +771,8 @@ public class ServerTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
             public InteractiveChallenge generateChallenge(
-                    ServerSession session, String username, String lang, String subMethods) {
+                    ServerSession session, String username, String lang, String subMethods)
+                        throws Exception {
                 challengeCount.incrementAndGet();
                 outputDebugMessage("generateChallenge(%s@%s) count=%s", username, session, challengeCount);
                 return null;
@@ -819,7 +820,8 @@ public class ServerTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
             public InteractiveChallenge generateChallenge(
-                    ServerSession session, String username, String lang, String subMethods) {
+                    ServerSession session, String username, String lang, String subMethods)
+                        throws Exception {
                 return challenge;
             }
 

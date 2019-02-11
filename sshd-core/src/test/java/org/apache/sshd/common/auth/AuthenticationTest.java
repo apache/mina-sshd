@@ -343,7 +343,9 @@ public class AuthenticationTest extends BaseTestSupport {
             sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
             sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
                 @Override
-                public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+                public InteractiveChallenge generateChallenge(
+                        ServerSession session, String username, String lang, String subMethods)
+                            throws Exception {
                     assertEquals("Mismatched user language",
                             PropertyResolverUtils.getStringProperty(
                                 client,
@@ -373,7 +375,9 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
 
                 @Override
-                public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+                public boolean authenticate(
+                        ServerSession session, String username, List<String> responses)
+                            throws Exception {
                     return super.authenticate(session, username, responses);
                 }
 
@@ -434,13 +438,16 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
             public InteractiveChallenge generateChallenge(
-                    ServerSession session, String username, String lang, String subMethods) {
+                    ServerSession session, String username, String lang, String subMethods)
+                        throws Exception {
                 assertEquals("Unexpected challenge call", 1, genCount.incrementAndGet());
                 return challenge;
             }
 
             @Override
-            public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+            public boolean authenticate(
+                    ServerSession session, String username, List<String> responses)
+                        throws Exception {
                 assertEquals("Unexpected authenticate call", 1, authCount.incrementAndGet());
                 assertEquals("Mismatched number of responses", GenericUtils.size(rspMap), GenericUtils.size(responses));
 

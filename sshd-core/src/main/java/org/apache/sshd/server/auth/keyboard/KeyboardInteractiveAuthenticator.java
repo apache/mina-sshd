@@ -35,12 +35,16 @@ public interface KeyboardInteractiveAuthenticator {
      */
     KeyboardInteractiveAuthenticator NONE = new KeyboardInteractiveAuthenticator() {
         @Override
-        public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+        public InteractiveChallenge generateChallenge(
+                ServerSession session, String username, String lang, String subMethods)
+                    throws Exception {
             return null;
         }
 
         @Override
-        public boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception {
+        public boolean authenticate(
+                ServerSession session, String username, List<String> responses)
+                    throws Exception {
             return false;
         }
 
@@ -59,8 +63,11 @@ public interface KeyboardInteractiveAuthenticator {
      * @param subMethods Sub-methods hints sent by the client
      * @return The {@link InteractiveChallenge} - if {@code null} then authentication
      * attempt via &quot;keyboard-interactive&quot; method is rejected
+     * @throws Exception If unable to generate the challenge
      */
-    InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods);
+    InteractiveChallenge generateChallenge(
+        ServerSession session, String username, String lang, String subMethods)
+            throws Exception;
 
     /**
      * Called to authenticate the response to the challenge(s) sent previously
@@ -74,5 +81,7 @@ public interface KeyboardInteractiveAuthenticator {
      * @return {@code true} if responses have been validated
      * @throws Exception if bad responses and server should terminate the connection
      */
-    boolean authenticate(ServerSession session, String username, List<String> responses) throws Exception;
+    boolean authenticate(
+        ServerSession session, String username, List<String> responses)
+            throws Exception;
 }

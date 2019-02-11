@@ -56,11 +56,13 @@ public class DefaultKeyboardInteractiveAuthenticator
     }
 
     @Override
-    public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
+    public InteractiveChallenge generateChallenge(
+            ServerSession session, String username, String lang, String subMethods)
+                throws Exception {
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
-                log.debug("generateChallenge({}) no password authenticator", session);
+                log.debug("generateChallenge({})[{}] no password authenticator", session, username);
             }
             return null;
         }
@@ -78,7 +80,7 @@ public class DefaultKeyboardInteractiveAuthenticator
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
-                log.debug("authenticate({}) no password authenticator", session);
+                log.debug("authenticate({})[{}] no password authenticator", session, username);
             }
             return false;
         }
@@ -91,10 +93,10 @@ public class DefaultKeyboardInteractiveAuthenticator
         try {
             return auth.authenticate(username, responses.get(0), session);
         } catch (Error e) {
-            log.warn("authenticate({}) failed ({}) to consult password authenticator: {}",
-                    session, e.getClass().getSimpleName(), e.getMessage());
+            log.warn("authenticate({})[{}] failed ({}) to consult password authenticator: {}",
+                session, username, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("authenticate(" + session + ") authenticator failure details", e);
+                log.debug("authenticate(" + session + ")[" + username + "] authenticator failure details", e);
             }
 
             throw new RuntimeSshException(e);

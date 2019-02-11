@@ -63,7 +63,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (auth == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
-                          username, session, subMethods, lang);
+                      username, session, subMethods, lang);
             }
             return false;
         }
@@ -83,7 +83,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (challenge == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
-                          username, session, subMethods, lang);
+                      username, session, subMethods, lang);
             }
             return false;
         }
