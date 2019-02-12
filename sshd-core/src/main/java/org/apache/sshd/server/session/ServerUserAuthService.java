@@ -359,11 +359,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 sendWelcomeBanner(session);
             }
 
-            Buffer response = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
-            session.writePacket(response);
             session.setUsername(username);
             session.setAuthenticated();
             session.startService(authService, buffer);
+
+            Buffer response = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
+            session.writePacket(response);
             session.resetIdleTimeout();
             log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
         } else {
