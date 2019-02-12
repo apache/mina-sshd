@@ -154,6 +154,26 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
+            /*
+             * According to RFC4252 section 5.1:
+             *
+             *
+             *      When SSH_MSG_USERAUTH_SUCCESS has been sent, any
+             *      further authentication requests received after that
+             *      SHOULD be silently ignored.
+             */
+            if (session.isAuthenticated()) {
+                String username = buffer.getString();
+                String service = buffer.getString();
+                String method = buffer.getString();
+
+                if (debugEnabled) {
+                    log.debug("process({}) ignore user={}, service={}, method={} auth. request since session already authenticated",
+                        session, username, service, method);
+                }
+                return;
+            }
+
             if (WelcomeBannerPhase.FIRST_REQUEST.equals(getWelcomePhase())) {
                 sendWelcomeBanner(session);
             }
