@@ -1022,9 +1022,22 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return;
         }
 
-        log.warn("exceptionCaught({})[state={}] {}: {}", this, curState, t.getClass().getSimpleName(), t.getMessage());
+        log.warn("exceptionCaught({})[state={}] {}: {}",
+            this, curState, t.getClass().getSimpleName(), t.getMessage());
+        Throwable cause = t.getCause();
+        if ((cause != null) && GenericUtils.isSameReference(t, cause)) {
+            cause = null;
+        }
+        if (cause != null) {
+            log.warn("exceptionCaught({})[state={}] caused by {}: {}",
+                this, curState, cause.getClass().getSimpleName(), cause.getMessage());
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("exceptionCaught(" + this + ")[state=" + curState + "] details", t);
+            if (cause != null) {
+                log.debug("exceptionCaught(" + this + ")[state=" + curState + "] cause", cause);
+            }
         }
 
         signalExceptionCaught(t);
