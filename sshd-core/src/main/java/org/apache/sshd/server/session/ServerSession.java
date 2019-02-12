@@ -22,7 +22,9 @@ package org.apache.sshd.server.session;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 
@@ -61,4 +63,27 @@ public interface ServerSession
      * @return The current number of live <code>SshSession</code> objects associated with the user
      */
     int getActiveSessionCountForUser(String userName);
+
+    /**
+     * <UL>
+     *      <P><LI>
+     *      Marks the session as authenticated.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Starts the specified service.
+     *      </LI></P>
+     *
+     *      <P><LI>
+     *      Sends the {@code SSH_MSG_USERAUTH_SUCCESS} message.
+     *      </LI></P>
+     * </UL>
+     * @param username The authenticated username
+     * @param authService The service to start
+     * @param buffer Any extra data received to use to start the service
+     * @return An {@link IoWriteFuture} that can be used to wait for the
+     * {@code SSH_MSG_USERAUTH_SUCCESS} message send result
+     * @throws Exception if cannot handle the request
+     */
+    IoWriteFuture signalAuthenticationSuccess(String username, String authService, Buffer buffer) throws Exception;
 }

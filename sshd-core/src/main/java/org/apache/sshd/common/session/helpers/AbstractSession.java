@@ -728,7 +728,8 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
-    protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
+    // NOTE: must acquire encodeLock when calling this method
+    protected Buffer resolveOutputPacket(Buffer buffer) throws IOException {
         Buffer ignoreBuf = null;
         int ignoreDataLen = resolveIgnoreBufferDataLength();
         if (ignoreDataLen > 0) {
@@ -742,7 +743,7 @@ public abstract class AbstractSession extends SessionHelper {
             ignoreBuf.wpos(wpos + ignoreDataLen);
 
             if (log.isDebugEnabled()) {
-                log.debug("doWritePacket({}) append SSH_MSG_IGNORE message", this);
+                log.debug("resolveOutputPacket({}) append SSH_MSG_IGNORE message", this);
             }
         }
 
@@ -751,22 +752,25 @@ public abstract class AbstractSession extends SessionHelper {
         int cmd = data[curPos] & 0xFF;  // usually the 1st byte is the command
         buffer = validateTargetBuffer(cmd, buffer);
 
+        if (ignoreBuf != null) {
+            ignoreBuf = encode(ignoreBuf);
+
+            IoSession networkSession = getIoSession();
+            networkSession.writePacket(ignoreBuf);
+        }
+
+        return encode(buffer);
+    }
+
+    protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
-        IoWriteFuture future;
-        IoSession networkSession = getIoSession();
         synchronized (encodeLock) {
-            if (ignoreBuf != null) {
-                ignoreBuf = encode(ignoreBuf);
-                networkSession.writePacket(ignoreBuf);
-            }
-
-            buffer = encode(buffer);
-            future = networkSession.writePacket(buffer);
+            Buffer packet = resolveOutputPacket(buffer);
+            IoSession networkSession = getIoSession();
+            return networkSession.writePacket(packet);
         }
-
-        return future;
     }
 
     protected int resolveIgnoreBufferDataLength() {

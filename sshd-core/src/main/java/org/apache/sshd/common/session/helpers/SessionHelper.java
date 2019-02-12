@@ -107,11 +107,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * The name of the authenticated user
      */
-    private String username;
+    private volatile String username;
     /**
      * Boolean indicating if this session has been authenticated or not
      */
-    private boolean authed;
+    private volatile boolean authed;
 
     /**
      * Create a new session.

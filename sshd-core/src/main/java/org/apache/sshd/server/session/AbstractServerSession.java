@@ -256,6 +256,36 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
+    public IoWriteFuture signalAuthenticationSuccess(
+            String username, String authService, Buffer buffer)
+                throws Exception {
+        KexState curState = kexState.get();
+        if (!KexState.DONE.equals(curState)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                    "Authentication success signalled though KEX state=" + curState);
+        }
+
+        Buffer response = createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
+        IoWriteFuture future;
+        IoSession networkSession = getIoSession();
+        synchronized (encodeLock) {
+            Buffer packet = resolveOutputPacket(response);
+
+            setUsername(username);
+            // must be AFTER the USERAUTH-SUCCESS packet created in case delayed compression is used
+            setAuthenticated();
+            startService(authService, buffer);
+
+            // Now we can inform the peer that authentication is successful
+            future = networkSession.writePacket(packet);
+        }
+
+        resetIdleTimeout();
+        log.info("Session {}@{} authenticated", username, networkSession.getRemoteAddress());
+        return future;
+    }
+
+    @Override
     protected void handleServiceAccept(String serviceName, Buffer buffer) throws Exception {
         super.handleServiceAccept(serviceName, buffer);
 
