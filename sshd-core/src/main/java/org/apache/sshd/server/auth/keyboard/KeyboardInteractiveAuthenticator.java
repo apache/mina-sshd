@@ -25,7 +25,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * Provides pluggable authentication using the &quot;keyboard-interactive&quot;
- * method as specified by <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC-4256</A>?
+ * method as specified by <A HREF="https://tools.ietf.org/html/rfc4256">RFC-4256</A>?
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

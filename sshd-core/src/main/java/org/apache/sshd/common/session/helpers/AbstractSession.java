@@ -63,10 +63,14 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
+import org.apache.sshd.common.kex.extension.KexExtensions;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
+import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -407,6 +411,9 @@ public abstract class AbstractSession extends SessionHelper {
             case SshConstants.SSH_MSG_NEWKEYS:
                 handleNewKeys(cmd, buffer);
                 break;
+            case KexExtensions.SSH_MSG_EXT_INFO:
+                handleKexExtension(cmd, buffer);
+                break;
             default:
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
                     if (firstKexPacketFollows != null) {
@@ -468,12 +475,54 @@ public abstract class AbstractSession extends SessionHelper {
         return true;
     }
 
+    /**
+     * Compares the specified {@link KexProposalOption} option value for client vs. server
+     *
+     * @param option The option to check
+     * @return {@code null} if option is equal, otherwise a kex/value pair where key=client
+     * option value and value=the server-side one
+     */
     protected SimpleImmutableEntry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
         String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
         String clientValue = clientPreferences[0];
         String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');
         String serverValue = serverPreferences[0];
-        return clientValue.equals(serverValue) ? null : new SimpleImmutableEntry<>(clientValue, serverValue);
+        return Objects.equals(clientValue, serverValue) ? null : new SimpleImmutableEntry<>(clientValue, serverValue);
+    }
+
+    /**
+     * Send a message to put new keys into use.
+     *
+     * @return An {@link IoWriteFuture} that can be used to wait and
+     * check the result of sending the packet
+     * @throws IOException if an error occurs sending the message
+     */
+    protected IoWriteFuture sendNewKeys() throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
+        }
+
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
+        IoWriteFuture future = writePacket(buffer);
+        /*
+         * According to https://tools.ietf.org/html/rfc8308#section-2.4:
+         *
+         *
+         *      If a client sends SSH_MSG_EXT_INFO, it MUST send it as the next packet
+         *      following the client's first SSH_MSG_NEWKEYS message to the server.
+         *
+         *      If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or
+         *      both of the following opportunities:
+         *
+         *          + As the next packet following the server's first SSH_MSG_NEWKEYS.
+         */
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
+            return future;
+        }
+
+        extHandler.sendKexExtensions(this, KexPhase.NEWKEYS);
+        return future;
     }
 
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
@@ -492,6 +541,16 @@ public abstract class AbstractSession extends SessionHelper {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", this, kex.getName(), cmd);
             }
         }
+    }
+
+    protected void handleKexExtension(int cmd, Buffer buffer) throws Exception {
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
+            notImplemented(cmd, buffer);
+            return;
+        }
+
+        extHandler.handleKexExtensionsMessage(this, buffer);
     }
 
     protected void handleServiceRequest(Buffer buffer) throws Exception {
@@ -1417,8 +1476,9 @@ public abstract class AbstractSession extends SessionHelper {
      * the {@link #negotiationResult} property.
      *
      * @return The negotiated options {@link Map}
+     * @throws IOException If negotiation failed
      */
-    protected Map<KexProposalOption, String> negotiate() {
+    protected Map<KexProposalOption, String> negotiate() throws IOException {
         Map<KexProposalOption, String> c2sOptions = getClientKexProposals();
         Map<KexProposalOption, String> s2cOptions = getServerKexProposals();
         signalNegotiationStart(c2sOptions, s2cOptions);
@@ -1426,12 +1486,21 @@ public abstract class AbstractSession extends SessionHelper {
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
         Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
         try {
+            boolean debugEnabled = log.isDebugEnabled();
             boolean traceEnabled = log.isTraceEnabled();
+            SessionDisconnectHandler discHandler = getSessionDisconnectHandler();
             for (KexProposalOption paramType : KexProposalOption.VALUES) {
                 String clientParamValue = c2sOptions.get(paramType);
                 String serverParamValue = s2cOptions.get(paramType);
                 String[] c = GenericUtils.split(clientParamValue, ',');
                 String[] s = GenericUtils.split(serverParamValue, ',');
+                /*
+                 * According to https://tools.ietf.org/html/rfc8308#section-2.2:
+                 *
+                 *      Implementations MAY disconnect if the counterpart sends an incorrect (KEX extension) indicator
+                 *
+                 * TODO - for now we do not enforce this
+                 */
                 for (String ci : c) {
                     for (String si : s) {
                         if (ci.equals(si)) {
@@ -1448,25 +1517,55 @@ public abstract class AbstractSession extends SessionHelper {
 
                 // check if reached an agreement
                 String value = guess.get(paramType);
-                if (value == null) {
-                    String message = "Unable to negotiate key exchange for " + paramType.getDescription()
-                        + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
-                    // OK if could not negotiate languages
-                    if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
-                        if (traceEnabled) {
-                            log.trace("negotiate({}) {}", this, message);
-                        }
-                    } else {
-                        throw new IllegalStateException(message);
+                if (value != null) {
+                    if (traceEnabled) {
+                        log.trace("negotiate({})[{}] guess={} (client={} / server={})",
+                            this, paramType.getDescription(), value, clientParamValue, serverParamValue);
+                    }
+                    continue;
+                }
+
+                if ((discHandler != null)
+                        && discHandler.handleKexDisconnectReason(
+                                this, c2sOptions, s2cOptions, negotiatedGuess, paramType)) {
+                    if (debugEnabled) {
+                        log.debug("negotiate({}) ignore missing value for KEX option={}", this, paramType);
+                    }
+                    continue;
+                }
+
+                String message = "Unable to negotiate key exchange for " + paramType.getDescription()
+                    + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
+                // OK if could not negotiate languages
+                if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
+                    if (traceEnabled) {
+                        log.trace("negotiate({}) {}", this, message);
                     }
                 } else {
-                    if (traceEnabled) {
-                        log.trace("negotiate(" + this + ")[" + paramType.getDescription() + "] guess=" + value
-                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
-                    }
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, message);
                 }
             }
-        } catch (RuntimeException | Error e) {
+
+            /*
+             * According to https://tools.ietf.org/html/rfc8308#section-2.2:
+             *
+             *      If "ext-info-c" or "ext-info-s" ends up being negotiated as a
+             *      key exchange method, the parties MUST disconnect.
+             */
+            String kexOption = guess.get(KexProposalOption.ALGORITHMS);
+            if (KexExtensions.CLIENT_KEX_EXTENSION.equalsIgnoreCase(kexOption)
+                    || KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(kexOption)) {
+                if ((discHandler != null)
+                        && discHandler.handleKexDisconnectReason(
+                                this, c2sOptions, s2cOptions, negotiatedGuess, KexProposalOption.ALGORITHMS)) {
+                    if (debugEnabled) {
+                        log.debug("negotiate({}) ignore violating {} KEX option={}", this, KexProposalOption.ALGORITHMS, kexOption);
+                    }
+                } else {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "Illegal KEX option negotiated: " + kexOption);
+                }
+            }
+        } catch (IOException | RuntimeException | Error e) {
             signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, e);
             throw e;
         }
@@ -1801,6 +1900,22 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         return rekey;
+    }
+
+    @Override
+    protected String resolveSessionKexProposal(String hostKeyTypes) throws IOException {
+        String proposal = super.resolveSessionKexProposal(hostKeyTypes);
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
+            return proposal;
+        }
+
+        String extType = isServerSession() ? KexExtensions.SERVER_KEX_EXTENSION : KexExtensions.CLIENT_KEX_EXTENSION;
+        if (GenericUtils.isEmpty(proposal)) {
+            return extType;
+        } else {
+            return proposal + "," + extType;
+        }
     }
 
     protected byte[] sendKexInit() throws IOException, GeneralSecurityException {

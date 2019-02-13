@@ -777,17 +777,22 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
     }
 
+    protected String resolveSessionKexProposal(String hostKeyTypes) throws IOException {
+        return NamedResource.getNames(
+            ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories"));
+    }
+
     /**
      * Create our proposal for SSH negotiation
      *
      * @param hostKeyTypes The comma-separated list of supported host key types
      * @return The proposal {@link Map}
+     * @throws IOException If internal problem - e.g., KEX extensions negotiation issue
      */
-    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) throws IOException {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-        proposal.put(KexProposalOption.ALGORITHMS,
-            NamedResource.getNames(
-                ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories")));
+        String kexProposal = resolveSessionKexProposal(hostKeyTypes);
+        proposal.put(KexProposalOption.ALGORITHMS, kexProposal);
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
 
         String ciphers = NamedResource.getNames(
@@ -886,21 +891,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
 
         listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
-    }
-
-    /**
-     * Send a message to put new keys into use.
-     *
-     * @return An {@link IoWriteFuture} that can be used to wait and
-     * check the result of sending the packet
-     * @throws IOException if an error occurs sending the message
-     */
-    protected IoWriteFuture sendNewKeys() throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
-        }
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
-        return writePacket(buffer);
     }
 
     @Override

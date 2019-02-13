@@ -283,6 +283,39 @@ public abstract class Buffer implements Readable {
     }
 
     /**
+     * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>:
+     *
+     *      A name-list is represented as a uint32 containing its length (number of bytes
+     *      that follow) followed by a comma-separated list of zero or more names.
+     *
+     * @return The parsed result
+     */
+    public List<String> getNameList() {
+        return getNameList(StandardCharsets.UTF_8);
+    }
+
+    public List<String> getNameList(Charset charset) {
+        return getNameList(charset, ',');
+    }
+
+    public List<String> getNameList(char separator) {
+        return getNameList(StandardCharsets.UTF_8, separator);
+    }
+
+    /**
+     * Parses a string that contains values separated by a delimiter
+     *
+     * @param charset The {@link Charset} to use to read the string
+     * @param separator The separator
+     * @return A {@link List} of the parsed values
+     */
+    public List<String> getNameList(Charset charset, char separator) {
+        String list = getString(charset);
+        String[] values = GenericUtils.split(list, separator);
+        return GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values);
+    }
+
+    /**
      * @param usePrependedLength If {@code true} then there is a 32-bit
      * value indicating the number of strings to read. Otherwise, the
      * method will use a &quot;greedy&quot; reading of strings while more
@@ -550,6 +583,46 @@ public abstract class Buffer implements Readable {
         putRawBytes(workBuf, 0, Byte.BYTES);
     }
 
+    /**
+     * Checks if the <tt>buffer</tt> argument is an array of bytes,
+     * a {@link Readable} instance or a {@link ByteBuffer} and invokes
+     * the appropriate {@code putXXX} method. If {@code null} then
+     * puts an empty byte array value
+     *
+     * @param buffer The buffered data object to inspect
+     * @see #putBufferedData(Object)
+     */
+    public void putOptionalBufferedData(Object buffer) {
+        if (buffer == null) {
+            putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
+        } else {
+            putBufferedData(buffer);
+        }
+    }
+
+    /**
+     * Checks if the <tt>buffer</tt> argument is an array of bytes,
+     * a {@link Readable} instance or a {@link ByteBuffer} and invokes
+     * the appropriate {@code putXXX} method.
+     *
+     * @param buffer The (never {@code null}) buffer object to put
+     * @throws IllegalArgumentException If <tt>buffer</tt> is none of the
+     * supported types
+     */
+    public void putBufferedData(Object buffer) {
+        Objects.requireNonNull(buffer, "No buffered data to encode");
+        if (buffer instanceof byte[]) {
+            putBytes((byte[]) buffer);
+        } else if (buffer instanceof Readable) {
+            putBuffer((Readable) buffer);
+        } else if (buffer instanceof ByteBuffer) {
+            putBuffer((ByteBuffer) buffer);
+        } else {
+            throw new IllegalArgumentException("No buffered overload found for "
+                + ((buffer == null) ? null : buffer.getClass().getName()));
+        }
+    }
+
     public void putBuffer(Readable buffer) {
         putBuffer(buffer, true);
     }
@@ -668,6 +741,36 @@ public abstract class Buffer implements Readable {
             String s = Objects.toString(o, null);
             putString(s, charset);
         }
+    }
+
+    /**
+     * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>:
+     *
+     *      A name-list is represented as a uint32 containing its length (number of bytes
+     *      that follow) followed by a comma-separated list of zero or more names.
+     */
+    public void putNameList(Collection<String> names) {
+        putNameList(names, StandardCharsets.UTF_8);
+    }
+
+    public void putNameList(Collection<String> names, Charset charset) {
+        putNameList(names, charset, ',');
+    }
+
+    public void putNameList(Collection<String> names, char separator) {
+        putNameList(names, StandardCharsets.UTF_8, separator);
+    }
+
+    /**
+     * Adds a string that contains values separated by a delimiter
+     *
+     * @param names The names to set
+     * @param charset The {@link Charset} to use to encode the string
+     * @param separator The separator
+     */
+    public void putNameList(Collection<String> names, Charset charset, char separator) {
+        String list = GenericUtils.join(names, separator);
+        putString(list, charset);
     }
 
     public void putString(String string) {

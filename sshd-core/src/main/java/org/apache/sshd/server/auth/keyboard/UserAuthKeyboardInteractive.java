@@ -31,7 +31,7 @@ import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Issue a &quot;keyboard-interactive&quot; command according to <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
+ * Issue a &quot;keyboard-interactive&quot; command according to <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

@@ -24,7 +24,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Provides a way to listen and handle the {@code SSH_MSG_IGNORE} and
- * {@code SSH_MSG_DEBUG} messages that are received by a session.
+ * {@code SSH_MSG_DEBUG} messages that are received by a session, as well
+ * as proprietary and/or extension messages.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

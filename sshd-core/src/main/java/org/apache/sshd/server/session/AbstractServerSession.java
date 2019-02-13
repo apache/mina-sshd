@@ -43,6 +43,8 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
@@ -265,10 +267,25 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                     "Authentication success signalled though KEX state=" + curState);
         }
 
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this)) {
+            extHandler.sendKexExtensions(this, KexPhase.AUTHOK);
+        }
+
         Buffer response = createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
         IoWriteFuture future;
         IoSession networkSession = getIoSession();
         synchronized (encodeLock) {
+            /*
+             * According to https://tools.ietf.org/html/rfc8308#section-2.4
+             *
+             *      If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or
+             *      both of the following opportunities:
+             *
+             *      ...
+             *
+             *      + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
+             */
             Buffer packet = resolveOutputPacket(response);
 
             setUsername(username);

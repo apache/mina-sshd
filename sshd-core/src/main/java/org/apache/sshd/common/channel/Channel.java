@@ -169,7 +169,7 @@ public interface Channel
     /**
      * @return {@code true} if the peer signaled that it will not send any
      * more data
-     * @see <A HREF="https://www.ietf.org/rfc/rfc4254.txt">RFC 4254 - section 5.3 - SSH_MSG_CHANNEL_EOE</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4254#section-5.3">RFC 4254 - section 5.3 - SSH_MSG_CHANNEL_EOF</A>
      */
     boolean isEofSignalled();
 

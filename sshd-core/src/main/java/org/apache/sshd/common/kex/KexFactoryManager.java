@@ -30,6 +30,7 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.kex.extension.KexExtensionHandlerManager;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -40,7 +41,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * Holds KEX negotiation stage configuration
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KexFactoryManager extends SignatureFactoriesManager {
+public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensionHandlerManager {
     /**
      * Retrieve the list of named factories for <code>KeyExchange</code>.
      *

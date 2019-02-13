@@ -428,7 +428,7 @@ public class ServerTest extends BaseTestSupport {
             protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
                 return new ClientSessionImpl(getClient(), ioSession) {
                     @Override
-                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) throws IOException {
                         Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
                         proposal.put(KexProposalOption.S2CLANG, "en-US");
                         proposal.put(KexProposalOption.C2SLANG, "en-US");
@@ -491,7 +491,7 @@ public class ServerTest extends BaseTestSupport {
             protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
                 return new ServerSessionImpl(getServer(), ioSession) {
                     @Override
-                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) throws IOException {
                         Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
                         proposal.put(KexProposalOption.C2SCOMP, getCurrentTestName());
                         proposal.put(KexProposalOption.S2CCOMP, getCurrentTestName());
@@ -507,7 +507,7 @@ public class ServerTest extends BaseTestSupport {
             protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
                 return new ClientSessionImpl(getClient(), ioSession) {
                     @Override
-                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) throws IOException {
                         Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
                         proposal.put(KexProposalOption.C2SCOMP, getCurrentTestName());
                         proposal.put(KexProposalOption.S2CCOMP, getCurrentTestName());

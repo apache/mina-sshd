@@ -238,7 +238,9 @@ public final class BufferUtils {
      * @throws NumberFormatException If invalid HEX characters found
      * @see #decodeHex(OutputStream, char, CharSequence, int, int)
      */
-    public static <S extends OutputStream> int decodeHex(S stream, char separator, CharSequence csq) throws IOException {
+    public static <S extends OutputStream> int decodeHex(
+            S stream, char separator, CharSequence csq)
+                throws IOException {
         return decodeHex(stream, separator, csq, 0, GenericUtils.length(csq));
     }
 
@@ -293,7 +295,7 @@ public final class BufferUtils {
      * @param input The {@link InputStream}
      * @param buf   Work buffer to use
      * @return The read 32-bit value
-     * @throws IOException If failed to read 4 bytes or not enough room in
+     * @throws IOException If failed to read 4 bytes or not enough room in work buffer
      * @see #readInt(InputStream, byte[], int, int)
      */
     public static int readInt(InputStream input, byte[] buf) throws IOException {
@@ -308,8 +310,7 @@ public final class BufferUtils {
      * @param offset Offset in buffer to us
      * @param len    Available length - must have at least 4 bytes available
      * @return The read 32-bit value
-     * @throws IOException If failed to read 4 bytes or not enough room in
-     *                     work buffer
+     * @throws IOException If failed to read 4 bytes or not enough room in work buffer
      * @see #readUInt(InputStream, byte[], int, int)
      */
     public static int readInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
@@ -322,7 +323,7 @@ public final class BufferUtils {
      * @param input The {@link InputStream}
      * @param buf   Work buffer to use
      * @return The read 32-bit value
-     * @throws IOException If failed to read 4 bytes or not enough room in
+     * @throws IOException If failed to read 4 bytes or not enough room in work buffer
      * @see #readUInt(InputStream, byte[], int, int)
      */
     public static long readUInt(InputStream input, byte[] buf) throws IOException {
@@ -337,8 +338,7 @@ public final class BufferUtils {
      * @param offset Offset in buffer to us
      * @param len    Available length - must have at least 4 bytes available
      * @return The read 32-bit value
-     * @throws IOException If failed to read 4 bytes or not enough room in
-     *                     work buffer
+     * @throws IOException If failed to read 4 bytes or not enough room in work buffer
      * @see #getUInt(byte[], int, int)
      */
     public static long readUInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
@@ -357,8 +357,8 @@ public final class BufferUtils {
 
     /**
      * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
-     *            format. <B>Note:</B> if more than 4 bytes are available, then only the
-     *            <U>first</U> 4 bytes in the buffer will be used
+     * format. <B>Note:</B> if more than 4 bytes are available, then only the
+     * <U>first</U> 4 bytes in the buffer will be used
      * @return The result as a {@code long} whose 32 high-order bits are zero
      * @see #getUInt(byte[], int, int)
      */
@@ -367,12 +367,11 @@ public final class BufferUtils {
     }
 
     /**
-     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
-     *            format.
+     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B> format.
      * @param off The offset of the data in the buffer
      * @param len The available data length. <B>Note:</B> if more than 4 bytes
-     *            are available, then only the <U>first</U> 4 bytes in the buffer will be
-     *            used (starting at the specified <tt>offset</tt>)
+     * are available, then only the <U>first</U> 4 bytes in the buffer will be
+     * used (starting at the specified <tt>offset</tt>)
      * @return The result as a {@code long} whose 32 high-order bits are zero
      */
     public static long getUInt(byte[] buf, int off, int len) {
@@ -393,7 +392,7 @@ public final class BufferUtils {
      * @param output The {@link OutputStream} to write the value
      * @param value  The 32-bit value
      * @param buf    A work buffer to use - must have enough space to contain 4 bytes
-     * @throws IOException If failed to write the value or work buffer to small
+     * @throws IOException If failed to write the value or work buffer too small
      * @see #writeInt(OutputStream, int, byte[], int, int)
      */
     public static void writeInt(OutputStream output, int value, byte[] buf) throws IOException {
@@ -408,7 +407,7 @@ public final class BufferUtils {
      * @param buf    A work buffer to use - must have enough space to contain 4 bytes
      * @param off    The offset to write the value
      * @param len    The available space
-     * @throws IOException If failed to write the value or work buffer to small
+     * @throws IOException If failed to write the value or work buffer too small
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
     public static void writeInt(
@@ -423,7 +422,7 @@ public final class BufferUtils {
      * @param output The {@link OutputStream} to write the value
      * @param value  The 32-bit value
      * @param buf    A work buffer to use - must have enough space to contain 4 bytes
-     * @throws IOException If failed to write the value or work buffer to small
+     * @throws IOException If failed to write the value or work buffer too small
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
     public static void writeUInt(OutputStream output, long value, byte[] buf) throws IOException {

@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Represents a server &quot;challenge&quot; as per
- * <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC-4256</A>
+ * <A HREF="https://tools.ietf.org/html/rfc4256">RFC-4256</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

@@ -20,8 +20,10 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.sshd.common.Service;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session.TimeoutStatus;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -127,6 +129,29 @@ public interface SessionDisconnectHandler {
     default boolean handleAuthParamsDisconnectReason(
             Session session, Service service, String authUser, String username, String authService, String serviceName)
                 throws IOException {
+        return false;
+    }
+
+    /**
+     * Invoked if after KEX negotiation parameters resolved one of the options
+     * violates some internal constraint (e.g., cannot negotiate a value, or
+     * <A HREF="https://tools.ietf.org/html/rfc8308#section-2.2">RFC 8308 - section 2.2</A>).
+     *
+     * @param session The session where the violation occurred
+     * @param c2sOptions The client options
+     * @param s2cOptions The server options
+     * @param negotiatedGuess The negotiated KEX options
+     * @param option The violating {@link KexProposalOption}
+     * @return {@code true} if disregard the violation - if {@code false} then
+     * session will disconnect
+     */
+    default boolean handleKexDisconnectReason(
+            Session session, Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
+            Map<KexProposalOption, String> negotiatedGuess, KexProposalOption option) {
+        if (KexProposalOption.S2CLANG.equals(option) || KexProposalOption.C2SLANG.equals(option)) {
+            return true;    // OK if cannot agree on a language
+        }
+
         return false;
     }
 }

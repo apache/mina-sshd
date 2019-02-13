@@ -67,7 +67,6 @@ In this context, it is worth mentioning that one can attach to sessions **arbitr
 
 ### `ChannelListener`
 
-
 Informs about channel related events - as with sessions, once can influence the channel to some extent, depending on the channel's **state**.
 The ability to influence channels is much more limited than sessions. In this context, it is worth mentioning that one can attach to channels
 **arbitrary attributes** that can be retrieved by the user's code later on - same was as it is done for sessions.
@@ -75,11 +74,14 @@ The ability to influence channels is much more limited than sessions. In this co
 
 ### `UnknownChannelReferenceHandler`
 
-
 Invoked whenever a message intended for an unknown channel is received. By default, the code **ignores** the vast majority of such messages
 and logs them at DEBUG level. For a select few types of messages the code generates an `SSH_CHANNEL_MSG_FAILURE` packet that is sent to the
 peer session - see `DefaultUnknownChannelReferenceHandler` implementation. The user may register handlers at any level - client/server, session
 and/or connection service - the one registered "closest" to connection service will be used.
+
+### `KexExtensionHandler`
+
+Provides hook for implementing [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
 
 ### `ReservedSessionMessagesHandler`
 

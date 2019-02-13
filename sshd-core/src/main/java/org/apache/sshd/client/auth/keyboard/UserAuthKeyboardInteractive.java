@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Manages a &quot;keyboard-interactive&quot; exchange according to
- * <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
+ * <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -249,7 +249,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
      *                    length as the prompts
      * @return The response for each prompt - if {@code null} then the assumption
      * is that some internal error occurred and no response is sent. <B>Note:</B>
-     * according to <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
+     * according to <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
      * the number of responses should be <U>exactly</U> the same as the number
      * of prompts. However, since it is the <U>server's</U> responsibility to
      * enforce this we do not validate the response (other than logging it as

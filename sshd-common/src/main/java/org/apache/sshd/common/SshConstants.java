@@ -45,6 +45,7 @@ public final class SshConstants {
     public static final byte SSH_MSG_DEBUG = 4;
     public static final byte SSH_MSG_SERVICE_REQUEST = 5;
     public static final byte SSH_MSG_SERVICE_ACCEPT = 6;
+
     public static final byte SSH_MSG_KEXINIT = 20;
     public static final int MSG_KEX_COOKIE_SIZE = 16;
     public static final byte SSH_MSG_NEWKEYS = 21;

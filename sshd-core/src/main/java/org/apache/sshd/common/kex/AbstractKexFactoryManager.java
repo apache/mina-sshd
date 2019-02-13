@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -42,6 +43,7 @@ public abstract class AbstractKexFactoryManager
     private List<NamedFactory<Compression>> compressionFactories;
     private List<NamedFactory<Mac>> macFactories;
     private List<NamedFactory<Signature>> signatureFactories;
+    private KexExtensionHandler kexExtensionHandler;
 
     protected AbstractKexFactoryManager() {
         this(null);
@@ -113,6 +115,18 @@ public abstract class AbstractKexFactoryManager
     @Override
     public void setSignatureFactories(List<NamedFactory<Signature>> signatureFactories) {
         this.signatureFactories = signatureFactories;
+    }
+
+    @Override
+    public KexExtensionHandler getKexExtensionHandler() {
+        KexFactoryManager parent = getDelegate();
+        return resolveEffectiveProvider(
+            KexExtensionHandler.class, kexExtensionHandler, (parent == null) ? null : parent.getKexExtensionHandler());
+    }
+
+    @Override
+    public void setKexExtensionHandler(KexExtensionHandler kexExtensionHandler) {
+        this.kexExtensionHandler = kexExtensionHandler;
     }
 
     protected <V> List<NamedFactory<V>> resolveEffectiveFactories(

@@ -26,7 +26,7 @@ import org.apache.sshd.client.session.ClientSession;
  * Interface used by the ssh client to communicate with the end user.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://www.ietf.org/rfc/rfc4256.txt">RFC 4256</A>
+ * @see <a href="https://tools.ietf.org/html/rfc4256">RFC 4256</A>
  */
 public interface UserInteraction {
     /**

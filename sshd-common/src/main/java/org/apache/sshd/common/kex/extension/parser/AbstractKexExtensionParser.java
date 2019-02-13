@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.apache.sshd.common.kex.extension.parser;
+
+import java.io.IOException;
+
+import org.apache.sshd.common.kex.extension.KexExtensionParser;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public abstract class AbstractKexExtensionParser<T> implements KexExtensionParser<T> {
+    private final String name;
+
+    protected AbstractKexExtensionParser(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name provided");
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void putExtension(T value, Buffer buffer) throws IOException {
+        buffer.putString(getName());
+        int lenPos = buffer.wpos();
+        buffer.putInt(0);   // placeholder for the encoded value length
+        encode(value, buffer);
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+    }
+
+    protected abstract void encode(T value, Buffer buffer) throws IOException;
+}

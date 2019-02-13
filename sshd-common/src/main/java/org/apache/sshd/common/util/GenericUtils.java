@@ -55,6 +55,8 @@ import java.util.stream.StreamSupport;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 
+import org.apache.sshd.common.util.functors.UnaryEquator;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -404,6 +406,72 @@ public final class GenericUtils {
         return result;
     }
 
+    public static <T> int findFirstDifferentValueIndex(List<? extends T> c1, List<? extends T> c2) {
+        return findFirstDifferentValueIndex(c1, c2, UnaryEquator.defaultEquality());
+    }
+
+    public static <T> int findFirstDifferentValueIndex(
+            List<? extends T> c1, List<? extends T> c2, UnaryEquator<? super T> equator) {
+        Objects.requireNonNull(equator, "No equator provided");
+
+        int l1 = size(c1);
+        int l2 = size(c2);
+        for (int index = 0, count = Math.min(l1, l2); index < count; index++) {
+            T v1 = c1.get(index);
+            T v2 = c2.get(index);
+            if (!equator.test(v1, v2)) {
+                return index;
+            }
+        }
+
+        // all common length items are equal - check length
+        if (l1 < l2) {
+            return l1;
+        } else if (l2 < l1) {
+            return l2;
+        } else {
+            return -1;
+        }
+    }
+
+    public static <T> int findFirstDifferentValueIndex(Iterable<? extends T> c1, Iterable<? extends T> c2) {
+        return findFirstDifferentValueIndex(c1, c2, UnaryEquator.defaultEquality());
+    }
+
+    public static <T> int findFirstDifferentValueIndex(
+            Iterable<? extends T> c1, Iterable<? extends T> c2, UnaryEquator<? super T> equator) {
+        return findFirstDifferentValueIndex(iteratorOf(c1), iteratorOf(c2), equator);
+    }
+
+    public static <T> int findFirstDifferentValueIndex(Iterator<? extends T> i1, Iterator<? extends T> i2) {
+        return findFirstDifferentValueIndex(i1, i2, UnaryEquator.defaultEquality());
+    }
+
+    public static <T> int findFirstDifferentValueIndex(
+            Iterator<? extends T> i1, Iterator<? extends T> i2, UnaryEquator<? super T> equator) {
+        Objects.requireNonNull(equator, "No equator provided");
+
+        i1 = iteratorOf(i1);
+        i2 = iteratorOf(i2);
+        for (int index = 0;; index++) {
+            if (i1.hasNext()) {
+                if (i2.hasNext()) {
+                    T v1 = i1.next();
+                    T v2 = i2.next();
+                    if (!equator.test(v1, v2)) {
+                        return index;
+                    }
+                } else {
+                    return index;
+                }
+            } else if (i2.hasNext()) {
+                return index;
+            } else {
+                return -1;  // neither has a next value - both exhausted at the same time
+            }
+        }
+    }
+
     public static <T> boolean containsAny(Collection<? extends T> coll, Iterable<? extends T> values) {
         if (isEmpty(coll)) {
             return false;
@@ -418,28 +486,29 @@ public final class GenericUtils {
         return false;
     }
 
-    public static <T> void forEach(Iterable<T> values, Consumer<T> consumer) {
+    public static <T> void forEach(Iterable<? extends T> values, Consumer<? super T> consumer) {
         if (isNotEmpty(values)) {
             values.forEach(consumer);
         }
     }
 
-    public static <T, U> List<U> map(Collection<T> values, Function<? super T, ? extends U> mapper) {
+    public static <T, U> List<U> map(Collection<? extends T> values, Function<? super T, ? extends U> mapper) {
         return stream(values).map(mapper).collect(Collectors.toList());
     }
 
     public static <T, U> NavigableSet<U> mapSort(
-            Collection<T> values, Function<? super T, ? extends U> mapper, Comparator<U> comparator) {
+            Collection<? extends T> values, Function<? super T, ? extends U> mapper, Comparator<? super U> comparator) {
         return stream(values).map(mapper).collect(toSortedSet(comparator));
     }
 
     public static <T, K, U> NavigableMap<K, U> toSortedMap(
-            Iterable<T> values, Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
+            Iterable<? extends T> values, Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends U> valueMapper, Comparator<? super K> comparator) {
         return stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
     }
 
     public static <T, K, U> Collector<T, ?, NavigableMap<K, U>> toSortedMap(
-            Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<K> comparator) {
+            Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<? super K> comparator) {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
     }
 
@@ -449,7 +518,7 @@ public final class GenericUtils {
         };
     }
 
-    public static <T> Collector<T, ?, NavigableSet<T>> toSortedSet(Comparator<T> comparator) {
+    public static <T> Collector<T, ?, NavigableSet<T>> toSortedSet(Comparator<? super T> comparator) {
         return Collectors.toCollection(() -> new TreeSet<>(comparator));
     }
 
@@ -629,8 +698,8 @@ public final class GenericUtils {
      */
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, Collection<? extends T> values) {
         return GenericUtils.stream(values)
-                .filter(acceptor)
-                .collect(Collectors.toList());
+            .filter(acceptor)
+            .collect(Collectors.toList());
     }
 
     /**

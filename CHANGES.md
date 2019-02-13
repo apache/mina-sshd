@@ -16,6 +16,8 @@ and also return an `Iterable<Path>`.
 * The SFTP command line client provides a `kex` command that displays the KEX parameters of the
 current sesssion - client/server proposals and what has been negotiated.
 
+* The `Session` object provides a `KexExtensionHandler` for usage with [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
+
 ## Behavioral changes and enhancements
 
 * [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer
@@ -24,4 +26,6 @@ for STDERR data sent via the `ChannelSession` - especially for the SFTP subsyste
 * [SSHD=892](https://issues.apache.org/jira/browse/SSHD-882) - Inform user about possible session disconnect prior
 to disconnecting and allow intervention via `SessionDisconnectHandler`.
 
-* [SSHD-893] Using Path(s) instead of String(s) as DirectoryScanner results
+* [SSHD-893](https://issues.apache.org/jira/browse/SSHD-893) - Using Path(s) instead of String(s) as DirectoryScanner results
+
+* [SSHD-896](https://issues.apache.org/jira/browse/SSHD-896) - Added support for [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)

@@ -27,6 +27,7 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -122,6 +123,7 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         private List<NamedFactory<Cipher>> ciphers;
         private List<NamedFactory<Mac>> macs;
         private List<NamedFactory<Signature>> signatures;
+        private KexExtensionHandler kexExtensionHandler;
 
         TestKexFactoryManager() {
             super();
@@ -175,6 +177,16 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         @Override
         public void setMacFactories(List<NamedFactory<Mac>> macFactories) {
             macs = macFactories;
+        }
+
+        @Override
+        public KexExtensionHandler getKexExtensionHandler() {
+            return kexExtensionHandler;
+        }
+
+        @Override
+        public void setKexExtensionHandler(KexExtensionHandler handler) {
+            this.kexExtensionHandler = handler;
         }
     }
 }

@@ -434,7 +434,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
      * The various {@link ECPoint} representation compression indicators
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see <A HREF="https://www.ietf.org/rfc/rfc5480.txt">RFC-5480 - section 2.2</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc5480#section-2.2">RFC-5480 - section 2.2</A>
      */
     public enum ECPointCompression {
         // see http://tools.ietf.org/html/draft-jivsov-ecc-compact-00
