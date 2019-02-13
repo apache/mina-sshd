@@ -46,6 +46,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
+import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
@@ -71,7 +72,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
@@ -101,7 +101,6 @@ public class ScpTest extends BaseTestSupport {
         public void startFileEvent(
                 Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
             logEvent("startFileEvent", s, op, file, true, length, perms, null);
-
         }
 
         @Override
@@ -384,8 +383,10 @@ public class ScpTest extends BaseTestSupport {
     }
 
     @Test
-    @Ignore("TODO investigate why this fails often")
     public void testScpNativeOnSingleFile() throws Exception {
+        // see SSHD-822
+        assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.NETTY));
+
         String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
         Path targetPath = detectTargetFolder();
@@ -441,6 +442,9 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnMultipleFiles() throws Exception {
+        // see SSHD-822
+        assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.MINA, BuiltinIoServiceFactoryFactories.NETTY));
+
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
                     .getSession()) {

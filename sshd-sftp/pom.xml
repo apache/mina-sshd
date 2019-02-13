@@ -1,6 +1,4 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
-
     <!--
 
         Licensed to the Apache Software Foundation (ASF) under one or more
@@ -199,9 +197,8 @@
 				                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.netty.NettyIoServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
 				                    </systemProperties>
 				                    <excludes>
-				                            <!-- TODO need some more research as to why this fails frequently on Netty -->
+				                            <!-- TODO (SSHD-822) need some more research as to why this fails frequently on Netty -->
 				                        <exclude>**/AbstractCheckFileExtensionTest.java</exclude>
-                                        <exclude>**/SftpVersionsTest.java</exclude>
 				                    </excludes>
                                 </configuration>
                             </execution>

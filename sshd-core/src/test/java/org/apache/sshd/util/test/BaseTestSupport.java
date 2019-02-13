@@ -18,11 +18,17 @@
  */
 package org.apache.sshd.util.test;
 
+import java.util.Collection;
+
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.helpers.AbstractFactoryManager;
+import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -74,9 +80,42 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         return CoreTestSupportUtils.setupTestClient(getClass());
     }
 
+    protected void assumeNotIoServiceProvider(Collection<BuiltinIoServiceFactoryFactories> excluded) {
+        assumeNotIoServiceProvider(getCurrentTestName(), excluded);
+    }
+
     public static IoServiceFactoryFactory getIoServiceProvider() {
         DefaultIoServiceFactoryFactory factory =
             DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
         return factory.getIoServiceProvider();
+    }
+
+    public static void assumeNotIoServiceProvider(
+            String message, Collection<BuiltinIoServiceFactoryFactories> excluded) {
+        if (GenericUtils.isEmpty(excluded)) {
+            return;
+        }
+
+        assumeNotIoServiceProvider(message, getIoServiceProvider(), excluded);
+    }
+
+    public static void assumeNotIoServiceProvider(
+            String message, AbstractFactoryManager manager, Collection<BuiltinIoServiceFactoryFactories> excluded) {
+        assumeNotIoServiceProvider(message, manager.getIoServiceFactoryFactory(), excluded);
+    }
+
+    public static void assumeNotIoServiceProvider(
+            String message, IoServiceFactoryFactory provider, Collection<BuiltinIoServiceFactoryFactories> excluded) {
+        if (GenericUtils.isEmpty(excluded)) {
+            return;
+        }
+
+        Class<?> clazz = provider.getClass();
+        String clazzName = clazz.getName();
+        BuiltinIoServiceFactoryFactories match = excluded.stream()
+            .filter(f -> clazzName.equals(f.getFactoryClassName()))
+            .findFirst()
+            .orElse(null);
+        Assume.assumeTrue(message + " - skip factory=" + match, match == null);
     }
 }
