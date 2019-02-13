@@ -103,6 +103,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 new PwdCommandExecutor(),
                 new InfoCommandExecutor(),
                 new SessionCommandExecutor(),
+                new KexCommandExecutor(),
                 new ClientCommandExecutor(),
                 new VersionCommandExecutor(),
                 new CdCommandExecutor(),
@@ -418,8 +419,38 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             appendInfoValue(stdout, "Local address", ioSession.getLocalAddress()).println();
             appendInfoValue(stdout, "Remote address", ioSession.getRemoteAddress()).println();
 
+            appendInfoValue(stdout, "Client version", session.getClientVersion()).println();
+            appendInfoValue(stdout, "Server version", session.getServerVersion()).println();
+            return false;
+        }
+    }
+
+    private class KexCommandExecutor implements SftpCommandExecutor {
+        KexCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return "kex";
+        }
+
+        @Override
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                    throws Exception {
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
+            SftpClient sftp = getClient();
+            ClientSession session = sftp.getSession();
+
+            Map<KexProposalOption, String> clientProposals = session.getClientKexProposals();
+            Map<KexProposalOption, String> serverProposals = session.getServerKexProposals();
+            Map<KexProposalOption, String> negotiated = session.getKexNegotiationResult();
             for (KexProposalOption option : KexProposalOption.VALUES) {
-                appendInfoValue(stdout, option.getDescription(), session.getNegotiatedKexParameter(option)).println();
+                String description = option.getDescription();
+                appendInfoValue(stdout, description + "[client]", clientProposals.get(option)).println();
+                appendInfoValue(stdout, description + "[server]", serverProposals.get(option)).println();
+                appendInfoValue(stdout, description + "[negotiated]", negotiated.get(option)).println();
             }
 
             return false;

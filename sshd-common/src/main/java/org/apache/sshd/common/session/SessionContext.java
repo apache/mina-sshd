@@ -19,9 +19,13 @@
 
 package org.apache.sshd.common.session;
 
+import java.util.Map;
+
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
@@ -73,11 +77,40 @@ public interface SessionContext
     String getClientVersion();
 
     /**
+     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options
+     * May be empty if KEX not yet completed or re-keying in progress
+     * @see #getKexState()
+     */
+    Map<KexProposalOption, String> getClientKexProposals();
+
+    /**
      * Retrieve the server version for this session.
      *
      * @return the server version - may be {@code null}/empty if versions not yet exchanged
      */
     String getServerVersion();
+
+    /**
+     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options.
+     * May be empty if KEX not yet completed or re-keying in progress
+     * @see #getKexState()
+     */
+    Map<KexProposalOption, String> getServerKexProposals();
+
+    KexState getKexState();
+
+    Map<KexProposalOption, String> getKexNegotiationResult();
+
+    /**
+     * Retrieve one of the negotiated values during the KEX stage
+     *
+     * @param paramType The request {@link KexProposalOption} value
+     * - ignored if {@code null}
+     * @return The negotiated parameter value - {@code null} if invalid
+     * parameter or no negotiated value.
+     * @see #getKexState()
+     */
+    String getNegotiatedKexParameter(KexProposalOption paramType);
 
     /**
      * @return {@code true} if session has successfully completed the authentication phase

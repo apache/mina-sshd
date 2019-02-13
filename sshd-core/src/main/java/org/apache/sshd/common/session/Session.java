@@ -40,7 +40,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
-import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -75,16 +74,6 @@ public interface Session
         AuthTimeout,
         IdleTimeout
     }
-
-    /**
-     * Retrieve one of the negotiated values during the KEX stage
-     *
-     * @param paramType The request {@link KexProposalOption} value
-     * - ignored if {@code null}
-     * @return The negotiated parameter value - {@code null} if invalid
-     * parameter or no negotiated value
-     */
-    String getNegotiatedKexParameter(KexProposalOption paramType);
 
     /**
      * Retrieves current cipher information - <B>Note:</B> may change if

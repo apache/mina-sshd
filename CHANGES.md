@@ -13,6 +13,9 @@ where the code decides to disconnect the session due to various protocol or conf
 * `ScpFileOpener#getMatchingFilesToSend` has been modified to accept a `Path` as the base directory
 and also return an `Iterable<Path>`.
 
+* The SFTP command line client provides a `kex` command that displays the KEX parameters of the
+current sesssion - client/server proposals and what has been negotiated.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer

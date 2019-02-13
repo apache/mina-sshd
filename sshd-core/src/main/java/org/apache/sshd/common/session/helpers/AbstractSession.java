@@ -132,8 +132,12 @@ public abstract class AbstractSession extends SessionHelper {
     protected String clientVersion;
     // if empty then means not-initialized
     protected final Map<KexProposalOption, String> serverProposal = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption, String> unmodServerProposal = Collections.unmodifiableMap(serverProposal);
     protected final Map<KexProposalOption, String> clientProposal = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption, String> unmodClientProposal = Collections.unmodifiableMap(clientProposal);
     protected final Map<KexProposalOption, String> negotiationResult = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption, String> unmodNegotiationResult = Collections.unmodifiableMap(negotiationResult);
+
     protected KeyExchange kex;
     protected Boolean firstKexPacketFollows;
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
@@ -226,8 +230,18 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     @Override
+    public Map<KexProposalOption, String> getServerKexProposals() {
+        return unmodServerProposal;
+    }
+
+    @Override
     public String getClientVersion() {
         return clientVersion;
+    }
+
+    @Override
+    public Map<KexProposalOption, String> getClientKexProposals() {
+        return unmodClientProposal;
     }
 
     @Override
@@ -236,9 +250,19 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     @Override
+    public KexState getKexState() {
+        return kexState.get();
+    }
+
+    @Override
     public byte[] getSessionId() {
         // return a clone to avoid anyone changing the internal value
         return NumberUtils.isEmpty(sessionId) ? sessionId : sessionId.clone();
+    }
+
+    @Override
+    public Map<KexProposalOption, String> getKexNegotiationResult() {
+        return unmodNegotiationResult;
     }
 
     @Override
@@ -1395,8 +1419,8 @@ public abstract class AbstractSession extends SessionHelper {
      * @return The negotiated options {@link Map}
      */
     protected Map<KexProposalOption, String> negotiate() {
-        Map<KexProposalOption, String> c2sOptions = Collections.unmodifiableMap(clientProposal);
-        Map<KexProposalOption, String> s2cOptions = Collections.unmodifiableMap(serverProposal);
+        Map<KexProposalOption, String> c2sOptions = getClientKexProposals();
+        Map<KexProposalOption, String> s2cOptions = getServerKexProposals();
         signalNegotiationStart(c2sOptions, s2cOptions);
 
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
