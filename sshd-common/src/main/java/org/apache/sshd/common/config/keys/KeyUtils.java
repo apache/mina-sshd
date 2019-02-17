@@ -48,12 +48,14 @@ import java.security.spec.ECParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -73,6 +75,7 @@ import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -130,6 +133,10 @@ public final class KeyUtils {
      */
     public static final DigestFactory DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
 
+    /** @see <A HREF="">https://tools.ietf.org/html/rfc8332#section-3</A> */
+    public static final String RSA_SHA256_KEY_TYPE_ALIAS = "rsa-sha2-256";
+    public static final String RSA_SHA512_KEY_TYPE_ALIAS = "rsa-sha2-512";
+
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
@@ -137,6 +144,12 @@ public final class KeyUtils {
 
     private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP =
             new HashMap<>();
+
+    private static final Map<String, String> KEY_TYPE_ALIASES =
+        NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+            .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+            .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+            .build();
 
     static {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
@@ -614,7 +627,7 @@ public final class KeyUtils {
     /**
      * @param f The {@link Factory} to create the {@link Digest} to use
      * @param s The {@link String} to digest - ignored if {@code null}/empty,
-     *          otherwise its UTF-8 representation is used as input for the fingerprint
+     * otherwise its UTF-8 representation is used as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input.
      * <B>Note:</B> if exception encountered then returns the exception's simple class name
      * @see #getFingerPrint(Digest, String, Charset)
@@ -627,7 +640,7 @@ public final class KeyUtils {
      * @param f       The {@link Factory} to create the {@link Digest} to use
      * @param s       The {@link String} to digest - ignored if {@code null}/empty
      * @param charset The {@link Charset} to use in order to convert the
-     *                string to its byte representation to use as input for the fingerprint
+     * string to its byte representation to use as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input
      * <B>Note:</B> if exception encountered then returns the exception's simple class name
      * @see DigestUtils#getFingerPrint(Digest, String, Charset)
@@ -652,7 +665,7 @@ public final class KeyUtils {
      * @param d       The {@link Digest} to use to calculate the fingerprint
      * @param s       The string to digest - ignored if {@code null}/empty
      * @param charset The {@link Charset} to use in order to convert the
-     *                string to its byte representation to use as input for the fingerprint
+     * string to its byte representation to use as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input.
      * <B>Note:</B> if exception encountered then returns the exception's simple class name
      * @see DigestUtils#getFingerPrint(Digest, String, Charset)
@@ -742,8 +755,8 @@ public final class KeyUtils {
 
     /**
      * @param kp a key pair - ignored if {@code null}. If the private
-     *           key is non-{@code null} then it is used to determine the type,
-     *           otherwise the public one is used.
+     * key is non-{@code null} then it is used to determine the type,
+     * otherwise the public one is used.
      * @return the key type or {@code null} if cannot determine it
      * @see #getKeyType(Key)
      */
@@ -784,6 +797,88 @@ public final class KeyUtils {
         }
 
         return null;
+    }
+
+    /**
+     * @param keyType The available key-type - ignored if {@code null}/empty
+     * @return The canonical key type - same as input if no alias registered
+     * for the provided key type
+     * @see #RSA_SHA256_KEY_TYPE_ALIAS
+     * @see #RSA_SHA512_KEY_TYPE_ALIAS
+     */
+    public static String getCanonicalKeyType(String keyType) {
+        if (GenericUtils.isEmpty(keyType)) {
+            return keyType;
+        }
+
+        String canonicalName;
+        synchronized (KEY_TYPE_ALIASES) {
+            canonicalName = KEY_TYPE_ALIASES.get(keyType);
+        }
+
+        if (GenericUtils.isEmpty(canonicalName)) {
+            return keyType;
+        }
+
+        return canonicalName;
+    }
+
+    /**
+     * @return A case insensitive {@link NavigableSet} of the currently registered
+     * key type &quot;aliases&quot;.
+     * @see #getCanonicalKeyType(String)
+     */
+    public static NavigableSet<String> getRegisteredKeyTypeAliases() {
+        synchronized (KEY_TYPE_ALIASES) {
+            return KEY_TYPE_ALIASES.isEmpty()
+                 ? Collections.emptyNavigableSet()
+                 : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, KEY_TYPE_ALIASES.keySet());
+        }
+    }
+
+    /**
+     * Registers a collection of aliases to a canonical key type
+     *
+     * @param keyType The (never {@code null}/empty) canonical name
+     * @param aliases The (never {@code null}/empty) aliases
+     * @return A {@link List} of the replaced aliases - empty
+     * if no previous aliases for the canonical name
+     */
+    public static List<String> registerCanonicalKeyTypes(String keyType, Collection<String> aliases) {
+        ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type value");
+        ValidateUtils.checkNotNullAndNotEmpty(aliases, "No aliases provided");
+
+        List<String> replaced = Collections.emptyList();
+        synchronized (KEY_TYPE_ALIASES) {
+            for (String a : aliases) {
+                ValidateUtils.checkNotNullAndNotEmpty(a, "Null/empty alias registration for %s", keyType);
+                String prev = KEY_TYPE_ALIASES.put(a, keyType);
+                if (GenericUtils.isEmpty(prev)) {
+                    continue;
+                }
+
+                if (replaced.isEmpty()) {
+                    replaced = new ArrayList<>();
+                }
+                replaced.add(prev);
+            }
+        }
+
+        return replaced;
+    }
+
+    /**
+     * @param alias The alias to unregister (ignored if {@code null}/empty)
+     * @return The associated canonical key type - {@code null} if alias not registered
+     */
+    public static String unregisterCanonicalKeyTypeAlias(String alias) {
+        if (GenericUtils.isEmpty(alias)) {
+            return alias;
+        }
+
+        synchronized (KEY_TYPE_ALIASES) {
+            return KEY_TYPE_ALIASES.remove(alias);
+        }
     }
 
     /**

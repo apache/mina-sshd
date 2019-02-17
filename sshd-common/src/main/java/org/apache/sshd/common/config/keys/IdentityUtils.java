@@ -77,7 +77,8 @@ public final class IdentityUtils {
             return null;
         } else {
             return GenericUtils.trimToEmpty(prefix)
-                    + type.toLowerCase() + GenericUtils.trimToEmpty(suffix);
+                 + type.toLowerCase()
+                 + GenericUtils.trimToEmpty(suffix);
         }
     }
 

@@ -34,6 +34,7 @@ import org.apache.sshd.common.digest.BaseDigest;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -152,6 +153,13 @@ public class KeyUtilsTest extends JUnitTestSupport {
             }
         } else {
             assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms, KeyUtils.validateStrictKeyFilePermissions(file));
+        }
+    }
+
+    @Test   // see SSHD-895
+    public void testRSAKeyTypeAliases() {
+        for (String alias : new String[] {KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS}) {
+            assertEquals("Mismatched canonical name for " + alias, KeyPairProvider.SSH_RSA, KeyUtils.getCanonicalKeyType(alias));
         }
     }
 }

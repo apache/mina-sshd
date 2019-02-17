@@ -31,11 +31,13 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -56,7 +58,39 @@ public enum BuiltinSignatures implements SignatureFactory {
     rsa(KeyPairProvider.SSH_RSA) {
         @Override
         public Signature create() {
-            return new SignatureRSA();
+            return new SignatureRSASHA1();
+        }
+    },
+    rsaSHA256(KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS) {
+        @Override
+        public Signature create() {
+            return new SignatureRSASHA256();
+        }
+    },
+    rsaSHA512(KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS) {
+        private final AtomicReference<Boolean> supportHolder = new AtomicReference<>();
+
+        @Override
+        public Signature create() {
+            return new SignatureRSASHA512();
+        }
+
+        @Override
+        public boolean isSupported() {
+            Boolean supported = supportHolder.get();
+            if (supported == null) {
+                try {
+                    java.security.Signature sig =
+                        SecurityUtils.getSignature(SignatureRSASHA512.ALGORITHM);
+                    supported = sig != null;
+                } catch (Exception e) {
+                    supported = Boolean.FALSE;
+                }
+
+                supportHolder.set(supported);
+            }
+
+            return supported;
         }
     },
     nistp256(KeyPairProvider.ECDSA_SHA2_NISTP256) {

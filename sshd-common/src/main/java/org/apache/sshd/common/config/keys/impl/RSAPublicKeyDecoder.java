@@ -33,6 +33,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -49,13 +50,20 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     public static final RSAPublicKeyDecoder INSTANCE = new RSAPublicKeyDecoder();
 
     public RSAPublicKeyDecoder() {
-        super(RSAPublicKey.class, RSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
+        super(RSAPublicKey.class, RSAPrivateKey.class,
+            Collections.unmodifiableList(
+                Arrays.asList(KeyPairProvider.SSH_RSA,
+                    // Not really required, but allow it
+                    KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
+                    KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS)));
     }
 
     @Override
     public RSAPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
             throws IOException, GeneralSecurityException {
-        if (!KeyPairProvider.SSH_RSA.equals(keyType)) { // just in case we were invoked directly
+        // Not really required, but allow it
+        String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
+        if (!KeyPairProvider.SSH_RSA.equals(canonicalName)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
 
@@ -96,15 +104,15 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
 
         RSAPrivateCrtKey rsaPrv = (RSAPrivateCrtKey) key;
         return generatePrivateKey(
-                new RSAPrivateCrtKeySpec(
-                        rsaPrv.getModulus(),
-                        rsaPrv.getPublicExponent(),
-                        rsaPrv.getPrivateExponent(),
-                        rsaPrv.getPrimeP(),
-                        rsaPrv.getPrimeQ(),
-                        rsaPrv.getPrimeExponentP(),
-                        rsaPrv.getPrimeExponentQ(),
-                        rsaPrv.getCrtCoefficient()));
+            new RSAPrivateCrtKeySpec(
+                rsaPrv.getModulus(),
+                rsaPrv.getPublicExponent(),
+                rsaPrv.getPrivateExponent(),
+                rsaPrv.getPrimeP(),
+                rsaPrv.getPrimeQ(),
+                rsaPrv.getPrimeExponentP(),
+                rsaPrv.getPrimeExponentQ(),
+                rsaPrv.getCrtCoefficient()));
     }
 
     @Override

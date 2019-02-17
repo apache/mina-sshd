@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package rg.apache.sshd.client.config.keys;
+package org.apache.sshd.client.config.keys;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.client.config.keys.ClientIdentityProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.FixMethodOrder;

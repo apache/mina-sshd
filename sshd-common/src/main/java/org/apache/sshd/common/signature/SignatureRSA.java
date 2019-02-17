@@ -23,6 +23,7 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 import java.util.Map;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -32,14 +33,8 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
-public class SignatureRSA extends AbstractSignature {
-    public static final String DEFAULT_ALGORITHM = "SHA1withRSA";
-
+public abstract class SignatureRSA extends AbstractSignature {
     private int verifierSignatureSize = -1;
-
-    public SignatureRSA() {
-        super(DEFAULT_ALGORITHM);
-    }
 
     protected SignatureRSA(String algorithm) {
         super(algorithm);
@@ -71,7 +66,18 @@ public class SignatureRSA extends AbstractSignature {
         Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
             String keyType = encoding.getKey();
-            ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(keyType), "Mismatched key type: %s", keyType);
+            /*
+             * According to https://tools.ietf.org/html/rfc8332#section-3.2:
+             *
+             *      OpenSSH 7.2 (but not 7.2p2) incorrectly encodes the algorithm in the
+             *      signature as "ssh-rsa" when the algorithm in SSH_MSG_USERAUTH_REQUEST
+             *      is "rsa-sha2-256" or "rsa-sha2-512".  In this case, the signature
+             *      does actually use either SHA-256 or SHA-512.  A server MAY, but is
+             *      not required to, accept this variant or another variant that
+             *      corresponds to a good-faith implementation and is considered safe to accept.
+             */
+            String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
+            ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(canonicalName), "Mismatched key type: %s", keyType);
             data = encoding.getValue();
         }
 
