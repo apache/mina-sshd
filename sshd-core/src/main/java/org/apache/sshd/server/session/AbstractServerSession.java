@@ -37,6 +37,7 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -267,6 +269,16 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                     "Authentication success signalled though KEX state=" + curState);
         }
 
+        /*
+         * According to https://tools.ietf.org/html/rfc8308#section-2.4
+         *
+         *      If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or
+         *      both of the following opportunities:
+         *
+         *      ...
+         *
+         *      + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
+         */
         KexExtensionHandler extHandler = getKexExtensionHandler();
         if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this)) {
             extHandler.sendKexExtensions(this, KexPhase.AUTHOK);
@@ -276,16 +288,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         IoWriteFuture future;
         IoSession networkSession = getIoSession();
         synchronized (encodeLock) {
-            /*
-             * According to https://tools.ietf.org/html/rfc8308#section-2.4
-             *
-             *      If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or
-             *      both of the following opportunities:
-             *
-             *      ...
-             *
-             *      + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
-             */
             Buffer packet = resolveOutputPacket(response);
 
             setUsername(username);
@@ -340,7 +342,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         ValidateUtils.checkTrue(proposedManager == getFactoryManager(), "Mismatched signatures proposed factory manager");
 
         KeyPairProvider kpp = getKeyPairProvider();
-        Collection<String> supported = NamedResource.getNameList(getSignatureFactories());
         boolean debugEnabled = log.isDebugEnabled();
         Iterable<String> provided;
         try {
@@ -355,35 +356,17 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             throw new RuntimeSshException(e);
         }
 
-        if ((provided == null) || GenericUtils.isEmpty(supported)) {
-            return resolveEmptySignaturesProposal(supported, provided);
+        Collection<String> available = NamedResource.getNameList(getSignatureFactories());
+        if ((provided == null) || GenericUtils.isEmpty(available)) {
+            return resolveEmptySignaturesProposal(available, provided);
         }
 
-        StringBuilder resolveKeys = null;
-        for (String keyType : provided) {
-            if (!supported.contains(keyType)) {
-                if (debugEnabled) {
-                    log.debug("resolveAvailableSignaturesProposal({})[{}] {} not in supported list: {}",
-                          this, provided, keyType, supported);
-                }
-                continue;
-            }
-
-            if (resolveKeys == null) {
-                resolveKeys = new StringBuilder(supported.size() * 16 /* ecdsa-sha2-xxxx */);
-            }
-
-            if (resolveKeys.length() > 0) {
-                resolveKeys.append(',');
-            }
-
-            resolveKeys.append(keyType);
-        }
-
-        if (GenericUtils.isEmpty(resolveKeys)) {
-            return resolveEmptySignaturesProposal(supported, provided);
+        Collection<String> supported =
+            SignatureFactory.resolveSignatureFactoryNamesProposal(provided, available);
+        if (GenericUtils.isEmpty(supported)) {
+            return resolveEmptySignaturesProposal(available, provided);
         } else {
-            return resolveKeys.toString();
+            return GenericUtils.join(supported, ',');
         }
     }
 
@@ -477,15 +460,16 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public KeyPair getHostKey() {
-        String keyType = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        String proposedKey = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        String keyType = KeyUtils.getCanonicalKeyType(proposedKey);
         KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             return provider.loadKey(this, keyType);
         } catch (IOException | GeneralSecurityException | Error e) {
-            log.warn("getHostKey({}) failed ({}) to load key of type={}: {}",
-                 this, e.getClass().getSimpleName(), keyType, e.getMessage());
+            log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
+                 this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("getHostKey(" + this + ") " + keyType + " key load failure details", e);
+                log.debug("getHostKey(" + this + ") " + proposedKey + "[" + keyType + "] key load failure details", e);
             }
 
             throw new RuntimeSshException(e);

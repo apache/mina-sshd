@@ -30,6 +30,7 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -74,7 +75,7 @@ public class SshBuilderTest extends BaseTestSupport {
      */
     @Test
     public void testAllBuiltinSignaturesListed() {
-        testAllInstancesListed(BuiltinSignatures.VALUES, BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE);
+        testAllInstancesListed(BuiltinSignatures.VALUES, ServerBuilder.DEFAULT_SIGNATURE_PREFERENCE);
     }
 
     /**

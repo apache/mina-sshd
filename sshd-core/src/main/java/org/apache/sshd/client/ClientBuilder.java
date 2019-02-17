@@ -19,6 +19,7 @@
 
 package org.apache.sshd.client;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -41,12 +42,44 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 
 /**
  * SshClient builder
  */
 public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
+    /**
+     * Preferred {@link BuiltinSignatures} according to
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">sshd_config(5)</A>
+     * {@code HostKeyAlgorithms} recommendation
+     */
+    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
+        /*
+         * According to https://tools.ietf.org/html/rfc8332#section-3.3:
+         *
+         *      Implementation experience has shown that there are servers that apply
+         *      authentication penalties to clients attempting public key algorithms
+         *      that the SSH server does not support.
+         *
+         *      When authenticating with an RSA key against a server that does not
+         *      implement the "server-sig-algs" extension, clients MAY default to an
+         *      "ssh-rsa" signature to avoid authentication penalties.  When the new
+         *      rsa-sha2-* algorithms have been sufficiently widely adopted to
+         *      warrant disabling "ssh-rsa", clients MAY default to one of the new
+         *      algorithms.
+         *
+         * Therefore we do not include by default the "rsa-sha-*" signatures.
+         */
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinSignatures.nistp256,
+                BuiltinSignatures.nistp384,
+                BuiltinSignatures.nistp521,
+                BuiltinSignatures.ed25519,
+                BuiltinSignatures.rsa,
+                BuiltinSignatures.dsa
+            ));
 
     public static final Function<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
             factory == null
@@ -101,6 +134,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     @Override
     protected ClientBuilder fillWithDefaultValues() {
         super.fillWithDefaultValues();
+
+        if (signatureFactories == null) {
+            signatureFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_SIGNATURE_PREFERENCE);
+        }
 
         if (compressionFactories == null) {
             compressionFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);

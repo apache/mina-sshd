@@ -33,6 +33,7 @@ import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -85,6 +86,24 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                 BuiltinCompressions.zlib,
                 BuiltinCompressions.delayedZlib));
 
+    /**
+     * Preferred {@link BuiltinSignatures} according to
+     * <A HREF="http://man7.org/linux/man-pages/man5/sshd_config.5.html">sshd_config(5) - HostKeyAlgorithms</A>
+     * {@code HostKeyAlgorithms} recommendation
+     */
+    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
+        Collections.unmodifiableList(
+            Arrays.asList(
+                BuiltinSignatures.nistp256,
+                BuiltinSignatures.nistp384,
+                BuiltinSignatures.nistp521,
+                BuiltinSignatures.ed25519,
+                BuiltinSignatures.rsaSHA512,
+                BuiltinSignatures.rsaSHA256,
+                BuiltinSignatures.rsa,
+                BuiltinSignatures.dsa
+            ));
+
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
 
@@ -108,6 +127,10 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
         if (compressionFactories == null) {
             compressionFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+        }
+
+        if (signatureFactories == null) {
+            signatureFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_SIGNATURE_PREFERENCE);
         }
 
         if (keyExchangeFactories == null) {

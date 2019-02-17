@@ -17,6 +17,9 @@ based applications requiring SSH support.
 * [RFC 8308 - Extension Negotiation in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8308)
     * **Note:** - the code contains **hooks** for implementing the RFC but beyond allowing convenient
     access to the required protocol details, it does not implement any logic that handles the messages.
+* [RFC 8332 - Use of RSA Keys with SHA-256 and SHA-512 in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8332)
+    * **Note:** - the server side supports these signatures by default. The client side requires specific
+    initialization - see [section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3).
 * SFTP version 3-6 + extensions
     * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
     * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)

@@ -28,4 +28,38 @@ to disconnecting and allow intervention via `SessionDisconnectHandler`.
 
 * [SSHD-893](https://issues.apache.org/jira/browse/SSHD-893) - Using Path(s) instead of String(s) as DirectoryScanner results
 
+* [SSHD-895](https://issues.apache.org/jira/browse/SSHD-895) - Add support for RSA + SHA-256/512 signatures. **Note:** according
+to [RFC - 8332 - section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3):
+
+>> Implementation experience has shown that there are servers that apply
+>> authentication penalties to clients attempting public key algorithms
+>> that the SSH server does not support.
+
+>> When authenticating with an RSA key against a server that does not
+>> implement the "server-sig-algs" extension, clients MAY default to an
+>> "ssh-rsa" signature to avoid authentication penalties.  When the new
+>> rsa-sha2-* algorithms have been sufficiently widely adopted to
+>> warrant disabling "ssh-rsa", clients MAY default to one of the new
+>> algorithms.
+
+Therefore we do not include by default the "rsa-sha-*" signature factories in the `SshClient`. They can
+be easily added by using the relevant `BuiltinSignatures`:
+
+```java
+SshClient client = SshClient.setupDefaultClient();
+client.setSignatureFactories(
+    Arrays.asList(
+        /* This is the full list in the recommended preference order,
+         * but the initialization code can choose and/or re-order
+         */
+        BuiltinSignatures.nistp256,
+        BuiltinSignatures.nistp384,
+        BuiltinSignatures.nistp521,
+        BuiltinSignatures.ed25519,
+        BuiltinSignatures.rsaSHA512,
+        BuiltinSignatures.rsaSHA256,     // should check if isSupported since not required by default for Java 8
+        BuiltinSignatures.rsa,
+        BuiltinSignatures.dsa));
+```
+
 * [SSHD-896](https://issues.apache.org/jira/browse/SSHD-896) - Added support for [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)

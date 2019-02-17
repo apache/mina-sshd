@@ -43,7 +43,6 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.session.helpers.DefaultUnknownChannelReferenceHandler;
-import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -125,22 +124,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
                 BuiltinMacs.hmacmd596
             ));
 
-    /**
-     * Preferred {@link BuiltinSignatures} according to
-     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">sshd_config(5)</A>
-     * {@code HostKeyAlgorithms} recommendation
-     */
-    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
-        Collections.unmodifiableList(
-            Arrays.asList(
-                BuiltinSignatures.nistp256,
-                BuiltinSignatures.nistp384,
-                BuiltinSignatures.nistp521,
-                BuiltinSignatures.ed25519,
-                BuiltinSignatures.rsa,
-                BuiltinSignatures.dsa
-            ));
-
     public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER =
             DefaultUnknownChannelReferenceHandler.INSTANCE;
 
@@ -164,10 +147,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     }
 
     protected S fillWithDefaultValues() {
-        if (signatureFactories == null) {
-            signatureFactories = setUpDefaultSignatures(false);
-        }
-
         if (randomFactory == null) {
             randomFactory = new SingletonRandomFactory(SecurityUtils.getRandomFactory());
         }
@@ -331,20 +310,5 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      */
     public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
         return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
-    }
-
-    /**
-     * @param ignoreUnsupported If {@code true} all the available built-in
-     *                          {@link Signature} factories are added, otherwise only those that are supported
-     *                          by the current JDK setup
-     * @return A {@link List} of the default {@link NamedFactory}
-     * instances of the {@link Signature}s according to the preference
-     * order defined by {@link #DEFAULT_SIGNATURE_PREFERENCE}.
-     * <B>Note:</B> the list may be filtered to exclude unsupported JCE
-     * signatures according to the <tt>ignoreUnsupported</tt> parameter
-     * @see BuiltinSignatures#isSupported()
-     */
-    public static List<NamedFactory<Signature>> setUpDefaultSignatures(boolean ignoreUnsupported) {
-        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
     }
 }

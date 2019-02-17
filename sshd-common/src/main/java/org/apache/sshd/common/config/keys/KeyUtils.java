@@ -800,6 +800,32 @@ public final class KeyUtils {
     }
 
     /**
+     * @param keyType A key type name - ignored if {@code null}/empty
+     * @return A {@link List} of they canonical key name and all its aliases
+     * @see #getCanonicalKeyType(String)
+     */
+    public static List<String> getAllEquivalentKeyTypes(String keyType) {
+        if (GenericUtils.isEmpty(keyType)) {
+            return Collections.emptyList();
+        }
+
+        String canonicalName = getCanonicalKeyType(keyType);
+        List<String> equivalents = new ArrayList<>();
+        equivalents.add(canonicalName);
+        synchronized (KEY_TYPE_ALIASES) {
+            for (Map.Entry<String, String> ae : KEY_TYPE_ALIASES.entrySet()) {
+                String alias = ae.getKey();
+                String name = ae.getValue();
+                if (canonicalName.equalsIgnoreCase(name)) {
+                    equivalents.add(alias);
+                }
+            }
+        }
+
+        return equivalents;
+    }
+
+    /**
      * @param keyType The available key-type - ignored if {@code null}/empty
      * @return The canonical key type - same as input if no alias registered
      * for the provided key type

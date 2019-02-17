@@ -1905,6 +1905,7 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     protected String resolveSessionKexProposal(String hostKeyTypes) throws IOException {
         String proposal = super.resolveSessionKexProposal(hostKeyTypes);
+        // see https://tools.ietf.org/html/rfc8308
         KexExtensionHandler extHandler = getKexExtensionHandler();
         if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
             return proposal;
