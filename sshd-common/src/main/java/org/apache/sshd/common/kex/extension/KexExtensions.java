@@ -32,6 +32,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,6 +57,10 @@ public final class KexExtensions {
 
     public static final String CLIENT_KEX_EXTENSION = "ext-info-c";
     public static final String SERVER_KEX_EXTENSION = "ext-info-s";
+
+    @SuppressWarnings("checkstyle:Indentation")
+    public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL =
+        n -> CLIENT_KEX_EXTENSION.equalsIgnoreCase(n) || SERVER_KEX_EXTENSION.equalsIgnoreCase(n);
 
     /**
      * A case <U>insensitive</U> map of all the default known {@link KexExtensionParser}

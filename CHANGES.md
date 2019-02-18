@@ -18,6 +18,15 @@ current sesssion - client/server proposals and what has been negotiated.
 
 * The `Session` object provides a `KexExtensionHandler` for usage with [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
 
+## Minor code helpers
+
+* The `Session` object provides a `isServerSession` method that can be used to distinguish between
+client/server instances without having to resort to `instanceof`.
+
+* When creating a CLI SSH client one can specify `-o KexExtensionHandler=XXX` option to initialize
+a client-side `KexExtensionHandler` using an FQCN. If `default` is specified as the option value,
+then the internal `DefaultClientKexExtensionHandler` is used.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer

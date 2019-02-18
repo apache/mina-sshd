@@ -131,6 +131,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return ioSession;
     }
 
+    @Override
     public boolean isServerSession() {
         return serverSession;
     }

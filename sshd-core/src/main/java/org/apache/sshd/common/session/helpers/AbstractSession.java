@@ -1257,8 +1257,9 @@ public abstract class AbstractSession extends SessionHelper {
      * @param buffer   the {@link Buffer} containing the key exchange init packet
      * @param proposal the remote proposal to fill
      * @return the packet data
+     * @throws IOException If failed to handle the message
      */
-    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) {
+    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) throws IOException {
         // Recreate the packet payload which will be needed at a later time
         byte[] d = buffer.array();
         byte[] data = new byte[buffer.available() + 1 /* the opcode */];
@@ -1290,13 +1291,26 @@ public abstract class AbstractSession extends SessionHelper {
             size += readLen;
         }
 
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        if (extHandler != null) {
+            if (traceEnabled) {
+                log.trace("receiveKexInit({}) options before handler: {}", this, proposal);
+            }
+
+            extHandler.handleKexInitProposal(this, false, proposal);
+
+            if (traceEnabled) {
+                log.trace("receiveKexInit({}) options after handler: {}", this, proposal);
+            }
+        }
+
         firstKexPacketFollows = buffer.getBoolean();
         if (traceEnabled) {
             log.trace("receiveKexInit({}) first kex packet follows: {}", this, firstKexPacketFollows);
         }
 
         long reserved = buffer.getUInt();
-        if (reserved != 0) {
+        if (reserved != 0L) {
             if (traceEnabled) {
                 log.trace("receiveKexInit({}) non-zero reserved value: {}", this, reserved);
             }
@@ -1489,6 +1503,7 @@ public abstract class AbstractSession extends SessionHelper {
             boolean debugEnabled = log.isDebugEnabled();
             boolean traceEnabled = log.isTraceEnabled();
             SessionDisconnectHandler discHandler = getSessionDisconnectHandler();
+            KexExtensionHandler extHandler = getKexExtensionHandler();
             for (KexProposalOption paramType : KexProposalOption.VALUES) {
                 String clientParamValue = c2sOptions.get(paramType);
                 String serverParamValue = s2cOptions.get(paramType);
@@ -1517,6 +1532,11 @@ public abstract class AbstractSession extends SessionHelper {
 
                 // check if reached an agreement
                 String value = guess.get(paramType);
+                if (extHandler != null) {
+                    extHandler.handleKexExtensionNegotiation(
+                        this, paramType, value, c2sOptions, clientParamValue, s2cOptions, serverParamValue);
+                }
+
                 if (value != null) {
                     if (traceEnabled) {
                         log.trace("negotiate({})[{}] guess={} (client={} / server={})",
@@ -1553,8 +1573,7 @@ public abstract class AbstractSession extends SessionHelper {
              *      key exchange method, the parties MUST disconnect.
              */
             String kexOption = guess.get(KexProposalOption.ALGORITHMS);
-            if (KexExtensions.CLIENT_KEX_EXTENSION.equalsIgnoreCase(kexOption)
-                    || KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(kexOption)) {
+            if (KexExtensions.IS_KEX_EXTENSION_SIGNAL.test(kexOption)) {
                 if ((discHandler != null)
                         && discHandler.handleKexDisconnectReason(
                                 this, c2sOptions, s2cOptions, negotiatedGuess, KexProposalOption.ALGORITHMS)) {
@@ -1923,17 +1942,31 @@ public abstract class AbstractSession extends SessionHelper {
         String resolvedAlgorithms = resolveAvailableSignaturesProposal();
         if (GenericUtils.isEmpty(resolvedAlgorithms)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
-                    "sendKexInit() no resolved signatures available");
+                "sendKexInit() no resolved signatures available");
         }
 
         Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        boolean traceEnabled = log.isTraceEnabled();
+        if (extHandler != null) {
+            if (traceEnabled) {
+                log.trace("sendKexInit({}) options before handler: {}", this, proposal);
+            }
+
+            extHandler.handleKexInitProposal(this, true, proposal);
+
+            if (traceEnabled) {
+                log.trace("sendKexInit({}) options after handler: {}", this, proposal);
+            }
+        }
+
         byte[] seed;
         synchronized (kexState) {
             seed = sendKexInit(proposal);
             setKexSeed(seed);
         }
 
-        if (log.isTraceEnabled()) {
+        if (traceEnabled) {
             log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
         }
         return seed;

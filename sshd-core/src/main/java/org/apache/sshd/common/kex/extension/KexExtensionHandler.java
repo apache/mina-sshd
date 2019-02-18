@@ -22,8 +22,10 @@ package org.apache.sshd.common.kex.extension;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -43,7 +45,7 @@ public interface KexExtensionHandler {
 
     /**
      * @param session The {@link Session} about to execute KEX
-     * @return {@code true} whether to declare KEX extensions availability for the session
+     * @return {@code true} whether to KEX extensions are supported/allowed for the session
      * @throws IOException If failed to process the request
      */
     default boolean isKexExtensionsAvailable(Session session) throws IOException {
@@ -51,8 +53,51 @@ public interface KexExtensionHandler {
     }
 
     /**
-     * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message.
+     * Invoked when a peer is ready to send the KEX options proposal or has received
+     * such a proposal. <B>Note:</B> this method is called during the negotiation phase
+     * even if {@link #isKexExtensionsAvailable(Session)} returns {@code false} for the session.
      *
+     * @param session The {@link Session} initiating or receiving the proposal
+     * @param initiator {@code true} if the proposal is about to be sent, {@code false}
+     * if this is a proposal received from the peer.
+     * @param proposal The proposal contents -  <B>Caveat emptor:</B> the proposal is
+     * <U>modifiable</U> i.e., the handler can modify before being sent or before
+     * being processed (if incoming)
+     * @throws IOException If failed to handle the request
+     */
+    default void handleKexInitProposal(
+            Session session, boolean initiator, Map<KexProposalOption, String> proposal)
+                throws IOException {
+        // ignored
+    }
+
+    /**
+     * Invoked during the KEX negotiation phase to inform about option
+     * being negotiated. <B>Note:</B> this method is called during the
+     * negotiation phase even if {@link #isKexExtensionsAvailable(Session)}
+     * returns {@code false} for the session.
+     *
+     * @param session The {@link Session} executing the negotiation
+     * @param option The negotiated {@link KexProposalOption}
+     * @param nValue The negotiated option value (may be {@code null}/empty).
+     * @param c2sOptions The client proposals
+     * @param cValue The client-side value for the option (may be {@code null}/empty).
+     * @param s2cOptions The server proposals
+     * @param sValue The server-side value for the option (may be {@code null}/empty).
+     * @throws IOException If failed to handle the invocation
+     */
+    default void handleKexExtensionNegotiation(
+            Session session, KexProposalOption option, String nValue,
+            Map<KexProposalOption, String> c2sOptions, String cValue,
+            Map<KexProposalOption, String> s2cOptions, String sValue)
+                throws IOException {
+        // do nothing
+    }
+
+    /**
+     * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message.
+     * <B>Note:</B> this method is called only if {@link #isKexExtensionsAvailable(Session)}
+     * returns {@code true} for the session.
      * @param session The {@link Session}
      * @param phase The phase at which the handler is invoked
      * @throws IOException If failed to handle the invocation
@@ -63,7 +108,9 @@ public interface KexExtensionHandler {
     }
 
     /**
-     * Parses the {@code SSH_MSG_EXT_INFO} message
+     * Parses the {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method
+     * is called only if {@link #isKexExtensionsAvailable(Session)} returns
+     * {@code true} for the session.
      *
      * @param session The {@link Session} through which the message was received
      * @param buffer The message buffer

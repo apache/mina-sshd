@@ -70,12 +70,16 @@ import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.kex.KexFactoryManager;
+import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * TODO Add javadoc
@@ -335,6 +339,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
             setupServerKeyVerifier(client, options, stdin, stdout, stderr);
             setupSessionUserInteraction(client, stdin, stdout, stderr);
+            setupSessionExtensions(client, options, stdin, stdout, stderr);
 
             Map<String, Object> props = client.getProperties();
             props.putAll(options);
@@ -420,6 +425,35 @@ public abstract class SshClientCliSupport extends CliSupport {
         };
         client.setUserInteraction(ui);
         return ui;
+    }
+
+    public static void setupSessionExtensions(
+            KexFactoryManager manager, Map<String, ?> options, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                throws Exception {
+        String kexExtension = Objects.toString(options.remove(KexExtensionHandler.class.getSimpleName()), null);
+        if (GenericUtils.isEmpty(kexExtension)) {
+            return;
+        }
+
+        if ("default".equalsIgnoreCase(kexExtension)) {
+            manager.setKexExtensionHandler(DefaultClientKexExtensionHandler.INSTANCE);
+            stdout.println("Using " + DefaultClientKexExtensionHandler.class.getSimpleName());
+        } else {
+            ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(KexExtensionHandler.class);
+            try {
+                Class<?> clazz = cl.loadClass(kexExtension);
+                KexExtensionHandler handler = KexExtensionHandler.class.cast(clazz.newInstance());
+                manager.setKexExtensionHandler(handler);
+            } catch (Exception e) {
+                stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
+                    .append(" to instantiate KEX extension handler=").append(kexExtension)
+                    .append(": ").println(e.getMessage());
+                stderr.flush();
+                throw e;
+            }
+
+            stdout.println("Using " + KexExtensionHandler.class.getSimpleName() + "=" + kexExtension);
+        }
     }
 
     public static ServerKeyVerifier setupServerKeyVerifier(
