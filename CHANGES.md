@@ -23,7 +23,7 @@ current sesssion - client/server proposals and what has been negotiated.
 * [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer
 for STDERR data sent via the `ChannelSession` - especially for the SFTP subsystem.
 
-* [SSHD=892](https://issues.apache.org/jira/browse/SSHD-882) - Inform user about possible session disconnect prior
+* [SSHD-892](https://issues.apache.org/jira/browse/SSHD-882) - Inform user about possible session disconnect prior
 to disconnecting and allow intervention via `SessionDisconnectHandler`.
 
 * [SSHD-893](https://issues.apache.org/jira/browse/SSHD-893) - Using Path(s) instead of String(s) as DirectoryScanner results
