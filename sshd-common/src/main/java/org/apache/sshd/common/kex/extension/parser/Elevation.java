@@ -20,6 +20,7 @@
 package org.apache.sshd.common.kex.extension.parser;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -37,8 +38,13 @@ public class Elevation extends AbstractKexExtensionParser<String> {
     }
 
     @Override
+    public String parseExtension(byte[] data, int off, int len) throws IOException {
+        return (len <= 0) ? "" : new String(data, off, len, StandardCharsets.UTF_8);
+    }
+
+    @Override
     public String parseExtension(Buffer buffer) throws IOException {
-        return buffer.getString();
+        return parseExtension(buffer.array(), buffer.rpos(), buffer.available());
     }
 
     @Override

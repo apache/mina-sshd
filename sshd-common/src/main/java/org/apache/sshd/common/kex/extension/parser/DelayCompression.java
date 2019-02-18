@@ -22,6 +22,7 @@ package org.apache.sshd.common.kex.extension.parser;
 import java.io.IOException;
 
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -46,7 +47,10 @@ public class DelayCompression extends AbstractKexExtensionParser<DelayedCompress
 
     @Override
     protected void encode(DelayedCompressionAlgorithms algos, Buffer buffer) throws IOException {
+        int lenPos = buffer.wpos();
+        buffer.putInt(0);   // total length placeholder
         buffer.putNameList(algos.getClient2Server());
         buffer.putNameList(algos.getServer2Client());
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
 }

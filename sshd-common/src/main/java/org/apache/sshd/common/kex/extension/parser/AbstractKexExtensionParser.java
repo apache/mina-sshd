@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.apache.sshd.common.kex.extension.KexExtensionParser;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -44,10 +43,7 @@ public abstract class AbstractKexExtensionParser<T> implements KexExtensionParse
     @Override
     public void putExtension(T value, Buffer buffer) throws IOException {
         buffer.putString(getName());
-        int lenPos = buffer.wpos();
-        buffer.putInt(0);   // placeholder for the encoded value length
         encode(value, buffer);
-        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
 
     protected abstract void encode(T value, Buffer buffer) throws IOException;

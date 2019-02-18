@@ -20,8 +20,12 @@
 package org.apache.sshd.common.kex.extension.parser;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -38,8 +42,15 @@ public class ServerSignatureAlgorithms extends AbstractKexExtensionParser<List<S
     }
 
     @Override
+    public List<String> parseExtension(byte[] data, int off, int len) throws IOException {
+        String s = (len <= 0) ? "" : new String(data, off, len, StandardCharsets.UTF_8);
+        String[] vals = GenericUtils.isEmpty(s) ? GenericUtils.EMPTY_STRING_ARRAY : GenericUtils.split(s, ',');
+        return GenericUtils.isEmpty(vals) ? Collections.emptyList() : Arrays.asList(vals);
+    }
+
+    @Override
     public List<String> parseExtension(Buffer buffer) throws IOException {
-        return buffer.getNameList();
+        return parseExtension(buffer.array(), buffer.rpos(), buffer.available());
     }
 
     @Override
