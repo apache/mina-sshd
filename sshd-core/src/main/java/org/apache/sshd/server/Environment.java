@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Interface providing access to the environment map and allowing the registration
@@ -73,9 +74,20 @@ public interface Environment {
      * Add a qualified listener for the specific signals
      *
      * @param listener the {@link SignalListener} to register
-     * @param signal   the {@link Signal}s  the listener is interested in
+     * @param signals The (never {@code null}/empty) {@link Signal}s the listener is interested in
      */
-    void addSignalListener(SignalListener listener, Signal... signal);
+    default void addSignalListener(SignalListener listener, Signal... signals) {
+        addSignalListener(listener, GenericUtils.asEnumSet(signals));
+    }
+
+    /**
+     * Add a global listener for all signals
+     *
+     * @param listener the {@link SignalListener} to register
+     */
+    default void addSignalListener(SignalListener listener) {
+        addSignalListener(listener, Signal.SIGNALS);
+    }
 
     /**
      * Add a qualified listener for the specific signals
@@ -84,13 +96,6 @@ public interface Environment {
      * @param signals  the {@link Signal}s the listener is interested in
      */
     void addSignalListener(SignalListener listener, Collection<Signal> signals);
-
-    /**
-     * Add a global listener for all signals
-     *
-     * @param listener the {@link SignalListener} to register
-     */
-    void addSignalListener(SignalListener listener);
 
     /**
      * Remove a previously registered listener for all the signals it was registered

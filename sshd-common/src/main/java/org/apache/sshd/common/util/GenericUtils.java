@@ -595,6 +595,22 @@ public final class GenericUtils {
         return set;
     }
 
+    @SafeVarargs
+    public static <E extends Enum<E>> Set<E> asEnumSet(E... values) {
+        if (isEmpty(values)) {
+            return Collections.emptySet();
+        }
+
+        Set<E> s = EnumSet.of(values[0]);
+        for (int index = 1 /* we used [0] to populate the initial set */; index < values.length; index++) {
+            if (!s.add(values[index])) {
+                continue;   // debug breakpoint
+            }
+        }
+
+        return s;
+    }
+
     /**
      * @param <V> Type of mapped value
      * @return A {@link Supplier} that returns a <U>new</U> {@link NavigableMap}

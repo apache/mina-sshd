@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server;
 
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.SshdEventListener;
 
 /**
@@ -27,11 +28,11 @@ import org.apache.sshd.common.util.SshdEventListener;
  */
 @FunctionalInterface
 public interface SignalListener extends SshdEventListener {
-
     /**
+     * @param channel The {@link Channel} through which the signal was received
      * @param signal The received {@link Signal}
      */
-    void signal(Signal signal);
+    void signal(Channel channel, Signal signal);
 
     static <L extends SignalListener> L validateListener(L listener) {
         return SshdEventListener.validateListener(listener, SignalListener.class.getSimpleName());

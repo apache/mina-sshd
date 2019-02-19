@@ -18,6 +18,8 @@ current sesssion - client/server proposals and what has been negotiated.
 
 * The `Session` object provides a `KexExtensionHandler` for usage with [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
 
+* The `SignalListener` accepts a `Channel` argument indicating the channel instance through which the signal was received.
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between

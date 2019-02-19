@@ -18,12 +18,12 @@
  */
 package org.apache.sshd.server;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -43,16 +43,6 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
         ptyModes = new ConcurrentHashMap<>();
     }
 
-    @Override
-    public void addSignalListener(SignalListener listener, Signal... signals) {
-        addSignalListener(listener, Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(signals, "No signals")));
-    }
-
-    @Override
-    public void addSignalListener(SignalListener listener) {
-        addSignalListener(listener, Signal.SIGNALS);
-    }
-
     /*
      * NOTE: we don't care if the collection is a Set or not - after all,
      * we hold the listeners inside a Set, so even if we add several times
@@ -64,7 +54,8 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
         ValidateUtils.checkNotNullAndNotEmpty(signals, "No signals");
 
         for (Signal s : signals) {
-            getSignalListeners(s, true).add(listener);
+            Collection<SignalListener> list = getSignalListeners(s, true);
+            list.add(listener);
         }
     }
 
@@ -93,26 +84,27 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
         }
     }
 
-    public void signal(Signal signal) {
+    public void signal(Channel channel, Signal signal) {
         Collection<SignalListener> ls = getSignalListeners(signal, false);
         if (log.isDebugEnabled()) {
-            log.debug("signal({}) - listeners={}", signal, ls);
+            log.debug("signal({})[{}] - listeners={}", channel, signal, ls);
         }
 
         if (GenericUtils.isEmpty(ls)) {
             return;
         }
 
+        boolean traceEnabled = log.isTraceEnabled();
         for (SignalListener l : ls) {
             try {
-                l.signal(signal);
+                l.signal(channel, signal);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Signal {} to {}", signal, l);
+                if (traceEnabled) {
+                    log.trace("signal({}) Signal {} to {}", channel, signal, l);
                 }
             } catch (RuntimeException e) {
-                log.warn("Failed ({}) to signal {} to listener={}: {}",
-                         e.getClass().getSimpleName(), signal, l, e.getMessage());
+                log.warn("signal({}) Failed ({}) to signal {} to listener={}: {}",
+                     channel, e.getClass().getSimpleName(), signal, l, e.getMessage());
             }
         }
     }
@@ -126,7 +118,8 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
      */
     public void set(String key, String value) {
         // TODO: listening for property changes would be nice too.
-        getEnv().put(ValidateUtils.checkNotNullAndNotEmpty(key, "Empty environment variable name"), value);
+        Map<String, String> environ = getEnv();
+        environ.put(ValidateUtils.checkNotNullAndNotEmpty(key, "Empty environment variable name"), value);
     }
 
     /**

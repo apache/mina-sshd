@@ -471,7 +471,7 @@ public class ChannelSession extends AbstractServerChannel {
         StandardEnvironment e = getEnvironment();
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
-        e.signal(Signal.WINCH);
+        e.signal(this, Signal.WINCH);
         return RequestHandler.Result.ReplySuccess;
     }
 
@@ -484,7 +484,8 @@ public class ChannelSession extends AbstractServerChannel {
 
         Signal signal = Signal.get(name);
         if (signal != null) {
-            getEnvironment().signal(signal);
+            StandardEnvironment environ = getEnvironment();
+            environ.signal(this, signal);
         } else {
             log.warn("handleSignal({}) unknown signal received: {}", this, name);
         }
@@ -498,7 +499,8 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleBreak({}) length={}", this, breakLength);
         }
 
-        getEnvironment().signal(Signal.INT);
+        StandardEnvironment environ = getEnvironment();
+        environ.signal(this, Signal.INT);
         return RequestHandler.Result.ReplySuccess;
     }
 

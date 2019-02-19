@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -36,7 +36,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class PtyModeTest extends BaseTestSupport {
+public class PtyModeTest extends JUnitTestSupport {
     public PtyModeTest() {
         super();
     }
