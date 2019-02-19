@@ -42,12 +42,8 @@ public class PtyModeTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testFromInt() {
-        for (PtyMode expected : PtyMode.MODES) {
-            int num = expected.toInt();
-            PtyMode actual = PtyMode.fromInt(num);
-            assertSame("Mismatched result for value=" + num, expected, actual);
-        }
+    public void testOpcodeExtractorOnNull() {
+        assertEquals(-1, PtyMode.OPCODE_EXTRACTOR.applyAsInt(null));
     }
 
     @Test

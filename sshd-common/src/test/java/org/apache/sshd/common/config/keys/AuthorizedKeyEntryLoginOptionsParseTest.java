@@ -26,8 +26,10 @@ import java.util.Map;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
@@ -40,13 +42,15 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@Category({ NoIoTestCase.class })
 public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
     private final String value;
     private final String loginPart;
     private final String keyPart;
     private final Map<String, String> options;
 
-    public AuthorizedKeyEntryLoginOptionsParseTest(String value, String loginPart, String keyPart, Map<String, String> options) {
+    public AuthorizedKeyEntryLoginOptionsParseTest(
+            String value, String loginPart, String keyPart, Map<String, String> options) {
         this.value = value;
         this.loginPart = loginPart;
         this.keyPart = keyPart;

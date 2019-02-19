@@ -121,7 +121,13 @@ public class PtyCapableChannelSession extends ChannelSession {
                 ptyType = "windows";
             }
         } catch (Throwable t) {
-            // Ignore exceptions
+            if (log.isDebugEnabled()) {
+                log.debug("setupSensibleDefaultPty({}) Failed ({}) to setup: {}",
+                    this, t.getClass().getSimpleName(), t.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("setupSensibleDefaultPty(" + this + ") failure details", t);
+            }
         }
     }
 

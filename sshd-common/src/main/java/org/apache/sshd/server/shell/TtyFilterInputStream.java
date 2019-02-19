@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.channel.PtyMode;
@@ -51,7 +52,7 @@ public class TtyFilterInputStream extends FilterInputStream {
     }
 
     public TtyFilterInputStream(InputStream in, Collection<PtyMode> ttyOptions) {
-        super(in);
+        super(Objects.requireNonNull(in, "No input stream provided"));
         // we create a copy of the options so as to avoid concurrent modifications
         this.ttyOptions = GenericUtils.of(ttyOptions);  // TODO validate non-conflicting options
     }
