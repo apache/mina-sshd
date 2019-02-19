@@ -414,6 +414,9 @@ public abstract class AbstractSession extends SessionHelper {
             case KexExtensions.SSH_MSG_EXT_INFO:
                 handleKexExtension(cmd, buffer);
                 break;
+            case KexExtensions.SSH_MSG_NEWCOMPRESS:
+                handleNewCompression(cmd, buffer);
+                break;
             default:
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
                     if (firstKexPacketFollows != null) {
@@ -545,12 +548,24 @@ public abstract class AbstractSession extends SessionHelper {
 
     protected void handleKexExtension(int cmd, Buffer buffer) throws Exception {
         KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
-            notImplemented(cmd, buffer);
+        int startPos = buffer.rpos();
+        if ((extHandler != null) && extHandler.handleKexExtensionsMessage(this, buffer)) {
             return;
         }
 
-        extHandler.handleKexExtensionsMessage(this, buffer);
+        buffer.rpos(startPos);  // restore original read position
+        notImplemented(cmd, buffer);
+    }
+
+    protected void handleNewCompression(int cmd, Buffer buffer) throws Exception {
+        KexExtensionHandler extHandler = getKexExtensionHandler();
+        int startPos = buffer.rpos();
+        if ((extHandler != null) && extHandler.handleKexCompressionMessage(this, buffer)) {
+            return;
+        }
+
+        buffer.rpos(startPos);  // restore original read position
+        notImplemented(cmd, buffer);
     }
 
     protected void handleServiceRequest(Buffer buffer) throws Exception {

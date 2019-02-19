@@ -109,24 +109,44 @@ public interface KexExtensionHandler {
 
     /**
      * Parses the {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method
-     * is called only if {@link #isKexExtensionsAvailable(Session)} returns
+     * is called regardless of whether {@link #isKexExtensionsAvailable(Session)} returns
      * {@code true} for the session.
      *
      * @param session The {@link Session} through which the message was received
      * @param buffer The message buffer
+     * @return {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED}
+     * will be generated
      * @throws IOException If failed to handle the message
      * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-2.3">RFC-8308 - section 2.3</A>
      * @see #handleKexExtensionRequest(Session, int, int, String, byte[])
      */
-    default void handleKexExtensionsMessage(Session session, Buffer buffer) throws IOException {
+    default boolean handleKexExtensionsMessage(Session session, Buffer buffer) throws IOException {
         int count = buffer.getInt();
         for (int index = 0; index < count; index++) {
             String name = buffer.getString();
             byte[] data = buffer.getBytes();
             if (!handleKexExtensionRequest(session, index, count, name, data)) {
-                return;
+                break;
             }
         }
+
+        return true;
+    }
+
+    /**
+     * Parses the {@code SSH_MSG_NEWCOMPRESS} message. <B>Note:</B> this method
+     * is called regardless of whether {@link #isKexExtensionsAvailable(Session)} returns
+     * {@code true} for the session.
+     *
+     * @param session The {@link Session} through which the message was received
+     * @param buffer The message buffer
+     * @return {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED}
+     * will be generated
+     * @throws IOException If failed to handle the message
+     * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
+     */
+    default boolean handleKexCompressionMessage(Session session, Buffer buffer) throws IOException {
+        return true;
     }
 
     /**
