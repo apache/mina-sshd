@@ -45,7 +45,7 @@ file to validate the server key. One can use this class + some existing code to 
 
 Of course, one can implement the verifier in whatever other manner is suitable for the specific code needs.
 
-### ClientIdentityLoader/KeyPairProvider
+### `ClientIdentityLoader/KeyPairProvider`
 
 One can set up the public/private keys to be used in case a password-less authentication is needed. By default, the client is configured to automatically
 detect and use the identity files residing in the user's *~/.ssh* folder (e.g., *id_rsa*, *id_ecdsa*) and present them as part of the authentication process.
@@ -98,7 +98,7 @@ The usual _OpenSSH_ default seems to be 16, but users can ask for more (or less)
 Various discussions on the net seem to indicate that 64 is the value at which many computers start to slow down noticeably, so
 our default limit seems quite suitable (and beyond) for most cases we are likely to encounter "in the wild".
 
-### UserInteraction
+### `UserInteraction`
 
 This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt).
 The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
@@ -153,3 +153,40 @@ sessions depends on the actual changed configuration. Here is how a typical usag
     client.stop();
 
 ```
+
+## Running a command or opening a shell
+
+When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the
+reported environment variables. By default, unless specific instructions are provided the code uses some internal
+defaults - which however, might not be adequate for the specific client/server.
+
+```java
+    // Assuming one has obtained a ClientSession as already shown
+    try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
+        channel.setIn(...stdin...);
+        channel.setOut(...stdout...);
+        channel.setErr(...stderr...);
+        ... spawn the thread that will pump the STDIN/OUT/ERR
+        channel.open().verify(...some timeout...);
+        // Wait (forever) for the channel to close - signalling shell exited
+        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+    }
+
+    // In order to override the PTY and/or environment
+    Map<String, ?> env = ...some environment...
+    PtyChannelConfiguration ptyConfig = ...some configuration...
+    try (ClientChannel channel = session.createShellChannel(ptyConfig, env)) {
+        ... same code as before ...
+    }
+
+    // the same code can be used when opening a ChannelExec in order to run a single command
+
+```
+
+One possible source of PTY configuration is code that provides some default initializations based on the detected O/S
+type - `PtyChannelConfigurationMutator#setupSensitiveDefaultPtyConfiguration`. Of course, the user may use whatever other
+considerations when opening such a channel.
+
+**Caveat Emptor:** If the detected O/S type is Unix/Linux, then the `setupSensitiveDefaultPtyConfiguration` code issues an `stty` command
+and parses the results (see `SttySupport` class). Since this involves using `System#exec` it is a source of concern as it may hang, throw
+an exception, provide corrupted data, etc...

@@ -80,4 +80,7 @@ client.setSignatureFactories(
         BuiltinSignatures.dsa));
 ```
 
-* [SSHD-896](https://issues.apache.org/jira/browse/SSHD-896) - Added support for [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
+* [SSHD-896](https://issues.apache.org/jira/browse/SSHD-896) - Added support for [KEX extension negotiation](https://tools.ietf.org/html/rfc8308)
+
+* [SSHD-897](https://issues.apache.org/jira/browse/SSHD-897) - The default CLI code automatically tries to detect the PTY settings to use
+if opening a shell or command channel.
