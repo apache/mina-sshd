@@ -35,20 +35,44 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KexExtensionHandler {
-    enum KexPhase {
-        NEWKEYS,
-        AUTHOK;
+    /**
+     * Provides a hint as to the context in which {@code isKexExtensionsAvailable} is invoked
+     *
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    enum AvailabilityPhase {
+        /**
+         * Decide whether to delay sending the KEX-INIT message until
+         * the peer one has been received. <B>Note:</B> currently invoked only
+         * by client sessions, but code should not rely on this implicit assumption.
+         */
+        PREKEX,
 
-        public static final Set<KexPhase> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(KexPhase.class));
+        /**
+         * About to create the KEX-INIT proposal - should this session declare
+         * it support the KEX negotiation extension mechanism or not.
+         */
+        PROPOSAL,
+
+        /**
+         * About to send the {@code SSH_MSG_NEWKEYS} message
+         */
+        NEWKEYS,
+
+        /**
+         * About to send {@code SSH_MSG_USERAUTH_SUCCESS} message. <B>Note:</B> currently
+         * invoked only by server sessions, but code should not rely on this implicit assumption.
+         */
+        AUTHOK;
     }
 
     /**
      * @param session The {@link Session} about to execute KEX
+     * @param phase The {@link AvailabilityPhase} hint as to why the query is being made
      * @return {@code true} whether to KEX extensions are supported/allowed for the session
      * @throws IOException If failed to process the request
      */
-    default boolean isKexExtensionsAvailable(Session session) throws IOException {
+    default boolean isKexExtensionsAvailable(Session session, AvailabilityPhase phase) throws IOException {
         return true;
     }
 
@@ -92,6 +116,18 @@ public interface KexExtensionHandler {
             Map<KexProposalOption, String> s2cOptions, String sValue)
                 throws IOException {
         // do nothing
+    }
+
+    /**
+     * The phase at which {@code sendKexExtensions} is invoked
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    enum KexPhase {
+        NEWKEYS,
+        AUTHOK;
+
+        public static final Set<KexPhase> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(KexPhase.class));
     }
 
     /**

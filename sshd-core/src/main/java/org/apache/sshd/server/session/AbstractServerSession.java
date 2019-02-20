@@ -45,6 +45,7 @@ import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
@@ -280,7 +281,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
          *      + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
          */
         KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this)) {
+        if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.AUTHOK)) {
             extHandler.sendKexExtensions(this, KexPhase.AUTHOK);
         }
 

@@ -81,7 +81,11 @@ and/or connection service - the one registered "closest" to connection service w
 
 ### `KexExtensionHandler`
 
-Provides hook for implementing [KEX extension negotiation](https://tools.wordtothewise.com/rfc/rfc8308)
+Provides hooks for implementing [KEX extension negotiation](https://tools.ietf.org/html/rfc8308).
+
+**Note:** it can be used for monitoring the KEX mechanism and intervene in a more general case for other purposes as well. In any case, it is
+highly recommended though to read the interface documentation and also review the code that invokes it before attempting to use it.
+An **experimental** implementation example is available for the client side - see `DefaultClientKexExtensionHandler`.
 
 ### `ReservedSessionMessagesHandler`
 

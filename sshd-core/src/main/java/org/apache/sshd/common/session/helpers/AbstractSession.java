@@ -64,6 +64,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
 import org.apache.sshd.common.kex.extension.KexExtensions;
 import org.apache.sshd.common.mac.Mac;
@@ -520,7 +521,7 @@ public abstract class AbstractSession extends SessionHelper {
          *          + As the next packet following the server's first SSH_MSG_NEWKEYS.
          */
         KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
+        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.NEWKEYS))) {
             return future;
         }
 
@@ -621,7 +622,10 @@ public abstract class AbstractSession extends SessionHelper {
             log.debug("handleKexInit({}) SSH_MSG_KEXINIT", this);
         }
         receiveKexInit(buffer);
+        doKexNegotiation();
+    }
 
+    protected void doKexNegotiation() throws Exception {
         if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
             sendKexInit();
         } else if (!kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
@@ -632,9 +636,10 @@ public abstract class AbstractSession extends SessionHelper {
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
         Collection<? extends NamedFactory<KeyExchange>> kexFactories = getKeyExchangeFactories();
         synchronized (pendingPackets) {
-            kex = ValidateUtils.checkNotNull(NamedFactory.create(kexFactories, kexAlgorithm),
-                    "Unknown negotiated KEX algorithm: %s",
-                    kexAlgorithm);
+            kex = ValidateUtils.checkNotNull(
+                NamedFactory.create(kexFactories, kexAlgorithm),
+                "Unknown negotiated KEX algorithm: %s",
+                kexAlgorithm);
         }
 
         byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
@@ -1941,7 +1946,7 @@ public abstract class AbstractSession extends SessionHelper {
         String proposal = super.resolveSessionKexProposal(hostKeyTypes);
         // see https://tools.ietf.org/html/rfc8308
         KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this))) {
+        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.PROPOSAL))) {
             return proposal;
         }
 
@@ -2048,7 +2053,7 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected abstract void checkKeys() throws IOException;
 
-    protected byte[] receiveKexInit(Buffer buffer) throws IOException {
+    protected byte[] receiveKexInit(Buffer buffer) throws Exception {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
 
         byte[] seed;
@@ -2058,7 +2063,8 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("receiveKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
+            log.trace("receiveKexInit({}) proposal={} seed: {}",
+                this, proposal, BufferUtils.toHex(':', seed));
         }
 
         return seed;

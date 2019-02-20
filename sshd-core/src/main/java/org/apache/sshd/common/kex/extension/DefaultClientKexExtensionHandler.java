@@ -56,7 +56,12 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     /**
      * Session {@link AttributeKey} used to store the client's proposal
      */
-    public static final AttributeKey<Map<KexProposalOption, String>> PROPOSAL_KEY = new AttributeKey<>();
+    public static final AttributeKey<Map<KexProposalOption, String>> CLIENT_PROPOSAL_KEY = new AttributeKey<>();
+
+    /**
+     * Session {@link AttributeKey} used to store the server's proposal
+     */
+    public static final AttributeKey<Map<KexProposalOption, String>> SERVER_PROPOSAL_KEY = new AttributeKey<>();
 
     public static final NavigableSet<String> DEFAULT_EXTRA_SIGNATURES =
         Collections.unmodifiableNavigableSet(
@@ -71,8 +76,60 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     }
 
     @Override
-    public boolean isKexExtensionsAvailable(Session session) throws IOException {
-        return (session != null) && (!session.isServerSession());
+    public boolean isKexExtensionsAvailable(Session session, AvailabilityPhase phase) throws IOException {
+        if ((session == null) || session.isServerSession()) {
+            return false;
+        }
+
+        // We only need to take special care during the proposal build phase
+        if (phase != AvailabilityPhase.PROPOSAL) {
+            return true;
+        }
+
+        boolean debugEnabled = log.isDebugEnabled();
+        // Check if client already sent its proposal - if not, we can still influence it
+        Map<KexProposalOption, String> clientProposal = session.getAttribute(CLIENT_PROPOSAL_KEY);
+        Map<KexProposalOption, String> serverProposal = session.getAttribute(SERVER_PROPOSAL_KEY);
+        if (GenericUtils.isNotEmpty(clientProposal)) {
+            if (debugEnabled) {
+                log.debug("isKexExtensionsAvailable({})[{}] already sent proposal={} (server={})",
+                    session, phase, clientProposal, serverProposal);
+            }
+            return false;
+        }
+
+        /*
+         * According to https://tools.ietf.org/html/rfc8308#section-3.1:
+         *
+         *
+         *      Note that implementations are known to exist that apply
+         *      authentication penalties if the client attempts to use an
+         *      unexpected public key algorithm.
+         *
+         * Therefore we want to be sure the server declared its support
+         * for extensions before we declare ours.
+         */
+        if (GenericUtils.isEmpty(serverProposal)) {
+            if (debugEnabled) {
+                log.debug("isKexExtensionsAvailable({})[{}] no server proposal", session, phase);
+            }
+            return false;
+        }
+
+        String algos = serverProposal.get(KexProposalOption.ALGORITHMS);
+        String extDeclared = Stream.of(GenericUtils.split(algos, ','))
+            .filter(s -> KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(s))
+            .findFirst()
+            .orElse(null);
+        if (GenericUtils.isEmpty(extDeclared)) {
+            if (debugEnabled) {
+                log.debug("isKexExtensionsAvailable({})[{}] server proposal does not include extension indicator: {}",
+                    session, phase, algos);
+            }
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -83,61 +140,11 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             return; // just in case
         }
 
-        boolean debugEnabled = log.isDebugEnabled();
-        Collection<String> extraAlgos = getExtraSignatureAlgorithms(session);
-        if (GenericUtils.isEmpty(extraAlgos)) {
-            if (debugEnabled) {
-                log.debug("handleKexInitProposal({}) no extra signatures to add to {}", session, proposal);
-            }
-            return;
+        session.setAttribute(initiator ? CLIENT_PROPOSAL_KEY : SERVER_PROPOSAL_KEY, new EnumMap<>(proposal));
+        if (log.isDebugEnabled()) {
+            log.debug("handleKexInitProposal({})[initiator={}] proposal={}", session, initiator, proposal);
         }
-
-        Collection<? extends NamedResource> sigList = session.getSignatureFactories();
-        long existCount = sigList.stream().filter(f -> extraAlgos.contains(f.getName())).count();
-        if (existCount == extraAlgos.size()) {
-            if (debugEnabled) {
-                log.debug("handleKexInitProposal({}) required extra signatures ({}) already supported for {}",
-                    session, extraAlgos, proposal);
-            }
-            return;
-        }
-
-        if (initiator) {
-            session.setAttribute(PROPOSAL_KEY, new EnumMap<>(proposal));
-            if (debugEnabled) {
-                log.debug("handleKexInitProposal({}) initial proposal={}", session, proposal);
-            }
-            return;
-        }
-
-        // Check if client already sent its proposal - if not, we can still influence it
-        Map<KexProposalOption, String> sentProposal = session.getAttribute(PROPOSAL_KEY);
-        if (GenericUtils.isNotEmpty(sentProposal)) {
-            if (debugEnabled) {
-                log.debug("handleKexInitProposal({}) already sent proposal={} (server={})",
-                    session, sentProposal, proposal);
-            }
-            return;
-        }
-
-        String algos = proposal.get(KexProposalOption.ALGORITHMS);
-        String extDeclared = Stream.of(GenericUtils.split(algos, ','))
-            .filter(s -> KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(s))
-            .findFirst()
-            .orElse(null);
-        if (GenericUtils.isEmpty(extDeclared)) {
-            if (debugEnabled) {
-                log.debug("handleKexInitProposal({}) server proposal={} does not include extension indicator",
-                    session, proposal);
-            }
-            return;
-        }
-
-        updateAvailableSignatureFactories(session, extraAlgos);
-    }
-
-    protected Collection<String> getExtraSignatureAlgorithms(Session session) throws IOException {
-        return DEFAULT_EXTRA_SIGNATURES;
+        return;
     }
 
     @Override

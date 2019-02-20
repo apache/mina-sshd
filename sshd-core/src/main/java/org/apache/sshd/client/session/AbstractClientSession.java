@@ -457,6 +457,25 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
+    protected byte[] receiveKexInit(Buffer buffer) throws Exception {
+        byte[] seed = super.receiveKexInit(buffer);
+        /*
+         * Check if the session has delayed its KEX-INIT until the
+         * server's one was received in order to support KEX
+         * extension negotiation (RFC 8308).
+         */
+        if (kexState.compareAndSet(KexState.UNKNOWN, KexState.RUN)) {
+            if (log.isDebugEnabled()) {
+                log.debug("receiveKexInit({}) sending client proposal", this);
+            }
+            kexState.set(KexState.INIT);
+            sendKexInit();
+        }
+
+        return seed;
+    }
+
+    @Override
     protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(serverProposal, proposal);
         setServerKexData(seed);
