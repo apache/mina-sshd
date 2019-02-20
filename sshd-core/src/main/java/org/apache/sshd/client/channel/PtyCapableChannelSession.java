@@ -20,18 +20,19 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.PtyChannelConfiguration;
+import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
+import org.apache.sshd.common.channel.PtyChannelConfigurationMutator;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.channel.SttySupport;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.MapEntryUtils.EnumMapBuilder;
-import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -75,51 +76,41 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class PtyCapableChannelSession extends ChannelSession {
-    public static final int DEFAULT_COLUMNS_COUNT = 80;
-    public static final int DEFAULT_ROWS_COUNT = 24;
-    public static final int DEFAULT_WIDTH = 640;
-    public static final int DEFAULT_HEIGHT = 480;
-    public static final Map<PtyMode, Integer> DEFAULT_PTY_MODES =
-        EnumMapBuilder.<PtyMode, Integer>builder(PtyMode.class)
-            .put(PtyMode.ISIG, 1)
-            .put(PtyMode.ICANON, 1)
-            .put(PtyMode.ECHO, 1)
-            .put(PtyMode.ECHOE, 1)
-            .put(PtyMode.ECHOK, 1)
-            .put(PtyMode.ECHONL, 0)
-            .put(PtyMode.NOFLSH, 0)
-            .immutable();
-
+public class PtyCapableChannelSession extends ChannelSession implements PtyChannelConfigurationMutator {
     private boolean agentForwarding;
     private boolean usePty;
-    private String ptyType;
-    private int ptyColumns = DEFAULT_COLUMNS_COUNT;
-    private int ptyLines = DEFAULT_ROWS_COUNT;
-    private int ptyWidth = DEFAULT_WIDTH;
-    private int ptyHeight = DEFAULT_HEIGHT;
-    private Map<PtyMode, Integer> ptyModes = new EnumMap<>(PtyMode.class);
-    private final Map<String, String> env = new LinkedHashMap<>();
+    private final Map<String, Object> env = new LinkedHashMap<>();
+    private final PtyChannelConfiguration config;
 
-    public PtyCapableChannelSession(boolean usePty) {
+    public PtyCapableChannelSession(boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         this.usePty = usePty;
-        ptyType = System.getenv("TERM");
-        if (GenericUtils.isEmpty(ptyType)) {
-            ptyType = "dummy";
+        this.config = PtyChannelConfigurationMutator.copyConfiguration(
+            configHolder, new PtyChannelConfiguration());
+        this.config.setPtyType(resolvePtyType(this.config));
+        if (GenericUtils.isNotEmpty(env)) {
+            for (Map.Entry<String, ?> ee : env.entrySet()) {
+                setEnv(ee.getKey(), ee.getValue());
+            }
+        }
+    }
+
+    protected String resolvePtyType(PtyChannelConfigurationHolder configHolder) {
+        String ptyType = configHolder.getPtyType();
+        if (GenericUtils.isNotEmpty(ptyType)) {
+            return ptyType;
         }
 
-        ptyModes.putAll(DEFAULT_PTY_MODES);
+        ptyType = System.getenv("TERM");
+        if (GenericUtils.isNotEmpty(ptyType)) {
+            return ptyType;
+        }
+
+        return DUMMY_PTY_TYPE;
     }
 
     public void setupSensibleDefaultPty() {
         try {
-            if (OsUtils.isUNIX()) {
-                ptyModes = SttySupport.getUnixPtyModes();
-                ptyColumns = SttySupport.getTerminalWidth();
-                ptyLines = SttySupport.getTerminalHeight();
-            } else {
-                ptyType = "windows";
-            }
+            PtyChannelConfigurationMutator.setupSensitiveDefaultPtyConfiguration(this);
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {
                 log.debug("setupSensibleDefaultPty({}) Failed ({}) to setup: {}",
@@ -147,60 +138,84 @@ public class PtyCapableChannelSession extends ChannelSession {
         this.usePty = usePty;
     }
 
+    @Override
     public String getPtyType() {
-        return ptyType;
+        return config.getPtyType();
     }
 
+    @Override
     public void setPtyType(String ptyType) {
-        this.ptyType = ptyType;
+        config.setPtyType(ptyType);
     }
 
+    @Override
     public int getPtyColumns() {
-        return ptyColumns;
+        return config.getPtyColumns();
     }
 
+    @Override
     public void setPtyColumns(int ptyColumns) {
-        this.ptyColumns = ptyColumns;
+        config.setPtyColumns(ptyColumns);
     }
 
+    @Override
     public int getPtyLines() {
-        return ptyLines;
+        return config.getPtyLines();
     }
 
+    @Override
     public void setPtyLines(int ptyLines) {
-        this.ptyLines = ptyLines;
+        config.setPtyLines(ptyLines);
     }
 
+    @Override
     public int getPtyWidth() {
-        return ptyWidth;
+        return config.getPtyWidth();
     }
 
+    @Override
     public void setPtyWidth(int ptyWidth) {
-        this.ptyWidth = ptyWidth;
+        config.setPtyWidth(ptyWidth);
     }
 
+    @Override
     public int getPtyHeight() {
-        return ptyHeight;
+        return config.getPtyHeight();
     }
 
+    @Override
     public void setPtyHeight(int ptyHeight) {
-        this.ptyHeight = ptyHeight;
+        config.setPtyHeight(ptyHeight);
     }
 
+    @Override
     public Map<PtyMode, Integer> getPtyModes() {
-        return ptyModes;
+        return config.getPtyModes();
     }
 
+    @Override
     public void setPtyModes(Map<PtyMode, Integer> ptyModes) {
-        this.ptyModes = (ptyModes == null) ? Collections.emptyMap() : ptyModes;
+        config.setPtyModes((ptyModes == null) ? Collections.emptyMap() : ptyModes);
     }
 
-    public void setEnv(String key, String value) {
-        env.put(key, value);
+    /**
+     * @param key The (never {@code null}) key (Note: may be empty...)
+     * @param value The value to set - if {@code null} then the pre-existing
+     * value for the key (if any) is <U>removed</U>.
+     * @return The replaced/removed previous value - {@code null} if no previous
+     * value set for the key.
+     */
+    public Object setEnv(String key, Object value) {
+        ValidateUtils.checkNotNull(key, "No key provided");
+        if (value == null) {
+            return env.remove(key);
+        } else {
+            return env.put(key, value);
+        }
     }
 
     public void sendWindowChange(int columns, int lines) throws IOException {
-        sendWindowChange(columns, lines, ptyHeight, ptyWidth);
+        sendWindowChange(columns, lines, getPtyHeight(), getPtyWidth());
     }
 
     public void sendWindowChange(int columns, int lines, int height, int width) throws IOException {
@@ -209,20 +224,20 @@ public class PtyCapableChannelSession extends ChannelSession {
                       this, columns, lines, height, width);
         }
 
-        ptyColumns = columns;
-        ptyLines = lines;
-        ptyHeight = height;
-        ptyWidth = width;
+        setPtyColumns(columns);
+        setPtyLines(lines);
+        setPtyHeight(height);
+        setPtyWidth(width);
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("window-change");
         buffer.putBoolean(false);   // want-reply
-        buffer.putInt(ptyColumns);
-        buffer.putInt(ptyLines);
-        buffer.putInt(ptyHeight);
-        buffer.putInt(ptyWidth);
+        buffer.putInt(getPtyColumns());
+        buffer.putInt(getPtyLines());
+        buffer.putInt(getPtyHeight());
+        buffer.putInt(getPtyWidth());
         writePacket(buffer);
     }
 
@@ -234,7 +249,8 @@ public class PtyCapableChannelSession extends ChannelSession {
                 log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
-            String channelType = session.getStringProperty(SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
+            String channelType = session.getStringProperty(
+                SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
             buffer.putString(channelType);
@@ -244,25 +260,28 @@ public class PtyCapableChannelSession extends ChannelSession {
 
         if (usePty) {
             if (debugEnabled) {
-                log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: type={}, cols={}, lines={}, height={}, width={}, modes={}",
-                          this, ptyType, ptyColumns, ptyLines, ptyHeight, ptyWidth, ptyModes);
+                log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: {}", this, config);
             }
 
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
             buffer.putInt(getRecipient());
             buffer.putString("pty-req");
             buffer.putBoolean(false);   // want-reply
-            buffer.putString(ptyType);
-            buffer.putInt(ptyColumns);
-            buffer.putInt(ptyLines);
-            buffer.putInt(ptyHeight);
-            buffer.putInt(ptyWidth);
+            buffer.putString(getPtyType());
+            buffer.putInt(getPtyColumns());
+            buffer.putInt(getPtyLines());
+            buffer.putInt(getPtyHeight());
+            buffer.putInt(getPtyWidth());
 
-            Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + Integer.BYTES) + Long.SIZE, false);
-            ptyModes.forEach((mode, value) -> {
-                modes.putByte((byte) mode.toInt());
-                modes.putInt(value.longValue());
-            });
+            Map<PtyMode, Integer> ptyModes = getPtyModes();
+            int numModes = GenericUtils.size(ptyModes);
+            Buffer modes = new ByteArrayBuffer(numModes * (1 + Integer.BYTES) + Long.SIZE, false);
+            if (numModes > 0) {
+                ptyModes.forEach((mode, value) -> {
+                    modes.putByte((byte) mode.toInt());
+                    modes.putInt(value.longValue());
+                });
+            }
             modes.putByte(PtyMode.TTY_OP_END);
             buffer.putBytes(modes.getCompactData());
             writePacket(buffer);
@@ -274,15 +293,17 @@ public class PtyCapableChannelSession extends ChannelSession {
             }
 
             // Cannot use forEach because of the IOException being thrown by writePacket
-            for (Map.Entry<String, String> entry : env.entrySet()) {
+            for (Map.Entry<String, ?> entry : env.entrySet()) {
                 String key = entry.getKey();
-                String value = entry.getValue();
-                Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + value.length() + Integer.SIZE);
+                Object value = entry.getValue();
+                String str = Objects.toString(value);
+                Buffer buffer = session.createBuffer(
+                    SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + GenericUtils.length(str) + Integer.SIZE);
                 buffer.putInt(getRecipient());
                 buffer.putString("env");
                 buffer.putBoolean(false);   // want-reply
                 buffer.putString(key);
-                buffer.putString(value);
+                buffer.putString(str);
                 writePacket(buffer);
             }
         }

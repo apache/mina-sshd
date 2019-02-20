@@ -48,6 +48,7 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -283,12 +284,14 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ChannelExec createExecChannel(String command) throws IOException {
-        ChannelExec channel = new ChannelExec(command);
+    public ChannelExec createExecChannel(
+            String command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+                throws IOException {
+        ChannelExec channel = new ChannelExec(command, ptyConfig, env);
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createExecChannel({})[{}] created id={}", this, command, id);
+            log.debug("createExecChannel({})[{}] created id={} - PTY={}", this, command, id, ptyConfig);
         }
         return channel;
     }
@@ -388,16 +391,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ChannelShell createShellChannel() throws IOException {
+    public ChannelShell createShellChannel(PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env) throws IOException {
         if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
             throw new IllegalStateException("Interactive channels are not supported with none cipher");
         }
 
-        ChannelShell channel = new ChannelShell();
+        ChannelShell channel = new ChannelShell(ptyConfig, env);
         ConnectionService service = getConnectionService();
         int id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createShellChannel({}) created id={}", this, id);
+            log.debug("createShellChannel({}) created id={} - PTY={}", this, id, ptyConfig);
         }
         return channel;
     }

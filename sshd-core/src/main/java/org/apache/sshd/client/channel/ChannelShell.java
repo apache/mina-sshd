@@ -20,9 +20,11 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Map;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -39,8 +41,8 @@ public class ChannelShell extends PtyCapableChannelSession {
     public static final String REQUEST_SHELL_REPLY = "channel-shell-want-reply";
     public static final boolean DEFAULT_REQUEST_SHELL_REPLY = false;
 
-    public ChannelShell() {
-        super(true);
+    public ChannelShell(PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+        super(true, configHolder, env);
     }
 
     @Override

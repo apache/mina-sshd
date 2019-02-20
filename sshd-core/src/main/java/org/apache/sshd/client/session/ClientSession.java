@@ -48,6 +48,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
@@ -148,21 +149,54 @@ public interface ClientSession
     ClientChannel createChannel(String type, String subType) throws IOException;
 
     /**
-     * Create a channel to start a shell.
+     * Create a channel to start a shell using default PTY settings and environment.
      *
      * @return The created {@link ChannelShell}
      * @throws IOException If failed to create the requested channel
      */
-    ChannelShell createShellChannel() throws IOException;
+    default ChannelShell createShellChannel() throws IOException {
+        return createShellChannel(null, Collections.emptyMap());
+    }
 
     /**
-     * Create a channel to execute a command.
+     * Create a channel to start a shell using specific PTY settings and/or environment.
+     *
+     * @param ptyConfig The PTY configuration to use - if {@code null} then
+     * internal defaults are used
+     * @param env Extra environment configuration to be transmitted to the server - ignored
+     * if {@code null}/empty.
+     * @return The created {@link ChannelShell}
+     * @throws IOException If failed to create the requested channel
+     */
+    ChannelShell createShellChannel(
+        PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+            throws IOException;
+
+    /**
+     * Create a channel to execute a command using default PTY settings and environment.
      *
      * @param command The command to execute
      * @return The created {@link ChannelExec}
      * @throws IOException If failed to create the requested channel
      */
-    ChannelExec createExecChannel(String command) throws IOException;
+    default ChannelExec createExecChannel(String command) throws IOException {
+        return createExecChannel(command, null, Collections.emptyMap());
+    }
+
+    /**
+     * Create a channel to execute a command using specific PTY settings and/or environment.
+     *
+     * @param command The command to execute
+     * @param ptyConfig The PTY configuration to use - if {@code null} then
+     * internal defaults are used
+     * @param env Extra environment configuration to be transmitted to the server - ignored
+     * if {@code null}/empty.
+     * @return The created {@link ChannelExec}
+     * @throws IOException If failed to create the requested channel
+     */
+    ChannelExec createExecChannel(
+        String command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+            throws IOException;
 
     /**
      * Execute a command that requires no input and returns its output
@@ -236,7 +270,9 @@ public interface ClientSession
      * @throws IOException If failed to execute the command or got a non-zero exit status
      * @see ClientChannel#validateCommandExitStatusCode(String, Integer) validateCommandExitStatusCode
      */
-    default void executeRemoteCommand(String command, OutputStream stdout, OutputStream stderr, Charset charset) throws IOException {
+    default void executeRemoteCommand(
+            String command, OutputStream stdout, OutputStream stderr, Charset charset)
+                throws IOException {
         if (charset == null) {
             charset = StandardCharsets.US_ASCII;
         }
@@ -276,7 +312,9 @@ public interface ClientSession
      * @return The created {@link ChannelDirectTcpip}
      * @throws IOException If failed to create the requested channel
      */
-    ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
+    ChannelDirectTcpip createDirectTcpipChannel(
+        SshdSocketAddress local, SshdSocketAddress remote)
+            throws IOException;
 
     /**
      * Starts a local port forwarding and returns a tracker that stops the
@@ -290,8 +328,11 @@ public interface ClientSession
      * @throws IOException If failed to set up the requested forwarding
      * @see #startLocalPortForwarding(SshdSocketAddress, SshdSocketAddress)
      */
-    default ExplicitPortForwardingTracker createLocalPortForwardingTracker(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        return new ExplicitPortForwardingTracker(this, true, local, remote, startLocalPortForwarding(local, remote));
+    default ExplicitPortForwardingTracker createLocalPortForwardingTracker(
+            SshdSocketAddress local, SshdSocketAddress remote)
+                throws IOException {
+        return new ExplicitPortForwardingTracker(
+            this, true, local, remote, startLocalPortForwarding(local, remote));
     }
 
     /**
@@ -306,8 +347,11 @@ public interface ClientSession
      * @throws IOException If failed to set up the requested forwarding
      * @see #startRemotePortForwarding(SshdSocketAddress, SshdSocketAddress)
      */
-    default ExplicitPortForwardingTracker createRemotePortForwardingTracker(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        return new ExplicitPortForwardingTracker(this, false, local, remote, startRemotePortForwarding(remote, local));
+    default ExplicitPortForwardingTracker createRemotePortForwardingTracker(
+            SshdSocketAddress remote, SshdSocketAddress local)
+                throws IOException {
+        return new ExplicitPortForwardingTracker(
+            this, false, local, remote, startRemotePortForwarding(remote, local));
     }
 
     /**
@@ -397,6 +441,7 @@ public interface ClientSession
     static Iterator<String> passwordIteratorOf(ClientSession session) {
         return (session == null)
             ? Collections.<String>emptyIterator()
-            : PasswordIdentityProvider.iteratorOf(session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
+            : PasswordIdentityProvider.iteratorOf(
+                session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
     }
 }

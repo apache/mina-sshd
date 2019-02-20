@@ -805,7 +805,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = createTestClientSession();
-             ChannelShell channel = new ChannelShell();
+             ChannelShell channel = new ChannelShell(null, Collections.emptyMap());
              ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream();
              ByteArrayOutputStream err = new ByteArrayOutputStream()) {

@@ -20,6 +20,13 @@ current sesssion - client/server proposals and what has been negotiated.
 
 * The `SignalListener` accepts a `Channel` argument indicating the channel instance through which the signal was received.
 
+* When creating a client shell or command channel one can provide optional PTY and/or environment values in order
+to override the internal default ones.
+
+    * In this context, the `PtyCapableChannelSession#setEnv` method has been modified to accept ANY object.
+    When the environment values are sent to the server, the object's `toString()` will be used. Furthermore,
+    if one provides a `null` value, the previous registered value (if any) is **removed**.
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between

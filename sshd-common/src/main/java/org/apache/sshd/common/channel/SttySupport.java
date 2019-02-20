@@ -67,7 +67,7 @@ public final class SttySupport {
             if (str.charAt(0) == 'v') {
                 str = str.substring(1);
                 int v = findChar(stty, str);
-                if (v < 0 && "reprint".equals(str)) {
+                if ((v < 0) && "reprint".equals(str)) {
                     v = findChar(stty, "rprnt");
                 }
                 if (v >= 0) {

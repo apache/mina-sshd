@@ -20,9 +20,11 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Map;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -42,8 +44,8 @@ public class ChannelExec extends PtyCapableChannelSession {
 
     private final String command;
 
-    public ChannelExec(String command) {
-        super(false);
+    public ChannelExec(String command, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+        super(false, configHolder, env);
         this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty");
     }
 
