@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +50,7 @@ import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.config.SshClientConfigFileReader;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
@@ -61,6 +63,9 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.PtyChannelConfiguration;
+import org.apache.sshd.common.channel.PtyChannelConfigurationMutator;
+import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
@@ -78,6 +83,7 @@ import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
@@ -192,7 +198,12 @@ public abstract class SshClientCliSupport extends CliSupport {
                     Path idFile = resolveIdentityFile(optValue);
                     identities.add(idFile);
                 } else {
-                    options.put(optName, optValue);
+                    Object prev = options.get(optName);
+                    if (prev == null) {
+                        options.put(optName, optValue);
+                    } else {
+                        options.put(optName, Objects.toString(prev) + "," + optValue);
+                    }
                 }
             } else if ("-l".equals(argName)) {
                 if (login != null) {
@@ -273,6 +284,96 @@ public abstract class SshClientCliSupport extends CliSupport {
         } else {
             return Paths.get(id);
         }
+    }
+
+    public static Map<String, ?> resolveClientEnvironment(PropertyResolver resolver) {
+        return resolveClientEnvironment((resolver == null) ? Collections.emptyMap() : resolver.getProperties());
+    }
+
+    public static Map<String, ?> resolveClientEnvironment(Map<String, ?> options) {
+        if (GenericUtils.isEmpty(options)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Object> env = Collections.emptyMap();
+        for (String propName : new String[] {SshClientConfigFileReader.SETENV_PROP, SshClientConfigFileReader.SENDENV_PROP}) {
+            Object v = options.get(propName);
+            String s = Objects.toString(v, null);
+            if (GenericUtils.isEmpty(s)) {
+                continue;
+            }
+
+            String[] kvp = GenericUtils.split(s, ',');
+            for (String kve : kvp) {
+                int pos = kve.indexOf('=');
+                String key = (pos >= 0) ? kve.substring(0, pos) : kve;
+                String value = (pos >= 0) ? kve.substring(pos + 1) : "";
+                if (env.isEmpty()) {
+                    env = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                }
+
+                Object prev = env.put(key, value);
+                if (prev != null) {
+                    continue;   // debug breakpoint
+                }
+            }
+        }
+
+        return env;
+    }
+
+    public static PtyChannelConfiguration resolveClientPtyOptions(PropertyResolver resolver)
+            throws IOException, InterruptedException {
+        return resolveClientPtyOptions((resolver == null) ? Collections.emptyMap() : resolver.getProperties());
+    }
+
+    public static PtyChannelConfiguration resolveClientPtyOptions(Map<String, ?> options)
+            throws IOException, InterruptedException {
+        Object v = GenericUtils.isEmpty(options) ? null : options.get(SshClientConfigFileReader.REQUEST_TTY_OPTION);
+        String s = Objects.toString(v, "auto");
+        boolean autoDetect = "auto".equalsIgnoreCase(s);
+        Boolean ptyEnabled = autoDetect ? Boolean.TRUE : PropertyResolverUtils.parseBoolean(s);
+        if ((ptyEnabled == null) || (!ptyEnabled.booleanValue())) {
+            return null;
+        }
+
+        PtyChannelConfiguration config = new PtyChannelConfiguration();
+        if (autoDetect) {
+            PtyChannelConfigurationMutator.setupSensitiveDefaultPtyConfiguration(config);
+        }
+
+        // TODO add support for height/width, rows/columns and TERM(inal) type
+        Map<PtyMode, Integer> ptyModes = resolveClientPtyModes(options);
+        if (GenericUtils.isNotEmpty(ptyModes)) {
+            config.setPtyModes(ptyModes);
+        }
+
+        return config;
+    }
+
+    public static Map<PtyMode, Integer> resolveClientPtyModes(Map<String, ?> options)
+            throws IOException, InterruptedException {
+        Object v = GenericUtils.isEmpty(options) ? null : options.get(PtyMode.class.getSimpleName());
+        String s = Objects.toString(v, null);
+        if (GenericUtils.isEmpty(s)) {
+            return Collections.emptyMap();
+        }
+
+        String[] kvp = GenericUtils.split(s, ',');
+        Map<PtyMode, Integer> ptyModes = new EnumMap<>(PtyMode.class);
+        for (String kve : kvp) {
+            int pos = kve.indexOf('=');
+            String key = (pos >= 0) ? kve.substring(0, pos) : kve;
+            PtyMode mode = ValidateUtils.checkNotNull(PtyMode.fromName(key), "Unknown PTY mode: %s", key);
+            s = (pos >= 0) ? kve.substring(pos + 1) : "";
+            Integer value = GenericUtils.isEmpty(s) ? Integer.valueOf(1) : Integer.valueOf(s);
+            Integer prev = ptyModes.put(mode, value);
+            if (prev != null) {
+                continue;   // debug breakpoint
+            }
+        }
+
+        return ptyModes;
     }
 
     public static SshClient setupDefaultClient(

@@ -26,6 +26,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.sshd.cli.CliSupport;
@@ -34,6 +35,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
@@ -159,13 +161,15 @@ public class SshClientMain extends SshClientCliSupport {
                         session.startDynamicPortForwarding(new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
                         Thread.sleep(Long.MAX_VALUE);
                     } else {
+                        Map<String, ?> env = resolveClientEnvironment(client);
+                        PtyChannelConfiguration ptyConfig = resolveClientPtyOptions(client);
                         ClientChannel channel;
                         if (GenericUtils.isEmpty(command)) {
-                            channel = session.createShellChannel();
+                            channel = session.createShellChannel(ptyConfig, env);
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            channel = session.createExecChannel(String.join(" ", command).trim());
+                            channel = session.createExecChannel(String.join(" ", command).trim(), ptyConfig, env);
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);

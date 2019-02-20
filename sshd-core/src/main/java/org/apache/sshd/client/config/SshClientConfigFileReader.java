@@ -28,6 +28,10 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SshClientConfigFileReader {
+    public static final String SETENV_PROP = "SetEnv";
+    public static final String SENDENV_PROP = "SendEnv";
+    public static final String REQUEST_TTY_OPTION = "RequestTTY";
+
     private SshClientConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
     }
