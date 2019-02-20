@@ -271,14 +271,3 @@ the capability to write a front-end that routes outgoing/incoming packets:
 * `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being sent to the server
 
 * `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
-
-# Builtin components
-
-Below is the list of builtin components:
-
-* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc
-* **Digests**: md5, sha1, sha224, sha384, sha512
-* **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512
-* **Key exchange**: dhg1, dhg14, dhgex, dhgex256, ecdhp256, ecdhp384, ecdhp521
-* **Compressions**: none, zlib, zlib@openssh.com
-* **Signatures/Keys**: ssh-dss, ssh-rsa, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
