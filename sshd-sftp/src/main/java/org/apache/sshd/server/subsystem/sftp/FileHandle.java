@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -62,9 +63,7 @@ public class FileHandle extends Handle {
         this.fileAttributes = Collections.unmodifiableCollection(toFileAttributes(attrs));
         signalHandleOpening(subsystem);
 
-        FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(fileAttributes)
-            ? IoUtils.EMPTY_FILE_ATTRIBUTES
-            : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
+        FileAttribute<?>[] fileAttrs = getFileAttributes(file);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
@@ -83,6 +82,14 @@ public class FileHandle extends Handle {
             close();
             throw e;
         }
+    }
+
+    private FileAttribute<?>[] getFileAttributes(Path file) {
+        // The 'attrs' field is ignored if an existing file is opened. see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-29
+        if (GenericUtils.isEmpty(fileAttributes) || Files.exists(file)) {
+            return IoUtils.EMPTY_FILE_ATTRIBUTES;
+        }
+        return fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
     }
 
     public final Set<StandardOpenOption> getOpenOptions() {
