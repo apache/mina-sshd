@@ -351,13 +351,15 @@ public abstract class JUnitTestSupport extends Assert {
         return folder;
     }
 
-    public static void assertObjectInstanceOf(String message, Class<?> expected, Object obj) {
+    public static <T> T assertObjectInstanceOf(String message, Class<? extends T> expected, Object obj) {
         assertNotNull(message + " - no actual object", obj);
 
         Class<?> actual = obj.getClass();
         if (!expected.isAssignableFrom(actual)) {
             fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName() + ")");
         }
+
+        return expected.cast(obj);
     }
 
     public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {

@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,6 +67,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
+import org.apache.sshd.client.subsystem.sftp.impl.DefaultCloseableHandle;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -87,7 +89,10 @@ import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
@@ -488,6 +493,74 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
             }
         }
+    }
+
+    @Test //SSHD-899
+    public void testNoAttributeImpactOnOpen() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path clientFolder = lclSftp.resolve("client");
+        Path testFile = clientFolder.resolve("file.txt");
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+
+        assertHierarchyTargetFolderExists(testFile.getParent());
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            Files.deleteIfExists(testFile); // make sure starting fresh
+            Files.createFile(testFile, IoUtils.EMPTY_FILE_ATTRIBUTES);
+
+            try (SftpClient sftp = createSftpClient(session)) {
+                Collection<PosixFilePermission> initialPermissions = IoUtils.getPermissions(testFile);
+                assertTrue("File does not have enough initial permissions: " + initialPermissions,
+                    initialPermissions.containsAll(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
+
+                try (CloseableHandle handle = sendRawAttributeImpactOpen(file, sftp)) {
+                    outputDebugMessage("%s - handle=%s", getCurrentTestName(), handle);
+                }
+
+                Collection<PosixFilePermission> updatedPermissions = IoUtils.getPermissions(testFile);
+                assertEquals("Mismatched updated permissions count", initialPermissions.size(), updatedPermissions.size());
+                assertTrue("File does not preserve initial permissions: expected=" + initialPermissions + ", actual=" + updatedPermissions,
+                    updatedPermissions.containsAll(initialPermissions));
+            } finally {
+                Files.delete(testFile);
+            }
+        }
+    }
+
+    private CloseableHandle sendRawAttributeImpactOpen(String path, SftpClient sftpClient) throws Exception {
+        RawSftpClient sftp = assertObjectInstanceOf("Not a raw SFTP client used", RawSftpClient.class, sftpClient);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
+        buffer.putString(path, StandardCharsets.UTF_8);
+        //access
+        buffer.putInt(SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES);
+        //mode
+        buffer.putInt(SftpConstants.SSH_FXF_OPEN_EXISTING);
+        //flag
+        buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS);
+        buffer.putByte((byte) SftpConstants.SSH_FILEXFER_TYPE_REGULAR);
+
+        buffer.putInt(0);
+
+        int reqId = sftp.send(SftpConstants.SSH_FXP_OPEN, buffer);
+        Buffer response = sftp.receive(reqId);
+        byte[] rawHandle = getRawFileHandle(response);
+        return new DefaultCloseableHandle(sftpClient, path, rawHandle);
+    }
+
+    private byte[] getRawFileHandle(Buffer buffer) {
+        buffer.getInt(); //length
+        int type = buffer.getUByte();
+        assertEquals("Mismatched response type", SftpConstants.SSH_FXP_HANDLE, type);
+        buffer.getInt(); //id
+        return ValidateUtils.checkNotNullAndNotEmpty(
+            buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Test

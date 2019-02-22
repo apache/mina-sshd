@@ -37,6 +37,7 @@ import java.util.Set;
 
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -85,6 +86,15 @@ public interface SftpFileSystemAccessor {
             ServerSession session, SftpEventListenerManager subsystem,
             Path file, String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
                 throws IOException {
+        /*
+         * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-33
+         *
+         *      The 'attrs' field is ignored if an existing file is opened.
+         */
+        if (Files.exists(file)) {
+            attrs = IoUtils.EMPTY_FILE_ATTRIBUTES;
+        }
+
         return FileChannel.open(file, options, attrs);
     }
 
