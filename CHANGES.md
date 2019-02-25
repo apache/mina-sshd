@@ -82,5 +82,8 @@ client.setSignatureFactories(
 
 * [SSHD-896](https://issues.apache.org/jira/browse/SSHD-896) - Added support for [KEX extension negotiation](https://tools.ietf.org/html/rfc8308)
 
+* [SSHD-870](https://issues.apache.org/jira/browse/SSHD-896) - Added support for GPGv2 public keyring (Note: requires upgraded
+[Bouncycastle](https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on/1.61) and [jpgpj](https://mvnrepository.com/artifact/org.c02e.jpgpj/jpgpj/0.6.1) versions).
+
 * [SSHD-897](https://issues.apache.org/jira/browse/SSHD-897) - The default CLI code automatically tries to detect the PTY settings to use
 if opening a shell or command channel.

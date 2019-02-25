@@ -66,7 +66,7 @@ This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support 
     <dependency>
         <groupId>org.c02e.jpgpj</groupId>
         <artifactId>jpgpj</artifactId>
-        <version>0.5</version>
+        <version>...</version>
     </dependency>
 ```
 
@@ -132,4 +132,5 @@ public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKe
 
 ```
 
-**Note:** seems that currently, this capability is limited to v1.x key rings (see [jpgpj - issue 21](https://github.com/justinludwig/jpgpj/issues/21))
+**Note:** in order to support GPG v2 `.kbx` files one requires requires up-to-date [Bouncycastle](https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on/1.61)
+and [jpgpj](https://mvnrepository.com/artifact/org.c02e.jpgpj/jpgpj/0.6.1) versions.
