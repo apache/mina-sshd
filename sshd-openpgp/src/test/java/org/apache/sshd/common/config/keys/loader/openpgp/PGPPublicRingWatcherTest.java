@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.config.keys.loader.openpgp;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Map;
@@ -36,8 +35,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -48,8 +45,8 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
 
     @Test
     public void testDefaultRingPath() {
-        Path path = PGPPublicRingWatcher.getDefaultPublicRingFilePath();
-        Assume.assumeTrue("File does not exist: " + path, Files.exists(path));
+        Path path = PGPPublicRingWatcher.detectDefaultPublicRingFilePath();
+        Assume.assumeTrue("No default ring detected", path != null);
 
         try {
             testPublicRingWatcher(path);
@@ -60,10 +57,19 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResourcesKeyPath() throws Exception {
+    public void testV1ResourcesKeyPath() throws Exception {
         Path dir = CommonTestSupportUtils.resolve(
             detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "keyring");
-        Path file = dir.resolve(PGPPublicRingWatcher.DEFAULT_PUBLIC_RING_FILENAME);
+        Path file = dir.resolve(PGPPublicRingWatcher.GPG_V1_PUBLIC_RING_FILENAME);
+        Map<String, PublicKey> keys = testPublicRingWatcher(file);
+        assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
+    }
+
+    @Test
+    public void testV2ResourcesKeyPath() throws Exception {
+        Path dir = CommonTestSupportUtils.resolve(
+            detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "kbx2ring");
+        Path file = dir.resolve(PGPPublicRingWatcher.GPG_V2_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
         assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
     }
@@ -78,8 +84,9 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
             for (Map.Entry<String, PublicKey> ke : keys.entrySet()) {
                 String fp = ke.getKey();
                 PublicKey k = ke.getValue();
-                outputDebugMessage("%s: %s %s %s",
-                    getCurrentTestName(), fp, KeyUtils.getKeyType(k), KeyUtils.getFingerPrint(k));
+                outputDebugMessage("%s: %s %s[%d] %s",
+                    getCurrentTestName(), fp, KeyUtils.getKeyType(k),
+                    KeyUtils.getKeySize(k), KeyUtils.getFingerPrint(k));
             }
         }
 

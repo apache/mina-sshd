@@ -21,12 +21,14 @@ package org.apache.sshd.common.config.keys.loader.openpgp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -57,15 +59,17 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     /**
      * @see <A HREF="https://www.gnupg.org/faq/whats-new-in-2.1.html#nosecring">Removal of the secret keyring</A>
      */
-    public static final String DEFAULT_PUBLIC_RING_FILENAME = "pubring.gpg";
+    public static final String GPG_V1_PUBLIC_RING_FILENAME = "pubring.gpg";
+    public static final String GPG_V2_PUBLIC_RING_FILENAME = "pubring.kbx";
+
+    /** V1 and V2 known public ring file names in <U>order</U> of preference */
+    public static final List<String> PUBLIC_RING_FILES =
+        Collections.unmodifiableList(
+            Arrays.asList(GPG_V2_PUBLIC_RING_FILENAME, GPG_V1_PUBLIC_RING_FILENAME));
 
     /** Holds a {@link Map} whose key=the fingerprint (case <U>insensitive</U>), value=the associated {@link PublicKey} */
     protected final AtomicReference<NavigableMap<String, PublicKey>> ringKeys =
         new AtomicReference<>(Collections.emptyNavigableMap());
-
-    public PGPPublicRingWatcher() {
-        this(getDefaultPublicRingFilePath());
-    }
 
     public PGPPublicRingWatcher(Path file) {
         super(file);
@@ -249,16 +253,33 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
         return SecurityUtils.getKeyFactory(algorithm);
     }
 
-    private static final class LazyDefaultPublicRingPathHolder {
-        private static final Path PATH = PGPUtils.getDefaultPgpFolderPath().resolve(DEFAULT_PUBLIC_RING_FILENAME);
-
-        private LazyDefaultPublicRingPathHolder() {
-            throw new UnsupportedOperationException("No instance");
-        }
+    public static Path detectDefaultPublicRingFilePath() {
+        return detectDefaultPublicRingFilePath(PGPUtils.getDefaultPgpFolderPath());
     }
 
-    @SuppressWarnings("synthetic-access")
-    public static Path getDefaultPublicRingFilePath() {
-        return LazyDefaultPublicRingPathHolder.PATH;
+    /**
+     * Checks if either the {@value #GPG_V1_PUBLIC_RING_FILENAME} or {@value #GPG_V2_PUBLIC_RING_FILENAME}
+     * exist as a <U>regular</U> file and can be read. <B>Note:</B> it attempts the V2 file first.
+     *
+     * @param dir The directory to look into
+     * @return The resolved {@link Path} - {@code null} if none of the files exists.
+     */
+    public static Path detectDefaultPublicRingFilePath(Path dir) {
+        for (String name : PUBLIC_RING_FILES) {
+            Path file = dir.resolve(name);
+            if (!Files.exists(file)) {
+                continue;
+            }
+            if (!Files.isRegularFile(file)) {
+                continue;
+            }
+            if (!Files.isReadable(file)) {
+                continue;
+            }
+
+            return file;
+        }
+
+        return null;
     }
 }

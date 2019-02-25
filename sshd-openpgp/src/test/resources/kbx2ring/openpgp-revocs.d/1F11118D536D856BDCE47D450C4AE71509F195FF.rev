@@ -1,0 +1,32 @@
+This is a revocation certificate for the OpenPGP key:
+
+pub   rsa2048 2019-02-25 [S]
+      1F11118D536D856BDCE47D450C4AE71509F195FF
+uid          Apache MINA SSHD (Apache MINA SSHD RSA kbx) <dev@mina.apache.org>
+
+A revocation certificate is a kind of "kill switch" to publicly
+declare that a key shall not anymore be used.  It is not possible
+to retract such a revocation certificate once it has been published.
+
+Use it to revoke this key in case of a compromise or loss of
+the secret key.  However, if the secret key is still accessible,
+it is better to generate a new revocation certificate and give
+a reason for the revocation.  For details see the description of
+of the gpg command "--generate-revocation" in the GnuPG manual.
+
+To avoid an accidental use of this file, a colon has been inserted
+before the 5 dashes below.  Remove this colon with a text editor
+before importing and publishing this revocation certificate.
+
+:-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: This is a revocation certificate
+
+iQE2BCABCAAgFiEEHxERjVNthWvc5H1FDErnFQnxlf8FAlxzePoCHQAACgkQDErn
+FQnxlf//1gf/YQz/tbAkEkYStxWJDBBsSRp40Z+tMlk6wHe+YIfqzwi5aOfO4gIO
+aS5QgqBuiALFnjsFaeNlm4liUtRp2ztYkYSRHQqfDb4iGhjFLU74a9sr++luv/uI
+ZdSgmVD0DjSwo3zqrNRWvvGTdOAr3Jswwt5Qw9m9pIjLN+7USi3J7nJXMnPW22TV
+iAi6pUQvCH2PNyZthkl5z2tkNQN7Ib/gOjbEX8l7bOCr5xO3UqDMMzn3Gz8pQE08
+3U0tNe81nDBm/124icD9QPoVKxCJ8ZILA1rq6xg9l+fCPDxWgxYdPJx/Ies+0TxP
+wZouY8LyW5WHyZEl+FbzrlccrYbjqJ+Ung==
+=Rsk+
+-----END PGP PUBLIC KEY BLOCK-----
