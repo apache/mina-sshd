@@ -30,6 +30,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -51,9 +52,9 @@ public class ClientConnectionService
     public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
 
-        heartbeatRequest = s.getStringProperty(
+        heartbeatRequest = this.getStringProperty(
             ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
-        heartbeatInterval = s.getLongProperty(
+        heartbeatInterval = this.getLongProperty(
             ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
     }
 
@@ -115,20 +116,22 @@ public class ClientConnectionService
             return super.sendHeartBeat();
         }
 
-        ClientSession session = getClientSession();
+        Session session = getSession();
         try {
             Buffer buf = session.createBuffer(
                 SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
             buf.putString(heartbeatRequest);
             buf.putBoolean(false);
+
             IoWriteFuture future = session.writePacket(buf);
             future.addListener(this::futureDone);
+            heartbeatCount.incrementAndGet();
             return future;
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             session.exceptionCaught(e);
             if (log.isDebugEnabled()) {
-                log.debug("sendHeartBeat({}) failed ({}) to send request={}: {}",
-                    session, e.getClass().getSimpleName(), heartbeatRequest, e.getMessage());
+                log.debug("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
+                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatRequest, e.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("sendHeartBeat(" + session + ") exception details", e);
@@ -139,13 +142,6 @@ public class ClientConnectionService
                     setValue(e);
                 }
             };
-        }
-    }
-
-    protected void futureDone(IoWriteFuture future) {
-        Throwable t = future.getException();
-        if (t != null) {
-            getSession().exceptionCaught(t);
         }
     }
 

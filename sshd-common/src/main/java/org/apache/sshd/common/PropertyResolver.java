@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common;
 
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 
@@ -121,4 +122,10 @@ public interface PropertyResolver {
     default Object getObject(String name) {
         return PropertyResolverUtils.getObject(this, name);
     }
+
+    default Charset getCharset(String name, Charset defaultValue) {
+        Object value = getObject(name);
+        return (value == null) ? defaultValue : PropertyResolverUtils.toCharset(value);
+    }
+
 }

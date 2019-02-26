@@ -22,15 +22,19 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet. Examples include ssh-userauth
- * and ssh-connection but developers are also free to implement their own custom service.
+ * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet. Examples include &quot;ssh-userauth&quot;
+ * and &quot;ssh-connection&quot; but developers are also free to implement their own custom service.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Service extends Closeable {
+public interface Service extends PropertyResolver, Closeable {
     Session getSession();
 
-    // TODO: this is specific to clients
+    @Override
+    default PropertyResolver getParentPropertyResolver() {
+        return getSession();
+    }
+
     void start();
 
     /**

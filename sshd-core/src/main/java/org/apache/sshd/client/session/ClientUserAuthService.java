@@ -23,7 +23,9 @@ import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
@@ -58,6 +60,7 @@ public class ClientUserAuthService
      * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
     private final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
     private final ClientSessionImpl clientSession;
     private final List<String> clientMethods;
@@ -69,7 +72,8 @@ public class ClientUserAuthService
     private int currentMethod;
 
     public ClientUserAuthService(Session s) {
-        clientSession = ValidateUtils.checkInstanceOf(s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
+        clientSession = ValidateUtils.checkInstanceOf(
+            s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
         authFactories = ValidateUtils.checkNotNullAndNotEmpty(
             clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
@@ -113,6 +117,11 @@ public class ClientUserAuthService
     @Override
     public ClientSession getClientSession() {
         return clientSession;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override

@@ -137,3 +137,16 @@ configurations (except the port) can still be *overridden* while the server is r
 only **new** clients that connect to the server after the change will be affected - with the exception of the negotiation
 options (keys, macs, ciphers, etc...) which take effect the next time keys are re-exchanged, that can affect live sessions
 and not only new ones.
+
+## Providing server-side heartbeat
+
+The server can generate [`SSH_MSG_IGNORE`](https://tools.ietf.org/html/rfc4253#section-11.2) messages towards its
+client sessions in order to make sure that the client does not time out on waiting for traffic if no user generated
+data is available. By default, this feature is **disabled** - however it can be enabled by invoking the `setSessionHeartbeat`
+API either on the server (for **global** setting) or a specific session (for targeted control of the feature).
+
+*Note:* the same effect can also be achieved by setting the relevant properties documented in `SessionHeartbeatController`, but
+it is highly recommended to use the API - unless one needs to control these properties **externally** via `-Dxxx` JVM options.
+
+If one is using the SSHD CLI code, then these options are controlled via `-o ServerAliveInterval=NNNN` where the value is
+the requested **global** interval in **seconds**. *Note*: any non-positive value is treated as if the feature is disabled.

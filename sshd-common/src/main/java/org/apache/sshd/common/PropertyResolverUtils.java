@@ -187,7 +187,8 @@ public final class PropertyResolverUtils {
      * @throws NoSuchElementException If no matching string name found and
      * <tt>failIfNoMatch</tt> is {@code true}
      */
-    public static <E extends Enum<E>> E toEnum(Class<E> enumType, Object value, boolean failIfNoMatch, Collection<E> available) {
+    public static <E extends Enum<E>> E toEnum(
+            Class<E> enumType, Object value, boolean failIfNoMatch, Collection<E> available) {
         if (value == null) {
             return null;
         } else if (enumType.isInstance(value)) {
@@ -208,7 +209,8 @@ public final class PropertyResolverUtils {
 
             return null;
         } else {
-            throw new IllegalArgumentException("Bad value type for enum conversion: " + value.getClass().getSimpleName());
+            throw new IllegalArgumentException(
+                "Bad value type for enum conversion: " + value.getClass().getSimpleName());
         }
     }
 
@@ -332,7 +334,8 @@ public final class PropertyResolverUtils {
         } else if (value instanceof CharSequence) {
             return parseBoolean(value.toString());
         } else {
-            throw new UnsupportedOperationException("Cannot convert " + value.getClass().getSimpleName() + "[" + value + "] to boolean");
+            throw new UnsupportedOperationException(
+                "Cannot convert " + value.getClass().getSimpleName() + "[" + value + "] to boolean");
         }
     }
 

@@ -164,6 +164,8 @@ public class SshServerMain extends SshServerCliSupport {
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
 
+        setupServerHeartbeat(sshd, options, System.out);
+
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);

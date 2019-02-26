@@ -19,6 +19,8 @@
 package org.apache.sshd.deprecated;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
@@ -54,6 +56,8 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
         }
     }
 
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
+
     /**
      * When !authFuture.isDone() the current authentication
      */
@@ -81,6 +85,11 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
     @Override
     public ClientSessionImpl getSession() {
         return session;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override

@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -81,6 +82,7 @@ import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -376,9 +378,30 @@ public abstract class SshClientCliSupport extends CliSupport {
         return ptyModes;
     }
 
+    public static void setupClientHeartbeat(
+            SshClient client, Map<String, ?> options, PrintStream stdout) {
+        long interval = PropertyResolverUtils.getLongProperty(
+            options, SshClientConfigFileReader.CLIENT_LIVECHECK_INTERVAL_PROP, SshClientConfigFileReader.DEFAULT_ALIVE_INTERVAL);
+        if (interval <= 0L) {
+            return;
+        }
+
+        if (PropertyResolverUtils.getBooleanProperty(
+                options, SshClientConfigFileReader.CLIENT_LIVECHECK_USE_NULLS, SshClientConfigFileReader.DEFAULT_LIVECHECK_USE_NULLS)) {
+            PropertyResolverUtils.updateProperty(
+                client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
+            stdout.println("Using SSH_MSG_IGNORE heartbeat every " + interval + " seconds");
+        } else {
+            client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+            stdout.println("Using global request heartbeat every " + interval + " seconds");
+        }
+    }
+
     public static SshClient setupDefaultClient(
             Map<String, ?> options, Level level, PrintStream stdout, PrintStream stderr, String... args) {
-        return setupIoServiceFactory(SshClient.setUpDefaultClient(), options, level, stdout, stderr, args);
+        SshClient client = setupIoServiceFactory(SshClient.setUpDefaultClient(), options, level, stdout, stderr, args);
+        setupClientHeartbeat(client, options, stdout);
+        return client;
     }
 
     // returns null if error encountered

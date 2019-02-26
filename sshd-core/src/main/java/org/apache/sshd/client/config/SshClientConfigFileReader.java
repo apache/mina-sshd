@@ -32,6 +32,12 @@ public final class SshClientConfigFileReader {
     public static final String SENDENV_PROP = "SendEnv";
     public static final String REQUEST_TTY_OPTION = "RequestTTY";
 
+    public static final String CLIENT_LIVECHECK_INTERVAL_PROP = "ClientAliveInterval";
+    public static final long DEFAULT_ALIVE_INTERVAL = 0L;
+
+    public static final String CLIENT_LIVECHECK_USE_NULLS = "ClientAliveUseNullPackets";
+    public static final boolean DEFAULT_LIVECHECK_USE_NULLS = false;
+
     private SshClientConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
     }

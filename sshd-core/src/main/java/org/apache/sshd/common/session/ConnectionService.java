@@ -35,6 +35,7 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public interface ConnectionService
         extends Service,
+        SessionHeartbeatController,
         UnknownChannelReferenceHandlerManager,
         PortForwardingEventListenerManager,
         PortForwardingEventListenerManagerHolder {
