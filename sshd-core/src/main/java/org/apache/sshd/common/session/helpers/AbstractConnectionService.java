@@ -26,9 +26,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
 
@@ -89,6 +92,9 @@ public abstract class AbstractConnectionService
      */
     public static final IntUnaryOperator RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
 
+    /** Used in {@code SSH_MSH_IGNORE} messages for the keep-alive mechanism */
+    public static final String DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING = "ignore@sshd.apache.org";
+
     /**
      * Map of channels keyed by the identifier
      */
@@ -97,6 +103,7 @@ public abstract class AbstractConnectionService
      * Next channel identifier
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
+    protected final AtomicLong heartbeatCount = new AtomicLong(0L);
 
     private ScheduledFuture<?> heartBeat;
 
@@ -106,6 +113,7 @@ public abstract class AbstractConnectionService
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final PortForwardingEventListener listenerProxy;
     private final AbstractSession sessionInstance;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
@@ -114,6 +122,11 @@ public abstract class AbstractConnectionService
         sessionInstance = Objects.requireNonNull(session, "No session");
         listenerProxy = EventListenerUtils.proxyWrapper(
             PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override
@@ -175,12 +188,28 @@ public abstract class AbstractConnectionService
 
     @Override
     public void start() {
-        startHeartBeat();
+        heartBeat = startHeartBeat();
     }
 
     protected synchronized ScheduledFuture<?> startHeartBeat() {
-        // TODO SSHD-782
-        return null;
+        stopHeartBeat();    // make sure any existing heartbeat is stopped
+
+        HeartbeatType heartbeatType = getSessionHeartbeatType();
+        long interval = getSessionHeartbeatInterval();
+        Session session = getSession();
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("startHeartbeat({}) heartbeat type={}, interval={}", session, heartbeatType, interval);
+        }
+
+        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0)) {
+            return null;
+        }
+
+        FactoryManager manager = session.getFactoryManager();
+        ScheduledExecutorService service = manager.getScheduledExecutorService();
+        return service.scheduleAtFixedRate(
+            this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -190,8 +219,51 @@ public abstract class AbstractConnectionService
      * message write completion - {@code null} if no heartbeat sent
      */
     protected IoWriteFuture sendHeartBeat() {
-        // TODO SSHD-782
-        return null;
+        HeartbeatType heartbeatType = getSessionHeartbeatType();
+        long interval = getSessionHeartbeatInterval();
+        Session session = getSession();
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
+            log.trace("sendHeartbeat({}) heartbeat type={}, interval={}",
+                session, heartbeatType, interval);
+        }
+
+        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0)) {
+            return null;
+        }
+
+        try {
+            Buffer buffer = session.createBuffer(
+                SshConstants.SSH_MSG_IGNORE, DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING.length() + Byte.SIZE);
+            buffer.putString(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING);
+            IoWriteFuture future = session.writePacket(buffer);
+            future.addListener(this::futureDone);
+            return future;
+        } catch (IOException | RuntimeException | Error e) {
+            session.exceptionCaught(e);
+            if (log.isDebugEnabled()) {
+                log.debug("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
+                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatType, e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("sendHeartBeat(" + session + ") exception details", e);
+            }
+
+            return new AbstractIoWriteFuture(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING, null) {
+                {
+                    setValue(e);
+                }
+            };
+        }
+
+    }
+
+    protected void futureDone(IoWriteFuture future) {
+        Throwable t = future.getException();
+        if (t != null) {
+            Session session = getSession();
+            session.exceptionCaught(t);
+        }
     }
 
     protected synchronized void stopHeartBeat() {
@@ -229,7 +301,8 @@ public abstract class AbstractConnectionService
                 return forwarder;
             }
 
-            forwarder = ValidateUtils.checkNotNull(createForwardingFilter(session), "No forwarder created for %s", session);
+            forwarder = ValidateUtils.checkNotNull(
+                createForwardingFilter(session), "No forwarder created for %s", session);
             forwarderHolder.set(forwarder);
         }
 
@@ -267,7 +340,8 @@ public abstract class AbstractConnectionService
                 return x11Support;
             }
 
-            x11Support = ValidateUtils.checkNotNull(createX11ForwardSupport(session), "No X11 forwarder created for %s", session);
+            x11Support = ValidateUtils.checkNotNull(
+                createX11ForwardSupport(session), "No X11 forwarder created for %s", session);
             x11ForwardHolder.set(x11Support);
         }
 
@@ -291,7 +365,8 @@ public abstract class AbstractConnectionService
                 return agentForward;
             }
 
-            agentForward = ValidateUtils.checkNotNull(createAgentForwardSupport(session), "No agent forward created for %s", session);
+            agentForward = ValidateUtils.checkNotNull(
+                createAgentForwardSupport(session), "No agent forward created for %s", session);
             agentForwardHolder.set(agentForward);
         }
 
@@ -349,7 +424,8 @@ public abstract class AbstractConnectionService
     }
 
     protected void handleChannelRegistrationFailure(Channel channel, int channelId) throws IOException {
-        RuntimeException reason = new IllegalStateException("Channel id=" + channelId + " not registered because session is being closed: " + this);
+        RuntimeException reason = new IllegalStateException(
+            "Channel id=" + channelId + " not registered because session is being closed: " + this);
         AbstractChannel notifier =
             ValidateUtils.checkInstanceOf(channel, AbstractChannel.class, "Non abstract channel for id=%d", channelId);
         notifier.signalChannelClosed(reason);
@@ -678,7 +754,8 @@ public abstract class AbstractConnectionService
         Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
         if (channel == null) {
             // TODO add language tag configurable control
-            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE, "Unsupported channel type: " + type, "");
+            sendChannelOpenFailure(buffer, sender,
+                SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE, "Unsupported channel type: " + type, "");
             return;
         }
 
@@ -719,14 +796,16 @@ public abstract class AbstractConnectionService
             } catch (IOException e) {
                 if (debugEnabled) {
                     log.debug("operationComplete({}) {}: {}",
-                              AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage());
+                          AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage());
                 }
                 session.exceptionCaught(e);
             }
         });
     }
 
-    protected IoWriteFuture sendChannelOpenFailure(Buffer buffer, int sender, int reasonCode, String message, String lang) throws IOException {
+    protected IoWriteFuture sendChannelOpenFailure(
+            Buffer buffer, int sender, int reasonCode, String message, String lang)
+                throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendChannelOpenFailure({}) sender={}, reason={}, lang={}, message='{}'",
                   this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
@@ -797,7 +876,9 @@ public abstract class AbstractConnectionService
         return sendGlobalResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
     }
 
-    protected IoWriteFuture sendGlobalResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+    protected IoWriteFuture sendGlobalResponse(
+            Buffer buffer, String req, RequestHandler.Result result, boolean wantReply)
+                throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendGlobalResponse({})[{}] result={}, want-reply={}", this, req, result, wantReply);
         }

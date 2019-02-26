@@ -38,6 +38,7 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesManager;
 import org.apache.sshd.common.session.SessionDisconnectHandlerManager;
+import org.apache.sshd.common.session.SessionHeartbeatController;
 import org.apache.sshd.common.session.SessionListenerManager;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandlerManager;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
@@ -62,7 +63,7 @@ public interface FactoryManager
                 PortForwardingEventListenerManager,
                 IoServiceEventListenerManager,
                 AttributeStore,
-                PropertyResolver {
+                SessionHeartbeatController {
 
     /**
      * Key used to retrieve the value of the channel window size in the

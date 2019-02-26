@@ -154,6 +154,41 @@ sessions depends on the actual changed configuration. Here is how a typical usag
 
 ```
 
+## Keeping the session alive while no traffic
+
+The client-side implementation has a 2 builtin mechanisms for maintaining the session alive as far as the **server** is concerned
+regardless of the user's own traffic:
+
+* Sending `SSH_MSG_IGNORE` messages every once in a while.
+
+    This mechanism is along the lines of [PUTTY null packets configuration](https://patrickmn.com/aside/how-to-keep-alive-ssh-sessions/).
+    It generates small [`SSH_MSG_IGNORE`](https://tools.ietf.org/html/rfc4253#section-11.2) messages. The way to set this mechanism
+    up is via the `setSessionHeartbeat` API.
+
+    *Note:* the same effect can also be achieved by setting the relevant properties documented in `SessionHeartbeatController`, but
+    it is highly recommended to use the API - unless one needs to control these properties **externally** via `-Dxxx` JVM options.
+
+* Sending `keepalive@...` [global requests](https://tools.ietf.org/html/rfc4254#section-4).
+
+    The feature is controlled via the `ClientFactoryManager#HEARTBEAT_REQUEST` and `HEARTBEAT_INTERVAL` properties - see the relevant
+    documentation for these features. The simplest way to activate this feature is to set the `HEARTBEAT_INTERVAL` property value
+    to the **milliseconds** value of the requested heartbeat interval.
+
+**Note(s):**
+
+* Both options are disabled by default - they need to be activated explicitly.
+
+* Both options can be activated either on the `SshClient` (for **global** setup) and/or
+the `ClientSession` (for specific session configuration).
+
+* The `keepalive@,,,,` mechanism **supersedes** the `SSH_MSG_IGNORE` one if both activated.
+
+* When using the CLI, these options can be configured using the following `-o key=value` properties:
+
+    * `ClientAliveInterval` - if positive the defines the heartbeat interval in **seconds**.
+
+    * `ClientAliveUseNullPackets` - *true* if use the `SSH_MSG_IGNORE` mechanism, *false* if use global request (default).
+
 ## Running a command or opening a shell
 
 When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the

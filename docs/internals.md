@@ -240,21 +240,16 @@ the handler may choose to build and send the response within its own code, in wh
 
 * `exit-signal`, `exit-status` - As described in [RFC4254 section 6.10](https://tools.ietf.org/html/rfc4254#section-6.10)
 
-
 * `*@putty.projects.tartarus.org` - As described in [Appendix F: SSH-2 names specified for PuTTY](http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html)
-
 
 * `hostkeys-prove-00@openssh.com`, `hostkeys-00@openssh.com` - As described in [OpenSSH protocol - section 2.5](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 
-
 * `tcpip-forward`, `cancel-tcpip-forward` - As described in [RFC4254 section 7](https://tools.ietf.org/html/rfc4254#section-7)
 
-
-* `keepalive@*` - Used by many implementations (including this one) to "ping" the peer and make sure the connection is still alive.
+* `keepalive@*` - Used by many client implementations (including this one) to "ping" the server and keep/make sure the connection is still alive.
 In this context, the SSHD code allows the user to configure both the frequency and content of the heartbeat request (including whether
 to send this request at all) via the `ClientFactoryManager`-s `HEARTBEAT_INTERVAL`, `HEARTBEAT_REQUEST` and `DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING`
 configuration properties.
-
 
 * `no-more-sessions@*` - As described in [OpenSSH protocol section 2.2](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL).
 In this context, the code consults the `ServerFactoryManagder.MAX_CONCURRENT_SESSIONS` server-side configuration property in order to

@@ -59,6 +59,9 @@ public final class SshServerConfigFileReader {
     public static final String VISUAL_HOST_KEY = "VisualHostKey";
     public static final String DEFAULT_VISUAL_HOST_KEY = "no";
 
+    public static final String SERVER_ALIVE_INTERVAL_PROP = "ServerAliveInterval";
+    public static final long DEFAULT_ALIVE_INTERVAL = 0L;
+
     private SshServerConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
     }

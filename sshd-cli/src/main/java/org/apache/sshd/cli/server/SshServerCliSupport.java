@@ -30,9 +30,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,6 +50,7 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
+import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -68,8 +71,6 @@ import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SshServerCliSupport extends CliSupport {
@@ -78,6 +79,18 @@ public abstract class SshServerCliSupport extends CliSupport {
 
     protected SshServerCliSupport() {
         super();
+    }
+
+    public static void setupServerHeartbeat(
+            SshServer sshd, Map<String, ?> options, PrintStream stdout) {
+        long interval = PropertyResolverUtils.getLongProperty(
+            options, SshServerConfigFileReader.SERVER_ALIVE_INTERVAL_PROP, SshServerConfigFileReader.DEFAULT_ALIVE_INTERVAL);
+        if (interval <= 0L) {
+            return;
+        }
+
+        sshd.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+        stdout.println("Generate server-side SSH_MSG_IGNORE heartbeat every " + interval + " seconds");
     }
 
     public static KeyPairProvider resolveServerKeys(

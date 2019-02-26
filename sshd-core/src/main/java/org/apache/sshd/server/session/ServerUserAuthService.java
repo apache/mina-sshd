@@ -33,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -65,8 +67,9 @@ import org.apache.sshd.server.auth.WelcomeBannerPhase;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerUserAuthService extends AbstractCloseable implements Service, ServerSessionHolder {
-    private final ServerSession serverSession;
     private final AtomicBoolean welcomeSent = new AtomicBoolean(false);
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
+    private final ServerSession serverSession;
     private final WelcomeBannerPhase welcomePhase;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<List<String>> authMethods;
@@ -86,10 +89,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             throw new SshException("Session already authenticated");
         }
 
-        Object phase = PropertyResolverUtils.getObject(s, ServerAuthenticationManager.WELCOME_BANNER_PHASE);
-        phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, true, WelcomeBannerPhase.VALUES);
+        Object phase = this.getObject(ServerAuthenticationManager.WELCOME_BANNER_PHASE);
+        phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, false, WelcomeBannerPhase.VALUES);
         welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;
-        maxAuthRequests = s.getIntProperty(ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
+        maxAuthRequests = this.getIntProperty(
+            ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         List<NamedFactory<UserAuth>> factories = ValidateUtils.checkNotNullAndNotEmpty(
             serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
@@ -97,7 +101,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Get authentication methods
         authMethods = new ArrayList<>();
 
-        String mths = s.getString(ServerAuthenticationManager.AUTH_METHODS);
+        String mths = this.getString(ServerAuthenticationManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : factories) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -146,6 +150,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     @Override
     public ServerSession getServerSession() {
         return serverSession;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override
@@ -448,7 +457,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return null;
         }
 
-        String lang = PropertyResolverUtils.getStringProperty(session,
+        String lang = this.getStringProperty(
             ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE,
             ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
@@ -464,7 +473,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected String resolveWelcomeBanner(ServerSession session) throws IOException {
-        Object bannerValue = session.getObject(ServerAuthenticationManager.WELCOME_BANNER);
+        Object bannerValue = this.getObject(ServerAuthenticationManager.WELCOME_BANNER);
         if (bannerValue == null) {
             return null;
         }
@@ -523,7 +532,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (bannerValue instanceof URL) {
-            Charset cs = PropertyResolverUtils.getCharset(session, ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
+            Charset cs = this.getCharset(
+                ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
             return loadWelcomeBanner(session, (URL) bannerValue, cs);
         }
 

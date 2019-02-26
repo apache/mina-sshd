@@ -22,7 +22,6 @@ package org.apache.sshd.common.session;
 import java.util.Map;
 
 import org.apache.sshd.common.AttributeStore;
-import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
@@ -37,7 +36,7 @@ import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 public interface SessionContext
         extends ConnectionEndpointsIndicator,
                 UsernameHolder,
-                PropertyResolver,
+                SessionHeartbeatController,
                 AttributeStore {
     /**
      * Default prefix expected for the client / server identification string
