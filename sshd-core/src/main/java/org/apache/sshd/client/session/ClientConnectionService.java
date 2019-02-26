@@ -31,6 +31,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -42,11 +43,18 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 public class ClientConnectionService
         extends AbstractConnectionService
         implements ClientSessionHolder {
-
-    private ScheduledFuture<?> heartBeat;
+    protected final String heartbeatRequest;
+    protected final long heartbeatInterval;
+    /** Non-null only if using the &quot;keep-alive&quot; request mechanism */
+    protected ScheduledFuture<?> clientHeartbeat;
 
     public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
+
+        heartbeatRequest = s.getStringProperty(
+            ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
+        heartbeatInterval = s.getLongProperty(
+            ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
     }
 
     @Override
@@ -65,60 +73,70 @@ public class ClientConnectionService
         if (!session.isAuthenticated()) {
             throw new IllegalStateException("Session is not authenticated");
         }
-        startHeartBeat();
+        super.start();
     }
 
     @Override
-    protected void preClose() {
-        stopHeartBeat();
-        super.preClose();
-    }
+    protected synchronized ScheduledFuture<?> startHeartBeat() {
+        if ((heartbeatInterval > 0L) && GenericUtils.isNotEmpty(heartbeatRequest)) {
+            stopHeartBeat();
 
-    protected synchronized void startHeartBeat() {
-        stopHeartBeat();
-        ClientSession session = getClientSession();
-        long interval = session.getLongProperty(ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
-        if (interval > 0L) {
+            ClientSession session = getClientSession();
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
-            heartBeat = service.scheduleAtFixedRate(this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
+            clientHeartbeat = service.scheduleAtFixedRate(
+                this::sendHeartBeat, heartbeatInterval, heartbeatInterval, TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
-                log.debug("startHeartbeat - started at interval={}", interval);
+                log.debug("startHeartbeat({}) - started at interval={} with request={}",
+                    session, heartbeatInterval, heartbeatRequest);
+            }
+
+            return clientHeartbeat;
+        } else {
+            return super.startHeartBeat();
+        }
+    }
+
+    @Override
+    protected synchronized void stopHeartBeat() {
+        try {
+            super.stopHeartBeat();
+        } finally {
+            // No need to cancel since this is the same reference as the superclass heartbeat future
+            if (clientHeartbeat != null) {
+                clientHeartbeat = null;
             }
         }
     }
 
-    protected synchronized void stopHeartBeat() {
-        if (heartBeat != null) {
-            heartBeat.cancel(true);
-            heartBeat = null;
-        }
-    }
-
-    /**
-     * Sends a heartbeat message
-     * @return The {@link IoWriteFuture} that can be used to wait for the
-     * message write completion
-     */
+    @Override
     protected IoWriteFuture sendHeartBeat() {
+        if (clientHeartbeat == null) {
+            return super.sendHeartBeat();
+        }
+
         ClientSession session = getClientSession();
-        String request = session.getStringProperty(ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, request.length() + Byte.SIZE);
-            buf.putString(request);
+            Buffer buf = session.createBuffer(
+                SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
+            buf.putString(heartbeatRequest);
             buf.putBoolean(false);
             IoWriteFuture future = session.writePacket(buf);
             future.addListener(this::futureDone);
             return future;
-        } catch (IOException e) {
-            getSession().exceptionCaught(e);
+        } catch (IOException | RuntimeException e) {
+            session.exceptionCaught(e);
             if (log.isDebugEnabled()) {
-                log.debug("Error (" + e.getClass().getSimpleName() + ") sending keepalive message=" + request + ": " + e.getMessage());
+                log.debug("sendHeartBeat({}) failed ({}) to send request={}: {}",
+                    session, e.getClass().getSimpleName(), heartbeatRequest, e.getMessage());
             }
-            Throwable t = e;
-            return new AbstractIoWriteFuture(request, null) {
+            if (log.isTraceEnabled()) {
+                log.trace("sendHeartBeat(" + session + ") exception details", e);
+            }
+
+            return new AbstractIoWriteFuture(heartbeatRequest, null) {
                 {
-                    setValue(t);
+                    setValue(e);
                 }
             };
         }

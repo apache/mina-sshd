@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,6 +53,7 @@ import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -96,6 +98,8 @@ public abstract class AbstractConnectionService
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
+    private ScheduledFuture<?> heartBeat;
+
     private final AtomicReference<AgentForwardSupport> agentForwardHolder = new AtomicReference<>();
     private final AtomicReference<X11ForwardSupport> x11ForwardHolder = new AtomicReference<>();
     private final AtomicReference<ForwardingFilter> forwarderHolder = new AtomicReference<>();
@@ -108,7 +112,8 @@ public abstract class AbstractConnectionService
 
     protected AbstractConnectionService(AbstractSession session) {
         sessionInstance = Objects.requireNonNull(session, "No session");
-        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(
+            PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
     }
 
     @Override
@@ -170,7 +175,48 @@ public abstract class AbstractConnectionService
 
     @Override
     public void start() {
-        // do nothing
+        startHeartBeat();
+    }
+
+    protected synchronized ScheduledFuture<?> startHeartBeat() {
+        // TODO SSHD-782
+        return null;
+    }
+
+    /**
+     * Sends a heartbeat message/packet
+     *
+     * @return The {@link IoWriteFuture} that can be used to wait for the
+     * message write completion - {@code null} if no heartbeat sent
+     */
+    protected IoWriteFuture sendHeartBeat() {
+        // TODO SSHD-782
+        return null;
+    }
+
+    protected synchronized void stopHeartBeat() {
+        boolean debugEnabled = log.isDebugEnabled();
+        Session session = getSession();
+        if (heartBeat == null) {
+            if (debugEnabled) {
+                log.debug("stopHeartBeat({}) no heartbeat to stop", session);
+            }
+            return;
+        }
+
+        if (debugEnabled) {
+            log.debug("stopHeartBeat({}) stopping", session);
+        }
+
+        try {
+            heartBeat.cancel(true);
+        } finally {
+            heartBeat = null;
+        }
+
+        if (debugEnabled) {
+            log.debug("stopHeartBeat({}) stopped", session);
+        }
     }
 
     @Override
@@ -195,6 +241,7 @@ public abstract class AbstractConnectionService
 
     @Override
     protected void preClose() {
+        stopHeartBeat();
         this.listeners.clear();
         this.managersHolder.clear();
         super.preClose();
