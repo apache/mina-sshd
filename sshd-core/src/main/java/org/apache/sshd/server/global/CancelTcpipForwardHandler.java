@@ -50,7 +50,9 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
     }
 
     @Override
-    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+    public Result process(
+            ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
+                throws Exception {
         if (!REQUEST.equals(request)) {
             return super.process(connectionService, request, wantReply, buffer);
         }

@@ -36,7 +36,9 @@ public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandl
     }
 
     @Override
-    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+    public Result process(
+            ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
+                throws Exception {
         if (request.startsWith("no-more-sessions@")) {
             connectionService.setAllowMoreSessions(false);
             return Result.ReplyFailure;

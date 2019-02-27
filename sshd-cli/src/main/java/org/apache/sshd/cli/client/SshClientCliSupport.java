@@ -394,6 +394,14 @@ public abstract class SshClientCliSupport extends CliSupport {
         } else {
             client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
             stdout.println("Using global request heartbeat every " + interval + " seconds");
+
+            interval = PropertyResolverUtils.getLongProperty(
+                options, SshClientConfigFileReader.CLIENT_LIVECHECK_REPLIES_WAIT, SshClientConfigFileReader.DEFAULT_LIVECHECK_REPLY_WAIT);
+            if (interval > 0L) {
+                PropertyResolverUtils.updateProperty(
+                    client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
+                stdout.println("Expecting heartbeat reply within at most " + interval + " seconds");
+            }
         }
     }
 

@@ -174,6 +174,14 @@ regardless of the user's own traffic:
     documentation for these features. The simplest way to activate this feature is to set the `HEARTBEAT_INTERVAL` property value
     to the **milliseconds** value of the requested heartbeat interval.
 
+    This configuration only ensures that the **server** does not terminate the session due to no traffic. If the
+    incoming traffic from the server may also suffer from long "quiet" periods, one runs the risk of a **client** time-out. In order
+    to avoid this, it is possible to activate the `wantReply` option for the global request. This way, there is bound to be some
+    packet response (even if failure - which will be ignored by the heartbeat code). In order to activate this option one needs to
+    set the `HEARTBEAT_REPLY_WAIT` property value to a **positive** value specifying the number of **milliseconds** the client is
+    willing to wait for the server's reply to the global request.
+
+
 **Note(s):**
 
 * Both options are disabled by default - they need to be activated explicitly.
@@ -183,11 +191,19 @@ the `ClientSession` (for specific session configuration).
 
 * The `keepalive@,,,,` mechanism **supersedes** the `SSH_MSG_IGNORE` one if both activated.
 
+    * If specified timeout expires for the `wantReply` option then session will be **closed**.
+
+    * *Any* response - including [`SSH_MSH_REQUEST_FAILURE`](https://tools.ietf.org/html/rfc4254#page-4)
+    is considered a "good" response for the heartbeat request.
+
 * When using the CLI, these options can be configured using the following `-o key=value` properties:
 
     * `ClientAliveInterval` - if positive the defines the heartbeat interval in **seconds**.
 
     * `ClientAliveUseNullPackets` - *true* if use the `SSH_MSG_IGNORE` mechanism, *false* if use global request (default).
+
+    * `ClientAliveReplyWait` - if positive, then activates the `wantReply` mechanism and specific the expected
+    response timeout in **seconds**.
 
 ## Running a command or opening a shell
 

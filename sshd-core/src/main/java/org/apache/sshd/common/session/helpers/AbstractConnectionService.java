@@ -202,7 +202,7 @@ public abstract class AbstractConnectionService
             log.debug("startHeartbeat({}) heartbeat type={}, interval={}", session, heartbeatType, interval);
         }
 
-        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0)) {
+        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0L)) {
             return null;
         }
 
@@ -214,11 +214,9 @@ public abstract class AbstractConnectionService
 
     /**
      * Sends a heartbeat message/packet
-     *
-     * @return The {@link IoWriteFuture} that can be used to wait for the
-     * message write completion - {@code null} if no heartbeat sent
+     * @return {@code true} if heartbeat successfully sent
      */
-    protected IoWriteFuture sendHeartBeat() {
+    protected boolean sendHeartBeat() {
         HeartbeatType heartbeatType = getSessionHeartbeatType();
         long interval = getSessionHeartbeatInterval();
         Session session = getSession();
@@ -228,17 +226,19 @@ public abstract class AbstractConnectionService
                 session, heartbeatType, interval);
         }
 
-        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0)) {
-            return null;
+        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE)
+                || (interval <= 0L) || (heartBeat == null)) {
+            return false;
         }
 
         try {
             Buffer buffer = session.createBuffer(
                 SshConstants.SSH_MSG_IGNORE, DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING.length() + Byte.SIZE);
             buffer.putString(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING);
+
             IoWriteFuture future = session.writePacket(buffer);
             future.addListener(this::futureDone);
-            return future;
+            return true;
         } catch (IOException | RuntimeException | Error e) {
             session.exceptionCaught(e);
             if (log.isDebugEnabled()) {
@@ -249,13 +249,8 @@ public abstract class AbstractConnectionService
                 log.trace("sendHeartBeat(" + session + ") exception details", e);
             }
 
-            return new AbstractIoWriteFuture(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING, null) {
-                {
-                    setValue(e);
-                }
-            };
+            return false;
         }
-
     }
 
     protected void futureDone(IoWriteFuture future) {
@@ -396,7 +391,7 @@ public abstract class AbstractConnectionService
     @Override
     public int registerChannel(Channel channel) throws IOException {
         AbstractSession session = getSession();
-        int maxChannels = session.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
+        int maxChannels = this.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
             throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);
@@ -894,7 +889,7 @@ public abstract class AbstractConnectionService
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
              ? SshConstants.SSH_MSG_REQUEST_SUCCESS
              : SshConstants.SSH_MSG_REQUEST_FAILURE;
-        AbstractSession session = getSession();
+        Session session = getSession();
         Buffer rsp = session.createBuffer(cmd, 2);
         return session.writePacket(rsp);
     }

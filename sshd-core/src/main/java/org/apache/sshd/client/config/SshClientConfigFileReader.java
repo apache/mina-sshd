@@ -38,6 +38,9 @@ public final class SshClientConfigFileReader {
     public static final String CLIENT_LIVECHECK_USE_NULLS = "ClientAliveUseNullPackets";
     public static final boolean DEFAULT_LIVECHECK_USE_NULLS = false;
 
+    public static final String CLIENT_LIVECHECK_REPLIES_WAIT = "ClientAliveReplyWait";
+    public static final long DEFAULT_LIVECHECK_REPLY_WAIT = 0L;
+
     private SshClientConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
     }

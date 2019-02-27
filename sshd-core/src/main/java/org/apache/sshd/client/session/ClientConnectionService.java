@@ -28,7 +28,6 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
@@ -46,6 +45,7 @@ public class ClientConnectionService
         implements ClientSessionHolder {
     protected final String heartbeatRequest;
     protected final long heartbeatInterval;
+    protected final long heartbeatReplyMaxWait;
     /** Non-null only if using the &quot;keep-alive&quot; request mechanism */
     protected ScheduledFuture<?> clientHeartbeat;
 
@@ -56,6 +56,8 @@ public class ClientConnectionService
             ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         heartbeatInterval = this.getLongProperty(
             ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
+        heartbeatReplyMaxWait = this.getLongProperty(
+            ClientFactoryManager.HEARTBEAT_REPLY_WAIT, ClientFactoryManager.DEFAULT_HEARTBEAT_REPLY_WAIT);
     }
 
     @Override
@@ -111,22 +113,33 @@ public class ClientConnectionService
     }
 
     @Override
-    protected IoWriteFuture sendHeartBeat() {
+    protected boolean sendHeartBeat() {
         if (clientHeartbeat == null) {
             return super.sendHeartBeat();
         }
 
         Session session = getSession();
         try {
+            boolean withReply = heartbeatReplyMaxWait > 0L;
             Buffer buf = session.createBuffer(
                 SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
             buf.putString(heartbeatRequest);
-            buf.putBoolean(false);
+            buf.putBoolean(withReply);
 
-            IoWriteFuture future = session.writePacket(buf);
-            future.addListener(this::futureDone);
+            if (withReply) {
+                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait, TimeUnit.MILLISECONDS);
+                if (reply != null) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("sendHeartBeat({}) received reply size={} for request={}",
+                            session, reply.available(), heartbeatRequest);
+                    }
+                }
+            } else {
+                IoWriteFuture future = session.writePacket(buf);
+                future.addListener(this::futureDone);
+            }
             heartbeatCount.incrementAndGet();
-            return future;
+            return true;
         } catch (IOException | RuntimeException | Error e) {
             session.exceptionCaught(e);
             if (log.isDebugEnabled()) {
@@ -137,11 +150,7 @@ public class ClientConnectionService
                 log.trace("sendHeartBeat(" + session + ") exception details", e);
             }
 
-            return new AbstractIoWriteFuture(heartbeatRequest, null) {
-                {
-                    setValue(e);
-                }
-            };
+            return false;
         }
     }
 
