@@ -50,7 +50,9 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler {
     }
 
     @Override
-    protected Result handleHostKeys(Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer) throws Exception {
+    protected Result handleHostKeys(
+            Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer)
+                throws Exception {
         // according to the spec, no reply should be required
         ValidateUtils.checkTrue(!wantReply, "Unexpected reply required for the host keys of %s", session);
         if (log.isDebugEnabled()) {

@@ -92,9 +92,9 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
         ValidateUtils.checkTrue(wantReply, "No reply required for host keys of %s", session);
         Collection<? extends NamedFactory<Signature>> factories =
             ValidateUtils.checkNotNullAndNotEmpty(
-                    SignatureFactoriesManager.resolveSignatureFactories(this, session),
-                    "No signature factories available for host keys of session=%s",
-                    session);
+                SignatureFactoriesManager.resolveSignatureFactories(this, session),
+                "No signature factories available for host keys of session=%s",
+                session);
         if (log.isDebugEnabled()) {
             log.debug("handleHostKeys({})[want-reply={}] received {} keys - factories={}",
                       session, wantReply, GenericUtils.size(keys), NamedResource.getNames(factories));

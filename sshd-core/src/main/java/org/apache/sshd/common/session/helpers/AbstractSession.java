@@ -899,7 +899,8 @@ public abstract class AbstractSession extends SessionHelper {
 
         long maxWaitMillis = TimeUnit.MILLISECONDS.convert(timeout, unit);
         if (maxWaitMillis <= 0L) {
-            throw new IllegalArgumentException("Requested timeout for " + request + " below 1 msec: " + timeout + " " + unit);
+            throw new IllegalArgumentException(
+                "Requested timeout for " + request + " below 1 msec: " + timeout + " " + unit);
         }
 
         boolean debugEnabled = log.isDebugEnabled();
@@ -934,7 +935,8 @@ public abstract class AbstractSession extends SessionHelper {
                     result = requestResult.getAndSet(null);
                 }
             } catch (InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException("Interrupted while waiting for request=" + request + " result").initCause(e);
+                throw (InterruptedIOException) new InterruptedIOException(
+                    "Interrupted while waiting for request=" + request + " result").initCause(e);
             }
         }
 

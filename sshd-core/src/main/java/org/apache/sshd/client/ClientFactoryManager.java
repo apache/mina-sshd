@@ -63,9 +63,19 @@ public interface ClientFactoryManager
     String HEARTBEAT_REQUEST = "heartbeat-request";
 
     /**
-     * Default value for {@link ClientFactoryManager#HEARTBEAT_REQUEST} is none configured
+     * Default value for {@value #HEARTBEAT_REQUEST} is none configured
      */
     String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
+
+    /**
+     * Key used to indicate that the heartbeat request is also
+     * expecting a reply - time in <U>milliseconds</U> to wait for
+     * the reply. If non-positive then no reply is expected (nor requested).
+     */
+    String HEARTBEAT_REPLY_WAIT = "heartbeat-reply-wait";
+
+    /** Default value for {@value #HEARTBEAT_REPLY_WAIT} if none is configured */
+    long DEFAULT_HEARTBEAT_REPLY_WAIT = 0L;
 
     /**
      * Whether to ignore invalid identities files when pre-initializing
