@@ -38,6 +38,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
@@ -148,10 +149,11 @@ public class SshServerMain extends SshServerCliSupport {
             }
         }
 
-        Level level = resolveLoggingVerbosity(options, args);
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
+        Level level = resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
             ? null
-            : setupIoServiceFactory(SshServer.setUpDefaultServer(), options, level, System.out, System.err, args);
+            : setupIoServiceFactory(SshServer.setUpDefaultServer(), resolver, level, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -164,9 +166,7 @@ public class SshServerMain extends SshServerCliSupport {
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
 
-        setupServerHeartbeat(sshd, options, System.out);
-
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
+        SshServerConfigFileReader.setupServerHeartbeat(sshd, resolver);
         KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed

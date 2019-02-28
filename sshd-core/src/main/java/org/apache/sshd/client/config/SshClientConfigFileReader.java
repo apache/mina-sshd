@@ -18,11 +18,18 @@
  */
 package org.apache.sshd.client.config;
 
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.client.ClientBuilder;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
+import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -45,10 +52,48 @@ public final class SshClientConfigFileReader {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
+    public static <C extends SshClient> C setupClientHeartbeat(C client, PropertyResolver props) {
+        if ((client == null) || (props == null)) {
+            return client;
+        }
+
+        long interval = PropertyResolverUtils.getLongProperty(
+                props, CLIENT_LIVECHECK_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
+        if (interval <= 0L) {
+            return client;
+        }
+
+        if (PropertyResolverUtils.getBooleanProperty(
+                props, CLIENT_LIVECHECK_USE_NULLS, DEFAULT_LIVECHECK_USE_NULLS)) {
+            client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+        } else {
+            PropertyResolverUtils.updateProperty(
+                client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
+
+            interval = PropertyResolverUtils.getLongProperty(
+                props, CLIENT_LIVECHECK_REPLIES_WAIT, DEFAULT_LIVECHECK_REPLY_WAIT);
+            if (interval > 0L) {
+                PropertyResolverUtils.updateProperty(
+                    client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
+            }
+        }
+
+        return client;
+    }
+
+    public static <C extends SshClient> C setupClientHeartbeat(C client, Map<String, ?> options) {
+        if ((client == null) || GenericUtils.isEmpty(options)) {
+            return client;
+        }
+
+        return setupClientHeartbeat(client, PropertyResolverUtils.toPropertyResolver(options));
+    }
+
     public static <C extends SshClient> C configure(
             C client, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         SshConfigFileReader.configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
+        setupClientHeartbeat(client, props);
         return client;
     }
 }

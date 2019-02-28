@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -82,7 +81,6 @@ import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
-import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -241,8 +239,9 @@ public abstract class SshClientCliSupport extends CliSupport {
             return null;
         }
 
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         SshClient client = setupClient(
-            options, ciphers, macs, compressions, identities,
+            resolver, ciphers, macs, compressions, identities,
             stdin, stdout, stderr, level, args);
         if (client == null) {
             return null;
@@ -378,44 +377,17 @@ public abstract class SshClientCliSupport extends CliSupport {
         return ptyModes;
     }
 
-    public static void setupClientHeartbeat(
-            SshClient client, Map<String, ?> options, PrintStream stdout) {
-        long interval = PropertyResolverUtils.getLongProperty(
-            options, SshClientConfigFileReader.CLIENT_LIVECHECK_INTERVAL_PROP, SshClientConfigFileReader.DEFAULT_ALIVE_INTERVAL);
-        if (interval <= 0L) {
-            return;
-        }
-
-        if (PropertyResolverUtils.getBooleanProperty(
-                options, SshClientConfigFileReader.CLIENT_LIVECHECK_USE_NULLS, SshClientConfigFileReader.DEFAULT_LIVECHECK_USE_NULLS)) {
-            PropertyResolverUtils.updateProperty(
-                client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
-            stdout.println("Using SSH_MSG_IGNORE heartbeat every " + interval + " seconds");
-        } else {
-            client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
-            stdout.println("Using global request heartbeat every " + interval + " seconds");
-
-            interval = PropertyResolverUtils.getLongProperty(
-                options, SshClientConfigFileReader.CLIENT_LIVECHECK_REPLIES_WAIT, SshClientConfigFileReader.DEFAULT_LIVECHECK_REPLY_WAIT);
-            if (interval > 0L) {
-                PropertyResolverUtils.updateProperty(
-                    client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
-                stdout.println("Expecting heartbeat reply within at most " + interval + " seconds");
-            }
-        }
-    }
-
     public static SshClient setupDefaultClient(
-            Map<String, ?> options, Level level, PrintStream stdout, PrintStream stderr, String... args) {
-        SshClient client = setupIoServiceFactory(SshClient.setUpDefaultClient(), options, level, stdout, stderr, args);
-        setupClientHeartbeat(client, options, stdout);
+            PropertyResolver resolver, Level level, PrintStream stdout, PrintStream stderr, String... args) {
+        SshClient client = setupIoServiceFactory(SshClient.setUpDefaultClient(), resolver, level, stdout, stderr, args);
+        SshClientConfigFileReader.setupClientHeartbeat(client, resolver);
         return client;
     }
 
     // returns null if error encountered
     @SuppressWarnings("checkstyle:ParameterNumber")
     public static SshClient setupClient(
-            Map<String, Object> options,
+            PropertyResolver resolver,
             List<NamedFactory<Cipher>> ciphers,
             List<NamedFactory<Mac>> macs,
             List<NamedFactory<Compression>> compressions,
@@ -423,7 +395,6 @@ public abstract class SshClientCliSupport extends CliSupport {
             BufferedReader stdin, PrintStream stdout, PrintStream stderr,
             Level level, String[] args)
                 throws Exception {
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         if (GenericUtils.isEmpty(ciphers)) {
             ciphers = setupCiphers(resolver, stderr);
             if (ciphers == null) {
@@ -445,7 +416,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
         }
 
-        SshClient client = setupDefaultClient(options, level, stdout, stderr, args);
+        SshClient client = setupDefaultClient(resolver, level, stdout, stderr, args);
         if (client == null) {
             return null;
         }
@@ -469,12 +440,15 @@ public abstract class SshClientCliSupport extends CliSupport {
                 showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
             }
 
-            setupServerKeyVerifier(client, options, stdin, stdout, stderr);
+            setupServerKeyVerifier(client, resolver, stdin, stdout, stderr);
             setupSessionUserInteraction(client, stdin, stdout, stderr);
-            setupSessionExtensions(client, options, stdin, stdout, stderr);
+            setupSessionExtensions(client, resolver, stdin, stdout, stderr);
 
-            Map<String, Object> props = client.getProperties();
-            props.putAll(options);
+            Map<String, ?> options = resolver.getProperties();
+            if (GenericUtils.isNotEmpty(options)) {
+                Map<String, Object> props = client.getProperties();
+                props.putAll(options);
+            }
             return client;
         } catch (Throwable t) {
             showError(stderr, "Failed (" + t.getClass().getSimpleName() + ") to setup client: " + t.getMessage());
@@ -560,8 +534,9 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static void setupSessionExtensions(
-            KexFactoryManager manager, Map<String, ?> options, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+            KexFactoryManager manager, PropertyResolver resolver, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
+        Map<String, ?> options = resolver.getProperties();
         String kexExtension = Objects.toString(options.remove(KexExtensionHandler.class.getSimpleName()), null);
         if (GenericUtils.isEmpty(kexExtension)) {
             return;
@@ -589,14 +564,17 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static ServerKeyVerifier setupServerKeyVerifier(
-            ClientAuthenticationManager manager, Map<String, ?> options, BufferedReader stdin, PrintStream stdout, PrintStream stderr) {
+            ClientAuthenticationManager manager, PropertyResolver resolver,
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr) {
         ServerKeyVerifier current = manager.getServerKeyVerifier();
         if (current == null) {
             current = ClientBuilder.DEFAULT_SERVER_KEY_VERIFIER;
             manager.setServerKeyVerifier(current);
         }
 
-        String strictValue = Objects.toString(options.remove(KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION), "true");
+        Map<String, ?> options = resolver.getProperties();
+        String strictValue =
+            Objects.toString(options.remove(KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION), "true");
         if (!ConfigFileReaderSupport.parseBooleanValue(strictValue)) {
             return current;
         }
