@@ -108,7 +108,7 @@ implementation of the logging API can be selected from the many existing adaptor
 
 ## [Internal support classes](./docs/internals.md)
 
-## [Event listeners](./docs/event-listeners.md)
+## [Event listeners and handlers](./docs/event-listeners.md)
 
 ## [Command line clients](./docs/cli.md)
 

@@ -56,6 +56,7 @@ import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
@@ -226,20 +227,35 @@ public abstract class AbstractConnectionService
                 session, heartbeatType, interval);
         }
 
-        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE)
-                || (interval <= 0L) || (heartBeat == null)) {
+        if ((heartbeatType == null) || (interval <= 0L) || (heartBeat == null)) {
             return false;
         }
 
         try {
-            Buffer buffer = session.createBuffer(
-                SshConstants.SSH_MSG_IGNORE, DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING.length() + Byte.SIZE);
-            buffer.putString(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING);
+            switch (heartbeatType) {
+                case NONE:
+                    return false;
+                case IGNORE: {
+                    Buffer buffer = session.createBuffer(
+                        SshConstants.SSH_MSG_IGNORE, DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING.length() + Byte.SIZE);
+                    buffer.putString(DEFAULT_SESSION_IGNORE_HEARTBEAT_STRING);
 
-            IoWriteFuture future = session.writePacket(buffer);
-            future.addListener(this::futureDone);
-            return true;
-        } catch (IOException | RuntimeException | Error e) {
+                    IoWriteFuture future = session.writePacket(buffer);
+                    future.addListener(this::futureDone);
+                    return true;
+                }
+                case RESERVED: {
+                    ReservedSessionMessagesHandler handler =
+                        Objects.requireNonNull(
+                            session.getReservedSessionMessagesHandler(),
+                            "No customized heartbeat handler registered");
+                    return handler.sendReservedHeartbeat(this);
+                }
+                default:
+                    throw new UnsupportedOperationException("Unsupported heartbeat type: " + heartbeatType);
+            }
+
+        } catch (Throwable e) {
             session.exceptionCaught(e);
             if (log.isDebugEnabled()) {
                 log.debug("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
