@@ -199,6 +199,7 @@
 				                    <excludes>
 				                            <!-- TODO (SSHD-822) need some more research as to why this fails frequently on Netty -->
 				                        <exclude>**/AbstractCheckFileExtensionTest.java</exclude>
+				                        <exclude>**/SftpVersionsTest.java</exclude>                                       
 				                    </excludes>
                                 </configuration>
                             </execution>
