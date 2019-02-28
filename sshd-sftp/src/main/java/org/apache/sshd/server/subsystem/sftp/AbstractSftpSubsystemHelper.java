@@ -80,6 +80,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
@@ -245,31 +246,43 @@ public abstract class AbstractSftpSubsystemHelper
     /**
      * @param buffer   The {@link Buffer} holding the request
      * @param id       The request id
-     * @param proposed The proposed value
+     * @param proposal The proposed value
      * @return A {@link Boolean} indicating whether to accept/reject the proposal.
      * If {@code null} then rejection response has been sent, otherwise and
      * appropriate response is generated
      * @throws IOException If failed send an independent rejection response
      */
-    protected Boolean validateProposedVersion(Buffer buffer, int id, String proposed) throws IOException {
-        if (log.isDebugEnabled()) {
+    protected Boolean validateProposedVersion(Buffer buffer, int id, String proposal) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        Session session = getServerSession();
+        if (debugEnabled) {
             log.debug("validateProposedVersion({})[id={}] SSH_FXP_EXTENDED(version-select) (version={})",
-                  getServerSession(), id, proposed);
+                  session, id, proposal);
         }
 
-        if (GenericUtils.length(proposed) != 1) {
+        if (GenericUtils.length(proposal) != 1) {
             return Boolean.FALSE;
         }
 
-        char digit = proposed.charAt(0);
+        char digit = proposal.charAt(0);
         if ((digit < '0') || (digit > '9')) {
             return Boolean.FALSE;
         }
 
-        int value = digit - '0';
-        String all = checkVersionCompatibility(buffer, id, value, SftpConstants.SSH_FX_FAILURE);
-        if (GenericUtils.isEmpty(all)) {    // validation failed
+        int proposed = digit - '0';
+        Map.Entry<Integer, String> result =
+            checkVersionCompatibility(buffer, id, proposed, SftpConstants.SSH_FX_FAILURE);
+        if (result == null) {    // validation failed
             return null;
+        }
+
+        int negotiated = result.getKey();
+        if (negotiated != proposed) {
+            if (debugEnabled) {
+                log.debug("validateProposedVersion({})[id={}] SSH_FXP_EXTENDED(version-select) proposed={} different than negotiated={}",
+                    session, id, proposed, negotiated);
+            }
+            return Boolean.FALSE;
         } else {
             return Boolean.TRUE;
         }
@@ -285,12 +298,14 @@ public abstract class AbstractSftpSubsystemHelper
      *                      if required
      * @param proposed      The proposed version value
      * @param failureOpcode The failure opcode to send if validation fails
-     * @return A {@link String} of comma separated values representing all
-     * the supported version - {@code null} if validation failed and an
-     * appropriate status message was sent
+     * @return A &quot;pair&quot; whose key is the negotiated version and value a {@link String}
+     * of comma separated values representing all the supported versions. {@code null} if validation
+     * failed and an appropriate status message was sent
      * @throws IOException If failed to send the failure status message
      */
-    protected String checkVersionCompatibility(Buffer buffer, int id, int proposed, int failureOpcode) throws IOException {
+    protected Map.Entry<Integer, String> checkVersionCompatibility(
+            Buffer buffer, int id, int proposed, int failureOpcode)
+                throws IOException {
         int low = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
         int hig = SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
         String available = SftpSubsystemEnvironment.ALL_SFTP_IMPL;
@@ -307,18 +322,33 @@ public abstract class AbstractSftpSubsystemHelper
             available = sftpVersion.toString();
         }
 
-        if (log.isTraceEnabled()) {
+        boolean traceEnabled = log.isTraceEnabled();
+        if (traceEnabled) {
             log.trace("checkVersionCompatibility({})[id={}] - proposed={}, available={}",
-                  session, id, proposed, available);
+                session, id, proposed, available);
         }
 
-        if ((proposed < low) || (proposed > hig)) {
+        /*
+         * According to all drafts, the server responds with a SSH_FXP_VERSION packet,
+         * supplying the lowest (!) of its own and the client's version number. However,
+         * if the client is below what we can support it makes no sense to agree to it.
+         */
+        if (proposed < low) {
             sendStatus(prepareReply(buffer), id, failureOpcode,
                 "Proposed version (" + proposed + ") not in supported range: " + available);
             return null;
         }
 
-        return available;
+        // Force the client to use a lower protocol
+        if (proposed > hig) {
+            if (traceEnabled) {
+                log.trace("checkVersionCompatibility({})[id={}] - replace proposed={} with negotiated={} due to available={}",
+                    session, id, proposed, hig, available);
+            }
+            proposed = hig; // debug breakpoint
+        }
+
+        return new SimpleImmutableEntry<>(proposed, available);
     }
 
     /**

@@ -136,6 +136,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Before
     public void setUp() throws Exception {
         setupServer();
+
+        Map<String, Object> props = sshd.getProperties();
+        Object forced = props.remove(SftpSubsystemEnvironment.SFTP_VERSION);
+        if (forced != null) {
+            outputDebugMessage("Removed forced version=%s", forced);
+        }
+
         JSch sch = new JSch();
         session = sch.getSession("sshd", TEST_LOCALHOST, port);
         session.setUserInfo(new SimpleUserInfo("sshd"));
@@ -1549,6 +1556,21 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         byte[] actual = Files.readAllBytes(lclFile);
         assertArrayEquals("Mismatched persisted data", expected, actual);
+    }
+
+    @Test   // see SSHD-903
+    public void testForcedVersionNegotiation() throws Exception {
+        PropertyResolverUtils.updateProperty(sshd, SftpSubsystemEnvironment.SFTP_VERSION, SftpConstants.SFTP_V3);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            try (SftpClient sftp = createSftpClient(session)) {
+                assertEquals("Mismatched negotiated version", SftpConstants.SFTP_V3, sftp.getVersion());
+            }
+        }
     }
 
     protected String readFile(String path) throws Exception {

@@ -71,7 +71,7 @@ implementations - e.g., in order to override some default behavior - e.g.:
 ### Version selection via `SftpVersionSelector`
 
 
-The SFTP subsystem code supports versions 3-6 (inclusive), and by default attempts to negotiate the **highest**
+The SFTP subsystem code supports versions 3-6 (inclusive), and by default attempts to negotiate the highest
 possible one - on both client and server code. The user can intervene and force a specific version or a narrower
 range.
 
@@ -98,13 +98,17 @@ range.
 
 ```
 
-On the server side, version selection restriction is more complex - please remember that the **client** chooses
-the version, and all we can do at the server is require a **specific** version via the `SftpSubsystem#SFTP_VERSION`
-configuration key. For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default
-`SftpSubsystemFactory` that uses the sub-classed code.
+On the server side, version selection restriction is more complex - please remember that the according to the
+protocol specification
+
+>> The server responds with a SSH_FXP_VERSION packet, supplying the lowest (!) of its own and the client's version number
+
+Currently at the server we support requiring a **specific** version via the `SftpSubsystem#SFTP_VERSION`
+configuration key. The same can be achieved for the CLI SSHD code by specifying `-o sftp-version=N` option.
+
+For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default `SftpSubsystemFactory` that uses the sub-classed code.
 
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
-
 
 The code automatically registers the `SftpFileSystemProvider` as the handler for `sftp://` URL(s). Such URLs are
 interpreted as remote file locations and automatically exposed to the user as [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html)

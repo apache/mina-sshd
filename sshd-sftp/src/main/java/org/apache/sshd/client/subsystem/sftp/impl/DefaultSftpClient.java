@@ -74,7 +74,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private Charset nameDecodingCharset = DEFAULT_NAME_DECODING_CHARSET;
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
-        this.nameDecodingCharset = PropertyResolverUtils.getCharset(clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
+        this.nameDecodingCharset = PropertyResolverUtils.getCharset(
+            clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
@@ -94,7 +95,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         });
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
 
-        long initializationTimeout = clientSession.getLongProperty(SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        long initializationTimeout = clientSession.getLongProperty(
+            SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
             synchronized (messages) {
@@ -331,6 +333,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         OutputStream dos = channel.getInvertedIn();
         BufferUtils.writeInt(dos, 5 /* total length */, workBuf);
         dos.write(SftpConstants.SSH_FXP_INIT);
+        // Ask for the highest we support and see what the server says
         BufferUtils.writeInt(dos, SftpConstants.SFTP_V6, workBuf);
         dos.flush();
 
@@ -385,7 +388,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         if (type == SftpConstants.SSH_FXP_VERSION) {
-            if (id < SftpConstants.SFTP_V3) {
+            if ((id < SftpConstants.SFTP_V3) || (id > SftpConstants.SFTP_V6)) {
                 throw new SshException("Unsupported sftp version " + id);
             }
             versionHolder.set(id);

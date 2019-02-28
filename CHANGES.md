@@ -98,3 +98,5 @@ if opening a shell or command channel.
 
 * [SSHD-901](https://issues.apache.org/jira/browse/SSHD-901) - Added capability to request a reply for the `keepalive@...` heartbeat request
 in order to avoid client-side session timeout due to no traffic from server.
+
+* [SSHD-903](https://issues.apache.org/jira/browse/SSHD-903) - Fixed the SFTP version negotiation behavior in case client proposed version is higher than server supported one.

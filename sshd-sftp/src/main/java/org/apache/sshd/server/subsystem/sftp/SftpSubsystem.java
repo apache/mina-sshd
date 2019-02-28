@@ -59,7 +59,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -925,12 +924,13 @@ public class SftpSubsystem
             log.debug("doInit({})[id={}] SSH_FXP_INIT (version={})", session, id, id);
         }
 
-        String all = checkVersionCompatibility(buffer, id, id, SftpConstants.SSH_FX_OP_UNSUPPORTED);
-        if (GenericUtils.isEmpty(all)) { // i.e. validation failed
+        Map.Entry<Integer, String> negotiated =
+            checkVersionCompatibility(buffer, id, id, SftpConstants.SSH_FX_OP_UNSUPPORTED);
+        if (negotiated == null) { // i.e. validation failed
             return;
         }
 
-        version = id;
+        version = negotiated.getKey();
         while (buffer.available() > 0) {
             String name = buffer.getString();
             byte[] data = buffer.getBytes();
@@ -941,7 +941,7 @@ public class SftpSubsystem
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
         buffer.putInt(version);
-        appendExtensions(buffer, all);
+        appendExtensions(buffer, negotiated.getValue());
 
         SftpEventListener listener = getSftpEventListenerProxy();
         listener.initialized(session, version);

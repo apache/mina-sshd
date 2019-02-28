@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
@@ -33,7 +34,7 @@ public interface SftpSubsystemEnvironment extends ServerSessionHolder {
     /**
      * Force the use of a given sftp version
      */
-    String SFTP_VERSION = "sftp-version";
+    String SFTP_VERSION = SshServerConfigFileReader.SFTP_FORCED_VERSION_PROP;
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
 
