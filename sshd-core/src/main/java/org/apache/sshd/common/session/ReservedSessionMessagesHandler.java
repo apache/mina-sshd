@@ -69,4 +69,21 @@ public interface ReservedSessionMessagesHandler extends SshdEventListener {
     default boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
         return false;
     }
+
+    /**
+     * Invoked if the user configured usage of a proprietary heartbeat mechanism.
+     * <B>Note:</B> by default throws {@code UnsupportedOperationException} so
+     * users who configure a proprietary heartbeat mechanism option must provide
+     * an implementation for this method.
+     *
+     * @param service The {@link ConnectionService} through which the heartbeat
+     * is being executed.
+     * @return {@code true} whether heartbeat actually sent - <B>Note:</B> used
+     * mainly for debugging purposes.
+     * @throws Exception If failed to send the heartbeat - <B>Note:</B> causes
+     * associated session termination.
+     */
+    default boolean sendReservedHeartbeat(ConnectionService service) throws Exception {
+        throw new UnsupportedOperationException("Reserved heartbeat not implemented for " + service);
+    }
 }

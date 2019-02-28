@@ -182,6 +182,13 @@ regardless of the user's own traffic:
     willing to wait for the server's reply to the global request.
 
 
+* Customized user code
+
+    In order to support customized user code for this feature, the `ReservedSessionMessagesHandler` can be used to
+    implement any kind of user-defined heartbeat. *Note:* if the user configured such a mechanism, then the
+    `sendReservedHeartbeat` method **must** be implemented since the default throws `UnsupportedOperationException`
+    which will cause the session to be terminated the 1st time the method is invoked.
+
 **Note(s):**
 
 * Both options are disabled by default - they need to be activated explicitly.
@@ -189,7 +196,7 @@ regardless of the user's own traffic:
 * Both options can be activated either on the `SshClient` (for **global** setup) and/or
 the `ClientSession` (for specific session configuration).
 
-* The `keepalive@,,,,` mechanism **supersedes** the `SSH_MSG_IGNORE` one if both activated.
+* The `keepalive@,,,,` mechanism **supersedes** the the other mechanisms if activated.
 
     * If specified timeout expires for the `wantReply` option then session will be **closed**.
 

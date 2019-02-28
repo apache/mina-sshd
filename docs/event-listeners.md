@@ -94,6 +94,9 @@ Can be used to handle the following cases:
 * [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2)
 * [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3)
 * [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4)
+* Implementing a custom session heartbeat mechanism - for **both**
+[client](./client-setup.md#keeping-the-session-alive-while-no-traffic)
+or [server](./server-setup.md#providing-server-side-heartbeat).
 * Any other unrecognized message received in the session.
 
 **Note:** The `handleUnimplementedMessage` method serves both for handling `SSH_MSG_UNIMPLEMENTED` and any other unrecognized

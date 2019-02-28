@@ -38,7 +38,13 @@ then the internal `DefaultClientKexExtensionHandler` is used.
 
 ## Behavioral changes and enhancements
 
-* [SSHD-782](https://issues.apache.org/jira/browse/SSHD-882) - Added session level heartbeat mechanism via `SSH_MSG_IGNORE`.
+* [SSHD-782](https://issues.apache.org/jira/browse/SSHD-882) - Added session level heartbeat mechanism via `SSH_MSG_IGNORE`
+or customized user provided code.
+
+In order to support customized user code for this feature, the `ReservedSessionMessagesHandler` can be used to
+implement any kind of user-defined heartbeat. *Note:* if the user configured such a mechanism, then the
+`sendReservedHeartbeat` method **must** be implemented since the default throws `UnsupportedOperationException`
+which will cause the session to be terminated the 1st time the method is invoked.
 
 * [SSHD-882](https://issues.apache.org/jira/browse/SSHD-882) - Provide hooks to allow users to register a consumer
 for STDERR data sent via the `ChannelSession` - especially for the SFTP subsystem.

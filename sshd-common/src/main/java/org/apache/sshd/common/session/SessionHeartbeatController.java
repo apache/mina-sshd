@@ -36,7 +36,9 @@ public interface SessionHeartbeatController extends PropertyResolver {
         /** No heartbeat */
         NONE,
         /** Use {@code SSH_MSG_IGNORE} packets */
-        IGNORE;
+        IGNORE,
+        /** Custom mechanism via {@code ReservedSessionMessagesHandler} */
+        RESERVED;
 
         public static final Set<HeartbeatType> VALUES = EnumSet.allOf(HeartbeatType.class);
 
@@ -60,13 +62,16 @@ public interface SessionHeartbeatController extends PropertyResolver {
     /** Property used to register the interval for the heartbeat - if not set or non-positive then disabled */
     String SESSION_HEARTBEAT_INTERVAL = "session-connection-heartbeat-interval";
 
+    /** Default value for {@value #SESSION_HEARTBEAT_INTERVAL} if none set */
+    long DEFAULT_CONNECTION_HEARTBEAT_INTERVAL = 0L;
+
     default HeartbeatType getSessionHeartbeatType() {
         Object value = getObject(SESSION_HEARTBEAT_TYPE);
         return PropertyResolverUtils.toEnum(HeartbeatType.class, value, false, HeartbeatType.VALUES);
     }
 
     default long getSessionHeartbeatInterval() {
-        return getLongProperty(SESSION_HEARTBEAT_INTERVAL, 0L);
+        return getLongProperty(SESSION_HEARTBEAT_INTERVAL, DEFAULT_CONNECTION_HEARTBEAT_INTERVAL);
     }
 
     /**

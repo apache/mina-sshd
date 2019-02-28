@@ -150,3 +150,9 @@ it is highly recommended to use the API - unless one needs to control these prop
 
 If one is using the SSHD CLI code, then these options are controlled via `-o ServerAliveInterval=NNNN` where the value is
 the requested **global** interval in **seconds**. *Note*: any non-positive value is treated as if the feature is disabled.
+
+In order to support customized user code for this feature, the `ReservedSessionMessagesHandler` can be used to
+implement any kind of user-defined heartbeat. *Note:* if the user configured such a mechanism, then the
+`sendReservedHeartbeat` method **must** be implemented since the default throws `UnsupportedOperationException`
+which will cause the session to be terminated the 1st time the method is invoked.
+
