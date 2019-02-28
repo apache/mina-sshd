@@ -19,12 +19,15 @@
 package org.apache.sshd.server.config;
 
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
+import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
@@ -66,10 +69,34 @@ public final class SshServerConfigFileReader {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
+    public static <S extends SshServer> S setupServerHeartbeat(S server, PropertyResolver props) {
+        if ((server == null) || (props == null)) {
+            return server;
+        }
+
+        long interval = PropertyResolverUtils.getLongProperty(
+            props, SERVER_ALIVE_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
+        if (interval <= 0L) {
+            return server;
+        }
+
+        server.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+        return server;
+    }
+
+    public static <S extends SshServer> S setupServerHeartbeat(S server, Map<String, ?> options) {
+        if ((server == null) || GenericUtils.isEmpty(options)) {
+            return server;
+        }
+
+        return setupServerHeartbeat(server, PropertyResolverUtils.toPropertyResolver(options));
+    }
+
     public static <S extends SshServer> S configure(
             S server, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         SshConfigFileReader.configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
+        setupServerHeartbeat(server, props);
         return server;
     }
 

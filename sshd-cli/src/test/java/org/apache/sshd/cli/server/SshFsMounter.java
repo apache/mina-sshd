@@ -296,9 +296,10 @@ public final class SshFsMounter extends SshServerCliSupport {
             }
         }
 
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         SshServer sshd = error ? null : setupIoServiceFactory(
-            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), options,
-            resolveLoggingVerbosity(options, args),
+            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), resolver,
+            resolveLoggingVerbosity(resolver, args),
             System.out, System.err, args);
         if (sshd == null) {
             error = true;
@@ -311,7 +312,6 @@ public final class SshFsMounter extends SshServerCliSupport {
 
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(targetFolder.resolve("key.pem")));

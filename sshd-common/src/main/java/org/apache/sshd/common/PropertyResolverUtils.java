@@ -528,11 +528,11 @@ public final class PropertyResolverUtils {
      * are updated
      * @return The resolver wrapper
      */
-    public static PropertyResolver toPropertyResolver(Map<String, Object> props) {
+    public static PropertyResolver toPropertyResolver(Map<String, ?> props) {
         return toPropertyResolver(props, null);
     }
 
-    public static PropertyResolver toPropertyResolver(Map<String, Object> props, PropertyResolver parent) {
+    public static PropertyResolver toPropertyResolver(Map<String, ?> props, PropertyResolver parent) {
         return new PropertyResolver() {
             @Override
             public PropertyResolver getParentPropertyResolver() {
@@ -540,8 +540,9 @@ public final class PropertyResolverUtils {
             }
 
             @Override
+            @SuppressWarnings({ "unchecked", "rawtypes" })
             public Map<String, Object> getProperties() {
-                return props;
+                return (Map) props;
             }
 
             @Override

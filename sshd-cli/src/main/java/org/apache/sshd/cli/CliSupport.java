@@ -21,11 +21,12 @@ package org.apache.sshd.cli;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.SocketAddress;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -108,7 +109,8 @@ public abstract class CliSupport {
     }
 
     public static <M extends AbstractFactoryManager> M setupIoServiceFactory(
-            M manager, Map<String, ?> options, Level level, PrintStream stdout, PrintStream stderr, String... args) {
+            M manager, PropertyResolver resolver, Level level,
+            PrintStream stdout, PrintStream stderr, String... args) {
         BuiltinIoServiceFactoryFactories factory = resolveIoServiceFactory(stderr, args);
         if (factory == null) {
             return null;
@@ -195,21 +197,21 @@ public abstract class CliSupport {
      * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options.
      * If found, then uses it as the result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
      *
-     * @param options The {@code -o} options specified by the user
+     * @param resolver The {@code -o} options specified by the user
      * @param args The command line arguments
      * @return The resolved verbosity level
      */
-    public static Level resolveLoggingVerbosity(Map<String, ?> options, String... args) {
-        String levelValue = (options == null)
-            ? null
-            : Objects.toString(options.get(ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP), null);
+    public static Level resolveLoggingVerbosity(PropertyResolver resolver, String... args) {
+        String levelValue = PropertyResolverUtils.getString(
+            resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
         if (GenericUtils.isEmpty(levelValue)) {
             return resolveLoggingVerbosity(args);
         }
 
         LogLevelValue level = LogLevelValue.fromName(levelValue);
         if (level == null) {
-            throw new IllegalArgumentException("Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+            throw new IllegalArgumentException(
+                "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
         }
 
         return level.getLoggingLevel();
