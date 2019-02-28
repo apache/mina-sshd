@@ -166,7 +166,7 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static List<NamedFactory<Command>> resolveServerSubsystems(
-            Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
+            ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
                 throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
@@ -177,7 +177,8 @@ public abstract class SshServerCliSupport extends CliSupport {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
-                    factory = registerSubsystemFactoryListeners(level, stdout, stderr, options, factory);
+                    factory = registerSubsystemFactoryListeners(
+                        server, level, stdout, stderr, options, factory);
                     subsystems.add(factory);
                 } catch (Exception e) {
                     stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
@@ -210,7 +211,8 @@ public abstract class SshServerCliSupport extends CliSupport {
                 continue;
             }
 
-            factory = registerSubsystemFactoryListeners(level, stdout, stderr, options, factory);
+            factory = registerSubsystemFactoryListeners(
+                server, level, stdout, stderr, options, factory);
             subsystems.add(factory);
         }
 
@@ -218,11 +220,15 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static <F extends SubsystemFactory> F registerSubsystemFactoryListeners(
-            Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
+            ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
                 throws Exception {
-        if ((factory instanceof SftpSubsystemFactory) && isEnabledVerbosityLogging(level)) {
-            SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
-            ((SftpSubsystemFactory) factory).addSftpEventListener(listener);
+        if (factory instanceof SftpSubsystemFactory) {
+            if (isEnabledVerbosityLogging(level)) {
+                SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
+                ((SftpSubsystemFactory) factory).addSftpEventListener(listener);
+            }
+
+            SshServerConfigFileReader.setupSftpSubsystem(server, options);
         }
 
         return factory;

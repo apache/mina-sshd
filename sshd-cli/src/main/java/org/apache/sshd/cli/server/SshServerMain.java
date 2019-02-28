@@ -192,7 +192,7 @@ public class SshServerMain extends SshServerCliSupport {
             .build());
 
         List<NamedFactory<Command>> subsystems =
-            resolveServerSubsystems(level, System.out, System.err, resolver);
+            resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
             sshd.setSubsystemFactories(subsystems);

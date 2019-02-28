@@ -42,13 +42,13 @@ public interface SftpVersionSelector {
      * An {@link SftpVersionSelector} that returns the maximum available version
      */
     SftpVersionSelector MAXIMUM = new NamedVersionSelector("MAXIMUM", (session, current, available) ->
-            GenericUtils.stream(available).mapToInt(Integer::intValue).max().orElse(current));
+        GenericUtils.stream(available).mapToInt(Integer::intValue).max().orElse(current));
 
     /**
      * An {@link SftpVersionSelector} that returns the maximum available version
      */
     SftpVersionSelector MINIMUM = new NamedVersionSelector("MINIMUM", (session, current, available) ->
-            GenericUtils.stream(available).mapToInt(Integer::intValue).min().orElse(current));
+        GenericUtils.stream(available).mapToInt(Integer::intValue).min().orElse(current));
 
     /**
      * @param session   The {@link ClientSession} through which the SFTP connection is made

@@ -32,6 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerBuilder;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
@@ -65,11 +66,13 @@ public final class SshServerConfigFileReader {
     public static final String SERVER_ALIVE_INTERVAL_PROP = "ServerAliveInterval";
     public static final long DEFAULT_ALIVE_INTERVAL = 0L;
 
+    public static final String SFTP_FORCED_VERSION_PROP = "sftp-version";
+
     private SshServerConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
-    public static <S extends SshServer> S setupServerHeartbeat(S server, PropertyResolver props) {
+    public static <S extends ServerFactoryManager> S setupServerHeartbeat(S server, PropertyResolver props) {
         if ((server == null) || (props == null)) {
             return server;
         }
@@ -84,12 +87,25 @@ public final class SshServerConfigFileReader {
         return server;
     }
 
-    public static <S extends SshServer> S setupServerHeartbeat(S server, Map<String, ?> options) {
+    public static <S extends ServerFactoryManager> S setupServerHeartbeat(S server, Map<String, ?> options) {
         if ((server == null) || GenericUtils.isEmpty(options)) {
             return server;
         }
 
         return setupServerHeartbeat(server, PropertyResolverUtils.toPropertyResolver(options));
+    }
+
+    public static <S extends ServerFactoryManager> S setupSftpSubsystem(S server, PropertyResolver props) {
+        if ((server == null) || (props == null)) {
+            return server;
+        }
+
+        Integer version = PropertyResolverUtils.getInteger(props, SFTP_FORCED_VERSION_PROP);
+        if (version != null) {
+            PropertyResolverUtils.updateProperty(server, SFTP_FORCED_VERSION_PROP, version);
+        }
+
+        return server;
     }
 
     public static <S extends SshServer> S configure(
