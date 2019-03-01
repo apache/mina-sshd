@@ -641,18 +641,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             factory.setFileSystemAccessor(new SftpFileSystemAccessor() {
                 @Override
                 public SeekableByteChannel openFile(
-                        ServerSession session, SftpEventListenerManager subsystem, Path file,
+                        ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle, Path file,
                         String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
                             throws IOException {
                     fileHolder.set(file);
-                    return SftpFileSystemAccessor.super.openFile(session, subsystem, file, handle, options, attrs);
+                    return SftpFileSystemAccessor.super.openFile(
+                        session, subsystem, fileHandle, file, handle, options, attrs);
                 }
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        ServerSession session, SftpEventListenerManager subsystem, Path dir, String handle) throws IOException {
+                        ServerSession session, SftpEventListenerManager subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+                            throws IOException {
                     dirHolder.set(dir);
-                    return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dir, handle);
+                    return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dirHandle, dir, handle);
                 }
 
                 @Override
@@ -663,7 +665,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path localFile = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+            Path localFile = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
             Files.createDirectories(localFile.getParent());
             byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
             Files.write(localFile, expected, StandardOpenOption.CREATE);
@@ -675,7 +678,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 try (SftpClient sftp = createSftpClient(session)) {
                     byte[] actual = new byte[expected.length];
-                    try (InputStream stream = sftp.read(CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+                    try (InputStream stream = sftp.read(
+                            CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
                         IoUtils.readFully(stream, actual);
                     }
 
@@ -686,7 +690,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     Path localParent = localFile.getParent();
                     String localName = Objects.toString(localFile.getFileName(), null);
-                    try (CloseableHandle handle = sftp.openDir(CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localParent))) {
+                    try (CloseableHandle handle = sftp.openDir(
+                            CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localParent))) {
                         List<DirEntry> entries = sftp.readDir(handle);
                         Path remoteParent = dirHolder.getAndSet(null);
                         assertNotNull("No remote folder holder value", remoteParent);

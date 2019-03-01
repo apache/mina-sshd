@@ -930,7 +930,8 @@ public abstract class AbstractSftpSubsystemHelper
         ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         ServerSession session = getServerSession();
-        try (SeekableByteChannel channel = accessor.openFile(session, this, file, "", Collections.emptySet())) {
+        try (SeekableByteChannel channel = accessor.openFile(
+                session, this, null, file, null, Collections.emptySet())) {
             channel.position(startOffset);
 
             Digest digest = factory.create();
@@ -988,6 +989,8 @@ public abstract class AbstractSftpSubsystemHelper
                     buffer.putBytes(hashValue);
                 }
             }
+
+            accessor.closeFile(session, this, null, file, null, channel, Collections.emptySet());
         }
     }
 
@@ -1043,7 +1046,8 @@ public abstract class AbstractSftpSubsystemHelper
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         boolean traceEnabled = log.isTraceEnabled();
         ServerSession session = getServerSession();
-        try (SeekableByteChannel channel = accessor.openFile(session, this, path, null, EnumSet.of(StandardOpenOption.READ))) {
+        try (SeekableByteChannel channel = accessor.openFile(
+                session, this, null, path, null, Collections.emptySet())) {
             channel.position(startOffset);
 
             /*
@@ -1114,6 +1118,8 @@ public abstract class AbstractSftpSubsystemHelper
             } else {
                 hashValue = GenericUtils.EMPTY_BYTE_ARRAY;
             }
+
+            accessor.closeFile(session, this, null, path, null, channel, Collections.emptySet());
         }
 
         if (traceEnabled) {
@@ -2428,9 +2434,12 @@ public abstract class AbstractSftpSubsystemHelper
                 case "size": {
                     long newSize = ((Number) value).longValue();
                     SftpFileSystemAccessor accessor = getFileSystemAccessor();
+                    ServerSession session = getServerSession();
+                    Set<StandardOpenOption> openOptions = EnumSet.of(StandardOpenOption.WRITE);
                     try (SeekableByteChannel channel =
-                            accessor.openFile(getServerSession(), this, file, null, EnumSet.of(StandardOpenOption.WRITE))) {
+                            accessor.openFile(session, this, null, file, null, openOptions)) {
                         channel.truncate(newSize);
+                        accessor.closeFile(session, this, null, file, null, channel, openOptions);
                     }
                     continue;
                 }

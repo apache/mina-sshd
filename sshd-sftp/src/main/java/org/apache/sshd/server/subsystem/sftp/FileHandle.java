@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -49,18 +48,16 @@ public class FileHandle extends Handle {
     private final int access;
     private final SeekableByteChannel fileChannel;
     private final List<FileLock> locks = new ArrayList<>();
-    private final SftpSubsystem subsystem;
     private final Set<StandardOpenOption> openOptions;
     private final Collection<FileAttribute<?>> fileAttributes;
 
     public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
-        super(file, handle);
+        super(subsystem, file, handle);
 
-        this.subsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.access = access;
         this.openOptions = Collections.unmodifiableSet(getOpenOptions(flags, access));
         this.fileAttributes = Collections.unmodifiableCollection(toFileAttributes(attrs));
-        signalHandleOpening(subsystem);
+        signalHandleOpening();
 
         FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(fileAttributes)
             ? IoUtils.EMPTY_FILE_ATTRIBUTES
@@ -70,15 +67,15 @@ public class FileHandle extends Handle {
         ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
         try {
-            channel = accessor.openFile(session, subsystem, file, handle, openOptions, fileAttrs);
+            channel = accessor.openFile(session, subsystem, this, file, handle, openOptions, fileAttrs);
         } catch (UnsupportedOperationException e) {
-            channel = accessor.openFile(session, subsystem, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
+            channel = accessor.openFile(session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
             subsystem.doSetAttributes(file, attrs);
         }
         this.fileChannel = channel;
 
         try {
-            signalHandleOpen(subsystem);
+            signalHandleOpen();
         } catch (IOException e) {
             close();
             throw e;
@@ -138,18 +135,20 @@ public class FileHandle extends Handle {
     public void close() throws IOException {
         super.close();
 
-        SeekableByteChannel channel = getFileChannel();
-        if (channel.isOpen()) {
-            channel.close();
-        }
+        SftpSubsystem subsystem = getSubsystem();
+        SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
+        ServerSession session = subsystem.getServerSession();
+        accessor.closeFile(session, subsystem, this, getFile(), getFileHandle(), getFileChannel(), getOpenOptions());
     }
 
     public void lock(long offset, long length, int mask) throws IOException {
         SeekableByteChannel channel = getFileChannel();
         long size = (length == 0L) ? channel.size() - offset : length;
+        SftpSubsystem subsystem = getSubsystem();
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
-        FileLock lock = accessor.tryLock(session, subsystem, getFile(), getFileHandle(), channel, offset, size, false);
+        FileLock lock = accessor.tryLock(
+            session, subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
         if (lock == null) {
             throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
                 "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
@@ -180,14 +179,14 @@ public class FileHandle extends Handle {
         lock.release();
     }
 
-    public static Collection<FileAttribute<?>> toFileAttributes(Map<String, Object> attrs) {
+    public static Collection<FileAttribute<?>> toFileAttributes(Map<String, ?> attrs) {
         if (GenericUtils.isEmpty(attrs)) {
             return Collections.emptyList();
         }
 
         Collection<FileAttribute<?>> attributes = null;
         // Cannot use forEach because the referenced attributes variable is not effectively final
-        for (Map.Entry<String, Object> attr : attrs.entrySet()) {
+        for (Map.Entry<String, ?> attr : attrs.entrySet()) {
             FileAttribute<?> fileAttr = toFileAttribute(attr.getKey(), attr.getValue());
             if (fileAttr == null) {
                 continue;

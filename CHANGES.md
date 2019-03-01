@@ -27,6 +27,12 @@ to override the internal default ones.
     When the environment values are sent to the server, the object's `toString()` will be used. Furthermore,
     if one provides a `null` value, the previous registered value (if any) is **removed**.
 
+* The `SftpFileSystemAccessor` callbacks are now provided with the relevant `Handle` they are servicing
+(*Note:* in special cases a `null` value is provided to indicate invocation outside the scope of such a handle).
+
+    * In this context, closing of file channel/directory streams created by the accessor are also closed
+    via callbacks to the same accessor
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between

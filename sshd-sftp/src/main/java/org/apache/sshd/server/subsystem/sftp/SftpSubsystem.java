@@ -390,7 +390,8 @@ public class SftpSubsystem
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
-        accessor.syncFileData(session, this, fileHandle.getFile(), fileHandle.getFileHandle(), fileHandle.getFileChannel());
+        accessor.syncFileData(
+            session, this, fileHandle, fileHandle.getFile(), fileHandle.getFileHandle(), fileHandle.getFileChannel());
     }
 
     @Override

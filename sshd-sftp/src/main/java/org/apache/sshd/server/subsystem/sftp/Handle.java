@@ -38,23 +38,31 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Handle implements java.nio.channels.Channel, AttributeStore {
+    private final SftpSubsystem sftpSubsystem;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Path file;
     private final String handle;
     private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
-    protected Handle(Path file, String handle) {
+    protected Handle(SftpSubsystem subsystem, Path file, String handle) {
+        this.sftpSubsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.file = Objects.requireNonNull(file, "No local file path");
         this.handle = ValidateUtils.checkNotNullAndNotEmpty(handle, "No assigned handle for %s", file);
     }
 
-    protected void signalHandleOpening(SftpSubsystem subsystem) throws IOException {
+    protected SftpSubsystem getSubsystem() {
+        return sftpSubsystem;
+    }
+
+    protected void signalHandleOpening() throws IOException {
+        SftpSubsystem subsystem = getSubsystem();
         SftpEventListener listener = subsystem.getSftpEventListenerProxy();
         ServerSession session = subsystem.getServerSession();
         listener.opening(session, handle, this);
     }
 
-    protected void signalHandleOpen(SftpSubsystem subsystem) throws IOException {
+    protected void signalHandleOpen() throws IOException {
+        SftpSubsystem subsystem = getSubsystem();
         SftpEventListener listener = subsystem.getSftpEventListenerProxy();
         ServerSession session = subsystem.getServerSession();
         listener.open(session, handle, this);

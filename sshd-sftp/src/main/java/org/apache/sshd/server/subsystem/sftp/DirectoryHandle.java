@@ -37,13 +37,11 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
     private Iterator<Path> fileList;
 
     public DirectoryHandle(SftpSubsystem subsystem, Path dir, String handle) throws IOException {
-        super(dir, handle);
-
-        signalHandleOpening(subsystem);
+        super(subsystem, dir, handle);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
-        ds = accessor.openDirectory(session, subsystem, dir, handle);
+        ds = accessor.openDirectory(session, subsystem, this, dir, handle);
 
         Path parent = dir.getParent();
         if (parent == null) {
@@ -52,7 +50,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
         fileList = ds.iterator();
 
         try {
-            signalHandleOpen(subsystem);
+            signalHandleOpen();
         } catch (IOException e) {
             close();
             throw e;
@@ -102,8 +100,14 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     @Override
     public void close() throws IOException {
-        super.close();
-        markDone(); // just making sure
-        ds.close();
+        try {
+            SftpSubsystem subsystem = getSubsystem();
+            SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
+            ServerSession session = subsystem.getServerSession();
+            accessor.closeDirectory(session, subsystem, this, getFile(), getFileHandle(), ds);
+        } finally {
+            super.close();
+            markDone(); // just making sure
+        }
     }
 }
