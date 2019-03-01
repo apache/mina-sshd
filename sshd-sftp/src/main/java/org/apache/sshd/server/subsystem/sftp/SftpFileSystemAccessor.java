@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
 
+import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -60,6 +62,12 @@ public interface SftpFileSystemAccessor {
             .put("size", FileInfoExtractor.SIZE)
             .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
             .immutable();
+
+    /** Whether to invoke {@link FileChannel#force(boolean)} on files open for write when closing */
+    String PROP_AUTO_SYNC_FILE_ON_CLOSE = "sftp-auto-fsync-on-close";
+
+    /** Default value for {@value #PROP_AUTO_SYNC_FILE_ON_CLOSE} if none set */
+    boolean DEFAULT_AUTO_SYNC_FILE_ON_CLOSE = true;
 
     SftpFileSystemAccessor DEFAULT = new SftpFileSystemAccessor() {
         @Override
@@ -175,6 +183,13 @@ public interface SftpFileSystemAccessor {
                 throws IOException {
         if ((channel == null) || (!channel.isOpen())) {
             return;
+        }
+
+        if ((channel instanceof FileChannel)
+                && GenericUtils.containsAny(options, IoUtils.WRITEABLE_OPEN_OPTIONS)
+                && PropertyResolverUtils.getBooleanProperty(
+                        session, PROP_AUTO_SYNC_FILE_ON_CLOSE, DEFAULT_AUTO_SYNC_FILE_ON_CLOSE)) {
+            ((FileChannel) channel).force(true);
         }
 
         channel.close();

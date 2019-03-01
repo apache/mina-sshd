@@ -30,8 +30,12 @@ to override the internal default ones.
 * The `SftpFileSystemAccessor` callbacks are now provided with the relevant `Handle` they are servicing
 (*Note:* in special cases a `null` value is provided to indicate invocation outside the scope of such a handle).
 
-    * In this context, closing of file channel/directory streams created by the accessor are also closed
+    * Closing of file channel/directory streams created by the accessor are also closed
     via callbacks to the same accessor
+    
+    * When closing a file channel that may have been potentially modified, the default implementation
+    forces a synchronization of the data with the file-system. This behavior can be modified
+    by setting the `sftp-auto-fsync-on-close` property to *false*.
 
 ## Minor code helpers
 
@@ -106,3 +110,5 @@ if opening a shell or command channel.
 in order to avoid client-side session timeout due to no traffic from server.
 
 * [SSHD-903](https://issues.apache.org/jira/browse/SSHD-903) - Fixed the SFTP version negotiation behavior in case client proposed version is higher than server supported one.
+
+* [SSHD-904](https://issues.apache.org/jira/browse/SSHD-904) - Add option to execute 'fsync' on modified file contents via SFTP.

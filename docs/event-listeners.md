@@ -220,6 +220,32 @@ store user-defined attributes via its `AttributeStore` implementation. The liste
 whether the close attempt was successful or not. In other words, after `SftpEventListener#closed` has been
 called, all attributes associated with the handle are cleared.
 
+### `SftpFileSystemAccessor`
+
+This is the abstraction providing the SFTP server subsystem access to files and directories. The SFTP subsystem
+uses this abstraction to obtain file channels and/or directory streams. One can override the default implementation
+and thus be able to track and/or intervene in all opened files and folders throughout the SFTP server subsystem code.
+The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
+
+```java
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .withFileSystemAccessor(new MySftpFileSystemAccessor())
+        .build();
+    server.setSubsystemFactories(Collections.singletonList(factory));
+
+```
+
+*Note:*
+
+* Closing of file channel/directory streams created by the accessor are also closed
+via callbacks to the same accessor
+    
+* When closing a file channel that may have been potentially modified, the default implementation
+forces a synchronization of the data with the file-system. This behavior can be modified
+by setting the `sftp-auto-fsync-on-close` property to *false* (or by providing a customized implementation
+that involves other considerations as well).
+    
 ### `PortForwardingEventListener`
 
 Informs and allows tracking of port forwarding events as described in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7)

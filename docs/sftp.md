@@ -252,20 +252,6 @@ the (default) password-based one:
 
 ```
 
-#### Tracking accessed locations via `SftpFileSystemAccessor`
-
-One can override the default `SftpFileSystemAccessor` and thus be able to track all opened files and folders
-throughout the SFTP server subsystem code. The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
-
-```java
-
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withFileSystemAccessor(new MySftpFileSystemAccessor())
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
-
-```
-
 ### SFTP sent/received names encoding
 
 By default, the SFTP client uses UTF-8 to encode/decode any referenced file/folder name. However, some servers do not properly encode such names,
