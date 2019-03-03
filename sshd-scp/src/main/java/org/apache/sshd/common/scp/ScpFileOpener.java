@@ -52,6 +52,12 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ScpFileOpener {
+    /** Whether to synchronize written file data with underlying file-system */
+    String PROP_AUTO_SYNC_FILE_ON_WRITE = "scp-auto-sync-on-write";
+
+    /** Default value for {@value #PROP_AUTO_SYNC_FILE_ON_WRITE} if none set */
+    boolean DEFAULT_AUTO_SYNC_FILE_ON_WRITE = true;
+
     /**
      * Invoked when receiving a new file to via a directory command
      *

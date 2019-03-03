@@ -25,14 +25,17 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
 import org.apache.sshd.common.scp.ScpTargetStreamResolver;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -40,6 +43,11 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFileOpener {
     public static final DefaultScpFileOpener INSTANCE = new DefaultScpFileOpener();
+
+    private static final OpenOption[] DEFAULT_SYNC_OPTIONS = {
+        StandardOpenOption.SYNC, StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
+    };
 
     public DefaultScpFileOpener() {
         super();
@@ -61,12 +69,43 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     public OutputStream openWrite(
             Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
                 throws IOException {
+        options = resolveOpenOptions(session, file, size, permissions, options);
         if (log.isDebugEnabled()) {
             log.debug("openWrite({}) size={}, permissions={}, file={}, options={}",
-                  session, size, permissions, file, Arrays.toString(options));
+                    session, size, permissions, file, Arrays.toString(options));
+        }
+        return Files.newOutputStream(file, options);
+    }
+
+    protected OpenOption[] resolveOpenOptions(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
+                throws IOException {
+        if (!session.getBooleanProperty(PROP_AUTO_SYNC_FILE_ON_WRITE, DEFAULT_AUTO_SYNC_FILE_ON_WRITE)) {
+            return options;
         }
 
-        return Files.newOutputStream(file, options);
+        int numOptions = GenericUtils.length(options);
+        if (numOptions <= 0) {
+            return DEFAULT_SYNC_OPTIONS.clone();
+        }
+
+        OpenOption syncOption = Stream.of(options)
+            .filter(o -> o == StandardOpenOption.SYNC)
+            .findFirst()
+            .orElse(null);
+        if (syncOption != null) {
+            return options;
+        }
+
+        OpenOption[] tmp = new OpenOption[numOptions + 1];
+        System.arraycopy(options, 0, tmp, 0, numOptions);
+        tmp[numOptions] = StandardOpenOption.SYNC;
+        if (log.isDebugEnabled()) {
+            log.debug("resolveOpenOptions({}) modify options from {} to {} for {}",
+                session, Arrays.toString(options), Arrays.toString(tmp), file);
+        }
+
+        return tmp;
     }
 
     @Override

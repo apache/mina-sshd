@@ -187,6 +187,9 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testNormalizedScpRemotePaths() throws Exception {
+        // see SSHD-822
+        assumeNotIoServiceProvider(
+            EnumSet.of(BuiltinIoServiceFactoryFactories.NETTY, BuiltinIoServiceFactoryFactories.MINA));
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,

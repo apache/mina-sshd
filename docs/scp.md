@@ -71,13 +71,19 @@ ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   /
 
 ```
 
-**Note:** due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
+**Note(s):**
+
+* Due to SCP protocol limitations one cannot change the **size** of the input/output since it is passed as part of the command
 **before** the file opener is invoked - so there are a few limitations on what one can do within this interface implementation.
 
-In this context, note that patterns used in `ScpFileOpener#getMatchingFilesToSend` are matched using case sensitivity derived from the O/S:
+* By default, SCP synchronizes the local copied file data with the file system using the [Java SYNC open option](https://docs.oracle.com/javase/8/docs/api/java/nio/file/StandardOpenOption.html#SYNC).
+This behavior can be controlled by setting the `scp-auto-sync-on-write` (a.k.a. `ScpFileOpener#PROP_AUTO_SYNC_FILE_ON_WRITE`) property to _false_
+or overriding the `DefaultScpFileOpener#resolveOpenOptions`, or even overriding the `ScpFileOpener#openWrite` method altogether.
 
-* `Windows` - case insensitive
-* `Unix=true` - case sensitive
+* Patterns used in `ScpFileOpener#getMatchingFilesToSend` are matched using case sensitivity derived from the O/S:
+
+    * `Windows` - case insensitive
+    * `Unix=true` - case sensitive
 
 as detected by the internal `OsUtils`. If a different behavior is required, then one needs to replace the default opener with one
 that uses a different sensitivity via `DirectoryScanner#setCaseSensitive` call (or executes the pattern matching in another way).

@@ -32,10 +32,13 @@ to override the internal default ones.
 
     * Closing of file channel/directory streams created by the accessor are also closed
     via callbacks to the same accessor
-    
+
     * When closing a file channel that may have been potentially modified, the default implementation
     forces a synchronization of the data with the file-system. This behavior can be modified
     by setting the `sftp-auto-fsync-on-close` property to *false*.
+
+* The `ScpFileOpener` methods are also invoked in order to close input/output streams created through it
+when they are no longer needed once data has been successfully copied.
 
 ## Minor code helpers
 
@@ -111,4 +114,6 @@ in order to avoid client-side session timeout due to no traffic from server.
 
 * [SSHD-903](https://issues.apache.org/jira/browse/SSHD-903) - Fixed the SFTP version negotiation behavior in case client proposed version is higher than server supported one.
 
-* [SSHD-904](https://issues.apache.org/jira/browse/SSHD-904) - Add option to execute 'fsync' on modified file contents via SFTP.
+* [SSHD-904](https://issues.apache.org/jira/browse/SSHD-904) - Add option to enable/disable 'fsync' on modified file contents via SFTP (default=enabled).
+
+* [SSHD-905](https://issues.apache.org/jira/browse/SSHD-905) - Add option to enable/disable 'fsync' on modified file contents via SCP (default=enabled).
