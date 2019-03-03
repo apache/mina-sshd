@@ -272,6 +272,26 @@ public interface ScpFileOpener {
         Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
             throws IOException;
 
+    /**
+     * Called when the stream obtained from {@link #openRead(Session, Path, long, Set, OpenOption...) openRead}
+     * is no longer required since data has been successfully copied.
+     *
+     * @param session The {@link Session} requesting the access
+     * @param file The requested local file {@link Path}
+     * @param size The expected transfer bytes count
+     * @param permissions The requested file permissions
+     * @param stream The {@link InputStream} to close
+     * @throws IOException If failed to close the stream - <B>Note:</B> stream will be closed
+     * regardless of whether this method throws an exception or not.
+     */
+    default void closeRead(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, InputStream stream)
+                throws IOException {
+        if (stream != null) {
+            stream.close();
+        }
+    }
+
     ScpSourceStreamResolver createScpSourceStreamResolver(Session session, Path path) throws IOException;
 
     /**
@@ -288,6 +308,26 @@ public interface ScpFileOpener {
     OutputStream openWrite(
         Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
             throws IOException;
+
+    /**
+     * Called when output stream obtained from {@link #openWrite(Session, Path, long, Set, OpenOption...) openWrite}
+     * is no longer needed since data copying has been successfully completed.
+     *
+     * @param session The {@link Session} requesting the access
+     * @param file The requested local file {@link Path}
+     * @param size The expected transfer byte count
+     * @param permissions The requested file permissions
+     * @param os The opened {@link OutputStream}
+     * @throws IOException If failed to close the stream - <B>Note:</B> stream will be closed
+     * regardless of whether this method throws an exception or not.
+     */
+    default void closeWrite(
+            Session session, Path file, long size, Set<PosixFilePermission> permissions, OutputStream os)
+                throws IOException {
+        if (os != null) {
+            os.close();
+        }
+    }
 
     ScpTargetStreamResolver createScpTargetStreamResolver(Session session, Path path) throws IOException;
 

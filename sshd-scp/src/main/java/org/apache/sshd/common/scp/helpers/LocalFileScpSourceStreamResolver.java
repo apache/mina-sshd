@@ -94,6 +94,13 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
+    public void closeSourceStream(
+            Session session, long length, Set<PosixFilePermission> permissions, InputStream stream)
+                throws IOException {
+        opener.closeRead(session, getEventListenerFilePath(), length, permissions, stream);
+    }
+
+    @Override
     public String toString() {
         return String.valueOf(getEventListenerFilePath());
     }

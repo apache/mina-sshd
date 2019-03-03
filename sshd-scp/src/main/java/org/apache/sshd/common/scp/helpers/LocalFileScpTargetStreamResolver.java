@@ -115,6 +115,17 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
+    public void closeTargetStream(
+            Session session, String name, long length, Set<PosixFilePermission> perms, OutputStream stream)
+                throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("closeTargetStream(" + name + "): " + file);
+        }
+
+        opener.closeWrite(session, file, length, perms, stream);
+    }
+
+    @Override
     public Path getEventListenerFilePath() {
         if (file == null) {
             return path;

@@ -75,4 +75,23 @@ public interface ScpSourceStreamResolver {
     InputStream resolveSourceStream(
         Session session, long fileSize, Set<PosixFilePermission> permissions, OpenOption... options)
             throws IOException;
+
+    /**
+     * Called when the stream obtained from {@link #resolveSourceStream(Session, long, Set, OpenOption...) resolveSourceStream}
+     * is no longer needed since since file copy was completed successfully.
+     *
+     * @param session The {@link Session} through which file is transmitted
+     * @param fileSize The expected transfer byte count
+     * @param permissions The requested file permissions
+     * @param stream The {@link InputStream} to close
+     * @throws IOException If failed to close the stream - <B>Note:</B> stream will be closed
+     * regardless of whether this method throws an exception or not.
+     */
+    default void closeSourceStream(
+            Session session, long fileSize, Set<PosixFilePermission> permissions, InputStream stream)
+                throws IOException {
+        if (stream != null) {
+            stream.close();
+        }
+    }
 }

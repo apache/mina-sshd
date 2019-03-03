@@ -322,19 +322,17 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         if (bufSize < 0) { // TODO consider throwing an exception
             log.warn("receiveStream({})[{}] bad buffer size ({}) using default ({})",
-                     this, resolver, bufSize, MIN_RECEIVE_BUFFER_SIZE);
+                 this, resolver, bufSize, MIN_RECEIVE_BUFFER_SIZE);
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         }
 
-        try (
-                InputStream is = new LimitInputStream(this.in, length);
-                OutputStream os = resolver.resolveTargetStream(
-                    getSession(), name, length, perms, IoUtils.EMPTY_OPEN_OPTIONS)
-        ) {
+        Session session = getSession();
+        try (InputStream is = new LimitInputStream(this.in, length);
+             OutputStream os = resolver.resolveTargetStream(
+                 session, name, length, perms, IoUtils.EMPTY_OPEN_OPTIONS)) {
             ack();
 
             Path file = resolver.getEventListenerFilePath();
-            Session session = getSession();
             listener.startFileEvent(session, FileOperation.RECEIVE, file, length, perms);
             try {
                 IoUtils.copy(is, os, bufSize);
@@ -343,6 +341,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 throw e;
             }
             listener.endFileEvent(session, FileOperation.RECEIVE, file, length, perms, null);
+            resolver.closeTargetStream(session, name, length, perms, os);
         }
 
         resolver.postProcessReceivedData(name, preserve, perms, time);
@@ -567,6 +566,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 throw e;
             }
             listener.endFileEvent(session, FileOperation.SEND, path, fileSize, perms, null);
+            resolver.closeSourceStream(session, fileSize, perms, in);
         }
         ack();
 
