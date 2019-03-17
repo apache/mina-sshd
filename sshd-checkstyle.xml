@@ -212,7 +212,6 @@
         </module>
 
         <module name="IllegalType">
-            <property name="format" value="^xxx$" />
             <property name="illegalClassNames" value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedList, java.util.LinkedHashMap, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap" />
         </module>
         <module name="DeclarationOrder" />
