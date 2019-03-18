@@ -117,3 +117,7 @@ in order to avoid client-side session timeout due to no traffic from server.
 * [SSHD-904](https://issues.apache.org/jira/browse/SSHD-904) - Add option to enable/disable 'fsync' on modified file contents via SFTP (default=enabled).
 
 * [SSHD-905](https://issues.apache.org/jira/browse/SSHD-905) - Add option to enable/disable 'fsync' on modified file contents via SCP (default=enabled).
+
+* [SSHD-907](https://issues.apache.org/jira/browse/SSHD-907) - `StpEventListener` invokes (new) `exiting` method to inform about SFTP subsystem exiting
+and therefore closing all currently tracked file/directory handles.
+

@@ -1023,20 +1023,34 @@ public class SftpSubsystem
 
     protected void closeAllHandles() {
         boolean debugEnabled = log.isDebugEnabled();
-        Session session = getServerSession();
-        handles.forEach((id, handle) -> {
+        ServerSession session = getServerSession();
+        SftpEventListener listener = getSftpEventListenerProxy();
+        for (Map.Entry<String, Handle> fe : handles.entrySet()) {
+            String id = fe.getKey();
+            Handle handle = fe.getValue();
+            try {
+                if (debugEnabled) {
+                    log.debug("closeAllHandles({}) exiting pending handle {} [{}]", session, id, handle);
+                }
+
+                listener.exiting(session, handle);
+            } catch (IOException | RuntimeException e) {
+                log.warn("closeAllHandles({}) failed ({}) to inform listener of exit for handle={}[{}]: {}",
+                    session, e.getClass().getSimpleName(), id, handle, e.getMessage());
+            }
+
             try {
                 handle.close();
                 if (debugEnabled) {
                     log.debug("closeAllHandles({}) closed pending handle {} [{}]", session, id, handle);
                 }
-            } catch (IOException e) {
-                log.error("closeAllHandles({}) failed ({}) to close handle={}[{}]: {}",
+            } catch (IOException | RuntimeException e) {
+                log.warn("closeAllHandles({}) failed ({}) to close handle={}[{}]: {}",
                     session, e.getClass().getSimpleName(), id, handle, e.getMessage());
             } finally {
                 handle.clearAttributes();
             }
-        });
+        }
         handles.clear();
     }
 }

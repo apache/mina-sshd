@@ -48,6 +48,17 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
+     * Called when subsystem is exiting due to being destroyed
+     *
+     * @param session The associated {@link ServerSession}
+     * @param handle The file / directory {@link Handle} being closed due to the exit
+     * @throws IOException If failed to handle the call
+     */
+    default void exiting(ServerSession session, Handle handle) throws IOException {
+        // ignored
+    }
+
+    /**
      * Called when subsystem is destroyed since it was closed
      *
      * @param session The associated {@link ServerSession}
@@ -94,8 +105,9 @@ public interface SftpEventListener extends SshdEventListener {
      * @param thrown       Non-{@code null} reason for the failure
      * @throws IOException If failed to handle the call
      */
-    default void openFailed(ServerSession session, String remotePath, Path localPath, boolean isDirectory, Throwable thrown)
-            throws IOException {
+    default void openFailed(
+            ServerSession session, String remotePath, Path localPath, boolean isDirectory, Throwable thrown)
+                throws IOException {
         // ignored
     }
 
@@ -111,9 +123,10 @@ public interface SftpEventListener extends SshdEventListener {
      *                     value = {@link Path} of the sub-entry
      * @throws IOException If failed to handle the call
      */
-    default void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
-            throws IOException {
-                // ignored
+    default void read(
+            ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
+                throws IOException {
+        // ignored
     }
 
     /**
@@ -128,8 +141,10 @@ public interface SftpEventListener extends SshdEventListener {
      * @param dataLen      Requested read length
      * @throws IOException If failed to handle the call
      */
-    default void reading(ServerSession session, String remoteHandle, FileHandle localHandle,
-            long offset, byte[] data, int dataOffset, int dataLen) throws IOException {
+    default void reading(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen)
+                throws IOException {
         // ignored
     }
 
@@ -148,10 +163,11 @@ public interface SftpEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the call
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
-    default void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-          long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
-              throws IOException {
-                      // ignored
+    default void read(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
+                throws IOException {
+        // ignored
     }
 
     /**
@@ -206,7 +222,8 @@ public interface SftpEventListener extends SshdEventListener {
      * @see #blocked(ServerSession, String, FileHandle, long, long, int, Throwable)
      */
     default void blocking(
-            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask)
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, long length, int mask)
                 throws IOException {
         // ignored
     }
@@ -224,7 +241,8 @@ public interface SftpEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the call
      */
     default void blocked(
-            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown)
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, long length, int mask, Throwable thrown)
                 throws IOException {
         // ignored
     }
@@ -257,7 +275,8 @@ public interface SftpEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the call
      */
     default void unblocked(
-            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, Throwable thrown)
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, long length, Throwable thrown)
                 throws IOException {
         // ignored
     }
@@ -268,8 +287,10 @@ public interface SftpEventListener extends SshdEventListener {
      * @param session      The {@link ServerSession} through which the request was handled
      * @param remoteHandle The (opaque) assigned handle for the file / directory
      * @param localHandle  The associated file / directory {@link Handle}
+     * @throws IOException If failed to handle the call
      */
-    default void closing(ServerSession session, String remoteHandle, Handle localHandle) {
+    default void closing(ServerSession session, String remoteHandle, Handle localHandle)
+            throws IOException {
         // ignored
     }
 
@@ -280,8 +301,11 @@ public interface SftpEventListener extends SshdEventListener {
      * @param remoteHandle The (opaque) assigned handle for the file / directory
      * @param localHandle  The associated file / directory {@link Handle}
      * @param thrown       If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
      */
-    default void closed(ServerSession session, String remoteHandle, Handle localHandle, Throwable thrown) {
+    default void closed(
+            ServerSession session, String remoteHandle, Handle localHandle, Throwable thrown)
+                throws IOException {
         // ignored
     }
 
@@ -323,8 +347,9 @@ public interface SftpEventListener extends SshdEventListener {
      * @throws IOException If failed to handle the call
      * @see #moved(ServerSession, Path, Path, Collection, Throwable)
      */
-    default void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts)
-            throws IOException {
+    default void moving(
+            ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts)
+                throws IOException {
         // ignored
     }
 
