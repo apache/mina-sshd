@@ -37,12 +37,14 @@ public abstract class AbstractInnerCloseable extends AbstractCloseable {
 
     @Override
     protected final CloseFuture doCloseGracefully() {
-        return getInnerCloseable().close(false);
+        Closeable innerCloser = getInnerCloseable();
+        return innerCloser.close(false);
     }
 
     @Override
     @SuppressWarnings("synthetic-access")
     protected final void doCloseImmediately() {
-        getInnerCloseable().close(true).addListener(future -> AbstractInnerCloseable.super.doCloseImmediately());
+        Closeable innerCloser = getInnerCloseable();
+        innerCloser.close(true).addListener(future -> AbstractInnerCloseable.super.doCloseImmediately());
     }
 }

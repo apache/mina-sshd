@@ -733,10 +733,12 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     protected Closeable getInnerCloseable() {
-        return builder()
+        Closeable closer = builder()
             .parallel(toString(), getServices())
             .close(getIoSession())
             .build();
+        closer.addCloseFutureListener(future -> clearAttributes());
+        return closer;
     }
 
     @Override
@@ -766,8 +768,6 @@ public abstract class AbstractSession extends SessionHelper {
             this.sessionListeners.clear();
             this.channelListeners.clear();
             this.tunnelListeners.clear();
-            // clear the attributes since we close the session
-            clearAttributes();
         }
 
         super.preClose();

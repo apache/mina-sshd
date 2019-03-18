@@ -556,7 +556,7 @@ public abstract class AbstractChannel
 
     @Override
     protected Closeable getInnerCloseable() {
-        return builder()
+        Closeable closer = builder()
             .sequential(new GracefulChannelCloseable(), getExecutorService())
             .run(toString(), () -> {
                 if (service != null) {
@@ -564,6 +564,8 @@ public abstract class AbstractChannel
                 }
             })
             .build();
+        closer.addCloseFutureListener(future -> clearAttributes());
+        return closer;
     }
 
     public class GracefulChannelCloseable extends IoBaseCloseable {
@@ -694,8 +696,6 @@ public abstract class AbstractChannel
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
-            // clear the attributes since we close the channel
-            clearAttributes();
         }
 
         IOException err = IoUtils.closeQuietly(getLocalWindow(), getRemoteWindow());
