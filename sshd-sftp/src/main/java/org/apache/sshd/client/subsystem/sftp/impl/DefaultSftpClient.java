@@ -444,8 +444,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
             Collection<String> reported = (vers == null) ? null : vers.getVersions();
             if (GenericUtils.size(reported) > 0) {
                 for (String v : reported) {
-                    if (!available.add(Integer.valueOf(v))) {
-                        continue;   // debug breakpoint
+                    try {
+                        if (!available.add(Integer.valueOf(v))) {
+                            continue;   // debug breakpoint
+                        }
+                    } catch (NumberFormatException nfe) {
+                        log.debug("Could not parse reported version {}", v);
                     }
                 }
             }
