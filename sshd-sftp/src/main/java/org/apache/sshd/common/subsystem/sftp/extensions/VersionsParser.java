@@ -20,13 +20,17 @@
 package org.apache.sshd.common.subsystem.sftp.extensions;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -57,6 +61,33 @@ public class VersionsParser extends AbstractParser<Versions> {
 
         public void setVersions(List<String> versions) {
             this.versions = versions;
+        }
+
+        public List<Integer> resolveAvailableVersions(int current) {
+            List<Integer> currentlyAvailable = Collections.singletonList(current);
+            Collection<String> reported = getVersions();
+            if (GenericUtils.isEmpty(reported)) {
+                return currentlyAvailable;
+            }
+
+            Set<Integer> available = GenericUtils.asSortedSet(currentlyAvailable);
+            for (String v : reported) {
+                /*
+                 * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-11#section-5.5
+                 * versions may contain not only numbers
+                 */
+                if (!NumberUtils.isIntegerNumber(v)) {
+                    continue;
+                }
+
+                if (!available.add(Integer.valueOf(v))) {
+                    continue;   // debug breakpoint
+                }
+            }
+
+            return (available.size() == 1)
+                 ? currentlyAvailable
+                 : new ArrayList<>(available);
         }
 
         @Override

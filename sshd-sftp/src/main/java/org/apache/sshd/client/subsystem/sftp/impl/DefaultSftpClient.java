@@ -27,15 +27,14 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -431,41 +430,50 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * @throws IOException If failed to negotiate
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        ClientChannel clientChannel = getClientChannel();
         int current = getVersion();
         if (selector == null) {
+            if (debugEnabled) {
+                log.debug("negotiateVersion({}) no selector to override current={}", clientChannel, current);
+            }
             return current;
         }
 
-        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(current));
         Map<String, ?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
-        if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
-            Versions vers = GenericUtils.isEmpty(parsed) ? null : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
-            Collection<String> reported = (vers == null) ? null : vers.getVersions();
-            if (GenericUtils.size(reported) > 0) {
-                for (String v : reported) {
-                    if (!available.add(Integer.valueOf(v))) {
-                        continue;   // debug breakpoint
-                    }
-                }
-            }
+        List<Integer> availableVersions = Collections.emptyList();
+        if ((GenericUtils.size(extensions) > 0)
+                && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
+            Versions vers = GenericUtils.isEmpty(parsed)
+                ? null
+                : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
+            availableVersions = (vers == null)
+                ? Collections.singletonList(current)
+                : vers.resolveAvailableVersions(current);
+        } else {
+            availableVersions = Collections.singletonList(current);
         }
 
-        int selected = selector.selectVersion(getClientSession(), current, new ArrayList<>(available));
-        if (log.isDebugEnabled()) {
-            log.debug("negotiateVersion({}) current={} {} -> {}", getClientChannel(), current, available, selected);
+        ClientSession session = getClientSession();
+        int selected = selector.selectVersion(session, current, availableVersions);
+        if (debugEnabled) {
+            log.debug("negotiateVersion({}) current={} {} -> {}",
+                clientChannel, current, availableVersions, selected);
         }
 
         if (selected == current) {
             return current;
         }
 
-        if (!available.contains(selected)) {
-            throw new StreamCorruptedException("Selected version (" + selected + ") not part of available: " + available);
+        if (!availableVersions.contains(selected)) {
+            throw new StreamCorruptedException(
+                "Selected version (" + selected + ") not part of available: " + availableVersions);
         }
 
         String verVal = String.valueOf(selected);
-        Buffer buffer = new ByteArrayBuffer(Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
+        Buffer buffer = new ByteArrayBuffer(
+                Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
                 + Integer.BYTES + verVal.length() + Byte.SIZE, false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);

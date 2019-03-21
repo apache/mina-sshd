@@ -121,3 +121,4 @@ in order to avoid client-side session timeout due to no traffic from server.
 * [SSHD-907](https://issues.apache.org/jira/browse/SSHD-907) - `StpEventListener` invokes (new) `exiting` method to inform about SFTP subsystem exiting
 and therefore closing all currently tracked file/directory handles.
 
+* [SSHD-909](https://issues.apache.org/jira/browse/SSHD-909) - SFTP versions extension handler ignores non-numerical versions when resolving the available ones.
