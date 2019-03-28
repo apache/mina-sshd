@@ -118,7 +118,7 @@
         <bytebuddy.version>1.9.12</bytebuddy.version>
 
         <surefire.plugin.version>2.22.1</surefire.plugin.version>
-        <maven.archiver.version>3.3.0</maven.archiver.version>
+        <maven.archiver.version>3.4.0</maven.archiver.version>
         <plexus.archiver.version>3.7.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.12.0</pmd.version>
