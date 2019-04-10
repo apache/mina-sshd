@@ -94,7 +94,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * <P>
  * The default configured client can be created using
  * the {@link #setUpDefaultClient()}. The next step is to
- * start the client using the {@link #start()} method.
+ * configure and then start the client using the {@link #start()} method.
  * </P>
  *
  * <P>
@@ -113,9 +113,12 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * <pre><code>
  * try (SshClient client = SshClient.setUpDefaultClient()) {
+ *      ...further configuration of the client...
  *      client.start();
  *
- *      try (ClientSession session = client.connect(login, host, port).await().getSession()) {
+ *      try (ClientSession session = client.connect(login, host, port)
+ *                  .verify(...timeout...)
+ *                  .getSession()) {
  *          session.addPasswordIdentity(password);
  *          session.auth().verify(...timeout...);
  *
@@ -134,6 +137,15 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * }
  * </code></pre>
  *
+ * <B>Note</B>: the idea is to have <U>one</U> {@code SshClient} instance
+ * for the entire application and re-use it repeatedly  in order to create
+ * as many sessions as necessary - possibly with different hosts, ports, users,
+ * passwords, etc. - including <U>concurrently</U>. In other words, except for
+ * exceptional cases, it is recommended to initialize one instance of {@code SshClient}
+ * for the application and then use throughout - including for multi-threading.
+ * As long as the {@code SshClient} is not re-configured it should be multi-thread safe
+ * regardless of the target session being created.
+
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
