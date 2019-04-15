@@ -402,6 +402,11 @@ public class AbstractSessionTest extends BaseTestSupport {
         public IoService getService() {
             return null;
         }
+
+        @Override
+        public void handleEof() {
+          // do nothing
+        }
     }
 
     public static class MySession extends AbstractSession {

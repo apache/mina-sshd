@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.io;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 
 import org.apache.sshd.common.Closeable;
@@ -87,4 +88,9 @@ public interface IoSession extends PacketWriter, Closeable {
      * @return the {@link IoService} that created this session.
      */
     IoService getService();
+
+    /**
+     * Handle received EOF.
+     */
+    void handleEof() throws IOException;
 }

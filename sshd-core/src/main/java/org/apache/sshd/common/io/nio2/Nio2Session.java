@@ -285,6 +285,14 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         return service;
     }
 
+    @Override
+    public void handleEof() throws IOException {
+        AsynchronousSocketChannel socket = getSocket();
+        if (socket.isOpen()) {
+            socket.shutdownOutput();
+        }
+    }
+
     public void startReading() {
         startReading(manager.getIntProperty(FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
     }
