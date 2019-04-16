@@ -19,10 +19,16 @@
 
 package org.apache.sshd.netty;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
@@ -31,6 +37,7 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -42,6 +49,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.util.Attribute;
 
 /**
@@ -51,6 +59,15 @@ import io.netty.util.Attribute;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoSession extends AbstractCloseable implements IoSession {
+    public static final Method NIO_JAVA_CHANNEL_METHOD =
+        Stream.of(AbstractNioChannel.class.getDeclaredMethods())
+            .filter(m -> "javaChannel".equals(m.getName()) && (m.getParameterCount() == 0))
+            .map(m -> {
+                m.setAccessible(true);
+                return m;
+            }).findFirst()
+            .orElse(null);
+
     protected final Map<Object, Object> attributes = new HashMap<>();
     protected final NettyIoService service;
     protected final IoHandler handler;
@@ -111,8 +128,8 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     public SocketAddress getLocalAddress() {
-        Channel channel = context.channel();
-        return channel.localAddress();
+        Channel channel = (context == null) ? null : context.channel();
+        return (channel == null) ? null : channel.localAddress();
     }
 
     @Override
@@ -146,6 +163,49 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     public IoService getService() {
         return service;
+    }
+
+    @Override   // see SSHD-902
+    public void handleEof() throws IOException {
+        Channel ch = context.channel();
+        boolean debugEnabled = log.isDebugEnabled();
+        if (!(ch instanceof AbstractNioChannel)) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) channel is not AbstractNioChannel: {}",
+                    this, (ch == null) ? null : ch.getClass().getSimpleName());
+            }
+            return;
+        }
+
+        if (NIO_JAVA_CHANNEL_METHOD == null) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) missing channel access method", this);
+            }
+            return;
+        }
+
+        SelectableChannel channel;
+        try {
+            channel = (SelectableChannel) NIO_JAVA_CHANNEL_METHOD.invoke(ch, GenericUtils.EMPTY_OBJECT_ARRAY);
+        } catch (Exception t) {
+            Throwable e = GenericUtils.peelException(t);
+            log.warn("handleEof({}) failed ({}) to retrieve embedded channel: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
+            return;
+        }
+
+        if (!(channel instanceof SocketChannel)) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) not a SocketChannel: {}",
+                    this, (channel == null) ? null : channel.getClass().getSimpleName());
+            }
+            return;
+        }
+
+        Socket socket = ((SocketChannel) channel).socket();
+        if (socket.isConnected() && (!socket.isClosed())) {
+            socket.shutdownOutput();
+        }
     }
 
     @Override
@@ -196,6 +256,14 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     protected void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         handler.exceptionCaught(NettyIoSession.this, cause);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+            + "[local=" + getLocalAddress()
+            + ", remote=" + getRemoteAddress()
+            + "]";
     }
 
     protected static class DefaultIoWriteFuture extends AbstractIoWriteFuture {
