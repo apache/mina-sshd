@@ -216,4 +216,10 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     public SshdSocketAddress getTunnelExit() {
         return tunnelExit;
     }
+
+    @Override
+    public void handleEof() throws IOException {
+        super.handleEof();
+        serverSession.handleEof();
+    }
 }
