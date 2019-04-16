@@ -166,12 +166,12 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     }
 
     @Override   // see SSHD-902
-    public void handleEof() throws IOException {
+    public void shudownOutputStream() throws IOException {
         Channel ch = context.channel();
         boolean debugEnabled = log.isDebugEnabled();
         if (!(ch instanceof AbstractNioChannel)) {
             if (debugEnabled) {
-                log.debug("handleEof({}) channel is not AbstractNioChannel: {}",
+                log.debug("shudownOutputStream({}) channel is not AbstractNioChannel: {}",
                     this, (ch == null) ? null : ch.getClass().getSimpleName());
             }
             return;
@@ -179,7 +179,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
         if (NIO_JAVA_CHANNEL_METHOD == null) {
             if (debugEnabled) {
-                log.debug("handleEof({}) missing channel access method", this);
+                log.debug("shudownOutputStream({}) missing channel access method", this);
             }
             return;
         }
@@ -189,14 +189,14 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
             channel = (SelectableChannel) NIO_JAVA_CHANNEL_METHOD.invoke(ch, GenericUtils.EMPTY_OBJECT_ARRAY);
         } catch (Exception t) {
             Throwable e = GenericUtils.peelException(t);
-            log.warn("handleEof({}) failed ({}) to retrieve embedded channel: {}",
+            log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
                 this, e.getClass().getSimpleName(), e.getMessage());
             return;
         }
 
         if (!(channel instanceof SocketChannel)) {
             if (debugEnabled) {
-                log.debug("handleEof({}) not a SocketChannel: {}",
+                log.debug("shudownOutputStream({}) not a SocketChannel: {}",
                     this, (channel == null) ? null : channel.getClass().getSimpleName());
             }
             return;
@@ -204,6 +204,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
         Socket socket = ((SocketChannel) channel).socket();
         if (socket.isConnected() && (!socket.isClosed())) {
+            if (debugEnabled) {
+                log.debug("shudownOutputStream({})", this);
+            }
             socket.shutdownOutput();
         }
     }
