@@ -209,11 +209,11 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     @Override   // see SSHD-902
-    public void handleEof() throws IOException {
+    public void shudownOutputStream() throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (!(session instanceof NioSession)) {
             if (debugEnabled) {
-                log.debug("handleEof({}) not a NioSession: {}",
+                log.debug("shudownOutputStream({}) not a NioSession: {}",
                     session, (session == null) ? null : session.getClass().getSimpleName());
             }
             return;
@@ -221,7 +221,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
         if (NIO_SESSION_CHANNEL_FIELD == null) {
             if (debugEnabled) {
-                log.debug("handleEof({}) missing channel field",
+                log.debug("shudownOutputStream({}) missing channel field",
                     session, (session == null) ? null : session.getClass().getSimpleName());
             }
             return;
@@ -232,14 +232,14 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             channel = (Channel) NIO_SESSION_CHANNEL_FIELD.get(session);
         } catch (Exception t) {
             Throwable e = GenericUtils.peelException(t);
-            log.warn("handleEof({}) failed ({}) to retrieve embedded channel: {}",
+            log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
                 session, e.getClass().getSimpleName(), e.getMessage());
             return;
         }
 
         if (!(channel instanceof SocketChannel)) {
             if (debugEnabled) {
-                log.debug("handleEof({}) not a SocketChannel: {}",
+                log.debug("shudownOutputStream({}) not a SocketChannel: {}",
                     session, (channel == null) ? null : channel.getClass().getSimpleName());
             }
             return;
@@ -247,6 +247,9 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
         Socket socket = ((SocketChannel) channel).socket();
         if (socket.isConnected() && (!socket.isClosed())) {
+            if (debugEnabled) {
+                log.debug("shudownOutputStream({})", session);
+            }
             socket.shutdownOutput();
         }
     }

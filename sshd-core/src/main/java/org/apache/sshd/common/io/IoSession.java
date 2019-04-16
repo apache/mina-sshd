@@ -89,5 +89,5 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
     /**
      * Handle received EOF.
      */
-    void handleEof() throws IOException;
+    void shudownOutputStream() throws IOException;
 }
