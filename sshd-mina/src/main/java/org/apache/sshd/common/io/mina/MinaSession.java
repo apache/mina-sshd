@@ -18,12 +18,19 @@
  */
 package org.apache.sshd.common.io.mina;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.channels.Channel;
+import java.nio.channels.SocketChannel;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -32,6 +39,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
@@ -41,6 +49,15 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaSession extends AbstractInnerCloseable implements IoSession {
+    public static final Field NIO_SESSION_CHANNEL_FIELD =
+        Stream.of(NioSession.class.getDeclaredFields())
+            .filter(f -> "channel".equals(f.getName()))
+            .map(f -> {
+                f.setAccessible(true);
+                return f;
+            }).findFirst()
+            .orElse(null);
+
     private final MinaService service;
     private final org.apache.mina.core.session.IoSession session;
     private final Object sessionWriteId;
@@ -189,6 +206,49 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     @Override
     public IoService getService() {
         return service;
+    }
+
+    @Override   // see SSHD-902
+    public void handleEof() throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (!(session instanceof NioSession)) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) not a NioSession: {}",
+                    session, (session == null) ? null : session.getClass().getSimpleName());
+            }
+            return;
+        }
+
+        if (NIO_SESSION_CHANNEL_FIELD == null) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) missing channel field",
+                    session, (session == null) ? null : session.getClass().getSimpleName());
+            }
+            return;
+        }
+
+        Channel channel;
+        try {
+            channel = (Channel) NIO_SESSION_CHANNEL_FIELD.get(session);
+        } catch (Exception t) {
+            Throwable e = GenericUtils.peelException(t);
+            log.warn("handleEof({}) failed ({}) to retrieve embedded channel: {}",
+                session, e.getClass().getSimpleName(), e.getMessage());
+            return;
+        }
+
+        if (!(channel instanceof SocketChannel)) {
+            if (debugEnabled) {
+                log.debug("handleEof({}) not a SocketChannel: {}",
+                    session, (channel == null) ? null : channel.getClass().getSimpleName());
+            }
+            return;
+        }
+
+        Socket socket = ((SocketChannel) channel).socket();
+        if (socket.isConnected() && (!socket.isClosed())) {
+            socket.shutdownOutput();
+        }
     }
 
     @Override
