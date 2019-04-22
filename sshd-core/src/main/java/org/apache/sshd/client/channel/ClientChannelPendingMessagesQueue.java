@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -148,6 +149,7 @@ public class ClientChannelPendingMessagesQueue
 
             if (enqueue) {
                 pendingQueue.add(new SimpleImmutableEntry<>(buffer, errHandler));
+                pendingQueue.notifyAll();   // in case anyone is waiting
             } else {
                 writeMessage(buffer, errHandler);
             }
@@ -161,6 +163,15 @@ public class ClientChannelPendingMessagesQueue
         try {
             if (!isOpen()) {
                 throw new EOFException("Queue is marked as closed");
+            }
+
+            if (!channel.isOpen()) {
+                throw new EOFException("Client channel is closed/closing");
+            }
+
+            Session session = channel.getSession();
+            if (!session.isOpen()) {
+                throw new EOFException("Client session is closed/closing");
             }
 
             OutputStream outputStream = channel.getInvertedIn();
