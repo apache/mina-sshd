@@ -33,6 +33,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -263,18 +264,17 @@ public final class SshFsMounter extends SshServerCliSupport {
                 }
                 port = Integer.parseInt(args[++i]);
             } else if ("-io".equals(argName)) {
-                if (i + 1 >= numArgs) {
+                if ((i + 1) >= numArgs) {
                     System.err.println("option requires an argument: " + argName);
                     break;
                 }
 
                 String provider = args[++i];
-                if ("mina".equals(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.MINA.getFactoryClassName());
-                } else if ("nio2".endsWith(provider)) {
-                    System.setProperty(IoServiceFactory.class.getName(), BuiltinIoServiceFactoryFactories.NIO2.getFactoryClassName());
+                BuiltinIoServiceFactoryFactories factory =
+                    CliSupport.resolveBuiltinIoServiceFactory(System.err, argName, provider);
+                if (factory != null) {
+                    System.setProperty(IoServiceFactory.class.getName(), factory.getFactoryClassName());
                 } else {
-                    System.err.println("provider should be mina or nio2: " + argName);
                     error = true;
                     break;
                 }

@@ -93,9 +93,8 @@ public abstract class CliSupport {
             }
 
             String provider = args[index];
-            factory = BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
+            factory = resolveBuiltinIoServiceFactory(stderr, argName, provider);
             if (factory == null) {
-                System.err.println("provider (" + argName + ") should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
                 return null;
             }
         }
@@ -105,6 +104,16 @@ public abstract class CliSupport {
         }
 
         System.setProperty(IoServiceFactoryFactory.class.getName(), factory.getFactoryClassName());
+        return factory;
+    }
+
+    public static BuiltinIoServiceFactoryFactories resolveBuiltinIoServiceFactory(
+            PrintStream stderr, String argName, String provider) {
+        BuiltinIoServiceFactoryFactories factory = BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
+        if (factory == null) {
+            System.err.println(argName + " - unknown provider (" + provider + ")"
+                + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
+        }
         return factory;
     }
 

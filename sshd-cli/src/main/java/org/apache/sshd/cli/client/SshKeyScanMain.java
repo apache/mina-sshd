@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.future.ConnectFuture;
@@ -67,6 +68,8 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -216,7 +219,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                     }
 
                     @Override
-                    public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    public String[] interactive(
+                            ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                         return null;
                     }
 
@@ -294,7 +298,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
     protected void resolveServerKeys(SshClient client, String host,
             Map<String, List<KeyPair>> pairsMap, Map<String, List<NamedFactory<Signature>>> sigFactories)
-                    throws IOException {
+                throws IOException {
         // Cannot use forEach because of the potential for throwing IOException by the invoked code
         for (Map.Entry<String, List<KeyPair>> pe : pairsMap.entrySet()) {
             String kt = pe.getKey();
@@ -667,6 +671,20 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             } else if ("-v".equals(optName)) {
                 ValidateUtils.checkTrue(scanner.getLogLevel() == null, "%s option re-specified", optName);
                 scanner.setLogLevel(Level.FINEST);
+            } else if ("-io".equals(optName)) {
+                if ((index + 1) >= numArgs) {
+                    System.err.println("option requires an argument: " + optName);
+                    break;
+                }
+
+                String provider = args[++index];
+                BuiltinIoServiceFactoryFactories factory =
+                    CliSupport.resolveBuiltinIoServiceFactory(System.err, optName, provider);
+                if (factory != null) {
+                    System.setProperty(IoServiceFactory.class.getName(), factory.getFactoryClassName());
+                } else {
+                    break;
+                }
             } else {    // stop at first non-option - assume the rest are host names/addresses
                 ValidateUtils.checkTrue(optName.charAt(0) != '-', "Unknown option: %s", optName);
 
