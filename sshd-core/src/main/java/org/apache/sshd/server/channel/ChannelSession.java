@@ -113,7 +113,7 @@ public class ChannelSession extends AbstractServerChannel {
     public ChannelSession(Collection<? extends RequestHandler<Channel>> handlers) {
         super("", handlers, null);
 
-        commandExitFuture = new DefaultCloseFuture(getClass().getSimpleName(), lock);
+        commandExitFuture = new DefaultCloseFuture(getClass().getSimpleName(), futureLock);
     }
 
     @Override

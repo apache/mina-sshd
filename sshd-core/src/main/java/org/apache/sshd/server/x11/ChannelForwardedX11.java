@@ -53,7 +53,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
-        openFuture = new DefaultOpenFuture(remote, lock);
+        openFuture = new DefaultOpenFuture(remote, futureLock);
 
         Session session = getSession();
         if (log.isDebugEnabled()) {

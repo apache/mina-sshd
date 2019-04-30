@@ -25,10 +25,10 @@ import java.util.Map;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
-/*
- * A ServerKeyVerifier that delegates verification to the ServerKeyVerifier found in the ClientSession metadata
- * The ServerKeyVerifier can be specified at the SshClient level, which may have connections to multiple hosts.
- * This technique lets each connection have its own ServerKeyVerifier.
+/**
+ * A {@link ServerKeyVerifier} that delegates verification to the instance found in the {@link ClientSession} metadata
+ * The verifier can be specified at the {@code SshClient} level, which may have connections to multiple hosts.
+ * This technique lets each connection have its own verifier instance.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -38,16 +38,17 @@ public class DelegatingServerKeyVerifier extends AbstractLoggingBean implements 
     }
 
     @Override
-    public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        Map<Object, Object> metadataMap = sshClientSession.getMetadataMap();
+    public boolean verifyServerKey(
+            ClientSession session, SocketAddress remoteAddress, PublicKey serverKey) {
+        Map<Object, Object> metadataMap = session.getMetadataMap();
         Object verifier = metadataMap.get(ServerKeyVerifier.class);
         if (verifier == null) {
             if (log.isTraceEnabled()) {
-                log.trace("verifyServerKey(" + remoteAddress + ") No verifier found in ClientSession metadata; accepting server key");
+                log.trace("verifyServerKey({}) No verifier found in ClientSession metadata; accepting server key", remoteAddress);
             }
             return true;
         }
         // We throw if it's not a ServerKeyVerifier...
-        return ((ServerKeyVerifier) verifier).verifyServerKey(sshClientSession, remoteAddress, serverKey);
+        return ((ServerKeyVerifier) verifier).verifyServerKey(session, remoteAddress, serverKey);
     }
 }

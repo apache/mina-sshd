@@ -134,7 +134,7 @@ public class ClientUserAuthService
 
         ClientSession session = getClientSession();
         // check if any previous future in use
-        AuthFuture authFuture = new DefaultAuthFuture(service, clientSession.getLock());
+        AuthFuture authFuture = new DefaultAuthFuture(service, clientSession.getFutureLock());
         AuthFuture currentFuture = authFutureHolder.getAndSet(authFuture);
         boolean debugEnabled = log.isDebugEnabled();
         if (currentFuture != null) {

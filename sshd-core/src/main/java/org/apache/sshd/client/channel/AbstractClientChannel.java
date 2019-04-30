@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -211,10 +212,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout) {
         Objects.requireNonNull(mask, "No mask specified");
-        long t = 0;
         boolean debugEnabled = log.isDebugEnabled();
         boolean traceEnabled = log.isTraceEnabled();
-        synchronized (lock) {
+        long startTime = System.currentTimeMillis();
+        /*
+         * NOTE !!! we must use the futureLock since some of the events that
+         * we wait on are related to open/close future(s)
+         */
+        synchronized (futureLock) {
+            long remWait = timeout;
             for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
                 updateCurrentChannelState(cond);
                 if (debugEnabled) {
@@ -229,48 +235,57 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 boolean nothingInCommon = Collections.disjoint(mask, cond);
                 if (!nothingInCommon) {
                     if (traceEnabled) {
-                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}", this, mask, cond);
+                        log.trace("waitFor({}) call returning mask={}, cond={}", this, mask, cond);
                     }
                     return cond;
                 }
 
                 if (timeout > 0L) {
-                    if (t == 0L) {
-                        t = System.currentTimeMillis() + timeout;
-                    } else {
-                        timeout = t - System.currentTimeMillis();
-                        if (timeout <= 0L) {
-                            if (traceEnabled) {
-                                log.trace("WaitFor call timeout on channel {}, mask={}", this, mask);
-                            }
-                            cond.add(ClientChannelEvent.TIMEOUT);
-                            return cond;
+                    long now = System.currentTimeMillis();
+                    long usedTime = now - startTime;
+                    if ((usedTime >= timeout) || (remWait <= 0L)) {
+                        if (traceEnabled) {
+                            log.trace("waitFor({}) call timeout {}/{} for mask={}: {}",
+                                this, usedTime, timeout, mask, cond);
                         }
+                        cond.add(ClientChannelEvent.TIMEOUT);
+                        return cond;
                     }
                 }
 
                 if (traceEnabled) {
-                    log.trace("Waiting {} millis for lock on channel {}, mask={}, cond={}", timeout, this, mask, cond);
+                    log.trace("waitFor({}) waiting {} millis for lock - mask={}, cond={}",
+                        this, remWait, mask, cond);
                 }
 
                 long nanoStart = System.nanoTime();
                 try {
                     if (timeout > 0L) {
-                        lock.wait(timeout);
+                        futureLock.wait(remWait);
                     } else {
-                        lock.wait();
+                        futureLock.wait();
                     }
 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
                     if (traceEnabled) {
-                        log.trace("Lock notified on channel {} after {} nanos", this, nanoDuration);
+                        log.trace("waitFor({}) lock notified on channel after {} nanos", this, nanoDuration);
+                    }
+
+                    if (timeout > 0L) {
+                        long waitDuration =
+                            TimeUnit.MILLISECONDS.convert(nanoDuration, TimeUnit.NANOSECONDS);
+                        if (waitDuration <= 0L) {
+                            waitDuration = 123L;
+                        }
+                        remWait -= waitDuration;
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
                     if (traceEnabled) {
-                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
+                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos",
+                            this, mask, nanoDuration);
                     }
                 }
             }
@@ -279,8 +294,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public Set<ClientChannelEvent> getChannelState() {
-        Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);
-        synchronized (lock) {
+        Set<ClientChannelEvent> cond =
+            EnumSet.noneOf(ClientChannelEvent.class);
+        synchronized (futureLock) {
             return updateCurrentChannelState(cond);
         }
     }
@@ -312,7 +328,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             throw new SshException("Session has been closed");
         }
 
-        openFuture = new DefaultOpenFuture(this.toString(), lock);
+        openFuture = new DefaultOpenFuture(this.toString(), futureLock);
         String type = getChannelType();
         if (log.isDebugEnabled()) {
             log.debug("open({}) Send SSH_MSG_CHANNEL_OPEN - type={}", this, type);
@@ -320,7 +336,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
         Session session = getSession();
         Window wLocal = getLocalWindow();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
+        Buffer buffer =
+            session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());
@@ -331,7 +348,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
-        throw new UnsupportedOperationException("open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+        throw new UnsupportedOperationException(
+            "open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
@@ -339,7 +357,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         setRecipient(recipient);
 
         Session session = getSession();
-        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager =
+            Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
 
@@ -371,7 +390,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         String lang = buffer.getString();
         if (log.isDebugEnabled()) {
             log.debug("handleOpenFailure({}) reason={}, lang={}, msg={}",
-                      this, SshConstants.getOpenErrorCodeName(reason), lang, msg);
+                this, SshConstants.getOpenErrorCodeName(reason), lang, msg);
         }
 
         this.openFailureReason = reason;
@@ -389,7 +408,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (isClosing()) {
             return;
         }
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(
+            len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
 
         if (asyncOut != null) {
             asyncOut.write(new ByteArrayBuffer(data, off, (int) len));
@@ -412,7 +432,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (isClosing()) {
             return;
         }
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Extended data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(
+            len <= Integer.MAX_VALUE, "Extended data length exceeds int boundaries: %d", len);
 
         if (asyncErr != null) {
             asyncErr.write(new ByteArrayBuffer(data, off, (int) len));

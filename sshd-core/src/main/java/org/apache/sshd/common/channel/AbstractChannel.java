@@ -127,7 +127,7 @@ public abstract class AbstractChannel
             Collection<? extends RequestHandler<Channel>> handlers,
             CloseableExecutorService executorService) {
         super(discriminator);
-        gracefulFuture = new DefaultCloseFuture(discriminator, lock);
+        gracefulFuture = new DefaultCloseFuture(discriminator, futureLock);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
         channelListenerProxy = EventListenerUtils.proxyWrapper(
@@ -477,8 +477,8 @@ public abstract class AbstractChannel
                 log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
             }
         } finally {
-            synchronized (lock) {
-                lock.notifyAll();
+            synchronized (futureLock) {
+                futureLock.notifyAll();
             }
         }
     }

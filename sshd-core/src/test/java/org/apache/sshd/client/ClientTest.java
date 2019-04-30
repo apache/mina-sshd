@@ -590,9 +590,12 @@ public class ClientTest extends BaseTestSupport {
                         }
                     });
 
+                long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result =
                     channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                long waitEnd = System.currentTimeMillis();
+                assertFalse("Timeout after " + (waitEnd - waitStart) + " ms. while waiting for channel closure",
+                    result.contains(ClientChannelEvent.TIMEOUT));
                 assertEquals("Mismatched sent and received data size", nbMessages * message.length, baosOut.size());
             }
 

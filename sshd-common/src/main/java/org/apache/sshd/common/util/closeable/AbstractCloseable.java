@@ -37,9 +37,9 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
-     * Lock object for this session state
+     * Lock object for {@code Future}-s based on this closeable instance
      */
-    protected final Object lock = new Object();
+    protected final Object futureLock = new Object();
 
     /**
      * State of this object
@@ -57,7 +57,11 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
 
     protected AbstractCloseable(String discriminator) {
         super(discriminator);
-        closeFuture = new DefaultCloseFuture(discriminator, lock);
+        closeFuture = new DefaultCloseFuture(discriminator, futureLock);
+    }
+
+    public Object getFutureLock() {
+        return futureLock;
     }
 
     @Override
@@ -157,6 +161,6 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     protected Builder builder() {
-        return new Builder(lock);
+        return new Builder(futureLock);
     }
 }

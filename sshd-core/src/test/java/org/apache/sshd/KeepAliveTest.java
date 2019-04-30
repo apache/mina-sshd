@@ -53,8 +53,8 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeepAliveTest extends BaseTestSupport {
     private static final long HEARTBEAT = TimeUnit.SECONDS.toMillis(2L);
-    private static final long TIMEOUT = 2L * HEARTBEAT;
-    private static final long WAIT = 2L * TIMEOUT;
+    private static final long TIMEOUT = HEARTBEAT * 2L;
+    private static final long WAIT = 3L * TIMEOUT;
 
     private static SshServer sshd;
     private static int port;
@@ -101,20 +101,27 @@ public class KeepAliveTest extends BaseTestSupport {
 
     @After
     public void tearDown() {
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
+        PropertyResolverUtils.updateProperty(
+            sshd, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+        PropertyResolverUtils.updateProperty(
+            client, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
     }
 
     @Test
     public void testIdleClient() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
-                assertTrue("Wrong channel state: " + result, result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
+                long waitEnd = System.currentTimeMillis();
+                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
+                    result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
             }
         }
     }
@@ -122,14 +129,19 @@ public class KeepAliveTest extends BaseTestSupport {
     @Test
     public void testClientWithHeartBeat() throws Exception {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
-                assertTrue("Wrong channel state: " + result, result.contains(ClientChannelEvent.TIMEOUT));
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
+                long waitEnd = System.currentTimeMillis();
+                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
+                    result.contains(ClientChannelEvent.TIMEOUT));
             }
         }
     }
@@ -138,7 +150,9 @@ public class KeepAliveTest extends BaseTestSupport {
     public void testShellClosedOnClientTimeout() throws Exception {
         TestEchoShell.latch = new CountDownLatch(1);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -151,11 +165,13 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
                 assertTrue("Latch time out", TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
+
+                long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
-                assertTrue("Wrong channel state: " + result,
-                           result.containsAll(
-                               EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)));
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
+                long waitEnd = System.currentTimeMillis();
+                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
+                   result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)));
             }
         } finally {
             TestEchoShell.latch = null;

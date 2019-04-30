@@ -22,9 +22,9 @@ package org.apache.sshd.netty;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -54,7 +54,6 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected final Map<Object, Object> attributes = new HashMap<>();
     protected final NettyIoService service;
     protected final IoHandler handler;
-    protected final DefaultCloseFuture closeFuture = new DefaultCloseFuture(toString(), lock);
     protected final long id;
     protected ChannelHandlerContext context;
     protected SocketAddress remoteAddr;
@@ -64,6 +63,8 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     private final SocketAddress acceptanceAddress;
 
     public NettyIoSession(NettyIoService service, IoHandler handler, SocketAddress acceptanceAddress) {
+        super(Objects.toString(acceptanceAddress, ""));
+
         this.service = service;
         this.handler = handler;
         this.id = service.sessionSeq.incrementAndGet();

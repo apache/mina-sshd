@@ -199,7 +199,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        final long testAuthTimeout = TimeUnit.SECONDS.toMillis(5L);
+        final long testAuthTimeout = TimeUnit.SECONDS.toMillis(4L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, testAuthTimeout);
 
         AtomicReference<TimeoutStatus> timeoutHolder = new AtomicReference<>();
@@ -222,17 +222,19 @@ public class ServerTest extends BaseTestSupport {
         });
         sshd.start();
         client.start();
-        Collection<ClientSession.ClientSessionEvent> res;
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
                 .verify(7L, TimeUnit.SECONDS)
                 .getSession()) {
-            res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testAuthTimeout);
+            long waitStart = System.currentTimeMillis();
+            Collection<ClientSession.ClientSessionEvent> res =
+                s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testAuthTimeout);
+            long waitEnd = System.currentTimeMillis();
+            assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
+                res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH)));
         } finally {
             client.stop();
         }
 
-        assertTrue("Session should be closed: " + res,
-            res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
         assertSame("Mismatched timeout status reported", TimeoutStatus.AuthTimeout, timeoutHolder.getAndSet(null));
     }
 
@@ -301,7 +303,6 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
 
         client.start();
-        Collection<ClientSession.ClientSessionEvent> res;
         try (ClientSession s = createTestClientSession(sshd);
              ChannelShell shell = s.createShellChannel();
              ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -313,13 +314,16 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
-            res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * testIdleTimeout);
+            long waitStart = System.currentTimeMillis();
+            Collection<ClientSession.ClientSessionEvent> res =
+                s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testIdleTimeout);
+            long waitEnd = System.currentTimeMillis();
+            assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
+                res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         } finally {
             client.stop();
         }
 
-        assertTrue("Session should be closed and authenticated: " + res,
-            res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         assertTrue("Session latch not signalled in time", latch.await(1L, TimeUnit.SECONDS));
         assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
         assertSame("Mismatched timeout status", TimeoutStatus.IdleTimeout, timeoutHolder.getAndSet(null));

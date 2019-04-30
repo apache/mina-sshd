@@ -105,7 +105,6 @@ public abstract class AbstractConnectionService
      */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
     protected final AtomicLong heartbeatCount = new AtomicLong(0L);
-
     private ScheduledFuture<?> heartBeat;
 
     private final AtomicReference<AgentForwardSupport> agentForwardHolder = new AtomicReference<>();
@@ -417,7 +416,7 @@ public abstract class AbstractConnectionService
         channel.init(this, session, channelId);
 
         boolean registered = false;
-        synchronized (lock) {
+        synchronized (channels) {
             if (!isClosing()) {
                 channels.put(channelId, channel);
                 registered = true;
@@ -451,7 +450,11 @@ public abstract class AbstractConnectionService
     @Override
     public void unregisterChannel(Channel channel) {
         int channelId = channel.getId();
-        Channel result = channels.remove(channelId);
+        Channel result;
+        synchronized (channels) {
+            result = channels.remove(channelId);
+        }
+
         if (log.isDebugEnabled()) {
             log.debug("unregisterChannel({}) result={}", channel, result);
         }
@@ -565,10 +568,20 @@ public abstract class AbstractConnectionService
         }
 
         int id = channel.getId();
-        if (log.isDebugEnabled()) {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("channelOpenFailure({}) Received SSH_MSG_CHANNEL_OPEN_FAILURE", channel);
         }
-        channels.remove(id);
+
+        Channel removed;
+        synchronized (channels) {
+            removed = channels.remove(id);
+        }
+
+        if (debugEnabled) {
+            log.debug("channelOpenFailure({}) unregistered {}", channel, removed);
+        }
+
         channel.handleOpenFailure(buffer);
     }
 
@@ -715,7 +728,6 @@ public abstract class AbstractConnectionService
             // Throw a special exception - SSHD-777
             throw new SshChannelNotFoundException(recipient,
                 "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
-
         }
 
         channel = handler.handleUnknownChannelCommand(this, cmd, recipient, buffer);

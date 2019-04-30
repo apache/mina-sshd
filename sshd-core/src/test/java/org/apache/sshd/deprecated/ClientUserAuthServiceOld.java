@@ -77,7 +77,7 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
             throw new IllegalStateException("Client side service used on server side");
         }
         session = (ClientSessionImpl) s;
-        lock = session.getLock();
+        lock = session.getFutureLock();
         // Maintain the current auth status in the authFuture.
         authFuture = new DefaultAuthFuture(s.toString(), lock);
     }

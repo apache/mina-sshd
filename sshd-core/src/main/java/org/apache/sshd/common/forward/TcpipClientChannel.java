@@ -135,7 +135,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         }
 
         // make sure the pending messages queue is 1st in line
-        openFuture = new DefaultOpenFuture(src, lock)
+        openFuture = new DefaultOpenFuture(src, futureLock)
             .addListener(getPendingMessagesQueue());
         if (log.isDebugEnabled()) {
             log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);

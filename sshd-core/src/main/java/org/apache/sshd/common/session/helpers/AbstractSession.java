@@ -358,7 +358,7 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected void handleMessage(Buffer buffer) throws Exception {
         try {
-            synchronized (lock) {
+            synchronized (sessionLock) {
                 doHandleMessage(buffer);
             }
         } catch (Throwable e) {
@@ -658,7 +658,8 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleNewKeys(int cmd, Buffer buffer) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}", this, SshConstants.getCommandMessageName(cmd));
+            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}",
+                this, SshConstants.getCommandMessageName(cmd));
         }
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
@@ -697,8 +698,8 @@ public abstract class AbstractSession extends SessionHelper {
             }
         }
 
-        synchronized (lock) {
-            lock.notifyAll();
+        synchronized (futureLock) {
+            futureLock.notifyAll();
         }
     }
 
@@ -1809,7 +1810,8 @@ public abstract class AbstractSession extends SessionHelper {
                     + " to generate keys for exchange: " + e.getMessage()), e);
         }
 
-        return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
+        return ValidateUtils.checkNotNull(
+            kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
     }
 
     /**

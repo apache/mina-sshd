@@ -71,7 +71,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             throw new SshException("Session has been closed");
         }
 
-        openFuture = new DefaultOpenFuture(remote, lock);
+        openFuture = new DefaultOpenFuture(remote, futureLock);
         if (log.isDebugEnabled()) {
             log.debug("open({}) SSH_MSG_CHANNEL_OPEN", this);
         }
