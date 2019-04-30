@@ -107,7 +107,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
             private final DefaultCloseFuture future =
-                new DefaultCloseFuture(MinaSession.this.toString(), lock);
+                new DefaultCloseFuture(MinaSession.this.toString(), futureLock);
 
             @SuppressWarnings("synthetic-access")
             @Override

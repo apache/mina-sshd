@@ -76,6 +76,9 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * Contains split code in order to make {@link AbstractSession} class smaller
  */
 public abstract class SessionHelper extends AbstractKexFactoryManager implements Session {
+    /** Session level lock for regulating access to sensitive data */
+    protected final Object sessionLock = new Object();
+
     /**
      * Client or server side
      */
@@ -231,7 +234,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
 
         long now = System.currentTimeMillis();
-        Map.Entry<TimeoutStatus, String> result = checkAuthenticationTimeout(now, getAuthTimeout());
+        Map.Entry<TimeoutStatus, String> result =
+            checkAuthenticationTimeout(now, getAuthTimeout());
         if (result == null) {
             result = checkIdleTimeout(now, getIdleTimeout());
         }
@@ -335,10 +339,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @Override
     public TimeoutStatus getTimeoutStatus() {
         return timeoutStatus.get();
-    }
-
-    public Object getLock() {
-        return lock;
     }
 
     @Override

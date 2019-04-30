@@ -122,3 +122,5 @@ in order to avoid client-side session timeout due to no traffic from server.
 and therefore closing all currently tracked file/directory handles.
 
 * [SSHD-909](https://issues.apache.org/jira/browse/SSHD-909) - SFTP versions extension handler ignores non-numerical versions when resolving the available ones.
+
+* [SSHD-912](https://issues.apache.org/jira/browse/SSHD-912) - Use separate locks for Future(s) and Session/Channel instances.

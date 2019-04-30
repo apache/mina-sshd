@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
@@ -59,7 +58,6 @@ import io.netty.util.concurrent.GlobalEventExecutor;
  */
 public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
     protected final ServerBootstrap bootstrap = new ServerBootstrap();
-    protected final DefaultCloseFuture closeFuture = new DefaultCloseFuture(toString(), lock);
     protected final Map<SocketAddress, Channel> boundAddresses = new ConcurrentHashMap<>();
 
     public NettyIoAcceptor(NettyIoServiceFactory factory, IoHandler handler) {

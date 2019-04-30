@@ -50,6 +50,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -75,6 +76,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         session = new MySession();
     }
 
+    @After
     public void tearDown() throws Exception {
         if (session != null) {
             session.close();

@@ -19,6 +19,7 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -71,26 +72,33 @@ public class ChannelSessionTest extends BaseTestSupport {
             server.start();
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                    channel.open().verify(7L, TimeUnit.SECONDS);
 
-                    channel.open().await();
+                    OutputStream invertedIn = channel.getInvertedIn();
+                    String cmdSent = "echo foo\nexit\n";
+                    invertedIn.write(cmdSent.getBytes());
+                    invertedIn.flush();
 
-                    channel.getInvertedIn().write("echo foo\nexit\n".getBytes());
-                    channel.getInvertedIn().flush();
-
+                    long waitStart = System.currentTimeMillis();
                     Collection<ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 5000);
-                    assertTrue("Wrong channel state: " + result, result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
+                    long waitEnd = System.currentTimeMillis();
+                    assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
+                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
 
                     byte[] b = new byte[1024];
-                    int l = channel.getInvertedOut().read(b);
-                    String s = l > 0 ? new String(b, 0, l) : "";
+                    InputStream invertedOut = channel.getInvertedOut();
+                    int l = invertedOut.read(b);
+                    String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
 
-                    assertEquals("echo foo\nexit\n", s);
+                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
                 }
             }
         }
@@ -111,13 +119,14 @@ public class ChannelSessionTest extends BaseTestSupport {
                 }
         }) {
             AtomicBoolean expanded = new AtomicBoolean(false);
-            channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
-                @Override
-                public void onWindowExpanded() throws IOException {
-                    expanded.set(true);
-                    super.onWindowExpanded();
-                }
-            };
+            channelSession.asyncOut =
+                new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
+                    @Override
+                    public void onWindowExpanded() throws IOException {
+                        expanded.set(true);
+                        super.onWindowExpanded();
+                    }
+                };
             channelSession.handleWindowAdjust(buffer);
             assertTrue("Expanded ?", expanded.get());
         }

@@ -370,20 +370,28 @@ public interface ClientSession
     }
 
     /**
+     * @return A snapshot of the current session state
+     * @see #waitFor(Collection, long)
+     */
+    Set<ClientSessionEvent> getSessionState();
+
+    /**
      * Wait for any one of a specific state to be signaled.
      *
      * @param mask    The request {@link ClientSessionEvent}s mask
      * @param timeout Wait time in milliseconds - non-positive means forever
      * @return The actual state that was detected either due to the mask
-     * yielding one of the states or due to timeout (in which case the {@link ClientSessionEvent#TIMEOUT}
-     * value is set)
+     * yielding one of the states or due to timeout (in which case the
+     * {@link ClientSessionEvent#TIMEOUT} value is set)
      */
     Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout);
 
     /**
      * Access to the metadata.
      *
-     * @return The metadata {@link Map}
+     * @return The metadata {@link Map} - <B>Note:</B> access to the map
+     * is not {@code synchronized} in any way - up to the user to take care
+     * of mutual exclusion if necessary
      */
     Map<Object, Object> getMetadataMap();
 
