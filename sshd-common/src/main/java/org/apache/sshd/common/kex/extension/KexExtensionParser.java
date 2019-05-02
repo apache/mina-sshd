@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * Parses a known KEX extension
  *
+ * @param <T> Extension generic type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KexExtensionParser<T> extends NamedResource {

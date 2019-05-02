@@ -28,7 +28,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.git.AbstractGitCommand;
 import org.apache.sshd.git.GitLocationResolver;
-import org.apache.sshd.server.Environment;
 
 /**
  * TODO Add javadoc
@@ -39,10 +38,12 @@ public class GitPgmCommand extends AbstractGitCommand {
     /**
      * @param rootDirResolver Resolver for GIT root directory
      * @param command Command to execute
-     * @param executorService An {@link CloseableExecutorService} to be used when {@link #start(Environment)}-ing
-     * execution. If {@code null} an ad-hoc single-threaded service is created and used.
+     * @param executorService An {@link CloseableExecutorService} to be used
+     * when {@code start(ChannelSession, Environment)}-ing execution. If {@code null}
+     * an ad-hoc single-threaded service is created and used.
      */
-    public GitPgmCommand(GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+    public GitPgmCommand(
+            GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
         super(rootDirResolver, command, executorService);
     }
 

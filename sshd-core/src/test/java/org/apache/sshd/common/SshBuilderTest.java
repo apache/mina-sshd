@@ -71,7 +71,7 @@ public class SshBuilderTest extends BaseTestSupport {
 
     /**
      * Make sure that all values in {@link BuiltinSignatures} are
-     * listed in {@link BaseBuilder#DEFAULT_SIGNATURE_PREFERENCE}
+     * listed in {@link ServerBuilder#DEFAULT_SIGNATURE_PREFERENCE}
      */
     @Test
     public void testAllBuiltinSignaturesListed() {

@@ -49,7 +49,7 @@ public class AsyncEchoShellFactory implements ShellFactory {
     }
 
     @Override
-    public Command create() {
+    public Command createShell(ChannelSession channel) {
         return new EchoShell();
     }
 
@@ -118,7 +118,7 @@ public class AsyncEchoShellFactory implements ShellFactory {
         }
 
         @Override
-        public void start(Environment env) throws IOException {
+        public void start(ChannelSession channel, Environment env) throws IOException {
             environment = env;
             session.setDataReceiver(this);
         }
@@ -129,12 +129,12 @@ public class AsyncEchoShellFactory implements ShellFactory {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) {
             // ignored
         }
 
         @Override
-        public int data(final ChannelSession channel, byte[] buf, int start, int len) throws IOException {
+        public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
             buffer.append(new String(buf, start, len, StandardCharsets.UTF_8));
             for (int i = 0; i < buffer.length(); i++) {
                 if (buffer.charAt(i) == '\n') {

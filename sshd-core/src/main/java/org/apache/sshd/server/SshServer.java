@@ -56,6 +56,7 @@ import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
+import org.apache.sshd.server.shell.ShellFactory;
 
 /**
  * <p>
@@ -99,7 +100,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected int port;
 
     private ServerProxyAcceptor proxyAcceptor;
-    private Factory<Command> shellFactory;
+    private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
     private List<NamedFactory<Command>> subsystemFactories;
@@ -156,11 +157,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    public Factory<Command> getShellFactory() {
+    public ShellFactory getShellFactory() {
         return shellFactory;
     }
 
-    public void setShellFactory(Factory<Command> shellFactory) {
+    public void setShellFactory(ShellFactory shellFactory) {
         this.shellFactory = shellFactory;
     }
 

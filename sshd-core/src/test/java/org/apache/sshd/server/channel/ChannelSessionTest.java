@@ -60,7 +60,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         try (SshServer server = setupTestServer();
              SshClient client = setupTestClient()) {
 
-            server.setShellFactory(() -> new CommandExecutionHelper(null) {
+            server.setShellFactory(session -> new CommandExecutionHelper(null) {
                 @Override
                 protected boolean handleCommandLine(String command) throws Exception {
                     OutputStream out = getOutputStream();

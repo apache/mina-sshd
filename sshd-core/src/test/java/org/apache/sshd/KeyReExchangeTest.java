@@ -56,6 +56,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -698,12 +699,12 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 }
 
                 @Override
-                public void start(Environment env) throws IOException {
+                public void start(ChannelSession channel, Environment env) throws IOException {
                     // Do nothing
                 }
 
                 @Override
-                public void destroy() throws Exception {
+                public void destroy(ChannelSession channel) throws Exception {
                     callback.onExit(0);
                 }
             };

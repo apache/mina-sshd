@@ -49,6 +49,7 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
@@ -158,13 +159,13 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         @Override
-        public void start(Environment env) throws IOException {
+        public void start(ChannelSession channel, Environment env) throws IOException {
             executor = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
             future = executor.submit(this);
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) {
             stopCommand();
 
             if (stdout != null) {
@@ -239,7 +240,7 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         @Override
-        public Command createCommand(String command) {
+        public Command createCommand(ChannelSession channel, String command) {
             return new MounterCommand(command);
         }
     }

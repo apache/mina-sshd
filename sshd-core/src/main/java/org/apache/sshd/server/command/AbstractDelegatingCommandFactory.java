@@ -19,8 +19,11 @@
 
 package org.apache.sshd.server.command;
 
+import java.io.IOException;
+
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.server.channel.ChannelSession;
 
 /**
  * TODO Add javadoc
@@ -53,14 +56,14 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
     }
 
     @Override
-    public Command createCommand(String command) {
+    public Command createCommand(ChannelSession channel, String command) throws IOException {
         if (isSupportedCommand(command)) {
             return executeSupportedCommand(command);
         }
 
         CommandFactory factory = getDelegateCommandFactory();
         if (factory != null) {
-            return factory.createCommand(command);
+            return factory.createCommand(channel, command);
         }
 
         return createUnsupportedCommand(command);

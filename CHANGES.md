@@ -40,6 +40,9 @@ to override the internal default ones.
 * The `ScpFileOpener` methods are also invoked in order to close input/output streams created through it
 when they are no longer needed once data has been successfully copied.
 
+* The `CommandFactory` and `ShellFactory` have been modified to accept the server's `ChannelSession` instance through
+which they are being invoked.
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between
@@ -122,3 +125,5 @@ in order to avoid client-side session timeout due to no traffic from server.
 and therefore closing all currently tracked file/directory handles.
 
 * [SSHD-909](https://issues.apache.org/jira/browse/SSHD-909) - SFTP versions extension handler ignores non-numerical versions when resolving the available ones.
+
+* [SSHD-913](https://issues.apache.org/jira/browse/SSHD-913) - Provide channel session instance to command and/or shell factories creators	

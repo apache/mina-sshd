@@ -269,7 +269,7 @@ public class SftpSubsystem
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public void start(ChannelSession channel, Environment env) throws IOException {
         this.env = env;
         try {
             CloseableExecutorService executor = getExecutorService();
@@ -964,7 +964,7 @@ public class SftpSubsystem
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) {
         if (closed.getAndSet(true)) {
             return; // ignore if already closed
         }

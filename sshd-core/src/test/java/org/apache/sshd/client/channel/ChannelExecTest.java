@@ -51,7 +51,7 @@ public class ChannelExecTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ChannelExecTest.class);
-        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
                 OutputStream stdout = getOutputStream();

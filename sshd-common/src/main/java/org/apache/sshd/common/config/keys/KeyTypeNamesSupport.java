@@ -41,6 +41,7 @@ public interface KeyTypeNamesSupport {
     NavigableSet<String> getSupportedKeyTypes();
 
     /**
+     * @param <S> Generic supporter type
      * @param typeName The {@code OpenSSH} key type  e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}.
      * Ignored if {@code null}/empty.
      * @param supporters The {@link KeyTypeNamesSupport}-ers to query - ignored if {@code null}/empty.

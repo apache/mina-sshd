@@ -27,6 +27,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
@@ -63,15 +64,17 @@ public class ProcessShellFactory extends AbstractLoggingBean implements ShellFac
     }
 
     @Override
-    public Command create() {
-        return new InvertedShellWrapper(createInvertedShell());
+    public Command createShell(ChannelSession channel) {
+        InvertedShell shell = createInvertedShell(channel);
+        return new InvertedShellWrapper(shell);
     }
 
-    protected InvertedShell createInvertedShell() {
-        return new ProcessShell(resolveEffectiveCommand(getCommand()));
+    protected InvertedShell createInvertedShell(ChannelSession channel) {
+        return new ProcessShell(resolveEffectiveCommand(channel, getCommand()));
     }
 
-    protected List<String> resolveEffectiveCommand(List<String> original) {
+    protected List<String> resolveEffectiveCommand(
+            ChannelSession channel, List<String> original) {
         if (!OsUtils.isWin32()) {
             return original;
         }

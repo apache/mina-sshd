@@ -48,6 +48,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AsyncCommand;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -84,9 +85,10 @@ public class WindowAdjustTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshServer = setupTestServer();
 
-        final byte[] msg = Files.readAllBytes(
-                Paths.get(getClass().getResource("/big-msg.txt").toURI()));
-        sshServer.setShellFactory(() -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
+        byte[] msg = Files.readAllBytes(
+            Paths.get(getClass().getResource("/big-msg.txt").toURI()));
+        sshServer.setShellFactory(
+            channel -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
 
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.start();
@@ -222,10 +224,11 @@ public class WindowAdjustTest extends BaseTestSupport {
         }
 
         @Override
-        public void start(Environment env) throws IOException {
+        public void start(ChannelSession channel, Environment env) throws IOException {
             log.info("Starting");
 
-            ExecutorService service = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
+            ExecutorService service =
+                ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
             executorHolder.set(service);
 
             futureHolder.set(service.submit((Runnable) () -> {
@@ -253,7 +256,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) {
             log.info("Destroying");
 
             Future<?> future = futureHolder.getAndSet(null);

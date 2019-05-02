@@ -71,7 +71,7 @@ public interface UnaryEquator<T> extends BiPredicate<T, T> {
     /**
      * @param <T> Type of entity
      * @return The default equality checker
-     * @see EqualityUtils#isEqualValue(Object, Object)
+     * @see Objects#equals(Object, Object)
      */
     static <T> UnaryEquator<T> defaultEquality() {
         return Objects::equals;
@@ -80,7 +80,7 @@ public interface UnaryEquator<T> extends BiPredicate<T, T> {
     /**
      * @param <T> Type of entity
      * @return An equator that checks reference equality
-     * @see EqualityUtils#isSameReference(Object, Object)
+     * @see GenericUtils#isSameReference(Object, Object)
      */
     static <T> UnaryEquator<T> referenceEquality() {
         return GenericUtils::isSameReference;

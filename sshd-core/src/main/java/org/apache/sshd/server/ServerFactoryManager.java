@@ -21,12 +21,12 @@ package org.apache.sshd.server;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptorHolder;
+import org.apache.sshd.server.shell.ShellFactory;
 
 /**
  * The <code>ServerFactoryManager</code> enable the retrieval of additional
@@ -88,12 +88,12 @@ public interface ServerFactoryManager
     String MODULI_URL = "moduli-url";
 
     /**
-     * Retrieve the <code>ShellFactory</code> object to be used to create shells.
+     * Retrieve the {@link ShellFactory} object to be used to create shells.
      *
-     * @return a valid <code>ShellFactory</code> object or {@code null} if shells
+     * @return a valid {@link ShellFactory} object or {@code null} if shells
      * are not supported on this server
      */
-    Factory<Command> getShellFactory();
+    ShellFactory getShellFactory();
 
     /**
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.

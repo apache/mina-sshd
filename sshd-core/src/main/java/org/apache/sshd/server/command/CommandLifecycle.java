@@ -22,6 +22,7 @@ package org.apache.sshd.server.command;
 import java.io.IOException;
 
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.ChannelSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -35,16 +36,20 @@ public interface CommandLifecycle {
      * {@code Thread(this).start(); }
      * </pre>
      *
+     * @param channel The {@link ChannelSession} through which the command has been
+     * received
      * @param env The {@link Environment}
      * @throws IOException If failed to start
      */
-    void start(Environment env) throws IOException;
+    void start(ChannelSession channel, Environment env) throws IOException;
 
     /**
      * This method is called by the SSH server to destroy the command because
      * the client has disconnected somehow.
      *
+     * @param channel The {@link ChannelSession} through which the command has been
+     * received
      * @throws Exception if failed to destroy
      */
-    void destroy() throws Exception;
+    void destroy(ChannelSession channel) throws Exception;
 }

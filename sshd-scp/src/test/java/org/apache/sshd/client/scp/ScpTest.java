@@ -60,6 +60,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.scp.ScpCommand;
 import org.apache.sshd.server.scp.ScpCommandFactory;
@@ -902,7 +903,7 @@ public class ScpTest extends BaseTestSupport {
         ScpCommandFactory factory = (ScpCommandFactory) sshd.getCommandFactory();
         sshd.setCommandFactory(new ScpCommandFactory() {
             @Override
-            public Command createCommand(String command) {
+            public Command createCommand(ChannelSession channel, String command) {
                 ValidateUtils.checkTrue(command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
                 return new InternalScpCommand(command,
                         getExecutorService(),

@@ -41,6 +41,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -204,7 +205,7 @@ public class AgentTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createShell(ChannelSession channel) {
             return shell;
         }
     }
@@ -219,8 +220,8 @@ public class AgentTest extends BaseTestSupport {
         }
 
         @Override
-        public synchronized void start(Environment env) throws IOException {
-            super.start(env);
+        public synchronized void start(ChannelSession channel, Environment env) throws IOException {
+            super.start(channel, env);
             started = true;
             notifyAll();
         }

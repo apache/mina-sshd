@@ -79,7 +79,7 @@ public interface KexExtensionHandler {
     /**
      * Invoked when a peer is ready to send the KEX options proposal or has received
      * such a proposal. <B>Note:</B> this method is called during the negotiation phase
-     * even if {@link #isKexExtensionsAvailable(Session)} returns {@code false} for the session.
+     * even if {@code isKexExtensionsAvailable} returns {@code false} for the session.
      *
      * @param session The {@link Session} initiating or receiving the proposal
      * @param initiator {@code true} if the proposal is about to be sent, {@code false}
@@ -98,7 +98,7 @@ public interface KexExtensionHandler {
     /**
      * Invoked during the KEX negotiation phase to inform about option
      * being negotiated. <B>Note:</B> this method is called during the
-     * negotiation phase even if {@link #isKexExtensionsAvailable(Session)}
+     * negotiation phase even if {@code isKexExtensionsAvailable}
      * returns {@code false} for the session.
      *
      * @param session The {@link Session} executing the negotiation
@@ -132,7 +132,7 @@ public interface KexExtensionHandler {
 
     /**
      * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message.
-     * <B>Note:</B> this method is called only if {@link #isKexExtensionsAvailable(Session)}
+     * <B>Note:</B> this method is called only if {@code isKexExtensionsAvailable}
      * returns {@code true} for the session.
      * @param session The {@link Session}
      * @param phase The phase at which the handler is invoked
@@ -145,7 +145,7 @@ public interface KexExtensionHandler {
 
     /**
      * Parses the {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method
-     * is called regardless of whether {@link #isKexExtensionsAvailable(Session)} returns
+     * is called regardless of whether {@code isKexExtensionsAvailable} returns
      * {@code true} for the session.
      *
      * @param session The {@link Session} through which the message was received
@@ -171,7 +171,7 @@ public interface KexExtensionHandler {
 
     /**
      * Parses the {@code SSH_MSG_NEWCOMPRESS} message. <B>Note:</B> this method
-     * is called regardless of whether {@link #isKexExtensionsAvailable(Session)} returns
+     * is called regardless of whether {@code isKexExtensionsAvailable} returns
      * {@code true} for the session.
      *
      * @param session The {@link Session} through which the message was received

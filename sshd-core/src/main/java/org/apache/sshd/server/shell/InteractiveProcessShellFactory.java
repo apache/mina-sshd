@@ -22,6 +22,7 @@ package org.apache.sshd.server.shell;
 import java.util.List;
 
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.server.channel.ChannelSession;
 
 /**
  * A simplistic interactive shell factory
@@ -36,7 +37,7 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
     }
 
     @Override
-    protected List<String> resolveEffectiveCommand(List<String> original) {
+    protected List<String> resolveEffectiveCommand(ChannelSession channel, List<String> original) {
         return original;
     }
 }

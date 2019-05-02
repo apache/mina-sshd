@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
@@ -100,14 +101,14 @@ public class UnknownCommand implements Command, Runnable {
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public void start(ChannelSession channel, Environment env) throws IOException {
         Thread thread = new Thread(this);
         thread.setDaemon(true);
         thread.start();
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) {
         // ignored
     }
 

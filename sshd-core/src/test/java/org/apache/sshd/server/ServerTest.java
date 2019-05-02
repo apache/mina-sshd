@@ -75,6 +75,7 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.PromptEntry;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
@@ -340,7 +341,7 @@ public class ServerTest extends BaseTestSupport {
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
 
         CountDownLatch latch = new CountDownLatch(1);
-        sshd.setCommandFactory(StreamCommand::new);
+        sshd.setCommandFactory((channel, command) -> new StreamCommand(command));
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -607,7 +608,7 @@ public class ServerTest extends BaseTestSupport {
     @Test   // see SSHD-645
     public void testChannelStateChangeNotifications() throws Exception {
         Semaphore exitSignal = new Semaphore(0);
-        sshd.setCommandFactory(command -> new Command() {
+        sshd.setCommandFactory((session, command) -> new Command() {
             private ExitCallback cb;
 
             @Override
@@ -631,12 +632,12 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
-            public void destroy() {
+            public void destroy(ChannelSession channel) {
                 // ignored
             }
 
             @Override
-            public void start(Environment env) throws IOException {
+            public void start(ChannelSession channel, Environment env) throws IOException {
                 exitSignal.release();
                 cb.onExit(0, command);
             }
@@ -676,7 +677,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
         AtomicReference<Environment> envHolder = new AtomicReference<>(null);
-        sshd.setCommandFactory(command -> new Command() {
+        sshd.setCommandFactory((session, command) -> new Command() {
             private ExitCallback cb;
 
             @Override
@@ -700,12 +701,12 @@ public class ServerTest extends BaseTestSupport {
             }
 
             @Override
-            public void destroy() {
+            public void destroy(ChannelSession channel) {
                 // ignored
             }
 
             @Override
-            public void start(Environment env) throws IOException {
+            public void start(ChannelSession channel, Environment env) throws IOException {
                 if (envHolder.getAndSet(env) != null) {
                     throw new StreamCorruptedException("Multiple starts for command=" + command);
                 }
@@ -1009,7 +1010,7 @@ public class ServerTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createShell(ChannelSession channel) {
             return new TestEchoShell();
         }
     }
@@ -1024,11 +1025,11 @@ public class ServerTest extends BaseTestSupport {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) throws Exception {
             if (latch != null) {
                 latch.countDown();
             }
-            super.destroy();
+            super.destroy(channel);
         }
     }
 
@@ -1065,12 +1066,12 @@ public class ServerTest extends BaseTestSupport {
         }
 
         @Override
-        public void start(Environment env) throws IOException {
+        public void start(ChannelSession channel, Environment env) throws IOException {
             new Thread(this).start();
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) {
             synchronized (name) {
                 if ("block".equals(name)) {
                     try {

@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
@@ -63,7 +64,9 @@ public abstract class AbstractCommandSupport
         this.command = command;
 
         if (executorService == null) {
-            String poolName = GenericUtils.isEmpty(command) ? getClass().getSimpleName() : command.replace(' ', '_').replace('/', ':');
+            String poolName = GenericUtils.isEmpty(command)
+                ? getClass().getSimpleName()
+                : command.replace(' ', '_').replace('/', ':');
             this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
         } else {
             this.executorService = executorService;
@@ -139,7 +142,7 @@ public abstract class AbstractCommandSupport
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public void start(ChannelSession channel, Environment env) throws IOException {
         environment = env;
         try {
             CloseableExecutorService executors = getExecutorService();
@@ -154,7 +157,7 @@ public abstract class AbstractCommandSupport
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) throws Exception {
         // if thread has not completed, cancel it
         boolean debugEnabled = log.isDebugEnabled();
         if ((cmdFuture != null) && (!cmdFuture.isDone()) && (cmdRunner != Thread.currentThread())) {

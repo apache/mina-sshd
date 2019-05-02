@@ -33,6 +33,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -167,7 +168,7 @@ public class KeepAliveTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createShell(ChannelSession channel) {
             return new TestEchoShell();
         }
     }
@@ -182,11 +183,11 @@ public class KeepAliveTest extends BaseTestSupport {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) throws Exception {
             if (latch != null) {
                 latch.countDown();
             }
-            super.destroy();
+            super.destroy(channel);
         }
     }
 }

@@ -34,7 +34,6 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -74,6 +73,7 @@ import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -205,7 +205,7 @@ public class ChannelSession extends AbstractServerChannel {
         boolean debugEnabled = log.isDebugEnabled();
         if (commandInstance != null) {
             try {
-                commandInstance.destroy();
+                commandInstance.destroy(this);
             } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
                      this, e.getClass().getSimpleName(), e.getMessage());
@@ -217,7 +217,8 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
 
-        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
+        IOException e =
+            IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
         if (e != null) {
             if (debugEnabled) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
@@ -400,7 +401,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (log.isDebugEnabled()) {
             log.debug("sendResponse({}) request={} activate command", this, req);
         }
-        commandInstance.start(getEnvironment());
+        commandInstance.start(this, getEnvironment());
         return future;
     }
 
@@ -513,8 +514,9 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
-        Factory<Command> factory = Objects.requireNonNull(manager, "No server factory manager").getShellFactory();
+        ServerSession shellSession = Objects.requireNonNull(getServerSession(), "No server session");
+        ServerFactoryManager manager = shellSession.getFactoryManager();
+        ShellFactory factory = Objects.requireNonNull(manager, "No server factory manager").getShellFactory();
         if (factory == null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleShell({}) - no shell factory", this);
@@ -523,8 +525,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         try {
-            commandInstance = factory.create();
-        } catch (RuntimeException | Error e) {
+            commandInstance = factory.createShell(this);
+        } catch (RuntimeException | IOException | Error e) {
             log.warn("handleShell({}) Failed ({}) to create shell: {}",
                  this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
@@ -550,7 +552,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         String commandLine = buffer.getString();
-        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        ServerSession cmdSession = Objects.requireNonNull(getServerSession(), "No server session");
+        ServerFactoryManager manager = cmdSession.getFactoryManager();
         CommandFactory factory = Objects.requireNonNull(manager, "No server factory manager").getCommandFactory();
         if (factory == null) {
             log.warn("handleExec({}) No command factory for command: {}", this, commandLine);
@@ -563,8 +566,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         try {
-            commandInstance = factory.createCommand(commandLine);
-        } catch (RuntimeException | Error e) {
+            commandInstance = factory.createCommand(this, commandLine);
+        } catch (RuntimeException | IOException | Error e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
                  this, e.getClass().getSimpleName(), commandLine, e.getMessage());
             if (debugEnabled) {
@@ -639,7 +642,7 @@ public class ChannelSession extends AbstractServerChannel {
      * For {@link Command} to install {@link ChannelDataReceiver}.
      * When you do this, {@link Command#setInputStream(java.io.InputStream)} or
      * {@link org.apache.sshd.server.command.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
-     * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
+     * will no longer be invoked. If you call this method from {@code Command#start(ChannelSession, Environment)},
      * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
      * not read any data.
      *

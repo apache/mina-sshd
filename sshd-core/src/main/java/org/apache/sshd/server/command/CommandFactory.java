@@ -18,9 +18,12 @@
  */
 package org.apache.sshd.server.command;
 
+import java.io.IOException;
+
+import org.apache.sshd.server.channel.ChannelSession;
+
 /**
- * A factory of commands.
- * Commands are executed on the server side when an "exec" channel is
+ * Commands are executed on the server side when an &quot;exec&quot; channel is
  * requested by the SSH client.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -33,8 +36,11 @@ public interface CommandFactory {
      * If the command is not known, a dummy command should be returned to allow
      * the display output to be sent back to the client.
      *
+     * @param channel The {@link ChannelSession} through which the command has been
+     * received
      * @param command The command that will be run
      * @return a non {@code null} {@link Command} instance
+     * @throws IOException if failed to create the instance
      */
-    Command createCommand(String command);
+    Command createCommand(ChannelSession channel, String command) throws IOException;
 }

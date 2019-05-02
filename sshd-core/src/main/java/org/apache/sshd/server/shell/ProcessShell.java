@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.PuttyRequestHandler;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
@@ -48,6 +49,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
     private final List<String> command;
     private String cmdValue;
     private ServerSession session;
+    private ChannelSession channel;
     private Process process;
     private TtyFilterOutputStream in;
     private TtyFilterInputStream out;
@@ -79,7 +81,14 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public ChannelSession getChannelSession() {
+        return channel;
+    }
+
+    @Override
+    public void start(ChannelSession channel, Environment env) throws IOException {
+        this.channel = channel;
+
         Map<String, String> varsMap = resolveShellEnvironment(env.getEnv());
         for (int i = 0; i < command.size(); i++) {
             String cmd = command.get(i);
@@ -163,16 +172,20 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) {
         // NOTE !!! DO NOT NULL-IFY THE PROCESS SINCE "exitValue" is called subsequently
+        boolean debugEnabled = log.isDebugEnabled();
         if (process != null) {
-            log.debug("Destroy process for " + cmdValue);
+            if (debugEnabled) {
+                log.debug("destroy({}) Destroy process for {}", channel, cmdValue);
+            }
             process.destroy();
         }
 
-        IOException e = IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
+        IOException e =
+            IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
         if (e != null) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug(e.getClass().getSimpleName() + " while destroy streams of '" + this + "': " + e.getMessage());
             }
 

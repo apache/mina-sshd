@@ -350,7 +350,7 @@ public class WindowTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createShell(ChannelSession channel) {
             return new TestEchoShell();
         }
     }
@@ -363,9 +363,9 @@ public class WindowTest extends BaseTestSupport {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) throws Exception {
             LATCH.countDown();
-            super.destroy();
+            super.destroy(channel);
         }
     }
 }

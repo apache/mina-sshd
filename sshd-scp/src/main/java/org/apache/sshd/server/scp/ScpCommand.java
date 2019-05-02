@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -58,8 +59,8 @@ public class ScpCommand
     /**
      * @param command         The command to be executed
      * @param executorService An {@link CloseableExecutorService} to be used when
-     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
-     *                        single-threaded service is created and used.
+     *                        {@code start(ChannelSession, Environment)}-ing execution.
+     *                        If {@code null} an ad-hoc single-threaded service is created and used.
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
      * @param fileOpener      The {@link ScpFileOpener} - if {@code null} then {@link DefaultScpFileOpener} is used
@@ -146,11 +147,11 @@ public class ScpCommand
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public void start(ChannelSession channel, Environment env) throws IOException {
         if (error != null) {
             throw error;
         }
-        super.start(env);
+        super.start(channel, env);
     }
 
     @Override

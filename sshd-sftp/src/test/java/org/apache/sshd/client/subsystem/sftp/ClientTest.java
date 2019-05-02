@@ -415,7 +415,7 @@ public class ClientTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createShell(ChannelSession channel) {
             return new TestEchoShell();
         }
     }
@@ -430,11 +430,11 @@ public class ClientTest extends BaseTestSupport {
         }
 
         @Override
-        public void destroy() {
+        public void destroy(ChannelSession channel) throws Exception {
             if (latch != null) {
                 latch.countDown();
             }
-            super.destroy();
+            super.destroy(channel);
         }
     }
 }

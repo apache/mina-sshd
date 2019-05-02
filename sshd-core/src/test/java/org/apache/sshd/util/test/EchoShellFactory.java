@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.util.test;
 
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.shell.ShellFactory;
 
@@ -34,7 +35,7 @@ public class EchoShellFactory implements ShellFactory {
     }
 
     @Override
-    public Command create() {
+    public Command createShell(ChannelSession channel) {
         return new EchoShell();
     }
 }

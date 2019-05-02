@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.CommandLifecycle;
 
 /**
@@ -33,6 +34,12 @@ import org.apache.sshd.server.command.CommandLifecycle;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface InvertedShell extends CommandLifecycle, SessionAware {
+    /**
+     * @return The {@link ChannelSession} instance through which
+     * the shell was created - may be {@code null} if shell not started yet
+     */
+    ChannelSession getChannelSession();
+
     /**
      * Returns the output stream used to feed the shell.
      * This method is called after the shell has been started.

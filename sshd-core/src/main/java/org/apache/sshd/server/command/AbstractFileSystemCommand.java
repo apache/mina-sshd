@@ -24,6 +24,7 @@ import java.nio.file.FileSystem;
 
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.server.channel.ChannelSession;
 
 /**
  * Provides a basic useful skeleton for {@link Command} executions that require file system access
@@ -48,9 +49,9 @@ public abstract class AbstractFileSystemCommand extends AbstractCommandSupport i
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) throws Exception {
         try {
-            super.destroy();
+            super.destroy(channel);
         } finally {
             if (fileSystem != null) {
                 try {

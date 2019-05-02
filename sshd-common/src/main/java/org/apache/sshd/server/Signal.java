@@ -29,11 +29,8 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * System signals definition that the shell can receive.
- *
- * @see Environment
  */
 public enum Signal {
-
     HUP(1),
     INT(2),
     QUIT(3),

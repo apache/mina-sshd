@@ -745,9 +745,11 @@ public abstract class Buffer implements Readable {
 
     /**
      * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>:
-     *
+     * <CODE>
      *      A name-list is represented as a uint32 containing its length (number of bytes
      *      that follow) followed by a comma-separated list of zero or more names.
+     * </CODE>
+     * @param names The name list to put
      */
     public void putNameList(Collection<String> names) {
         putNameList(names, StandardCharsets.UTF_8);

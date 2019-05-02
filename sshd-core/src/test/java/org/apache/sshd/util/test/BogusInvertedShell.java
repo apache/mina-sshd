@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 import org.apache.sshd.server.shell.InvertedShell;
@@ -38,6 +39,7 @@ public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
 
     // for test assertions
     private ServerSession session;
+    private ChannelSession channel;
     private boolean started;
     private boolean alive = true;
     private Map<String, String> env;
@@ -59,7 +61,13 @@ public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
     }
 
     @Override
-    public void start(Environment env) throws IOException {
+    public ChannelSession getChannelSession() {
+        return channel;
+    }
+
+    @Override
+    public void start(ChannelSession channel, Environment env) throws IOException {
+        this.channel = channel;
         this.started = true;
         this.env = Collections.unmodifiableMap(env.getEnv());
     }
@@ -90,7 +98,7 @@ public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
     }
 
     @Override
-    public void destroy() {
+    public void destroy(ChannelSession channel) {
         IoUtils.closeQuietly(in, out, err);
     }
 

@@ -258,11 +258,12 @@ public class DirectoryScanner {
      * is found, it is scanned recursively.
      *
      * @param <C> Target matches collection type
-     * @param dir The directory to scan. Must not be {@code null}.
-     * @param vpath The path relative to the base directory (needed to prevent
+     * @param rootDir The directory to scan. Must not be {@code null}.
+     * @param dir The path relative to the root directory (needed to prevent
      * problems with an absolute path when using <tt>dir</tt>). Must not be {@code null}.
      * @param filesList Target {@link Collection} to accumulate the relative
      * path matches
+     * @return Updated files list
      * @throws IOException if failed to scan the directory
      */
     protected <C extends Collection<Path>> C scandir(Path rootDir, Path dir, C filesList) throws IOException {

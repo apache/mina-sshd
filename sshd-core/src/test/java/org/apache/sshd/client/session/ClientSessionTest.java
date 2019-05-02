@@ -90,7 +90,7 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testDefaultExecuteCommandMethod() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedResponse = getCurrentTestName() + "-RSP";
-        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
             @Override
@@ -121,7 +121,7 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testExceptionThrownIfRemoteStderrWrittenTo() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final String expectedErrorMessage = getCurrentTestName() + "-ERR";
-        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
             @Override
@@ -166,7 +166,7 @@ public class ClientSessionTest extends BaseTestSupport {
     public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
         final String expectedCommand = getCurrentTestName() + "-CMD";
         final int expectedErrorCode = 7365;
-        sshd.setCommandFactory(command -> new CommandExecutionHelper(command) {
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
             @Override

@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.shell;
 
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 
@@ -40,7 +41,7 @@ public class UnknownCommandFactory implements CommandFactory {
     }
 
     @Override
-    public Command createCommand(String command) {
+    public Command createCommand(ChannelSession channel, String command) {
         return new UnknownCommand(command);
     }
 }

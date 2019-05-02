@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusEnvironment;
@@ -37,6 +38,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
@@ -55,12 +57,13 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
              ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
             InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
+            ChannelSession channel = Mockito.mock(ChannelSession.class);
             try {
                 wrapper.setInputStream(in);
                 wrapper.setOutputStream(out);
                 wrapper.setErrorStream(err);
                 wrapper.setExitCallback(new BogusExitCallback());
-                wrapper.start(new BogusEnvironment());
+                wrapper.start(channel, new BogusEnvironment());
 
                 wrapper.pumpStreams();
 
@@ -69,7 +72,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 assertEquals("stdout", "out", out.toString());
                 assertEquals("stderr", "err", err.toString());
             } finally {
-                wrapper.destroy();
+                wrapper.destroy(channel);
             }
         }
     }
@@ -84,8 +87,13 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             private boolean destroyed;
 
             @Override
-            public void start(Environment env) throws IOException {
-                bogusShell.start(env);
+            public ChannelSession getChannelSession() {
+                return bogusShell.getChannelSession();
+            }
+
+            @Override
+            public void start(ChannelSession channel, Environment env) throws IOException {
+                bogusShell.start(channel, env);
             }
 
             @Override
@@ -119,8 +127,8 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             }
 
             @Override
-            public void destroy() {
-                bogusShell.destroy();
+            public void destroy(ChannelSession channel) {
+                bogusShell.destroy(channel);
                 bogusShell.setAlive(false);
                 destroyed = true;
             }
@@ -149,17 +157,18 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
             BogusExitCallback exitCallback = new BogusExitCallback();
             InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
+            ChannelSession channel = Mockito.mock(ChannelSession.class);
             try {
                 wrapper.setInputStream(stdin);
                 wrapper.setOutputStream(out);
                 wrapper.setErrorStream(err);
 
                 wrapper.setExitCallback(exitCallback);
-                wrapper.start(new BogusEnvironment());
+                wrapper.start(channel, new BogusEnvironment());
 
                 wrapper.pumpStreams();
             } finally {
-                wrapper.destroy();
+                wrapper.destroy(channel);
             }
 
             assertEquals("Mismatched exit value", destroyedExitValue, exitCallback.getExitValue());
@@ -180,9 +189,16 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
              ByteArrayOutputStream stderr = new ByteArrayOutputStream(errorContent.length() + Byte.SIZE)) {
 
             InvertedShell shell = new InvertedShell() {
+                private ChannelSession channel;
+
                 @Override
-                public void start(Environment env) throws IOException {
-                    // ignored
+                public void start(ChannelSession channel, Environment env) throws IOException {
+                    this.channel = channel;
+                }
+
+                @Override
+                public ChannelSession getChannelSession() {
+                    return channel;
                 }
 
                 @Override
@@ -216,24 +232,25 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 }
 
                 @Override
-                public void destroy() {
+                public void destroy(ChannelSession channel) {
                     // ignored
                 }
             };
 
             BogusExitCallback exitCallback = new BogusExitCallback();
             InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
+            ChannelSession channel = Mockito.mock(ChannelSession.class);
             try {
                 wrapper.setInputStream(stdin);
                 wrapper.setOutputStream(stdout);
                 wrapper.setErrorStream(stderr);
 
                 wrapper.setExitCallback(exitCallback);
-                wrapper.start(new BogusEnvironment());
+                wrapper.start(channel, new BogusEnvironment());
 
                 wrapper.pumpStreams();
             } finally {
-                wrapper.destroy();
+                wrapper.destroy(channel);
             }
 
             assertEquals("Mismatched STDIN value", inputContent, shellIn.toString(StandardCharsets.UTF_8.name()));

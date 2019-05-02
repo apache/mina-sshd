@@ -34,6 +34,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -103,8 +104,8 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     /**
      * @param shell            The {@link InvertedShell}
      * @param executor         The {@link Executor} to use in order to create the streams pump thread.
-     *                         If {@code null} one is auto-allocated and shutdown when wrapper is {@link #destroy()}-ed.
-     * @param shutdownExecutor If {@code true} the executor is shut down when shell wrapper is {@link #destroy()}-ed.
+     *                         If {@code null} one is auto-allocated and shutdown when wrapper is {@code destroy()}-ed.
+     * @param shutdownExecutor If {@code true} the executor is shut down when shell wrapper is {@code destroy()}-ed.
      *                         Ignored if executor service auto-allocated
      * @param bufferSize       Buffer size to use - must be above min. size ({@link Byte#SIZE})
      */
@@ -144,9 +145,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     }
 
     @Override
-    public synchronized void start(Environment env) throws IOException {
+    public synchronized void start(ChannelSession channel, Environment env) throws IOException {
         // TODO propagate the Environment itself and support signal sending.
-        shell.start(env);
+        shell.start(channel,  env);
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
@@ -154,14 +155,14 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     }
 
     @Override
-    public synchronized void destroy() throws Exception {
+    public synchronized void destroy(ChannelSession channel) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         Throwable err = null;
         try {
-            shell.destroy();
+            shell.destroy(channel);
         } catch (Throwable e) {
             log.warn("destroy({}) failed ({}) to destroy shell: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                 this, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("destroy(" + this + ") shell destruction failure details", e);
             }
@@ -173,7 +174,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 ((ExecutorService) executor).shutdown();
             } catch (Exception e) {
                 log.warn("destroy({}) failed ({}) to shut down executor: {}",
-                         this, e.getClass().getSimpleName(), e.getMessage());
+                     this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("destroy(" + this + ") executor shutdown failure details", e);
                 }
@@ -223,10 +224,10 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         } catch (Throwable e) {
             boolean debugEnabled = log.isDebugEnabled();
             try {
-                shell.destroy();
+                shell.destroy(shell.getChannelSession());
             } catch (Throwable err) {
                 log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
-                         this, e.getClass().getSimpleName(), e.getMessage());
+                     this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("pumpStreams(" + this + ") shell destruction failure details", err);
                 }
