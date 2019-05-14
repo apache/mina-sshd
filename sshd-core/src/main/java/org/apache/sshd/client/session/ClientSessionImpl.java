@@ -148,16 +148,25 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     protected void signalAuthFailure(AuthFuture future, Throwable t) {
         boolean signalled = false;
-        synchronized (sessionLock) {
-            if ((future != null) && (!future.isDone())) {
-                future.setException(t);
-                signalled = true;
+        if (future != null) {
+            /*
+             * SSHD-916 - do not synchronize on the session lock since the
+             * result of setting an exception may be an exchange of messages
+             * due to one of the registered listeners. If this is the case
+             * then a deadlock will occur since the session's message handling
+             * loop also tries to lock the session lock - but on another thread.
+             */
+            synchronized (future) {
+                if (!future.isDone()) {
+                    future.setException(t);
+                    signalled = true;
+                }
             }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("signalAuthFailure({}) type={}, signalled={}, message=\"{}\"",
-                  this, t.getClass().getSimpleName(), signalled, t.getMessage());
+            log.debug("signalAuthFailure({}) type={}, signalled={}: {}",
+                this, t.getClass().getSimpleName(), signalled, t.getMessage());
         }
     }
 

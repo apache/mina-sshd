@@ -133,4 +133,6 @@ and therefore closing all currently tracked file/directory handles.
 
 * [SSHD-912](https://issues.apache.org/jira/browse/SSHD-912) - Use separate locks for Future(s) and Session/Channel instances.
 
+* [SSHD-916](https://issues.apache.org/jira/browse/SSHD-916) - Avoid locking the session lock when signalling client session authentication failure.
+
 * [SSHD-917](https://issues.apache.org/jira/browse/SSHD-917) - Add support for SSH2 public key file format.
