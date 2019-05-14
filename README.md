@@ -8,13 +8,18 @@ based applications requiring SSH support.
 
 # Supported standards
 
-## Reference documentation
+## Reference implementation documentation
 * [RFC 4251 - The Secure Shell (SSH) Protocol Architecture](https://tools.ietf.org/html/rfc4251)
 * [RFC 4252 - The Secure Shell (SSH) Authentication Protocol](https://tools.ietf.org/html/rfc4252)
 * [RFC 4253 - The Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc4253)
 * [RFC 4254 - The Secure Shell (SSH) Connection Protocol](https://tools.ietf.org/html/rfc4254)
 * [RFC 4256 - Generic Message Exchange Authentication for the Secure Shell Protocol (SSH)](https://tools.ietf.org/html/rfc4256)
+* [RFC 4335 - The Secure Shell (SSH) Session Channel Break Extension](https://tools.ietf.org/html/rfc4335)
+* [RFC 4344 - The Secure Shell (SSH) Transport Layer Encryption Modes](https://tools.ietf.org/html/rfc4344)
+* [RFC 4345 - Improved Arcfour Modes for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc4345)
 * [RFC 5480 - Elliptic Curve Cryptography Subject Public Key Information](https://tools.ietf.org/html/rfc5480)
+* [RFC 6668 - SHA-2 Data Integrity Verification for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc6668)
+* [RFC 8160 - IUTF8 Terminal Mode in Secure Shell (SSH)](https://tools.ietf.org/html/rfc8160)
 * [RFC 8308 - Extension Negotiation in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8308)
     * **Note:** - the code contains [**hooks**](./docs/event-listeners.md#kexextensionhandler) for implementing the RFC but
     beyond allowing convenient support for the required protocol details, it does not implement any default logic that handles
@@ -23,6 +28,7 @@ based applications requiring SSH support.
     * **Note:** - the server side supports these signatures by default. The client side requires specific
     initialization - see [section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3) and also the
     above mentioned hooks for [RFC 8308](https://tools.ietf.org/html/rfc8308).
+* [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
 * SFTP version 3-6 + extensions
     * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
     * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)
@@ -41,7 +47,9 @@ based applications requiring SSH support.
 * **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc
 * **Digests**: md5, sha1, sha224, sha384, sha512
 * **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512
-* **Key exchange**: dhg1, dhg14, dhgex, dhgex256, ecdhp256, ecdhp384, ecdhp521
+* **Key exchange**: diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
+, diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
+, ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521
 * **Compressions**: none, zlib, zlib@openssh.com
 * **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
 
