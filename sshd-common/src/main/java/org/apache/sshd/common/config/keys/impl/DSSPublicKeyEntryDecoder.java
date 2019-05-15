@@ -34,6 +34,7 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
@@ -53,8 +54,9 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
     }
 
     @Override
-    public DSAPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    public DSAPublicKey decodePublicKey(
+            SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }

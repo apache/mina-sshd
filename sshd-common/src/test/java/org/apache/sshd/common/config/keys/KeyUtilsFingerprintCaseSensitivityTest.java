@@ -25,6 +25,7 @@ import java.security.PublicKey;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -71,7 +72,7 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
     @BeforeClass
     public static void beforeClass() throws GeneralSecurityException, IOException {
         PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(KEY_STRING);
-        key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+        key = keyEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
     }
 
     @Parameters(name = "expected={0}, test={1}")

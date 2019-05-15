@@ -27,6 +27,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -50,7 +51,7 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isEDDSACurveSupported()) {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " provider not supported for " + resourceKey);

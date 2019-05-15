@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
@@ -81,7 +82,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            List<String> lines)
+            List<String> lines, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         StringBuilder writer = new StringBuilder(beginMarker.length() + endMarker.length() + lines.size() * 80);
         writer.append(beginMarker).append(IoUtils.EOL);
@@ -91,7 +92,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
         String data = writer.toString();
         byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
         try (InputStream bais = new ByteArrayInputStream(dataBytes)) {
-            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais, headers);
         }
     }
 
@@ -100,7 +101,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            InputStream stream)
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         KeyPair kp = loadKeyPair(session, resourceKey, stream, passwordProvider);
         return (kp == null) ? Collections.emptyList() : Collections.singletonList(kp);

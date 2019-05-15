@@ -34,6 +34,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -74,7 +75,7 @@ public class RSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            InputStream stream)
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         KeyPair kp = decodeRSAKeyPair(SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM), stream, false);
         return Collections.singletonList(kp);

@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -119,6 +120,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     /**
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param headers Any headers that may have been available when data was read
      * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
      * none of the built-in ones can be used. If {@code null} and no built-in
      * resolver can be used then an {@link InvalidKeySpecException} is thrown.
@@ -128,8 +130,9 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    public PublicKey resolvePublicKey(SessionContext session, PublicKeyEntryResolver fallbackResolver)
-            throws IOException, GeneralSecurityException {
+    public PublicKey resolvePublicKey(
+            SessionContext session, Map<String, String> headers, PublicKeyEntryResolver fallbackResolver)
+                throws IOException, GeneralSecurityException {
         String kt = getKeyType();
         PublicKeyEntryResolver decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
         if (decoder == null) {
@@ -139,7 +142,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
             throw new InvalidKeySpecException("No decoder available for key type=" + kt);
         }
 
-        return decoder.resolve(session, kt, getKeyData());
+        return decoder.resolve(session, kt, getKeyData(), headers);
     }
 
     /**
@@ -157,7 +160,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     public PublicKey appendPublicKey(
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
                 throws IOException, GeneralSecurityException {
-        PublicKey key = resolvePublicKey(session, fallbackResolver);
+        PublicKey key = resolvePublicKey(session, Collections.emptyMap(), fallbackResolver);
         if (key != null) {
             appendPublicKeyEntry(sb, key, resolvePublicKeyEntryDataResolver());
         }
@@ -225,7 +228,10 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
 
         List<PublicKey> keys = new ArrayList<>(numEntries);
         for (PublicKeyEntry e : entries) {
-            PublicKey k = e.resolvePublicKey(session, fallbackResolver);
+            Map<String, String> headers = (e instanceof AuthorizedKeyEntry)
+                ? ((AuthorizedKeyEntry) e).getLoginOptions()
+                : Collections.emptyMap();
+            PublicKey k = e.resolvePublicKey(session, headers, fallbackResolver);
             if (k != null) {
                 keys.add(k);
             }

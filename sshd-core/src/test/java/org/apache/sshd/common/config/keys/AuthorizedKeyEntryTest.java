@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -110,8 +111,10 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         Exception err = null;
         for (AuthorizedKeyEntry entry : entries) {
             try {
-                ValidateUtils.checkNotNull(entry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING),
-                        "No public key resolved from %s", entry);
+                ValidateUtils.checkNotNull(
+                    entry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING),
+                    "No public key resolved from %s",
+                    entry);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName()).append(')')
                         .append(" to resolve key of entry=").append(entry.toString())

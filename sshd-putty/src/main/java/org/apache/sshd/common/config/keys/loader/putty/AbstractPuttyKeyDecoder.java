@@ -34,6 +34,8 @@ import java.util.Base64.Decoder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -92,6 +94,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 throws IOException, GeneralSecurityException {
         List<String> pubLines = Collections.emptyList();
         List<String> prvLines = Collections.emptyList();
+        Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String prvEncryption = null;
         for (int index = 0, numLines = lines.size(); index < numLines; index++) {
             String l = lines.get(index);
@@ -103,6 +106,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
 
             String hdrName = l.substring(0, pos).trim();
             String hdrValue = l.substring(pos + 1).trim();
+            headers.put(hdrName, hdrValue);
             switch (hdrName) {
                 case ENCRYPTION_HEADER:
                     if (prvEncryption != null) {
@@ -122,7 +126,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             }
         }
 
-        return loadKeyPairs(session, resourceKey, pubLines, prvLines, prvEncryption, passwordProvider);
+        return loadKeyPairs(session, resourceKey, pubLines, prvLines, prvEncryption, passwordProvider, headers);
     }
 
     public static List<String> extractDataLines(
@@ -151,17 +155,17 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     public Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey,
             List<String> pubLines, List<String> prvLines, String prvEncryption,
-            FilePasswordProvider passwordProvider)
+            FilePasswordProvider passwordProvider, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, resourceKey,
                 KeyPairResourceParser.joinDataLines(pubLines), KeyPairResourceParser.joinDataLines(prvLines),
-                prvEncryption, passwordProvider);
+                prvEncryption, passwordProvider, headers);
     }
 
     public Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey,
             String pubData, String prvData, String prvEncryption,
-            FilePasswordProvider passwordProvider)
+            FilePasswordProvider passwordProvider, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         byte[] pubBytes = GenericUtils.EMPTY_BYTE_ARRAY;
         byte[] prvBytes = GenericUtils.EMPTY_BYTE_ARRAY;
@@ -171,7 +175,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             prvBytes = b64Decoder.decode(prvData);
             if (GenericUtils.isEmpty(prvEncryption)
                     || NO_PRIVATE_KEY_ENCRYPTION_VALUE.equalsIgnoreCase(prvEncryption)) {
-                return loadKeyPairs(resourceKey, pubBytes, prvBytes);
+                return loadKeyPairs(resourceKey, pubBytes, prvBytes, headers);
             }
 
             // format is "<cipher><bits>-<mode>" - e.g., "aes256-cbc"
@@ -208,7 +212,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                     byte[] decBytes = PuttyKeyPairResourceParser.decodePrivateKeyBytes(
                         prvBytes, algName, numBits, mode, password);
                     try {
-                        keys = loadKeyPairs(resourceKey, pubBytes, decBytes);
+                        keys = loadKeyPairs(resourceKey, pubBytes, decBytes, headers);
                     } finally {
                         Arrays.fill(decBytes, (byte) 0);    // eliminate sensitive data a.s.a.p.
                     }
@@ -243,26 +247,29 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         }
     }
 
-    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, byte[] pubData, byte[] prvData)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            NamedResource resourceKey, byte[] pubData, byte[] prvData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(pubData, "No public key data in %s", resourceKey);
         ValidateUtils.checkNotNullAndNotEmpty(prvData, "No private key data in %s", resourceKey);
         try (InputStream pubStream = new ByteArrayInputStream(pubData);
              InputStream prvStream = new ByteArrayInputStream(prvData)) {
-            return loadKeyPairs(resourceKey, pubStream, prvStream);
+            return loadKeyPairs(resourceKey, pubStream, prvStream, headers);
         }
     }
 
-    public Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, InputStream pubData, InputStream prvData)
-            throws IOException, GeneralSecurityException {
+    public Collection<KeyPair> loadKeyPairs(
+            NamedResource resourceKey, InputStream pubData, InputStream prvData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         try (PuttyKeyReader pubReader =
                 new PuttyKeyReader(ValidateUtils.checkNotNull(pubData, "No public key data in %s", resourceKey));
              PuttyKeyReader prvReader =
                 new PuttyKeyReader(ValidateUtils.checkNotNull(prvData, "No private key data in %s", resourceKey))) {
-            return loadKeyPairs(resourceKey, pubReader, prvReader);
+            return loadKeyPairs(resourceKey, pubReader, prvReader, headers);
         }
     }
 
-    public abstract Collection<KeyPair> loadKeyPairs(NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+    public abstract Collection<KeyPair> loadKeyPairs(
+        NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
             throws IOException, GeneralSecurityException;
 }

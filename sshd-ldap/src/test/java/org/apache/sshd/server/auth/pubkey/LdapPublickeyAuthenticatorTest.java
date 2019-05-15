@@ -20,6 +20,7 @@
 package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
@@ -66,7 +67,8 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
-            PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+            PublicKey key = Objects.requireNonNull(entry, "No key extracted")
+                .resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
             KEYS_MAP.put(username, key);
         }
     }

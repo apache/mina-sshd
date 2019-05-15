@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
@@ -91,8 +92,9 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
     }
 
     @Override
-    public EdDSAPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    public EdDSAPublicKey decodePublicKey(
+            SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);
         return EdDSAPublicKey.class.cast(SecurityUtils.generateEDDSAPublicKey(keyType, seed));
     }

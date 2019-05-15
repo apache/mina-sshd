@@ -45,8 +45,9 @@ import org.bouncycastle.openpgp.PGPException;
  */
 public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, PublicKeyEntryResolver {
     @Override
-    default PublicKey resolve(SessionContext session, String keyType, byte[] keyData)
-            throws IOException, GeneralSecurityException {
+    default PublicKey resolve(
+            SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         if (!PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)) {
             return null;
         }

@@ -23,6 +23,7 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -51,7 +52,7 @@ public class PublicKeyEntryTest extends JUnitTestSupport {
         for (PublicKeyEntryResolver resolver : new PublicKeyEntryResolver[]{
             null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING}) {
             try {
-                PublicKey key = entry.resolvePublicKey(null, resolver);
+                PublicKey key = entry.resolvePublicKey(null, Collections.emptyMap(), resolver);
                 assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);
                 assertNull("Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key), key);
             } catch (GeneralSecurityException e) {

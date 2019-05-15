@@ -23,6 +23,7 @@ import java.net.URL;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -84,7 +85,8 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
         assertEquals("Mismatched public keys count", 1, GenericUtils.size(entries));
 
         AuthorizedKeyEntry entry = entries.get(0);
-        PublicKey pubEntry = entry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+        PublicKey pubEntry = entry.resolvePublicKey(
+            null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
         assertNotNull("Cannot retrieve public key", pubEntry);
 
         testLoadKeyPairs(encrypted, resourceKey, pairs, pubEntry);

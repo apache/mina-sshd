@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.FailedLoginException;
@@ -79,7 +81,7 @@ public abstract class AbstractPEMResourceKeyPairParser
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            List<String> lines)
+            List<String> lines, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(lines)) {
             return Collections.emptyList();
@@ -89,6 +91,7 @@ public abstract class AbstractPEMResourceKeyPairParser
         byte[] initVector = null;
         String algInfo = null;
         int dataStartIndex = -1;
+        boolean hdrsAvailable = GenericUtils.isNotEmpty(headers);
         for (int index = 0; index < lines.size(); index++) {
             String line = GenericUtils.trimToEmpty(lines.get(index));
             if (GenericUtils.isEmpty(line)) {
@@ -102,28 +105,36 @@ public abstract class AbstractPEMResourceKeyPairParser
                 break;
             }
 
-            if (line.startsWith("Proc-Type:")) {
+            String hdrName = line.substring(0, headerPos).trim();
+            String hdrValue = line.substring(headerPos + 1).trim();
+            if (!hdrsAvailable) {
+                Map<String, String> accHeaders = GenericUtils.isEmpty(headers)
+                    ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
+                    : headers;
+                accHeaders.put(hdrName, hdrValue);
+            }
+
+            if (hdrName.equalsIgnoreCase("Proc-Type")) {
                 if (encrypted != null) {
                     throw new StreamCorruptedException("Multiple encryption indicators in " + resourceKey);
                 }
 
-                line = line.substring(headerPos + 1).trim();
-                line = line.toUpperCase();
+                hdrValue = hdrValue.toUpperCase();
                 encrypted = Boolean.valueOf(line.contains("ENCRYPTED"));
-            } else if (line.startsWith("DEK-Info:")) {
+            } else if (hdrName.equalsIgnoreCase("DEK-Info")) {
                 if ((initVector != null) || (algInfo != null)) {
                     throw new StreamCorruptedException("Multiple encryption settings in " + resourceKey);
                 }
 
-                line = line.substring(headerPos + 1).trim();
-                headerPos = line.indexOf(',');
-                if (headerPos < 0) {
-                    throw new StreamCorruptedException(resourceKey + ": Missing encryption data values separator in line '" + line + "'");
+                int infoPos = hdrValue.indexOf(',');
+                if (infoPos < 0) {
+                    throw new StreamCorruptedException(
+                        resourceKey + ": Missing encryption data values separator in line '" + line + "'");
                 }
 
-                algInfo = line.substring(0, headerPos).trim();
+                algInfo = hdrValue.substring(0, infoPos).trim();
 
-                String algInitVector = line.substring(headerPos + 1).trim();
+                String algInitVector = hdrValue.substring(infoPos + 1).trim();
                 initVector = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, algInitVector);
             }
         }
@@ -156,7 +167,7 @@ public abstract class AbstractPEMResourceKeyPairParser
                         encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
                         decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
                         try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
+                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais, headers);
                         }
                     } finally {
                         Arrays.fill(encryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
@@ -188,7 +199,7 @@ public abstract class AbstractPEMResourceKeyPairParser
             }
         }
 
-        return super.extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataLines);
+        return super.extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataLines, headers);
     }
 
     protected byte[] applyPrivateKeyCipher(

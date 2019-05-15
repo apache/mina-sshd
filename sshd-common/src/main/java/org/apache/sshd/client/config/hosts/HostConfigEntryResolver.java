@@ -26,7 +26,7 @@ import org.apache.sshd.common.AttributeRepository;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://www.gsp.com/cgi-bin/man.cgi?topic=ssh_config">ssh_config</A>
+ * @see <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A>
  */
 @FunctionalInterface
 public interface HostConfigEntryResolver {

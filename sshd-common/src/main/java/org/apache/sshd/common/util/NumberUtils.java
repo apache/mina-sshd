@@ -247,15 +247,15 @@ public final class NumberUtils {
     }
 
     public static int length(byte... a) {
-        return a == null ? 0 : a.length;
+        return (a == null) ? 0 : a.length;
     }
 
     public static int length(int... a) {
-        return a == null ? 0 : a.length;
+        return (a == null) ? 0 : a.length;
     }
 
     public static int length(long... a) {
-        return a == null ? 0 : a.length;
+        return (a == null) ? 0 : a.length;
     }
 
     public static List<Integer> asList(int... values) {

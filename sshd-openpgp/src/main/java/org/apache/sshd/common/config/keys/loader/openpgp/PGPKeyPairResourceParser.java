@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -75,7 +76,7 @@ public class PGPKeyPairResourceParser
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            List<String> lines)
+            List<String> lines, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         // We need to re-construct the original data - including start/end markers
         String eol = System.lineSeparator();
@@ -93,7 +94,7 @@ public class PGPKeyPairResourceParser
         String keyData = sb.toString();
         byte[] dataBytes = keyData.getBytes(StandardCharsets.US_ASCII);
         try {
-            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes, headers);
         } finally {
             Arrays.fill(dataBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
         }
@@ -104,10 +105,12 @@ public class PGPKeyPairResourceParser
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            InputStream stream)
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         for (int retryCount = 0;; retryCount++) {
-            String password = (passwordProvider == null) ? null : passwordProvider.getPassword(session, resourceKey, retryCount);
+            String password = (passwordProvider == null)
+                ? null
+                : passwordProvider.getPassword(session, resourceKey, retryCount);
             Collection<KeyPair> keys;
             try {
                 if (retryCount > 0) {

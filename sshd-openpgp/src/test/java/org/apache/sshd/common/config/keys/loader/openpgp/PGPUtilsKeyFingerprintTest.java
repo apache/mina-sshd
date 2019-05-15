@@ -211,10 +211,11 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         PGPAuthorizedEntriesTracker tracker = new PGPAuthorizedEntriesTracker(file);
         SessionContext session = Mockito.mock(SessionContext.class);
         for (PublicKeyEntry pke : available) {
-            Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
+            Collection<PublicKey> keys =
+                tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
             assertEquals("Mismatched recovered keys count for " + pke, 1, GenericUtils.size(keys));
 
-            PublicKey expected = pke.resolvePublicKey(session, tracker);
+            PublicKey expected = pke.resolvePublicKey(session, Collections.emptyMap(), tracker);
             PublicKey actual = GenericUtils.head(keys);
             assertKeyEquals(pke.toString(), expected, actual);
         }

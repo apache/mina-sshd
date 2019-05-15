@@ -43,6 +43,9 @@ when they are no longer needed once data has been successfully copied.
 * The `CommandFactory` and `ShellFactory` have been modified to accept the server's `ChannelSession` instance through
 which they are being invoked.
 
+* The various implementations of public/private keys/pairs decoders/loaders are provided with a `Map` of any headers that
+may be available in the relevant data file.
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between
@@ -126,6 +129,8 @@ and therefore closing all currently tracked file/directory handles.
 
 * [SSHD-909](https://issues.apache.org/jira/browse/SSHD-909) - SFTP versions extension handler ignores non-numerical versions when resolving the available ones.
 
-* [SSHD-913](https://issues.apache.org/jira/browse/SSHD-913) - Provide channel session instance to command and/or shell factories creators	
+* [SSHD-913](https://issues.apache.org/jira/browse/SSHD-913) - Provide channel session instance to command and/or shell factories creators
 
 * [SSHD-912](https://issues.apache.org/jira/browse/SSHD-912) - Use separate locks for Future(s) and Session/Channel instances.
+
+* [SSHD-917](https://issues.apache.org/jira/browse/SSHD-917) - Add support for SSH2 public key file format.

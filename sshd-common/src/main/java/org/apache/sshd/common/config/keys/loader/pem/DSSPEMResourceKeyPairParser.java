@@ -33,6 +33,7 @@ import java.security.spec.DSAPublicKeySpec;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -73,7 +74,7 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            InputStream stream)
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         KeyPair kp = decodeDSSKeyPair(SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM), stream, false);
         return Collections.singletonList(kp);

@@ -106,7 +106,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            InputStream stream)
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         boolean debugEnabled = log.isDebugEnabled();
 
@@ -114,7 +114,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
         String cipher = KeyEntryResolver.decodeString(stream, MAX_CIPHER_NAME_LENGTH);
         OpenSSHKdfOptions kdfOptions =
-            resolveKdfOptions(session, resourceKey, beginMarker, endMarker, stream);
+            resolveKdfOptions(session, resourceKey, beginMarker, endMarker, stream, headers);
         OpenSSHParserContext context = new OpenSSHParserContext(cipher, kdfOptions);
         int numKeys = KeyEntryResolver.decodeInt(stream);
         if (numKeys <= 0) {
@@ -131,7 +131,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         List<PublicKey> publicKeys = new ArrayList<>(numKeys);
         boolean traceEnabled = log.isTraceEnabled();
         for (int index = 1; index <= numKeys; index++) {
-            PublicKey pubKey = readPublicKey(session, resourceKey, context, stream);
+            PublicKey pubKey = readPublicKey(session, resourceKey, context, stream, headers);
             ValidateUtils.checkNotNull(pubKey, "Empty public key #%d in %s", index, resourceKey);
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) read public key #{}: {} {}",
@@ -198,7 +198,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
     protected OpenSSHKdfOptions resolveKdfOptions(
             SessionContext session, NamedResource resourceKey,
-            String beginMarker, String endMarker, InputStream stream)
+            String beginMarker, String endMarker, InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         String kdfName = KeyEntryResolver.decodeString(stream, OpenSSHKdfOptions.MAX_KDF_NAME_LENGTH);
         byte[] kdfOptions = KeyEntryResolver.readRLEBytes(stream, OpenSSHKdfOptions.MAX_KDF_OPTIONS_SIZE);
@@ -215,7 +215,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     }
 
     protected PublicKey readPublicKey(
-            SessionContext session, NamedResource resourceKey, OpenSSHParserContext context, InputStream stream)
+            SessionContext session, NamedResource resourceKey,
+            OpenSSHParserContext context,
+            InputStream stream, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
@@ -225,7 +227,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
                 throw new NoSuchAlgorithmException("Unsupported key type (" + keyType + ") in " + resourceKey);
             }
 
-            return decoder.decodePublicKey(session, keyType, bais);
+            return decoder.decodePublicKey(session, keyType, bais, headers);
         }
     }
 

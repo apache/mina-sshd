@@ -88,7 +88,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             SshdSocketAddress hostIdentity = ke.getKey();
             KnownHostEntry entry = ke.getValue();
             AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
-            PublicKey key = authEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+            PublicKey key = authEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
             assertNull("Multiple keys for host=" + hostIdentity, HOST_KEYS.put(hostIdentity, key));
         }
     }

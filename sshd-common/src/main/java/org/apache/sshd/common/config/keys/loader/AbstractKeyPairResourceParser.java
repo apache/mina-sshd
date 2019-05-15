@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -109,8 +110,15 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
 
             int endIndex = markerPos.getKey();
             String endLine = lines.get(endIndex);
-            Collection<KeyPair> kps = extractKeyPairs(session, resourceKey,
-                startLine, endLine, passwordProvider, lines.subList(startIndex, endIndex));
+            Map.Entry<? extends Map<String, String>, ? extends List<String>> result =
+                separateDataLinesFromHeaders(
+                    session, resourceKey, startLine, endLine, lines.subList(startIndex, endIndex));
+            Map<String, String> headers = result.getKey();
+            List<String> dataLines = result.getValue();
+            Collection<KeyPair> kps = extractKeyPairs(
+                session, resourceKey, startLine, endLine, passwordProvider,
+                (dataLines == null) ? Collections.emptyList() : dataLines,
+                (headers == null) ? Collections.emptyMap() : headers);
             if (GenericUtils.isNotEmpty(kps)) {
                 if (GenericUtils.isEmpty(keyPairs)) {
                     keyPairs = new LinkedList<>(kps);
@@ -126,6 +134,12 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
         return keyPairs;
     }
 
+    protected Map.Entry<Map<String, String>, List<String>> separateDataLinesFromHeaders(
+            SessionContext session, NamedResource resourceKey, String startLine, String endLine, List<String> dataLines)
+                throws IOException, GeneralSecurityException {
+        return new SimpleImmutableEntry<>(Collections.emptyMap(), dataLines);
+    }
+
     /**
      * Extracts the key pairs within a <U>single</U> delimited by markers block of lines. By
      * default cleans up the empty lines, joins them and converts them from BASE64
@@ -138,6 +152,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @param passwordProvider The {@link FilePasswordProvider} to use
      * in case the data is encrypted - may be {@code null} if no encrypted
      * @param lines The block of lines between the markers
+     * @param headers Any headers that may have been available when data was read
      * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
      * @throws IOException If failed to parse the data
      * @throws GeneralSecurityException If failed to generate the keys
@@ -146,11 +161,11 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            List<String> lines)
+            List<String> lines, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         byte[] dataBytes = KeyPairResourceParser.extractDataBytes(lines);
         try {
-            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes, headers);
         } finally {
             Arrays.fill(dataBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
         }
@@ -165,6 +180,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @param passwordProvider The {@link FilePasswordProvider} to use
      * in case the data is encrypted - may be {@code null} if no encrypted
      * @param bytes The decoded bytes from the lines containing the data
+     * @param headers Any headers that may have been available when data was read
      * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
      * @throws IOException If failed to parse the data
      * @throws GeneralSecurityException If failed to generate the keys
@@ -173,14 +189,14 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
             SessionContext session, NamedResource resourceKey,
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
-            byte[] bytes)
+            byte[] bytes, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         if (log.isTraceEnabled()) {
             BufferUtils.dumpHex(getSimplifiedLogger(), Level.FINER, beginMarker, ':', 16, bytes);
         }
 
         try (InputStream bais = new ByteArrayInputStream(bytes)) {
-            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais);
+            return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais, headers);
         }
     }
 
@@ -193,6 +209,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
      * @param passwordProvider The {@link FilePasswordProvider} to use
      * in case the data is encrypted - may be {@code null} if no encrypted
      * @param stream The decoded data {@link InputStream}
+     * @param headers Any headers that may have been available when data was read
      * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
      * @throws IOException If failed to parse the data
      * @throws GeneralSecurityException If failed to generate the keys
@@ -200,6 +217,7 @@ public abstract class AbstractKeyPairResourceParser extends AbstractLoggingBean 
     public abstract Collection<KeyPair> extractKeyPairs(
         SessionContext session, NamedResource resourceKey,
         String beginMarker, String endMarker,
-        FilePasswordProvider passwordProvider, InputStream stream)
+        FilePasswordProvider passwordProvider,
+        InputStream stream, Map<String, String> headers)
             throws IOException, GeneralSecurityException;
 }

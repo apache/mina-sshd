@@ -35,6 +35,7 @@ import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
@@ -59,8 +60,9 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     }
 
     @Override
-    public RSAPublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData)
-            throws IOException, GeneralSecurityException {
+    public RSAPublicKey decodePublicKey(
+            SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
         // Not really required, but allow it
         String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
         if (!KeyPairProvider.SSH_RSA.equals(canonicalName)) { // just in case we were invoked directly

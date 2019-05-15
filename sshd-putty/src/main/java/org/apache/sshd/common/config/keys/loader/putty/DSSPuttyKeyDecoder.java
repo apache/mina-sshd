@@ -32,6 +32,7 @@ import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -50,7 +51,7 @@ public class DSSPuttyKeyDecoder extends AbstractPuttyKeyDecoder<DSAPublicKey, DS
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader)
+            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
                 throws IOException, GeneralSecurityException {
         pubReader.skip();   // skip version
 
