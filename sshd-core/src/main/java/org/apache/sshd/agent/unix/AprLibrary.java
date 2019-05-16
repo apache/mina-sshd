@@ -25,7 +25,6 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.tomcat.jni.Library;
 import org.apache.tomcat.jni.Pool;
 
-
 /**
  * <p>
  * Internal singleton used for initializing correctly the APR native library
@@ -42,7 +41,6 @@ import org.apache.tomcat.jni.Pool;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public final class AprLibrary {
-
     // is APR library was initialized (load of native libraries)
     private static AprLibrary library;
 

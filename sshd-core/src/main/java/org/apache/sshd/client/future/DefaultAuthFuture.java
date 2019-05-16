@@ -24,7 +24,6 @@ import java.util.Objects;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 
-
 /**
  * A default implementation of {@link AuthFuture}.
  *

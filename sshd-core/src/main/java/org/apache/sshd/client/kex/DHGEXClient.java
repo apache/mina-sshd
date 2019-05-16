@@ -38,12 +38,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXClient extends AbstractDHClientKeyExchange {
-
     protected final DHFactory factory;
     protected byte expected;
     protected int min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
@@ -106,13 +104,14 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         Session session = getSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={}",
+                this, session, KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
-                  + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
+                "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
+              + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
@@ -127,7 +126,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_INIT", this, session);
             }
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, e.length + Byte.SIZE);
+            buffer = session.createBuffer(
+                SshConstants.SSH_MSG_KEX_DH_GEX_INIT, e.length + Byte.SIZE);
             buffer.putMPInt(e);
             session.writePacket(buffer);
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_REPLY;

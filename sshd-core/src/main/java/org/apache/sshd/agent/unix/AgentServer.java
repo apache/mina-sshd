@@ -38,12 +38,10 @@ import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
 
-
 /**
  * A server for an SSH Agent
  */
 public class AgentServer extends AbstractLoggingBean implements Closeable, ExecutorServiceCarrier {
-
     private final SshAgent agent;
     private final CloseableExecutorService service;
     private Future<?> agentThread;
@@ -62,7 +60,8 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     public AgentServer(SshAgent agent, CloseableExecutorService executor) {
         this.agent = agent;
         this.service = (executor == null)
-                ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
+            ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]")
+            : executor;
     }
 
     public SshAgent getAgent() {
@@ -93,7 +92,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
             try {
                 while (true) {
                     long clientSock = Local.accept(handle);
-                    Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
+                    Socket.timeoutSet(clientSock, 10000000L);    // TODO make this configurable
                     new SshAgentSession(clientSock, agent).run();
                 }
             } catch (Exception e) {
@@ -136,7 +135,6 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     }
 
     protected static class SshAgentSession extends AbstractAgentClient implements Runnable {
-
         private final long socket;
 
         public SshAgentSession(long socket, SshAgent agent) {
@@ -144,8 +142,8 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
             this.socket = socket;
         }
 
-        @SuppressWarnings("synthetic-access")
         @Override
+        @SuppressWarnings("synthetic-access")
         public void run() {
             try {
                 byte[] buf = new byte[1024];
@@ -183,9 +181,6 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     private static void throwException(int code) throws IOException {
-        throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code)
-                        + " (code: " + code + ")");
+        throw new IOException(org.apache.tomcat.jni.Error.strerror(-code) + " (code: " + code + ")");
     }
-
 }

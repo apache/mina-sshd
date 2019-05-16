@@ -30,7 +30,6 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.io.der.DERWriter;
 
-
 /**
  * DSA <code>Signature</code>
  *

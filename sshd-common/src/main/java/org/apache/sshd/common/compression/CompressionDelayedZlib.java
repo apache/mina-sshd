@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.compression;
 
-
 /**
  * ZLib delayed compression.
  *

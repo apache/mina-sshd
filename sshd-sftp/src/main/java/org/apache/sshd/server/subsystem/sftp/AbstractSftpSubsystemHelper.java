@@ -2809,7 +2809,6 @@ public abstract class AbstractSftpSubsystemHelper
         return abs.normalize();
     }
 
-
     /**
      * @param remotePath The remote path - separated by '/'
      * @return The local {@link Path}

@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.keyverifier;
 
-
 /**
  * A ServerKeyVerifier that accepts all server keys.
  *
