@@ -1,4 +1,4 @@
-<project xmlns="https://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <!--
 
@@ -75,8 +75,8 @@
     <scm>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
-        <url>https://gitbox.apache.org/repos/asf?p=mina-sshd.git</url>
-        <tag>HEAD</tag>
+        <url>https://github.com/apache/mina-sshd/tree/${project.scm.tag}</url>
+        <tag>master</tag>
     </scm>
 
     <properties>
