@@ -255,8 +255,20 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return TimeoutIndicator.NONE;
         }
 
-        SessionDisconnectHandler handler = getSessionDisconnectHandler();
-        if ((handler != null) && handler.handleTimeoutDisconnectReason(this, result)) {
+        boolean resetTimeout = false;
+        try {
+            SessionDisconnectHandler handler = getSessionDisconnectHandler();
+            resetTimeout = (handler != null) && handler.handleTimeoutDisconnectReason(this, result);
+        } catch (RuntimeException | IOException e) {
+            // If disconnect handler throws an exception continue with the disconnect
+            log.warn("checkForTimeouts({}) failed ({}) to invoke disconnect handler to handle {}: {}",
+                this, e.getClass().getSimpleName(), result, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("checkForTimeouts(" + this + ") disconnect handler exception details", e);
+            }
+        }
+
+        if (resetTimeout) {
             if (log.isDebugEnabled()) {
                 log.debug("checkForTimeouts({}) cancel {} due to handler intervention", this, result);
             }

@@ -174,18 +174,23 @@ protocol requirements - e.g., unknown service, idle timeout, etc.. In many cases
 cancel the disconnect by handling the problem somehow and then signaling to the code that there is no longer any need
 to disconnect. The handler can be registered globally at the `SshClient/Server` instance or per-session (via a `SessionListener`).
 
-**NOTE:** this handler is non-cumulative - i.e., setting it replaces any existing previous handler instance.
+**NOTE(s):**
+
+* This handler is non-cumulative - i.e., setting it replaces any existing previous handler instance.
+
+* If any exception is thrown from one of the invoked callback methods then session disconnect proceeds as if
+the handler decided not to intervene.
 
 ### `SignalListener`
 
-Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), break requests
+Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), "break" requests
 (sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described
 in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
 
 
 ### `SftpEventListener`
 
-Provides information about major SFTP protocol events. The provided `File/DirectoryHandle` to the various callbacks an also be used to
+Provides information about major SFTP protocol events. The provided `File/DirectoryHandle` to the various callbacks can also be used to
 store user-defined attributes via its `AttributeStore` implementation. The listener is registered at the `SftpSubsystemFactory`:
 
 
@@ -216,7 +221,7 @@ store user-defined attributes via its `AttributeStore` implementation. The liste
 
 ```
 
-**Note:** the attached attributed are automatically removed once handle has been closed - regardless of
+**Note:** the attached attributes are automatically removed once handle has been closed - regardless of
 whether the close attempt was successful or not. In other words, after `SftpEventListener#closed` has been
 called, all attributes associated with the handle are cleared.
 
@@ -236,16 +241,16 @@ The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
 
 ```
 
-*Note:*
+**Note:**
 
 * Closing of file channel/directory streams created by the accessor are also closed
 via callbacks to the same accessor
-    
+
 * When closing a file channel that may have been potentially modified, the default implementation
 forces a synchronization of the data with the file-system. This behavior can be modified
 by setting the `sftp-auto-fsync-on-close` property to *false* (or by providing a customized implementation
 that involves other considerations as well).
-    
+
 ### `PortForwardingEventListener`
 
 Informs and allows tracking of port forwarding events as described in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7)

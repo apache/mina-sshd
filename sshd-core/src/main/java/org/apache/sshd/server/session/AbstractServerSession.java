@@ -246,14 +246,22 @@ public abstract class AbstractServerSession extends AbstractSession implements S
          *      appropriate SSH_MSG_DISCONNECT message and MUST disconnect.
          */
         if (currentService == null) {
-            SessionDisconnectHandler handler = getSessionDisconnectHandler();
-            if ((handler != null)
-                    && handler.handleUnsupportedServiceDisconnectReason(
+            try {
+                SessionDisconnectHandler handler = getSessionDisconnectHandler();
+                if ((handler != null)
+                        && handler.handleUnsupportedServiceDisconnectReason(
                             this, SshConstants.SSH_MSG_SERVICE_REQUEST, name, buffer)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("startService({}) ignore unknown service={} by handler", this, name);
+                    if (log.isDebugEnabled()) {
+                        log.debug("startService({}) ignore unknown service={} by handler", this, name);
+                    }
+                    return;
                 }
-                return;
+            } catch (IOException | RuntimeException e) {
+                log.warn("startService({})[{}] failed ({}) to invoke disconnect handler: {}",
+                    this, name, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("startService(" + this + ")[" + name + "] disconnect handler invocation exception details", e);
+                }
             }
 
             throw new SshException(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unknown service: " + name);
@@ -309,18 +317,27 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     protected void handleServiceAccept(String serviceName, Buffer buffer) throws Exception {
         super.handleServiceAccept(serviceName, buffer);
 
-        SessionDisconnectHandler handler = getSessionDisconnectHandler();
-        if ((handler != null)
-                && handler.handleUnsupportedServiceDisconnectReason(
+        try {
+            SessionDisconnectHandler handler = getSessionDisconnectHandler();
+            if ((handler != null)
+                    && handler.handleUnsupportedServiceDisconnectReason(
                         this, SshConstants.SSH_MSG_SERVICE_ACCEPT, serviceName, buffer)) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleServiceAccept({}) ignore unknown service={} by handler", this, serviceName);
+                if (log.isDebugEnabled()) {
+                    log.debug("handleServiceAccept({}) ignore unknown service={} by handler", this, serviceName);
+                }
+                return;
             }
-            return;
+        } catch (IOException | RuntimeException e) {
+            log.warn("handleServiceAccept({}) failed ({}) to invoke disconnect handler of unknown service={}: {}",
+                this, e.getClass().getSimpleName(), serviceName, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("handleServiceAccept(" + this + ")[" + serviceName + "] handler invocation exception details", e);
+            }
         }
 
         // TODO: can services be initiated by the server-side ?
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+            "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
     }
 
     @Override

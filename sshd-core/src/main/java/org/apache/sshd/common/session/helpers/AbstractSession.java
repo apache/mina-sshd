@@ -1568,13 +1568,22 @@ public abstract class AbstractSession extends SessionHelper {
                     continue;
                 }
 
-                if ((discHandler != null)
-                        && discHandler.handleKexDisconnectReason(
+                try {
+                    if ((discHandler != null)
+                            && discHandler.handleKexDisconnectReason(
                                 this, c2sOptions, s2cOptions, negotiatedGuess, paramType)) {
-                    if (debugEnabled) {
-                        log.debug("negotiate({}) ignore missing value for KEX option={}", this, paramType);
+                        if (debugEnabled) {
+                            log.debug("negotiate({}) ignore missing value for KEX option={}", this, paramType);
+                        }
+                        continue;
                     }
-                    continue;
+                } catch (IOException | RuntimeException e) {
+                    // If disconnect handler throws an exception continue with the disconnect
+                    log.warn("negotiate({}) failed ({}) to invoke disconnect handler due to mismatched KEX option={}: {}",
+                        this, e.getClass().getSimpleName(), paramType, e.getMessage());
+                    if (debugEnabled) {
+                        log.debug("negotiate(" + this + ") handler invocation exception details", e);
+                    }
                 }
 
                 String message = "Unable to negotiate key exchange for " + paramType.getDescription()

@@ -144,10 +144,12 @@ public interface SessionDisconnectHandler {
      * @param option The violating {@link KexProposalOption}
      * @return {@code true} if disregard the violation - if {@code false} then
      * session will disconnect
+     * @throws IOException if attempted to exchange some packets to fix the situation
      */
     default boolean handleKexDisconnectReason(
             Session session, Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
-            Map<KexProposalOption, String> negotiatedGuess, KexProposalOption option) {
+            Map<KexProposalOption, String> negotiatedGuess, KexProposalOption option)
+                throws IOException {
         if (KexProposalOption.S2CLANG.equals(option) || KexProposalOption.C2SLANG.equals(option)) {
             return true;    // OK if cannot agree on a language
         }
