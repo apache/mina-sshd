@@ -60,12 +60,13 @@ import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.Session.TimeoutStatus;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.session.helpers.TimeoutIndicator;
+import org.apache.sshd.common.session.helpers.TimeoutIndicator.TimeoutStatus;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
@@ -202,14 +203,15 @@ public class ServerTest extends BaseTestSupport {
         final long testAuthTimeout = TimeUnit.SECONDS.toMillis(4L);
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, testAuthTimeout);
 
-        AtomicReference<TimeoutStatus> timeoutHolder = new AtomicReference<>();
+        AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
         sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
             @Override
-            public boolean handleTimeoutDisconnectReason(Session session, TimeoutStatus timeoutStatus)
+            public boolean handleTimeoutDisconnectReason(Session session, TimeoutIndicator timeoutStatus)
                     throws IOException {
                 outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
-                TimeoutStatus prev = timeoutHolder.getAndSet(timeoutStatus);
-                if (prev != null) {
+
+                TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
+                if (prev != TimeoutIndicator.NONE) {
                     throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
@@ -235,23 +237,24 @@ public class ServerTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertSame("Mismatched timeout status reported", TimeoutStatus.AuthTimeout, timeoutHolder.getAndSet(null));
+        TimeoutIndicator status = timeoutHolder.getAndSet(null);
+        assertSame("Mismatched timeout status reported", TimeoutIndicator.TimeoutStatus.AuthTimeout, status.getStatus());
     }
 
     @Test
     public void testIdleTimeout() throws Exception {
         final long testIdleTimeout = 2500L;
         PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, testIdleTimeout);
-        AtomicReference<TimeoutStatus> timeoutHolder = new AtomicReference<>();
+        AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
         CountDownLatch latch = new CountDownLatch(1);
         TestEchoShell.latch = new CountDownLatch(1);
         sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
             @Override
-            public boolean handleTimeoutDisconnectReason(Session session, TimeoutStatus timeoutStatus)
+            public boolean handleTimeoutDisconnectReason(Session session, TimeoutIndicator timeoutStatus)
                     throws IOException {
                 outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
-                TimeoutStatus prev = timeoutHolder.getAndSet(timeoutStatus);
-                if (prev != null) {
+                TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
+                if (prev != TimeoutIndicator.NONE) {
                     throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
@@ -326,7 +329,9 @@ public class ServerTest extends BaseTestSupport {
 
         assertTrue("Session latch not signalled in time", latch.await(1L, TimeUnit.SECONDS));
         assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
-        assertSame("Mismatched timeout status", TimeoutStatus.IdleTimeout, timeoutHolder.getAndSet(null));
+
+        TimeoutIndicator status = timeoutHolder.getAndSet(null);
+        assertSame("Mismatched timeout status", TimeoutStatus.IdleTimeout, status.getStatus());
     }
 
     /*

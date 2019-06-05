@@ -138,3 +138,5 @@ and therefore closing all currently tracked file/directory handles.
 * [SSHD-916](https://issues.apache.org/jira/browse/SSHD-916) - Avoid locking the session lock when signalling client session authentication failure.
 
 * [SSHD-917](https://issues.apache.org/jira/browse/SSHD-917) - Add support for SSH2 public key file format.
+
+* [SSHD-921](https://issues.apache.org/jira/browse/SSHD-921) - Do not send session disconnect message due to timeout expiration if already done so.

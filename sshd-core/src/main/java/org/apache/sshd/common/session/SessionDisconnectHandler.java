@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.session.Session.TimeoutStatus;
+import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 
@@ -46,7 +46,7 @@ public interface SessionDisconnectHandler {
      * @throws IOException If failed to handle the event
      */
     default boolean handleTimeoutDisconnectReason(
-            Session session, TimeoutStatus timeoutStatus)
+            Session session, TimeoutIndicator timeoutStatus)
                 throws IOException {
         return false;
     }

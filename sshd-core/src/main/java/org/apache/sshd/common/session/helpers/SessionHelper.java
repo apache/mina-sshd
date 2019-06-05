@@ -21,7 +21,6 @@ package org.apache.sshd.common.session.helpers;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -64,6 +63,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
+import org.apache.sshd.common.session.helpers.TimeoutIndicator.TimeoutStatus;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -100,7 +100,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     // Session timeout measurements
     private long authTimeoutStart = System.currentTimeMillis();
     private long idleTimeoutStart = System.currentTimeMillis();
-    private final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<>(TimeoutStatus.NoTimeout);
+    private final AtomicReference<TimeoutIndicator> timeoutStatus = new AtomicReference<>(TimeoutIndicator.NONE);
 
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private SessionDisconnectHandler sessionDisconnectHandler;
@@ -221,34 +221,44 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * Checks whether the session has timed out (both auth and idle timeouts are checked).
      * If the session has timed out, a DISCONNECT message will be sent.
      *
+     * @return An indication whether timeout has been detected
      * @throws IOException If failed to check
      * @see #checkAuthenticationTimeout(long, long)
      * @see #checkIdleTimeout(long, long)
      */
-    protected void checkForTimeouts() throws IOException {
+    protected TimeoutIndicator checkForTimeouts() throws IOException {
         if ((!isOpen()) || isClosing() || isClosed()) {
             if (log.isDebugEnabled()) {
                 log.debug("checkForTimeouts({}) session closing", this);
-                return;
+                return TimeoutIndicator.NONE;
             }
         }
 
+        // If already detected a timeout don't check again
+        TimeoutIndicator result = timeoutStatus.get();
+        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
+        if ((status != null) && (status != TimeoutStatus.NoTimeout)) {
+            if (log.isDebugEnabled()) {
+                log.debug("checkForTimeouts({}) already detected {}", this, result);
+            }
+            return result;
+        }
+
         long now = System.currentTimeMillis();
-        Map.Entry<TimeoutStatus, String> result =
-            checkAuthenticationTimeout(now, getAuthTimeout());
+        result = checkAuthenticationTimeout(now, getAuthTimeout());
         if (result == null) {
             result = checkIdleTimeout(now, getIdleTimeout());
         }
 
-        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getKey();
+        status = (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
         if ((status == null) || TimeoutStatus.NoTimeout.equals(status)) {
-            return;
+            return TimeoutIndicator.NONE;
         }
 
         SessionDisconnectHandler handler = getSessionDisconnectHandler();
-        if ((handler != null) && handler.handleTimeoutDisconnectReason(this, status)) {
+        if ((handler != null) && handler.handleTimeoutDisconnectReason(this, result)) {
             if (log.isDebugEnabled()) {
-                log.debug("checkForTimeouts({}) cancel {} due to handler intervention", this, status);
+                log.debug("checkForTimeouts({}) cancel {} due to handler intervention", this, result);
             }
 
             switch(status) {
@@ -261,15 +271,19 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
                 default:    // ignored
             }
-            return;
+
+            return TimeoutIndicator.NONE;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("checkForTimeouts({}) disconnect - reason={}", this, status);
+            log.debug("checkForTimeouts({}) disconnect - reason={}", this, result);
         }
 
-        timeoutStatus.set(status);
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, result.getValue());
+        timeoutStatus.set(result);
+
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+            "Detected " + status + " after " + result.getExpiredValue() + "/" + result.getThresholdValue() + " ms.");
+        return result;
     }
 
     @Override
@@ -289,16 +303,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      *
      * @param now           The current time in millis
      * @param authTimeoutMs The configured timeout in millis - if non-positive then no timeout
-     * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
+     * @return A {@link TimeoutIndicator} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getAuthTimeout()
      */
-    protected SimpleImmutableEntry<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
+    protected TimeoutIndicator checkAuthenticationTimeout(long now, long authTimeoutMs) {
         long authDiff = now - getAuthTimeoutStart();
         if ((!isAuthenticated()) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
-            return new SimpleImmutableEntry<>(
-                TimeoutStatus.AuthTimeout,
-                "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+            return new TimeoutIndicator(TimeoutStatus.AuthTimeout, authTimeoutMs, authDiff);
         } else {
             return null;
         }
@@ -314,16 +326,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      *
      * @param now           The current time in millis
      * @param idleTimeoutMs The configured timeout in millis - if non-positive then no timeout
-     * @return A {@link SimpleImmutableEntry} specifying the timeout status and disconnect reason
+     * @return A {@link TimeoutIndicator} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getIdleTimeout()
      */
-    protected SimpleImmutableEntry<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
+    protected TimeoutIndicator checkIdleTimeout(long now, long idleTimeoutMs) {
         long idleDiff = now - getIdleTimeoutStart();
         if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
-            return new SimpleImmutableEntry<>(
-                TimeoutStatus.IdleTimeout,
-                "User session has timed out idling after " + idleTimeoutMs + " ms.");
+            return new TimeoutIndicator(TimeoutStatus.IdleTimeout, idleTimeoutMs, idleDiff);
         } else {
             return null;
         }
@@ -337,7 +347,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public TimeoutStatus getTimeoutStatus() {
+    public TimeoutIndicator getTimeoutStatus() {
         return timeoutStatus.get();
     }
 

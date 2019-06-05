@@ -42,6 +42,7 @@ import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacInformation;
+import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -73,15 +74,6 @@ public interface Session
      * @return {@code true} if this is a server session
      */
     boolean isServerSession();
-
-    /**
-     * Timeout status.
-     */
-    enum TimeoutStatus {
-        NoTimeout,
-        AuthTimeout,
-        IdleTimeout
-    }
 
     /**
      * Retrieves current cipher information - <B>Note:</B> may change if
@@ -245,9 +237,9 @@ public interface Session
     /**
      * Check if timeout has occurred.
      *
-     * @return the timeout status, never {@code null}
+     * @return the timeout status - never {@code null}
      */
-    TimeoutStatus getTimeoutStatus();
+    TimeoutIndicator getTimeoutStatus();
 
     /**
      * @return Timeout value in milliseconds for communication
