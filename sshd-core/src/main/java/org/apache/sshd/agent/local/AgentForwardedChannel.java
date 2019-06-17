@@ -23,6 +23,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
@@ -31,18 +32,36 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class AgentForwardedChannel extends AbstractClientChannel {
+    /**
+     * Time to wait for new incoming messages before checking if the channel is still active
+     */
+    public static final String MESSAGE_POLL_FREQUENCY = "agent-fwd-channel-message-poll-time";
+
+    /**
+     * Default value for {@value #MESSAGE_POLL_FREQUENCY}
+     */
+    public static final long DEFAULT_MESSAGE_POLL_FREQUENCY = TimeUnit.MINUTES.toMillis(2L);
+
     private final Queue<Buffer> messages = new ArrayBlockingQueue<>(10);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
 
     public AgentForwardedChannel(String channelType) {
         super(channelType);
+        // Wake up waitForMessageBuffer to sense the closure
+        addCloseFutureListener(f -> {
+            synchronized (messages) {
+                messages.notifyAll();
+            }
+        });
     }
 
     public SshAgent getAgent() {
@@ -67,25 +86,52 @@ public class AgentForwardedChannel extends AbstractClientChannel {
                 }
             }
         };
-        rtn.setChannelType(PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARDING_TYPE));
+
+        String chType = PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
+        rtn.setChannelType(chType);
         return rtn;
     }
 
     protected Buffer request(Buffer buffer) throws IOException {
+        int reqLen = buffer.available();
         synchronized (messages) {
-            try {
-                OutputStream outputStream = getInvertedIn();
-                outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
-                outputStream.flush();
+            OutputStream outputStream = getInvertedIn();
+            outputStream.write(buffer.array(), buffer.rpos(), reqLen);
+            outputStream.flush();
 
-                Window wLocal = getLocalWindow();
-                wLocal.consumeAndCheck(buffer.available());
-                if (messages.isEmpty()) {
-                    messages.wait();
-                }
+            Window wLocal = getLocalWindow();
+            wLocal.consumeAndCheck(reqLen);
+            return waitForMessageBuffer();
+        }
+    }
+
+    // NOTE: assumes messages lock is obtained prior to calling this method
+    protected Buffer waitForMessageBuffer() throws IOException {
+        Session session = getSession();
+        long idleTimeout = PropertyResolverUtils.getLongProperty(
+            session, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
+        if (idleTimeout <= 0L) {
+            idleTimeout = DEFAULT_MESSAGE_POLL_FREQUENCY;
+        }
+
+        boolean traceEnabled = log.isTraceEnabled();
+        for (int count = 1;; count++) {
+            if (isClosing() || (!isOpen())) {
+                throw new SshException("Channel is being closed");
+            }
+
+            if (!messages.isEmpty()) {
                 return messages.poll();
+            }
+
+            if (traceEnabled) {
+                log.trace("waitForMessageBuffer({}) wait iteration #{}", this, count);
+            }
+
+            try {
+                messages.wait(idleTimeout);
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException("Interrupted while polling for messages").initCause(e);
+                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
             }
         }
     }
@@ -103,11 +149,11 @@ public class AgentForwardedChannel extends AbstractClientChannel {
         Buffer message = null;
         synchronized (receiveBuffer) {
             receiveBuffer.putBuffer(new ByteArrayBuffer(data, off, (int) len));
-            if (receiveBuffer.available() >= 4) {
+            if (receiveBuffer.available() >= Integer.BYTES) {
                 off = receiveBuffer.rpos();
                 len = receiveBuffer.getInt();
                 receiveBuffer.rpos(off);
-                if (receiveBuffer.available() >= (4 + len)) {
+                if (receiveBuffer.available() >= (Integer.BYTES + len)) {
                     message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }
