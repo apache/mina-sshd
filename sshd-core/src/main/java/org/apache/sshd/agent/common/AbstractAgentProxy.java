@@ -49,7 +49,6 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     private String channelType = FactoryManager.AGENT_FORWARDING_TYPE_OPENSSH;
 
     protected AbstractAgentProxy(CloseableExecutorService executorService) {
-        super();
         executor = executorService;
     }
 
@@ -126,20 +125,19 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         }
 
         byte[] signature = buffer.getBytes();
+        boolean debugEnabled = log.isDebugEnabled();
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sign({})[{}] : {}",
-                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
-                          BufferUtils.toHex(':', signature));
+                    KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), BufferUtils.toHex(':', signature));
             }
         } else {
             Buffer buf = new ByteArrayBuffer(signature);
             String algorithm = buf.getString();
             signature = buf.getBytes();
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("sign({})[{}] {}: {}",
-                          KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key),
-                          algorithm, BufferUtils.toHex(':', signature));
+                    KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), algorithm, BufferUtils.toHex(':', signature));
             }
         }
 

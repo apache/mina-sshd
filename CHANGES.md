@@ -46,6 +46,9 @@ which they are being invoked.
 * The various implementations of public/private keys/pairs decoders/loaders are provided with a `Map` of any headers that
 may be available in the relevant data file.
 
+* `org.apache.sshd.agent.unix.AgentClient` constructor expects a non-*null* `FactoryManager` instance which
+it then exposes via its `getFactoryManager`.
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between
@@ -140,3 +143,5 @@ and therefore closing all currently tracked file/directory handles.
 * [SSHD-917](https://issues.apache.org/jira/browse/SSHD-917) - Add support for SSH2 public key file format.
 
 * [SSHD-921](https://issues.apache.org/jira/browse/SSHD-921) - Do not send session disconnect message due to timeout expiration if already done so.
+
+* [SSHD-923](https://issues.apache.org/jira/browse/SSHD-923) - Added agent close detection mechanisms to avoid infinite waits on incoming messages.

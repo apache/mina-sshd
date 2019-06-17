@@ -82,7 +82,7 @@ public class UnixAgentFactory implements SshAgentFactory {
             throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");
         }
 
-        return new AgentClient(authSocket, newExecutor());
+        return new AgentClient(manager, authSocket, newExecutor());
     }
 
     @Override

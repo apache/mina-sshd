@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -53,6 +55,7 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.mockito.Mockito;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AgentTest extends BaseTestSupport {
@@ -83,7 +86,11 @@ public class AgentTest extends BaseTestSupport {
         try (AgentServer agent = new AgentServer()) {
             String authSocket = agent.start();
 
-            try (SshAgent client = new AgentClient(authSocket)) {
+            FactoryManager manager = Mockito.mock(FactoryManager.class);
+            Mockito.when(manager.getParentPropertyResolver()).thenReturn(null);
+            Mockito.when(manager.getProperties()).thenReturn(Collections.emptyMap());
+
+            try (SshAgent client = new AgentClient(manager, authSocket)) {
                 Iterable<? extends Map.Entry<PublicKey, String>> keys = client.getIdentities();
                 assertNotNull("No initial identities", keys);
                 assertObjectInstanceOf("Non collection initial identities", Collection.class, keys);

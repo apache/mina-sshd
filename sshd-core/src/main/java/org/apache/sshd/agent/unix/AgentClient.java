@@ -21,12 +21,17 @@ package org.apache.sshd.agent.unix;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.common.AbstractAgentProxy;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerHolder;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -40,9 +45,19 @@ import org.apache.tomcat.jni.Status;
 /**
  * A client for a remote SSH agent
  */
-public class AgentClient extends AbstractAgentProxy implements Runnable {
+public class AgentClient extends AbstractAgentProxy implements Runnable, FactoryManagerHolder {
+    /**
+     * Time to wait for new incoming messages before checking if the client is still active
+     */
+    public static final String MESSAGE_POLL_FREQUENCY = "agent-client-message-poll-time";
+
+    /**
+     * Default value for {@value #MESSAGE_POLL_FREQUENCY}
+     */
+    public static final long DEFAULT_MESSAGE_POLL_FREQUENCY = TimeUnit.MINUTES.toMillis(2L);
 
     private final String authSocket;
+    private final FactoryManager manager;
     private final long pool;
     private final long handle;
     private final Buffer receiveBuffer;
@@ -50,16 +65,18 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
     private Future<?> pumper;
     private final AtomicBoolean open = new AtomicBoolean(true);
 
-    public AgentClient(String authSocket) throws IOException {
-        this(authSocket, null);
+    public AgentClient(FactoryManager manager, String authSocket) throws IOException {
+        this(manager, authSocket, null);
     }
 
-    public AgentClient(String authSocket, CloseableExecutorService executor) throws IOException {
+    public AgentClient(FactoryManager manager, String authSocket, CloseableExecutorService executor) throws IOException {
         super((executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentClient[" + authSocket + "]") : executor);
+        this.manager = Objects.requireNonNull(manager, "No factory manager instance provided");
         this.authSocket = authSocket;
 
         try {
-            pool = Pool.create(AprLibrary.getInstance().getRootPool());
+            AprLibrary aprLibInstance = AprLibrary.getInstance();
+            pool = Pool.create(aprLibInstance.getRootPool());
             handle = Local.create(authSocket, pool);
             int result = Local.connect(handle, 0);
             if (result != Status.APR_SUCCESS) {
@@ -78,6 +95,15 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
     }
 
     @Override
+    public FactoryManager getFactoryManager() {
+        return manager;
+    }
+
+    public String getAuthSocket() {
+        return authSocket;
+    }
+
+    @Override
     public boolean isOpen() {
         return open.get();
     }
@@ -91,14 +117,20 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 if (result < Status.APR_SUCCESS) {
                     throwException(result);
                 }
+
                 messageReceived(new ByteArrayBuffer(buf, 0, result));
             }
         } catch (Exception e) {
+            boolean debugEnabled = log.isDebugEnabled();
             if (isOpen()) {
-                log.warn(e.getClass().getSimpleName() + " while still open: " + e.getMessage());
+                log.warn("run({}) {} while still open: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage());
+                if (debugEnabled) {
+                    log.debug("run(" + this + ") open client exception", e);
+                }
             } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("Closed client loop exception", e);
+                if (debugEnabled) {
+                    log.debug("run(" + this + ") closed client loop exception", e);
                 }
             }
         } finally {
@@ -106,7 +138,8 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 close();
             } catch (IOException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug(e.getClass().getSimpleName() + " while closing: " + e.getMessage());
+                    log.debug("run({}) {} while closing: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 }
             }
         }
@@ -116,20 +149,22 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         Buffer message = null;
         synchronized (receiveBuffer) {
             receiveBuffer.putBuffer(buffer);
-            if (receiveBuffer.available() >= 4) {
+            if (receiveBuffer.available() >= Integer.BYTES) {
                 int rpos = receiveBuffer.rpos();
                 int len = receiveBuffer.getInt();
                 // Protect against malicious or corrupted packets
                 if (len < 0) {
                     throw new StreamCorruptedException("Illogical message length: " + len);
                 }
+
                 receiveBuffer.rpos(rpos);
-                if (receiveBuffer.available() >= (4 + len)) {
+                if (receiveBuffer.available() >= (Integer.BYTES + len)) {
                     message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }
             }
         }
+
         if (message != null) {
             synchronized (messages) {
                 messages.offer(message);
@@ -142,6 +177,11 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
     public void close() throws IOException {
         if (open.getAndSet(false)) {
             Socket.close(handle);
+        }
+
+        // make any waiting thread aware of the closure
+        synchronized (messages) {
+            messages.notifyAll();
         }
 
         if ((pumper != null) && (!pumper.isDone())) {
@@ -158,17 +198,42 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         buffer.putInt(wpos - 4);
         buffer.wpos(wpos);
         synchronized (messages) {
-            try {
-                int result = Socket.send(handle, buffer.array(), buffer.rpos(), buffer.available());
-                if (result < Status.APR_SUCCESS) {
-                    throwException(result);
-                }
-                if (messages.isEmpty()) {
-                    messages.wait();
-                }
+            int result = Socket.send(handle, buffer.array(), buffer.rpos(), buffer.available());
+            if (result < Status.APR_SUCCESS) {
+                throwException(result);
+            }
+
+            return waitForMessageBuffer();
+        }
+    }
+
+    // NOTE: assumes messages lock is obtained prior to calling this method
+    protected Buffer waitForMessageBuffer() throws IOException {
+        FactoryManager mgr = getFactoryManager();
+        long idleTimeout = PropertyResolverUtils.getLongProperty(
+            mgr, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
+        if (idleTimeout <= 0L) {
+            idleTimeout = DEFAULT_MESSAGE_POLL_FREQUENCY;
+        }
+
+        boolean traceEnabled = log.isTraceEnabled();
+        for (int count = 1;; count++) {
+            if (!isOpen()) {
+                throw new SshException("Client is being closed");
+            }
+
+            if (!messages.isEmpty()) {
                 return messages.poll();
+            }
+
+            if (traceEnabled) {
+                log.trace("waitForMessageBuffer({}) wait iteration #{}", this, count);
+            }
+
+            try {
+                messages.wait(idleTimeout);
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException(authSocket + ": Interrupted while polling for messages").initCause(e);
+                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
             }
         }
     }
@@ -179,10 +244,12 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
-    private void throwException(int code) throws IOException {
-        throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code)
-                        + " (code: " + code + ")");
+    protected void throwException(int code) throws IOException {
+        throw new IOException(org.apache.tomcat.jni.Error.strerror(-code) + " (code: " + code + ")");
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[socket=" + getAuthSocket() + "]";
+    }
 }
