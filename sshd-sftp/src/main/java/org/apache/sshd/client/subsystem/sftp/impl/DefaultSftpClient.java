@@ -44,9 +44,11 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
@@ -79,6 +81,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
             private final byte[] singleByte = new byte[1];
+
             @Override
             public void write(int b) throws IOException {
                 synchronized (singleByte) {
@@ -281,23 +284,35 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public Buffer receive(int id) throws IOException {
-        Integer reqId = id;
-        synchronized (messages) {
-            for (int count = 1;; count++) {
-                if (isClosing() || (!isOpen())) {
-                    throw new SshException("Channel is being closed");
-                }
+        Session session = getClientSession();
+        long idleTimeout = PropertyResolverUtils.getLongProperty(
+            session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+        if (idleTimeout <= 0L) {
+            idleTimeout = FactoryManager.DEFAULT_IDLE_TIMEOUT;
+        }
 
+        Integer reqId = id;
+        boolean traceEnabled = log.isTraceEnabled();
+        for (int count = 1;; count++) {
+            if (isClosing() || (!isOpen())) {
+                throw new SshException("Channel is being closed");
+            }
+
+            synchronized (messages) {
                 Buffer buffer = messages.remove(reqId);
                 if (buffer != null) {
                     return buffer;
                 }
 
                 try {
-                    messages.wait();
+                    messages.wait(idleTimeout);
                 } catch (InterruptedException e) {
                     throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
                 }
+            }
+
+            if (traceEnabled) {
+                log.trace("receive({}) check iteration #{} for id={}", this, count, reqId);
             }
         }
     }
@@ -359,7 +374,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                         remainingTimeout -= sleepMillis;
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted init()").initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
                 }
             }
 
