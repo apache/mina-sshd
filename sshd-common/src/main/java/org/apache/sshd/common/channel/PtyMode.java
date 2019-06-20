@@ -167,7 +167,7 @@ public enum PtyMode {
      */
     IMAXBEL(41),
     /**
-     * @see <A HREF="https://tools.ietf.org/html/draft-sgtatham-secsh-iutf8-01">IUTF8 Terminal Mode in Secure Shell</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc8160">IUTF8 Terminal Mode in Secure Shell</A>
      */
     IUTF8(42),
 
