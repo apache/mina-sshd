@@ -1,6 +1,5 @@
 # Set up an SSH client in 5 minutes
 
-
 SSHD is designed to easily allow setting up and using an SSH client in a few simple steps. The client needs to be configured
 and then started before it can be used to connect to an SSH server. There are a few simple steps for creating a client
 instance - for more details refer to the `SshClient` class.
@@ -35,13 +34,10 @@ key was accepted. There are other out-of-the-box verifiers available in the code
 * `RejectAllServerKeyVerifier` - rejects all server key - usually used in tests or as a fallback verifier if none
 of it predecesors validated the server key
 
-
 * `RequiredServerKeyVerifier` - accepts only **one** specific server key (similar to certificate pinning for SSL)
-
 
 * `KnownHostsServerKeyVerifier` - uses the [known_hosts](https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#Public_Keys_from_other_Hosts_.E2.80.93_.7E.2F.ssh.2Fknown_hosts)
 file to validate the server key. One can use this class + some existing code to **update** the file when new servers are detected and their keys are accepted.
-
 
 Of course, one can implement the verifier in whatever other manner is suitable for the specific code needs.
 
@@ -181,7 +177,6 @@ regardless of the user's own traffic:
     set the `HEARTBEAT_REPLY_WAIT` property value to a **positive** value specifying the number of **milliseconds** the client is
     willing to wait for the server's reply to the global request.
 
-
 * Customized user code
 
     In order to support customized user code for this feature, the `ReservedSessionMessagesHandler` can be used to
@@ -196,7 +191,7 @@ regardless of the user's own traffic:
 * Both options can be activated either on the `SshClient` (for **global** setup) and/or
 the `ClientSession` (for specific session configuration).
 
-* The `keepalive@,,,,` mechanism **supersedes** the the other mechanisms if activated.
+* The `keepalive@,,,,` mechanism **supersedes** the other mechanisms if activated.
 
     * If specified timeout expires for the `wantReply` option then session will be **closed**.
 
@@ -224,10 +219,14 @@ defaults - which however, might not be adequate for the specific client/server.
         channel.setIn(...stdin...);
         channel.setOut(...stdout...);
         channel.setErr(...stderr...);
-        ... spawn the thread that will pump the STDIN/OUT/ERR
-        channel.open().verify(...some timeout...);
-        // Wait (forever) for the channel to close - signalling shell exited
-        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+        // ... spawn the thread(s) that will pump the STDIN/OUT/ERR
+        try {
+            channel.open().verify(...some timeout...);
+            // Wait (forever) for the channel to close - signalling shell exited
+            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+        } finally {
+            // ... stop the pumping threads ...
+        }
     }
 
     // In order to override the PTY and/or environment

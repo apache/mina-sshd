@@ -2,7 +2,6 @@
 
 ## [Bouncy Castle](https://www.bouncycastle.org/)
 
-
 Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard
 [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See
 [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html)
@@ -15,17 +14,13 @@ keys, signatures, etc. rather than the default JCE provided in the JVM.
 
  - The security provider can also be registered for keys/ciphers/etc. that are already supported by the standard JCE as a **replacement** for them.
 
-
  - The _BouncyCastle_ code can also be used to load keys from PEM files instead or in parallel with the built-in code that
 already parses the standard PEM formats for the default JCE supported key types.
 
-
-- One can use the `BouncyCastleKeyPairResourceParser` to load standard PEM files instead of the core one - either directly
+ - One can use the `BouncyCastleKeyPairResourceParser` to load standard PEM files instead of the core one - either directly
 or via `SecurityUtils#setKeyPairResourceParser` for **global** usage - even without registering or enabling the provider.
 
-
  - The required _Maven_ module(s) are defined as `optional` so must be added as an **explicit** dependency in order to be included in the classpath:
-
 
 ```xml
 

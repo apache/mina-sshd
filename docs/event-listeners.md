@@ -65,12 +65,13 @@ In this context, it is worth mentioning that one can attach to sessions **arbitr
     });
 ```
 
+The attributes cache is automatically cleared once the session is closed.
+
 ### `ChannelListener`
 
 Informs about channel related events - as with sessions, once can influence the channel to some extent, depending on the channel's **state**.
 The ability to influence channels is much more limited than sessions. In this context, it is worth mentioning that one can attach to channels
-**arbitrary attributes** that can be retrieved by the user's code later on - same was as it is done for sessions.
-
+**arbitrary attributes** that can be retrieved by the user's code later on and are cleared when channel is closed - same was as it is done for sessions.
 
 ### `UnknownChannelReferenceHandler`
 
@@ -101,7 +102,6 @@ or [server](./server-setup.md#providing-server-side-heartbeat).
 
 **Note:** The `handleUnimplementedMessage` method serves both for handling `SSH_MSG_UNIMPLEMENTED` and any other unrecognized
 message received in the session as well.
-
 
 ```java
 
@@ -186,111 +186,3 @@ the handler decided not to intervene.
 Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), "break" requests
 (sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described
 in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
-
-
-### `SftpEventListener`
-
-Provides information about major SFTP protocol events. The provided `File/DirectoryHandle` to the various callbacks can also be used to
-store user-defined attributes via its `AttributeStore` implementation. The listener is registered at the `SftpSubsystemFactory`:
-
-
-```java
-    public class MySfpEventListener implements SftpEventListener {
-        private static final AttributeKey<SomeType> MY_SPECIAL_KEY = new Attribute<SomeType>();
-
-        ...
-        @Override
-        public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
-            localHandle.setAttribute(MY_SPECIAL_KEY, instanceOfSomeType);
-        }
-
-        @Override
-        public void writing(
-                ServerSession session, String remoteHandle, FileHandle localHandle,
-                long offset, byte[] data, int dataOffset, int dataLen)
-                    throws IOException {
-            SomeType myData = localHandle.getAttribute(MY_SPECIAL_KEY);
-            ...do something based on my data...
-        }
-    }
-
-
-    SftpSubsystemFactory factory = new SftpSubsystemFactory();
-    factory.addSftpEventListener(new MySftpEventListener());
-    sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
-
-```
-
-**Note:** the attached attributes are automatically removed once handle has been closed - regardless of
-whether the close attempt was successful or not. In other words, after `SftpEventListener#closed` has been
-called, all attributes associated with the handle are cleared.
-
-### `SftpFileSystemAccessor`
-
-This is the abstraction providing the SFTP server subsystem access to files and directories. The SFTP subsystem
-uses this abstraction to obtain file channels and/or directory streams. One can override the default implementation
-and thus be able to track and/or intervene in all opened files and folders throughout the SFTP server subsystem code.
-The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
-
-```java
-
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withFileSystemAccessor(new MySftpFileSystemAccessor())
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
-
-```
-
-**Note:**
-
-* Closing of file channel/directory streams created by the accessor are also closed
-via callbacks to the same accessor
-
-* When closing a file channel that may have been potentially modified, the default implementation
-forces a synchronization of the data with the file-system. This behavior can be modified
-by setting the `sftp-auto-fsync-on-close` property to *false* (or by providing a customized implementation
-that involves other considerations as well).
-
-### `PortForwardingEventListener`
-
-Informs and allows tracking of port forwarding events as described in [RFC 4254 - section 7](https://tools.ietf.org/html/rfc4254#section-7)
-as well as the (simple) [SOCKS](https://en.wikipedia.org/wiki/SOCKS) protocol (versions 4, 5). In this context, one can create a
-`PortForwardingTracker` that can be used in a `try-with-resource` block so that the set up forwarding is automatically torn down when
-the tracker is `close()`-d:
-
-
-```java
-
-    try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(...timeout...);
-
-        try (PortForwardingTracker tracker = session.createLocal/RemotePortForwardingTracker(...)) {
-            ...do something that requires the tunnel...
-        }
-
-        // Tunnel is torn down when code reaches this point
-    }
-```
-
-### `ScpTransferEventListener`
-
-Inform about SCP related events. `ScpTransferEventListener`(s) can be registered on *both* client and server side:
-
-
-```java
-
-    // Server side
-    ScpCommandFactory factory = new ScpCommandFactory(...with/out delegate..);
-    factory.addEventListener(new MyServerSideScpTransferEventListener());
-    sshd.setCommandFactory(factory);
-
-    // Client side
-    try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(...timeout...);
-
-        ScpClient scp = session.createScpClient(new MyClientSideScpTransferEventListener());
-        ...scp.upload/download...
-    }
-```

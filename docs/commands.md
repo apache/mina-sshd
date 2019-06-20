@@ -146,6 +146,11 @@ The provided message is simply logged at DEBUG level.
 
             callback.onExit(0);
         }
+
+        @Override
+        public void destroy() throws Exception {
+            ...release any allocated resources...
+        }
     }
 ```
 

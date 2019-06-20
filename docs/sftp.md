@@ -27,8 +27,65 @@ On the server side, the following code needs to be added:
 
 ### `SftpEventListener`
 
-(See above more details...) - users may register an `SftpEventListener` (or more...) in the `SftpSubsystemFactory` in
-order to monitor and even intervene in the susbsytem's functionality.
+Provides information about major SFTP protocol events. The provided `File/DirectoryHandle` to the various callbacks can also be used to
+store user-defined attributes via its `AttributeStore` implementation. The listener is registered at the `SftpSubsystemFactory`:
+
+```java
+    public class MySfpEventListener implements SftpEventListener {
+        private static final AttributeKey<SomeType> MY_SPECIAL_KEY = new Attribute<SomeType>();
+
+        ...
+        @Override
+        public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
+            localHandle.setAttribute(MY_SPECIAL_KEY, instanceOfSomeType);
+        }
+
+        @Override
+        public void writing(
+                ServerSession session, String remoteHandle, FileHandle localHandle,
+                long offset, byte[] data, int dataOffset, int dataLen)
+                    throws IOException {
+            SomeType myData = localHandle.getAttribute(MY_SPECIAL_KEY);
+            ...do something based on my data...
+        }
+    }
+
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory();
+    factory.addSftpEventListener(new MySftpEventListener());
+    sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+
+```
+
+**Note:** the attached attributes are automatically removed once handle has been closed - regardless of
+whether the close attempt was successful or not. In other words, after `SftpEventListener#closed` has been
+called, all attributes associated with the handle are cleared.
+
+### `SftpFileSystemAccessor`
+
+This is the abstraction providing the SFTP server subsystem access to files and directories. The SFTP subsystem
+uses this abstraction to obtain file channels and/or directory streams. One can override the default implementation
+and thus be able to track and/or intervene in all opened files and folders throughout the SFTP server subsystem code.
+The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
+
+```java
+
+    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+        .withFileSystemAccessor(new MySftpFileSystemAccessor())
+        .build();
+    server.setSubsystemFactories(Collections.singletonList(factory));
+
+```
+
+**Note:**
+
+* Closing of file channel/directory streams created by the accessor are also closed
+via callbacks to the same accessor
+
+* When closing a file channel that may have been potentially modified, the default implementation
+forces a synchronization of the data with the file-system. This behavior can be modified
+by setting the `sftp-auto-fsync-on-close` property to *false* (or by providing a customized implementation
+that involves other considerations as well).
 
 ### Client-side SFTP
 
@@ -44,7 +101,6 @@ In order to obtain an `SftpClient` instance one needs to use an `SftpClientFacto
 ```
 
 A default client factory implementations is provided in the module - see `SftpClientFactory.instance()`
-
 
 ### Using a custom `SftpClientFactory`
 
@@ -69,7 +125,6 @@ implementations - e.g., in order to override some default behavior - e.g.:
 ```
 
 ### Version selection via `SftpVersionSelector`
-
 
 The SFTP subsystem code supports versions 3-6 (inclusive), and by default attempts to negotiate the highest
 possible one - on both client and server code. The user can intervene and force a specific version or a narrower
@@ -98,7 +153,7 @@ range.
 
 ```
 
-On the server side, version selection restriction is more complex - please remember that the according to the
+On the server side, version selection restriction is more complex - please remember that according to the
 protocol specification
 
 >> The server responds with a SSH_FXP_VERSION packet, supplying the lowest (!) of its own and the client's version number
@@ -214,7 +269,8 @@ configuration keys and values.
     params.put("param2", value2);
 
     // The value of 'param1' is overridden in the URI
-    try (FileSystem fs = FileSystems.newFileSystem(new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
+    try (FileSystem fs = FileSystems.newFileSystem(
+            new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
         Path remotePath = fs.getPath("/some/remote/path");
         ... work with the remote path...
     }
@@ -284,23 +340,25 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
     PropertyResolverUtils.updateProperty(client, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-8");
 
     try (ClientSession session = client.connect(...)) {
-         // default for ALL SFTP clients obtained through the session - overrides client setting
-         PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
-         session.authenticate(...);
+        session.addPasswordIdentity(password);
+        session.auth().verify(timeout);
 
-         SftpClientFactory factory = SftpClientFactory.instance();
-         try (SftpClient sftp = factory.createSftpClient(session)) {
-             for (DirEntry entry : sftp.readDir(...some path...)) {
-                 ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
-             }
+        // default for ALL SFTP clients obtained through the session - overrides client setting
+        PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
 
-             // override the inherited default from the session
-             sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
+        SftpClientFactory factory = SftpClientFactory.instance();
+        try (SftpClient sftp = factory.createSftpClient(session)) {
+            for (DirEntry entry : sftp.readDir(...some path...)) {
+                ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
+            }
 
-             for (DirEntry entry : sftp.readDir(...some other path...)) {
-                 ...handle entry assuming ISO-8859-1 encoded names...
-             }
-         }
+            // override the inherited default from the session
+            sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
+
+            for (DirEntry entry : sftp.readDir(...some other path...)) {
+                ...handle entry assuming ISO-8859-1 encoded names...
+            }
+        }
     }
 
 ```
@@ -326,7 +384,6 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 * `posix-rename@openssh.com`
 * `statvfs@openssh.com`
 
-
 On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration
 key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.
 
@@ -334,7 +391,6 @@ On the client side, all the supported extensions are classes that implement `Sft
 to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users
 can easily add support for more extensions in a similar manner as the existing ones by implementing an appropriate `ExtensionParser`
 and then registering it at the `ParserUtils` - see the existing ones for details how this can be achieved.
-
 
 ```java
 
@@ -370,7 +426,6 @@ and then registering it at the `ParserUtils` - see the existing ones for details
 ```
 
 One can skip all the conditional code if a specific known extension is required:
-
 
 ```java
 

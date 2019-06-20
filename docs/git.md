@@ -12,7 +12,6 @@ instance to use, and even which `ClientSession`. The default instance allocates 
 created - which is started and stopped as necessary. However, this can be pretty wasteful, so if one intends to issue several commands
 that access GIT repositories via SSH, one should maintain a **single** client instance and re-use it:
 
-
 ```java
 
     SshClient client = ...create and setup the client...
@@ -29,13 +28,11 @@ that access GIT repositories via SSH, one should maintain a **single** client in
     }
 
 ```
-
 ### Server-side
 
 See `GitPackCommandFactory` and `GitPgmCommandFactory` - in order for the various commands to function correctly, they require a `GitLocationResolver`
 that is invoked in order to allow the user to decide which is the correct GIT repository root location for a given command. The resolver is provided
 with all the relevant details - including the command and server session through which the command was received:
-
 
 ```java
 
@@ -44,8 +41,7 @@ with all the relevant details - including the command and server session through
 
 ```
 
- These command factories also accept a delegate to which non-_git_ commands are routed:
-
+These command factories also accept a delegate to which non-_git_ commands are routed:
 
 ```java
 

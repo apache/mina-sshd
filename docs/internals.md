@@ -35,6 +35,7 @@ before starting the client/server. Therefore, the default selection process desc
 # Advanced configuration and interaction
 
 ## Properties and inheritance model
+
 The code's behavior is highly customizable not only via non-default implementations of interfaces but also as far as
 the **parameters** that govern its behavior - e.g., timeouts, min./max. values, allocated memory size, etc... All the
 customization related code flow implements a **hierarchical** `PropertyResolver` inheritance model where the "closest"
@@ -48,6 +49,36 @@ to decide how to behave, then the following configuration hierarchy is consulted
 * The system properties - **Note:** any configuration value required by the code can be provided via a system property bearing
 the `org.apache.sshd.config` prefix - see `SyspropsMapWrapper` for the implementation details.
 
+The easiest way to configure a target instance (client/server/session/channel) is via one of the (many) available `PropertyResolverUtils`
+`updateProperty` methods:
+
+```java
+    PropertyResolverUtils.updateProperty(client, "prop1", 5L);
+    PropertyResolverUtils.updateProperty(server, "prop2", someInteger);
+    PropertyResolverUtils.updateProperty(session, "prop3", "hello world");
+    PropertyResolverUtils.updateProperty(channel, "prop4", false);
+```
+
+**Note**: the `updateProperty` method(s) accept **any** `Object` so care must be taken to provide the expected type. However, at
+least for **primitive** values, the various `getXXXProperty` methods automatically convert compatible types:
+
+```java
+    PropertyResolverUtils.updateProperty(client, "prop1", 7365L);
+
+    // all will yield 7365 converted to the relevant type
+    Long value = PropertyResolverUtils.getLongProperty(client, "prop1");
+    Integer value = PropertyResolverUtils.getLongProperty(client, "prop1");
+```
+
+including strings
+
+```java
+    PropertyResolverUtils.updateProperty(client, "prop1", "7365");
+
+    // all will yield 7365
+    Long value = PropertyResolverUtils.getLongProperty(client, "prop1");
+    Integer value = PropertyResolverUtils.getLongProperty(client, "prop1");
+```
 
 ### Using the inheritance model for fine-grained/targeted configuration
 
@@ -77,28 +108,22 @@ key - there are several possible values for this key:
 
 * A simple string - in which case its contents are the welcome banner.
 
-
 * A file [URI](https://docs.oracle.com/javase/8/docs/api/java/net/URI.html) - or a string starting with `"file:/"` followed by the file path - see below.
-
 
 * A [URL](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html) - or a string containing "://" - in which
 case the [URL#openStream()](https://docs.oracle.com/javase/8/docs/api/java/net/URL.html#openStream) method is invoked
 and its contents are read.
 
-
 * A [File](https://docs.oracle.com/javase/8/docs/api/java/io/File.html) or
 a [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) - in this case, the file's contents are __re-loaded__ every time it is required and sent as the banner contents.
-
 
 * The special value `ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE` which generates a combined "random art" of
 all the server's keys as described in `Perrig A.` and `Song D.`-s article
 [Hash Visualization: a New Technique to improve Real-World Security](http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf) - _International Workshop on Cryptographic Techniques and E-Commerce (CrypTEC '99)_
 
-
 * One can also override the `ServerUserAuthService#resolveWelcomeBanner` method and use whatever other content customization one sees fit.
 
 **Note:**
-
 
 1. If any of the sources yields an empty string or is missing (in the case of a resource) then no welcome banner message is sent.
 
@@ -107,18 +132,15 @@ all the server's keys as described in `Perrig A.` and `Song D.`-s article
 3. In this context, see also the `ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE` configuration key - which
 provides control over the declared language tag, although most clients seem to ignore it.
 
-
 ### Welcome banner sending phase
 
 According to [RFC 4252 - section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4):
 
 > The SSH server may send an SSH_MSG_USERAUTH_BANNER message at any time after this authentication protocol starts and before authentication is successful.
 
-
 The code contains a `WelcomeBannerPhase` enumeration that can be used to configure via the `ServerAuthenticationManager.WELCOME_BANNER_PHASE`
 configuration key the authentication phase at which the welcome banner is sent (see also the `ServerAuthenticationManager.DEFAULT_BANNER_PHASE` value).
 In this context, note that if the `NEVER` phase is configured, no banner will be sent even if one has been configured via one of the methods mentioned previously.
-
 
 ## `HostConfigEntryResolver`
 
@@ -126,7 +148,6 @@ This interface provides the ability to intervene during the connection and authe
 the user's original parameters. The `DefaultConfigFileHostEntryResolver` instance used to set up the default
 client instance follows the [SSH config file](https://www.digitalocean.com/community/tutorials/how-to-configure-custom-connection-options-for-your-ssh-client)
 standards, but the interface can be replaced so as to implement whatever proprietary logic is required.
-
 
 ```java
 
@@ -143,7 +164,6 @@ standards, but the interface can be replaced so as to implement whatever proprie
         session.auth().verify(...timeout...);
     }
 ```
-
 
 ## `SshConfigFileReader`
 
@@ -204,19 +224,16 @@ request handlers are invoked when a global/channel-specific request is received 
 * All currently registered handlers' `process` method is invoked with the request type string parameter (among others).
 The implementation should examine the request parameters and decide whether it is able to process it.
 
-
 * If the handler returns `Result.Unsupported` then the next registered handler is invoked.
 In other words, processing stops at the **first** handler that returned a valid response. Thus the importance of
 the `List<RequestHandler<...>>` that defines the **order** in which the handlers are invoked. **Note**: while
 it is possible to register multiple handlers for the same request and rely on their order, it is highly recommended
 to avoid this situation as it makes debugging the code and diagnosing problems much more difficult.
 
-
 * If no handler reported a valid result value then a failure message is sent back to the peer. Otherwise, the returned
 result is translated into the appropriate success/failure response (if the sender asked for a response). In this context,
 the handler may choose to build and send the response within its own code, in which case it should return the
 `Result.Replied` value indicating that it has done so.
-
 
 ```java
 

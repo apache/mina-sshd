@@ -18,7 +18,6 @@ and adds proprietary logic.
 * `InteractivePasswordIdentityProvider` - helps implement a `PasswordIdentityProvider` by delegating calls
 to `UserInteraction#getUpdatedPassword`. The way to use it would be as follows:
 
-
 ```java
 try (ClientSession session = client.connect(login, host, port).await().getSession()) {
      session.setUserInteraction(...);     // this can also be set at the client level
@@ -31,7 +30,6 @@ try (ClientSession session = client.connect(login, host, port).await().getSessio
 ```
 
 or
-
 
 ```java
 UserInteraction ui = ....;
@@ -47,19 +45,15 @@ try (ClientSession session = client.connect(login, host, port).await().getSessio
 **Note:** `UserInteraction#isInteractionAllowed` is consulted prior to invoking `getUpdatedPassword` - if it
 returns _false_ then password retrieval method is not invoked, and it is assumed that no more passwords are available
 
-
 * `SimpleAccessControlScpEventListener` - Provides a simple access control by making a distinction between
 methods that upload data and ones that download it via SCP. In order to use it, simply extend it and override
 its `isFileUpload/DownloadAllowed` methods
 
-
 * `SimpleAccessControlSftpEventListener` - Provides a simple access control by making a distinction between
 methods that provide SFTP file information - including reading data - and those that modify it
 
-
 * `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in
 [HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
-
 
 * `ThrottlingPacketWriter` - An example of a way to overcome big window sizes when sending data - as
 described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754) and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)

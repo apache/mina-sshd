@@ -15,34 +15,28 @@ no-arguments constructor. The code automatically parses the list and attempts to
 
 **Note:**
 
-
 - The registration code automatically parses the configured registrars list and instantiates them. In this context, one can use the
 special `none` value to indicate that the code should not attempt to automatically register the default providers.
 
 - A registrar instance might be created but eventually discarded and not invoked if it is disabled, unsupported or already registered
 programmatically via `SecurityUtils#registerSecurityProvider`.
 
-
 - The registration attempt is a **one-shot** deal - i.e., once the registrars list is parsed and successfully resolved, any modifications
 to the registered security providers must be done **programatically**. One can call `SecurityUtils#isRegistrationCompleted()` to find out
 if the registration phase has already been executed.
 
-
 - The registrars are consulted in the same **order** as they were initially registered - either programmatically or via the system property
 configuration. Therefore, if two or more registrars support the same algorithm, then the earlier registered one will be used.
-
 
 - If no matching registrar was found, then the default security provider is used. If none set, the JCE defaults are invoked. The default
 security provider can be configured either via the `org.apache.sshd.security.defaultProvider` system property or by programmatically
 invoking `SecurityUtils#setDefaultProviderChoice`. **Note:** if the system property option is used, then it is assumed to contain a security
 provider's **name** (rather than its `Provider` class name...).
 
-
 - If programmatic selection of the default security provider choice is required, then the code flow must ensure that
 `SecurityUtils#setDefaultProviderChoice` is called before **any** security entity (e.g., ciphers, keys, etc...) are
 required. Theoretically, one could change the choice after ciphers have been been requested but before keys were generated
 (e.g....), but it is dangerous and may yield unpredictable behavior.
-
 
 ### Implementing a new security provider registrar
 
@@ -70,25 +64,20 @@ is assumed to contain a comma-separated list of supported `KeyFactory` algorithm
 
 **Note:**
 
-
 * The same naming convention can be used to enable/disable the registrar - even if supported - e.g.,
 `org.apache.sshd.security.provider.BC.enabled=false` disables the _BouncyCastle_ registrar.
-
 
 * One can use `all` or `*` to specify that all entities of the specified type are supported - e.g.,
 `org.apache.sshd.security.provider.BC.MessageDigest=all`. In this context, one can override the
 `getDefaultSecurityEntitySupportValue` method if no fine-grained configuration is required per-entity type,
 
-
 * The result of an `isXxxSupported` call is/should be **cached** (see `AbstractSecurityProviderRegistrar`).
-
 
 * For ease of implementation, all support query calls are routed to the `isSecurityEntitySupported` method
 so that one can concentrate all the configuration in a single method. This is done for **convenience**
 reasons - the code will invoke the correct support query as per the type of entity it needs. E.g., if it
 needs a cipher, it will invoke `isCipherSupported` - which by default will invoke `isSecurityEntitySupported`
 with the `Cipher` class as its argument.
-
 
 * Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`)
 so one should take that into account when parsing the input argument to decide which cipher is referenced - see

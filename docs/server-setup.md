@@ -26,11 +26,9 @@ There are a few things that need to be configured on the server before being abl
 **random** free port is selected by the O/S. In any case, once the server is `start()`-ed one can query the
 instance as to the assigned port via `sshd.getPort()`.
 
-
 In this context, the listen bind address can also be specified explicitly via `sshd.setHost(...some IP address...)`
 that causes the server to bind to a specific network address rather than **all** addresses (the default). Using
 `"0.0.0.0"` as the bind address is also tantamount to binding to all addresses.
-
 
 * `KeyPairProvider` - `sshd.setKeyPairProvider(...);` - sets the host's private keys used for key exchange with
 clients as well as representing the host's "identities". There are several choices - one can load keys from standard
@@ -39,12 +37,10 @@ is restarted, the same keys will be used to authenticate the server and avoid th
 the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/)
 supporting artifacts be available in the code's classpath.
 
-
 * `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will
 be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple
 implementation that you can use if you want. This implementation will create a process and delegate everything to it,
 so it's mostly useful to launch the OS native shell. E.g.,
-
 
 ```java
 
@@ -52,14 +48,11 @@ so it's mostly useful to launch the OS native shell. E.g.,
 
 ```
 
-
 There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note
 that the `ShellFactory` is not required. If none is configured, any request for an interactive shell will be denied to clients.
 
-
 * `CommandFactory` - The `CommandFactory` provides the ability to run a **single** direct command at a time instead
 of an interactive session (it also uses a **different** channel type than shells). It can be used **in addition** to the `ShellFactory`.
-
 
 SSHD provides a `CommandFactory` to support SCP that can be configured in the following way:
 
@@ -73,7 +66,6 @@ SSHD provides a `CommandFactory` to support SCP that can be configured in the fo
 One can also use the `ScpCommandFactory` on top of one's own `CommandFactory` by placing the command factory as a **delegate**
 of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands and execute them by itself, while passing all
 other commands to the delegate `CommandFactory`
-
 
 ```java
 
@@ -92,9 +84,7 @@ The SSHD server security layer has to be customized to suit your needs. This lay
 * `HostBasedAuthenticator` for host based authentication - [RFC 4252 section 9](https://www.ietf.org/rfc/rfc4252.txt)
 * `KeyboardInteractiveAuthenticator` for user interactive authentication - [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt)
 
-
 These custom classes can be configured on the SSHD server using the respective setter methods:
-
 
 ```java
 
@@ -155,4 +145,3 @@ In order to support customized user code for this feature, the `ReservedSessionM
 implement any kind of user-defined heartbeat. *Note:* if the user configured such a mechanism, then the
 `sendReservedHeartbeat` method **must** be implemented since the default throws `UnsupportedOperationException`
 which will cause the session to be terminated the 1st time the method is invoked.
-
