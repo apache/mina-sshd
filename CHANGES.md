@@ -49,6 +49,8 @@ may be available in the relevant data file.
 * `org.apache.sshd.agent.unix.AgentClient` constructor expects a non-*null* `FactoryManager` instance which
 it then exposes via its `getFactoryManager`.
 
+* `SftpEventListener` has separate callbacks for informing about removal of files vs. directories
+
 ## Minor code helpers
 
 * The `Session` object provides a `isServerSession` method that can be used to distinguish between
@@ -145,3 +147,5 @@ and therefore closing all currently tracked file/directory handles.
 * [SSHD-921](https://issues.apache.org/jira/browse/SSHD-921) - Do not send session disconnect message due to timeout expiration if already done so.
 
 * [SSHD-923](https://issues.apache.org/jira/browse/SSHD-923) - Added agent close detection mechanisms to avoid infinite waits on incoming messages.
+
+* [SSHD-929](https://issues.apache.org/jira/browse/SSHD-929) - Provide separate SFTP event listener callbacks for removal of files vs. directories.

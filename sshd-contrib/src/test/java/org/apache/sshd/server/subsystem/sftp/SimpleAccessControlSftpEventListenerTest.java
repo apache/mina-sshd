@@ -139,7 +139,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     public void testReadOnlyDirectoryAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.deleteIfExists(testFile);
@@ -148,7 +149,9 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -161,7 +164,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                     String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
                     try {
                         sftp.remove(file);
-                        fail("Unexpected file remove success");
+                        fail("Unexpected file removal success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
                         assertEquals("Unexpected remove SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
@@ -177,7 +180,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
 
                     try {
                         sftp.rmdir(folder);
-                        fail("Unexpected folder creation success");
+                        fail("Unexpected folder removal success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
                         assertEquals("Unexpected rmdir SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);

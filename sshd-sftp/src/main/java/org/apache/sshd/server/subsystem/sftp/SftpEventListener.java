@@ -370,26 +370,50 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
-     * Called <U>prior</U> to removing a file / directory
+     * Called <U>prior</U> to removing a file
      *
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} about to be removed
      * @throws IOException If failed to handle the call
-     * @see #removed(ServerSession, Path, Throwable)
+     * @see #removedFile(ServerSession, Path, Throwable)
      */
-    default void removing(ServerSession session, Path path) throws IOException {
+    default void removingFile(ServerSession session, Path path) throws IOException {
         // ignored
     }
 
     /**
-     * Called <U>after</U> a file / directory has been removed
+     * Called <U>after</U> a file has been removed
      *
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} to be removed
      * @param thrown  If not-{@code null} then the reason for the failure to execute
      * @throws IOException If failed to handle the call
      */
-    default void removed(ServerSession session, Path path, Throwable thrown) throws IOException {
+    default void removedFile(ServerSession session, Path path, Throwable thrown) throws IOException {
+        // ignored
+    }
+
+    /**
+     * Called <U>prior</U> to removing a directory
+     *
+     * @param session The {@link ServerSession} through which the request was handled
+     * @param path    The {@link Path} about to be removed
+     * @throws IOException If failed to handle the call
+     * @see #removedDirectory(ServerSession, Path, Throwable)
+     */
+    default void removingDirectory(ServerSession session, Path path) throws IOException {
+        // ignored
+    }
+
+    /**
+     * Called <U>after</U> a directory has been removed
+     *
+     * @param session The {@link ServerSession} through which the request was handled
+     * @param path    The {@link Path} to be removed
+     * @param thrown  If not-{@code null} then the reason for the failure to execute
+     * @throws IOException If failed to handle the call
+     */
+    default void removedDirectory(ServerSession session, Path path, Throwable thrown) throws IOException {
         // ignored
     }
 
