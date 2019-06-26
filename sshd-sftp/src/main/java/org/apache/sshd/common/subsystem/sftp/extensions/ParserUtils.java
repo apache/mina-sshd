@@ -25,11 +25,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FstatVfsExtensionParser;
@@ -61,14 +65,12 @@ public final class ParserUtils {
                 FsyncExtensionParser.INSTANCE
             ));
 
-    private static final Map<String, ExtensionParser<?>> PARSERS_MAP;
-
-    static {
-        PARSERS_MAP = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (ExtensionParser<?> p : BUILT_IN_PARSERS) {
-            PARSERS_MAP.put(p.getName(), p);
-        }
-    }
+    private static final NavigableMap<String, ExtensionParser<?>> PARSERS_MAP =
+        Collections.unmodifiableNavigableMap(
+            BUILT_IN_PARSERS.stream()
+                .collect(Collectors.toMap(
+                    NamedResource::getName, Function.identity(),
+                    GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER))));
 
     private ParserUtils() {
         throw new UnsupportedOperationException("No instance");

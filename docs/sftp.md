@@ -445,6 +445,19 @@ One can skip all the conditional code if a specific known extension is required:
 
 ```
 
+### Contributing support for a new extension
+
+* Add the code to handle the new extension in `AbstractSftpSubsystemHelper#executeExtendedCommand`
+
+* Declare the extension name in `DEFAULT_SUPPORTED_CLIENT_EXTENSIONS` (same class)
+
+* In the `org.apache.sshd.client.subsystem.sftp.extensions.helpers` package implement an extension of `AbstractSftpClientExtension`
+for sending and receiving the newly added extension.
+
+* Add a relevant parser for reported extension data initial report (if necessary) in `ParserUtils#BUILT_IN_PARSERS`
+
+See how other extensions are implemented and follow their example
+
 ### Internal exceptions and error message handling
 
 If an exception is thrown during processing of an SFTP command, then the exception is translated into a `SSH_FXP_STATUS` message
