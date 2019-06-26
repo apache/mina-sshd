@@ -73,7 +73,7 @@ public class SftpServerSubSystemEventListener extends ServerEventListenerHelper 
     }
 
     @Override
-    public void removed(ServerSession session, Path path, Throwable thrown) throws IOException {
+    public void removed(ServerSession session, Path path, boolean isDirectory, Throwable thrown) throws IOException {
         if (thrown == null) {
             outputDebugMessage("Session %s removed %s", session, path);
         } else {

@@ -1514,9 +1514,9 @@ public abstract class AbstractSftpSubsystemHelper
                   getServerSession(), id, path, p);
         }
         if (Files.isDirectory(p, options)) {
-            doRemove(id, p);
+            doRemove(id, p, true);
         } else {
-            throw signalRemovalPreConditionFailure(id, path, p, new NotDirectoryException(p.toString()));
+            throw signalRemovalPreConditionFailure(id, path, p, new NotDirectoryException(p.toString()), true);
         }
     }
 
@@ -1525,19 +1525,21 @@ public abstract class AbstractSftpSubsystemHelper
      *
      * @param id Deletion request ID
      * @param p {@link Path} to delete
+     * @param isDirectory Whether the requested path represents a directory or a regular file
      * @throws IOException If failed to delete
      */
-    protected void doRemove(int id, Path p) throws IOException {
+    protected void doRemove(int id, Path p, boolean isDirectory) throws IOException {
         SftpEventListener listener = getSftpEventListenerProxy();
         ServerSession session = getServerSession();
-        listener.removing(session, p);
+
+        listener.removing(session, p, isDirectory);
         try {
             Files.delete(p);
         } catch (IOException | RuntimeException e) {
-            listener.removed(session, p, e);
+            listener.removed(session, p, isDirectory, e);
             throw e;
         }
-        listener.removed(session, p, null);
+        listener.removed(session, p, isDirectory, null);
     }
 
     protected void doMakeDirectory(Buffer buffer, int id) throws IOException {
@@ -1612,27 +1614,30 @@ public abstract class AbstractSftpSubsystemHelper
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
             throw signalRemovalPreConditionFailure(id, path, p,
-                new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"));
+                new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"), false);
         } else if (!status) {
             throw signalRemovalPreConditionFailure(id, path, p,
-                new NoSuchFileException(p.toString(), p.toString(), "Removal candidate not found"));
+                new NoSuchFileException(p.toString(), p.toString(), "Removal candidate not found"), false);
         } else if (Files.isDirectory(p, options)) {
             throw signalRemovalPreConditionFailure(id, path, p,
-                new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder"));
+                new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder"), false);
         } else {
-            doRemove(id, p);
+            doRemove(id, p, false);
         }
     }
 
-    protected <E extends IOException> E signalRemovalPreConditionFailure(int id, String pathValue, Path path, E thrown) throws IOException {
+    protected <E extends IOException> E signalRemovalPreConditionFailure(
+            int id, String pathValue, Path path, E thrown, boolean isRemoveDirectory)
+                throws IOException {
         SftpEventListener listener = getSftpEventListenerProxy();
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("signalRemovalPreConditionFailure(id={})[{}] signal {} for {}: {}",
-                id, pathValue, thrown.getClass().getSimpleName(), path, thrown.getMessage());
+            log.debug("signalRemovalPreConditionFailure(id={})[{}] signal {} for (directory={}) {}: {}",
+                id, pathValue, thrown.getClass().getSimpleName(), isRemoveDirectory, path, thrown.getMessage());
         }
-        listener.removing(session, path);
-        listener.removed(session, path, thrown);
+
+        listener.removing(session, path, isRemoveDirectory);
+        listener.removed(session, path, isRemoveDirectory, thrown);
         return thrown;
     }
 

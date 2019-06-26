@@ -161,8 +161,16 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     @Override
-    public void removing(ServerSession session, Path path) throws IOException {
-        super.removing(session, path);
+    public void removing(ServerSession session, Path path, boolean isDirectory) throws IOException {
+        super.removing(session, path, isDirectory);
+        if (!isModificationAllowed(session, path.toString(), path)) {
+            throw new AccessDeniedException(path.toString());
+        }
+    }
+
+    @Override
+    public void removed(ServerSession session, Path path, boolean isDirectory, Throwable thrown) throws IOException {
+        super.removed(session, path, isDirectory, thrown);
         if (!isModificationAllowed(session, path.toString(), path)) {
             throw new AccessDeniedException(path.toString());
         }

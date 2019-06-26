@@ -207,18 +207,18 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void removing(ServerSession session, Path path)
+    public void removing(ServerSession session, Path path, boolean isDirectory)
             throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("removing(" + session + ") " + path);
+            log.trace("removing(" + session + ")[dir=" + isDirectory + "] " + path);
         }
     }
 
     @Override
-    public void removed(ServerSession session, Path path, Throwable thrown)
+    public void removed(ServerSession session, Path path, boolean isDirectory, Throwable thrown)
             throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("removed(" + session + ") " + path
+            log.trace("removed(" + session + ")[dir=" + isDirectory + "] " + path
                   + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }

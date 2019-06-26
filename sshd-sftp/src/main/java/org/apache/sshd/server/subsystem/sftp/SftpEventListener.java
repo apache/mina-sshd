@@ -370,26 +370,30 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
-     * Called <U>prior</U> to removing a file / directory
+     * Called <U>prior</U> to removing a file
      *
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} about to be removed
+     * @param isDirectory  Whether this is a folder or a file
      * @throws IOException If failed to handle the call
-     * @see #removed(ServerSession, Path, Throwable)
+     * @see #removedFile(ServerSession, Path, Throwable)
      */
-    default void removing(ServerSession session, Path path) throws IOException {
+    default void removing(ServerSession session, Path path, boolean isDirectory) throws IOException {
         // ignored
     }
 
     /**
-     * Called <U>after</U> a file / directory has been removed
+     * Called <U>after</U> a file has been removed
      *
      * @param session The {@link ServerSession} through which the request was handled
      * @param path    The {@link Path} to be removed
+     * @param isDirectory  Whether this was a folder or a file
      * @param thrown  If not-{@code null} then the reason for the failure to execute
      * @throws IOException If failed to handle the call
      */
-    default void removed(ServerSession session, Path path, Throwable thrown) throws IOException {
+    default void removed(
+            ServerSession session, Path path, boolean isDirectory, Throwable thrown)
+                throws IOException {
         // ignored
     }
 
@@ -418,8 +422,9 @@ public interface SftpEventListener extends SshdEventListener {
      * @param thrown  If not-{@code null} then the reason for the failure to execute
      * @throws IOException If failed to handle the call
      */
-    default void linked(ServerSession session, Path source, Path target, boolean symLink, Throwable thrown)
-            throws IOException {
+    default void linked(
+            ServerSession session, Path source, Path target, boolean symLink, Throwable thrown)
+                throws IOException {
         // ignored
     }
 
@@ -448,8 +453,9 @@ public interface SftpEventListener extends SshdEventListener {
      * @param thrown  If not-{@code null} then the reason for the failure to execute
      * @throws IOException If failed to handle the call
      */
-    default void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
-            throws IOException {
+    default void modifiedAttributes(
+            ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
+                throws IOException {
         // ignored
     }
 

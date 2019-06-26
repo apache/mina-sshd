@@ -736,8 +736,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         AtomicInteger entriesCount = new AtomicInteger(0);
         AtomicInteger creatingCount = new AtomicInteger(0);
         AtomicInteger createdCount = new AtomicInteger(0);
-        AtomicInteger removingCount = new AtomicInteger(0);
-        AtomicInteger removedCount = new AtomicInteger(0);
+        AtomicInteger removingFileCount = new AtomicInteger(0);
+        AtomicInteger removedFileCount = new AtomicInteger(0);
+        AtomicInteger removingDirectoryCount = new AtomicInteger(0);
+        AtomicInteger removedDirectoryCount = new AtomicInteger(0);
         AtomicInteger modifyingCount = new AtomicInteger(0);
         AtomicInteger modifiedCount = new AtomicInteger(0);
         SftpEventListener listener = new AbstractSftpEventListenerAdapter() {
@@ -765,16 +767,24 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void removing(ServerSession session, Path path) {
-                removingCount.incrementAndGet();
-                log.info("removing(" + session + ") " + path);
+            public void removing(ServerSession session, Path path, boolean isDirectory) {
+                if (isDirectory) {
+                    removingDirectoryCount.incrementAndGet();
+                } else {
+                    removingFileCount.incrementAndGet();
+                }
+                log.info("removing(" + session + ")[dir=" + isDirectory + "] " + path);
             }
 
             @Override
-            public void removed(ServerSession session, Path path, Throwable thrown) {
-                removedCount.incrementAndGet();
-                log.info("removed(" + session + ") " + path
-                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            public void removed(ServerSession session, Path path, boolean isDirectory, Throwable thrown) {
+                if (isDirectory) {
+                    removedDirectoryCount.incrementAndGet();
+                } else {
+                    removedFileCount.incrementAndGet();
+                }
+                log.info("removed(" + session + ")[dir=" + isDirectory + "] " + path
+                        + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
             }
 
             @Override
@@ -908,8 +918,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             assertTrue("No entries read", entriesCount.get() > 0);
             assertTrue("No data read", readSize.get() > 0L);
             assertTrue("No data written", writeSize.get() > 0L);
-            assertEquals("Mismatched removal counts", removingCount.get(), removedCount.get());
-            assertTrue("No removals signalled", removedCount.get() > 0);
+            assertEquals("Mismatched removal counts", removingFileCount.get(), removedFileCount.get());
+            assertEquals("Mismatched directory removal counts", removingDirectoryCount.get(), removedDirectoryCount.get());
+            assertTrue("No removals signalled", removedFileCount.get() > 0);
             assertEquals("Mismatched creation counts", creatingCount.get(), createdCount.get());
             assertTrue("No creations signalled", creatingCount.get() > 0);
             assertEquals("Mismatched modification counts", modifyingCount.get(), modifiedCount.get());
