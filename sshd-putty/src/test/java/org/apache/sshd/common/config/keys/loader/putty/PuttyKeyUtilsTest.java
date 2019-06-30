@@ -125,6 +125,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
     @Test
     public void testDecodeEncryptedPuttyKeyFile() throws IOException, GeneralSecurityException {
         Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
+
         URL url = getClass().getResource(encryptedFile);
         Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
         assertNotNull("Missing test resource: " + encryptedFile, url);
@@ -138,6 +139,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
     @Test
     public void testDecideEncryptedFileWithRetries() throws IOException, GeneralSecurityException {
         Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
+
         URL url = getClass().getResource(encryptedFile);
         Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
         assertNotNull("Missing test resource: " + encryptedFile, url);

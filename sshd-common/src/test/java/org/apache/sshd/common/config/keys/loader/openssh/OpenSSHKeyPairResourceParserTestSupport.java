@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -62,6 +63,7 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
         URL urlKeyPair = getClass().getResource(resourceKey);
         if (encrypted) {
             Assume.assumeTrue(identity + " no encrypted test data", urlKeyPair != null);
+            Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
         } else {
             assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
         }
