@@ -406,7 +406,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected boolean readIdentification(Buffer buffer) throws IOException, GeneralSecurityException {
+    protected boolean readIdentification(Buffer buffer) throws Exception {
         ServerProxyAcceptor acceptor = getServerProxyAcceptor();
         int rpos = buffer.rpos();
         boolean debugEnabled = log.isDebugEnabled();
@@ -466,6 +466,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                  .addListener(future -> close(true));
             throw err;
         }
+
+        signalPeerIdentificationReceived(clientVersion, ident);
 
         kexState.set(KexState.INIT);
         sendKexInit();

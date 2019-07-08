@@ -472,7 +472,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         return true;
     }
 
-    protected void signalExtraServerVersionInfo(String version, List<String> lines) throws IOException {
+    protected void signalExtraServerVersionInfo(String version, List<String> lines) throws Exception {
+        signalPeerIdentificationReceived(version, lines);
+
         if (GenericUtils.isEmpty(lines)) {
             return;
         }
@@ -483,8 +485,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 ui.serverVersionInfo(this, lines);
             }
         } catch (Error e) {
-            log.warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}", this, version,
-                    e.getClass().getSimpleName(), e.getMessage());
+            log.warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}",
+                this, version, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("signalExtraServerVersionInfo(" + this + ")[" + version
                         + "] interaction consultation failure details", e);

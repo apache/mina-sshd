@@ -931,11 +931,7 @@ public class ServerTest extends BaseTestSupport {
         client.addSessionListener(listener);
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(9L, TimeUnit.SECONDS);
+        try (ClientSession session = createTestClientSession(sshd)) {
             assertEquals("Mismatched client identification", expClientIdent, session.getClientVersion());
             assertEquals("Mismatched server identification", expServerIdent, session.getServerVersion());
         } finally {
@@ -980,11 +976,7 @@ public class ServerTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(9L, TimeUnit.SECONDS);
+        try (ClientSession session = createTestClientSession(sshd)) {
             assertTrue("No signal received in time", signal.tryAcquire(11L, TimeUnit.SECONDS));
         } finally {
             client.stop();
@@ -993,6 +985,37 @@ public class ServerTest extends BaseTestSupport {
         List<String> actual = actualHolder.get();
         assertNotNull("Information not signalled", actual);
         assertListEquals("Server information", expected, actual);
+    }
+
+    @Test   // see SSHD-930
+    public void testDelayClientIdentification() throws Exception {
+        sshd.start();
+
+        PropertyResolverUtils.updateProperty(
+            client, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION, false);
+        AtomicReference<String> peerVersion = new AtomicReference<>();
+        client.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionPeerIdentificationReceived(Session session, String version, List<String> extraLines) {
+                String clientVersion = session.getClientVersion();
+                if (GenericUtils.isNotEmpty(clientVersion)) {
+                    throw new IllegalStateException("Client version already established");
+                }
+
+                String prev = peerVersion.getAndSet(version);
+                if (GenericUtils.isNotEmpty(prev)) {
+                    throw new IllegalStateException("Peer version already signalled: " + prev);
+                }
+            }
+        });
+        client.start();
+
+        try (ClientSession session = createTestClientSession(sshd)) {
+            String version = peerVersion.getAndSet(null);
+            assertTrue("Peer version not signalled", GenericUtils.isNotEmpty(version));
+        } finally {
+            client.stop();
+        }
     }
 
     private ClientSession createTestClientSession(SshServer server) throws Exception {
