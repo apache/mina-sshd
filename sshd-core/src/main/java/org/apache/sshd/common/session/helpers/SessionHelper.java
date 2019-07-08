@@ -19,6 +19,7 @@
 package org.apache.sshd.common.session.helpers;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -79,22 +80,16 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /** Session level lock for regulating access to sensitive data */
     protected final Object sessionLock = new Object();
 
-    /**
-     * Client or server side
-     */
+    /** Client or server side */
     private final boolean serverSession;
-    /**
-     * The underlying network session
-     */
+
+    /** The underlying network session */
     private final IoSession ioSession;
 
-    /**
-     * The session specific properties
-     */
+    /** The session specific properties */
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
-    /**
-     * Session specific attributes
-     */
+
+    /** Session specific attributes */
     private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout measurements
@@ -729,12 +724,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * @return A {@link List} of all received remote identification lines until
      * the version line was read or {@code null} if more data is needed.
      * The identification line is the <U>last</U> one in the list
+     * @throws IOException if malformed identification found
      */
-    protected List<String> doReadIdentification(Buffer buffer, boolean server) {
+    protected List<String> doReadIdentification(Buffer buffer, boolean server) throws IOException {
         int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
             FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
         List<String> ident = null;
         int rpos = buffer.rpos();
+        boolean debugEnabled = log.isDebugEnabled();
         for (byte[] data = new byte[SessionContext.MAX_VERSION_LINE_LENGTH];;) {
             int pos = 0;    // start accumulating line from scratch
             for (boolean needLf = false;;) {
@@ -751,9 +748,9 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                  *      "The null character MUST NOT be sent"
                  */
                 if (b == 0) {
-                    throw new IllegalStateException("Incorrect identification (null characters not allowed) - "
-                            + " at line " + (GenericUtils.size(ident) + 1) + " character #" + (pos + 1)
-                            + " after '" + new String(data, 0, pos, StandardCharsets.UTF_8) + "'");
+                    throw new StreamCorruptedException("Incorrect identification (null characters not allowed) - "
+                        + " at line " + (GenericUtils.size(ident) + 1) + " character #" + (pos + 1)
+                        + " after '" + new String(data, 0, pos, StandardCharsets.UTF_8) + "'");
                 }
                 if (b == '\r') {
                     needLf = true;
@@ -765,22 +762,22 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 }
 
                 if (needLf) {
-                    throw new IllegalStateException("Incorrect identification (bad line ending) "
-                            + " at line " + (GenericUtils.size(ident) + 1)
-                            + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                    throw new StreamCorruptedException("Incorrect identification (bad line ending) "
+                        + " at line " + (GenericUtils.size(ident) + 1)
+                        + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
 
                 if (pos >= data.length) {
-                    throw new IllegalStateException("Incorrect identification (line too long): "
-                            + " at line " + (GenericUtils.size(ident) + 1)
-                            + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
+                    throw new StreamCorruptedException("Incorrect identification (line too long): "
+                        + " at line " + (GenericUtils.size(ident) + 1)
+                        + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
 
                 data[pos++] = b;
             }
 
             String str = new String(data, 0, pos, StandardCharsets.UTF_8);
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("doReadIdentification({}) line='{}'", this, str);
             }
 
@@ -795,7 +792,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             }
 
             if (buffer.rpos() > maxIdentSize) {
-                throw new IllegalStateException("Incorrect identification (too many header lines): size > " + maxIdentSize);
+                throw new StreamCorruptedException("Incorrect identification (too many header lines): size > " + maxIdentSize);
             }
         }
     }

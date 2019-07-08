@@ -48,6 +48,19 @@ public interface ClientFactoryManager
     String CLIENT_IDENTIFICATION = "client-identification";
 
     /**
+     * Whether to send the identification string immediately upon session connection
+     * being established or wait for the peer's identification before sending our own.
+     *
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol Version Exchange</A>
+     */
+    String SEND_IMMEDIATE_IDENTIFICATION = "send-immediate-identification";
+
+    /**
+     * Value of {@value #SEND_IMMEDIATE_IDENTIFICATION} if none configured
+     */
+    boolean DEFAULT_SEND_IMMEDIATE_IDENTIFICATION = true;
+
+    /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     String HEARTBEAT_INTERVAL = "heartbeat-interval";
