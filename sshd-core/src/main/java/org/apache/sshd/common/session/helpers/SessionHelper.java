@@ -550,6 +550,38 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         listener.sessionCreated(this);
     }
 
+    protected void signalPeerIdentificationReceived(String version, List<String> extraLines) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalPeerIdentificationReceived(l, version, extraLines);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("signalPeerIdentificationReceived({}) Failed ({}) to announce peer={}: {}",
+                    this, e.getClass().getSimpleName(), version, e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("signalPeerIdentificationReceived(" + this + ")[" + version + "] failure details", e);
+            }
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+
+    }
+
+    protected void signalPeerIdentificationReceived(SessionListener listener, String version, List<String> extraLines) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationReceived(this, version, extraLines);
+    }
+
     /**
      * Sends a session event to all currently registered session listeners
      *

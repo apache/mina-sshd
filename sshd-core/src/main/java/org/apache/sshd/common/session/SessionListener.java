@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.session;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -39,6 +40,19 @@ public interface SessionListener extends SshdEventListener {
      * @param session The created {@link Session}
      */
     default void sessionCreated(Session session) {
+        // ignored
+    }
+
+    /**
+     * The peer's identification version was received
+     *
+     * @param session The {@link Session} instance
+     * @param version The retrieved identification version
+     * @param extraLines Extra data preceding the identification
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol Version Exchange</A>
+     */
+    default void sessionPeerIdentificationReceived(
+            Session session, String version, List<String> extraLines) {
         // ignored
     }
 
