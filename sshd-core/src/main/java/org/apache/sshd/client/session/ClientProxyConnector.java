@@ -31,13 +31,15 @@ package org.apache.sshd.client.session;
 @FunctionalInterface
 public interface ClientProxyConnector {
     /**
-     * Invoked just before the client identification is sent so that the
-     * proxy can send the meta-data to its peer. Upon successful return
-     * the SSH identification line is sent and the protocol proceeds as usual.
+     * Invoked once initial connection has been established so that the proxy can open
+     * its channel and send the meta-data to its peer. Upon successful return the SSH
+     * identification line is eventually sent and the protocol proceeds as usual.
      *
-     * @param session The {@link ClientSession} instance
-     * @throws Exception If failed to send the data - which will also
+     * @param session The {@link ClientSession} instance - <B>Note:</B> at this stage
+     * the client's identification line is not set yet.
+     * @throws Exception If failed to initialize the proxy - which will also
      * terminate the session
+     * @see org.apache.sshd.client.ClientFactoryManager#SEND_IMMEDIATE_IDENTIFICATION SEND_IMMEDIATE_IDENTIFICATION
      */
     void sendClientProxyMetadata(ClientSession session) throws Exception;
 }

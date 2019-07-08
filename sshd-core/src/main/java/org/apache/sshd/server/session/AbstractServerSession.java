@@ -444,25 +444,27 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             log.debug("readIdentification({}) client version string: {}", this, clientVersion);
         }
 
-        String errorMessage = null;
-        if (!SessionContext.isValidVersionPrefix(clientVersion)) {
-            errorMessage = "Unsupported protocol version: " + clientVersion;
+        IOException err;
+        if (SessionContext.isValidVersionPrefix(clientVersion)) {
+            /*
+             * NOTE: because of the way that "doReadIdentification" works we are
+             * assured that there are no extra lines beyond the version one, but
+             * we check this nevertheless
+             */
+            err = (numLines > 1)
+                ? new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion)
+                : null;
+        } else {
+            err = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+                "Unsupported protocol version: " + clientVersion);
         }
 
-        /*
-         * NOTE: because of the way that "doReadIdentification" works we are
-         * assured that there are no extra lines beyond the version one, but
-         * we check this nevertheless
-         */
-        if ((errorMessage == null) && (numLines > 1)) {
-            errorMessage = "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion;
-        }
-
-        if (GenericUtils.length(errorMessage) > 0) {
+        if (err != null) {
             IoSession networkSession = getIoSession();
-            networkSession.writePacket(new ByteArrayBuffer((errorMessage + "\n").getBytes(StandardCharsets.UTF_8)))
+            networkSession.writePacket(new ByteArrayBuffer((err.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)))
                  .addListener(future -> close(true));
-            throw new SshException(errorMessage);
+            throw err;
         }
 
         kexState.set(KexState.INIT);

@@ -20,6 +20,7 @@ package org.apache.sshd.common.session.helpers;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.io.WriteAbortedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -84,45 +85,46 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadIdentSimple() {
+    public void testReadIdentSimple() throws IOException {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithoutCR() {
+    public void testReadIdentWithoutCR() throws IOException {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithHeaders() {
+    public void testReadIdentWithHeaders() throws IOException {
         Buffer buf = new ByteArrayBuffer("a header line\r\nSSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithSplitPackets() {
+    public void testReadIdentWithSplitPackets() throws IOException {
         Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertNull("Unexpected identification for header only", ident);
+
         buf.putRawBytes("-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testReadIdentBadLineEnding() {
+    @Test(expected = StreamCorruptedException.class)
+    public void testReadIdentBadLineEnding() throws IOException {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\ra".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         fail("Unexpected success: " + ident);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testReadIdentLongLine() {
+    @Test(expected = StreamCorruptedException.class)
+    public void testReadIdentLongLine() throws IOException {
         StringBuilder sb = new StringBuilder(SessionContext.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
         sb.append("SSH-2.0-software");
         do {
@@ -134,16 +136,16 @@ public class AbstractSessionTest extends BaseTestSupport {
         fail("Unexpected success: " + ident);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testReadIdentWithNullChar() {
+    @Test(expected = StreamCorruptedException.class)
+    public void testReadIdentWithNullChar() throws IOException {
         String id = "SSH-2.0" + '\0' + "-software\r\n";
         Buffer buf = new ByteArrayBuffer(id.getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         fail("Unexpected success: " + ident);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testReadIdentLongHeader() {
+    @Test(expected = StreamCorruptedException.class)
+    public void testReadIdentLongHeader() throws IOException {
         StringBuilder sb = new StringBuilder(FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE + Integer.SIZE);
         do {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
@@ -294,7 +296,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    private static String readIdentification(MySession session, Buffer buf) {
+    private static String readIdentification(MySession session, Buffer buf) throws IOException {
         List<String> lines = session.doReadIdentification(buf);
         return GenericUtils.isEmpty(lines) ? null : lines.get(lines.size() - 1);
     }
@@ -432,7 +434,7 @@ public class AbstractSessionTest extends BaseTestSupport {
             return false;
         }
 
-        public List<String> doReadIdentification(Buffer buffer) {
+        public List<String> doReadIdentification(Buffer buffer) throws IOException {
             return super.doReadIdentification(buffer, false);
         }
 

@@ -39,8 +39,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.kex.extension.KexExtensionHandler;
-import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -90,16 +88,17 @@ public class ClientSessionImpl extends AbstractClientSession {
         authFuture.setAuthed(false);
 
         signalSessionCreated(ioSession);
-        sendClientIdentification();
 
-        KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.PREKEX))) {
-            kexState.set(KexState.INIT);
-            sendKexInit();
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("<init>({}) delay KEX-INIT until server-side one received", this);
-            }
+        /*
+         * Must be called regardless of whether the client identification
+         * is sent or not immediately in order to allow opening any underlying
+         * proxy protocol - e.g., SOCKS or HTTP CONNECT - otherwise the server's
+         * identification will never arrive
+         */
+        initializeProxyConnector();
+
+        if (sendImmediateIdentification) {
+            initializeKexPhase();
         }
     }
 

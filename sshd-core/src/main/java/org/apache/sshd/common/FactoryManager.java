@@ -362,6 +362,11 @@ public interface FactoryManager
     String IGNORE_MESSAGE_SIZE = "ignore-message-size";
 
     /**
+     * Value of {@value #IGNORE_MESSAGE_SIZE} if none configured
+     */
+    int DEFAULT_IGNORE_MESSAGE_SIZE = 16;
+
+    /**
      * The request type of agent forwarding. The value may be {@value #AGENT_FORWARDING_TYPE_IETF} or
      *  {@value #AGENT_FORWARDING_TYPE_OPENSSH}.
      */
@@ -376,11 +381,6 @@ public interface FactoryManager
      * The agent forwarding type defined by OpenSSH.
      */
     String AGENT_FORWARDING_TYPE_OPENSSH = "auth-agent-req@openssh.com";
-
-    /**
-     * Value of {@value #IGNORE_MESSAGE_SIZE} if none configured
-     */
-    int DEFAULT_IGNORE_MESSAGE_SIZE = 16;
 
     /**
      * An upper case string identifying the version of the software used on client or server side.

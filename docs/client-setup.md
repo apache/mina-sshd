@@ -150,6 +150,20 @@ sessions depends on the actual changed configuration. Here is how a typical usag
 
 ```
 
+## Configuring the protocol exchange phase
+
+[RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2) does not specify when the client/server should send
+their respective identification strings. All it states is that these strings must be available before KEX stage since they
+participate in it. By default, the client sends its identification string immediately upon session being established. However,
+this can be modified so that the client waits for the server's identification before sending its own.
+
+```java
+    SshClient client = ...setup client...
+    PropertyResolverUtils.updateProperty(
+       client, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION, false);
+    client.start();
+```
+
 ## Keeping the session alive while no traffic
 
 The client-side implementation has a 2 builtin mechanisms for maintaining the session alive as far as the **server** is concerned

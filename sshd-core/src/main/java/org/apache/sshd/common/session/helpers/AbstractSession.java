@@ -1227,10 +1227,10 @@ public abstract class AbstractSession extends SessionHelper {
      * @param buffer The {@link Buffer} containing the remote identification
      * @return <code>true</code> if the identification has been fully read or
      * <code>false</code> if more data is needed
-     * @throws IOException if an error occurs such as a bad protocol version
-     * @throws GeneralSecurityException If unsuccessful KEX was involved
+     * @throws Exception if an error occurs such as a bad protocol version or unsuccessful
+     * KEX was involved
      */
-    protected abstract boolean readIdentification(Buffer buffer) throws IOException, GeneralSecurityException;
+    protected abstract boolean readIdentification(Buffer buffer) throws Exception;
 
     /**
      * Send the key exchange initialization packet.
