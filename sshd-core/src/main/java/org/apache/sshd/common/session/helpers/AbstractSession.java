@@ -488,10 +488,15 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected SimpleImmutableEntry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
         String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
-        String clientValue = clientPreferences[0];
+        String clientValue = GenericUtils.isEmpty(clientPreferences) ? null : clientPreferences[0];
         String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');
-        String serverValue = serverPreferences[0];
-        return Objects.equals(clientValue, serverValue) ? null : new SimpleImmutableEntry<>(clientValue, serverValue);
+        String serverValue = GenericUtils.isEmpty(serverPreferences) ? null : serverPreferences[0];
+        if (GenericUtils.isEmpty(clientValue) || GenericUtils.isEmpty(serverValue)
+                || (!Objects.equals(clientValue, serverValue))) {
+            return new SimpleImmutableEntry<>(clientValue, serverValue);
+        }
+
+        return null;
     }
 
     /**
