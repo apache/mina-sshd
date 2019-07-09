@@ -799,9 +799,9 @@ public abstract class AbstractSession extends SessionHelper {
         // While exchanging key, queue high level packets
         if (!KexState.DONE.equals(kexState.get())) {
             byte[] bufData = buffer.array();
-            byte cmd = bufData[buffer.rpos()];
+            int cmd = bufData[buffer.rpos()] & 0xFF;
             if (cmd > SshConstants.SSH_MSG_KEX_LAST) {
-                String cmdName = SshConstants.getCommandMessageName(cmd & 0xFF);
+                String cmdName = SshConstants.getCommandMessageName(cmd);
                 synchronized (pendingPackets) {
                     if (!KexState.DONE.equals(kexState.get())) {
                         if (pendingPackets.isEmpty()) {
