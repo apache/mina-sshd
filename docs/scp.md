@@ -7,7 +7,7 @@ to add this additional dependency to your maven project:
 
     <dependency>
         <groupId>org.apache.sshd</groupId>
-        <artifactId>sshd-sscp</artifactId>
+        <artifactId>sshd-scp</artifactId>
         <version>...same as sshd-core...</version>
     </dependency>
 
