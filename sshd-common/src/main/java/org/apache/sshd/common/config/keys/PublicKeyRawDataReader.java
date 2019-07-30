@@ -42,6 +42,7 @@ import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.io.resource.URLResource;
 
 /**
+ * @param <PUB> The generic {@link PublicKey} type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PublicKeyRawDataReader<PUB extends PublicKey> {

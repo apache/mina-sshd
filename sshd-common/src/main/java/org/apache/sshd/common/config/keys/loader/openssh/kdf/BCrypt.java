@@ -614,6 +614,9 @@ public class BCrypt {
 
   /**
    * Compatibility with new OpenBSD function.
+   * @param hpass The hash password bytes
+   * @param hsalt The hash salt bytes
+   * @param output Target hash output buffer
    */
   public void hash(byte[] hpass, byte[] hsalt, byte[] output) {
       init_key();
@@ -642,6 +645,11 @@ public class BCrypt {
 
   /**
    * Compatibility with new OpenBSD function.
+   *
+   * @param password The password bytes
+   * @param salt The salt bytes
+   * @param rounds Number of hash rounds
+   * @param output Hash output buffer
    */
   public void pbkdf(byte[] password, byte[] salt, int rounds, byte[] output) {
       try {

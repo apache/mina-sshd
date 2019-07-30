@@ -155,7 +155,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @return The {@link PublicKey} or {@code null} if could not resolve it
      * @throws IOException              If failed to decode/encode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see #resolvePublicKey(SessionContext, PublicKeyEntryResolver)
+     * @see #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
      */
     public PublicKey appendPublicKey(
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
@@ -216,7 +216,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * @throws IOException If failed to decode the key data
      * @throws GeneralSecurityException If failed to generate the {@link PublicKey}
      * from the decoded data
-     * @see #resolvePublicKey(SessionContext, PublicKeyEntryResolver)
+     * @see #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
      */
     public static List<PublicKey> resolvePublicKeyEntries(
             SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)

@@ -247,7 +247,7 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
      * @param buf The buffer with the data bytes
      * @param offset The offset in the buffer to decode the array
      * @param available The max. available data starting from the offset
-     * @param maxChars Max. allowed data in decoded buffer - if more than
+     * @param maxAllowed Max. allowed data in decoded buffer - if more than
      * that is encoded then an {@link IndexOutOfBoundsException} will be thrown
      * @return The decoded data buffer + the offset of the next byte after it
      */

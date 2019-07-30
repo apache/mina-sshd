@@ -376,7 +376,7 @@ public interface SftpEventListener extends SshdEventListener {
      * @param path    The {@link Path} about to be removed
      * @param isDirectory  Whether this is a folder or a file
      * @throws IOException If failed to handle the call
-     * @see #removedFile(ServerSession, Path, Throwable)
+     * @see #removed(ServerSession, Path, boolean, Throwable)
      */
     default void removing(ServerSession session, Path path, boolean isDirectory) throws IOException {
         // ignored
