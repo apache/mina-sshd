@@ -16,3 +16,5 @@ peer version data is received.
 * [SSHD-930](https://issues.apache.org/jira/browse/SSHD-930) - Added configuration allowing the user to specify whether client should wait
 for the server's identification before sending its own.
 
+* [SSHD-934](https://issues.apache.org/jira/browse/SSHD-934) - Fixed ECDSA public key encoding into OpenSSH format.
+

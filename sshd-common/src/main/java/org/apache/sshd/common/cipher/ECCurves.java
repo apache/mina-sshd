@@ -221,8 +221,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * @param name The curve name (case <U>insensitive</U> - ignored if
-     *             {@code null}/empty
+     * @param name The curve name (case <U>insensitive</U> - ignored if {@code null}/empty
      * @return The matching {@link ECCurves} instance - {@code null} if no
      * match found
      */
@@ -552,6 +551,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 byte[] tmp = new byte[numElements];
                 System.arraycopy(vp, startIndex, tmp, numElements - vLen, vLen);
                 vp = tmp;
+                startIndex = 0;
+                vLen = vp.length;
             }
 
             s.write(vp, startIndex, vLen);
