@@ -45,7 +45,7 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     @Test
     public void testBuilderDefaultFactoryValues() {
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder().build();
-        assertNull("Mismatched executor", factory.getExecutorService());
+        assertNull("Mismatched executor", factory.resolveExecutorService());
         assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY, factory.getUnsupportedAttributePolicy());
     }
 
@@ -56,9 +56,10 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     public void testBuilderCorrectlyInitializesFactory() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         CloseableExecutorService service = dummyExecutor();
-        SftpSubsystemFactory factory = builder.withExecutorService(service)
+        SftpSubsystemFactory factory =
+            builder.withExecutorServiceProvider(() -> service)
                 .build();
-        assertSame("Mismatched executor", service, factory.getExecutorService());
+        assertSame("Mismatched executor", service, factory.resolveExecutorService());
 
         for (UnsupportedAttributePolicy policy : UnsupportedAttributePolicy.VALUES) {
             SftpSubsystemFactory actual = builder.withUnsupportedAttributePolicy(policy).build();
@@ -82,13 +83,15 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     @Test
     public void testBuilderUniqueInstance() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
-        SftpSubsystemFactory f1 = builder.withExecutorService(dummyExecutor()).build();
+        CloseableExecutorService service1 = dummyExecutor();
+        SftpSubsystemFactory f1 = builder.withExecutorServiceProvider(() -> service1).build();
         SftpSubsystemFactory f2 = builder.build();
         assertNotSame("No new instance built", f1, f2);
-        assertSame("Mismatched executors", f1.getExecutorService(), f2.getExecutorService());
+        assertSame("Mismatched executors", f1.resolveExecutorService(), f2.resolveExecutorService());
 
-        SftpSubsystemFactory f3 = builder.withExecutorService(dummyExecutor()).build();
-        assertNotSame("Executor service not changed", f1.getExecutorService(), f3.getExecutorService());
+        CloseableExecutorService service2 = dummyExecutor();
+        SftpSubsystemFactory f3 = builder.withExecutorServiceProvider(() -> service2).build();
+        assertNotSame("Executor service not changed", f1.resolveExecutorService(), f3.resolveExecutorService());
     }
 
     private static CloseableExecutorService dummyExecutor() {

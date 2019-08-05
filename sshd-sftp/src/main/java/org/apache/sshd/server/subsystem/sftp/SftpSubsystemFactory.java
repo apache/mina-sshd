@@ -20,6 +20,7 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
@@ -39,7 +40,7 @@ public class SftpSubsystemFactory
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
     public static class Builder extends AbstractSftpEventListenerManager implements ObjectBuilder<SftpSubsystemFactory> {
-        private CloseableExecutorService executors;
+        private Supplier<? extends CloseableExecutorService> executorsProvider;
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
         private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
         private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
@@ -48,8 +49,8 @@ public class SftpSubsystemFactory
             super();
         }
 
-        public Builder withExecutorService(CloseableExecutorService service) {
-            executors = service;
+        public Builder withExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider) {
+            executorsProvider = provider;
             return this;
         }
 
@@ -71,7 +72,7 @@ public class SftpSubsystemFactory
         @Override
         public SftpSubsystemFactory build() {
             SftpSubsystemFactory factory = new SftpSubsystemFactory();
-            factory.setExecutorService(executors);
+            factory.setExecutorServiceProvider(executorsProvider);
             factory.setUnsupportedAttributePolicy(policy);
             factory.setFileSystemAccessor(fileSystemAccessor);
             factory.setErrorStatusDataHandler(errorStatusDataHandler);
@@ -80,7 +81,7 @@ public class SftpSubsystemFactory
         }
     }
 
-    private CloseableExecutorService executors;
+    private Supplier<? extends CloseableExecutorService> executorsProvider;
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
     private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
     private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
@@ -94,16 +95,17 @@ public class SftpSubsystemFactory
         return NAME;
     }
 
-    public CloseableExecutorService getExecutorService() {
-        return executors;
+    public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
+        return executorsProvider;
     }
 
     /**
-     * @param service The {@link CloseableExecutorService} to be used by the {@link SftpSubsystem}
-     * command when starting execution. If {@code null} then a single-threaded ad-hoc service is used.
+     * @param service The {@link Supplier} of {@link CloseableExecutorService}-s to be used by the
+     * {@link SftpSubsystem} command when starting execution. If {@code null} then a single-threaded
+     * ad-hoc service is used.
      */
-    public void setExecutorService(CloseableExecutorService service) {
-        executors = service;
+    public void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider) {
+        executorsProvider = provider;
     }
 
     public UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
@@ -136,10 +138,15 @@ public class SftpSubsystemFactory
         errorStatusDataHandler = Objects.requireNonNull(handler, "No error status data handler provided");
     }
 
+    protected CloseableExecutorService resolveExecutorService() {
+        Supplier<? extends CloseableExecutorService> provider = getExecutorServiceProvider();
+        return (provider == null) ? null : provider.get();
+    }
+
     @Override
     public Command create() {
         SftpSubsystem subsystem =
-            new SftpSubsystem(getExecutorService(),
+            new SftpSubsystem(resolveExecutorService(),
                 getUnsupportedAttributePolicy(), getFileSystemAccessor(),
                 getErrorStatusDataHandler());
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
