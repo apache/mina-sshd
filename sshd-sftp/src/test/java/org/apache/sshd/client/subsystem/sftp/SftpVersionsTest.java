@@ -49,13 +49,14 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
@@ -244,7 +245,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         AtomicInteger numInvocations = new AtomicInteger(0);
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
-            public Command create() {
+            public Command createSubsystem(ChannelSession channel) throws IOException {
                 SftpSubsystem subsystem = new SftpSubsystem(resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
@@ -317,7 +318,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
@@ -368,7 +369,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         final AtomicInteger numInvocations = new AtomicInteger(0);
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
-            public Command create() {
+            public Command createSubsystem(ChannelSession channel) throws IOException {
                 SftpSubsystem subsystem = new SftpSubsystem(resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
@@ -439,7 +440,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)

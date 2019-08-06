@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -26,6 +27,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
@@ -144,7 +146,7 @@ public class SftpSubsystemFactory
     }
 
     @Override
-    public Command create() {
+    public Command createSubsystem(ChannelSession channel) throws IOException {
         SftpSubsystem subsystem =
             new SftpSubsystem(resolveExecutorService(),
                 getUnsupportedAttributePolicy(), getFileSystemAccessor(),

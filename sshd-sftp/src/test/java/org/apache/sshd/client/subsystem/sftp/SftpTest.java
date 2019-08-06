@@ -70,7 +70,6 @@ import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.client.subsystem.sftp.impl.DefaultCloseableHandle;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -94,8 +93,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper;
 import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
@@ -627,10 +626,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testSftpFileSystemAccessor() throws Exception {
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
-        NamedFactory<Command> f = factories.get(0);
+        SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
@@ -721,10 +720,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     @SuppressWarnings({"checkstyle:anoninnerlength", "checkstyle:methodlength"})
     public void testClient() throws Exception {
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
-        NamedFactory<Command> f = factories.get(0);
+        SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
@@ -1333,7 +1332,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test   // see SSHD-621
     public void testServerDoesNotSupportSftp() throws Exception {
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         sshd.setSubsystemFactories(null);
@@ -1452,10 +1451,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
-        NamedFactory<Command> f = factories.get(0);
+        SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
 
         SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
@@ -1478,7 +1477,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         };
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         /*
@@ -1555,7 +1555,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 Path parentPath = targetPath.getParent();
                 String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
 
-                try (FileChannel fc = sftp.openRemotePathChannel(remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                try (FileChannel fc = sftp.openRemotePathChannel(
+                        remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
                     int writeLen = fc.write(ByteBuffer.wrap(expected));
                     assertEquals("Mismatched written length", expected.length, writeLen);
 

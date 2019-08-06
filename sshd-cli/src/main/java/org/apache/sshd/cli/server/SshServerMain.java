@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Level;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -37,13 +36,13 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.shell.ShellFactory;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
  * TODO Add javadoc
@@ -191,7 +190,7 @@ public class SshServerMain extends SshServerCliSupport {
             .withDelegate(ProcessShellCommandFactory.INSTANCE)
             .build());
 
-        List<NamedFactory<Command>> subsystems =
+        List<SubsystemFactory> subsystems =
             resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));

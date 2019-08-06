@@ -50,13 +50,13 @@ import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ShellFactory;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
  * <p>
@@ -103,7 +103,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
-    private List<NamedFactory<Command>> subsystemFactories;
+    private List<SubsystemFactory> subsystemFactories;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private KeyPairProvider keyPairProvider;
     private PasswordAuthenticator passwordAuthenticator;
@@ -193,11 +193,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    public List<NamedFactory<Command>> getSubsystemFactories() {
+    public List<SubsystemFactory> getSubsystemFactories() {
         return subsystemFactories;
     }
 
-    public void setSubsystemFactories(List<NamedFactory<Command>> subsystemFactories) {
+    public void setSubsystemFactories(List<SubsystemFactory> subsystemFactories) {
         this.subsystemFactories = subsystemFactories;
     }
 

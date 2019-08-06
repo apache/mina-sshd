@@ -36,8 +36,8 @@ public interface CommandFactory {
      * If the command is not known, a dummy command should be returned to allow
      * the display output to be sent back to the client.
      *
-     * @param channel The {@link ChannelSession} through which the command has been
-     * received
+     * @param channel The {@link ChannelSession} through which the command
+     * has been received
      * @param command The command that will be run
      * @return a non {@code null} {@link Command} instance
      * @throws IOException if failed to create the instance

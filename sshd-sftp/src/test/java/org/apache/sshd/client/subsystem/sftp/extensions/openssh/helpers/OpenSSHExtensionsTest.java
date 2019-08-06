@@ -48,6 +48,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtension
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
@@ -125,7 +126,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
-            public Command create() {
+            public Command createSubsystem(ChannelSession channel) throws IOException {
                 return new SftpSubsystem(resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override

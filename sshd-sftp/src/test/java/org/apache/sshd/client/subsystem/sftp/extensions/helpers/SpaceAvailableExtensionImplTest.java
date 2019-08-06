@@ -32,10 +32,11 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SpaceAvailableExtension;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
@@ -67,10 +68,10 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         final String queryPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
 
-        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
-            public Command create() {
+            public Command createSubsystem(ChannelSession channel) throws IOException {
                 return new SftpSubsystem(resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override

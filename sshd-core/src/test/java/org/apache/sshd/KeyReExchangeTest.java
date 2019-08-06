@@ -674,7 +674,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         }
 
         @Override
-        public Command create() {
+        public Command createSubsystem(ChannelSession channel) throws IOException {
             return new Command() {
                 private ExitCallback callback;
 

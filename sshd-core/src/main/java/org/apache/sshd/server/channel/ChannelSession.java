@@ -35,7 +35,6 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
@@ -74,6 +73,7 @@ import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.ShellFactory;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -591,16 +591,18 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleSubsystem({})[want-reply={}] subsystem={}", this, wantReply, subsystem);
         }
 
-        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
-        List<NamedFactory<Command>> factories = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
+        ServerFactoryManager manager =
+            Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        Collection<SubsystemFactory> factories =
+            Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
             return RequestHandler.Result.ReplyFailure;
         }
 
         try {
-            commandInstance = NamedFactory.create(factories, subsystem);
-        } catch (RuntimeException | Error e) {
+            commandInstance = SubsystemFactory.createSubsystem(this,  factories, subsystem);
+        } catch (IOException | RuntimeException | Error e) {
             log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
                   this, e.getClass().getSimpleName(), subsystem, e.getMessage());
             if (log.isDebugEnabled()) {

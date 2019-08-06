@@ -22,11 +22,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptorHolder;
 import org.apache.sshd.server.shell.ShellFactory;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
  * The <code>ServerFactoryManager</code> enable the retrieval of additional
@@ -107,8 +106,8 @@ public interface ServerFactoryManager
      * Retrieve the list of named factories for <code>CommandFactory.Command</code> to
      * be used to create subsystems.
      *
-     * @return a list of named <code>CommandFactory.Command</code> factories
-     * or {@code null} if subsystems are not supported on this server
+     * @return a list of named {@link SubsystemFactory}-ies
+     * or {@code null}/empty if subsystems are not supported on this server
      */
-    List<NamedFactory<Command>> getSubsystemFactories();
+    List<SubsystemFactory> getSubsystemFactories();
 }

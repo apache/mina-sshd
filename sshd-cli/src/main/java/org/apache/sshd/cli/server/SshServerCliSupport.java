@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.cli.server.helper.ServerPortForwardingEventListener;
 import org.apache.sshd.cli.server.helper.SftpServerSubSystemEventListener;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
@@ -56,7 +55,6 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
@@ -165,14 +163,14 @@ public abstract class SshServerCliSupport extends CliSupport {
         return banner;
     }
 
-    public static List<NamedFactory<Command>> resolveServerSubsystems(
+    public static List<SubsystemFactory> resolveServerSubsystems(
             ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
                 throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
         if (GenericUtils.isNotEmpty(classList)) {
             String[] classes = GenericUtils.split(classList, ',');
-            List<NamedFactory<Command>> subsystems = new ArrayList<>(classes.length);
+            List<SubsystemFactory> subsystems = new ArrayList<>(classes.length);
             for (String fqcn : classes) {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
@@ -204,7 +202,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             : Stream.of(GenericUtils.split(nameList, ','))
                 .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
         ServiceLoader<SubsystemFactory> loader = ServiceLoader.load(SubsystemFactory.class, cl);
-        List<NamedFactory<Command>> subsystems = new ArrayList<>();
+        List<SubsystemFactory> subsystems = new ArrayList<>();
         for (SubsystemFactory factory : loader) {
             String name = factory.getName();
             if (havePreferences && (!preferredNames.contains(name))) {
