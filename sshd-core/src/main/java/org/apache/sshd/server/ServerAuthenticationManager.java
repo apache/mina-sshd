@@ -32,6 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
@@ -157,7 +158,7 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
      *
      * @return a list of named <code>UserAuth</code> factories, never {@code null}/empty
      */
-    List<NamedFactory<UserAuth>> getUserAuthFactories();
+    List<UserAuthFactory> getUserAuthFactories();
 
     default String getUserAuthFactoriesNameList() {
         return NamedResource.getNames(getUserAuthFactories());
@@ -167,7 +168,7 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
         return NamedResource.getNameList(getUserAuthFactories());
     }
 
-    void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories);
+    void setUserAuthFactories(List<UserAuthFactory> userAuthFactories);
 
     default void setUserAuthFactoriesNameList(String names) {
         setUserAuthFactoriesNames(GenericUtils.split(names, ','));
@@ -179,9 +180,8 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
 
     default void setUserAuthFactoriesNames(Collection<String> names) {
         BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<NamedFactory<UserAuth>> factories =
-                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
+        List<UserAuthFactory> factories =
+            ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
         setUserAuthFactories(factories);
@@ -255,7 +255,7 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
      * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
      * @see #resolveUserAuthFactories(ServerAuthenticationManager, List)
      */
-    static List<NamedFactory<UserAuth>> resolveUserAuthFactories(ServerAuthenticationManager manager) {
+    static List<UserAuthFactory> resolveUserAuthFactories(ServerAuthenticationManager manager) {
         if (manager == null) {
             return Collections.emptyList();
         } else {
@@ -273,8 +273,8 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
      * {@code null}/empty then they are used as-is.
      * @return The resolved {@link List} of {@link NamedFactory} for the {@link UserAuth}s
      */
-    static List<NamedFactory<UserAuth>> resolveUserAuthFactories(
-            ServerAuthenticationManager manager, List<NamedFactory<UserAuth>> userFactories) {
+    static List<UserAuthFactory> resolveUserAuthFactories(
+            ServerAuthenticationManager manager, List<UserAuthFactory> userFactories) {
         if (GenericUtils.size(userFactories) > 0) {
             return userFactories;   // use whatever the user decided
         }
@@ -283,7 +283,7 @@ public interface ServerAuthenticationManager extends KeyPairProviderHolder {
             return Collections.emptyList();
         }
 
-        List<NamedFactory<UserAuth>> factories = new ArrayList<>();
+        List<UserAuthFactory> factories = new ArrayList<>();
         if (manager.getPasswordAuthenticator() != null) {
             factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
             factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);

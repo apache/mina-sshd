@@ -29,14 +29,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
-import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultForwarderFactory;
@@ -67,16 +66,16 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
     @Test
     public void testDefaultUserAuthFactoriesMethods() {
-        AtomicReference<List<NamedFactory<UserAuth>>> factoriesHolder = new AtomicReference<>();
+        AtomicReference<List<UserAuthFactory>> factoriesHolder = new AtomicReference<>();
         @SuppressWarnings("checkstyle:anoninnerlength")
         ClientAuthenticationManager manager = new ClientAuthenticationManager() {
             @Override
-            public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+            public List<UserAuthFactory> getUserAuthFactories() {
                 return factoriesHolder.get();
             }
 
             @Override
-            public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+            public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
                 assertNull("Unexpected multiple invocation", factoriesHolder.getAndSet(userAuthFactories));
             }
 
@@ -151,8 +150,9 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         manager.setUserAuthFactoriesNameList(expected);
         assertEquals("Mismatched updated factories names", expected, manager.getUserAuthFactoriesNameList());
 
-        List<NamedFactory<UserAuth>> factories = factoriesHolder.get();
-        assertEquals("Mismatched factories count", BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+        List<UserAuthFactory> factories = factoriesHolder.get();
+        assertEquals("Mismatched factories count",
+            BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
         for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
             assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
         }

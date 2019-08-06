@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
-import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
@@ -42,7 +42,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
@@ -89,7 +88,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
     private KeyIdentityProvider keyIdentityProvider;
-    private List<NamedFactory<UserAuth>> userAuthFactories;
+    private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
 
@@ -145,13 +144,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+    public List<UserAuthFactory> getUserAuthFactories() {
         ClientFactoryManager manager = getFactoryManager();
-        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, manager.getUserAuthFactories());
+        return resolveEffectiveFactories(userAuthFactories, manager.getUserAuthFactories());
     }
 
     @Override
-    public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+    public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
     }
 

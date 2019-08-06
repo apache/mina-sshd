@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.ServiceFactory;
@@ -59,7 +58,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
@@ -80,7 +79,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
     private GSSAuthenticator gssAuthenticator;
     private HostBasedAuthenticator hostBasedAuthenticator;
-    private List<NamedFactory<UserAuth>> userAuthFactories;
+    private List<UserAuthFactory> userAuthFactories;
     private KeyPairProvider keyPairProvider;
 
     protected AbstractServerSession(ServerFactoryManager factoryManager, IoSession ioSession) {
@@ -167,13 +166,13 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+    public List<UserAuthFactory> getUserAuthFactories() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveFactories(UserAuth.class, userAuthFactories, manager.getUserAuthFactories());
+        return resolveEffectiveFactories(userAuthFactories, manager.getUserAuthFactories());
     }
 
     @Override
-    public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+    public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
         this.userAuthFactories = userAuthFactories; // OK if null/empty - inherit from parent
     }
 

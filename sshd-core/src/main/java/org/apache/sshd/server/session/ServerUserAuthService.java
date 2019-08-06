@@ -40,8 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
@@ -61,6 +59,7 @@ import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.auth.UserAuthNoneFactory;
 import org.apache.sshd.server.auth.WelcomeBannerPhase;
 
@@ -72,7 +71,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private final ServerSession serverSession;
     private final WelcomeBannerPhase welcomePhase;
-    private List<NamedFactory<UserAuth>> userAuthFactories;
+    private List<UserAuthFactory> userAuthFactories;
     private List<List<String>> authMethods;
     private String authUserName;
     private String authMethod;
@@ -96,7 +95,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         maxAuthRequests = this.getIntProperty(
             ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
-        List<NamedFactory<UserAuth>> factories = ValidateUtils.checkNotNullAndNotEmpty(
+        List<UserAuthFactory> factories = ValidateUtils.checkNotNullAndNotEmpty(
             serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
         userAuthFactories = new ArrayList<>(factories);
         // Get authentication methods
@@ -104,7 +103,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         String mths = this.getString(ServerAuthenticationManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
-            for (NamedFactory<UserAuth> uaf : factories) {
+            for (UserAuthFactory uaf : factories) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
             }
         } else {
@@ -118,7 +117,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Verify all required methods are supported
         for (List<String> l : authMethods) {
             for (String m : l) {
-                NamedFactory<UserAuth> factory =
+                UserAuthFactory factory =
                     NamedResource.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
                 if (factory == null) {
                     throw new SshException("Configured method is not supported: " + m);
@@ -329,7 +328,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                   session, username, service, method, nbAuthRequests, maxAuthRequests);
         }
 
-        Factory<UserAuth> factory = NamedResource.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+        UserAuthFactory factory = NamedResource.findByName(
+            method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
         if (factory == null) {
             if (debugEnabled) {
                 log.debug("handleUserAuthRequestMessage({}) no authentication factory for method={}", session, method);
@@ -338,7 +338,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return true;
         }
 
-        currentAuth = ValidateUtils.checkNotNull(factory.create(), "No authenticator created for method=%s", method);
+        currentAuth = ValidateUtils.checkNotNull(
+            factory.createUserAuth(session), "No authenticator created for method=%s", method);
         try {
             Boolean authed = currentAuth.auth(session, username, service, buffer);
             authHolder.set(authed);

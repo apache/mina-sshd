@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
-import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
@@ -155,9 +155,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * Default user authentication preferences if not set
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
-    public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
+    public static final List<UserAuthFactory> DEFAULT_USER_AUTH_FACTORIES =
         Collections.unmodifiableList(
-            Arrays.<NamedFactory<UserAuth>>asList(
+            Arrays.asList(
                 UserAuthPublicKeyFactory.INSTANCE,
                 UserAuthKeyboardInteractiveFactory.INSTANCE,
                 UserAuthPasswordFactory.INSTANCE
@@ -172,7 +172,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
     protected UserInteraction userInteraction;
-    protected List<NamedFactory<UserAuth>> userAuthFactories;
+    protected List<UserAuthFactory> userAuthFactories;
 
     private ClientProxyConnector proxyConnector;
     private ServerKeyVerifier serverKeyVerifier;
@@ -259,13 +259,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
-    public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+    public List<UserAuthFactory> getUserAuthFactories() {
         return userAuthFactories;
     }
 
     @Override
-    public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
-        this.userAuthFactories = ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
+    public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
+        this.userAuthFactories =
+            ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
     }
 
     @Override

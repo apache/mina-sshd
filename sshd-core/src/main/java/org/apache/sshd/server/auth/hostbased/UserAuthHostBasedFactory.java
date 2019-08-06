@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.auth.hostbased;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
@@ -26,6 +27,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.AbstractUserAuthFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -68,7 +70,7 @@ public class UserAuthHostBasedFactory extends AbstractUserAuthFactory implements
     }
 
     @Override
-    public UserAuthHostBased create() {
+    public UserAuthHostBased createUserAuth(ServerSession session) throws IOException {
         return new UserAuthHostBased(getSignatureFactories());
     }
 }

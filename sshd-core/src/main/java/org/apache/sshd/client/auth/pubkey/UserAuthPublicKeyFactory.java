@@ -18,9 +18,11 @@
  */
 package org.apache.sshd.client.auth.pubkey;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AbstractUserAuthFactory;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -67,7 +69,7 @@ public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory implements
     }
 
     @Override
-    public UserAuthPublicKey create() {
+    public UserAuthPublicKey createUserAuth(ClientSession session) throws IOException {
         return new UserAuthPublicKey(getSignatureFactories());
     }
 }

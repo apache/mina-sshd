@@ -30,15 +30,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
@@ -64,7 +65,7 @@ public class ClientUserAuthService
 
     private final ClientSessionImpl clientSession;
     private final List<String> clientMethods;
-    private final List<NamedFactory<UserAuth>> authFactories;
+    private final List<UserAuthFactory> authFactories;
 
     private String service;
     private List<String> serverMethods;
@@ -81,7 +82,7 @@ public class ClientUserAuthService
         String prefs = s.getString(ClientAuthenticationManager.PREFERRED_AUTHS);
         boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(prefs)) {
-            for (NamedFactory<UserAuth> factory : authFactories) {
+            for (UserAuthFactory factory : authFactories) {
                 clientMethods.add(factory.getName());
             }
         } else {
@@ -90,7 +91,7 @@ public class ClientUserAuthService
             }
 
             for (String pref : GenericUtils.split(prefs, ',')) {
-                NamedFactory<UserAuth> factory =
+                UserAuthFactory factory =
                     NamedResource.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
                 if (factory != null) {
                     clientMethods.add(pref);
@@ -333,7 +334,7 @@ public class ClientUserAuthService
                 return;
             }
 
-            userAuth = NamedFactory.create(authFactories, method);
+            userAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
             if (userAuth == null) {
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }

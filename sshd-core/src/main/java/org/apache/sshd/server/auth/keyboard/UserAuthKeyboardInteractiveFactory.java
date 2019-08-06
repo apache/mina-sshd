@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.server.auth.keyboard;
 
+import java.io.IOException;
+
 import org.apache.sshd.server.auth.AbstractUserAuthFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -32,7 +35,7 @@ public class UserAuthKeyboardInteractiveFactory extends AbstractUserAuthFactory 
     }
 
     @Override
-    public UserAuthKeyboardInteractive create() {
+    public UserAuthKeyboardInteractive createUserAuth(ServerSession session) throws IOException {
         return new UserAuthKeyboardInteractive();
     }
 }

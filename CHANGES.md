@@ -18,9 +18,12 @@ session is initiated and protect their instance from shutdown when session is de
     server.setSubsystemFactories(Collections.singletonList(factory));
 ```
 
-* `SubsystemFactory` is  a proper interface and it has been refactored to contain a
+* `SubsystemFactory` is a proper interface and it has been refactored to contain a
 `createSubsystem` method that accepts the `ChannelSession` through which the request
 has been made
+
+* `UserAuthFactory` is a proper interface and it has been refactored to contain a
+`createUserAuth` method that accepts the session instance through which the request is made.
 
 ## Minor code helpers
 
@@ -36,4 +39,4 @@ for the server's identification before sending its own.
 
 * [SSHD-934](https://issues.apache.org/jira/browse/SSHD-934) - Fixed ECDSA public key encoding into OpenSSH format.
 
-* [SSHD-937](https://issues.apache.org/jira/browse/SSHD-937) - Provide ChannelSession instance when creating a subsystem instance.
+* [SSHD-937](https://issues.apache.org/jira/browse/SSHD-937) - Provide session instance when creating a subsystem or user authentication.

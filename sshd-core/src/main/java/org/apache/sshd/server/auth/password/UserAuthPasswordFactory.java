@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.server.auth.password;
 
+import java.io.IOException;
+
 import org.apache.sshd.server.auth.AbstractUserAuthFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -32,7 +35,7 @@ public class UserAuthPasswordFactory extends AbstractUserAuthFactory {
     }
 
     @Override
-    public UserAuthPassword create() {
+    public UserAuthPassword createUserAuth(ServerSession session) throws IOException {
         return new UserAuthPassword();
     }
 }

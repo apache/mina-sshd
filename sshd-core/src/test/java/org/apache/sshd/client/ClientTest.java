@@ -1145,7 +1145,7 @@ public class ClientTest extends BaseTestSupport {
         Collection<String> mismatchedPrompts = new LinkedList<>();
         client.setUserAuthFactories(Collections.singletonList(new UserAuthKeyboardInteractiveFactory() {
             @Override
-            public UserAuthKeyboardInteractive create() {
+            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
                 return new UserAuthKeyboardInteractive() {
                     @Override
                     protected boolean useCurrentPassword(

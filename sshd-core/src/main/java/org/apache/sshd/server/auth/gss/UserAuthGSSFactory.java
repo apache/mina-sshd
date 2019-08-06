@@ -18,8 +18,11 @@
  */
 package org.apache.sshd.server.auth.gss;
 
+import java.io.IOException;
+
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.UserAuthFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * Factory class.
@@ -38,7 +41,7 @@ public class UserAuthGSSFactory implements UserAuthFactory {
     }
 
     @Override
-    public UserAuth create() {
+    public UserAuth createUserAuth(ServerSession session) throws IOException {
         return new UserAuthGSS();
     }
 }

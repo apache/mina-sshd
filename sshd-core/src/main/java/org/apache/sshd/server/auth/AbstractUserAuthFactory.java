@@ -20,11 +20,14 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.auth.AbstractUserAuthMethodFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractUserAuthFactory extends AbstractUserAuthMethodFactory<UserAuth> implements UserAuthFactory {
+public abstract class AbstractUserAuthFactory
+        extends AbstractUserAuthMethodFactory<ServerSession, UserAuth>
+        implements UserAuthFactory {
     protected AbstractUserAuthFactory(String name) {
         super(name);
     }

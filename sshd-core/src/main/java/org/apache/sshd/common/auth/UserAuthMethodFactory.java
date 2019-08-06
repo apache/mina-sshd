@@ -19,16 +19,21 @@
 
 package org.apache.sshd.common.auth;
 
-import org.apache.sshd.common.NamedFactory;
+import java.io.IOException;
+import java.util.Collection;
+
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.session.SessionContext;
 
 /**
  * Represents a user authentication method
  *
+ * @param <S> The type of {@link SessionContext} being provided
+ * to the instance creator
  * @param <M> The authentication method factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface UserAuthMethodFactory<M> extends NamedFactory<M> {
+public interface UserAuthMethodFactory<S extends SessionContext, M extends UserAuthInstance<S>> extends NamedResource {
     /**
      * Password authentication method name
      */
@@ -48,5 +53,33 @@ public interface UserAuthMethodFactory<M> extends NamedFactory<M> {
      * Host-based authentication method
      */
     String HOST_BASED = "hostbased";
+
+    /**
+     * @param session The session for which authentication is required
+     * @return The authenticator instance
+     * @throws IOException If failed to create the instance
+     */
+    M createUserAuth(S session) throws IOException;
+
+    /**
+     * @param <S> The type of {@link SessionContext} being provided
+     * to the instance creator
+     * @param <M> The authentication method factory type
+     * @param session The session through which the request is being made
+     * @param factories The available factories
+     * @param name The requested factory name
+     * @return The created authenticator instance - {@code null} if no matching factory
+     * @throws IOException If failed to create the instance
+     */
+    static <S extends SessionContext, M extends UserAuthInstance<S>> M createUserAuth(
+            S session, Collection<? extends UserAuthMethodFactory<S, M>> factories, String name)
+                throws IOException {
+        UserAuthMethodFactory<S, M> f =
+            NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+        if (f != null) {
+            return f.createUserAuth(session);
+        } else {
+            return null;
+        }
+    }
 }
-//CHECKSTYLE:ON

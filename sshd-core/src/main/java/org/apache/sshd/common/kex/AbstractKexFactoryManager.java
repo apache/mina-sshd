@@ -60,7 +60,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
         KexFactoryManager parent = getDelegate();
-        return resolveEffectiveFactories(KeyExchange.class, keyExchangeFactories,
+        return resolveEffectiveFactories(keyExchangeFactories,
             (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
     }
 
@@ -72,7 +72,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Cipher>> getCipherFactories() {
         KexFactoryManager parent = getDelegate();
-        return resolveEffectiveFactories(Cipher.class, cipherFactories,
+        return resolveEffectiveFactories(cipherFactories,
             (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
     }
 
@@ -84,7 +84,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Compression>> getCompressionFactories() {
         KexFactoryManager parent = getDelegate();
-        return resolveEffectiveFactories(Compression.class, compressionFactories,
+        return resolveEffectiveFactories(compressionFactories,
             (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
     }
 
@@ -96,7 +96,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Mac>> getMacFactories() {
         KexFactoryManager parent = getDelegate();
-        return resolveEffectiveFactories(Mac.class, macFactories,
+        return resolveEffectiveFactories(macFactories,
             (parent == null) ? Collections.emptyList() : parent.getMacFactories());
     }
 
@@ -108,7 +108,7 @@ public abstract class AbstractKexFactoryManager
     @Override
     public List<NamedFactory<Signature>> getSignatureFactories() {
         KexFactoryManager parent = getDelegate();
-        return resolveEffectiveFactories(Signature.class, signatureFactories,
+        return resolveEffectiveFactories(signatureFactories,
             (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
     }
 
@@ -129,8 +129,7 @@ public abstract class AbstractKexFactoryManager
         this.kexExtensionHandler = kexExtensionHandler;
     }
 
-    protected <V> List<NamedFactory<V>> resolveEffectiveFactories(
-            Class<V> factoryType, List<NamedFactory<V>> local, List<NamedFactory<V>> inherited) {
+    protected <V> List<V> resolveEffectiveFactories(List<V> local, List<V> inherited) {
         if (GenericUtils.isEmpty(local)) {
             return inherited;
         } else {

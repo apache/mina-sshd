@@ -187,7 +187,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setUserAuthFactories(Collections.singletonList(
             new org.apache.sshd.server.auth.password.UserAuthPasswordFactory() {
                 @Override
-                public org.apache.sshd.server.auth.password.UserAuthPassword create() {
+                public org.apache.sshd.server.auth.password.UserAuthPassword createUserAuth(ServerSession session) throws IOException {
                     return new org.apache.sshd.server.auth.password.UserAuthPassword() {
                         @Override
                         protected Boolean handleClientPasswordChangeRequest(
@@ -235,7 +235,7 @@ public class AuthenticationTest extends BaseTestSupport {
             client.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.client.auth.password.UserAuthPasswordFactory() {
                     @Override
-                    public org.apache.sshd.client.auth.password.UserAuthPassword create() {
+                    public org.apache.sshd.client.auth.password.UserAuthPassword createUserAuth(ClientSession session) throws IOException {
                         return new org.apache.sshd.client.auth.password.UserAuthPassword() {
                             @Override
                             protected IoWriteFuture sendPassword(
@@ -717,7 +717,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
-                    public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey create() {
+                    public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey createUserAuth(ServerSession session) throws IOException {
                         return new org.apache.sshd.server.auth.pubkey.UserAuthPublicKey() {
                             @Override
                             protected void sendPublicKeyResponse(

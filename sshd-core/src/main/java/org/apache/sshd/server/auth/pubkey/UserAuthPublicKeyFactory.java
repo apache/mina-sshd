@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth.pubkey;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
@@ -25,6 +26,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.AbstractUserAuthFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -67,7 +69,7 @@ public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory implements
     }
 
     @Override
-    public UserAuthPublicKey create() {
+    public UserAuthPublicKey createUserAuth(ServerSession session) throws IOException {
         return new UserAuthPublicKey(getSignatureFactories());
     }
 }

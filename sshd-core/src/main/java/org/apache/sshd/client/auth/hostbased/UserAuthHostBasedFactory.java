@@ -19,9 +19,11 @@
 
 package org.apache.sshd.client.auth.hostbased;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AbstractUserAuthFactory;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -126,7 +128,7 @@ public class UserAuthHostBasedFactory extends AbstractUserAuthFactory implements
     }
 
     @Override
-    public UserAuthHostBased create() {
+    public UserAuthHostBased createUserAuth(ClientSession session) throws IOException {
         UserAuthHostBased auth = new UserAuthHostBased(getClientHostKeys());
         auth.setClientHostname(getClientHostname());
         auth.setClientUsername(getClientUsername());

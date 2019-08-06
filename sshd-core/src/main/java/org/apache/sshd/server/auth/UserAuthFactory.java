@@ -20,12 +20,13 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 // CHECKSTYLE:OFF
-public interface UserAuthFactory extends UserAuthMethodFactory<UserAuth> {
+public interface UserAuthFactory extends UserAuthMethodFactory<ServerSession, UserAuth> {
     // nothing extra
 }
 //CHECKSTYLE:ON

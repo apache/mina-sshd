@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
  * @param <F> Factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class NamedFactoriesListParseResult<T, F extends NamedFactory<T>>
+public abstract class NamedFactoriesListParseResult<T, F extends NamedResource>
         extends FactoriesListParseResult<T, F> {
 
     protected NamedFactoriesListParseResult(List<F> parsed, List<String> unsupported) {

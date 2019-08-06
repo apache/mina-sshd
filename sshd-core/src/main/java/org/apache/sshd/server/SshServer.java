@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -44,7 +43,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -104,7 +103,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
     private List<SubsystemFactory> subsystemFactories;
-    private List<NamedFactory<UserAuth>> userAuthFactories;
+    private List<UserAuthFactory> userAuthFactories;
     private KeyPairProvider keyPairProvider;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
@@ -147,12 +146,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+    public List<UserAuthFactory> getUserAuthFactories() {
         return userAuthFactories;
     }
 
     @Override
-    public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+    public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
         this.userAuthFactories = userAuthFactories;
     }
 
@@ -267,7 +266,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
-        List<NamedFactory<UserAuth>> authFactories = ServerAuthenticationManager.resolveUserAuthFactories(this);
+        List<UserAuthFactory> authFactories = ServerAuthenticationManager.resolveUserAuthFactories(this);
         setUserAuthFactories(ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
 
         ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");

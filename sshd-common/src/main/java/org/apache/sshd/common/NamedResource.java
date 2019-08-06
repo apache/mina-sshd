@@ -41,7 +41,8 @@ public interface NamedResource {
      * Compares 2 {@link NamedResource}s according to their {@link #getName()}
      * value case <U>insensitive</U>
      */
-    Comparator<NamedResource> BY_NAME_COMPARATOR = Comparator.comparing(NAME_EXTRACTOR, String.CASE_INSENSITIVE_ORDER);
+    Comparator<NamedResource> BY_NAME_COMPARATOR =
+        Comparator.comparing(NAME_EXTRACTOR, String.CASE_INSENSITIVE_ORDER);
 
     /**
      * @return The resource name
@@ -76,7 +77,8 @@ public interface NamedResource {
      * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
      * @return the removed resource from the list or {@code null} if not in the list
      */
-    static <R extends NamedResource> R removeByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
+    static <R extends NamedResource> R removeByName(
+            String name, Comparator<? super String> c, Collection<? extends R> resources) {
         R r = findByName(name, c, resources);
         if (r != null) {
             resources.remove(r);
@@ -93,7 +95,8 @@ public interface NamedResource {
      * @return The <U>first</U> resource whose name matches the parameter (by invoking
      * {@link Comparator#compare(Object, Object)} - {@code null} if no match found
      */
-    static <R extends NamedResource> R findByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
+    static <R extends NamedResource> R findByName(
+            String name, Comparator<? super String> c, Collection<? extends R> resources) {
         return GenericUtils.isEmpty(name)
             ? null
             : GenericUtils.stream(resources)

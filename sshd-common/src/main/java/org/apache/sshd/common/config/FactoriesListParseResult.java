@@ -22,13 +22,14 @@ package org.apache.sshd.common.config;
 import java.util.List;
 
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.NamedResource;
 
 /**
  * @param <T> Result type
  * @param <F> Factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class FactoriesListParseResult<T, F extends Factory<T>> extends ListParseResult<F> {
+public abstract class FactoriesListParseResult<T, F extends NamedResource> extends ListParseResult<F> {
     protected FactoriesListParseResult(List<F> parsed, List<String> unsupported) {
         super(parsed, unsupported);
     }
