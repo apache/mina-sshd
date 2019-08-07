@@ -35,12 +35,11 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SyspropsMapWrapper;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
@@ -73,7 +72,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected Factory<Random> randomFactory;
-    protected List<NamedFactory<Channel>> channelFactories;
+    protected List<ChannelFactory> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
@@ -208,11 +207,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public List<NamedFactory<Channel>> getChannelFactories() {
+    public List<ChannelFactory> getChannelFactories() {
         return channelFactories;
     }
 
-    public void setChannelFactories(List<NamedFactory<Channel>> channelFactories) {
+    public void setChannelFactories(List<ChannelFactory> channelFactories) {
         this.channelFactories = channelFactories;
     }
 

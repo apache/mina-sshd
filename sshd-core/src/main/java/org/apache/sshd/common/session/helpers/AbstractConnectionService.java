@@ -41,10 +41,10 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
@@ -774,7 +774,7 @@ public abstract class AbstractConnectionService
 
         AbstractSession session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        Channel channel = NamedFactory.create(manager.getChannelFactories(), type);
+        Channel channel = ChannelFactory.createChannel(session, manager.getChannelFactories(), type);
         if (channel == null) {
             // TODO add language tag configurable control
             sendChannelOpenFailure(buffer, sender,
@@ -792,7 +792,8 @@ public abstract class AbstractConnectionService
                         log.debug("operationComplete({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
                               channel, sender, channelId, window.getSize(), window.getPacketSize());
                     }
-                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
+                    Buffer buf =
+                        session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
                     buf.putInt(sender); // remote (server side) identifier
                     buf.putInt(channelId);  // local (client side) identifier
                     buf.putInt(window.getSize());
@@ -813,7 +814,8 @@ public abstract class AbstractConnectionService
                              AbstractConnectionService.this, future);
                     }
 
-                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
+                    Buffer buf =
+                        session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
                     sendChannelOpenFailure(buf, sender, reasonCode, message, "");
                 }
             } catch (IOException e) {

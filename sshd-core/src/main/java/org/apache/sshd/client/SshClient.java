@@ -66,10 +66,9 @@ import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -366,15 +365,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
-            List<NamedFactory<Channel>> forwarders =
+            List<ChannelFactory> forwarders =
                 ValidateUtils.checkNotNullAndNotEmpty(
-                    agentFactory.getChannelForwardingFactories(this), "No agent channel forwarding factories for %s", agentFactory);
-            List<NamedFactory<Channel>> factories = getChannelFactories();
+                    agentFactory.getChannelForwardingFactories(this),
+                    "No agent channel forwarding factories for %s",
+                    agentFactory);
+            List<ChannelFactory> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
                 factories = forwarders;
             } else {
                 // create a copy in case un-modifiable original
-                List<NamedFactory<Channel>> factories2 =
+                List<ChannelFactory> factories2 =
                     new ArrayList<>(factories.size() + forwarders.size());
                 factories2.addAll(factories);
                 factories2.addAll(forwarders);

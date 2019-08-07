@@ -26,7 +26,7 @@ import java.util.function.Function;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.CompressionFactory;
@@ -60,9 +60,9 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                     ? DHGEXServer.newFactory(factory)
                     : DHGServer.newFactory(factory);
 
-    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+    public static final List<ChannelFactory> DEFAULT_CHANNEL_FACTORIES =
         Collections.unmodifiableList(
-            Arrays.<NamedFactory<Channel>>asList(
+            Arrays.asList(
                 ChannelSessionFactory.INSTANCE,
                 DirectTcpipFactory.INSTANCE
             ));

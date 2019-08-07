@@ -19,8 +19,11 @@
 
 package org.apache.sshd.agent.local;
 
+import java.io.IOException;
+
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -43,7 +46,7 @@ public class ChannelAgentForwardingFactory implements ChannelFactory {
     }
 
     @Override
-    public Channel create() {
+    public Channel createChannel(Session session) throws IOException {
         return new ChannelAgentForwarding(null);
     }
 }

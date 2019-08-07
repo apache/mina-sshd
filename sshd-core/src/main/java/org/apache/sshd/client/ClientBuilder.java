@@ -34,7 +34,7 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.CompressionFactory;
@@ -92,7 +92,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
         Collections.unmodifiableList(Collections.singletonList(BuiltinCompressions.none));
 
-    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+    public static final List<ChannelFactory> DEFAULT_CHANNEL_FACTORIES =
         Collections.unmodifiableList(Collections.singletonList(ForwardedTcpipFactory.INSTANCE));
     public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
         Collections.unmodifiableList(Collections.singletonList(OpenSshHostKeysHandler.INSTANCE));

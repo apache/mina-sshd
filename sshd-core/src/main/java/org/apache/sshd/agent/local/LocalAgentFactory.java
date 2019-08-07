@@ -28,14 +28,13 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.agent.common.AgentDelegate;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 public class LocalAgentFactory implements SshAgentFactory {
-    public static final List<NamedFactory<Channel>> DEFAULT_FORWARDING_CHANNELS =
+    public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS =
         Collections.unmodifiableList(
-            Arrays.<NamedFactory<Channel>>asList(
+            Arrays.asList(
                 ChannelAgentForwardingFactory.OPENSSH,
                 ChannelAgentForwardingFactory.IETF));
 
@@ -54,7 +53,7 @@ public class LocalAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
+    public List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager) {
         return DEFAULT_FORWARDING_CHANNELS;
     }
 

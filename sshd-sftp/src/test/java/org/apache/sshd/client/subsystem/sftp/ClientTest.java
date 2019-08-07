@@ -146,7 +146,7 @@ public class ClientTest extends BaseTestSupport {
         sshd.setChannelFactories(Arrays.asList(
                 new ChannelSessionFactory() {
                     @Override
-                    public Channel create() {
+                    public Channel createChannel(Session session) throws IOException {
                         return new ChannelSession() {
                             @SuppressWarnings("synthetic-access")
                             @Override

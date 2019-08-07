@@ -18,8 +18,11 @@
  */
 package org.apache.sshd.server.channel;
 
+import java.io.IOException;
+
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -37,7 +40,7 @@ public class ChannelSessionFactory implements ChannelFactory {
     }
 
     @Override
-    public Channel create() {
+    public Channel createChannel(Session session) throws IOException {
         return new ChannelSession();
     }
 }

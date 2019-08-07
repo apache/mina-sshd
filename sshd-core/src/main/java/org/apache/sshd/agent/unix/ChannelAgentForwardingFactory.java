@@ -18,9 +18,12 @@
  */
 package org.apache.sshd.agent.unix;
 
+import java.io.IOException;
+
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
@@ -51,8 +54,9 @@ public class ChannelAgentForwardingFactory implements ChannelFactory {
     }
 
     @Override
-    public Channel create() {
-        CloseableExecutorService executorService = executorServiceFactory != null ? executorServiceFactory.create() : null;
+    public Channel createChannel(Session session) throws IOException {
+        CloseableExecutorService executorService =
+            executorServiceFactory != null ? executorServiceFactory.create() : null;
         ChannelAgentForwarding channel = new ChannelAgentForwarding(executorService);
         return channel;
     }

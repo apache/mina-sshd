@@ -30,10 +30,9 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -52,7 +51,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager) {
+    public List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager) {
         return isPreferredUnixAgent(manager)
             ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS
             : LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;

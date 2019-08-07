@@ -83,7 +83,7 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ChannelSession extends AbstractServerChannel {
     public static final List<ChannelRequestHandler> DEFAULT_HANDLERS =
-        Collections.<ChannelRequestHandler>singletonList(PuttyRequestHandler.INSTANCE);
+        Collections.singletonList(PuttyRequestHandler.INSTANCE);
 
     /**
      * Maximum amount of extended (a.k.a. STDERR) data allowed to be accumulated
@@ -743,7 +743,8 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (extendedDataBuffer != null) {
             if (extendedDataWriter == null) {
-                throw new UnsupportedOperationException("No extended data writer available though " + extendedDataBuffer.available() + " bytes accumulated");
+                throw new UnsupportedOperationException(
+                    "No extended data writer available though " + extendedDataBuffer.available() + " bytes accumulated");
             }
 
             Buffer buffer = extendedDataBuffer;
@@ -755,7 +756,8 @@ public class ChannelSession extends AbstractServerChannel {
             try {
                 closeShell(exitValue);
                 if (log.isDebugEnabled()) {
-                    log.debug("onExit({}) code={} message='{}' shell closed", ChannelSession.this, exitValue, exitMessage);
+                    log.debug("onExit({}) code={} message='{}' shell closed",
+                        ChannelSession.this, exitValue, exitMessage);
                 }
             } catch (IOException e) {
                 log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
@@ -771,10 +773,14 @@ public class ChannelSession extends AbstractServerChannel {
         return v != null ? v.intValue() : 0;
     }
 
-    protected RequestHandler.Result handleAgentForwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleAgentForwarding(
+            String requestType, Buffer buffer, boolean wantReply)
+                throws IOException {
         ServerSession session = getServerSession();
         PropertyResolverUtils.updateProperty(session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
-        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
+
+        FactoryManager manager =
+            Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         AgentForwardingFilter filter = manager.getAgentForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         boolean debugEnabled = log.isDebugEnabled();
@@ -808,14 +814,17 @@ public class ChannelSession extends AbstractServerChannel {
         return RequestHandler.Result.ReplySuccess;
     }
 
-    protected RequestHandler.Result handleX11Forwarding(String requestType, Buffer buffer, boolean wantReply) throws IOException {
+    protected RequestHandler.Result handleX11Forwarding(
+            String requestType, Buffer buffer, boolean wantReply)
+                throws IOException {
         ServerSession session = getServerSession();
         boolean singleConnection = buffer.getBoolean();
         String authProtocol = buffer.getString();
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
-        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager =
+            Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         X11ForwardingFilter filter = manager.getX11ForwardingFilter();
         boolean debugEnabled = log.isDebugEnabled();
         try {
@@ -844,7 +853,8 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        String display = x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
+        String display =
+            x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
         if (debugEnabled) {
             log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
                   this, singleConnection, authProtocol, authCookie, screenId, display);
@@ -858,7 +868,8 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void addEnvVariable(String name, String value) {
-        getEnvironment().set(name, value);
+        StandardEnvironment e = getEnvironment();
+        e.set(name, value);
     }
 
     public StandardEnvironment getEnvironment() {

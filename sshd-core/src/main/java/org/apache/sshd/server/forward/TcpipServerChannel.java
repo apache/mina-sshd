@@ -87,9 +87,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         }
 
         @Override
-        public Channel create() {
-            TcpipServerChannel channel = new TcpipServerChannel(getType(), ThreadUtils.noClose(getExecutorService()));
-            return channel;
+        public Channel createChannel(Session session) throws IOException {
+            return  new TcpipServerChannel(getType(), ThreadUtils.noClose(getExecutorService()));
         }
     }
 

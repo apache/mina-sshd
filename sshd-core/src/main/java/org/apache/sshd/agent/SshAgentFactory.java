@@ -22,8 +22,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**
@@ -48,9 +47,9 @@ public interface SshAgentFactory {
      * either local or through another proxy.
      *
      * @param manager The {@link FactoryManager} through which the request is made
-     * @return The (named) channel factories used to create channels on the client side
+     * @return The {@link ChannelFactory}-ies used to create channels on the client side
      */
-    List<NamedFactory<Channel>> getChannelForwardingFactories(FactoryManager manager);
+    List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager);
 
     /**
      * Create an SshAgent that can be used on the client side by the authentication

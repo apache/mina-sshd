@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
@@ -134,7 +134,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected List<NamedFactory<Mac>> macFactories;
     protected List<NamedFactory<Signature>> signatureFactories;
     protected Factory<Random> randomFactory;
-    protected List<NamedFactory<Channel>> channelFactories;
+    protected List<ChannelFactory> channelFactories;
     protected FileSystemFactory fileSystemFactory;
     protected ForwardingFilterFactory forwarderFactory;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
@@ -208,7 +208,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public S channelFactories(List<NamedFactory<Channel>> channelFactories) {
+    public S channelFactories(List<ChannelFactory> channelFactories) {
         this.channelFactories = channelFactories;
         return me();
     }

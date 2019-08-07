@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
@@ -403,9 +403,9 @@ public interface FactoryManager
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.
      *
-     * @return A list of named <code>Channel</code> factories, never {@code null}
+     * @return A list of {@link ChannelFactory}-ies, never {@code null}
      */
-    List<NamedFactory<Channel>> getChannelFactories();
+    List<ChannelFactory> getChannelFactories();
 
     /**
      * Retrieve the agent factory for creating <code>SshAgent</code> objects.
