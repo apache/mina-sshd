@@ -89,6 +89,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionI
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.LSetStatExtensionParser;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
@@ -161,7 +162,8 @@ public abstract class AbstractSftpSubsystemHelper
         Collections.unmodifiableList(
             Arrays.asList(
                 new OpenSSHExtension(FsyncExtensionParser.NAME, "1"),
-                new OpenSSHExtension(HardLinkExtensionParser.NAME, "1")
+                new OpenSSHExtension(HardLinkExtensionParser.NAME, "1"),
+                new OpenSSHExtension(LSetStatExtensionParser.NAME, "1")
             ));
 
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES =
@@ -393,7 +395,7 @@ public abstract class AbstractSftpSubsystemHelper
                 doFStat(buffer, id);
                 break;
             case SftpConstants.SSH_FXP_SETSTAT:
-                doSetStat(buffer, id);
+                doSetStat(buffer, id, "", type, null);
                 break;
             case SftpConstants.SSH_FXP_FSETSTAT:
                 doFSetStat(buffer, id);
@@ -660,11 +662,13 @@ public abstract class AbstractSftpSubsystemHelper
         return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
     }
 
-    protected void doSetStat(Buffer buffer, int id) throws IOException {
+    protected void doSetStat(
+            Buffer buffer, int id, String extension, int cmd, Boolean followLinks /* null = auto-resolve */)
+                throws IOException {
         String path = buffer.getString();
         Map<String, Object> attrs = readAttrs(buffer);
         try {
-            doSetStat(id, path, attrs);
+            doSetStat(id, path, cmd, extension, attrs, followLinks);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_SETSTAT, path);
             return;
@@ -673,13 +677,19 @@ public abstract class AbstractSftpSubsystemHelper
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doSetStat(int id, String path, Map<String, ?> attrs) throws IOException {
+    protected void doSetStat(
+            int id, String path, int cmd, String extension, Map<String, ?> attrs, Boolean followLinks /* null = auto-resolve */)
+                throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("doSetStat({})[id={}] SSH_FXP_SETSTAT (path={}, attrs={})",
-                  getServerSession(), id, path, attrs);
+            log.debug("doSetStat({})[id={}, cmd={}, extension={}]  (path={}, attrs={}, followLinks={})",
+                  getServerSession(), id, cmd, extension, path, attrs, followLinks);
         }
+
         Path p = resolveFile(path);
-        doSetAttributes(p, attrs);
+        if (followLinks == null) {
+            followLinks = resolvePathResolutionFollowLinks(cmd, extension, p);
+        }
+        doSetAttributes(p, attrs, followLinks);
     }
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
@@ -1579,7 +1589,9 @@ public abstract class AbstractSftpSubsystemHelper
             listener.creating(session, p, attrs);
             try {
                 Files.createDirectory(p);
-                doSetAttributes(p, attrs);
+                boolean followLinks = resolvePathResolutionFollowLinks(
+                    SftpConstants.SSH_FXP_MKDIR, "", p);
+                doSetAttributes(p, attrs, followLinks);
             } catch (IOException | RuntimeException e) {
                 listener.created(session, p, attrs, e);
                 throw e;
@@ -1682,9 +1694,11 @@ public abstract class AbstractSftpSubsystemHelper
             case HardLinkExtensionParser.NAME:
                 doOpenSSHHardLink(buffer, id);
                 break;
+            case LSetStatExtensionParser.NAME:
+                doSetStat(buffer, id, extension, -1, Boolean.FALSE);
+                break;
             default:
                 doUnsupportedExtension(buffer, id, extension);
-                break;
         }
     }
 
@@ -1697,35 +1711,38 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void appendExtensions(Buffer buffer, String supportedVersions) {
-        appendVersionsExtension(buffer, supportedVersions);
-        appendNewlineExtension(buffer, resolveNewlineValue(getServerSession()));
-        appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
-        appendOpenSSHExtensions(buffer);
-        appendAclSupportedExtension(buffer);
+        ServerSession session = getServerSession();
+        appendVersionsExtension(buffer, supportedVersions, session);
+        appendNewlineExtension(buffer, session);
+        appendVendorIdExtension(buffer, VersionProperties.getVersionProperties(), session);
+        appendOpenSSHExtensions(buffer, session);
+        appendAclSupportedExtension(buffer, session);
 
-        Map<String, OptionalFeature> extensions = getSupportedClientExtensions();
+        Map<String, OptionalFeature> extensions = getSupportedClientExtensions(session);
         int numExtensions = GenericUtils.size(extensions);
-        List<String> extras = (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
+        List<String> extras =
+            (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
-            ServerSession session = getServerSession();
             boolean debugEnabled = log.isDebugEnabled();
-            extensions.forEach((name, f) -> {
+            for (Map.Entry<String, OptionalFeature> ee : extensions.entrySet()) {
+                String name = ee.getKey();
+                OptionalFeature f = ee.getValue();
                 if (!f.isSupported()) {
                     if (debugEnabled) {
                         log.debug("appendExtensions({}) skip unsupported extension={}", session, name);
                     }
-                    return;
+                    continue;
                 }
 
                 extras.add(name);
-            });
+            }
         }
+
         appendSupportedExtension(buffer, extras);
         appendSupported2Extension(buffer, extras);
     }
 
-    protected int appendAclSupportedExtension(Buffer buffer) {
-        ServerSession session = getServerSession();
+    protected int appendAclSupportedExtension(Buffer buffer, ServerSession session) {
         Collection<Integer> maskValues = resolveAclSupportedCapabilities(session);
         int mask = AclSupportedParser.AclCapabilities.constructAclCapabilities(maskValues);
         if (mask != 0) {
@@ -1772,8 +1789,8 @@ public abstract class AbstractSftpSubsystemHelper
         return maskValues;
     }
 
-    protected List<OpenSSHExtension> appendOpenSSHExtensions(Buffer buffer) {
-        List<OpenSSHExtension> extList = resolveOpenSSHExtensions(getServerSession());
+    protected List<OpenSSHExtension> appendOpenSSHExtensions(Buffer buffer, ServerSession session) {
+        List<OpenSSHExtension> extList = resolveOpenSSHExtensions(session);
         if (GenericUtils.isEmpty(extList)) {
             return extList;
         }
@@ -1820,8 +1837,7 @@ public abstract class AbstractSftpSubsystemHelper
         return extList;
     }
 
-    protected Map<String, OptionalFeature> getSupportedClientExtensions() {
-        ServerSession session = getServerSession();
+    protected Map<String, OptionalFeature> getSupportedClientExtensions(ServerSession session) {
         String value = session.getString(CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
@@ -1855,15 +1871,16 @@ public abstract class AbstractSftpSubsystemHelper
      *
      * @param buffer The {@link Buffer} to append to
      * @param value  The recommended value - ignored if {@code null}/empty
+     * @param session The {@link ServerSession} for which this extension is added
      * @see SftpConstants#EXT_VERSIONS
      */
-    protected void appendVersionsExtension(Buffer buffer, String value) {
+    protected void appendVersionsExtension(Buffer buffer, String value, ServerSession session) {
         if (GenericUtils.isEmpty(value)) {
             return;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("appendVersionsExtension({}) value={}", getServerSession(), value);
+            log.debug("appendVersionsExtension({}) value={}", session, value);
         }
 
         buffer.putString(SftpConstants.EXT_VERSIONS);
@@ -1876,10 +1893,12 @@ public abstract class AbstractSftpSubsystemHelper
      * or use the correct extension name
      *
      * @param buffer The {@link Buffer} to append to
-     * @param value  The recommended value - ignored if {@code null}/empty
+     * @param session The {@link ServerSession} for which this extension is added
      * @see SftpConstants#EXT_NEWLINE
+     * @see #resolveNewlineValue(ServerSession)
      */
-    protected void appendNewlineExtension(Buffer buffer, String value) {
+    protected void appendNewlineExtension(Buffer buffer, ServerSession session) {
+        String value = resolveNewlineValue(session);
         if (GenericUtils.isEmpty(value)) {
             return;
         }
@@ -1915,20 +1934,22 @@ public abstract class AbstractSftpSubsystemHelper
      *     <LI>{@code artifactId} - as the product name</LI>
      *     <LI>{@code version} - as the product version</LI>
      * </UL>
+     * @param session The {@link ServerSession} for which these properties are added
      * @see SftpConstants#EXT_VENDOR_ID
      * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 4.4</A>
      */
-    protected void appendVendorIdExtension(Buffer buffer, Map<String, ?> versionProperties) {
+    protected void appendVendorIdExtension(Buffer buffer, Map<String, ?> versionProperties, ServerSession session) {
         if (GenericUtils.isEmpty(versionProperties)) {
             return;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("appendVendorIdExtension({}): {}", getServerSession(), versionProperties);
+            log.debug("appendVendorIdExtension({}): {}", session, versionProperties);
         }
         buffer.putString(SftpConstants.EXT_VENDOR_ID);
 
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(versionProperties));
+        PropertyResolver resolver =
+            PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(versionProperties));
         // placeholder for length
         int lenPos = buffer.wpos();
         buffer.putInt(0);
@@ -2409,12 +2430,12 @@ public abstract class AbstractSftpSubsystemHelper
         return Collections.emptyNavigableMap();
     }
 
-    protected void doSetAttributes(Path file, Map<String, ?> attributes) throws IOException {
+    protected void doSetAttributes(Path file, Map<String, ?> attributes, boolean followLinks) throws IOException {
         SftpEventListener listener = getSftpEventListenerProxy();
         ServerSession session = getServerSession();
         listener.modifyingAttributes(session, file, attributes);
         try {
-            setFileAttributes(file, attributes, IoUtils.getLinkOptions(false));
+            setFileAttributes(file, attributes, IoUtils.getLinkOptions(followLinks));
         } catch (IOException | RuntimeException e) {
             listener.modifiedAttributes(session, file, attributes, e);
             throw e;
@@ -2423,9 +2444,14 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected LinkOption[] getPathResolutionLinkOption(int cmd, String extension, Path path) throws IOException {
-        ServerSession session = getServerSession();
-        boolean followLinks = PropertyResolverUtils.getBooleanProperty(session, AUTO_FOLLOW_LINKS, DEFAULT_AUTO_FOLLOW_LINKS);
+        boolean followLinks = resolvePathResolutionFollowLinks(cmd, extension, path);
         return IoUtils.getLinkOptions(followLinks);
+    }
+
+    protected boolean resolvePathResolutionFollowLinks(int cmd, String extension, Path path) throws IOException {
+        ServerSession session = getServerSession();
+        return PropertyResolverUtils.getBooleanProperty(
+            session, AUTO_FOLLOW_LINKS, DEFAULT_AUTO_FOLLOW_LINKS);
     }
 
     protected void setFileAttributes(Path file, Map<String, ?> attributes, LinkOption... options) throws IOException {

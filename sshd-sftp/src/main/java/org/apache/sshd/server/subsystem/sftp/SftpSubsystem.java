@@ -767,7 +767,10 @@ public class SftpSubsystem
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
-        doSetAttributes(fileHandle.getFile(), attrs);
+        Path path = fileHandle.getFile();
+        boolean followLinks = resolvePathResolutionFollowLinks(
+            SftpConstants.SSH_FXP_FSETSTAT, "", path);
+        doSetAttributes(fileHandle.getFile(), attrs, followLinks);
     }
 
     @Override

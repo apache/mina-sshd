@@ -51,7 +51,9 @@ public class FileHandle extends Handle {
     private final Set<StandardOpenOption> openOptions;
     private final Collection<FileAttribute<?>> fileAttributes;
 
-    public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs) throws IOException {
+    public FileHandle(
+            SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs)
+                throws IOException {
         super(subsystem, file, handle);
 
         this.access = access;
@@ -67,10 +69,12 @@ public class FileHandle extends Handle {
         ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
         try {
-            channel = accessor.openFile(session, subsystem, this, file, handle, openOptions, fileAttrs);
+            channel = accessor.openFile(
+                session, subsystem, this, file, handle, openOptions, fileAttrs);
         } catch (UnsupportedOperationException e) {
-            channel = accessor.openFile(session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
-            subsystem.doSetAttributes(file, attrs);
+            channel = accessor.openFile(
+                session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
+            subsystem.doSetAttributes(file, attrs, false);
         }
         this.fileChannel = channel;
 

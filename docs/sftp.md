@@ -126,6 +126,16 @@ reasonable buffer size by setting the `channel-session-max-extdata-bufsize` prop
 extended data handler is registered it will be buffered (up to the specified max. size). **Note:** if a buffer size is configured
 but no extended data handler is registered when channel is spawning the command then an exception will occur.
 
+### Symbolic links handling
+
+Whenever the server needs to execute a command that may behave differently if applied to a symbolic link instead of its target
+it consults the `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` method. By default, this method simply consults
+the value of the `sftp-auto-follow-links` configuration property (default=*true*).
+
+**Note:** the property is consulted only for cases where there is no clear indication in the standard how to behave for the
+specific command. E.g., the `lsetstat@openssh.com` specifically specifies that symbolic links should not be followed, so the
+implementation does not consult the aforementioned property.
+
 ## Client-side SFTP
 
 In order to obtain an `SftpClient` instance one needs to use an `SftpClientFactory`:
@@ -424,6 +434,7 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 * `hardlink@openssh.com`
 * `posix-rename@openssh.com`
 * `statvfs@openssh.com`
+* `lsetstat@openssh.com`
 
 On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration
 key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.

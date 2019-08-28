@@ -22,6 +22,9 @@ session is initiated and protect their instance from shutdown when session is de
 `createSubsystem` method that accepts the `ChannelSession` through which the request
 has been made
 
+* `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` is consulted wherever
+the standard does not specifically specify the behavior regarding symbolic links handling.
+
 * `UserAuthFactory` is a proper interface and it has been refactored to contain a
 `createUserAuth` method that accepts the session instance through which the request is made.
 
@@ -34,6 +37,8 @@ has been made
 peer version data is received.
 
 ## Behavioral changes and enhancements
+
+* [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
 
 * [SSHD-930](https://issues.apache.org/jira/browse/SSHD-930) - Added configuration allowing the user to specify whether client should wait
 for the server's identification before sending its own.

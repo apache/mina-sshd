@@ -20,14 +20,17 @@
 package org.apache.sshd.common.subsystem.sftp.extensions.openssh;
 
 /**
+ * Replicates the functionality of the existing {@code SSH_FXP_SETSTAT} operation
+ * but does not follow symbolic links
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 10</A>
+ * @see <A HREF="https://www.openssh.com/txt/release-8.0">OpenSSH v8.0 release notes</A>
  */
-public class FsyncExtensionParser extends AbstractOpenSSHExtensionParser {
-    public static final String NAME = "fsync@openssh.com";
-    public static final FsyncExtensionParser INSTANCE = new FsyncExtensionParser();
+public class LSetStatExtensionParser extends AbstractOpenSSHExtensionParser {
+    public static final String NAME = "lsetstat@openssh.com";
+    public static final LSetStatExtensionParser INSTANCE = new LSetStatExtensionParser();
 
-    public FsyncExtensionParser() {
+    public LSetStatExtensionParser() {
         super(NAME);
     }
 }
