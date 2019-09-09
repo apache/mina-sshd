@@ -25,6 +25,9 @@
 	<!--<module name="StrictDuplicateCode" />-->
 
 	<module name="TreeWalker">
+        <module name="LineLength">
+            <property name="max" value="180" />
+        </module>
         <property name="fileExtensions" value="java" />
 
             <!-- Checks for Javadoc comments.                     -->
@@ -317,9 +320,6 @@
 	<module name="FileLength">
 		<property name="max" value="4096" />
 	</module>
-    <module name="LineLength">
-        <property name="max" value="180" />
-    </module>
 	<module name="FileTabCharacter">
 		<property name="eachLine" value="true" />
 	</module>
