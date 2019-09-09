@@ -69,7 +69,10 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
             Collections.unmodifiableList(Arrays.asList(
                 new SimpleImmutableEntry<>(
                     // CHECKSTYLE:OFF
-                    "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxr3N5fkt966xJINl0hH7Q6lLDRR1D0yMjcXCE5roE9VFut2ctGFuo90TCOxkPOMnwzwConeyScVF4ConZeWsxbG9VtRh61IeZ6R5P5ZTvE9xPdZBgIEWvU1bRfrrOfSMihqF98pODspE6NoTtND2eglwSGwxcYFmpdTAmu+8qgxgGxlEaaCjqwdiNPZhygrH81Mv2ruolNeZkn4Bj+wFFmZTD/waN1pQaMf+SO1+kEYIYFNl5+8JRGuUcr8MhHHJB+gwqMTF2BSBVITJzZUiQR0TMtkK6Vbs7yt1F9hhzDzAFDwhV+rsfNQaOHpl3zP07qH+/99A0XG1CVcEdHqVMw== lgoldstein@LGOLDSTEIN-WIN7",
+                    "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxr3N5fkt966xJINl0hH7Q6lLDRR1D0yMjcXCE5roE9VFut2ctGFuo90TCOxkPOMnwzw"
+                    + "ConeyScVF4ConZeWsxbG9VtRh61IeZ6R5P5ZTvE9xPdZBgIEWvU1bRfrrOfSMihqF98pODspE6NoTtND2eglwSGwxcYFmpdTAmu+"
+                    + "8qgxgGxlEaaCjqwdiNPZhygrH81Mv2ruolNeZkn4Bj+wFFmZTD/waN1pQaMf+SO1+kEYIYFNl5+8JRGuUcr8MhHHJB+gwqMTF2BSB"
+                    + "VITJzZUiQR0TMtkK6Vbs7yt1F9hhzDzAFDwhV+rsfNQaOHpl3zP07qH+/99A0XG1CVcEdHqVMw== lgoldstein@LGOLDSTEIN-WIN7",
                     // CHECKSTYLE:ON
                     Arrays.asList(
                         new SimpleImmutableEntry<>(
@@ -84,7 +87,12 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
                 ),
                 new SimpleImmutableEntry<>(
                     // CHECKSTYLE:OFF
-                    "ssh-dss AAAAB3NzaC1kc3MAAACBAMg/IxsG5BxnF5gM7IKqqR0rftxZC+n5GlbO+J4H+iIb/KR8NBehkxG3CrBZMF96M2K1sEGYLob+3k4r71oWaPul8n5rt9kpd+JSq4iD2ygOyg6Kd1/YDBHoxneizy6I/bGsLwhAAKWcRNrXmYVKGzhrhvZWN12AJDq2mGdj3szLAAAAFQD7a2MltdUSF7FU3//SpW4WGjZbeQAAAIBf0nNsfKQL/TEMo7IpTrEMg5V0RnSigCX0+yUERS42GW/ZeCZBJw7oL2XZbuBtu63vMjDgVpnb92BdrcPgjJ7EFW6DlcyeuywStmg1ygXmDR2AQCxv0eX2CQgrdUczmRa155SDVUTvTQlO1IyKx0vwKAh1H7E3yJUfkTAJstbGYQAAAIEAtv+cdRfNevYFkp55jVqazc8zRLvfb64jzgc5oSJVc64kFs4yx+abYpGX9WxNxDlG6g2WiY8voDBB0YnUJsn0kVRjBKX9OceROxrfT4K4dVbQZsdt+SLaXWL4lGJFrFZL3LZqvySvq6xfhJfakQDDivW4hUOhFPXPHrE5/Ia3T7A= dsa-key-20130709",
+                    "ssh-dss AAAAB3NzaC1kc3MAAACBAMg/IxsG5BxnF5gM7IKqqR0rftxZC+n5GlbO+J4H+iIb/KR8NBehkxG3CrBZMF96M2K1sEGYLob+"
+                    + "3k4r71oWaPul8n5rt9kpd+JSq4iD2ygOyg6Kd1/YDBHoxneizy6I/bGsLwhAAKWcRNrXmYVKGzhrhvZWN12AJDq2mGdj3szLAAAAFQ"
+                    + "D7a2MltdUSF7FU3//SpW4WGjZbeQAAAIBf0nNsfKQL/TEMo7IpTrEMg5V0RnSigCX0+yUERS42GW/ZeCZBJw7oL2XZbuBtu63vMjDg"
+                    + "Vpnb92BdrcPgjJ7EFW6DlcyeuywStmg1ygXmDR2AQCxv0eX2CQgrdUczmRa155SDVUTvTQlO1IyKx0vwKAh1H7E3yJUfkTAJstbGYQ"
+                    + "AAAIEAtv+cdRfNevYFkp55jVqazc8zRLvfb64jzgc5oSJVc64kFs4yx+abYpGX9WxNxDlG6g2WiY8voDBB0YnUJsn0kVRjBKX9OceR"
+                    + "OxrfT4K4dVbQZsdt+SLaXWL4lGJFrFZL3LZqvySvq6xfhJfakQDDivW4hUOhFPXPHrE5/Ia3T7A= dsa-key-20130709",
                     // CHECKSTYLE:ON
                     Arrays.asList(
                         new SimpleImmutableEntry<>(
@@ -99,7 +107,8 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
                 ),
                 new SimpleImmutableEntry<>(
                     // CHECKSTYLE:OFF
-                    "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBFImZtcTj842stlcVHLFBFxTEx7lu3jW9aZCvd0r9fUNKZ6LbRPh6l1oJ4ozArnw7XreQBUc5oNd9HB5RNJ8jl1nWXY5cXBA7McZrKZrYmk+zxNhH6UL+kMLaJkyngJHQw== root@osv-linux",
+                    "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBFImZtcTj842stlcVHLFBFxTEx7lu3j"
+                    + "W9aZCvd0r9fUNKZ6LbRPh6l1oJ4ozArnw7XreQBUc5oNd9HB5RNJ8jl1nWXY5cXBA7McZrKZrYmk+zxNhH6UL+kMLaJkyngJHQw== root@osv-linux",
                     // CHECKSTYLE:ON
                     Arrays.asList(
                         new SimpleImmutableEntry<>(

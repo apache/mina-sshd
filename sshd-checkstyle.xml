@@ -40,7 +40,11 @@
             <!-- Check annotations conventions -->
             <!-- See http://checkstyle.sourceforge.net/config_annotation.html -->
         <module name="MissingOverride" />
-        <module name="MissingDeprecated" />
+            <!-- Un-comment when stops complaining about HTML violations -->
+        <!-- module name="MissingDeprecated">
+            <property name="violateExecutionOnNonTightHtml" value="false" />
+        </module -->
+
         <module name="AnnotationLocation">
             <property name="allowSamelineMultipleAnnotations" value="false" />
             <property name="allowSamelineSingleParameterlessAnnotation" value="false" />
@@ -97,9 +101,6 @@
         </module>
         <module name="ExecutableStatementCount">
             <property name="max" value="100" />
-        </module>
-        <module name="LineLength">
-            <property name="max" value="180" />
         </module>
         <module name="MethodLength">
             <property name="max" value="150" />
@@ -316,6 +317,9 @@
 	<module name="FileLength">
 		<property name="max" value="4096" />
 	</module>
+    <module name="LineLength">
+        <property name="max" value="180" />
+    </module>
 	<module name="FileTabCharacter">
 		<property name="eachLine" value="true" />
 	</module>
