@@ -102,7 +102,7 @@ public class SftpSubsystemFactory
     }
 
     /**
-     * @param service The {@link Supplier} of {@link CloseableExecutorService}-s to be used by the
+     * @param provider The {@link Supplier} of {@link CloseableExecutorService}-s to be used by the
      * {@link SftpSubsystem} command when starting execution. If {@code null} then a single-threaded
      * ad-hoc service is used.
      */
