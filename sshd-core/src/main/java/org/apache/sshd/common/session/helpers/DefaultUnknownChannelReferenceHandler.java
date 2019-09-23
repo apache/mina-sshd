@@ -55,13 +55,13 @@ public class DefaultUnknownChannelReferenceHandler
     @Override
     public Channel handleUnknownChannelCommand(
             ConnectionService service, byte cmd, int channelId, Buffer buffer)
-                    throws IOException {
+                throws IOException {
         Session session = service.getSession();
         // Use DEBUG level to avoid log overflow due to invalid messages flood
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("handleUnknownChannelCommand({}) received {} command for unknown channel: {}",
-                    session, SshConstants.getCommandMessageName(cmd), channelId);
+                session, SshConstants.getCommandMessageName(cmd), channelId);
         }
 
         boolean wantReply = false;
@@ -85,10 +85,12 @@ public class DefaultUnknownChannelReferenceHandler
 
             case SshConstants.SSH_MSG_CHANNEL_DATA:
             case SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA:
-                wantReply = PropertyResolverUtils.getBooleanProperty(session, SEND_REPLY_FOR_CHANNEL_DATA, DEFAULT_SEND_REPLY_FOR_CHANNEL_DATA);
+                wantReply = PropertyResolverUtils.getBooleanProperty(
+                    session, SEND_REPLY_FOR_CHANNEL_DATA, DEFAULT_SEND_REPLY_FOR_CHANNEL_DATA);
                 // Use TRACE level to avoid log overflow due to invalid messages flood
                 if (log.isTraceEnabled()) {
-                    log.trace("handleUnknownChannelCommand({}) received msg channel data (opcode={}) reply={}", session, cmd, wantReply);
+                    log.trace("handleUnknownChannelCommand({}) received msg channel data (opcode={}) reply={}",
+                        session, cmd, wantReply);
                 }
                 break;
 
@@ -102,12 +104,14 @@ public class DefaultUnknownChannelReferenceHandler
         return null;
     }
 
-    protected IoWriteFuture sendFailureResponse(ConnectionService service, byte cmd, int channelId) throws IOException {
+    protected IoWriteFuture sendFailureResponse(
+            ConnectionService service, byte cmd, int channelId)
+                throws IOException {
         Session session = service.getSession();
         // Use DEBUG level to avoid log overflow due to invalid messages flood
         if (log.isDebugEnabled()) {
             log.debug("sendFailureResponse({}) send SSH_MSG_CHANNEL_FAILURE for {} command on unknown channel: {}",
-                    session, SshConstants.getCommandMessageName(cmd), channelId);
+                session, SshConstants.getCommandMessageName(cmd), channelId);
         }
 
         Buffer rsp = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, Integer.BYTES);

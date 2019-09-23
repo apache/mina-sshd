@@ -80,6 +80,10 @@ and logs them at DEBUG level. For a select few types of messages the code genera
 peer session - see `DefaultUnknownChannelReferenceHandler` implementation. The user may register handlers at any level - client/server, session
 and/or connection service - the one registered "closest" to connection service will be used.
 
+An **experimental** `ChannelIdTrackingUnknownChannelReferenceHandler` is available in _sshd-contrib_ package that applies the "leniency" of
+the `DefaultUnknownChannelReferenceHandler` only if the unknown channel is one that has been assigned in the past - otherwise it throws an
+exception. In order to use it, the handler instance needs to be registered as **both** an `UnknownChannelReferenceHandler` and a `ChannelListener`.
+
 ### `KexExtensionHandler`
 
 Provides hooks for implementing [KEX extension negotiation](https://tools.ietf.org/html/rfc8308).

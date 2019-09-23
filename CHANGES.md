@@ -36,6 +36,10 @@ the standard does not specifically specify the behavior regarding symbolic links
 * `SessionListener` supports `sessionPeerIdentificationReceived` that is invoked once successful
 peer version data is received.
 
+* `ChannelIdTrackingUnknownChannelReferenceHandler` extends the functionality of the `DefaultUnknownChannelReferenceHandler`
+by tracking the initialized channels identifiers and being lenient only if command is received for a channel that was
+initialized in the past.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
