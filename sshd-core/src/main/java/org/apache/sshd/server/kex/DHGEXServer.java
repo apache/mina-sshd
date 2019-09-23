@@ -55,7 +55,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXServer extends AbstractDHServerKeyExchange {
-
     protected final DHFactory factory;
     protected DHG dh;
     protected int min;
@@ -73,7 +72,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         return factory.getName();
     }
 
-    public static KeyExchangeFactory newFactory(final DHFactory factory) {
+    public static KeyExchangeFactory newFactory(DHFactory factory) {
         return new KeyExchangeFactory() {
             @Override
             public KeyExchange create() {
@@ -105,10 +104,13 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getGroupKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={} (expected={})",
+                this, session, KeyExchange.getGroupKexOpcodeName(cmd),
+                KeyExchange.getGroupKexOpcodeName(expected));
         }
 
-        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
+        if ((cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD)
+                && (expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)) {
             oldRequest = true;
             min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
             prf = buffer.getInt();
@@ -116,15 +118,17 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
             if ((max < min) || (prf < min) || (max < prf)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
+                    "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
+
             dh = chooseDH(min, prf, max);
             f = dh.getE();
             hash = dh.getHash();
             hash.init();
 
             if (debugEnabled) {
-                log.debug("next({})[{}] send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
+                log.debug("next({})[{}] send (old request) SSH_MSG_KEX_DH_GEX_GROUP - min={}, prf={}, max={}",
+                    this, session, min, prf, max);
             }
 
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
@@ -136,21 +140,25 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             return false;
         }
 
-        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
+        if ((cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)
+                && (expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)) {
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
+
             if ((prf < min) || (max < prf)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
+                    "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
+
             dh = chooseDH(min, prf, max);
             f = dh.getE();
             hash = dh.getHash();
             hash.init();
 
             if (debugEnabled) {
-                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_GROUP", this, session);
+                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_GROUP - min={}, prf={}, max={}",
+                    this, session, min, prf, max);
             }
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
             buffer.putMPInt(dh.getP());
@@ -163,8 +171,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
-                  + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
+                "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
+              + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
@@ -190,6 +198,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.putBytes(i_c);
             buffer.putBytes(i_s);
             buffer.putBytes(k_s);
+
             if (oldRequest) {
                 buffer.putInt(prf);
             } else {
@@ -197,6 +206,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                 buffer.putInt(prf);
                 buffer.putInt(max);
             }
+
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             buffer.putMPInt(e);
@@ -220,10 +230,12 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
             // Send response
             if (debugEnabled) {
-                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_REPLY", this, session);
+                log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_REPLY - old={}, min={}, prf={}, max={}",
+                    this, session, oldRequest, min, prf, max);
             }
 
-            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY, BufferUtils.clear(buffer));
+            buffer = session.prepareBuffer(
+                SshConstants.SSH_MSG_KEX_DH_GEX_REPLY, BufferUtils.clear(buffer));
             buffer.putBytes(k_s);
             buffer.putBytes(f);
             buffer.putBytes(sigH);
@@ -235,20 +247,23 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     }
 
     protected DHG chooseDH(int min, int prf, int max) throws Exception {
-        List<Moduli.DhGroup> groups = loadModuliGroups();
-
+        int maxDHGroupExchangeKeySize = SecurityUtils.getMaxDHGroupExchangeKeySize();
         min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
         prf = Math.max(prf, SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        prf = Math.min(prf, SecurityUtils.getMaxDHGroupExchangeKeySize());
-        max = Math.min(max, SecurityUtils.getMaxDHGroupExchangeKeySize());
-        int bestSize = 0;
+        prf = Math.min(prf, maxDHGroupExchangeKeySize);
+        max = Math.min(max, maxDHGroupExchangeKeySize);
+
+        List<Moduli.DhGroup> groups = loadModuliGroups();
+        Session session = getServerSession();
         List<Moduli.DhGroup> selected = new ArrayList<>();
+        int bestSize = 0;
         boolean traceEnabled = log.isTraceEnabled();
         for (Moduli.DhGroup group : groups) {
             int size = group.getSize();
             if ((size < min) || (size > max)) {
                 if (traceEnabled) {
-                    log.trace("chooseDH - skip group={} - size not in range [{}-{}]", group, min, max);
+                    log.trace("chooseDH({})[{}] - skip group={} - size not in range [{}-{}]",
+                        this, session, group, min, max);
                 }
                 continue;
             }
@@ -256,22 +271,24 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             if (((size > prf) && (size < bestSize)) || ((size > bestSize) && (bestSize < prf))) {
                 bestSize = size;
                 if (traceEnabled) {
-                    log.trace("chooseDH(prf={}, min={}, max={}) new best size={} from group={}", prf, min, max, bestSize, group);
+                    log.trace("chooseDH({})[{}][prf={}, min={}, max={}] new best size={} from group={}",
+                        this, session, prf, min, max, bestSize, group);
                 }
                 selected.clear();
             }
 
             if (size == bestSize) {
                 if (traceEnabled) {
-                    log.trace("chooseDH(prf={}, min={}, max={}) selected {}", prf, min, max, group);
+                    log.trace("chooseDH({})[{}][prf={}, min={}, max={}] selected {}",
+                        this, session, prf, min, max, group);
                 }
                 selected.add(group);
             }
         }
 
-        ServerSession session = getServerSession();
         if (selected.isEmpty()) {
-            log.warn("chooseDH({})[{}] No suitable primes found, defaulting to DHG1", this, session);
+            log.warn("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found, defaulting to DHG1",
+                this, session, prf, min, max);
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
 
@@ -280,42 +297,48 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         Random random = Objects.requireNonNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
+        if (traceEnabled) {
+            log.trace("chooseDH({})[{}][prf={}, min={}, max={}] selected {}",
+                this, session, prf, min, max, group);
+        }
         return getDH(group.getP(), group.getG());
     }
 
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
-        ServerSession session = getServerSession();
+        Session session = getServerSession();
         String moduliStr = session.getString(ServerFactoryManager.MODULI_URL);
 
         List<Moduli.DhGroup> groups = null;
-        URL moduli;
         if (!GenericUtils.isEmpty(moduliStr)) {
             try {
-                moduli = new URL(moduliStr);
+                URL moduli = new URL(moduliStr);
                 groups = Moduli.parseModuli(moduli);
             } catch (IOException e) {   // OK - use internal moduli
-                log.warn("Error (" + e.getClass().getSimpleName() + ") loading external moduli from " + moduliStr + ": " + e.getMessage());
+                log.warn("loadModuliGroups({})[{}] Error ({}) loading external moduli from {}: {}",
+                    this, session, e.getClass().getSimpleName(), moduliStr, e.getMessage());
             }
         }
 
         if (groups == null) {
-            moduliStr = "/org/apache/sshd/moduli";
+            moduliStr = Moduli.INTERNAL_MODULI_RESPATH;
             try {
-                moduli = getClass().getResource(moduliStr);
+                URL moduli = getClass().getResource(moduliStr);
                 if (moduli == null) {
                     throw new FileNotFoundException("Missing internal moduli file");
                 }
 
                 moduliStr = moduli.toExternalForm();
-                groups = Moduli.parseModuli(moduli);
+                groups = Moduli.loadInternalModuli(moduli);
             } catch (IOException e) {
-                log.warn("Error (" + e.getClass().getSimpleName() + ") loading internal moduli from " + moduliStr + ": " + e.getMessage());
+                log.warn("loadModuliGroups({})[{}] Error ({}) loading internal moduli from {}: {}",
+                    this, session, e.getClass().getSimpleName(), moduliStr, e.getMessage());
                 throw e;    // this time we MUST throw the exception
             }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Loaded moduli groups from {}", moduliStr);
+            log.debug("loadModuliGroups({})[{}] Loaded moduli groups from {}",
+                this, session, moduliStr);
         }
         return groups;
     }

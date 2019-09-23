@@ -87,8 +87,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
         if (log.isDebugEnabled()) {
-            log.debug("init({}) Send SSH_MSG_KEX_DH_GEX_REQUEST", s);
+            log.debug("init({})[{}] Send SSH_MSG_KEX_DH_GEX_REQUEST - min={}, prf={}, max={}",
+                this, s, min, prf, max);
         }
+
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST, Integer.SIZE);
         buffer.putInt(min);
         buffer.putInt(prf);
@@ -104,8 +106,9 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         Session session = getSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("next({})[{}] process command={}",
-                this, session, KeyExchange.getGroupKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={} (expected={})",
+                this, session, KeyExchange.getGroupKexOpcodeName(cmd),
+                KeyExchange.getGroupKexOpcodeName(expected));
         }
 
         if (cmd != expected) {
@@ -126,6 +129,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_INIT", this, session);
             }
+
             buffer = session.createBuffer(
                 SshConstants.SSH_MSG_KEX_DH_GEX_INIT, e.length + Byte.SIZE);
             buffer.putMPInt(e);
@@ -135,6 +139,11 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REPLY) {
+            if (debugEnabled) {
+                log.debug("next({})[{}] validate SSH_MSG_KEX_DH_GEX_REPLY - min={}, prf={}, max={}",
+                    this, session, min, prf, max);
+            }
+
             byte[] k_s = buffer.getBytes();
             f = buffer.getMPIntAsBytes();
             byte[] sig = buffer.getBytes();
@@ -146,7 +155,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
             String keyAlg = KeyUtils.getKeyType(serverKey);
             if (GenericUtils.isEmpty(keyAlg)) {
-                throw new SshException("Unsupported server key type");
+                throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm()
+                    + " [" + serverKey.getFormat() + "]");
             }
 
             buffer = new ByteArrayBuffer();

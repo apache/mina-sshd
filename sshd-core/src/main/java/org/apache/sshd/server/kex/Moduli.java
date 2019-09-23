@@ -19,14 +19,21 @@
 package org.apache.sshd.server.kex;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Helper class to load DH group primes from a file.
@@ -34,6 +41,10 @@ import java.util.Objects;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class Moduli {
+    /**
+     * Resource path of internal moduli file
+     */
+    public static final String INTERNAL_MODULI_RESPATH = "/org/apache/sshd/moduli";
 
     public static final int MODULI_TYPE_SAFE = 2;
     public static final int MODULI_TESTS_COMPOSITE = 0x01;
@@ -63,13 +74,42 @@ public final class Moduli {
 
         @Override
         public String toString() {
-            return "[size=" + getSize() + ",G=" + getG() + ",P=" + getP() + "]";
+            return "[size=" + getSize() + ", G=" + getG() + ", P=" + getP() + "]";
         }
     }
+
+    private static final AtomicReference<Map.Entry<String, List<DhGroup>>> INTERNAL_MODULI_HOLDER = new AtomicReference<>();
 
     // Private constructor
     private Moduli() {
         throw new UnsupportedOperationException("No instance allowed");
+    }
+
+    public static Map.Entry<String, List<DhGroup>> clearInternalModuliCache() {
+        return INTERNAL_MODULI_HOLDER.getAndSet(null);
+    }
+
+    public static List<DhGroup> loadInternalModuli(URL url) throws IOException {
+        if (url == null) {
+            throw new FileNotFoundException("No internal moduli resource specified");
+        }
+
+        String moduliStr = url.toExternalForm();
+        Map.Entry<String, List<DhGroup>> lastModuli = INTERNAL_MODULI_HOLDER.get();
+        String lastResource = (lastModuli == null) ? null : lastModuli.getKey();
+        if (Objects.equals(lastResource, moduliStr)) {
+            return lastModuli.getValue();
+        }
+
+        List<DhGroup> groups = parseModuli(url);
+        if (GenericUtils.isEmpty(groups)) {
+            groups = Collections.emptyList();
+        } else {
+            groups = Collections.unmodifiableList(groups);
+        }
+
+        INTERNAL_MODULI_HOLDER.set(new SimpleImmutableEntry<>(moduliStr, groups));
+        return groups;
     }
 
     public static List<DhGroup> parseModuli(URL url) throws IOException {
@@ -77,6 +117,10 @@ public final class Moduli {
         try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
             for (String line = r.readLine(); line != null; line = r.readLine()) {
                 line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
                 if (line.startsWith("#")) {
                     continue;
                 }
@@ -105,7 +149,10 @@ public final class Moduli {
                     continue;
                 }
 
-                DhGroup group = new DhGroup(Integer.parseInt(parts[4]) + 1, new BigInteger(parts[5], 16), new BigInteger(parts[6], 16));
+                DhGroup group = new DhGroup(
+                    Integer.parseInt(parts[4]) + 1,
+                    new BigInteger(parts[5], 16),
+                    new BigInteger(parts[6], 16));
                 groups.add(group);
             }
 
