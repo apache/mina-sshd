@@ -31,6 +31,7 @@ import java.util.Objects;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.DHFactory;
@@ -55,6 +56,9 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXServer extends AbstractDHServerKeyExchange {
+    public static final String PROP_DHGEX_SERVER_MIN_KEY = "dhgex-server-min";
+    public static final String PROP_DHGEX_SERVER_MAX_KEY = "dhgex-server-max";
+
     protected final DHFactory factory;
     protected DHG dh;
     protected int min;
@@ -112,9 +116,11 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         if ((cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD)
                 && (expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)) {
             oldRequest = true;
-            min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
+            min = PropertyResolverUtils.getIntProperty(
+                session, PROP_DHGEX_SERVER_MIN_KEY, SecurityUtils.MIN_DHGEX_KEY_SIZE);
             prf = buffer.getInt();
-            max = SecurityUtils.getMaxDHGroupExchangeKeySize();
+            max = PropertyResolverUtils.getIntProperty(
+                session, PROP_DHGEX_SERVER_MAX_KEY, SecurityUtils.getMaxDHGroupExchangeKeySize());
 
             if ((max < min) || (prf < min) || (max < prf)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
@@ -307,7 +313,6 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
         Session session = getServerSession();
         String moduliStr = session.getString(ServerFactoryManager.MODULI_URL);
-
         List<Moduli.DhGroup> groups = null;
         if (!GenericUtils.isEmpty(moduliStr)) {
             try {
@@ -337,8 +342,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("loadModuliGroups({})[{}] Loaded moduli groups from {}",
-                this, session, moduliStr);
+            log.debug("loadModuliGroups({})[{}] Loaded {} moduli groups from {}",
+                this, session, GenericUtils.size(groups), moduliStr);
         }
         return groups;
     }

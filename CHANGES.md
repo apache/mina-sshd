@@ -43,6 +43,10 @@ initialized in the past.
 * The internal moduli used in Diffie-Hellman group exchange are **cached** - lazy-loaded the 1st time such an exchange
 occurs. The cache can be invalidated (and thus force a re-load) by invoking `Moduli#clearInternalModuliCache`.
 
+* `DHGEXClient#init` implementation allows overriding the min./max. key sizes for a specific session Diffi-Helman group
+exchange via properties - see `DHGEXClient#PROP_DHGEX_CLIENT_MIN/MAX_KEY`. Similar applies for `DHGEXServer` but only for
+the message type=30.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
@@ -50,8 +54,12 @@ occurs. The cache can be invalidated (and thus force a re-load) by invoking `Mod
 * [SSHD-930](https://issues.apache.org/jira/browse/SSHD-930) - Added configuration allowing the user to specify whether client should wait
 for the server's identification before sending its own.
 
-* [SSHD-931](https://issues.apache.org/jira/browse/SSHD-931) - Using an executor supplier instead of a specific instance in `SftpSubsystemFactory`
+* [SSHD-931](https://issues.apache.org/jira/browse/SSHD-931) - Using an executor supplier instead of a specific instance in `SftpSubsystemFactory`.
 
 * [SSHD-934](https://issues.apache.org/jira/browse/SSHD-934) - Fixed ECDSA public key encoding into OpenSSH format.
 
 * [SSHD-937](https://issues.apache.org/jira/browse/SSHD-937) - Provide session instance when creating a subsystem, user authentication, channel.
+
+* [SSHD-941](https://issues.apache.org/jira/browse/SSHD-941) - Allow user to override min./max. key sizes for a specific session Diffi-Helman group
+exchange via properties.
+

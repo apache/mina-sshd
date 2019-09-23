@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -42,6 +43,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXClient extends AbstractDHClientKeyExchange {
+    public static final String PROP_DHGEX_CLIENT_MIN_KEY = "dhgex-client-min";
+    public static final String PROP_DHGEX_CLIENT_MAX_KEY = "dhgex-client-max";
+
     protected final DHFactory factory;
     protected byte expected;
     protected int min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
@@ -86,9 +90,18 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
+
+        // SSHD-941 give the user a chance to intervene in the choice
+        min = PropertyResolverUtils.getIntProperty(s, PROP_DHGEX_CLIENT_MIN_KEY, min);
+        max = PropertyResolverUtils.getIntProperty(s, PROP_DHGEX_CLIENT_MAX_KEY, max);
+        prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
         if (log.isDebugEnabled()) {
             log.debug("init({})[{}] Send SSH_MSG_KEX_DH_GEX_REQUEST - min={}, prf={}, max={}",
                 this, s, min, prf, max);
+        }
+        if ((max < min) || (prf < min) || (max < prf)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
         }
 
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST, Integer.SIZE);

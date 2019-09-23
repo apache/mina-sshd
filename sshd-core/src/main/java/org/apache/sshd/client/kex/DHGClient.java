@@ -102,8 +102,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     public boolean next(int cmd, Buffer buffer) throws Exception {
         Session session = getSession();
         if (log.isDebugEnabled()) {
-            log.debug("next({})[{}] process command={}", this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
+            log.debug("next({})[{}] process command={}",
+                this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
         }
+
         if (cmd != SshConstants.SSH_MSG_KEXDH_REPLY) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                 "Protocol error: expected packet SSH_MSG_KEXDH_REPLY, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
@@ -119,7 +121,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         serverKey = buffer.getRawPublicKey();
         String keyAlg = KeyUtils.getKeyType(serverKey);
         if (GenericUtils.isEmpty(keyAlg)) {
-            throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm());
+            throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm()
+                + "[" + serverKey.getFormat() + "]");
         }
 
         buffer = new ByteArrayBuffer();
@@ -140,8 +143,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         verif.initVerifier(serverKey);
         verif.update(h);
         if (!verif.verify(sig)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "KeyExchange signature verification failed for key type=" + keyAlg);
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                "KeyExchange signature verification failed for key type=" + keyAlg);
         }
+
         return true;
     }
 }
