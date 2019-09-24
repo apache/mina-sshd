@@ -47,9 +47,9 @@ public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensi
      *
      * @return a list of named <code>KeyExchange</code> factories, never {@code null}
      */
-    List<NamedFactory<KeyExchange>> getKeyExchangeFactories();
+    List<KeyExchangeFactory> getKeyExchangeFactories();
 
-    void setKeyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories);
+    void setKeyExchangeFactories(List<KeyExchangeFactory> keyExchangeFactories);
 
     /**
      * Retrieve the list of named factories for <code>Cipher</code>.

@@ -26,6 +26,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -35,7 +36,7 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyExchange extends NamedResource {
+public interface KeyExchange extends NamedResource, SessionHolder<Session> {
     NavigableMap<Integer, String> GROUP_KEX_OPCODES_MAP =
         Collections.unmodifiableNavigableMap(
             LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_"));
@@ -47,14 +48,13 @@ public interface KeyExchange extends NamedResource {
     /**
      * Initialize the key exchange algorithm.
      *
-     * @param session the session using this algorithm
      * @param v_s     the server identification string
      * @param v_c     the client identification string
      * @param i_s     the server key initialization packet
      * @param i_c     the client key initialization packet
      * @throws Exception if an error occurs
      */
-    void init(Session session, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
+    void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
 
     /**
      * Process the next packet

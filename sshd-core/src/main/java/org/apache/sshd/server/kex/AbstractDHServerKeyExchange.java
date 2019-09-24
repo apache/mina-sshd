@@ -32,19 +32,13 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange implements ServerSessionHolder {
-    protected AbstractDHServerKeyExchange() {
-        super();
+    protected AbstractDHServerKeyExchange(Session s) {
+        super(ValidateUtils.checkInstanceOf(s, ServerSession.class, "Using a client side KeyExchange on a server: %s", s));
     }
 
     @Override
     public final ServerSession getServerSession() {
         return (ServerSession) getSession();
-    }
-
-    @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
-        ValidateUtils.checkInstanceOf(s, ServerSession.class, "Using a server side KeyExchange on a client: %s", s);
     }
 
     @Override

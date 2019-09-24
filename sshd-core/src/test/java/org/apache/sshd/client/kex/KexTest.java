@@ -34,10 +34,9 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
-import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -119,12 +118,15 @@ public class KexTest extends BaseTestSupport {
         testClient(ClientBuilder.DH2KEX.apply(factory));
     }
 
-    private void testClient(NamedFactory<KeyExchange> kex) throws Exception {
+    private void testClient(KeyExchangeFactory kex) throws Exception {
         try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             client.setKeyExchangeFactories(Collections.singletonList(kex));
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session =
+                    client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                        .verify(7L, TimeUnit.SECONDS)
+                        .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -153,7 +155,7 @@ public class KexTest extends BaseTestSupport {
                     teeOut.flush();
 
                     Collection<ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                 }
             }

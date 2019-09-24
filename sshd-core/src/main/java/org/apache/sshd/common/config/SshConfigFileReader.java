@@ -38,6 +38,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -162,11 +163,13 @@ public final class SshConfigFileReader {
         return manager;
     }
 
-    public static <M extends AbstractFactoryManager> M configureCiphers(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configureCiphers(
+            M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
         return configureCiphers(manager,
-            props.getStringProperty(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_CIPHERS),
-                lenient, ignoreUnsupported);
+            props.getStringProperty(
+                ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_CIPHERS),
+            lenient, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureCiphers(
@@ -175,18 +178,22 @@ public final class SshConfigFileReader {
 
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
-        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported cipher(s) (%s) in %s", unsupported, value);
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+            "Unsupported cipher(s) (%s) in %s", unsupported, value);
 
         List<NamedFactory<Cipher>> factories =
-                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-        manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
+            BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setCipherFactories(
+            ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
         return manager;
     }
 
-    public static <M extends AbstractFactoryManager> M configureSignatures(M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configureSignatures(
+            M manager, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
         return configureSignatures(manager,
-            props.getStringProperty(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS),
+            props.getStringProperty(
+                ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS),
             lenient, ignoreUnsupported);
     }
 
@@ -196,11 +203,13 @@ public final class SshConfigFileReader {
 
         BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
-        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported signatures (%s) in %s", unsupported, value);
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+            "Unsupported signatures (%s) in %s", unsupported, value);
 
         List<NamedFactory<Signature>> factories =
-                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-        manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
+            BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setSignatureFactories(
+            ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
         return manager;
     }
 
@@ -208,7 +217,8 @@ public final class SshConfigFileReader {
             M manager, PropertyResolver resolver, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(resolver, "No properties to configure");
         return configureMacs(manager,
-            resolver.getStringProperty(ConfigFileReaderSupport.MACS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_MACS),
+            resolver.getStringProperty(
+                ConfigFileReaderSupport.MACS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_MACS),
             lenient, ignoreUnsupported);
     }
 
@@ -218,11 +228,13 @@ public final class SshConfigFileReader {
 
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
-        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported MAC(s) (%s) in %s", unsupported, value);
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+            "Unsupported MAC(s) (%s) in %s", unsupported, value);
 
         List<NamedFactory<Mac>> factories =
-                BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-        manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
+            BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setMacFactories(
+            ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
         return manager;
     }
 
@@ -242,25 +254,30 @@ public final class SshConfigFileReader {
      * @see ConfigFileReaderSupport#DEFAULT_KEX_ALGORITHMS DEFAULT_KEX_ALGORITHMS
      */
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
-            M manager, PropertyResolver props, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+            M manager, PropertyResolver props, boolean lenient,
+            Function<? super DHFactory, ? extends KeyExchangeFactory> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
         return configureKeyExchanges(manager,
-            props.getStringProperty(ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_KEX_ALGORITHMS),
+            props.getStringProperty(
+                ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_KEX_ALGORITHMS),
             lenient, xformer, ignoreUnsupported);
     }
 
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
-            M manager, String value, boolean lenient, Function<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+            M manager, String value, boolean lenient,
+            Function<? super DHFactory, ? extends KeyExchangeFactory> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
         Objects.requireNonNull(xformer, "No DHFactory transformer");
 
         BuiltinDHFactories.ParseResult result = BuiltinDHFactories.parseDHFactoriesList(value);
         Collection<String> unsupported = result.getUnsupportedFactories();
-        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported KEX(s) (%s) in %s", unsupported, value);
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+            "Unsupported KEX(s) (%s) in %s", unsupported, value);
 
-        List<NamedFactory<KeyExchange>> factories =
-                NamedFactory.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
-        manager.setKeyExchangeFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
+        List<KeyExchangeFactory> factories =
+            NamedFactory.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
+        manager.setKeyExchangeFactories(
+            ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
         return manager;
     }
 

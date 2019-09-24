@@ -31,10 +31,14 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
@@ -91,18 +95,21 @@ public class ClientSessionListenerTest extends BaseTestSupport {
 
     @Test
     public void testSessionListenerCanModifyKEXNegotiation() throws Exception {
-        final Map<KexProposalOption, NamedFactory<?>> kexParams = new EnumMap<>(KexProposalOption.class);
+        Map<KexProposalOption, NamedResource> kexParams = new EnumMap<>(KexProposalOption.class);
         kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchange.class, client.getKeyExchangeFactories()));
-        kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(Cipher.class, client.getCipherFactories()));
-        kexParams.put(KexProposalOption.C2SMAC, getLeastFavorite(Mac.class, client.getMacFactories()));
+        kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(CipherFactory.class, client.getCipherFactories()));
+        kexParams.put(KexProposalOption.C2SMAC, getLeastFavorite(MacFactory.class, client.getMacFactories()));
 
         SessionListener listener = new SessionListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
-                session.setKeyExchangeFactories(Collections.singletonList((NamedFactory<KeyExchange>) kexParams.get(KexProposalOption.ALGORITHMS)));
-                session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
-                session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
+                session.setKeyExchangeFactories(
+                    Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
+                session.setCipherFactories(
+                    Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
+                session.setMacFactories(
+                    Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
             }
         };
         client.addSessionListener(listener);
@@ -120,16 +127,17 @@ public class ClientSessionListenerTest extends BaseTestSupport {
 
     @Test
     public void testSessionListenerCanInfluenceAuthentication() throws IOException {
-        final AtomicInteger verificationCount = new AtomicInteger();
-        final ServerKeyVerifier verifier = (sshClientSession, remoteAddress, serverKey) -> {
+        AtomicInteger verificationCount = new AtomicInteger();
+        ServerKeyVerifier verifier = (sshClientSession, remoteAddress, serverKey) -> {
             verificationCount.incrementAndGet();
             return true;
         };
-
         SessionListener listener = new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
-                if ((!session.isAuthenticated()) && (session instanceof ClientSession) && Event.KexCompleted.equals(event)) {
+                if ((!session.isAuthenticated())
+                        && (session instanceof ClientSession)
+                        && Event.KexCompleted.equals(event)) {
                     ClientSession clientSession = (ClientSession) session;
                     clientSession.setServerKeyVerifier(verifier);
                     clientSession.setUserInteraction(UserInteraction.NONE);
@@ -149,14 +157,18 @@ public class ClientSessionListenerTest extends BaseTestSupport {
         }
     }
 
-    private static <V> NamedFactory<V> getLeastFavorite(Class<V> type, List<? extends NamedFactory<V>> factories) {
+    private static <V extends NamedResource> NamedResource getLeastFavorite(
+            Class<V> type, List<? extends NamedResource> factories) {
         int numFactories = GenericUtils.size(factories);
         assertTrue("No factories for " + type.getSimpleName(), numFactories > 0);
         return factories.get(numFactories - 1);
     }
 
     private ClientSession createTestClientSession() throws IOException {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session =
+            client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

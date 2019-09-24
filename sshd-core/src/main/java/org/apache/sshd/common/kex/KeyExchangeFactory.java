@@ -19,13 +19,18 @@
 
 package org.apache.sshd.common.kex;
 
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-// CHECKSTYLE:OFF
-public interface KeyExchangeFactory extends NamedFactory<KeyExchange> {
-    // nothing extra
+public interface KeyExchangeFactory extends NamedResource {
+    /**
+     * @param session The {@link Session} for which the factory is invoked
+     * @return The {@link KeyExchange} instance to be used
+     * @throws Exception If failed to create
+     */
+    KeyExchange createKeyExchange(Session session) throws Exception;
 }
-//CHECKSTYLE:ON
+

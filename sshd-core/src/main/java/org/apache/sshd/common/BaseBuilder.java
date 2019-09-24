@@ -35,7 +35,7 @@ import org.apache.sshd.common.forward.DefaultForwarderFactory;
 import org.apache.sshd.common.forward.ForwardingFilterFactory;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
-import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
@@ -128,7 +128,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             DefaultUnknownChannelReferenceHandler.INSTANCE;
 
     protected Factory<T> factory;
-    protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
+    protected List<KeyExchangeFactory> keyExchangeFactories;
     protected List<NamedFactory<Cipher>> cipherFactories;
     protected List<NamedFactory<Compression>> compressionFactories;
     protected List<NamedFactory<Mac>> macFactories;
@@ -178,7 +178,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public S keyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories) {
+    public S keyExchangeFactories(List<KeyExchangeFactory> keyExchangeFactories) {
         this.keyExchangeFactories = keyExchangeFactories;
         return me();
     }
@@ -283,9 +283,9 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     /**
      * @param ignoreUnsupported If {@code true} then all the default
-     *                          ciphers are included, regardless of whether they are currently
-     *                          supported by the JCE. Otherwise, only the supported ones out of the
-     *                          list are included
+     * ciphers are included, regardless of whether they are currently
+     * supported by the JCE. Otherwise, only the supported ones out of the
+     * list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link Cipher}s according to the preference
      * order defined by {@link #DEFAULT_CIPHERS_PREFERENCE}.
@@ -293,14 +293,15 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * ciphers according to the <tt>ignoreUnsupported</tt> parameter
      * @see BuiltinCiphers#isSupported()
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
     public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
-        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
+        return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
     }
 
     /**
      * @param ignoreUnsupported If {@code true} all the available built-in
-     *                          {@link Mac} factories are added, otherwise only those that are supported
-     *                          by the current JDK setup
+     * {@link Mac} factories are added, otherwise only those that are supported
+     * by the current JDK setup
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link Mac}s according to the preference
      * order defined by {@link #DEFAULT_MAC_PREFERENCE}.
@@ -308,7 +309,8 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * MACs according to the <tt>ignoreUnsupported</tt> parameter
      * @see BuiltinMacs#isSupported()
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
     public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
-        return NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
+        return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
     }
 }

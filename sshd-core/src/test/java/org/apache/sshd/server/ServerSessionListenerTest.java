@@ -32,11 +32,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
@@ -165,18 +168,21 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
     @Test
     public void testSessionListenerCanModifyKEXNegotiation() throws Exception {
-        final Map<KexProposalOption, NamedFactory<?>> kexParams = new EnumMap<>(KexProposalOption.class);
-        kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchange.class, sshd.getKeyExchangeFactories()));
-        kexParams.put(KexProposalOption.S2CENC, getLeastFavorite(Cipher.class, sshd.getCipherFactories()));
-        kexParams.put(KexProposalOption.S2CMAC, getLeastFavorite(Mac.class, sshd.getMacFactories()));
+        Map<KexProposalOption, NamedResource> kexParams = new EnumMap<>(KexProposalOption.class);
+        kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchangeFactory.class, sshd.getKeyExchangeFactories()));
+        kexParams.put(KexProposalOption.S2CENC, getLeastFavorite(CipherFactory.class, sshd.getCipherFactories()));
+        kexParams.put(KexProposalOption.S2CMAC, getLeastFavorite(MacFactory.class, sshd.getMacFactories()));
 
         SessionListener listener = new SessionListener() {
             @Override
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
-                session.setKeyExchangeFactories(Collections.singletonList((NamedFactory<KeyExchange>) kexParams.get(KexProposalOption.ALGORITHMS)));
-                session.setCipherFactories(Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
-                session.setMacFactories(Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
+                session.setKeyExchangeFactories(
+                    Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
+                session.setCipherFactories(
+                    Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
+                session.setMacFactories(
+                    Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
             }
         };
         sshd.addSessionListener(listener);
@@ -194,9 +200,9 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
     @Test
     public void testSessionListenerCanModifyAuthentication() throws Exception {
-        final AtomicInteger passCount = new AtomicInteger(0);
-        final PasswordAuthenticator defaultPassAuth = sshd.getPasswordAuthenticator();
-        final PasswordAuthenticator passAuth = (username, password, session) -> {
+        AtomicInteger passCount = new AtomicInteger(0);
+        PasswordAuthenticator defaultPassAuth = sshd.getPasswordAuthenticator();
+        PasswordAuthenticator passAuth = (username, password, session) -> {
             passCount.incrementAndGet();
             return defaultPassAuth.authenticate(username, password, session);
         };
@@ -215,22 +221,28 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         sshd.addSessionListener(listener);
 
         try (ClientSession session = createTestClientSession()) {
-            assertNotSame("Mismatched default password authenticator", passAuth, sshd.getPasswordAuthenticator());
-            assertNotSame("Mismatched default kb authenticator", KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
+            assertNotSame("Mismatched default password authenticator",
+                passAuth, sshd.getPasswordAuthenticator());
+            assertNotSame("Mismatched default kb authenticator",
+                KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
             assertEquals("Authenticator override not invoked", 1, passCount.get());
         } finally {
             sshd.removeSessionListener(listener);
         }
     }
 
-    private static <V> NamedFactory<V> getLeastFavorite(Class<V> type, List<? extends NamedFactory<V>> factories) {
+    private static <V extends NamedResource> NamedResource getLeastFavorite(
+            Class<V> type, List<? extends NamedResource> factories) {
         int numFactories = GenericUtils.size(factories);
         assertTrue("No factories for " + type.getSimpleName(), numFactories > 0);
         return factories.get(numFactories - 1);
     }
 
     private ClientSession createTestClientSession() throws Exception {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session =
+            client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(11L, TimeUnit.SECONDS);

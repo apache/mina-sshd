@@ -45,20 +45,28 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class DHGEXClient extends AbstractDHClientKeyExchange {
     public static final String PROP_DHGEX_CLIENT_MIN_KEY = "dhgex-client-min";
     public static final String PROP_DHGEX_CLIENT_MAX_KEY = "dhgex-client-max";
+    public static final String PROP_DHGEX_CLIENT_PRF_KEY = "dhgex-client-prf";
 
     protected final DHFactory factory;
     protected byte expected;
-    protected int min = SecurityUtils.MIN_DHGEX_KEY_SIZE;
+    protected int min;
     protected int prf;
     protected int max;
     protected AbstractDH dh;
     protected byte[] p;
     protected byte[] g;
 
-    protected DHGEXClient(DHFactory factory) {
+    protected DHGEXClient(DHFactory factory, Session session) {
+        super(session);
         this.factory = Objects.requireNonNull(factory, "No factory");
-        this.max = SecurityUtils.getMaxDHGroupExchangeKeySize();
-        this.prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
+
+        // SSHD-941 give the user a chance to intervene in the choice
+        min = PropertyResolverUtils.getIntProperty(
+            session, PROP_DHGEX_CLIENT_MIN_KEY, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        max = PropertyResolverUtils.getIntProperty(
+            session, PROP_DHGEX_CLIENT_MAX_KEY, SecurityUtils.getMaxDHGroupExchangeKeySize());
+        prf = PropertyResolverUtils.getIntProperty(
+            session, PROP_DHGEX_CLIENT_PRF_KEY, Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max));
     }
 
     @Override
@@ -74,8 +82,8 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             }
 
             @Override
-            public KeyExchange create() {
-                return new DHGEXClient(delegate);
+            public KeyExchange createKeyExchange(Session session) throws Exception {
+                return new DHGEXClient(delegate, session);
             }
 
             @Override
@@ -88,13 +96,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     }
 
     @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
+    public void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(v_s, v_c, i_s, i_c);
 
-        // SSHD-941 give the user a chance to intervene in the choice
-        min = PropertyResolverUtils.getIntProperty(s, PROP_DHGEX_CLIENT_MIN_KEY, min);
-        max = PropertyResolverUtils.getIntProperty(s, PROP_DHGEX_CLIENT_MAX_KEY, max);
-        prf = Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max);
+        Session s = getSession();
         if (log.isDebugEnabled()) {
             log.debug("init({})[{}] Send SSH_MSG_KEX_DH_GEX_REQUEST - min={}, prf={}, max={}",
                 this, s, min, prf, max);

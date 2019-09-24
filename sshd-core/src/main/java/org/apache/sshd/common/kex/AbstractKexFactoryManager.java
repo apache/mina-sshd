@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.kex;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,7 +39,7 @@ public abstract class AbstractKexFactoryManager
               extends AbstractInnerCloseable
               implements KexFactoryManager {
     private final KexFactoryManager delegate;
-    private List<NamedFactory<KeyExchange>> keyExchangeFactories;
+    private List<KeyExchangeFactory> keyExchangeFactories;
     private List<NamedFactory<Cipher>> cipherFactories;
     private List<NamedFactory<Compression>> compressionFactories;
     private List<NamedFactory<Mac>> macFactories;
@@ -58,14 +59,14 @@ public abstract class AbstractKexFactoryManager
     }
 
     @Override
-    public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
+    public List<KeyExchangeFactory> getKeyExchangeFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(keyExchangeFactories,
             (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
     }
 
     @Override
-    public void setKeyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories) {
+    public void setKeyExchangeFactories(List<KeyExchangeFactory> keyExchangeFactories) {
         this.keyExchangeFactories = keyExchangeFactories;
     }
 
@@ -129,7 +130,7 @@ public abstract class AbstractKexFactoryManager
         this.kexExtensionHandler = kexExtensionHandler;
     }
 
-    protected <V> List<V> resolveEffectiveFactories(List<V> local, List<V> inherited) {
+    protected <V, C extends Collection<V>> C resolveEffectiveFactories(C local, C inherited) {
         if (GenericUtils.isEmpty(local)) {
             return inherited;
         } else {

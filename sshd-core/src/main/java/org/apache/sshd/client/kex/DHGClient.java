@@ -46,7 +46,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
-    protected DHGClient(DHFactory factory) {
+    protected DHGClient(DHFactory factory, Session session) {
+        super(session);
+
         this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
@@ -63,8 +65,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             }
 
             @Override
-            public KeyExchange create() {
-                return new DHGClient(delegate);
+            public KeyExchange createKeyExchange(Session session) throws Exception {
+                return new DHGClient(delegate, session);
             }
 
             @Override
@@ -77,17 +79,20 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     }
 
     @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
+    public void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(v_s, v_c, i_s, i_c);
+
         dh = getDH();
         hash = dh.getHash();
         hash.init();
         e = dh.getE();
 
+        Session s = getSession();
         if (log.isDebugEnabled()) {
             log.debug("init({})[{}] Send SSH_MSG_KEXDH_INIT", this, s);
         }
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT, e.length + Integer.SIZE);
+        Buffer buffer =
+            s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT, e.length + Integer.SIZE);
         buffer.putMPInt(e);
 
         s.writePacket(buffer);

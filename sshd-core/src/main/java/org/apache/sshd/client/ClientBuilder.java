@@ -37,12 +37,15 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 
 /**
@@ -81,7 +84,9 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
                 BuiltinSignatures.dsa
             ));
 
-    public static final Function<DHFactory, NamedFactory<KeyExchange>> DH2KEX = factory ->
+    @SuppressWarnings("checkstyle:Indentation")
+    public static final Function<DHFactory, KeyExchangeFactory> DH2KEX =
+        factory ->
             factory == null
                 ? null
                 : factory.isGroupExchange()
@@ -136,11 +141,11 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         super.fillWithDefaultValues();
 
         if (signatureFactories == null) {
-            signatureFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_SIGNATURE_PREFERENCE);
+            signatureFactories = setUpDefaultSignatureFactories(false);
         }
 
         if (compressionFactories == null) {
-            compressionFactories = NamedFactory.setUpBuiltinFactories(false, DEFAULT_COMPRESSION_FACTORIES);
+            compressionFactories = setUpDefaultCompressionFactories(false);
         }
 
         if (keyExchangeFactories == null) {
@@ -188,11 +193,21 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         return client;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    public static List<NamedFactory<Signature>> setUpDefaultSignatureFactories(boolean ignoreUnsupported) {
+        return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    public static List<NamedFactory<Compression>> setUpDefaultCompressionFactories(boolean ignoreUnsupported) {
+        return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_COMPRESSION_FACTORIES);
+    }
+
     /**
      * @param ignoreUnsupported If {@code true} then all the default
-     *                          key exchanges are included, regardless of whether they are currently
-     *                          supported by the JCE. Otherwise, only the supported ones out of the
-     *                          list are included
+     * key exchanges are included, regardless of whether they are currently
+     * supported by the JCE. Otherwise, only the supported ones out of the
+     * list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link KeyExchange}s according to the preference
      * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
@@ -200,7 +215,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
      * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
      * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
-    public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
+    public static List<KeyExchangeFactory> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
         return NamedFactory.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
     }
 

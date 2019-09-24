@@ -41,7 +41,8 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
      * @return a newly created object or {@code null} if the factory is not in the list
      */
     static <T> T create(Collection<? extends NamedFactory<? extends T>> factories, String name) {
-        NamedFactory<? extends T> f = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+        NamedFactory<? extends T> f =
+            NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
         if (f != null) {
             return f.create();
         } else {
@@ -49,7 +50,7 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
         }
     }
 
-    static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
+    static <S extends OptionalFeature, E extends NamedResource> List<E> setUpTransformedFactories(
             boolean ignoreUnsupported, Collection<? extends S> preferred, Function<? super S, ? extends E> xform) {
         return preferred.stream()
             .filter(f -> ignoreUnsupported || f.isSupported())
@@ -57,7 +58,7 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             .collect(Collectors.toList());
     }
 
-    static <T, E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
+    static <E extends NamedResource & OptionalFeature> List<E> setUpBuiltinFactories(
             boolean ignoreUnsupported, Collection<? extends E> preferred) {
         return preferred.stream()
             .filter(f -> ignoreUnsupported || f.isSupported())

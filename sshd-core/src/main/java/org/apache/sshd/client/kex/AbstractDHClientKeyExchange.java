@@ -33,19 +33,13 @@ import org.apache.sshd.common.util.ValidateUtils;
 public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange implements ClientSessionHolder {
     protected PublicKey serverKey;
 
-    protected AbstractDHClientKeyExchange() {
-        super();
+    protected AbstractDHClientKeyExchange(Session session) {
+        super(ValidateUtils.checkInstanceOf(session, ClientSession.class, "Using a client side KeyExchange on a server: %s", session));
     }
 
     @Override
     public final ClientSession getClientSession() {
         return (ClientSession) getSession();
-    }
-
-    @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
-        ValidateUtils.checkInstanceOf(s, ClientSession.class, "Using a client side KeyExchange on a server: %s", s);
     }
 
     @Override

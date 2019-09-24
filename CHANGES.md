@@ -31,6 +31,9 @@ the standard does not specifically specify the behavior regarding symbolic links
 * `ChannelFactory` is a proper interface and it has been refactored to contain a
 `createChannel` method that accepts the session instance through which the request is made.
 
+* `KeyExchangeFactory` is a proper interface and it has been refactored to contain a
+`createKeyExchange` method that accepts the session instance through which the request is made.
+
 ## Minor code helpers
 
 * `SessionListener` supports `sessionPeerIdentificationReceived` that is invoked once successful
@@ -43,9 +46,9 @@ initialized in the past.
 * The internal moduli used in Diffie-Hellman group exchange are **cached** - lazy-loaded the 1st time such an exchange
 occurs. The cache can be invalidated (and thus force a re-load) by invoking `Moduli#clearInternalModuliCache`.
 
-* `DHGEXClient#init` implementation allows overriding the min./max. key sizes for a specific session Diffi-Helman group
-exchange via properties - see `DHGEXClient#PROP_DHGEX_CLIENT_MIN/MAX_KEY`. Similar applies for `DHGEXServer` but only for
-the message type=30.
+* `DHGEXClient` implementation allows overriding the min./max. key sizes for a specific session Diffi-Helman group
+exchange via properties - see `DHGEXClient#PROP_DHGEX_CLIENT_MIN/MAX/PRF_KEY`. Similar applies for `DHGEXServer` but only for
+the message type=30 (old request).
 
 ## Behavioral changes and enhancements
 
@@ -62,4 +65,6 @@ for the server's identification before sending its own.
 
 * [SSHD-941](https://issues.apache.org/jira/browse/SSHD-941) - Allow user to override min./max. key sizes for a specific session Diffi-Helman group
 exchange via properties.
+
+* [SSHD-943](https://issues.apache.org/jira/browse/SSHD-943) - Provide session instance when KEX factory is invoked in order to create a KeyExchange instance.
 

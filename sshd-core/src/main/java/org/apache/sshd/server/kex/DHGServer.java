@@ -45,7 +45,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
-    protected DHGServer(DHFactory factory) {
+    protected DHGServer(DHFactory factory, Session session) {
+        super(session);
         this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
@@ -57,8 +58,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     public static KeyExchangeFactory newFactory(final DHFactory factory) {
         return new KeyExchangeFactory() {
             @Override
-            public KeyExchange create() {
-                return new DHGServer(factory);
+            public KeyExchange createKeyExchange(Session session) throws Exception {
+                return new DHGServer(factory, session);
             }
 
             @Override
@@ -76,8 +77,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     }
 
     @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
+    public void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(v_s, v_c, i_s, i_c);
         dh = factory.create();
         hash = dh.getHash();
         hash.init();

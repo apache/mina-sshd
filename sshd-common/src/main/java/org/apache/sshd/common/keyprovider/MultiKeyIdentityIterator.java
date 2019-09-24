@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionContextHolder;
 
 /**
  * Iterates over several {@link KeyIdentityProvider}-s exhausting their
@@ -33,7 +34,7 @@ import org.apache.sshd.common.session.SessionContext;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class MultiKeyIdentityIterator implements Iterator<KeyPair> {
+public class MultiKeyIdentityIterator implements Iterator<KeyPair>, SessionContextHolder {
     protected Iterator<KeyPair> currentProvider;
     protected boolean finished;
     private final SessionContext sessionContext;
@@ -48,6 +49,7 @@ public class MultiKeyIdentityIterator implements Iterator<KeyPair> {
         return providers;
     }
 
+    @Override
     public SessionContext getSessionContext() {
         return sessionContext;
     }

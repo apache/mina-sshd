@@ -140,12 +140,12 @@ public class KexFactoryManagerTest extends BaseTestSupport {
         }
 
         @Override
-        public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
+        public List<KeyExchangeFactory> getKeyExchangeFactories() {
             return null;
         }
 
         @Override
-        public void setKeyExchangeFactories(List<NamedFactory<KeyExchange>> keyExchangeFactories) {
+        public void setKeyExchangeFactories(List<KeyExchangeFactory> keyExchangeFactories) {
             throw new UnsupportedOperationException("N/A");
         }
 

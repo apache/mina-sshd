@@ -67,7 +67,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     protected byte expected;
     protected boolean oldRequest;
 
-    protected DHGEXServer(DHFactory factory) {
+    protected DHGEXServer(DHFactory factory, Session session) {
+        super(session);
         this.factory = Objects.requireNonNull(factory, "No factory");
     }
 
@@ -79,8 +80,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     public static KeyExchangeFactory newFactory(DHFactory factory) {
         return new KeyExchangeFactory() {
             @Override
-            public KeyExchange create() {
-                return new DHGEXServer(factory);
+            public KeyExchange createKeyExchange(Session session) throws Exception {
+                return new DHGEXServer(factory, session);
             }
 
             @Override
@@ -98,8 +99,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     }
 
     @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        super.init(s, v_s, v_c, i_s, i_c);
+    public void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(v_s, v_c, i_s, i_c);
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST;
     }
 

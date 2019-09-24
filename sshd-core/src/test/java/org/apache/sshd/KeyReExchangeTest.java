@@ -42,13 +42,13 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.io.NullOutputStream;
@@ -150,21 +150,21 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.getCipherFactories().add(BuiltinCiphers.none);
             // replace the original KEX factories with wrapped ones that we can fail intentionally
-            List<NamedFactory<KeyExchange>> kexFactories = new ArrayList<>();
-            final AtomicBoolean successfulInit = new AtomicBoolean(true);
-            final AtomicBoolean successfulNext = new AtomicBoolean(true);
-            final ClassLoader loader = getClass().getClassLoader();
-            final Class<?>[] interfaces = {KeyExchange.class};
-            for (final NamedFactory<KeyExchange> factory : client.getKeyExchangeFactories()) {
-                kexFactories.add(new NamedFactory<KeyExchange>() {
+            List<KeyExchangeFactory> kexFactories = new ArrayList<>();
+            AtomicBoolean successfulInit = new AtomicBoolean(true);
+            AtomicBoolean successfulNext = new AtomicBoolean(true);
+            ClassLoader loader = getClass().getClassLoader();
+            Class<?>[] interfaces = {KeyExchange.class};
+            for (KeyExchangeFactory factory : client.getKeyExchangeFactories()) {
+                kexFactories.add(new KeyExchangeFactory() {
                     @Override
                     public String getName() {
                         return factory.getName();
                     }
 
                     @Override
-                    public KeyExchange create() {
-                        final KeyExchange proxiedInstance = factory.create();
+                    public KeyExchange createKeyExchange(Session s) throws Exception {
+                        KeyExchange proxiedInstance = factory.createKeyExchange(s);
                         return (KeyExchange) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
                             String name = method.getName();
                             if ("init".equals(name) && (!successfulInit.get())) {

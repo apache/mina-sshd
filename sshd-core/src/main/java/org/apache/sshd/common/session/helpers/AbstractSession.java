@@ -44,6 +44,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
@@ -63,6 +64,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
@@ -639,12 +641,12 @@ public abstract class AbstractSession extends SessionHelper {
 
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-        Collection<? extends NamedFactory<KeyExchange>> kexFactories = getKeyExchangeFactories();
+        Collection<? extends KeyExchangeFactory> kexFactories = getKeyExchangeFactories();
+        KeyExchangeFactory kexFactory = NamedResource.findByName(
+            kexAlgorithm, String.CASE_INSENSITIVE_ORDER, kexFactories);
+        ValidateUtils.checkNotNull(kexFactory, "Unknown negotiated KEX algorithm: %s", kexAlgorithm);
         synchronized (pendingPackets) {
-            kex = ValidateUtils.checkNotNull(
-                NamedFactory.create(kexFactories, kexAlgorithm),
-                "Unknown negotiated KEX algorithm: %s",
-                kexAlgorithm);
+            kex = kexFactory.createKeyExchange(this);
         }
 
         byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
@@ -655,7 +657,7 @@ public abstract class AbstractSession extends SessionHelper {
             i_s = getServerKexData();
             i_c = getClientKexData();
         }
-        kex.init(this, v_s, v_c, i_s, i_c);
+        kex.init(v_s, v_c, i_s, i_c);
 
         signalSessionEvent(SessionListener.Event.KexCompleted);
     }

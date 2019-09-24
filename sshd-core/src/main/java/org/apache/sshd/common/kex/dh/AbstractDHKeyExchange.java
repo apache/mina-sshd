@@ -19,19 +19,18 @@
 
 package org.apache.sshd.common.kex.dh;
 
+import java.util.Objects;
+
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.SessionHolder;
-import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange, SessionHolder<AbstractSession> {
-
+public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
     protected byte[] v_s;
     protected byte[] v_c;
     protected byte[] i_s;
@@ -42,15 +41,14 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     protected byte[] k;
     protected byte[] h;
 
-    private AbstractSession session;
+    private final Session session;
 
-    protected AbstractDHKeyExchange() {
-        super();
+    protected AbstractDHKeyExchange(Session session) {
+        this.session = Objects.requireNonNull(session, "No session provided");
     }
 
     @Override
-    public void init(Session s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
-        this.session = ValidateUtils.checkInstanceOf(s, AbstractSession.class, "Not an abstract session: %s", s);
+    public void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         this.v_s = ValidateUtils.checkNotNullAndNotEmpty(v_s, "No v_s value");
         this.v_c = ValidateUtils.checkNotNullAndNotEmpty(v_c, "No v_c value");
         this.i_s = ValidateUtils.checkNotNullAndNotEmpty(i_s, "No i_s value");
@@ -58,7 +56,7 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     }
 
     @Override
-    public AbstractSession getSession() {
+    public Session getSession() {
         return session;
     }
 
