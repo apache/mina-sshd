@@ -21,6 +21,8 @@ package org.apache.sshd.spring.integration.sftp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -31,9 +33,11 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.springframework.integration.file.remote.session.Session;
 import org.springframework.util.FileCopyUtils;
 
@@ -53,6 +57,26 @@ public class SpringSftpSession extends AbstractLoggingBean implements Session<Di
     public SpringSftpSession(SftpClient clientInstance, Callable<Exception> sessionCloser) {
         this.sftpClient = Objects.requireNonNull(clientInstance, "No SFTP client instance");
         this.sessionCloser = sessionCloser;
+    }
+
+    @Override
+    public String getHostPort() {
+        SftpClient client = getClientInstance();
+        @SuppressWarnings("resource")
+        org.apache.sshd.common.session.Session session =
+            (client == null) ? null : client.getSession();
+        @SuppressWarnings("resource")
+        IoSession ioSession = (session == null) ? null : session.getIoSession();
+        SocketAddress peerAddress = (ioSession == null) ? null : ioSession.getRemoteAddress();
+        if (peerAddress instanceof InetSocketAddress) {
+            InetSocketAddress inetAddress = (InetSocketAddress) peerAddress;
+            return inetAddress.getHostString() + ":" + inetAddress.getPort();
+        } else if (peerAddress instanceof SshdSocketAddress) {
+            SshdSocketAddress sshdAddress = (SshdSocketAddress) peerAddress;
+            return sshdAddress.getHostName() + ":" + sshdAddress.getPort();
+        } else {
+            return Objects.toString(peerAddress, null);
+        }
     }
 
     @Override
