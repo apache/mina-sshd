@@ -66,9 +66,10 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         try {
             return await0(timeoutMillis, false) != null;
         } catch (InterruptedIOException e) {
-            throw formatExceptionMessage(msg -> new InternalError(msg, e),
-                    "Unexpected interrupted exception wile awaitUninterruptibly %d msec: %s",
-                    timeoutMillis, e.getMessage());
+            throw formatExceptionMessage(
+                msg -> new InternalError(msg, e),
+                "Unexpected interrupted exception wile awaitUninterruptibly %d msec: %s",
+                timeoutMillis, e.getMessage());
         }
     }
 
@@ -109,7 +110,10 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     protected <R> R verifyResult(Class<? extends R> expectedType, long timeout) throws IOException {
         Object value = await0(timeout, true);
         if (value == null) {
-            throw formatExceptionMessage(SshException::new, "Failed to get operation result within specified timeout: %s", timeout);
+            throw formatExceptionMessage(
+                SshException::new,
+                "Failed to get operation result within specified timeout: %s",
+                timeout);
         }
 
         Class<?> actualType = value.getClass();
@@ -129,9 +133,13 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
             }
 
             Throwable cause = GenericUtils.resolveExceptionCause(t);
-            throw formatExceptionMessage(msg -> new SshException(msg, cause), "Failed (%s) to execute: %s", t.getClass().getSimpleName(), t.getMessage());
+            throw formatExceptionMessage(
+                msg -> new SshException(msg, cause),
+                "Failed (%s) to execute: %s",
+                t.getClass().getSimpleName(), t.getMessage());
         } else {    // what else can it be ????
-            throw formatExceptionMessage(StreamCorruptedException::new, "Unknown result type: %s", actualType.getName());
+            throw formatExceptionMessage(
+                StreamCorruptedException::new, "Unknown result type: %s", actualType.getName());
         }
     }
 
@@ -172,8 +180,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     }
 
     /**
-     * Generates an exception whose message is prefixed by the future simple class name + {@link #getId() identifier}
-     * as a hint to the context of the failure.
+     * Generates an exception whose message is prefixed by the future simple
+     * class name + {@link #getId() identifier} as a hint to the context of the failure.
      *
      * @param <E> Type of {@link Throwable} being generated
      * @param exceptionCreator The exception creator from the formatted message
@@ -181,7 +189,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      * @param args The formatting arguments
      * @return The generated exception
      */
-    protected <E extends Throwable> E formatExceptionMessage(Function<? super String, ? extends E> exceptionCreator, String format, Object... args) {
+    protected <E extends Throwable> E formatExceptionMessage(
+            Function<? super String, ? extends E> exceptionCreator, String format, Object... args) {
         String messagePayload = String.format(format, args);
         String excMessage = getClass().getSimpleName() + "[" + getId() + "]: " + messagePayload;
         return exceptionCreator.apply(excMessage);

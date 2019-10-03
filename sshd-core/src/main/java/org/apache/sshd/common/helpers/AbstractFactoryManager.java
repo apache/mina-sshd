@@ -101,9 +101,12 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();
-        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
-        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
-        tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
+        sessionListenerProxy =
+            EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
+        channelListenerProxy =
+            EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
+        tunnelListenerProxy =
+            EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
     }
 
     @Override
@@ -167,7 +170,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> T computeAttributeIfAbsent(
-            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
+            AttributeRepository.AttributeKey<T> key,
+            Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
         return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 
@@ -202,7 +206,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public String getVersion() {
         String version = PropertyResolverUtils.getStringProperty(
-            VersionProperties.getVersionProperties(), VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
+            VersionProperties.getVersionProperties(),
+            VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
         return version.toUpperCase();
     }
 
@@ -532,7 +537,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         Objects.requireNonNull(getRandomFactory(), "RandomFactory not set");
 
         if (getIoServiceFactoryFactory() == null) {
-            setIoServiceFactoryFactory(DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance());
+            IoServiceFactoryFactory defaultFactory =
+                DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
+            setIoServiceFactoryFactory(defaultFactory);
         }
     }
 }

@@ -266,8 +266,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
-        List<UserAuthFactory> authFactories = ServerAuthenticationManager.resolveUserAuthFactories(this);
-        setUserAuthFactories(ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
+        List<UserAuthFactory> authFactories =
+            ServerAuthenticationManager.resolveUserAuthFactories(this);
+        setUserAuthFactories(
+            ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
 
         ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");
         Objects.requireNonNull(getKeyPairProvider(), "HostKeyProvider not set");
@@ -320,7 +322,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
                     acceptor.bind(new InetSocketAddress(inetAddress, port));
                     if (port == 0) {
-                        SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
+                        SocketAddress selectedAddress =
+                            GenericUtils.head(acceptor.getBoundAddresses());
                         port = ((InetSocketAddress) selectedAddress).getPort();
                         log.info("start() listen on auto-allocated port=" + port);
                     }
@@ -329,7 +332,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         } else {
             acceptor.bind(new InetSocketAddress(port));
             if (port == 0) {
-                SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
+                SocketAddress selectedAddress =
+                    GenericUtils.head(acceptor.getBoundAddresses());
                 port = ((InetSocketAddress) selectedAddress).getPort();
                 log.info("start() listen on auto-allocated port=" + port);
             }
@@ -352,7 +356,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         try {
-            long maxWait = immediately ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME) : Long.MAX_VALUE;
+            long maxWait = immediately
+                ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME)
+                : Long.MAX_VALUE;
             boolean successful = close(immediately).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

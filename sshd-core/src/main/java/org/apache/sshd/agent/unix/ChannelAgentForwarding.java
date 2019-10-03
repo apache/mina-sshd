@@ -88,8 +88,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 : ThreadUtils.noClose(service);
 
             int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
-            ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
-            ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE, "Copy buf size above max.: %d", copyBufSize);
+            ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE,
+                "Copy buf size below min.: %d", copyBufSize);
+            ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE,
+                "Copy buf size above max.: %d", copyBufSize);
 
             forwarder = forwardService.submit(() -> {
                 try {
@@ -158,7 +160,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
         int result = Socket.send(handle, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {
             throwException(result);
@@ -167,7 +170,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException("AgentForward channel does not support extended data");
+        throw new UnsupportedOperationException(
+            "AgentForward channel does not support extended data");
     }
 
     /**

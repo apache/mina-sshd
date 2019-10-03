@@ -57,11 +57,14 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         OpenFuture f = new DefaultOpenFuture(this, this);
         String changeEvent = "auth-agent";
         try {
-            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Session session = getSession();
-            FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-            SshAgentFactory factory = Objects.requireNonNull(manager.getAgentFactory(), "No agent factory");
+            FactoryManager manager =
+                Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+            SshAgentFactory factory =
+                Objects.requireNonNull(manager.getAgentFactory(), "No agent factory");
             agent = factory.createClient(manager);
             client = new AgentClient();
 
@@ -119,13 +122,15 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
         client.messageReceived(new ByteArrayBuffer(data, off, (int) len));
     }
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException("AgentForward channel does not support extended data");
+        throw new UnsupportedOperationException(
+            "AgentForward channel does not support extended data");
     }
 
     @SuppressWarnings("synthetic-access")

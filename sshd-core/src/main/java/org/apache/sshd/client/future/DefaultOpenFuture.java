@@ -38,7 +38,10 @@ public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> im
     public OpenFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result) {
-            throw formatExceptionMessage(SshException::new, "Channel opening failed while waiting %d msec.", timeoutMillis);
+            throw formatExceptionMessage(
+                SshException::new,
+                "Channel opening failed while waiting %d msec.",
+                timeoutMillis);
         }
 
         return this;

@@ -93,7 +93,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public ServerProxyAcceptor getServerProxyAcceptor() {
-        return resolveEffectiveProvider(ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
+        return resolveEffectiveProvider(
+            ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
     }
 
     @Override
@@ -113,7 +114,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public PasswordAuthenticator getPasswordAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(PasswordAuthenticator.class, passwordAuthenticator, manager.getPasswordAuthenticator());
+        return resolveEffectiveProvider(
+            PasswordAuthenticator.class, passwordAuthenticator, manager.getPasswordAuthenticator());
     }
 
     @Override
@@ -124,7 +126,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public PublickeyAuthenticator getPublickeyAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(PublickeyAuthenticator.class, publickeyAuthenticator, manager.getPublickeyAuthenticator());
+        return resolveEffectiveProvider(
+            PublickeyAuthenticator.class, publickeyAuthenticator, manager.getPublickeyAuthenticator());
     }
 
     @Override
@@ -135,7 +138,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(KeyboardInteractiveAuthenticator.class, interactiveAuthenticator, manager.getKeyboardInteractiveAuthenticator());
+        return resolveEffectiveProvider(
+            KeyboardInteractiveAuthenticator.class, interactiveAuthenticator, manager.getKeyboardInteractiveAuthenticator());
     }
 
     @Override
@@ -146,7 +150,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public GSSAuthenticator getGSSAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(GSSAuthenticator.class, gssAuthenticator, manager.getGSSAuthenticator());
+        return resolveEffectiveProvider(
+            GSSAuthenticator.class, gssAuthenticator, manager.getGSSAuthenticator());
     }
 
     @Override
@@ -157,7 +162,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public HostBasedAuthenticator getHostBasedAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(HostBasedAuthenticator.class, hostBasedAuthenticator, manager.getHostBasedAuthenticator());
+        return resolveEffectiveProvider(
+            HostBasedAuthenticator.class, hostBasedAuthenticator, manager.getHostBasedAuthenticator());
     }
 
     @Override
@@ -356,7 +362,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         /*
          * Make sure we can provide key(s) for the available signatures
          */
-        ValidateUtils.checkTrue(proposedManager == getFactoryManager(), "Mismatched signatures proposed factory manager");
+        ValidateUtils.checkTrue(proposedManager == getFactoryManager(),
+            "Mismatched signatures proposed factory manager");
 
         KeyPairProvider kpp = getKeyPairProvider();
         boolean debugEnabled = log.isDebugEnabled();
@@ -373,7 +380,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             throw new RuntimeSshException(e);
         }
 
-        Collection<String> available = NamedResource.getNameList(getSignatureFactories());
+        Collection<String> available =
+            NamedResource.getNameList(getSignatureFactories());
         if ((provided == null) || GenericUtils.isEmpty(available)) {
             return resolveEmptySignaturesProposal(available, provided);
         }
@@ -411,7 +419,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         boolean debugEnabled = log.isDebugEnabled();
         if (acceptor != null) {
             try {
-                boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
+                boolean completed =
+                    acceptor.acceptServerProxyMetadata(this, buffer);
                 if (!completed) {
                     buffer.rpos(rpos);  // restore original buffer position
                     return false;   // more data required
@@ -483,7 +492,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public KeyPair getHostKey() {
         String proposedKey = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         String keyType = KeyUtils.getCanonicalKeyType(proposedKey);
-        KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
+        KeyPairProvider provider =
+            Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             return provider.loadKey(this, keyType);
         } catch (IOException | GeneralSecurityException | Error e) {
@@ -518,7 +528,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             }
 
             String sessionUser = session.getUsername();
-            if ((!GenericUtils.isEmpty(sessionUser)) && Objects.equals(sessionUser, userName)) {
+            if ((!GenericUtils.isEmpty(sessionUser))
+                    && Objects.equals(sessionUser, userName)) {
                 totalCount++;
             }
         }
@@ -538,6 +549,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     protected ConnectionService getConnectionService() {
-        return (this.currentService instanceof ConnectionService) ? (ConnectionService) this.currentService : null;
+        return (this.currentService instanceof ConnectionService)
+             ? (ConnectionService) this.currentService
+             : null;
     }
 }

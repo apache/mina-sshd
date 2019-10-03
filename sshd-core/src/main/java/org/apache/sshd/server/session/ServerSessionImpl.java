@@ -33,7 +33,8 @@ public class ServerSessionImpl extends AbstractServerSession {
         signalSessionCreated(ioSession);
 
         String headerConfig = this.getString(ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES);
-        String[] headers = GenericUtils.split(headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+        String[] headers = GenericUtils.split(
+            headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
         sendServerIdentification(headers);
     }
 }

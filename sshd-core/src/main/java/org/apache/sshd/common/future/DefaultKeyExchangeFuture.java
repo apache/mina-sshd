@@ -26,7 +26,9 @@ import org.apache.sshd.common.SshException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExchangeFuture> implements KeyExchangeFuture {
+public class DefaultKeyExchangeFuture
+        extends DefaultVerifiableSshFuture<KeyExchangeFuture>
+        implements KeyExchangeFuture {
     public DefaultKeyExchangeFuture(Object id, Object lock) {
         super(id, lock);
     }
@@ -35,7 +37,10 @@ public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExch
     public KeyExchangeFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result) {
-            throw formatExceptionMessage(SshException::new, "Key exchange failed while waiting %d msec.", timeoutMillis);
+            throw formatExceptionMessage(
+                SshException::new,
+                "Key exchange failed while waiting %d msec.",
+                timeoutMillis);
         }
 
         return this;

@@ -309,7 +309,8 @@ public abstract class AbstractChannel
      * @throws IOException If failed to send the response (if needed)
      * @see #handleInternalRequest(String, boolean, Buffer)
      */
-    protected void handleUnknownChannelRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+    protected void handleUnknownChannelRequest(String req, boolean wantReply, Buffer buffer)
+            throws IOException {
         RequestHandler.Result r = handleInternalRequest(req, wantReply, buffer);
         if ((r == null) || RequestHandler.Result.Unsupported.equals(r)) {
             log.warn("handleUnknownChannelRequest({}) Unknown channel request: {}[want-reply={}]", this, req, wantReply);
@@ -331,14 +332,17 @@ public abstract class AbstractChannel
      *                  and reply is required then a failure message will be sent
      * @throws IOException If failed to process the request internally
      */
-    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer)
+            throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}", this, wantReply, req);
         }
         return RequestHandler.Result.Unsupported;
     }
 
-    protected IoWriteFuture sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+    protected IoWriteFuture sendResponse(
+            Buffer buffer, String req, RequestHandler.Result result, boolean wantReply)
+                throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendResponse({}) request={} result={}, want-reply={}", this, req, result, wantReply);
         }
@@ -970,7 +974,8 @@ public abstract class AbstractChannel
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> T computeAttributeIfAbsent(
-            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
+            AttributeRepository.AttributeKey<T> key,
+            Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
         return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 

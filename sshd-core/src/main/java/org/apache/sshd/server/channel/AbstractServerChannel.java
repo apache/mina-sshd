@@ -67,7 +67,8 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         setRecipient(recipient);
 
         Session s = getSession();
-        FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
+        FactoryManager manager =
+            Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
         configureWindow();
@@ -75,8 +76,11 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
-        throw new UnsupportedOperationException("handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+    public void handleOpenSuccess(
+            int recipient, long rwSize, long packetSize, Buffer buffer)
+                throws IOException {
+        throw new UnsupportedOperationException(
+            "handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
@@ -116,10 +120,12 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         }
 
         Session session = getSession();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
+        Buffer buffer = session.createBuffer(
+            SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("exit-status");
-        buffer.putBoolean(false);   // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
+        // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
+        buffer.putBoolean(false);
         buffer.putInt(v);
         writePacket(buffer);
         notifyStateChanged("exit-status");

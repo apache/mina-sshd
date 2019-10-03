@@ -79,9 +79,12 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     @Override
     protected synchronized void doOpen() throws IOException {
         if (Streaming.Async.equals(streaming)) {
-            throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
+            throw new IllegalArgumentException(
+                "Asynchronous streaming isn't supported yet on this channel");
         }
-        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+
+        out = new ChannelOutputStream(
+            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
@@ -92,11 +95,13 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
 
     @Override
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
         // use a clone in case data buffer is re-used
-        serverSession.writePacket(ByteArrayBuffer.getCompactClone(data, off, (int) len));
+        Buffer packet = ByteArrayBuffer.getCompactClone(data, off, (int) len);
+        serverSession.writePacket(packet);
     }
 
     @Override

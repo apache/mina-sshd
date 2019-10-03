@@ -197,12 +197,16 @@ public class SftpSubsystem
         this.randomizer = factory.create();
 
         this.fileHandleSize = session.getIntProperty(FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
-        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
-        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
+        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE,
+            "File handle size too small: %d", this.fileHandleSize);
+        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE,
+            "File handle size too big: %d", this.fileHandleSize);
 
         this.maxFileHandleRounds = session.getIntProperty(MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
-        ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS, "File handle rounds too small: %d", this.maxFileHandleRounds);
-        ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS, "File handle rounds too big: %d", this.maxFileHandleRounds);
+        ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS,
+            "File handle rounds too small: %d", this.maxFileHandleRounds);
+        ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS,
+            "File handle rounds too big: %d", this.maxFileHandleRounds);
 
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
@@ -344,7 +348,9 @@ public class SftpSubsystem
     }
 
     @Override
-    protected void createLink(int id, String existingPath, String linkPath, boolean symLink) throws IOException {
+    protected void createLink(
+            int id, String existingPath, String linkPath, boolean symLink)
+                throws IOException {
         Path link = resolveFile(linkPath);
         Path existing = fileSystem.getPath(existingPath);
         ServerSession session = getServerSession();
@@ -391,7 +397,8 @@ public class SftpSubsystem
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         accessor.syncFileData(
-            session, this, fileHandle, fileHandle.getFile(), fileHandle.getFileHandle(), fileHandle.getFileChannel());
+            session, this, fileHandle, fileHandle.getFile(),
+            fileHandle.getFileHandle(), fileHandle.getFileChannel());
     }
 
     @Override
@@ -413,7 +420,8 @@ public class SftpSubsystem
              */
             int access = fileHandle.getAccessMask();
             if ((access & SftpConstants.ACE4_READ_DATA) == 0) {
-                throw new AccessDeniedException(path.toString(), path.toString(), "File not opened for read");
+                throw new AccessDeniedException(
+                    path.toString(), path.toString(), "File not opened for read");
             }
         } else {
             path = resolveFile(target);
@@ -580,12 +588,15 @@ public class SftpSubsystem
 
     @Override
     @SuppressWarnings("resource")
-    protected void doCopyData(int id, String readHandle, long readOffset, long readLength, String writeHandle, long writeOffset) throws IOException {
+    protected void doCopyData(
+            int id, String readHandle, long readOffset, long readLength, String writeHandle, long writeOffset)
+                throws IOException {
         boolean inPlaceCopy = readHandle.equals(writeHandle);
         Handle rh = handles.get(readHandle);
         Handle wh = inPlaceCopy ? rh : handles.get(writeHandle);
         if (log.isDebugEnabled()) {
-            log.debug("doCopyData({})[id={}] SSH_FXP_EXTENDED[{}] read={}[{}], read-offset={}, read-length={}, write={}[{}], write-offset={})",
+            log.debug("doCopyData({})[id={}] SSH_FXP_EXTENDED[{}] read={}[{}]"
+                + ", read-offset={}, read-length={}, write={}[{}], write-offset={})",
                   getServerSession(), id, SftpConstants.EXT_COPY_DATA,
                   readHandle, rh, readOffset, readLength,
                   writeHandle, wh, writeOffset);
@@ -595,7 +606,8 @@ public class SftpSubsystem
         Path srcPath = srcHandle.getFile();
         int srcAccess = srcHandle.getAccessMask();
         if ((srcAccess & SftpConstants.ACE4_READ_DATA) != SftpConstants.ACE4_READ_DATA) {
-            throw new AccessDeniedException(srcPath.toString(), srcPath.toString(), "Source file not opened for read");
+            throw new AccessDeniedException(
+                srcPath.toString(), srcPath.toString(), "Source file not opened for read");
         }
 
         ValidateUtils.checkTrue(readLength >= 0L, "Invalid read length: %d", readLength);
@@ -611,12 +623,15 @@ public class SftpSubsystem
                 effectiveLength = totalSize - readOffset;
             }
         }
-        ValidateUtils.checkTrue(effectiveLength > 0L, "Non-positive effective copy data length: %d", effectiveLength);
+        ValidateUtils.checkTrue(effectiveLength > 0L,
+            "Non-positive effective copy data length: %d", effectiveLength);
 
-        FileHandle dstHandle = inPlaceCopy ? srcHandle : validateHandle(writeHandle, wh, FileHandle.class);
+        FileHandle dstHandle =
+            inPlaceCopy ? srcHandle : validateHandle(writeHandle, wh, FileHandle.class);
         int dstAccess = dstHandle.getAccessMask();
         if ((dstAccess & SftpConstants.ACE4_WRITE_DATA) != SftpConstants.ACE4_WRITE_DATA) {
-            throw new AccessDeniedException(srcHandle.toString(), srcHandle.toString(), "Source handle not opened for write");
+            throw new AccessDeniedException(
+                srcHandle.toString(), srcHandle.toString(), "Source handle not opened for write");
         }
 
         ValidateUtils.checkTrue(writeOffset >= 0L, "Invalid write offset: %d", writeOffset);
@@ -675,7 +690,8 @@ public class SftpSubsystem
                 getPathResolutionLinkOption(SftpConstants.SSH_FXP_READDIR, "", file);
             Boolean status = IoUtils.checkFileExists(file, options);
             if (status == null) {
-                throw new AccessDeniedException(file.toString(), file.toString(), "Cannot determine existence of read-dir");
+                throw new AccessDeniedException(
+                    file.toString(), file.toString(), "Cannot determine existence of read-dir");
             }
 
             if (!status) {
@@ -786,7 +802,9 @@ public class SftpSubsystem
     }
 
     @Override
-    protected void doWrite(int id, String handle, long offset, int length, byte[] data, int doff, int remaining) throws IOException {
+    protected void doWrite(
+            int id, String handle, long offset, int length, byte[] data, int doff, int remaining)
+                throws IOException {
         Handle h = handles.get(handle);
         ServerSession session = getServerSession();
         if (log.isTraceEnabled()) {
@@ -820,7 +838,9 @@ public class SftpSubsystem
     }
 
     @Override
-    protected int doRead(int id, String handle, long offset, int length, byte[] data, int doff) throws IOException {
+    protected int doRead(
+            int id, String handle, long offset, int length, byte[] data, int doff)
+                throws IOException {
         Handle h = handles.get(handle);
         ServerSession session = getServerSession();
         if (log.isTraceEnabled()) {
@@ -865,7 +885,9 @@ public class SftpSubsystem
     }
 
     @Override
-    protected String doOpen(int id, String path, int pflags, int access, Map<String, Object> attrs) throws IOException {
+    protected String doOpen(
+            int id, String path, int pflags, int access, Map<String, Object> attrs)
+                throws IOException {
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doOpen({})[id={}] SSH_FXP_OPEN (path={}, access=0x{}, pflags=0x{}, attrs={})",
@@ -874,7 +896,8 @@ public class SftpSubsystem
 
         Path file = resolveFile(path);
         int curHandleCount = handles.size();
-        int maxHandleCount = session.getIntProperty(MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        int maxHandleCount = session.getIntProperty(
+            MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
             throw signalOpenFailure(id, path, file, false,
                 new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
@@ -903,11 +926,13 @@ public class SftpSubsystem
         boolean traceEnabled = log.isTraceEnabled();
         for (int index = 0; index < maxFileHandleRounds; index++) {
             randomizer.fill(workBuf, 0, fileHandleSize);
-            String handle = BufferUtils.toHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+            String handle = BufferUtils.toHex(
+                workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
 
             if (handles.containsKey(handle)) {
                 if (traceEnabled) {
-                    log.trace("generateFileHandle({})[{}] handle={} in use at round {}", session, file, handle, index);
+                    log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
+                        session, file, handle, index);
                 }
                 continue;
             }
@@ -929,7 +954,8 @@ public class SftpSubsystem
         }
 
         Map.Entry<Integer, String> negotiated =
-            checkVersionCompatibility(buffer, id, id, SftpConstants.SSH_FX_OP_UNSUPPORTED);
+            checkVersionCompatibility(
+                buffer, id, id, SftpConstants.SSH_FX_OP_UNSUPPORTED);
         if (negotiated == null) { // i.e. validation failed
             return;
         }

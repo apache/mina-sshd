@@ -87,7 +87,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             }
         };
 
-        String chType = PropertyResolverUtils.getString(getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
+        String chType = PropertyResolverUtils.getString(
+            getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
         rtn.setChannelType(chType);
         return rtn;
     }
@@ -131,20 +132,25 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             try {
                 messages.wait(idleTimeout);
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
+                throw (IOException) new InterruptedIOException(
+                        "Interrupted while waiting for messages at iteration #" + count)
+                    .initCause(e);
             }
         }
     }
 
     @Override
     protected void doOpen() throws IOException {
-        ValidateUtils.checkTrue(!Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
-        invertedIn = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        ValidateUtils.checkTrue(
+            !Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
+        invertedIn = new ChannelOutputStream(
+            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
 
         Buffer message = null;
         synchronized (receiveBuffer) {

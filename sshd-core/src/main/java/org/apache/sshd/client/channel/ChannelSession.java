@@ -71,7 +71,8 @@ public class ChannelSession extends AbstractClientChannel {
             asyncOut = new ChannelAsyncInputStream(this);
             asyncErr = new ChannelAsyncInputStream(this);
         } else {
-            invertedIn = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            invertedIn = new ChannelOutputStream(
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Window wLocal = getLocalWindow();
             if (out == null) {
@@ -91,7 +92,8 @@ public class ChannelSession extends AbstractClientChannel {
                 // allocate a temporary executor service if none provided
                 CloseableExecutorService service = getExecutorService();
                 if (service == null) {
-                    pumperService = ThreadUtils.newSingleThreadExecutor("ClientInputStreamPump[" + this.toString() + "]");
+                    pumperService = ThreadUtils.newSingleThreadExecutor(
+                        "ClientInputStreamPump[" + this.toString() + "]");
                 } else {
                     pumperService = ThreadUtils.noClose(service);
                 }
@@ -105,7 +107,8 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer) throws IOException {
+    protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer)
+            throws IOException {
         switch (req) {
             case "xon-xoff":
                 return handleXonXoff(buffer, wantReply);
@@ -161,7 +164,8 @@ public class ChannelSession extends AbstractClientChannel {
             Session session = getSession();
             Window wRemote = getRemoteWindow();
             long packetSize = wRemote.getPacketSize();
-            ValidateUtils.checkTrue(packetSize < Integer.MAX_VALUE, "Remote packet size exceeds int boundary: %d", packetSize);
+            ValidateUtils.checkTrue(packetSize < Integer.MAX_VALUE,
+                "Remote packet size exceeds int boundary: %d", packetSize);
             byte[] buffer = new byte[(int) packetSize];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
@@ -186,7 +190,8 @@ public class ChannelSession extends AbstractClientChannel {
         } catch (Exception e) {
             if (!isClosing()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("pumpInputStream({}) Caught {} : {}", this, e.getClass().getSimpleName(), e.getMessage());
+                    log.debug("pumpInputStream({}) Caught {} : {}",
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 }
                 if (log.isTraceEnabled()) {
                     log.trace("pumpInputStream(" + this + ") caught exception details", e);

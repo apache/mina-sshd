@@ -165,7 +165,9 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         if (streaming == Streaming.Async) {
             throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
-        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+
+        out = new ChannelOutputStream(
+            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
@@ -194,7 +196,8 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     @Override
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         Window wLocal = getLocalWindow();
@@ -204,7 +207,8 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(getChannelType() + "Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(
+            getChannelType() + "Tcpip channel does not support extended data");
     }
 
     @Override

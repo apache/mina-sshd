@@ -76,9 +76,10 @@ public class ChannelSubsystem extends ChannelSession {
         }
 
         Session session = getSession();
-        boolean wantReply = this.getBooleanProperty(REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+        boolean wantReply = this.getBooleanProperty(
+            REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
-                Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
+            Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString(Channel.CHANNEL_SUBSYSTEM);
         buffer.putBoolean(wantReply);

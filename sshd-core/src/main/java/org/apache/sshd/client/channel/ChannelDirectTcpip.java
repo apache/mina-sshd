@@ -101,9 +101,12 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncOut = new ChannelAsyncInputStream(this);
         } else {
-            out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+            out = new ChannelOutputStream(
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             invertedIn = out;
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(this, getLocalWindow());
+
+            ChannelPipedInputStream pis =
+                new ChannelPipedInputStream(this, getLocalWindow());
             pipe = new ChannelPipedOutputStream(pis);
             in = pis;
             invertedOut = in;
@@ -112,7 +115,8 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
+            "Data length exceeds int boundaries: %d", len);
         pipe.write(data, off, (int) len);
         pipe.flush();
 

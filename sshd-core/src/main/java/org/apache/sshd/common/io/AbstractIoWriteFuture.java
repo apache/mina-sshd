@@ -27,7 +27,9 @@ import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<IoWriteFuture> implements IoWriteFuture {
+public abstract class AbstractIoWriteFuture
+        extends DefaultVerifiableSshFuture<IoWriteFuture>
+        implements IoWriteFuture {
     protected AbstractIoWriteFuture(Object id, Object lock) {
         super(id, lock);
     }
@@ -36,7 +38,10 @@ public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<I
     public IoWriteFuture verify(long timeout) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
-            throw formatExceptionMessage(SshException::new, "Write failed signalled while wait %d msec.", timeout);
+            throw formatExceptionMessage(
+                SshException::new,
+                "Write failed signalled while wait %d msec.",
+                timeout);
         }
 
         return this;

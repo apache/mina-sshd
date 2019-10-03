@@ -144,7 +144,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         int originatorPort = buffer.getInt();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("doInit({}) Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
+            log.debug("doInit({}) Receiving request for direct tcpip:"
+                + " hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
                   this, hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
@@ -194,7 +195,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         }
 
         // TODO: revisit for better threading. Use async io ?
-        out = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+        out = new ChannelOutputStream(
+            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -235,7 +237,9 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
         connector = ioServiceFactory.createConnector(handler);
-        IoConnectFuture future = connector.connect(address.toInetSocketAddress(), null, getLocalAddress());
+
+        IoConnectFuture future =
+            connector.connect(address.toInetSocketAddress(), null, getLocalAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
         return f;
     }
@@ -284,7 +288,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         notifyStateChanged(problem.getClass().getSimpleName());
         try {
             if (problem instanceof ConnectException) {
-                f.setException(new SshChannelOpenException(getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+                f.setException(new SshChannelOpenException(
+                    getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
             } else {
                 f.setException(problem);
             }
@@ -343,16 +348,19 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         ioSession.writePacket(buf).addListener(future -> {
             if (future.isWritten()) {
-                handleWriteDataSuccess(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);
+                handleWriteDataSuccess(
+                    SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);
             } else {
-                handleWriteDataFailure(SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len, future.getException());
+                handleWriteDataFailure(
+                    SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len, future.getException());
             }
         });
     }
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(getTcpipChannelType() + "Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(
+            getTcpipChannelType() + "Tcpip channel does not support extended data");
     }
 
     protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
@@ -379,8 +387,9 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("handleWriteDataFailure(" + this + ")[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
-                    + " len=" + len + " write failure details", t);
+            log.trace("handleWriteDataFailure(" + this + ")"
+                + "[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
+                + " len=" + len + " write failure details", t);
         }
 
         if (ioSession.isOpen()) {

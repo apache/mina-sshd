@@ -82,7 +82,8 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
     private final Map<String, Object> env = new LinkedHashMap<>();
     private final PtyChannelConfiguration config;
 
-    public PtyCapableChannelSession(boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+    public PtyCapableChannelSession(
+            boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         this.usePty = usePty;
         this.config = PtyChannelConfigurationMutator.copyConfiguration(
             configHolder, new PtyChannelConfiguration());
@@ -251,7 +252,8 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
 
             String channelType = session.getStringProperty(
                 SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
+            Buffer buffer = session.createBuffer(
+                SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
             buffer.putString(channelType);
             buffer.putBoolean(false);   // want-reply
@@ -263,7 +265,8 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: {}", this, config);
             }
 
-            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
+            Buffer buffer = session.createBuffer(
+                SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
             buffer.putInt(getRecipient());
             buffer.putString("pty-req");
             buffer.putBoolean(false);   // want-reply
