@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * The complement to the {@code Callable} interface - accepts one argument
- * and possibly throws somethind
+ * and possibly throws something
  *
  * @param <ARG> Argument type
  * @param <RET> Return type
@@ -34,7 +34,19 @@ import java.util.Map;
 public interface Invoker<ARG, RET> {
     RET invoke(ARG arg) throws Throwable;
 
-    static <ARG> Invoker<ARG, Void> wrapAll(Collection<? extends Invoker<? super ARG, ?>> invokers) {
+    /**
+     * Wraps a bunch of {@link Invoker}-s that return no value into one that
+     * invokes them in the same <U>order</U> as they appear. <B>Note:</B>
+     * <U>all</U> invokers are used and any thrown exceptions are <U>accumulated</U>
+     * and thrown as a single exception at the end of invoking all of them.
+     *
+     * @param <ARG> The argument type
+     * @param invokers The invokers to wrap - ignored if {@code null}/empty
+     * @return The wrapper
+     * @see #invokeAll(Object, Collection) invokeAll
+     */
+    static <ARG> Invoker<ARG, Void> wrapAll(
+            Collection<? extends Invoker<? super ARG, ?>> invokers) {
         return arg -> {
             invokeAll(arg, invokers);
             return null;
@@ -51,7 +63,9 @@ public interface Invoker<ARG, RET> {
      * (also ignores {@code null} members)
      * @throws Throwable If invocation failed
      */
-    static <ARG> void invokeAll(ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) throws Throwable {
+    static <ARG> void invokeAll(
+            ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers)
+                throws Throwable {
         if (GenericUtils.isEmpty(invokers)) {
             return;
         }
@@ -74,9 +88,21 @@ public interface Invoker<ARG, RET> {
         }
     }
 
-    static <ARG> Invoker<ARG, Void> wrapFirst(Collection<? extends Invoker<? super ARG, ?>> invokers) {
+    /**
+     * Wraps a bunch of {@link Invoker}-s that return no value into one that
+     * invokes them in the same <U>order</U> as they appear. <B>Note:</B>
+     * stops when <U>first</U> invoker throws an exception (otherwise invokes all)
+     *
+     * @param <ARG> The argument type
+     * @param invokers The invokers to wrap - ignored if {@code null}/empty
+     * @return The wrapper
+     * @see #invokeTillFirstFailure(Object, Collection) invokeTillFirstFailure
+     */
+    static <ARG> Invoker<ARG, Void> wrapFirst(
+            Collection<? extends Invoker<? super ARG, ?>> invokers) {
         return arg -> {
-            Map.Entry<Invoker<? super ARG, ?>, Throwable> result = invokeTillFirstFailure(arg, invokers);
+            Map.Entry<Invoker<? super ARG, ?>, Throwable> result =
+                invokeTillFirstFailure(arg, invokers);
             if (result != null) {
                 throw result.getValue();
             }
@@ -94,7 +120,9 @@ public interface Invoker<ARG, RET> {
      * @return A {@link SimpleImmutableEntry} representing the <U>first</U> failed
      * invocation - {@code null} if all were successful (or none invoked).
      */
-    static <ARG> SimpleImmutableEntry<Invoker<? super ARG, ?>, Throwable> invokeTillFirstFailure(ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) {
+    static <ARG> SimpleImmutableEntry<Invoker<? super ARG, ?>, Throwable>
+            invokeTillFirstFailure(
+                ARG arg, Collection<? extends Invoker<? super ARG, ?>> invokers) {
         if (GenericUtils.isEmpty(invokers)) {
             return null;
         }

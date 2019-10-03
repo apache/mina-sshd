@@ -35,6 +35,20 @@ public interface SessionListener extends SshdEventListener {
     }
 
     /**
+     * An initial session connection has been established - <B>Caveat emptor:</B>
+     * the main difference between this callback and {@link #sessionCreated(Session)}
+     * is that when this callback is called, the session is not yet fully initialized
+     * so not all API(s) will respond as expected. The main purpose of this callback
+     * is to allow the user to customize some session properties based on the peer's
+     * address and/or any provided connection context.
+     *
+     * @param session The established {@code Session}
+     */
+    default void sessionEstablished(Session session) {
+        // ignored
+    }
+
+    /**
      * A new session just been created
      *
      * @param session The created {@link Session}
@@ -64,7 +78,8 @@ public interface SessionListener extends SshdEventListener {
      * @param serverProposal The server proposal options (un-modifiable)
      */
     default void sessionNegotiationStart(Session session,
-            Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal) {
+            Map<KexProposalOption, String> clientProposal,
+            Map<KexProposalOption, String> serverProposal) {
         // ignored
     }
 
@@ -79,8 +94,10 @@ public interface SessionListener extends SshdEventListener {
      * @param reason Negotiation end reason - {@code null} if successful
      */
     default void sessionNegotiationEnd(Session session,
-            Map<KexProposalOption, String> clientProposal, Map<KexProposalOption, String> serverProposal,
-            Map<KexProposalOption, String> negotiatedOptions, Throwable reason) {
+            Map<KexProposalOption, String> clientProposal,
+            Map<KexProposalOption, String> serverProposal,
+            Map<KexProposalOption, String> negotiatedOptions,
+            Throwable reason) {
         // ignored
     }
 

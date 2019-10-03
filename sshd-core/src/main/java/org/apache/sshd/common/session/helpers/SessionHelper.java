@@ -520,6 +520,36 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return writeFuture;
     }
 
+    protected void signalSessionEstablished(IoSession ioSession) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalSessionEstablished(l);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (log.isDebugEnabled()) {
+                log.debug("Failed ({}) to announce session={} established: {}",
+                      e.getClass().getSimpleName(), ioSession, e.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("Session=" + ioSession + " establish failure details", e);
+            }
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalSessionEstablished(SessionListener listener) {
+        if (listener == null) {
+            return;
+        }
+        listener.sessionEstablished(this);
+    }
+
     protected void signalSessionCreated(IoSession ioSession) throws Exception {
         try {
             invokeSessionSignaller(l -> {

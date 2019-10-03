@@ -230,6 +230,16 @@ public abstract class AbstractSession extends SessionHelper {
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
+
+        try {
+            signalSessionEstablished(ioSession);
+        } catch (Exception e) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
     }
 
     @Override
@@ -2040,7 +2050,8 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
-     * @param seed The result of the KEXINIT handshake - required for correct session key establishment
+     * @param seed The result of the KEXINIT handshake - required
+     * for correct session key establishment
      */
     protected abstract void setKexSeed(byte... seed);
 
@@ -2052,7 +2063,8 @@ public abstract class AbstractSession extends SessionHelper {
      * @see #getFactoryManager()
      * @see #resolveAvailableSignaturesProposal(FactoryManager)
      */
-    protected String resolveAvailableSignaturesProposal() throws IOException, GeneralSecurityException {
+    protected String resolveAvailableSignaturesProposal()
+            throws IOException, GeneralSecurityException {
         return resolveAvailableSignaturesProposal(getFactoryManager());
     }
 
@@ -2064,7 +2076,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws GeneralSecurityException If failed to generate the keys
      */
     protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager)
-            throws IOException, GeneralSecurityException;
+        throws IOException, GeneralSecurityException;
 
     /**
      * Indicates the the key exchange is completed and the exchanged keys
@@ -2091,7 +2103,9 @@ public abstract class AbstractSession extends SessionHelper {
         return seed;
     }
 
-    protected abstract void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException;
+    protected abstract void receiveKexInit(
+        Map<KexProposalOption, String> proposal, byte[] seed)
+            throws IOException;
 
     /**
      * Retrieve the SSH session from the I/O session. If the session has not been attached,
@@ -2102,7 +2116,8 @@ public abstract class AbstractSession extends SessionHelper {
      * @see #getSession(IoSession, boolean)
      * @throws MissingAttachedSessionException if no attached SSH session
      */
-    public static AbstractSession getSession(IoSession ioSession) throws MissingAttachedSessionException {
+    public static AbstractSession getSession(IoSession ioSession)
+            throws MissingAttachedSessionException {
         return getSession(ioSession, false);
     }
 
@@ -2134,7 +2149,8 @@ public abstract class AbstractSession extends SessionHelper {
      * @return the session attached to the I/O session or {@code null}
      * @throws MissingAttachedSessionException if no attached session and <tt>allowNull=false</tt>
      */
-    public static AbstractSession getSession(IoSession ioSession, boolean allowNull) throws MissingAttachedSessionException {
+    public static AbstractSession getSession(IoSession ioSession, boolean allowNull)
+            throws MissingAttachedSessionException {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
         if ((session == null) && (!allowNull)) {
             throw new MissingAttachedSessionException("No session attached to " + ioSession);

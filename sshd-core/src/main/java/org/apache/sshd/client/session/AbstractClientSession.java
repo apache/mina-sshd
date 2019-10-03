@@ -43,7 +43,6 @@ import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -96,12 +95,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
 
-        sendImmediateClientIdentification = PropertyResolverUtils.getBooleanProperty(
-            factoryManager, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
+        sendImmediateClientIdentification = this.getBooleanProperty(
+            ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
             ClientFactoryManager.DEFAULT_SEND_IMMEDIATE_IDENTIFICATION);
-        sendImmediateKexInit = PropertyResolverUtils.getBooleanProperty(
-                factoryManager, ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
-                ClientFactoryManager.DEFAULT_SEND_KEXINIT);
+        sendImmediateKexInit = this.getBooleanProperty(
+            ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
+            ClientFactoryManager.DEFAULT_SEND_KEXINIT);
 
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
         connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);

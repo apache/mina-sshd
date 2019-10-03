@@ -36,8 +36,10 @@ the standard does not specifically specify the behavior regarding symbolic links
 
 ## Minor code helpers
 
-* `SessionListener` supports `sessionPeerIdentificationReceived` that is invoked once successful
+* `SessionListener` supports `sessionPeerIdentificationReceived` method that is invoked once successful
 peer version data is received.
+
+* `SessionListener` supports `sessionEstablished` method that is invoked when initial constructor is executed.
 
 * `ChannelIdTrackingUnknownChannelReferenceHandler` extends the functionality of the `DefaultUnknownChannelReferenceHandler`
 by tracking the initialized channels identifiers and being lenient only if command is received for a channel that was

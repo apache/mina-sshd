@@ -38,8 +38,9 @@ registered listener.
 ### `SessionListener`
 
 Informs about session related events. One can modify the session - although the modification effect depends on the session's **state**. E.g., if one
-changes the ciphers *after* the key exchange (KEX) phase, then they will take effect only if the keys are re-negotiated. It is important to read the
-documentation very carefully and understand at which stage each listener method is invoked and what are the repercussions of changes at that stage.
+changes the ciphers *after* the key exchange (KEX) phase, then they will take effect only if the keys are re-negotiated. Furthermore, invoking some
+session API(s) - event `getSomeValue` at the wrong time might yield unexpected results. It is important to read the documentation very carefully and
+understand at which stage each listener method is invoked, what are the limitations and what are the repercussions of changes at that stage.
 In this context, it is worth mentioning that one can attach to sessions **arbitrary attributes** that can be retrieved by the user's code later on:
 
 
@@ -49,6 +50,11 @@ In this context, it is worth mentioning that one can attach to sessions **arbitr
     public static final AttributeKey<Long> LONG_KEY = new AttributeKey<>();
 
     sshClient/Server.addSessionListener(new SessionListener() {
+        @Override
+        public void sessionEstablished(Session session) {
+            // examine the peer address or the connection context and set some attributes
+        }
+
         @Override
         public void sessionCreated(Session session) {
             session.setAttribute(STR_KEY, "Some string value");
