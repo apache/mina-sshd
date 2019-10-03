@@ -49,7 +49,7 @@ public interface ClientFactoryManager
 
     /**
      * Whether to send the identification string immediately upon session connection
-     * being established or wait for the peer's identification before sending our own.
+     * being established or wait for the server's identification before sending our own.
      *
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol Version Exchange</A>
      */
@@ -59,6 +59,17 @@ public interface ClientFactoryManager
      * Value of {@value #SEND_IMMEDIATE_IDENTIFICATION} if none configured
      */
     boolean DEFAULT_SEND_IMMEDIATE_IDENTIFICATION = true;
+
+    /**
+     * Whether to send {@code SSH_MSG_KEXINIT} immediately after sending
+     * the client identification string or wait until the severer's one
+     * has been received.
+     *
+     * @see #SEND_IMMEDIATE_IDENTIFICATION
+     */
+    String SEND_IMMEDIATE_KEXINIT = "send-immediate-kex-init";
+
+    boolean DEFAULT_SEND_KEXINIT = true;
 
     /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)

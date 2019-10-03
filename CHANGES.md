@@ -70,3 +70,6 @@ exchange via properties.
 
 * [SSHD-943](https://issues.apache.org/jira/browse/SSHD-943) - Provide session instance when KEX factory is invoked in order to create a KeyExchange instance.
 
+* [SSHD-947](https://issues.apache.org/jira/browse/SSHD-947) - Added configuration allowing the user to specify whether client should wait
+for the server's identification before sending KEX-INIT message.
+

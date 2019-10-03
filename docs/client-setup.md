@@ -164,6 +164,28 @@ this can be modified so that the client waits for the server's identification be
     client.start();
 ```
 
+A similar configuration can be applied to sending the initial `SSH_MSG_KEXINIT` message - i.e., the client can be configured
+to wait until the server's identification is received before sending the message. This is done in order to allow clients to
+customize the KEX phase according to the parsed server identification.
+
+```java
+    SshClient client = ...setup client...
+    PropertyResolverUtils.updateProperty(
+       client, ClientFactoryManager.SEND_IMMEDIATE_KEXINIT, false);
+    client.start();
+```
+
+**Note:** if immediate sending of the client's identification is disabled, `SSH_MSG_KEXINIT` message sending is also
+automatically delayed until after the server's identification is received.
+
+A viable configuration might be to send the client's identification immediately, but delay the client's `SSH_MSG_KEXINIT`
+message sending until the server's identification is received so that the client can customize the session based on the
+server's identity. This is a more likely configuration then delaying the client's own identification in order to be able
+to cope with port multiplexors such as [sslh](http://www.rutschle.net/tech/sslh/README.html). Such multiplexors usually
+require that the client send an initial packet immediately after connection is established so that they can analyze it
+and route it to the correct server (_ssh_ in this case). If we delay the client's identification, then obviously no server
+identification will ever be received since the multiplexor does not know how to route the connection.
+
 ## Keeping the session alive while no traffic
 
 The client-side implementation has a 2 builtin mechanisms for maintaining the session alive as far as the **server** is concerned

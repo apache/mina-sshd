@@ -220,7 +220,8 @@ public abstract class AbstractSession extends SessionHelper {
 
         attachSession(ioSession, this);
 
-        Factory<Random> factory = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
+        Factory<Random> factory =
+            ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(factory.create(), "No randomizer instance for %s", ioSession);
 
         refreshConfiguration();
@@ -2112,7 +2113,8 @@ public abstract class AbstractSession extends SessionHelper {
      * @param session The SSH session to attach
      * @throws MultipleAttachedSessionException If a previous session already attached
      */
-    public static void attachSession(IoSession ioSession, AbstractSession session) throws MultipleAttachedSessionException {
+    public static void attachSession(IoSession ioSession, AbstractSession session)
+            throws MultipleAttachedSessionException {
         Objects.requireNonNull(ioSession, "No I/O session");
         Objects.requireNonNull(session, "No SSH session");
         Object prev = ioSession.setAttributeIfAbsent(SESSION, session);

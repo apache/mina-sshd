@@ -78,7 +78,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClientSession extends AbstractSession implements ClientSession {
-    protected final boolean sendImmediateIdentification;
+    protected final boolean sendImmediateClientIdentification;
+    protected final boolean sendImmediateKexInit;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
@@ -94,12 +95,16 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
-        this.sendImmediateIdentification = PropertyResolverUtils.getBooleanProperty(
+
+        sendImmediateClientIdentification = PropertyResolverUtils.getBooleanProperty(
             factoryManager, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
             ClientFactoryManager.DEFAULT_SEND_IMMEDIATE_IDENTIFICATION);
+        sendImmediateKexInit = PropertyResolverUtils.getBooleanProperty(
+                factoryManager, ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
+                ClientFactoryManager.DEFAULT_SEND_KEXINIT);
 
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
-        this.connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
+        connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
     }
 
     @Override
@@ -248,9 +253,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
     }
 
-    protected void initializeKexPhase() throws Exception {
-        sendClientIdentification();
-
+    protected void initializeKeyExchangePhase() throws Exception {
         KexExtensionHandler extHandler = getKexExtensionHandler();
         if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.PREKEX))) {
             kexState.set(KexState.INIT);
@@ -464,8 +467,15 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         signalExtraServerVersionInfo(serverVersion, ident);
-        if (!sendImmediateIdentification) {
-            initializeKexPhase();
+
+        // Now that we have the server's identity reported see if have delayed any of out duties...
+        if (!sendImmediateClientIdentification) {
+            sendClientIdentification();
+            // if client identification not sent then KEX-INIT was not sent either
+            initializeKeyExchangePhase();
+        } else if (!sendImmediateKexInit) {
+            // if client identification sent, perhaps we delayed KEX-INIT
+            initializeKeyExchangePhase();
         }
 
         return true;

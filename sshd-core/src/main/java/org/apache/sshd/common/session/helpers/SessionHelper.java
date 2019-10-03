@@ -735,12 +735,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * @throws IOException If failed to send the packet
      */
     protected IoWriteFuture sendIdentification(String ident) throws IOException {
-        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         if (log.isDebugEnabled()) {
-            log.debug("sendIdentification({}): {}", this, ident.replace('\r', '|').replace('\n', '|'));
+            log.debug("sendIdentification({}): {}",
+                this, ident.replace('\r', '|').replace('\n', '|'));
         }
 
         IoSession networkSession = getIoSession();
+        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         return networkSession.writePacket(new ByteArrayBuffer(data));
     }
 

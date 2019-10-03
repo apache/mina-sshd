@@ -97,8 +97,12 @@ public class ClientSessionImpl extends AbstractClientSession {
          */
         initializeProxyConnector();
 
-        if (sendImmediateIdentification) {
-            initializeKexPhase();
+        if (sendImmediateClientIdentification) {
+            sendClientIdentification();
+
+            if (sendImmediateKexInit) {
+                initializeKeyExchangePhase();
+            }
         }
     }
 
