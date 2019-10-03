@@ -20,6 +20,7 @@ package org.apache.sshd.common.signature;
 
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.spec.DSAPublicKeySpec;
 
@@ -47,7 +48,9 @@ public class SignatureDSATest extends JUnitTestSupport {
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM);
         SignatureDSA signatureDSA = new SignatureDSA(KeyUtils.DSS_ALGORITHM) {
             @Override
-            protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
+            protected java.security.Signature doInitSignature(
+                    String algo, Key key, boolean forSigning)
+                        throws GeneralSecurityException {
                 return java.security.Signature.getInstance(algo);
 
             }

@@ -20,6 +20,7 @@ package org.apache.sshd.common.signature;
 
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.Provider;
 import java.security.PublicKey;
@@ -73,9 +74,12 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
             public SignatureRSA create() {
                 return new SignatureRSASHA1() {
                     @Override
-                    protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
+                    protected java.security.Signature doInitSignature(
+                            String algo, Key key, boolean forSigning)
+                                throws GeneralSecurityException {
                         assertFalse("Signature not initialized for verification", forSigning);
-                        java.security.Signature signature = super.doInitSignature(algo, forSigning);
+                        java.security.Signature signature =
+                            super.doInitSignature(algo, key, forSigning);
                         if (SecurityUtils.isBouncyCastleRegistered()) {
                             Provider provider = signature.getProvider();
                             String name = provider.getName();
@@ -92,9 +96,12 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
     public void testLeadingZeroesJCE() throws Throwable {
         testLeadingZeroes(() -> new SignatureRSASHA1() {
             @Override
-            protected java.security.Signature doInitSignature(String algo, boolean forSigning) throws GeneralSecurityException {
+            protected java.security.Signature doInitSignature(
+                    String algo, Key key, boolean forSigning)
+                        throws GeneralSecurityException {
                 assertFalse("Signature not initialized for verification", forSigning);
-                java.security.Signature signature = java.security.Signature.getInstance(algo);
+                java.security.Signature signature =
+                    java.security.Signature.getInstance(algo);
                 Provider provider = signature.getProvider();
                 String name = provider.getName();
                 assertNotEquals("BC provider used although not required", SecurityUtils.BOUNCY_CASTLE, name);

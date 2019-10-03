@@ -50,6 +50,8 @@ occurs. The cache can be invalidated (and thus force a re-load) by invoking `Mod
 exchange via properties - see `DHGEXClient#PROP_DHGEX_CLIENT_MIN/MAX/PRF_KEY`. Similar applies for `DHGEXServer` but only for
 the message type=30 (old request).
 
+* `AbstractSignature#doInitSignature` is now provided also with the `Key` instance for which it is invoked.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
