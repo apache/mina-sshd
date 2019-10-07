@@ -60,3 +60,9 @@ described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754) and [SSH
 
 * `AndroidOpenSSLSecurityProviderRegistrar` - A security registrar that uses the [AndroidOpenSSL](https://github.com/guardianproject/openssl-android)
 security provider
+
+* `LegacyDSASigner` - A `java.security.Signature` that applies SHA-1 with DSA keys regardless of their
+key length - i.e., despite FIPS186-3 section 4.2 that mandates usage of SHA-2 for keys greater than
+1024 bits. This is in accordance with RFC 4253 that was never amended to specify any other digest for
+such keys. The signer can be use to provide a custom implementation of `SignatureDSA` (and its factory)
+that uses this signer instead of the JCE or _Bouncycastle_ one - see comments on issue [SSHD-945](https://issues.apache.org/jira/browse/SSHD-945).
