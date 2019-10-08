@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -427,10 +428,14 @@ public class ChannelSession extends AbstractServerChannel {
     protected RequestHandler.Result handleEnv(Buffer buffer, boolean wantReply) throws IOException {
         String name = buffer.getString();
         String value = buffer.getString();
-        addEnvVariable(name, value);
         if (log.isDebugEnabled()) {
             log.debug("handleEnv({}): {} = {}", this, name, value);
         }
+        return handleEnvParsed(name, value);
+    }
+
+    protected RequestHandler.Result handleEnvParsed(String name, String value) throws IOException {
+        addEnvVariable(name, value);
         return RequestHandler.Result.ReplySuccess;
     }
 
@@ -441,9 +446,8 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         byte[] modes = buffer.getBytes();
-        Environment environment = getEnvironment();
-        Map<PtyMode, Integer> ptyModes = environment.getPtyModes();
 
+        Map<PtyMode, Integer> ptyModes = new HashMap<>();
         for (int i = 0; (i < modes.length) && (modes[i] != PtyMode.TTY_OP_END);) {
             int opcode = modes[i++] & 0x00FF;
             /*
@@ -473,6 +477,15 @@ public class ChannelSession extends AbstractServerChannel {
                     this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
         }
 
+        return handlePtyReqParsed(term, tColumns, tRows, tWidth, tHeight, ptyModes);
+    }
+
+    protected RequestHandler.Result handlePtyReqParsed(
+            String term, int tColumns, int tRows, int tWidth, int tHeight,
+            Map<PtyMode, Integer> ptyModes)
+            throws IOException {
+        Environment environment = getEnvironment();
+        environment.getPtyModes().putAll(ptyModes);
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
@@ -489,6 +502,12 @@ public class ChannelSession extends AbstractServerChannel {
                     this, tColumns, tRows, tWidth, tHeight);
         }
 
+        return handleWindowChangeParsed(tColumns, tRows, tWidth, tHeight);
+    }
+
+    protected RequestHandler.Result handleWindowChangeParsed(
+            int tColumns, int tRows, int tWidth, int tHeight)
+            throws IOException {
         StandardEnvironment e = getEnvironment();
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
@@ -503,6 +522,10 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleSignal({}): {}", this, name);
         }
 
+        return handleSignalParsed(name);
+    }
+
+    protected RequestHandler.Result handleSignalParsed(String name) throws IOException {
         Signal signal = Signal.get(name);
         if (signal != null) {
             StandardEnvironment environ = getEnvironment();
@@ -520,6 +543,10 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleBreak({}) length={}", this, breakLength);
         }
 
+        return handleBreakParsed(breakLength);
+    }
+
+    protected RequestHandler.Result handleBreakParsed(long breakLength) throws IOException {
         StandardEnvironment environ = getEnvironment();
         environ.signal(this, Signal.INT);
         return RequestHandler.Result.ReplySuccess;
@@ -536,6 +563,10 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
+        return handleShellParsed(request);
+    }
+
+    protected RequestHandler.Result handleShellParsed(String request) throws IOException {
         ServerSession shellSession = Objects.requireNonNull(getServerSession(), "No server session");
         ServerFactoryManager manager = Objects.requireNonNull(shellSession.getFactoryManager(), "No server factory manager");
         ShellFactory factory = manager.getShellFactory();
@@ -576,6 +607,12 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         String commandLine = buffer.getString();
+        return handleExecParsed(request, commandLine);
+    }
+
+    protected RequestHandler.Result handleExecParsed(
+            String request, String commandLine)
+            throws IOException {
         ServerSession cmdSession = Objects.requireNonNull(getServerSession(), "No server session");
         ServerFactoryManager manager = Objects.requireNonNull(cmdSession.getFactoryManager(), "No server factory manager");
         CommandFactory factory = manager.getCommandFactory();
@@ -617,6 +654,10 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleSubsystem({})[want-reply={}] subsystem={}", this, wantReply, subsystem);
         }
 
+        return handleSubsystemParsed(request, subsystem);
+    }
+
+    protected RequestHandler.Result handleSubsystemParsed(String request, String subsystem) throws IOException {
         ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
         Collection<SubsystemFactory> factories
                 = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
@@ -798,6 +839,10 @@ public class ChannelSession extends AbstractServerChannel {
     protected RequestHandler.Result handleAgentForwarding(
             String requestType, Buffer buffer, boolean wantReply)
             throws IOException {
+        return handleAgentForwardingParsed(requestType);
+    }
+
+    protected RequestHandler.Result handleAgentForwardingParsed(String requestType) throws IOException {
         ServerSession session = getServerSession();
         PropertyResolverUtils.updateProperty(
                 session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
@@ -845,6 +890,13 @@ public class ChannelSession extends AbstractServerChannel {
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
+        return handleX11ForwardingParsed(requestType, session, singleConnection, authProtocol, authCookie, screenId);
+    }
+
+    protected RequestHandler.Result handleX11ForwardingParsed(
+            String requestType, ServerSession session, boolean singleConnection,
+            String authProtocol, String authCookie, int screenId)
+            throws IOException {
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         X11ForwardingFilter filter = manager.getX11ForwardingFilter();
         boolean debugEnabled = log.isDebugEnabled();
