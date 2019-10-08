@@ -18,3 +18,6 @@
 language: java
 jdk: openjdk8
 script: mvn test -B -Dtest=!org.apache.sshd.client.ClientTest#testConnectUsingIPv6Address
+cache:
+  directories:
+    - $HOME/.m2
