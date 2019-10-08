@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 
 /**
  * Uses an {@link SshAgent} to generate the identity signature
@@ -50,8 +51,8 @@ public class KeyAgentIdentity implements PublicKeyIdentity {
     }
 
     @Override
-    public byte[] sign(byte[] data) throws Exception {
-        return agent.sign(getPublicKey(), data);
+    public byte[] sign(SessionContext session, byte[] data) throws Exception {
+        return agent.sign(session, getPublicKey(), data);
     }
 
     @Override

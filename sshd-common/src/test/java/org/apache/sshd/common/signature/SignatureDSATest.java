@@ -25,6 +25,7 @@ import java.security.KeyFactory;
 import java.security.spec.DSAPublicKeySpec;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -49,7 +50,7 @@ public class SignatureDSATest extends JUnitTestSupport {
         SignatureDSA signatureDSA = new SignatureDSA(KeyUtils.DSS_ALGORITHM) {
             @Override
             protected java.security.Signature doInitSignature(
-                    String algo, Key key, boolean forSigning)
+                    SessionContext session, String algo, Key key, boolean forSigning)
                         throws GeneralSecurityException {
                 return java.security.Signature.getInstance(algo);
 
@@ -94,18 +95,18 @@ public class SignatureDSATest extends JUnitTestSupport {
         BigInteger bigG = new BigInteger(g);
 
         DSAPublicKeySpec dsaPublicKey = new DSAPublicKeySpec(bigY, bigP, bigQ, bigG);
-        signatureDSA.initVerifier(kf.generatePublic(dsaPublicKey));
+        signatureDSA.initVerifier(null, kf.generatePublic(dsaPublicKey));
         byte[] h = new byte[] {
             -4, 111, -103, 111, 72, -106, 105, -19, 81, -123, 84, -13, -40, -53, -3,
             -97, -8, 43, -22, -2, -23, -15, 28, 116, -63, 96, -79, -127, -84, 63, -6, -94 };
-        signatureDSA.update(h);
+        signatureDSA.update(null, h);
 
         byte[] sig_of_h = new byte[] {
             0, 0, 0, 7, 115, 115, 104, 45, 100, 115, 115, 0, 0, 0, 40, 0, 79,
             84, 118, -50, 11, -117, -112, 52, -25, -78, -50, -20, 6, -69, -26,
             7, 90, -34, -124, 80, 76, -32, -23, -8, 43, 38, -48, -89, -17, -60,
             -1, -78, 112, -88, 14, -39, -78, -98, -80 };
-        boolean verified = signatureDSA.verify(sig_of_h);
+        boolean verified = signatureDSA.verify(null, sig_of_h);
 
         assertTrue(verified);
     }

@@ -23,6 +23,8 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Map;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * SSH key agent server
  */
@@ -32,7 +34,7 @@ public interface SshAgent extends java.nio.channels.Channel {
 
     Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException;
 
-    byte[] sign(PublicKey key, byte[] data) throws IOException;
+    byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException;
 
     void addIdentity(KeyPair key, String comment) throws IOException;
 

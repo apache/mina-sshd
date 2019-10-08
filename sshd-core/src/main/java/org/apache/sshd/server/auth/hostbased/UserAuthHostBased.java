@@ -21,6 +21,7 @@ package org.apache.sshd.server.auth.hostbased;
 
 import java.io.ByteArrayInputStream;
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -126,7 +127,8 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         boolean authed;
         try {
-            authed = authenticator.authenticate(session, username, clientKey, clientHostName, clientUsername, certs);
+            authed = authenticator.authenticate(
+                session, username, clientKey, clientHostName, clientUsername, certs);
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to consult authenticator for {} key={}: {}",
                     username, session, e.getClass().getSimpleName(),
@@ -157,7 +159,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             NamedFactory.create(factories, keyType),
             "No verifier located for algorithm=%s",
             keyType);
-        verifier.initVerifier(clientKey);
+        verifier.initVerifier(session, clientKey);
 
         byte[] id = session.getSessionId();
         buf = new ByteArrayBuffer(dataLen + id.length + Long.SIZE, false);
@@ -175,22 +177,22 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
 
         if (log.isTraceEnabled()) {
             log.trace("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - verification data: {}",
-                      username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                      clientUsername, clientHostName, GenericUtils.size(certs), buf.toHex());
+                  username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                  clientUsername, clientHostName, GenericUtils.size(certs), buf.toHex());
             log.trace("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - expected signature: {}",
-                    username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                    clientUsername, clientHostName, GenericUtils.size(certs), BufferUtils.toHex(signature));
+                username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                clientUsername, clientHostName, GenericUtils.size(certs), BufferUtils.toHex(signature));
         }
 
-        verifier.update(buf.array(), buf.rpos(), buf.available());
-        if (!verifier.verify(signature)) {
-            throw new Exception("Key verification failed");
+        verifier.update(session, buf.array(), buf.rpos(), buf.available());
+        if (!verifier.verify(session, signature)) {
+            throw new SignatureException("Key verification failed");
         }
 
         if (debugEnabled) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={}, client={}@{}, num-certs={} - verified signature",
-                    username, session, keyType, KeyUtils.getFingerPrint(clientKey),
-                    clientUsername, clientHostName, GenericUtils.size(certs));
+                username, session, keyType, KeyUtils.getFingerPrint(clientKey),
+                clientUsername, clientHostName, GenericUtils.size(certs));
         }
         return Boolean.TRUE;
     }

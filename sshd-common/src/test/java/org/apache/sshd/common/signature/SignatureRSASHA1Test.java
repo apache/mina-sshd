@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -75,11 +76,11 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
                 return new SignatureRSASHA1() {
                     @Override
                     protected java.security.Signature doInitSignature(
-                            String algo, Key key, boolean forSigning)
+                            SessionContext session, String algo, Key key, boolean forSigning)
                                 throws GeneralSecurityException {
                         assertFalse("Signature not initialized for verification", forSigning);
                         java.security.Signature signature =
-                            super.doInitSignature(algo, key, forSigning);
+                            super.doInitSignature(session, algo, key, forSigning);
                         if (SecurityUtils.isBouncyCastleRegistered()) {
                             Provider provider = signature.getProvider();
                             String name = provider.getName();
@@ -97,7 +98,7 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         testLeadingZeroes(() -> new SignatureRSASHA1() {
             @Override
             protected java.security.Signature doInitSignature(
-                    String algo, Key key, boolean forSigning)
+                    SessionContext session, String algo, Key key, boolean forSigning)
                         throws GeneralSecurityException {
                 assertFalse("Signature not initialized for verification", forSigning);
                 java.security.Signature signature =
@@ -112,7 +113,7 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
 
     private void testLeadingZeroes(Factory<? extends SignatureRSA> factory) throws Exception {
         SignatureRSA rsa = factory.create();
-        rsa.initVerifier(testKey);
+        rsa.initVerifier(null, testKey);
 
         int vSize = rsa.getVerifierSignatureSize();
         assertTrue("Verifier signature size not initialized", vSize > 0);
@@ -123,7 +124,7 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         byte[] data = encoding.getValue();
         assertTrue("Signature data size (" + data.length + ") not below verifier size (" + vSize + ")", data.length < vSize);
 
-        rsa.update(TEST_MSG);
-        assertTrue("Failed to verify", rsa.verify(TEST_SIGNATURE));
+        rsa.update(null, TEST_MSG);
+        assertTrue("Failed to verify", rsa.verify(null, TEST_SIGNATURE));
     }
 }

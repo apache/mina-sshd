@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.util.Map;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -65,13 +66,14 @@ public class SignatureECDSA extends AbstractSignature {
     }
 
     @Override
-    public byte[] sign() throws Exception {
-        byte[] sig = super.sign();
+    public byte[] sign(SessionContext session) throws Exception {
+        byte[] sig = super.sign(session);
 
         try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
-                throw new StreamCorruptedException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                throw new StreamCorruptedException(
+                    "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
 
             // length of remaining encoding of the 2 integers
@@ -84,7 +86,8 @@ public class SignatureECDSA extends AbstractSignature {
              *  - at least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException(
+                    "Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -99,7 +102,7 @@ public class SignatureECDSA extends AbstractSignature {
     }
 
     @Override
-    public boolean verify(byte[] sig) throws Exception {
+    public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
         Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {

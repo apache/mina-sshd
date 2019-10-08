@@ -193,7 +193,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             Signature sig = ValidateUtils.checkNotNull(
                 NamedFactory.create(session.getSignatureFactories(), algo),
                 "Unknown negotiated server keys: %s", algo);
-            sig.initSigner(kp.getPrivate());
+            sig.initSigner(session, kp.getPrivate());
 
             buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(kp.getPublic());
@@ -221,11 +221,11 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.putMPInt(k);
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
-            sig.update(h);
+            sig.update(session, h);
 
             buffer.clear();
             buffer.putString(algo);
-            byte[] sigBytes = sig.sign();
+            byte[] sigBytes = sig.sign(session);
             buffer.putBytes(sigBytes);
 
             byte[] sigH = buffer.getCompactData();

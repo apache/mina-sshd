@@ -97,7 +97,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
                 session);
         if (log.isDebugEnabled()) {
             log.debug("handleHostKeys({})[want-reply={}] received {} keys - factories={}",
-                      session, wantReply, GenericUtils.size(keys), NamedResource.getNames(factories));
+                  session, wantReply, GenericUtils.size(keys), NamedResource.getNames(factories));
         }
 
         // generate the required signatures
@@ -105,7 +105,8 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
 
         Buffer buf = new ByteArrayBuffer();
         byte[] sessionId = session.getSessionId();
-        KeyPairProvider kpp = Objects.requireNonNull(((ServerSession) session).getKeyPairProvider(), "No server keys provider");
+        KeyPairProvider kpp = Objects.requireNonNull(
+            ((ServerSession) session).getKeyPairProvider(), "No server keys provider");
         for (PublicKey k : keys) {
             String keyType = KeyUtils.getKeyType(k);
             Signature verifier = ValidateUtils.checkNotNull(
@@ -118,14 +119,14 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
                 kp = ValidateUtils.checkNotNull(kpp.loadKey(session, keyType), "No key of type=%s available", keyType);
             } catch (Error e) {
                 log.warn("handleHostKeys({}) failed ({}) to load key of type={}: {}",
-                         session, e.getClass().getSimpleName(), keyType, e.getMessage());
+                     session, e.getClass().getSimpleName(), keyType, e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("handleHostKey(" + session + ") " + keyType + " key load failure details", e);
                 }
 
                 throw new RuntimeSshException(e);
             }
-            verifier.initSigner(kp.getPrivate());
+            verifier.initSigner(session, kp.getPrivate());
 
             buf.clear();
             buf.putString(REQUEST);
@@ -133,9 +134,9 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
             buf.putPublicKey(k);
 
             byte[] data = buf.getCompactData();
-            verifier.update(data);
+            verifier.update(session, data);
 
-            byte[] signature = verifier.sign();
+            byte[] signature = verifier.sign(session);
             buffer.putBytes(signature);
         }
 

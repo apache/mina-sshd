@@ -48,29 +48,32 @@ public abstract class SignatureVariantTestSupport extends JUnitTestSupport {
         Assume.assumeTrue("Unsupported factory: " + factory, factory.isSupported());
     }
 
-    protected static KeyPair initializeSigningKeyPair(String algorithm) throws IOException, GeneralSecurityException {
+    protected static KeyPair initializeSigningKeyPair(String algorithm)
+            throws IOException, GeneralSecurityException {
         String resourceKey = ClientIdentity.getIdentityFileName(algorithm);
         URL urlKeyPair = SignatureVariantTestSupport.class.getResource(resourceKey);
         assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
         try (InputStream stream = urlKeyPair.openStream()) {
             Iterable<KeyPair> ids =
-                SecurityUtils.loadKeyPairIdentities(null, NamedResource.ofName(resourceKey), stream, null);
+                SecurityUtils.loadKeyPairIdentities(
+                    null, NamedResource.ofName(resourceKey), stream, null);
             return GenericUtils.head(ids);
         }
     }
 
     @Test
     public void testSignature() throws Exception {
-        byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+        byte[] data = (getClass().getName() + "#" + getCurrentTestName())
+            .getBytes(StandardCharsets.UTF_8);
         Signature signer = factory.create();
-        signer.initSigner(kp.getPrivate());
-        signer.update(data);
+        signer.initSigner(null, kp.getPrivate());
+        signer.update(null, data);
 
-        byte[] signature = signer.sign();
+        byte[] signature = signer.sign(null);
         Signature verifier = factory.create();
-        verifier.initVerifier(kp.getPublic());
-        verifier.update(data);
-        verifier.verify(signature);
+        verifier.initVerifier(null, kp.getPublic());
+        verifier.update(null, data);
+        verifier.verify(null, signature);
     }
 
     @Override

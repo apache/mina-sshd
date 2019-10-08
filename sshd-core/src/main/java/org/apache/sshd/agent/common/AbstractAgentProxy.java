@@ -32,6 +32,7 @@ import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -102,7 +103,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public byte[] sign(PublicKey key, byte[] data) throws IOException {
+    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
         int okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
         if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {

@@ -206,7 +206,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         return true;
     }
 
-    protected void appendSignature(ClientSession session, String service, String name, String username, String algo, PublicKey key, Buffer buffer) throws Exception {
+    protected void appendSignature(
+            ClientSession session, String service, String name, String username, String algo, PublicKey key, Buffer buffer)
+                throws Exception {
         byte[] id = session.getSessionId();
         Buffer bs = new ByteArrayBuffer(id.length + username.length() + service.length() + name.length()
             + algo.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE, false);
@@ -222,7 +224,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         byte[] contents = bs.getCompactData();
         byte[] sig;
         try {
-            sig = current.sign(contents);
+            sig = current.sign(session, contents);
         } catch (Error e) {
             log.warn("appendSignature({})[{}][{}] failed ({}) to sign contents: {}",
                      session, service, name, e.getClass().getSimpleName(), e.getMessage());
@@ -235,9 +237,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
+                  session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
-                      session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
+                  session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
         }
 
         bs.clear();

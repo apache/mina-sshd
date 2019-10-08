@@ -104,7 +104,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             NamedFactory.create(factories, alg),
             "No verifier located for algorithm=%s",
             alg);
-        verifier.initVerifier(key);
+        verifier.initVerifier(session, key);
         buffer.wpos(oldLim);
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
@@ -182,8 +182,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                   username, session, service, name, alg, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
         }
 
-        verifier.update(buf.array(), buf.rpos(), buf.available());
-        return verifier.verify(sig);
+        verifier.update(session, buf.array(), buf.rpos(), buf.available());
+        return verifier.verify(session, sig);
     }
 
     protected void sendPublicKeyResponse(

@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -69,7 +70,7 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
-    public byte[] sign(PublicKey key, byte[] data) throws IOException {
+    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
@@ -79,7 +80,7 @@ public class AgentImpl implements SshAgent {
             KeyPair kp = ValidateUtils.checkNotNull(pp.getKey(), "No key pair for agent=%s", pp.getValue());
             PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getValue());
 
-            final Signature verif;
+            Signature verif;
             if (pubKey instanceof DSAPublicKey) {
                 verif = BuiltinSignatures.dsa.create();
             } else if (pubKey instanceof ECPublicKey) {
@@ -92,9 +93,9 @@ public class AgentImpl implements SshAgent {
             } else {
                 throw new InvalidKeySpecException("Unsupported key type: " + pubKey.getClass().getSimpleName());
             }
-            verif.initSigner(kp.getPrivate());
-            verif.update(data);
-            return verif.sign();
+            verif.initSigner(session, kp.getPrivate());
+            verif.update(session, data);
+            return verif.sign(session);
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {

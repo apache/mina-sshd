@@ -44,14 +44,14 @@ public class SignaturesDevelopment extends JUnitTestSupport {
                 throws Exception {
         Signature signer = factory.create();
         if (generateSignature) {
-            signer.initSigner(kp.getPrivate());
-            signer.update(data);
-            signature = signer.sign();
+            signer.initSigner(null, kp.getPrivate());
+            signer.update(null, data);
+            signature = signer.sign(null);
             System.out.append('\t').append("Signature: ").println(BufferUtils.toHex(':', signature));
         } else {
-            signer.initVerifier(kp.getPublic());
-            signer.update(data);
-            if (signer.verify(signature)) {
+            signer.initVerifier(null, kp.getPublic());
+            signer.update(null, data);
+            if (signer.verify(null, signature)) {
                 System.out.append('\t').println("Valid signature");
             } else {
                 System.err.append('\t').println("Invalid signature");

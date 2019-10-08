@@ -135,7 +135,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                         KeyUtils.getKeyType(signingKey),
                         "Cannot resolve key type of %s",
                         signingKey.getClass().getSimpleName());
-                byte[] signature = agent.sign(signingKey, data);
+                byte[] signature = agent.sign(null, signingKey, data);
                 Buffer sig = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE, false);
                 sig.putString(keyType);
                 sig.putBytes(signature);
@@ -187,5 +187,4 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
     }
 
     protected abstract void reply(Buffer buf) throws IOException;
-
 }

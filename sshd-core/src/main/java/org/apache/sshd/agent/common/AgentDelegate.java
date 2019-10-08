@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.session.SessionContext;
 
 public class AgentDelegate implements SshAgent {
 
@@ -49,8 +50,8 @@ public class AgentDelegate implements SshAgent {
     }
 
     @Override
-    public byte[] sign(PublicKey key, byte[] data) throws IOException {
-        return agent.sign(key, data);
+    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
+        return agent.sign(session, key, data);
     }
 
     @Override

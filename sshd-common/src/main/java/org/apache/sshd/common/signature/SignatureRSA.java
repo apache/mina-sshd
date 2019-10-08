@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -49,8 +50,8 @@ public abstract class SignatureRSA extends AbstractSignature {
     }
 
     @Override
-    public void initVerifier(PublicKey key) throws Exception {
-        super.initVerifier(key);
+    public void initVerifier(SessionContext session, PublicKey key) throws Exception {
+        super.initVerifier(session, key);
         RSAKey rsaKey = ValidateUtils.checkInstanceOf(key, RSAKey.class, "Not an RSA key");
         verifierSignatureSize = getVerifierSignatureSize(rsaKey);
     }
@@ -61,7 +62,7 @@ public abstract class SignatureRSA extends AbstractSignature {
     }
 
     @Override
-    public boolean verify(byte[] sig) throws Exception {
+    public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
         Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {

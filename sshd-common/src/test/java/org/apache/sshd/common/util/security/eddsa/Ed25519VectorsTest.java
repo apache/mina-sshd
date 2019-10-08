@@ -202,16 +202,16 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
     @Test
     public void testSignature() throws Exception {
         Signature signer = EdDSASecurityProviderUtils.getEDDSASignature();
-        signer.initSigner(privateKey);
-        signer.update(msgBytes.clone());
+        signer.initSigner(null, privateKey);
+        signer.update(null, msgBytes.clone());
 
-        byte[] actSignature = signer.sign();
+        byte[] actSignature = signer.sign(null);
         assertArrayEquals("Mismatched signature", expSignature, actSignature);
 
         Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
-        verifier.initVerifier(publicKey);
-        verifier.update(msgBytes.clone());
-        assertTrue("Verification failed", verifier.verify(expSignature));
+        verifier.initVerifier(null, publicKey);
+        verifier.update(null, msgBytes.clone());
+        assertTrue("Verification failed", verifier.verify(null, expSignature));
     }
 
     @Test
@@ -224,15 +224,15 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
         System.arraycopy(extraData, offset, dataBuf, offset + msgBytes.length, extraData.length - offset);
 
         Signature signer = EdDSASecurityProviderUtils.getEDDSASignature();
-        signer.initSigner(privateKey);
-        signer.update(dataBuf.clone(), offset, msgBytes.length);
+        signer.initSigner(null, privateKey);
+        signer.update(null, dataBuf.clone(), offset, msgBytes.length);
 
-        byte[] actSignature = signer.sign();
+        byte[] actSignature = signer.sign(null);
         assertArrayEquals("Mismatched signature", expSignature, actSignature);
 
         Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
-        verifier.initVerifier(publicKey);
-        verifier.update(dataBuf.clone(), offset, msgBytes.length);
-        assertTrue("Verification failed", verifier.verify(expSignature));
+        verifier.initVerifier(null, publicKey);
+        verifier.update(null, dataBuf.clone(), offset, msgBytes.length);
+        assertTrue("Verification failed", verifier.verify(null, expSignature));
     }
 }

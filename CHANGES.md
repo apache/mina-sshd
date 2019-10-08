@@ -34,6 +34,9 @@ the standard does not specifically specify the behavior regarding symbolic links
 * `KeyExchangeFactory` is a proper interface and it has been refactored to contain a
 `createKeyExchange` method that accepts the session instance through which the request is made.
 
+* `Signature` methods accept a `SessionContext` argument representing the session context
+of their invocation (if any)
+
 ## Minor code helpers
 
 * `SessionListener` supports `sessionPeerIdentificationReceived` method that is invoked once successful

@@ -40,7 +40,8 @@ import org.junit.runner.Description;
  */
 public abstract class BaseTestSupport extends JUnitTestSupport {
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
-    public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
+    public static final String TEST_LOCALHOST =
+        System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
 
     @Rule
     public final TestWatcher rule = new TestWatcher() {
@@ -50,7 +51,10 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
 
         @Override
         protected void starting(Description description) {
-            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...");
+            System.out.append(System.lineSeparator())
+                .append("Starting ").append(description.getClassName())
+                .append(':').append(description.getMethodName())
+                .println("...");
             try {
                 IoServiceFactoryFactory ioProvider = getIoServiceProvider();
                 System.out.println("Using default provider: " + ioProvider.getClass().getName());
@@ -64,7 +68,11 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         @Override
         protected void finished(Description description) {
             long duration = System.currentTimeMillis() - startTime;
-            System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
+            System.out.append(System.lineSeparator())
+                .append("Finished ").append(description.getClassName())
+                .append(':').append(description.getMethodName())
+                .append(" in ").append(Long.toString(duration))
+                .println(" ms");
         }
     };
 
@@ -80,7 +88,8 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         return CoreTestSupportUtils.setupTestClient(getClass());
     }
 
-    protected void assumeNotIoServiceProvider(Collection<BuiltinIoServiceFactoryFactories> excluded) {
+    protected void assumeNotIoServiceProvider(
+            Collection<BuiltinIoServiceFactoryFactories> excluded) {
         assumeNotIoServiceProvider(getCurrentTestName(), excluded);
     }
 
@@ -100,12 +109,14 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     }
 
     public static void assumeNotIoServiceProvider(
-            String message, AbstractFactoryManager manager, Collection<BuiltinIoServiceFactoryFactories> excluded) {
+            String message, AbstractFactoryManager manager,
+            Collection<BuiltinIoServiceFactoryFactories> excluded) {
         assumeNotIoServiceProvider(message, manager.getIoServiceFactoryFactory(), excluded);
     }
 
     public static void assumeNotIoServiceProvider(
-            String message, IoServiceFactoryFactory provider, Collection<BuiltinIoServiceFactoryFactories> excluded) {
+            String message, IoServiceFactoryFactory provider,
+            Collection<BuiltinIoServiceFactoryFactories> excluded) {
         if (GenericUtils.isEmpty(excluded)) {
             return;
         }

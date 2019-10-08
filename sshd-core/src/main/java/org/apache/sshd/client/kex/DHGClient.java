@@ -145,9 +145,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         Signature verif = ValidateUtils.checkNotNull(
             NamedFactory.create(session.getSignatureFactories(), keyAlg),
             "No verifier located for algorithm=%s", keyAlg);
-        verif.initVerifier(serverKey);
-        verif.update(h);
-        if (!verif.verify(sig)) {
+        verif.initVerifier(session, serverKey);
+        verif.update(session, h);
+        if (!verif.verify(session, sig)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                 "KeyExchange signature verification failed for key type=" + keyAlg);
         }

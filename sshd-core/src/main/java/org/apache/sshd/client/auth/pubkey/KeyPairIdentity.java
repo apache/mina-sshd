@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -52,15 +53,15 @@ public class KeyPairIdentity implements PublicKeyIdentity {
     }
 
     @Override
-    public byte[] sign(byte[] data) throws Exception {
+    public byte[] sign(SessionContext session, byte[] data) throws Exception {
         String keyType = KeyUtils.getKeyType(getPublicKey());
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(signatureFactories, keyType),
                 "No signer could be located for key type=%s",
                 keyType);
-        verifier.initSigner(pair.getPrivate());
-        verifier.update(data);
-        return verifier.sign();
+        verifier.initSigner(session, pair.getPrivate());
+        verifier.update(session, data);
+        return verifier.sign(session);
     }
 
     @Override
