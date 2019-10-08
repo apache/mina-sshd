@@ -45,7 +45,6 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.RequestHandler.Result;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
@@ -386,7 +385,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     @Override
     protected IoWriteFuture sendResponse(
-            Buffer buffer, String req, Result result, boolean wantReply)
+            Buffer buffer, String req, RequestHandler.Result result, boolean wantReply)
             throws IOException {
         IoWriteFuture future = super.sendResponse(buffer, req, result, wantReply);
         if (!RequestHandler.Result.ReplySuccess.equals(result)) {
