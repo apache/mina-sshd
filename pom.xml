@@ -110,7 +110,7 @@
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
-        <bouncycastle.version>1.63</bouncycastle.version>
+        <bouncycastle.version>1.64</bouncycastle.version>
         <slf4j.version>1.7.28</slf4j.version>
         <spring.version>5.2.0.RELEASE</spring.version>
         <jgit.version>5.5.0.201909110433-r</jgit.version>
