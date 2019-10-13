@@ -188,7 +188,7 @@ identification will ever be received since the multiplexor does not know how to 
 
 ## Keeping the session alive while no traffic
 
-The client-side implementation has a 2 builtin mechanisms for maintaining the session alive as far as the **server** is concerned
+The client-side implementation supports several mechanisms for maintaining the session alive as far as the **server** is concerned
 regardless of the user's own traffic:
 
 * Sending `SSH_MSG_IGNORE` messages every once in a while.
@@ -222,9 +222,9 @@ regardless of the user's own traffic:
 
 **Note(s):**
 
-* Both options are disabled by default - they need to be activated explicitly.
+* Mechanisms are disabled by default - they need to be activated explicitly.
 
-* Both options can be activated either on the `SshClient` (for **global** setup) and/or
+* Mechanisms can be activated either on the `SshClient` (for **global** setup) and/or
 the `ClientSession` (for specific session configuration).
 
 * The `keepalive@,,,,` mechanism **supersedes** the other mechanisms if activated.
@@ -246,7 +246,7 @@ the `ClientSession` (for specific session configuration).
 ## Running a command or opening a shell
 
 When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the
-reported environment variables. By default, unless specific instructions are provided the code uses some internal
+reported environment variables. By default, unless specific instructions are provided, the code uses some internal
 defaults - which however, might not be adequate for the specific client/server.
 
 ```java

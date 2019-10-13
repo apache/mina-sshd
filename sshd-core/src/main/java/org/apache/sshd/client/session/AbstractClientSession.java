@@ -467,7 +467,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
         signalExtraServerVersionInfo(serverVersion, ident);
 
-        // Now that we have the server's identity reported see if have delayed any of out duties...
+        // Now that we have the server's identity reported see if have delayed any of our duties...
         if (!sendImmediateClientIdentification) {
             sendClientIdentification();
             // if client identification not sent then KEX-INIT was not sent either
