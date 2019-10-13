@@ -60,7 +60,7 @@ this feature should be considered **experimental** for the time being. However, 
 The code reads **all** the available key pairs in the key file without any distinction between encryption, decryption,
 authentication or signature ones.
 
-This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support module
+This code relies on the [jpgpj](https://github.com/justinludwig/jpgpj) support module
 
 ```xml
     <dependency>
