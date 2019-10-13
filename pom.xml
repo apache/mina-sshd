@@ -113,7 +113,7 @@
         <bouncycastle.version>1.64</bouncycastle.version>
         <slf4j.version>1.7.28</slf4j.version>
         <spring.version>5.2.0.RELEASE</spring.version>
-        <jgit.version>5.5.0.201909110433-r</jgit.version>
+        <jgit.version>5.5.1.201910021850-r</jgit.version>
         <junit.version>4.12</junit.version>
         <bytebuddy.version>1.10.1</bytebuddy.version>
 
