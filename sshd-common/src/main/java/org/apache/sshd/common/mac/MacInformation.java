@@ -37,4 +37,8 @@ public interface MacInformation extends AlgorithmNameProvider {
      * @return The &quot;natural&quot; MAC block size in bytes
      */
     int getDefaultBlockSize();
+
+    default boolean isEncryptThenMac() {
+        return false;
+    }
 }

@@ -681,7 +681,8 @@ public abstract class SshClientCliSupport extends CliSupport {
              : setupMacs(ConfigFileReaderSupport.MACS_CONFIG_PROP, argVal, null, stderr);
     }
 
-    public static List<NamedFactory<Mac>> setupMacs(String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
+    public static List<NamedFactory<Mac>> setupMacs(
+            String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
             showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;

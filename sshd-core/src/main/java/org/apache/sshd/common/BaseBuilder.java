@@ -116,10 +116,13 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     public static final List<BuiltinMacs> DEFAULT_MAC_PREFERENCE =
         Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinMacs.hmacmd5,
-                BuiltinMacs.hmacsha1,
+                BuiltinMacs.hmacsha256etm,
+                BuiltinMacs.hmacsha512etm,
+                BuiltinMacs.hmacsha1etm,
                 BuiltinMacs.hmacsha256,
                 BuiltinMacs.hmacsha512,
+                BuiltinMacs.hmacsha1,
+                BuiltinMacs.hmacmd5,
                 BuiltinMacs.hmacsha196,
                 BuiltinMacs.hmacmd596
             ));

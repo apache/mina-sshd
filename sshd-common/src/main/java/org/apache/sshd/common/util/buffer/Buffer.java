@@ -114,6 +114,15 @@ public abstract class Buffer implements Readable {
     public abstract byte[] array();
 
     /**
+     * @param pos A position in the <U>raw</U> underlying data bytes
+     * @return The byte at that position
+     */
+    public byte rawByte(int pos) {
+        byte[] data = array();
+        return data[pos];
+    }
+
+    /**
      * &quot;Shift&quot; the internal data so that reading starts from
      * position zero.
      */
@@ -221,7 +230,8 @@ public abstract class Buffer implements Readable {
     }
 
     public void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver) {
-        BufferUtils.dumpHex(logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
+        BufferUtils.dumpHex(
+            logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
     }
 
     /*======================
@@ -482,9 +492,9 @@ public abstract class Buffer implements Readable {
 
     public KeyPair getKeyPair() throws SshException {
         try {
-            final PublicKey pub;
-            final PrivateKey prv;
-            final String keyAlg = getString();
+            PublicKey pub;
+            PrivateKey prv;
+            String keyAlg = getString();
             if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
                 BigInteger e = getMPInt();
                 BigInteger n = getMPInt();

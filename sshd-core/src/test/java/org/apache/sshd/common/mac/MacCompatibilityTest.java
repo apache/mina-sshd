@@ -55,14 +55,14 @@ import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.ConnectionInfo;
 
 /**
- * Test MAC algorithms.
+ * Test MAC algorithms with other known implementations.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-public class MacTest extends BaseTestSupport {
+public class MacCompatibilityTest extends BaseTestSupport {
     private static final Collection<String> GANYMEDE_MACS =
         Collections.unmodifiableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
@@ -73,7 +73,7 @@ public class MacTest extends BaseTestSupport {
     private final MacFactory factory;
     private final String jschMacClass;
 
-    public MacTest(MacFactory factory, String jschMacClass) {
+    public MacCompatibilityTest(MacFactory factory, String jschMacClass) {
         this.factory = factory;
         this.jschMacClass = jschMacClass;
     }
@@ -83,7 +83,13 @@ public class MacTest extends BaseTestSupport {
         List<Object[]> ret = new ArrayList<>();
         for (MacFactory f : BuiltinMacs.VALUES) {
             if (!f.isSupported()) {
-                System.out.println("Skip unsupported MAC " + f);
+                outputDebugMessage("Skip unsupported MAC %s", f);
+                continue;
+            }
+
+            // None of the implementations we use support encrypt-then-mac mode
+            if (f.isEncryptThenMac()) {
+                outputDebugMessage("Skip Encrypt-Then-Mac %s", f);
                 continue;
             }
 
@@ -116,8 +122,8 @@ public class MacTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = CoreTestSupportUtils.setupTestServer(MacTest.class);
-        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacTest.class));
+        sshd = CoreTestSupportUtils.setupTestServer(MacCompatibilityTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
         sshd.start();
         port = sshd.getPort();
     }
@@ -180,7 +186,8 @@ public class MacTest extends BaseTestSupport {
         try {
             conn.setClient2ServerMACs(new String[]{macName});
 
-            ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
+            ConnectionInfo info = conn.connect(null,
+                (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
             outputDebugMessage("Connected: kex=%s, key-type=%s, c2senc=%s, s2cenc=%s, c2mac=%s, s2cmac=%s",
                     info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
                     info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,

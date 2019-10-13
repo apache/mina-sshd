@@ -39,6 +39,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -61,6 +62,7 @@ import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -1030,24 +1032,24 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
-     * Encode a buffer into the SSH protocol.
-     * This method need to be called into a synchronized block around encodeLock
+     * Encode a buffer into the SSH protocol. <B>Note:</B> This method must be called
+     * inside a {@code synchronized} block using {@code encodeLock}.
      *
      * @param buffer the buffer to encode
      * @return The encoded buffer - may be different than original if input
      * buffer does not have enough room for {@link SshConstants#SSH_PACKET_HEADER_LEN},
-     * in which a substitute buffer will be created and used.
+     * in which case a substitute buffer will be created and used.
      * @throws IOException if an exception occurs during the encoding process
      */
     protected Buffer encode(Buffer buffer) throws IOException {
         try {
             // Check that the packet has some free space for the header
             int curPos = buffer.rpos();
+            int cmd = buffer.rawByte(curPos) & 0xFF;  // usually the 1st byte is an SSH opcode
             if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
-                byte[] data = buffer.array();
-                int cmd = data[curPos] & 0xFF;  // usually the 1st byte is an SSH opcode
-                log.warn("encode({}) command={} performance cost: available buffer packet header length ({}) below min. required ({})",
-                     this, SshConstants.getCommandMessageName(cmd), curPos, SshConstants.SSH_PACKET_HEADER_LEN);
+                log.warn("encode({}) command={}[{}] performance cost: available buffer packet header length ({}) below min. required ({})",
+                     this, cmd, SshConstants.getCommandMessageName(cmd),
+                     curPos, SshConstants.SSH_PACKET_HEADER_LEN);
                 Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
                 nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
                 nb.putBuffer(buffer);
@@ -1057,57 +1059,63 @@ public abstract class AbstractSession extends SessionHelper {
 
             // Grab the length of the packet (excluding the 5 header bytes)
             int len = buffer.available();
+            if (log.isDebugEnabled()) {
+                log.debug("encode({}) packet #{} sending command={}[{}] len={}",
+                    this, seqo, cmd, SshConstants.getCommandMessageName(cmd), len);
+            }
+
             int off = curPos - SshConstants.SSH_PACKET_HEADER_LEN;
             // Debug log the packet
-            if (log.isTraceEnabled()) {
-                buffer.dumpHex(getSimplifiedLogger(), "encode(" + this + ") packet #" + seqo, this);
+            boolean traceEnabled = log.isTraceEnabled();
+            if (traceEnabled) {
+                buffer.dumpHex(getSimplifiedLogger(), Level.FINEST, "encode(" + this + ") packet #" + seqo, this);
             }
 
             // Compress the packet if needed
             if ((outCompression != null)
                     && outCompression.isCompressionExecuted()
                     && (isAuthenticated() || (!outCompression.isDelayed()))) {
+                int oldLen = len;
                 outCompression.compress(buffer);
                 len = buffer.available();
+                if (traceEnabled) {
+                    log.trace("encode({}) packet #{} command={}[{}] compressed {} -> {}",
+                        this, seqo, cmd, SshConstants.getCommandMessageName(cmd), oldLen, len);
+                }
             }
 
             // Compute padding length
-            int bsize = outCipherSize;
+            boolean etmMode = (outMac == null) ? false : outMac.isEncryptThenMac();
+            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode);
             int oldLen = len;
-            len += SshConstants.SSH_PACKET_HEADER_LEN;
-            int pad = (-len) & (bsize - 1);
-            if (pad < bsize) {
-                pad += bsize;
+            len = len + pad + Byte.BYTES /* the pad length byte */;
+
+            if (traceEnabled) {
+                log.trace("encode({}) packet #{} command={}[{}] len={}, pad={}, mac={}",
+                    this, seqo, cmd, SshConstants.getCommandMessageName(cmd), len, pad, outMac);
             }
-            len = len + pad - 4;
+
             // Write 5 header bytes
             buffer.wpos(off);
             buffer.putInt(len);
             buffer.putByte((byte) pad);
-            // Fill padding
+            // Make sure enough room for padding and then fill it
             buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
             synchronized (random) {
                 random.fill(buffer.array(), buffer.wpos() - pad, pad);
             }
 
-            // Compute mac
-            if (outMac != null) {
-                int macSize = outMac.getBlockSize();
-                int l = buffer.wpos();
-                buffer.wpos(l + macSize);
-                outMac.updateUInt(seqo);
-                outMac.update(buffer.array(), off, l);
-                outMac.doFinal(buffer.array(), l);
+            if (etmMode) {
+                // Do not encrypt the length field
+                encryptOutgoingBuffer(buffer, off + Integer.BYTES, len);
+                appendOutgoingMac(buffer, off, len);
+            } else {
+                appendOutgoingMac(buffer, off, len);
+                encryptOutgoingBuffer(buffer, off, len + Integer.BYTES);
             }
-            // Encrypt packet, excluding mac
-            if (outCipher != null) {
-                outCipher.update(buffer.array(), off, len + 4);
 
-                int blocksCount = (len + 4) / outCipher.getCipherBlockSize();
-                outBlocksCount.addAndGet(Math.max(1, blocksCount));
-            }
             // Increment packet id
-            seqo = (seqo + 1) & 0xffffffffL;
+            seqo = (seqo + 1L) & 0x0ffffffffL;
             // Update stats
             outPacketsCount.incrementAndGet();
             outBytesCount.addAndGet(len);
@@ -1121,6 +1129,33 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
+    protected void appendOutgoingMac(Buffer buf, int offset, int len) throws Exception {
+        if (outMac == null) {
+            return;
+        }
+
+        int macSize = outMac.getBlockSize();
+        int l = buf.wpos();
+        // ensure enough room for MAC in outgoing buffer
+        buf.wpos(l + macSize);
+        // Include sequence number
+        outMac.updateUInt(seqo);
+        // Include the length field in the MAC calculation
+        outMac.update(buf.array(), offset, len + Integer.BYTES);
+        // Append MAC to end of packet
+        outMac.doFinal(buf.array(), l);
+    }
+
+    protected void encryptOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
+        if (outCipher == null) {
+            return;
+        }
+        outCipher.update(buf.array(), offset, len);
+
+        int blocksCount = len / outCipher.getCipherBlockSize();
+        outBlocksCount.addAndGet(Math.max(1, blocksCount));
+    }
+
     /**
      * Decode the incoming buffer and handle packets as needed.
      *
@@ -1129,14 +1164,16 @@ public abstract class AbstractSession extends SessionHelper {
     protected void decode() throws Exception {
         // Decoding loop
         for (;;) {
+            boolean etmMode = (inMac == null) ? false : inMac.isEncryptThenMac();
             // Wait for beginning of packet
             if (decoderState == 0) {
                 // The read position should always be 0 at this point because we have compacted this buffer
                 assert decoderBuffer.rpos() == 0;
+                int minBufLen = etmMode ? Integer.BYTES : inCipherSize;
                 // If we have received enough bytes, start processing those
-                if (decoderBuffer.available() > inCipherSize) {
+                if (decoderBuffer.available() > minBufLen) {
                     // Decrypt the first bytes
-                    if (inCipher != null) {
+                    if ((inCipher != null) && (!etmMode)) {
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
 
                         int blocksCount = inCipherSize / inCipher.getCipherBlockSize();
@@ -1151,7 +1188,7 @@ public abstract class AbstractSession extends SessionHelper {
                     if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN)
                             || (decoderLength > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT))) {
                         log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
-                        decoderBuffer.dumpHex(getSimplifiedLogger(), "decode(" + this + ") invalid length packet", this);
+                        decoderBuffer.dumpHex(getSimplifiedLogger(), Level.FINEST, "decode(" + this + ") invalid length packet", this);
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                     }
@@ -1163,35 +1200,36 @@ public abstract class AbstractSession extends SessionHelper {
                 }
                 // We have received the beginning of the packet
             } else if (decoderState == 1) {
-                // The read position should always be 4 at this point
-                assert decoderBuffer.rpos() == 4;
-                int macSize = inMac != null ? inMac.getBlockSize() : 0;
+                // The read position should always be after reading the packet length at this point
+                assert decoderBuffer.rpos() == Integer.BYTES;
+                int macSize = (inMac != null) ? inMac.getBlockSize() : 0;
                 // Check if the packet has been fully received
                 if (decoderBuffer.available() >= (decoderLength + macSize)) {
                     byte[] data = decoderBuffer.array();
-                    // Decrypt the remaining of the packet
-                    if (inCipher != null) {
-                        int updateLen = decoderLength + 4 - inCipherSize;
-                        inCipher.update(data, inCipherSize, updateLen);
+                    if (etmMode) {
+                        validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
 
-                        int blocksCount = updateLen / inCipher.getCipherBlockSize();
-                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
-                    }
-                    // Check the mac of the packet
-                    if (inMac != null) {
-                        // Update mac with packet id
-                        inMac.updateUInt(seqi);
-                        // Update mac with packet data
-                        inMac.update(data, 0, decoderLength + 4);
-                        // Compute mac result
-                        inMac.doFinal(inMacResult, 0);
-                        // Check the computed result with the received mac (just after the packet data)
-                        if (!BufferUtils.equals(inMacResult, 0, data, decoderLength + 4, macSize)) {
-                            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC Error");
+                        if (inCipher != null) {
+                            inCipher.update(data, Integer.BYTES, decoderLength);
+
+                            int blocksCount = decoderLength / inCipher.getCipherBlockSize();
+                            inBlocksCount.addAndGet(Math.max(1, blocksCount));
                         }
+                    } else {
+                        // Decrypt the remaining of the packet
+                        if (inCipher != null) {
+                            int updateLen = decoderLength + Integer.BYTES - inCipherSize;
+                            inCipher.update(data, inCipherSize, updateLen);
+
+                            int blocksCount = updateLen / inCipher.getCipherBlockSize();
+                            inBlocksCount.addAndGet(Math.max(1, blocksCount));
+                        }
+
+                        validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
                     }
+
                     // Increment incoming packet sequence number
-                    seqi = (seqi + 1) & 0xffffffffL;
+                    seqi = (seqi + 1L) & 0x0ffffffffL;
                     // Get padding
                     int pad = decoderBuffer.getUByte();
                     Buffer packet;
@@ -1210,12 +1248,12 @@ public abstract class AbstractSession extends SessionHelper {
                         inCompression.uncompress(decoderBuffer, uncompressBuffer);
                         packet = uncompressBuffer;
                     } else {
-                        decoderBuffer.wpos(decoderLength + 4 - pad);
+                        decoderBuffer.wpos(decoderLength + Integer.BYTES - pad);
                         packet = decoderBuffer;
                     }
 
                     if (log.isTraceEnabled()) {
-                        packet.dumpHex(getSimplifiedLogger(), "decode(" + this + ") packet #" + seqi, this);
+                        packet.dumpHex(getSimplifiedLogger(), Level.FINEST, "decode(" + this + ") packet #" + seqi, this);
                     }
 
                     // Update stats
@@ -1224,7 +1262,7 @@ public abstract class AbstractSession extends SessionHelper {
                     // Process decoded packet
                     handleMessage(packet);
                     // Set ready to handle next packet
-                    decoderBuffer.rpos(decoderLength + 4 + macSize);
+                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize);
                     decoderBuffer.wpos(wpos);
                     decoderBuffer.compact();
                     decoderState = 0;
@@ -1233,6 +1271,24 @@ public abstract class AbstractSession extends SessionHelper {
                     break;
                 }
             }
+        }
+    }
+
+    protected void validateIncomingMac(byte[] data, int offset, int len) throws Exception {
+        if (inMac == null) {
+            return;
+        }
+
+        // Update mac with packet id
+        inMac.updateUInt(seqi);
+        // Update mac with packet data
+        inMac.update(data, offset, len);
+        // Compute mac result
+        inMac.doFinal(inMacResult, 0);
+
+        // Check the computed result with the received mac (just after the packet data)
+        if (!BufferUtils.equals(inMacResult, 0, data, offset + len, inMac.getBlockSize())) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC Error");
         }
     }
 

@@ -46,11 +46,29 @@ public enum BuiltinMacs implements MacFactory {
     hmacmd5(Constants.HMAC_MD5, "HmacMD5", 16, 16),
     hmacmd596(Constants.HMAC_MD5_96, "HmacMD5", 12, 16),
     hmacsha1(Constants.HMAC_SHA1, "HmacSHA1", 20, 20),
+    hmacsha1etm(Constants.ETM_HMAC_SHA1, "HmacSHA1", 20, 20) {
+        @Override
+        public boolean isEncryptThenMac() {
+            return true;
+        }
+    },
     hmacsha196(Constants.HMAC_SHA1_96, "HmacSHA1", 12, 20),
     /** See <A HREF="https://tools.ietf.org/html/rfc6668">RFC 6668</A> */
     hmacsha256(Constants.HMAC_SHA2_256, "HmacSHA256", 32, 32),
+    hmacsha256etm(Constants.ETM_HMAC_SHA2_256, "HmacSHA256", 32, 32) {
+        @Override
+        public boolean isEncryptThenMac() {
+            return true;
+        }
+    },
     /** See <A HREF="https://tools.ietf.org/html/rfc6668">RFC 6668</A> */
-    hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 64);
+    hmacsha512(Constants.HMAC_SHA2_512, "HmacSHA512", 64, 64),
+    hmacsha512etm(Constants.ETM_HMAC_SHA2_512, "HmacSHA512", 64, 64) {
+        @Override
+        public boolean isEncryptThenMac() {
+            return true;
+        }
+    };
 
     public static final Set<BuiltinMacs> VALUES =
         Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
@@ -72,7 +90,7 @@ public enum BuiltinMacs implements MacFactory {
 
     @Override
     public Mac create() {
-        return new BaseMac(getAlgorithm(), getBlockSize(), getDefaultBlockSize());
+        return new BaseMac(getAlgorithm(), getBlockSize(), getDefaultBlockSize(), isEncryptThenMac());
     }
 
     @Override
@@ -116,10 +134,12 @@ public enum BuiltinMacs implements MacFactory {
      */
     public static void registerExtension(MacFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
-        ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
+        ValidateUtils.checkTrue(
+            fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
         synchronized (EXTENSIONS) {
-            ValidateUtils.checkTrue(!EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
+            ValidateUtils.checkTrue(
+                !EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
             EXTENSIONS.put(name, extension);
         }
     }
@@ -130,7 +150,8 @@ public enum BuiltinMacs implements MacFactory {
      */
     public static NavigableSet<MacFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
-            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
+            return GenericUtils.asSortedSet(
+                NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }
     }
 
@@ -152,8 +173,9 @@ public enum BuiltinMacs implements MacFactory {
 
     /**
      * @param s The {@link Enum}'s name - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose {@link Enum#name()} matches
-     * (case <U>insensitive</U>) the provided argument - {@code null} if no match
+     * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs}
+     * whose {@link Enum#name()} matches (case <U>insensitive</U>) the provided
+     * argument - {@code null} if no match
      */
     public static BuiltinMacs fromString(String s) {
         if (GenericUtils.isEmpty(s)) {
@@ -193,8 +215,7 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param macs A comma-separated list of MACs' names - ignored
-     *             if {@code null}/empty
+     * @param macs A comma-separated list of MACs' names - ignored if {@code null}/empty
      * @return A {@link ParseResult} containing the successfully parsed
      * factories and the unknown ones. <B>Note:</B> it is up to caller to
      * ensure that the lists do not contain duplicates
@@ -204,7 +225,9 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     public static ParseResult parseMacsList(String... macs) {
-        return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.emptyList() : Arrays.asList(macs));
+        return parseMacsList(GenericUtils.isEmpty((Object[]) macs)
+            ? Collections.emptyList()
+            : Arrays.asList(macs));
     }
 
     public static ParseResult parseMacsList(Collection<String> macs) {
@@ -250,8 +273,10 @@ public enum BuiltinMacs implements MacFactory {
         }
     }
 
-    public static final class ParseResult extends NamedFactoriesListParseResult<Mac, MacFactory> {
-        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
+    public static final class ParseResult
+            extends NamedFactoriesListParseResult<Mac, MacFactory> {
+        public static final ParseResult EMPTY =
+            new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<MacFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);
@@ -265,6 +290,10 @@ public enum BuiltinMacs implements MacFactory {
         public static final String HMAC_SHA1_96 = "hmac-sha1-96";
         public static final String HMAC_SHA2_256 = "hmac-sha2-256";
         public static final String HMAC_SHA2_512 = "hmac-sha2-512";
+
+        public static final String ETM_HMAC_SHA1 = "hmac-sha1-etm@openssh.com";
+        public static final String ETM_HMAC_SHA2_256 = "hmac-sha2-256-etm@openssh.com";
+        public static final String ETM_HMAC_SHA2_512 = "hmac-sha2-512-etm@openssh.com";
 
         private Constants() {
             throw new UnsupportedOperationException("No instance allowed");

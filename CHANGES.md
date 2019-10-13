@@ -37,6 +37,9 @@ the standard does not specifically specify the behavior regarding symbolic links
 * `Signature` methods accept a `SessionContext` argument representing the session context
 of their invocation (if any)
 
+* Default MAC(s) list is set according to the [ssh_config(5)](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5)
+order as **first** ones, where the supported MAC(s) that do no appear in it come last.
+
 ## Minor code helpers
 
 * `SessionListener` supports `sessionPeerIdentificationReceived` method that is invoked once successful
@@ -57,6 +60,8 @@ the message type=30 (old request).
 
 * `AbstractSignature#doInitSignature` is now provided also with the `Key` instance for which it is invoked.
 
+* The `MacInformation` interface has an extra `isEncryptThenMac` method (default=_false_) to enable distinction of this mode.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
@@ -76,6 +81,8 @@ exchange via properties.
 * [SSHD-943](https://issues.apache.org/jira/browse/SSHD-943) - Provide session instance when KEX factory is invoked in order to create a KeyExchange instance.
 
 * [SSHD-945](https://issues.apache.org/jira/browse/SSHD-945) - Added sshd-contrib code that uses SHA1 with DSA regardless of its key length
+
+* [SSHD-946](https://issues.apache.org/jira/browse/SSHD-946) - Supporting 'encrypt-then-MAC' mode.
 
 * [SSHD-947](https://issues.apache.org/jira/browse/SSHD-947) - Added configuration allowing the user to specify whether client should wait
 for the server's identification before sending KEX-INIT message.

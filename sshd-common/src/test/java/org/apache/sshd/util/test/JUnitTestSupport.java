@@ -576,6 +576,14 @@ public abstract class JUnitTestSupport extends Assert {
         return false;
     }
 
+    /* ---------------------------------------------------------------------------- */
+
+    public static void outputDebugMessage(String format, Object o) {
+        if (OUTPUT_DEBUG_MESSAGES) {
+            outputDebugMessage(String.format(format, o));
+        }
+    }
+
     public static void outputDebugMessage(String format, Object... args) {
         if (OUTPUT_DEBUG_MESSAGES) {
             outputDebugMessage(String.format(format, args));

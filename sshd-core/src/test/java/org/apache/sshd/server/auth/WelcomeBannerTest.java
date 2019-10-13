@@ -90,8 +90,9 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @Test
     public void testSimpleBanner() throws Exception {
-        final String expectedWelcome = "Welcome to SSHD WelcomeBannerTest";
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, expectedWelcome);
+        String expectedWelcome = "Welcome to SSHD WelcomeBannerTest";
+        PropertyResolverUtils.updateProperty(
+            sshd, ServerAuthenticationManager.WELCOME_BANNER, expectedWelcome);
         testBanner(expectedWelcome);
     }
 

@@ -24,8 +24,6 @@ import java.nio.channels.Channel;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PacketWriter extends Channel {
@@ -40,4 +38,24 @@ public interface PacketWriter extends Channel {
      * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer) throws IOException;
+
+    /**
+     * @param len The packet payload size
+     * @param blockSize The cipher block size
+     * @param etmMode Whether using &quot;encrypt-then-MAC&quot; mode
+     * @return The required padding length
+     */
+    static int calculatePadLength(int len, int blockSize, boolean etmMode) {
+        len++;  // the pad length
+        if (!etmMode) {
+            len += Integer.BYTES;
+        }
+
+        int pad = (-len) & (blockSize - 1);
+        if (pad < blockSize) {
+            pad += blockSize;
+        }
+
+        return pad;
+    }
 }

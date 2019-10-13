@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.kex;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -41,6 +42,22 @@ public enum KexProposalOption {
     S2CCOMP(Constants.PROPOSAL_COMP_ALGS_STOC, "compression algorithms (server to client)"),
     C2SLANG(Constants.PROPOSAL_LANG_CTOS, "languages (client to server)"),
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
+
+    public static final Collection<KexProposalOption> CIPHER_PROPOSALS =
+        Collections.unmodifiableSet(
+            EnumSet.of(KexProposalOption.C2SENC, KexProposalOption.S2CENC));
+
+    public static final Collection<KexProposalOption> MAC_PROPOSALS =
+        Collections.unmodifiableSet(
+            EnumSet.of(KexProposalOption.C2SMAC, KexProposalOption.S2CMAC));
+
+    public static final Collection<KexProposalOption> COMPRESSION_PROPOSALS =
+        Collections.unmodifiableSet(
+            EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
+
+    public static final Collection<KexProposalOption> LANGUAGE_PROPOSALS =
+        Collections.unmodifiableSet(
+            EnumSet.of(KexProposalOption.C2SLANG, KexProposalOption.S2CLANG));
 
     /**
      * Compares values according to {@link KexProposalOption#getProposalIndex()}

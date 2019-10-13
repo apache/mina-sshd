@@ -158,6 +158,11 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
+    public byte rawByte(int pos) {
+        return data[pos];
+    }
+
+    @Override
     public void compact() {
         int avail = available();
         if (avail > 0) {

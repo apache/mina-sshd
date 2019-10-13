@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.mac.MacTest;
+import org.apache.sshd.common.mac.MacCompatibilityTest;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
@@ -97,8 +97,8 @@ public class CompressionTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = CoreTestSupportUtils.setupTestServer(MacTest.class);
-        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacTest.class));
+        sshd = CoreTestSupportUtils.setupTestServer(MacCompatibilityTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
         sshd.start();
         port = sshd.getPort();
     }

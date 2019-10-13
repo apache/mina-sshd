@@ -921,7 +921,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return proposal;
     }
 
-    protected void signalNegotiationStart(Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
+    protected void signalNegotiationStart(
+            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
         try {
             invokeSessionSignaller(l -> {
                 signalNegotiationStart(l, c2sOptions, s2cOptions);
