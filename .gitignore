@@ -6,6 +6,9 @@ Servers/
 RemoteSystemsTempFiles/
 .classpath
 .project
+# Puthon related files
+.pydevproject
+*.pyc
 .checkstyle
 .eclipse-pmd
 .pmd

@@ -637,6 +637,7 @@
                         <excludes>
                             <exclude>*.md</exclude>
                             <exclude>docs/**</exclude>
+                            <exclude>sshd-sources/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
@@ -659,6 +660,8 @@
                             <exclude>.project</exclude>
                             <exclude>.classpath</exclude>
                             <exclude>.springBeans</exclude>
+                            <exclude>.pydevproject</exclude>
+                            <exclude>*.pyc</exclude>
                             <exclude>.settings/**</exclude>
                             <exclude>.repository/**</exclude>
                             <exclude>.gitignore</exclude>
