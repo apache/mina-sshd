@@ -197,7 +197,8 @@ public class AuthenticationTest extends BaseTestSupport {
                                 assertNotEquals("Non-different passwords", oldPassword, newPassword);
                                 return checkPassword(buffer, session, username, newPassword);
                             } else {
-                                return super.handleClientPasswordChangeRequest(buffer, session, username, oldPassword, newPassword);
+                                return super.handleClientPasswordChangeRequest(
+                                    buffer, session, username, oldPassword, newPassword);
                             }
                         }
                     };

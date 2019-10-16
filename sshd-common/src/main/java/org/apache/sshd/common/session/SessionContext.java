@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.util.GenericUtils;
@@ -124,5 +125,26 @@ public interface SessionContext
     static boolean isValidVersionPrefix(String version) {
         return GenericUtils.isNotEmpty(version)
             && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
+    }
+
+    /**
+     * @param session The {@link SessionContext} to be examined
+     * @return {@code true} if the context is not {@code null} and the ciphers
+     * have been established to anything other than &quot;none&quot;.
+     */
+    static boolean isSecureSessionTransport(SessionContext session) {
+        if (session == null) {
+            return false;
+        }
+
+        for (KexProposalOption opt : KexProposalOption.CIPHER_PROPOSALS) {
+            String value = session.getNegotiatedKexParameter(opt);
+            if (GenericUtils.isEmpty(value)
+                    || BuiltinCiphers.Constants.NONE.equalsIgnoreCase(value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

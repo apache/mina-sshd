@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.password;
 
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -27,7 +28,7 @@ import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * TODO Add javadoc
+ * Implements the server-side &quot;password&quot; authentication mechanism
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -45,7 +46,8 @@ public class UserAuthPassword extends AbstractUserAuth {
         boolean newPassword = buffer.getBoolean();
         String password = buffer.getString();
         if (newPassword) {
-            return handleClientPasswordChangeRequest(buffer, getServerSession(), getUsername(), password, buffer.getString());
+            return handleClientPasswordChangeRequest(
+                buffer, getServerSession(), getUsername(), password, buffer.getString());
         } else {
             return checkPassword(buffer, getServerSession(), getUsername(), password);
         }
@@ -68,9 +70,18 @@ public class UserAuthPassword extends AbstractUserAuth {
      * {@link PasswordChangeRequiredException} which is handled internally)
      * @see #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)
      */
-    protected Boolean checkPassword(Buffer buffer, ServerSession session, String username, String password) throws Exception {
-        PasswordAuthenticator auth = session.getPasswordAuthenticator();
+    protected Boolean checkPassword(
+            Buffer buffer, ServerSession session, String username, String password)
+                throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
+        if (!UserAuthMethodFactory.isSecureAuthenticationTransport(session)) {
+            if (debugEnabled) {
+                log.debug("checkPassword({}) session is not secure", session);
+            }
+            return false;
+        }
+
+        PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (debugEnabled) {
                 log.debug("checkPassword({}) no password authenticator", session);
@@ -84,13 +95,14 @@ public class UserAuthPassword extends AbstractUserAuth {
                 authed = auth.authenticate(username, password, session);
             } catch (Error e) {
                 log.warn("checkPassword({}) failed ({}) to consult authenticator: {}",
-                         session, e.getClass().getSimpleName(), e.getMessage());
+                     session, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("checkPassword(" + session + ") authenticator failure details", e);
                 }
 
                 throw new RuntimeSshException(e);
             }
+
             if (debugEnabled) {
                 log.debug("checkPassword({}) authentication result: {}", session, authed);
             }
@@ -99,6 +111,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             if (debugEnabled) {
                 log.debug("checkPassword({}) password change required: {}", session, e.getMessage());
             }
+
             return handleServerPasswordChangeRequest(buffer, session, username, password, e);
         }
     }
@@ -143,7 +156,7 @@ public class UserAuthPassword extends AbstractUserAuth {
         String lang = e.getLanguage();
         if (log.isDebugEnabled()) {
             log.debug("handlePasswordChangeRequest({}) password change required - prompt={}, lang={}",
-                      session, prompt, lang);
+                  session, prompt, lang);
         }
 
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,

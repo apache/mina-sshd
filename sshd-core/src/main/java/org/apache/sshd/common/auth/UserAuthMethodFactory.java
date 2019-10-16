@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
@@ -55,6 +56,14 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
     String HOST_BASED = "hostbased";
 
     /**
+     * If set to {@code true} then {@link #isSecureAuthenticationTransport(SessionContext)}
+     * returns {@code true} even if transport is insecure.
+     */
+    String ALLOW_INSECURE_AUTH = "allow-insecure-auth";
+
+    boolean DEFAULT_ALLOW_INSECURE_AUTH = false;
+
+    /**
      * @param session The session for which authentication is required
      * @return The authenticator instance
      * @throws IOException If failed to create the instance
@@ -81,5 +90,35 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
         } else {
             return null;
         }
+    }
+
+    /**
+     * According to <A HREF="https://tools.ietf.org/html/rfc4252#section-8">RFC 4252 - section 8</A>:
+     * <PRE>
+     *      Both the server and the client should check whether the underlying
+     *      transport layer provides confidentiality (i.e., if encryption is
+     *      being used).  If no confidentiality is provided ("none" cipher),
+     *      password authentication SHOULD be disabled.  If there is no
+     *      confidentiality or no MAC, password change SHOULD be disabled.
+     * </PRE>
+     *
+     * @param session The {@link SessionContext} being used for authentication
+     * @return {@code true} if the context is not {@code null} and the ciphers
+     * have been established to anything other than &quot;none&quot;.
+     * @see {@value #ALLOW_INSECURE_AUTH}
+     * @see SessionContext#isSecureSessionTransport(SessionContext)
+     */
+    static boolean isSecureAuthenticationTransport(SessionContext session) {
+        if (session == null) {
+            return false;
+        }
+
+        boolean allowInsecure = PropertyResolverUtils.getBooleanProperty(
+            session, ALLOW_INSECURE_AUTH, DEFAULT_ALLOW_INSECURE_AUTH);
+        if (allowInsecure) {
+            return true;
+        }
+
+        return SessionContext.isSecureSessionTransport(session);
     }
 }

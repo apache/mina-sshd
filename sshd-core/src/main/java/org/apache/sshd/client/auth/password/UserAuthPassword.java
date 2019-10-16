@@ -27,12 +27,14 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Implements the &quot;password&quot; authentication mechanism
+ * Implements the client-side &quot;password&quot; authentication mechanism
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPassword extends AbstractUserAuth {
@@ -53,6 +55,13 @@ public class UserAuthPassword extends AbstractUserAuth {
 
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+        if (!UserAuthMethodFactory.isSecureAuthenticationTransport(session)) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendAuthDataRequest({})[{}] session is not secure", session, service);
+            }
+            return false;
+        }
+
         if ((passwords == null) || (!passwords.hasNext())) {
             if (log.isDebugEnabled()) {
                 log.debug("sendAuthDataRequest({})[{}] no more passwords to send", session, service);
@@ -64,17 +73,30 @@ public class UserAuthPassword extends AbstractUserAuth {
         current = passwords.next();
         String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
+            username.length() + service.length()
+            + GenericUtils.length(getName()) + current.length()
+            + Integer.SIZE /* a few extra encoding fields overhead */);
         sendPassword(buffer, session, current, current);
         return true;
     }
 
     @Override
-    protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
+    protected boolean processAuthDataRequest(
+            ClientSession session, String service, Buffer buffer)
+                throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
-            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
-                            + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+            throw new IllegalStateException(
+                "processAuthDataRequest(" + session + ")[" + service + "]"
+                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+        }
+
+        boolean debugEnabled = log.isDebugEnabled();
+        if (!UserAuthMethodFactory.isSecureAuthenticationTransport(session)) {
+            if (debugEnabled) {
+                log.debug("processAuthDataRequest({})[{}] session is not secure", session, service);
+            }
+            return false;
         }
 
         String prompt = buffer.getString();
@@ -82,7 +104,6 @@ public class UserAuthPassword extends AbstractUserAuth {
         UserInteraction ui = session.getUserInteraction();
         boolean interactive;
         String password;
-        boolean debugEnabled = log.isDebugEnabled();
         try {
             interactive = (ui != null) && ui.isInteractionAllowed(session);
             password = interactive ? ui.getUpdatedPassword(session, prompt, lang) : null;
@@ -131,14 +152,16 @@ public class UserAuthPassword extends AbstractUserAuth {
      * on the success/failure of the request packet being sent
      * @throws IOException If failed to send the message.
      */
-    protected IoWriteFuture sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
+    protected IoWriteFuture sendPassword(
+            Buffer buffer, ClientSession session, String oldPassword, String newPassword)
+                throws IOException {
         String username = session.getUsername();
         String service = getService();
         String name = getName();
         boolean modified = !Objects.equals(oldPassword, newPassword);
         if (log.isDebugEnabled()) {
             log.debug("sendPassword({})[{}] send SSH_MSG_USERAUTH_REQUEST for {} - modified={}",
-                      session, service, name, modified);
+                  session, service, name, modified);
         }
 
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,

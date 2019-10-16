@@ -242,7 +242,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         FactoryManager factoryManager = getFactoryManager();
         currentService = ServiceFactory.create(
             factoryManager.getServiceFactories(),
-            ValidateUtils.checkNotNullAndNotEmpty(name, "No service name"),
+            ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified"),
             this);
         /*
          * According to RFC4253:
@@ -404,7 +404,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      * @param provided  The available signature types - may be {@code null}/empty
      * @return The resolved proposal - {@code null} by default
      */
-    protected String resolveEmptySignaturesProposal(Iterable<String> supported, Iterable<String> provided) {
+    protected String resolveEmptySignaturesProposal(
+            Iterable<String> supported, Iterable<String> provided) {
         if (log.isDebugEnabled()) {
             log.debug("resolveEmptySignaturesProposal({})[{}] none of the keys appears in supported list: {}",
                   this, provided, supported);
@@ -470,7 +471,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         if (err != null) {
             IoSession networkSession = getIoSession();
-            networkSession.writePacket(new ByteArrayBuffer((err.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)))
+            networkSession.writePacket(
+                    new ByteArrayBuffer((err.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)))
                  .addListener(future -> close(true));
             throw err;
         }
@@ -483,7 +485,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
+    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed)
+            throws IOException {
         mergeProposals(clientProposal, proposal);
         setClientKexData(seed);
     }
@@ -538,9 +541,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     /**
-     * Returns the session id.
-     *
-     * @return The session id.
+     * @return The underlying {@link IoSession} id.
      */
     public long getId() {
         IoSession networkSession = getIoSession();
