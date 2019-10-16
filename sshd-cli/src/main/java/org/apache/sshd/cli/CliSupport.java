@@ -20,7 +20,10 @@ package org.apache.sshd.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.SocketAddress;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
@@ -35,6 +38,9 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -131,9 +137,27 @@ public abstract class CliSupport {
             return manager;
         }
 
-        manager.setIoServiceEventListener(new IoServiceEventListener() {
-            private final PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
+        PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
+        manager.setIoServiceEventListener(createLoggingIoServiceEventListener(out));
+        manager.addSessionListener(createLoggingSessionListener(out));
+        return manager;
+    }
 
+    public static void printStackTrace(Appendable out, Throwable reason) {
+        if ((reason == null) || (out == null)) {
+            return;
+        }
+
+        if (out instanceof PrintStream) {
+            reason.printStackTrace((PrintStream) out);
+        } else if (out instanceof PrintWriter) {
+            reason.printStackTrace((PrintWriter) out);
+        }
+    }
+
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    public static IoServiceEventListener createLoggingIoServiceEventListener(Appendable out) {
+        return new IoServiceEventListener() {
             @Override
             public void connectionEstablished(
                     IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
@@ -141,7 +165,7 @@ public abstract class CliSupport {
                 out.append("Connection established via ").append(Objects.toString(connector))
                     .append("- local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
-                    .println();
+                    .append(System.lineSeparator());
             }
 
             @Override
@@ -152,8 +176,9 @@ public abstract class CliSupport {
                     .append(" - local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
                     .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(" ").println(reason.getMessage());
-                reason.printStackTrace(out);
+                    .append(' ').append(reason.getMessage())
+                    .append(System.lineSeparator());
+                printStackTrace(out, reason);
             }
 
             @Override
@@ -163,7 +188,7 @@ public abstract class CliSupport {
                     .append(" - local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
                     .append(", service=").append(Objects.toString(service))
-                    .println();
+                    .append(System.lineSeparator());
             }
 
             @Override
@@ -175,12 +200,82 @@ public abstract class CliSupport {
                     .append(", remote=").append(Objects.toString(remote))
                     .append(", service=").append(Objects.toString(service))
                     .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(" ").println(reason.getMessage());
-                reason.printStackTrace(out);
+                    .append(' ').append(reason.getMessage())
+                    .append(System.lineSeparator());
+                printStackTrace(out, reason);
             }
-        });
+        };
+    }
 
-        return manager;
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    public static SessionListener createLoggingSessionListener(Appendable out) {
+        return new SessionListener() {
+            @Override
+            public void sessionPeerIdentificationReceived(
+                    Session session, String version, List<String> extraLines) {
+                try {
+                    out.append(Objects.toString(session))
+                        .append(" peer identification=").append(version)
+                        .append(System.lineSeparator());
+                    if (GenericUtils.isNotEmpty(extraLines)) {
+                        for (String l : extraLines) {
+                            out.append("    => ").append(l).append(System.lineSeparator());
+                        }
+                    }
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionNegotiationEnd(Session session,
+                    Map<KexProposalOption, String> clientProposal,
+                    Map<KexProposalOption, String> serverProposal,
+                    Map<KexProposalOption, String> negotiatedOptions,
+                    Throwable reason) {
+                if (reason != null) {
+                    return;
+                }
+
+                try {
+                    out.append(Objects.toString(session))
+                        .append(" KEX negotiation results:")
+                        .append(System.lineSeparator());
+                    for (KexProposalOption opt : KexProposalOption.VALUES) {
+                        String value = negotiatedOptions.get(opt);
+                        out.append("    ").append(opt.getDescription())
+                            .append(": ").append(value)
+                            .append(System.lineSeparator());
+                    }
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                try {
+                    out.append(Objects.toString(session))
+                        .append(' ').append(t.getClass().getSimpleName())
+                        .append(": ").append(t.getMessage())
+                        .append(System.lineSeparator());
+                    printStackTrace(out, t);
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                try {
+                    out.append(Objects.toString(session))
+                        .append(" closed")
+                        .append(System.lineSeparator());
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+        };
     }
 
     public static Level resolveLoggingVerbosity(String... args) {
