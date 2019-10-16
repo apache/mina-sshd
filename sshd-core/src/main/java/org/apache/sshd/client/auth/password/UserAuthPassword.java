@@ -99,6 +99,13 @@ public class UserAuthPassword extends AbstractUserAuth {
             return false;
         }
 
+        if (!UserAuthMethodFactory.isDataIntegrityAuthenticationTransport(session)) {
+            if (debugEnabled) {
+                log.debug("processAuthDataRequest({})[{}] session is not validated via MAC", session, service);
+            }
+            return false;
+        }
+
         String prompt = buffer.getString();
         String lang = buffer.getString();
         UserInteraction ui = session.getUserInteraction();

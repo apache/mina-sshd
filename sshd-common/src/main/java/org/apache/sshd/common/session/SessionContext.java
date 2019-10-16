@@ -131,6 +131,8 @@ public interface SessionContext
      * @param session The {@link SessionContext} to be examined
      * @return {@code true} if the context is not {@code null} and the ciphers
      * have been established to anything other than &quot;none&quot;.
+     * @see #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
+     * @see KexProposalOption#CIPHER_PROPOSALS CIPHER_PROPOSALS
      */
     static boolean isSecureSessionTransport(SessionContext session) {
         if (session == null) {
@@ -141,6 +143,28 @@ public interface SessionContext
             String value = session.getNegotiatedKexParameter(opt);
             if (GenericUtils.isEmpty(value)
                     || BuiltinCiphers.Constants.NONE.equalsIgnoreCase(value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param session The {@link SessionContext} to be examined
+     * @return {@code true} if the context is not {@code null} and the MAC(s)
+     * used to verify packet integrity have been established.
+     * @see #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
+     * @see KexProposalOption#MAC_PROPOSALS MAC_PROPOSALS
+     */
+    static boolean isDataIntegrityTransport(SessionContext session) {
+        if (session == null) {
+            return false;
+        }
+
+        for (KexProposalOption opt : KexProposalOption.MAC_PROPOSALS) {
+            String value = session.getNegotiatedKexParameter(opt);
+            if (GenericUtils.isEmpty(value)) {
                 return false;
             }
         }

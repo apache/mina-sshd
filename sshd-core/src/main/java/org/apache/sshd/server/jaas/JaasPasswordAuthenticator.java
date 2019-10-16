@@ -35,7 +35,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JaasPasswordAuthenticator extends AbstractLoggingBean implements PasswordAuthenticator {
-
     private String domain;
 
     public JaasPasswordAuthenticator() {
@@ -55,14 +54,11 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
     }
 
     @Override
-    public boolean authenticate(String username, String password, ServerSession session) {
-        return authenticate(username, password);
-    }
-
-    public boolean authenticate(final String username, final String password) {
+    public boolean authenticate(
+            String username, String password, ServerSession session) {
         try {
             Subject subject = new Subject();
-            LoginContext loginContext = new LoginContext(domain, subject, callbacks -> {
+            LoginContext loginContext = new LoginContext(getDomain(), subject, callbacks -> {
                 for (Callback callback : callbacks) {
                     if (callback instanceof NameCallback) {
                         ((NameCallback) callback).setName(username);
@@ -77,7 +73,11 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
             loginContext.logout();
             return true;
         } catch (Exception e) {
-            log.error("Authentication failed with error", e);
+            log.warn("authenticate({}) failed ({}) to authenticate user={}: {}",
+                session, e.getClass().getSimpleName(), username, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("authenticate(" + session + ")[" + username + "] failure details", e);
+            }
             return false;
         }
     }

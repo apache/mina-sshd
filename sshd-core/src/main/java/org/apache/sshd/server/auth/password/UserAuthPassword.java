@@ -43,13 +43,22 @@ public class UserAuthPassword extends AbstractUserAuth {
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ValidateUtils.checkTrue(init, "Instance not initialized");
 
+        ServerSession session = getServerSession();
+        if (!UserAuthMethodFactory.isSecureAuthenticationTransport(session)) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}) session is not secure", session);
+            }
+            return false;
+        }
+
+        String username = getUsername();
         boolean newPassword = buffer.getBoolean();
         String password = buffer.getString();
         if (newPassword) {
             return handleClientPasswordChangeRequest(
-                buffer, getServerSession(), getUsername(), password, buffer.getString());
+                buffer, session, username, password, buffer.getString());
         } else {
-            return checkPassword(buffer, getServerSession(), getUsername(), password);
+            return checkPassword(buffer, session, username, password);
         }
     }
 
@@ -74,13 +83,6 @@ public class UserAuthPassword extends AbstractUserAuth {
             Buffer buffer, ServerSession session, String username, String password)
                 throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
-        if (!UserAuthMethodFactory.isSecureAuthenticationTransport(session)) {
-            if (debugEnabled) {
-                log.debug("checkPassword({}) session is not secure", session);
-            }
-            return false;
-        }
-
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (debugEnabled) {
@@ -132,7 +134,23 @@ public class UserAuthPassword extends AbstractUserAuth {
     protected Boolean handleClientPasswordChangeRequest(
             Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
                 throws Exception {
-        throw new UnsupportedOperationException("Password change not supported");
+        boolean debugEnabled = log.isDebugEnabled();
+        if (!UserAuthMethodFactory.isDataIntegrityAuthenticationTransport(session)) {
+            if (debugEnabled) {
+                log.debug("handleClientPasswordChangeRequest({}) session is not validated via MAC", session);
+            }
+            return false;
+        }
+
+        PasswordAuthenticator auth = session.getPasswordAuthenticator();
+        if (auth == null) {
+            if (debugEnabled) {
+                log.debug("handleClientPasswordChangeRequest({}) no password authenticator", session);
+            }
+            return false;
+        }
+
+        return auth.handleClientPasswordChangeRequest(session, username, oldPassword, newPassword);
     }
 
     /**

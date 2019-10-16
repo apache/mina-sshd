@@ -40,6 +40,10 @@ of their invocation (if any)
 * Default MAC(s) list is set according to the [ssh_config(5)](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5)
 order as **first** ones, where the supported MAC(s) that do no appear in it come last.
 
+* `PasswordAuthenticator` has a `handleClientPasswordChangeRequest` method that is invoked if
+a password change has been indicated by the user during authentication via the "password"
+method - by default throws `UnsupportedOperationException`.
+
 ## Minor code helpers
 
 * `SessionListener` supports `sessionPeerIdentificationReceived` method that is invoked once successful

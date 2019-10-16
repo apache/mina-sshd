@@ -62,14 +62,14 @@ public class LdapPasswordAuthenticator extends LdapAuthenticator implements Pass
     }
 
     @Override
-    public boolean authenticate(String username, String password, ServerSession session) throws PasswordChangeRequiredException {
+    public boolean authenticate(String username, String password, ServerSession session)
+            throws PasswordChangeRequiredException {
         try {
             Map<String, ?> attrs = resolveAttributes(username, password, session);
             return authenticate(username, password, session, attrs);
         } catch (NamingException | RuntimeException e) {
             log.warn("authenticate({}@{}) failed ({}) to query: {}",
-                      username, session, e.getClass().getSimpleName(), e.getMessage());
-
+                  username, session, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + "@" + session + ") query failure details", e);
             }
@@ -78,7 +78,8 @@ public class LdapPasswordAuthenticator extends LdapAuthenticator implements Pass
         }
     }
 
-    protected boolean authenticate(String username, String password, ServerSession session, Map<String, ?> attrs) {
+    protected boolean authenticate(
+            String username, String password, ServerSession session, Map<String, ?> attrs) {
         /*
          * By default we assume that the user + password are the same for
          * accessing the LDAP as the user's account, so the very LDAP query

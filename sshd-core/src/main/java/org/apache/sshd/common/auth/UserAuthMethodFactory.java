@@ -64,6 +64,14 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
     boolean DEFAULT_ALLOW_INSECURE_AUTH = false;
 
     /**
+     * If set to {@code true} then {@link #isDataIntegrityAuthenticationTransport(SessionContext)}
+     * returns {@code true} even if transport has no MAC(s) to verify message integrity
+     */
+    String ALLOW_NON_INTEGRITY_AUTH = "allow-non-integrity-auth";
+
+    boolean DEFAULT_ALLOW_NON_INTEGRITY_AUTH = false;
+
+    /**
      * @param session The session for which authentication is required
      * @return The authenticator instance
      * @throws IOException If failed to create the instance
@@ -120,5 +128,26 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
         }
 
         return SessionContext.isSecureSessionTransport(session);
+    }
+
+    /**
+     * @param session The {@link SessionContext} being used for authentication
+     * @return {@code true} if the context is not {@code null} and the MAC(s)
+     * used to verify packet integrity have been established.
+     * @see {@value #ALLOW_NON_INTEGRITY_AUTH}
+     * @see SessionContext#isDataIntegrityTransport(SessionContext)
+     */
+    static boolean isDataIntegrityAuthenticationTransport(SessionContext session) {
+        if (session == null) {
+            return false;
+        }
+
+        boolean allowNonValidated = PropertyResolverUtils.getBooleanProperty(
+            session, ALLOW_NON_INTEGRITY_AUTH, DEFAULT_ALLOW_NON_INTEGRITY_AUTH);
+        if (allowNonValidated) {
+            return true;
+        }
+
+        return SessionContext.isDataIntegrityTransport(session);
     }
 }

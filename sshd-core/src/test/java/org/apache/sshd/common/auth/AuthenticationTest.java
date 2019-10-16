@@ -174,37 +174,30 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testChangePassword() throws Exception {
         PasswordAuthenticator delegate = sshd.getPasswordAuthenticator();
         AtomicInteger attemptsCount = new AtomicInteger(0);
-        sshd.setPasswordAuthenticator((username, password, session) -> {
-            if (attemptsCount.incrementAndGet() == 1) {
-                throw new PasswordChangeRequiredException(attemptsCount.toString(),
+        AtomicInteger changesCount = new AtomicInteger(0);
+        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session) {
+                if (attemptsCount.incrementAndGet() == 1) {
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(),
                         getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                }
+
+                return delegate.authenticate(username, password, session);
             }
 
-            return delegate.authenticate(username, password, session);
-        });
-
-        AtomicInteger changesCount = new AtomicInteger(0);
-        sshd.setUserAuthFactories(Collections.singletonList(
-            new org.apache.sshd.server.auth.password.UserAuthPasswordFactory() {
-                @Override
-                public org.apache.sshd.server.auth.password.UserAuthPassword createUserAuth(ServerSession session) throws IOException {
-                    return new org.apache.sshd.server.auth.password.UserAuthPassword() {
-                        @Override
-                        protected Boolean handleClientPasswordChangeRequest(
-                                Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
-                                    throws Exception {
-                            if (changesCount.incrementAndGet() == 1) {
-                                assertNotEquals("Non-different passwords", oldPassword, newPassword);
-                                return checkPassword(buffer, session, username, newPassword);
-                            } else {
-                                return super.handleClientPasswordChangeRequest(
-                                    buffer, session, username, oldPassword, newPassword);
-                            }
-                        }
-                    };
+            @Override
+            public boolean handleClientPasswordChangeRequest(
+                    ServerSession session, String username, String oldPassword, String newPassword) {
+                if (changesCount.incrementAndGet() == 1) {
+                    assertNotEquals("Non-different passwords", oldPassword, newPassword);
+                    return authenticate(username, newPassword, session);
+                } else {
+                    return PasswordAuthenticator.super.handleClientPasswordChangeRequest(
+                        session, username, oldPassword, newPassword);
                 }
             }
-        ));
+        });
         PropertyResolverUtils.updateProperty(sshd,
             ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
