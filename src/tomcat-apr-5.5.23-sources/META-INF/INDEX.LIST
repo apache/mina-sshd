@@ -1,0 +1,8 @@
+JarIndex-Version: 1.0
+
+tomcat-apr.jar
+org
+org/apache
+org/apache/tomcat
+org/apache/tomcat/jni
+
