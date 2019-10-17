@@ -18,18 +18,15 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.util.buffer.Buffer;
 
-/**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public interface IoHandler {
-    void sessionCreated(IoSession session) throws Exception;
-
-    void sessionClosed(IoSession session) throws Exception;
-
-    void exceptionCaught(IoSession session, Throwable cause) throws Exception;
-
-    void messageReceived(IoSession session, Readable message) throws Exception;
-
+public interface IoInputStream extends Closeable {
+    /**
+     * NOTE: the buffer must not be touched until the returned read future is completed.
+     *
+     * @param buffer the {@link Buffer} to use
+     * @return The {@link IoReadFuture} for the operation
+     */
+    IoReadFuture read(Buffer buffer);
 }

@@ -18,17 +18,22 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.util.buffer.Buffer;
+import java.net.SocketAddress;
 
-public interface IoInputStream extends Closeable {
+import org.apache.sshd.common.AttributeRepository;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface IoConnector extends IoService {
     /**
-     * NOTE: the buffer must not be touched until the returned read future is completed.
-     *
-     * @param buffer the {@link Buffer} to use
-     * @return The {@link IoReadFuture} for the operation
+     * @param targetAddress The target address to connect to
+     * @param context An optional &quot;context&quot; to be attached to the established
+     * session if successfully connected
+     * @param localAddress The local address to use - if {@code null} an
+     * automatic ephemeral port and bind address is used
+     * @return The {@link IoConnectFuture future} representing the connection request
      */
-    IoReadFuture read(Buffer buffer);
-
+    IoConnectFuture connect(
+        SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress);
 }
