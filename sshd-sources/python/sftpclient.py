@@ -336,6 +336,7 @@ def doSftp(sftp):
     while True:
         curdir = sftp.getcwd()
         sys.stdout.write("%s > " % curdir)
+        sys.stdout.flush()
         l = sys.stdin.readline()
         l = l.strip()
     
