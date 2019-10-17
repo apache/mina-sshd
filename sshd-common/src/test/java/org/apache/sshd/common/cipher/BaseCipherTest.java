@@ -43,9 +43,17 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
         super();
     }
 
-    protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation) throws GeneralSecurityException {
+    protected void ensureCipherInformationKeySizeSupported(CipherInformation cipher)
+            throws GeneralSecurityException {
+        ensureKeySizeSupported(
+            cipher.getCipherBlockSize(), cipher.getAlgorithm(), cipher.getTransformation());
+    }
+
+    protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation)
+            throws GeneralSecurityException {
         try {
-            javax.crypto.Cipher cipher = SecurityUtils.getCipher(transformation);
+            javax.crypto.Cipher cipher =
+                SecurityUtils.getCipher(transformation);
             byte[] key = new byte[bsize];
             cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm));
         } catch (GeneralSecurityException e) {
@@ -57,12 +65,23 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
         }
     }
 
-    protected void ensureKeySizeSupported(int ivsize, int bsize, String algorithm, String transformation) throws GeneralSecurityException {
+    protected void ensureFullCipherInformationSupported(CipherInformation cipher)
+            throws GeneralSecurityException {
+        ensureKeySizeSupported(
+            cipher.getIVSize(), cipher.getCipherBlockSize(), cipher.getAlgorithm(), cipher.getTransformation());
+    }
+
+    protected void ensureKeySizeSupported(
+            int ivsize, int bsize, String algorithm, String transformation)
+                throws GeneralSecurityException {
         try {
-            javax.crypto.Cipher cipher = SecurityUtils.getCipher(transformation);
+            javax.crypto.Cipher cipher =
+                SecurityUtils.getCipher(transformation);
             byte[] key = new byte[bsize];
             byte[] iv = new byte[ivsize];
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm), new IvParameterSpec(iv));
+            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE,
+                new SecretKeySpec(key, algorithm),
+                new IvParameterSpec(iv));
         } catch (GeneralSecurityException e) {
             if (e instanceof InvalidKeyException) {
                 Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]", false /* force exception */);
@@ -81,15 +100,16 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
         byte[] iv = new byte[ivSize];
         enc.init(Mode.Encrypt, key, iv);
 
-        byte[] expected = facName.getBytes(StandardCharsets.UTF_8);
-        byte[] workBuf = expected.clone();    // need to clone since the cipher works in-line
+        String expected = getClass().getName() + "[" + facName + "]";
+        byte[] expBytes = expected.getBytes(StandardCharsets.UTF_8);
+        byte[] workBuf = expBytes.clone();    // need to clone since the cipher works in-line
         enc.update(workBuf, 0, workBuf.length);
 
         Cipher dec = factory.create();
         dec.init(Mode.Decrypt, key, iv);
-        byte[] actual = workBuf.clone();
-        dec.update(actual, 0, actual.length);
+        byte[] actBytes = workBuf.clone();  // need to clone since the cipher works in-line
+        dec.update(actBytes, 0, actBytes.length);
 
-        assertArrayEquals(facName, expected, actual);
+        assertArrayEquals(facName, expBytes, actBytes);
     }
 }

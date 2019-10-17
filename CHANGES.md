@@ -35,7 +35,7 @@ the standard does not specifically specify the behavior regarding symbolic links
 `createKeyExchange` method that accepts the session instance through which the request is made.
 
 * `Signature` methods accept a `SessionContext` argument representing the session context
-of their invocation (if any)
+of their invocation (if any).
 
 * Default MAC(s) list is set according to the [ssh_config(5)](https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5)
 order as **first** ones, where the supported MAC(s) that do no appear in it come last.
@@ -92,4 +92,6 @@ exchange via properties.
 for the server's identification before sending KEX-INIT message.
 
 * [SSHD-948](https://issues.apache.org/jira/browse/SSHD-948) - Do not accept password authentication if the session is not encrypted.
+
+* [SSHD-949](https://issues.apache.org/jira/browse/SSHD-949) - Session should use cipher block size and not IV size to calculate padding.
 

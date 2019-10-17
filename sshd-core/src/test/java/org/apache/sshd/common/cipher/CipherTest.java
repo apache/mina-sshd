@@ -71,10 +71,13 @@ public class CipherTest extends BaseTestSupport {
         Collections.unmodifiableList(
             Arrays.asList(
                 new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.aes128ctr, com.jcraft.jsch.jce.AES128CTR.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.aes192ctr, com.jcraft.jsch.jce.AES192CTR.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
+                new Object[]{BuiltinCiphers.aes256ctr, com.jcraft.jsch.jce.AES256CTR.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
                 new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
             ));
@@ -94,7 +97,10 @@ public class CipherTest extends BaseTestSupport {
     private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
     private final int loadTestRounds;
 
-    public CipherTest(BuiltinCiphers builtInCipher, Class<? extends com.jcraft.jsch.Cipher> jschCipher, int loadTestRounds) {
+    public CipherTest(
+            BuiltinCiphers builtInCipher,
+            Class<? extends com.jcraft.jsch.Cipher> jschCipher,
+            int loadTestRounds) {
         this.builtInCipher = builtInCipher;
         this.jschCipher = jschCipher;
         this.loadTestRounds = loadTestRounds;
@@ -126,7 +132,8 @@ public class CipherTest extends BaseTestSupport {
 
     @Test
     public void testBuiltinCipherSession() throws Exception {
-        Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
+        Assume.assumeTrue("No internal support for " + builtInCipher.getName(),
+            builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
         sshd.setCipherFactories(Collections.singletonList(builtInCipher));
         runJschTest(port);
     }
@@ -170,7 +177,9 @@ public class CipherTest extends BaseTestSupport {
         loadTest(builtInCipher, random, loadTestRounds);
     }
 
-    private static void loadTest(NamedFactory<Cipher> factory, Random random, int numRounds) throws Exception {
+    private static void loadTest(
+            NamedFactory<Cipher> factory, Random random, int numRounds)
+                throws Exception {
         Cipher cipher = factory.create();
         byte[] key = new byte[cipher.getKdfSize()];
         byte[] iv = new byte[cipher.getIVSize()];
@@ -185,7 +194,10 @@ public class CipherTest extends BaseTestSupport {
             cipher.update(input, 0, input.length);
         }
         long t1 = System.currentTimeMillis();
-        System.err.println(factory.getName() + "[" + numRounds + "]: " + (t1 - t0) + " ms");
+        System.err.append(CipherTest.class.getSimpleName())
+            .append(" - ").append(factory.getName())
+            .append('[').append(Integer.toString(numRounds)).append(']')
+            .append(": ").append(Long.toString(t1 - t0)).println(" ms");
     }
 
     static boolean checkCipher(String cipher) {
@@ -197,7 +209,9 @@ public class CipherTest extends BaseTestSupport {
                     new byte[jschCipher.getIVSize()]);
             return true;
         } catch (Exception e) {
-            System.err.println("checkCipher(" + cipher + ") " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.err.println("checkCipher(" + cipher + ")"
+                + " " + e.getClass().getSimpleName()
+                + ": " + e.getMessage());
             return false;
         }
     }

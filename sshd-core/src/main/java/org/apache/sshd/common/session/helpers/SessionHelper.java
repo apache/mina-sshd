@@ -687,7 +687,9 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * @return the resized key
      * @throws Exception if a problem occur while resizing the key
      */
-    protected byte[] resizeKey(byte[] e, int kdfSize, Digest hash, byte[] k, byte[] h) throws Exception {
+    protected byte[] resizeKey(
+            byte[] e, int kdfSize, Digest hash, byte[] k, byte[] h)
+                throws Exception {
         for (Buffer buffer = null; kdfSize > e.length; buffer = BufferUtils.clear(buffer)) {
             if (buffer == null) {
                 buffer = new ByteArrayBuffer();
@@ -697,12 +699,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             buffer.putRawBytes(h);
             buffer.putRawBytes(e);
             hash.update(buffer.array(), 0, buffer.available());
+
             byte[] foo = hash.digest();
             byte[] bar = new byte[e.length + foo.length];
             System.arraycopy(e, 0, bar, 0, e.length);
             System.arraycopy(foo, 0, bar, e.length, foo.length);
             e = bar;
         }
+
         return e;
     }
 
