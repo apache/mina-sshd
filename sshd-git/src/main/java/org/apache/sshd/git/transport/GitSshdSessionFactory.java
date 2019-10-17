@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -37,7 +38,9 @@ import org.eclipse.jgit.util.FS;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitSshdSessionFactory extends SshSessionFactory implements ClientSessionHolder {
+public class GitSshdSessionFactory
+        extends SshSessionFactory
+        implements SessionHolder<ClientSession>, ClientSessionHolder {
     public static final GitSshdSessionFactory INSTANCE = new GitSshdSessionFactory();
 
     private final SshClient client;
@@ -75,7 +78,9 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     }
 
     @Override
-    public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws TransportException {
+    public RemoteSession getSession(
+            URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
+                throws TransportException {
         try {
             return new GitSshdSession(uri, credentialsProvider, fs, tms) {
                 @Override
@@ -132,5 +137,10 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     @Override
     public ClientSession getClientSession() {
         return session;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
     }
 }

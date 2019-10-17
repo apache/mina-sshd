@@ -25,18 +25,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class PortForwardingTracker implements Channel, ClientSessionHolder {
+public abstract class PortForwardingTracker
+        implements Channel, SessionHolder<ClientSession>, ClientSessionHolder {
     protected final AtomicBoolean open = new AtomicBoolean(true);
     private final ClientSession session;
     private final SshdSocketAddress localAddress;
     private final SshdSocketAddress boundAddress;
 
-    protected PortForwardingTracker(ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
+    protected PortForwardingTracker(
+            ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
         this.session = Objects.requireNonNull(session, "No client session provided");
         this.localAddress = Objects.requireNonNull(localAddress, "No local address specified");
         this.boundAddress  = Objects.requireNonNull(boundAddress, "No bound address specified");
@@ -58,6 +61,11 @@ public abstract class PortForwardingTracker implements Channel, ClientSessionHol
     @Override
     public ClientSession getClientSession() {
         return session;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
     }
 
     @Override

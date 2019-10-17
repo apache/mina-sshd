@@ -63,11 +63,6 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     @Override
-    public final ClientSession getSession() {
-        return getClientSession();
-    }
-
-    @Override
     public void download(String[] remote, String local, Collection<Option> options) throws IOException {
         local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);

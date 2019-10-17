@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -42,7 +43,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Channel
-        extends ChannelListenerManager,
+        extends SessionHolder<Session>,
+                ChannelListenerManager,
                 PropertyResolver,
                 AttributeStore,
                 PacketWriter,
@@ -62,11 +64,6 @@ public interface Channel
      * @return Remote channel identifier
      */
     int getRecipient();
-
-    /**
-     * @return The channel's underlying {@link Session}
-     */
-    Session getSession();
 
     Window getLocalWindow();
 

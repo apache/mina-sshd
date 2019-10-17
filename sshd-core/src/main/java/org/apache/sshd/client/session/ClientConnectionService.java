@@ -52,11 +52,11 @@ public class ClientConnectionService
     public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
 
-        heartbeatRequest = this.getStringProperty(
+        heartbeatRequest = getStringProperty(
             ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
-        heartbeatInterval = this.getLongProperty(
+        heartbeatInterval = getLongProperty(
             ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
-        heartbeatReplyMaxWait = this.getLongProperty(
+        heartbeatReplyMaxWait = getLongProperty(
             ClientFactoryManager.HEARTBEAT_REPLY_WAIT, ClientFactoryManager.DEFAULT_HEARTBEAT_REPLY_WAIT);
     }
 
@@ -65,7 +65,7 @@ public class ClientConnectionService
         return getSession();
     }
 
-    @Override
+    @Override   // co-variant return
     public AbstractClientSession getSession() {
         return (AbstractClientSession) super.getSession();
     }

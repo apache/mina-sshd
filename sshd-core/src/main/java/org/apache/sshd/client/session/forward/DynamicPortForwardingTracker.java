@@ -29,7 +29,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DynamicPortForwardingTracker extends PortForwardingTracker {
-    public DynamicPortForwardingTracker(ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
+    public DynamicPortForwardingTracker(
+            ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
         super(session, localAddress, boundAddress);
     }
 

@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.io.IoInputStream;
@@ -44,6 +45,11 @@ public interface ClientChannel extends Channel, ClientSessionHolder {
     enum Streaming {
         Async,
         Sync
+    }
+
+    @Override
+    default ClientSession getClientSession() {
+        return (ClientSession) getSession();
     }
 
     /**

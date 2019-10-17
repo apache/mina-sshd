@@ -28,7 +28,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
-
     /**
      * @param session The {@link ClientSession}
      * @param service The requesting service name
@@ -50,5 +49,4 @@ public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSe
      * Called to release any allocated resources
      */
     void destroy();
-
 }

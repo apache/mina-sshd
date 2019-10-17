@@ -36,5 +36,8 @@ public interface SubsystemClient
                 NamedResource,
                 Channel,
                 ClientChannelHolder {
-    // nothing extra
+    @Override
+    default ClientSession getSession() {
+        return getClientSession();
+    }
 }

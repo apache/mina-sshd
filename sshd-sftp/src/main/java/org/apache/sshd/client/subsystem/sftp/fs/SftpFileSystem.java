@@ -49,11 +49,14 @@ import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.common.file.util.BaseFileSystem;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
-public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSessionHolder {
+public class SftpFileSystem
+        extends BaseFileSystem<SftpPath>
+        implements SessionHolder<ClientSession>, ClientSessionHolder {
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
     public static final int DEFAULT_POOL_SIZE = 8;
 
@@ -154,6 +157,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> implements ClientSe
     @Override
     public ClientSession getClientSession() {
         return clientSession;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
     }
 
     @SuppressWarnings("synthetic-access")

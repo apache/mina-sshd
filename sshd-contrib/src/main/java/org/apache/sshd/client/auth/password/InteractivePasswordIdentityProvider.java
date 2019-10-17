@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -60,7 +61,8 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InteractivePasswordIdentityProvider implements Iterator<String>, ClientSessionHolder {
+public class InteractivePasswordIdentityProvider
+        implements Iterator<String>, SessionHolder<ClientSession>, ClientSessionHolder {
     /** Special marker to indicate that we exhausted all attempts */
     protected static final String EOF = "EOF";
 
@@ -69,7 +71,8 @@ public class InteractivePasswordIdentityProvider implements Iterator<String>, Cl
     private String prompt;
     private AtomicReference<String> nextPassword = new AtomicReference<>();
 
-    public InteractivePasswordIdentityProvider(ClientSession clientSession, UserInteraction userInteraction, String prompt) {
+    public InteractivePasswordIdentityProvider(
+            ClientSession clientSession, UserInteraction userInteraction, String prompt) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session provided");
         this.userInteraction = Objects.requireNonNull(userInteraction, "No user interaction instance configured");
         this.prompt = prompt;
@@ -78,6 +81,11 @@ public class InteractivePasswordIdentityProvider implements Iterator<String>, Cl
     @Override
     public ClientSession getClientSession() {
         return clientSession;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
     }
 
     public UserInteraction getUserInteraction() {

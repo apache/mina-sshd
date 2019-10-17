@@ -19,19 +19,26 @@
 package org.apache.sshd.client.future;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.VerifiableFuture;
+import org.apache.sshd.common.session.SessionHolder;
 
 /**
  * An {@link SshFuture} for asynchronous connections requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ConnectFuture extends SshFuture<ConnectFuture>, VerifiableFuture<ConnectFuture> {
-    /**
-     * @return The referenced {@link ClientSession}
-     */
-    ClientSession getSession();
+public interface ConnectFuture
+        extends SshFuture<ConnectFuture>,
+        VerifiableFuture<ConnectFuture>,
+        SessionHolder<ClientSession>,
+        ClientSessionHolder {
+
+    @Override
+    default ClientSession getClientSession() {
+        return getSession();
+    }
 
     /**
      * @return <code>true</code> if the connect operation is finished successfully.

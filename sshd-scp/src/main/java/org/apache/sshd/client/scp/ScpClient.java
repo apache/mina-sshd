@@ -66,6 +66,11 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     String SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = "scp-exec-channel-exit-status-timeout";
     long DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
+    @Override
+    default ClientSession getSession() {
+        return getClientSession();
+    }
+
     default void download(String remote, String local, Option... options) throws IOException {
         download(remote, local, GenericUtils.of(options));
     }
