@@ -26,7 +26,7 @@ import java.util.EnumSet;
 
 import org.apache.sshd.common.kex.KexProposalOption.Constants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -38,18 +38,21 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class KexProposalOptionTest extends BaseTestSupport {
+public class KexProposalOptionTest extends JUnitTestSupport {
     public KexProposalOptionTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    public void testFromUnmatchedName() {
         for (String n : new String[]{null, "", getCurrentTestName()}) {
             KexProposalOption o = KexProposalOption.fromName(n);
             assertNull("Unexpected value for name='" + n + "'", o);
         }
+    }
 
+    @Test
+    public void testFromMatchedName() {
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             String n = expected.name();
 
@@ -62,12 +65,15 @@ public class KexProposalOptionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testFromProposalIndex() {
+    public void testFromUnmatchedProposalIndex() {
         for (int index : new int[]{-1, KexProposalOption.VALUES.size()}) {
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
             assertNull("Unexpected value for index=" + index, o);
         }
+    }
 
+    @Test
+    public void testFromMatchedProposalIndex() {
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             int index = expected.getProposalIndex();
             KexProposalOption actual = KexProposalOption.fromProposalIndex(index);
@@ -95,7 +101,8 @@ public class KexProposalOptionTest extends BaseTestSupport {
     public void testAllConstantsCovered() throws Exception {
         Field[] fields = Constants.class.getFields();
 
-        Collection<KexProposalOption> options = EnumSet.allOf(KexProposalOption.class);
+        Collection<KexProposalOption> options =
+            EnumSet.allOf(KexProposalOption.class);
         for (Field f : fields) {
             int mods = f.getModifiers();
             if (!Modifier.isStatic(mods)) {
