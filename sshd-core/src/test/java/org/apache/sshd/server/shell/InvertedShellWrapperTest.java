@@ -79,12 +79,18 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
     @Test   // see SSHD-570
     public void testExceptionWhilePumpStreams() throws Exception {
-        final BogusInvertedShell bogusShell = newShell("out", "err");
+        BogusInvertedShell bogusShell = newShell("out", "err");
         bogusShell.setAlive(false);
 
         final int destroyedExitValue = 7365;
+        @SuppressWarnings("checkstyle:anoninnerlength")
         InvertedShell shell = new InvertedShell() {
             private boolean destroyed;
+
+            @Override
+            public ServerSession getServerSession() {
+                return bogusShell.getServerSession();
+            }
 
             @Override
             public ChannelSession getChannelSession() {
@@ -188,12 +194,24 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
              InputStream shellErr = newDelayedInputStream(Short.SIZE, errorContent);
              ByteArrayOutputStream stderr = new ByteArrayOutputStream(errorContent.length() + Byte.SIZE)) {
 
+            @SuppressWarnings("checkstyle:anoninnerlength")
             InvertedShell shell = new InvertedShell() {
+                private ServerSession session;
                 private ChannelSession channel;
 
                 @Override
                 public void start(ChannelSession channel, Environment env) throws IOException {
                     this.channel = channel;
+                }
+
+                @Override
+                public ServerSession getServerSession() {
+                    if (session != null) {
+                        return session;
+                    }
+
+                    ChannelSession channel = getChannelSession();
+                    return (channel == null) ? null : channel.getServerSession();
                 }
 
                 @Override
@@ -203,7 +221,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
                 @Override
                 public void setSession(ServerSession session) {
-                    // ignored
+                    this.session = session;
                 }
 
                 @Override
@@ -286,8 +304,10 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
     private static BogusInvertedShell newShell(String contentOut, String contentErr) {
         ByteArrayOutputStream in = new ByteArrayOutputStream(20);
-        ByteArrayInputStream out = new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
-        ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream out =
+            new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream err =
+            new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
         return new BogusInvertedShell(in, out, err);
     }
 }

@@ -36,7 +36,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -44,7 +43,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractServerChannel extends AbstractChannel implements ServerChannel {
-
     protected final AtomicBoolean exitStatusSent = new AtomicBoolean(false);
 
     protected AbstractServerChannel(CloseableExecutorService executor) {
@@ -55,11 +53,6 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             Collection<? extends RequestHandler<Channel>> handlers,
             CloseableExecutorService executor) {
         super(discriminator, false, handlers, executor);
-    }
-
-    @Override
-    public ServerSession getServerSession() {
-        return (ServerSession) getSession();
     }
 
     @Override

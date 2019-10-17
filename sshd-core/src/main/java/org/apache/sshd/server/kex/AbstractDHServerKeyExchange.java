@@ -19,6 +19,7 @@
 
 package org.apache.sshd.server.kex;
 
+import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Objects;
 
@@ -31,9 +32,12 @@ import org.apache.sshd.server.session.ServerSessionHolder;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange implements ServerSessionHolder {
+public abstract class AbstractDHServerKeyExchange
+        extends AbstractDHKeyExchange
+        implements ServerSessionHolder {
     protected AbstractDHServerKeyExchange(Session s) {
-        super(ValidateUtils.checkInstanceOf(s, ServerSession.class, "Using a client side KeyExchange on a server: %s", s));
+        super(ValidateUtils.checkInstanceOf(s, ServerSession.class,
+            "Using a client side KeyExchange on a server: %s", s));
     }
 
     @Override
@@ -44,6 +48,8 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
     @Override
     public PublicKey getServerKey() {
         ServerSession session = getServerSession();
-        return Objects.requireNonNull(session.getHostKey(), "No server key pair available").getPublic();
+        KeyPair kpHost = Objects.requireNonNull(
+            session.getHostKey(), "No server key pair available");
+        return kpHost.getPublic();
     }
 }

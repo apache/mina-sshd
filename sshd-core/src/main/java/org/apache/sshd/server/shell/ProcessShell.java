@@ -38,14 +38,13 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.PuttyRequestHandler;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * Bridges the I/O streams between the SSH command and the process that executes it
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShell extends AbstractLoggingBean implements InvertedShell, ServerSessionHolder {
+public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     private final List<String> command;
     private String cmdValue;
     private ServerSession session;
@@ -65,7 +64,8 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
 
     public ProcessShell(Collection<String> command) {
         // we copy the original list so as not to change it
-        this.command = new ArrayList<>(ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
+        this.command = new ArrayList<>(
+            ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
         this.cmdValue = GenericUtils.join(command, ' ');
     }
 
@@ -105,16 +105,17 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
                 Map<String, String> procEnv = builder.environment();
                 procEnv.putAll(varsMap);
             } catch (Exception e) {
-                log.warn("start() - Failed ({}) to set environment for command={}: {}",
-                         e.getClass().getSimpleName(), cmdValue, e.getMessage());
+                log.warn("start({}) - Failed ({}) to set environment for command={}: {}",
+                     channel, e.getClass().getSimpleName(), cmdValue, e.getMessage());
                 if (log.isDebugEnabled()) {
-                    log.debug("start(" + cmdValue + ") failure details", e);
+                    log.debug("start(" + channel + ")[" + cmdValue + "] failure details", e);
                 }
             }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
+            log.debug("start({}): command='{}', env={}",
+                channel, builder.command(), builder.environment());
         }
 
         process = builder.start();
@@ -177,7 +178,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
         boolean debugEnabled = log.isDebugEnabled();
         if (process != null) {
             if (debugEnabled) {
-                log.debug("destroy({}) Destroy process for {}", channel, cmdValue);
+                log.debug("destroy({}) Destroy process for '{}'", channel, cmdValue);
             }
             process.destroy();
         }
@@ -186,14 +187,16 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell, 
             IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
         if (e != null) {
             if (debugEnabled) {
-                log.debug(e.getClass().getSimpleName() + " while destroy streams of '" + this + "': " + e.getMessage());
+                log.debug("destroy({}) {} while destroy streams of '{}': {}",
+                    channel, e.getClass().getSimpleName(), this, e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
                 Throwable[] suppressed = e.getSuppressed();
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable t : suppressed) {
-                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while destroy streams of '" + this + "': " + t.getMessage());
+                        log.trace("destroy({}) Suppressed {} while destroy streams of '{}': {}",
+                            channel, t.getClass().getSimpleName(), this, t.getMessage());
                     }
                 }
             }

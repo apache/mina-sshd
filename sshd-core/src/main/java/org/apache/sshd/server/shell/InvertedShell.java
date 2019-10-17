@@ -21,9 +21,12 @@ package org.apache.sshd.server.shell;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.CommandLifecycle;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a
@@ -33,7 +36,17 @@ import org.apache.sshd.server.command.CommandLifecycle;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface InvertedShell extends CommandLifecycle, SessionAware {
+public interface InvertedShell
+        extends SessionHolder<ServerSession>,
+        ServerSessionHolder,
+        CommandLifecycle,
+        SessionAware {
+
+    @Override
+    default ServerSession getSession() {
+        return getServerSession();
+    }
+
     /**
      * @return The {@link ChannelSession} instance through which
      * the shell was created - may be {@code null} if shell not started yet

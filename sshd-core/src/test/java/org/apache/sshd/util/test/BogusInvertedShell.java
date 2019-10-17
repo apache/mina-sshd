@@ -28,11 +28,9 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.session.ServerSessionHolder;
 import org.apache.sshd.server.shell.InvertedShell;
 
-public class BogusInvertedShell implements InvertedShell, ServerSessionHolder {
-
+public class BogusInvertedShell implements InvertedShell {
     private final OutputStream in;
     private final InputStream out;
     private final InputStream err;

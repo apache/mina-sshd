@@ -19,6 +19,7 @@
 package org.apache.sshd.common;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -27,9 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Service extends PropertyResolver, Closeable {
-    Session getSession();
-
+public interface Service extends SessionHolder<Session>, PropertyResolver, Closeable {
     @Override
     default PropertyResolver getParentPropertyResolver() {
         return getSession();

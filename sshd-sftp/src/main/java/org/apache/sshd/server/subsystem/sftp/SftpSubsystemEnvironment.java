@@ -23,14 +23,16 @@ import java.nio.file.Path;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemEnvironment extends ServerSessionHolder {
+public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, ServerSessionHolder {
     /**
      * Force the use of a given sftp version
      */
@@ -43,6 +45,11 @@ public interface SftpSubsystemEnvironment extends ServerSessionHolder {
     String ALL_SFTP_IMPL = IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
             .mapToObj(Integer::toString)
             .collect(Collectors.joining(","));
+
+    @Override
+    default ServerSession getSession() {
+        return getServerSession();
+    }
 
     /**
      * @return The negotiated version

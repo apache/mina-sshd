@@ -41,7 +41,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -52,10 +51,7 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthService
-        extends AbstractCloseable
-        implements Service, SessionHolder<ClientSession>, ClientSessionHolder {
-
+public class ClientUserAuthService extends AbstractCloseable implements Service, ClientSessionHolder {
     /**
      * The AuthFuture that is being used by the current auth request. This encodes the state.
      * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
@@ -144,7 +140,8 @@ public class ClientUserAuthService
                     log.debug("auth({})[{}] request new authentication", session, service);
                 }
             } else {
-                currentFuture.setException(new InterruptedIOException("New authentication started before previous completed"));
+                currentFuture.setException(
+                    new InterruptedIOException("New authentication started before previous completed"));
             }
         }
 
@@ -240,7 +237,8 @@ public class ClientUserAuthService
             session.setAuthenticated();
             ((ClientSessionImpl) session).switchToNextService();
 
-            AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
+            AuthFuture authFuture =
+                Objects.requireNonNull(authFutureHolder.get(), "No current future");
             // Will wake up anyone sitting in waitFor
             authFuture.setAuthed(true);
             return;
@@ -270,7 +268,8 @@ public class ClientUserAuthService
         }
 
         if (userAuth == null) {
-            throw new IllegalStateException("Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
+            throw new IllegalStateException(
+                "Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
 
         if (log.isDebugEnabled()) {
@@ -328,9 +327,11 @@ public class ClientUserAuthService
                 }
 
                 // also wake up anyone sitting in waitFor
-                AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
+                AuthFuture authFuture =
+                    Objects.requireNonNull(authFutureHolder.get(), "No current future");
                 authFuture.setException(new SshException(
-                    SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE, "No more authentication methods available"));
+                    SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
+                    "No more authentication methods available"));
                 return;
             }
 

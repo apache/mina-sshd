@@ -30,7 +30,6 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSession>, UsernameHolder {
-
     /**
      * Try to authenticate the user. This methods should return a non {@code null}
      * value indicating if the authentication succeeded. If the authentication is

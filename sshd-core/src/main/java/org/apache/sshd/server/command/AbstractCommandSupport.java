@@ -47,7 +47,7 @@ import org.apache.sshd.server.session.ServerSessionHolder;
 public abstract class AbstractCommandSupport
         extends AbstractLoggingBean
         implements Command, Runnable, ExecutorServiceCarrier, SessionAware,
-                    SessionHolder<Session>, ServerSessionHolder {
+        SessionHolder<ServerSession>, ServerSessionHolder {
     protected final String command;
     protected InputStream in;
     protected OutputStream out;
@@ -55,7 +55,7 @@ public abstract class AbstractCommandSupport
     protected ExitCallback callback;
     protected Environment environment;
     protected Future<?> cmdFuture;
-    protected Thread cmdRunner;
+    protected volatile Thread cmdRunner;
     protected CloseableExecutorService executorService;
     protected boolean cbCalled;
     protected ServerSession serverSession;
@@ -78,7 +78,7 @@ public abstract class AbstractCommandSupport
     }
 
     @Override
-    public Session getSession() {
+    public ServerSession getSession() {
         return getServerSession();
     }
 
@@ -145,13 +145,19 @@ public abstract class AbstractCommandSupport
     public void start(ChannelSession channel, Environment env) throws IOException {
         environment = env;
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("start({}) starting runner for command={}", channel, command);
+            }
+
             CloseableExecutorService executors = getExecutorService();
             cmdFuture = executors.submit(() -> {
                 cmdRunner = Thread.currentThread();
                 this.run();
             });
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
-            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command=" + command + ": " + e.getMessage(), e);
+            log.error("start(" + channel + ")"
+                + " Failed (" + e.getClass().getSimpleName() + ")"
+                + " to start command=" + command + ": " + e.getMessage(), e);
             throw new IOException(e);
         }
     }
@@ -160,11 +166,13 @@ public abstract class AbstractCommandSupport
     public void destroy(ChannelSession channel) throws Exception {
         // if thread has not completed, cancel it
         boolean debugEnabled = log.isDebugEnabled();
-        if ((cmdFuture != null) && (!cmdFuture.isDone()) && (cmdRunner != Thread.currentThread())) {
+        if ((cmdFuture != null)
+                && (!cmdFuture.isDone())
+                && (cmdRunner != Thread.currentThread())) {
             boolean result = cmdFuture.cancel(true);
             // TODO consider waiting some reasonable (?) amount of time for cancellation
             if (debugEnabled) {
-                log.debug("destroy() - cancel pending future=" + result);
+                log.debug("destroy({})[{}] - cancel pending future={}", channel, this, result);
             }
         }
 
@@ -174,7 +182,8 @@ public abstract class AbstractCommandSupport
         if ((executors != null) && (!executors.isShutdown())) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {
-                log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
+                log.debug("destroy({})[{}] - shutdown executor service - runners count={}",
+                    channel, this, runners.size());
             }
         }
         this.executorService = null;
@@ -185,10 +194,11 @@ public abstract class AbstractCommandSupport
     }
 
     protected void onExit(int exitValue, String exitMessage) {
+        Session session = getSession();
         if (cbCalled) {
             if (log.isTraceEnabled()) {
-                log.trace("onExit({}) ignore exitValue={}, message={} - already called",
-                        this, exitValue, exitMessage);
+                log.trace("onExit({})[{}] ignore exitValue={}, message={} - already called",
+                    session, this, exitValue, exitMessage);
             }
             return;
         }
@@ -196,7 +206,8 @@ public abstract class AbstractCommandSupport
         ExitCallback cb = getExitCallback();
         try {
             if (log.isDebugEnabled()) {
-                log.debug("onExit({}) exiting - value={}, message={}", this, exitValue, exitMessage);
+                log.debug("onExit({})[{}] exiting - value={}, message={}",
+                    session, this, exitValue, exitMessage);
             }
             cb.onExit(exitValue, exitMessage);
         } finally {
