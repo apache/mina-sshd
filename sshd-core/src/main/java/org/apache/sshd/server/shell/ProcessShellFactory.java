@@ -37,30 +37,44 @@ import org.apache.sshd.server.command.Command;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProcessShellFactory extends AbstractLoggingBean implements ShellFactory {
-    private List<String> command;
+    private String command;
+    private List<String> elements;
 
     public ProcessShellFactory() {
-        this(Collections.emptyList());
+        command = "";
+        elements = Collections.emptyList();
     }
 
-    public ProcessShellFactory(String... command) {
-        this(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
+    public ProcessShellFactory(String command, String... elements) {
+        this(command, GenericUtils.isEmpty(elements) ? Collections.emptyList() : Arrays.asList(elements));
     }
 
-    public ProcessShellFactory(List<String> command) {
+    public ProcessShellFactory(String command, List<String> elements) {
         this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
+        this.elements = ValidateUtils.checkNotNullAndNotEmpty(elements, "No parsed elements");
     }
 
-    public List<String> getCommand() {
+    /**
+     * @return The original unparsed raw command
+     */
+    public String getCommand() {
         return command;
     }
 
-    public void setCommand(String... command) {
-        setCommand(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
+    /**
+     * @return The parsed command elements
+     */
+    public List<String> getElements() {
+        return elements;
     }
 
-    public void setCommand(List<String> command) {
+    public void setCommand(String command, String... elements) {
+        setCommand(command, GenericUtils.isEmpty(elements) ? Collections.emptyList() : Arrays.asList(elements));
+    }
+
+    public void setCommand(String command, List<String> elements) {
         this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
+        this.elements = ValidateUtils.checkNotNullAndNotEmpty(elements, "No parsed elements");
     }
 
     @Override
@@ -70,26 +84,28 @@ public class ProcessShellFactory extends AbstractLoggingBean implements ShellFac
     }
 
     protected InvertedShell createInvertedShell(ChannelSession channel) {
-        return new ProcessShell(resolveEffectiveCommand(channel, getCommand()));
+        return new ProcessShell(resolveEffectiveCommand(channel, getCommand(), getElements()));
     }
 
     protected List<String> resolveEffectiveCommand(
-            ChannelSession channel, List<String> original) {
+            ChannelSession channel, String rawCommand, List<String> parsedElements) {
         if (!OsUtils.isWin32()) {
-            return original;
+            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
         }
 
-        // Turns out that running a command with no arguments works just fine
-        if (GenericUtils.size(original) <= 1) {
-            return original;
+        // Turns out that running a command with no arguments works just fine in Windows
+        if (GenericUtils.size(parsedElements) <= 1) {
+            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
         }
 
         // For windows create a "cmd.exe /C "..."" string
-        String cmdName = original.get(0);
+        String cmdName = parsedElements.get(0);
+        // If already using shell prefix then assume callers knows what they're doing
         if (OsUtils.WINDOWS_SHELL_COMMAND_NAME.equalsIgnoreCase(cmdName)) {
-            return original;    // assume callers knows what they're doing
+            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
         }
 
-        return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C", GenericUtils.join(original, ' '));
+        return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C",
+            ValidateUtils.checkNotNullAndNotEmpty(rawCommand, "No command"));
     }
 }

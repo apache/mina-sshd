@@ -95,3 +95,4 @@ for the server's identification before sending KEX-INIT message.
 
 * [SSHD-949](https://issues.apache.org/jira/browse/SSHD-949) - Session should use cipher block size and not IV size to calculate padding.
 
+* [SSHD-953](https://issues.apache.org/jira/browse/SSHD-953) - Parse and strip quoted command arguments when executing a server-side command via local shell.

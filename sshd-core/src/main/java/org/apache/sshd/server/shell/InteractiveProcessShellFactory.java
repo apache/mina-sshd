@@ -33,11 +33,13 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
     public static final InteractiveProcessShellFactory INSTANCE = new InteractiveProcessShellFactory();
 
     public InteractiveProcessShellFactory() {
-        super(OsUtils.resolveDefaultInteractiveCommand());
+        super(OsUtils.resolveDefaultInteractiveShellCommand(),
+            OsUtils.resolveDefaultInteractiveCommandElements());
     }
 
     @Override
-    protected List<String> resolveEffectiveCommand(ChannelSession channel, List<String> original) {
-        return original;
+    protected List<String> resolveEffectiveCommand(
+            ChannelSession channel, String rawCommand, List<String> parsedElements) {
+        return parsedElements;
     }
 }

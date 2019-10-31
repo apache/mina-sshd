@@ -105,12 +105,20 @@ public final class OsUtils {
         }
     }
 
-    public static List<String> resolveDefaultInteractiveCommand() {
-        return resolveInteractiveCommand(isWin32());
+    public static String resolveDefaultInteractiveShellCommand() {
+        return resolveDefaultInteractiveShellCommand(isWin32());
     }
 
-    public static List<String> resolveInteractiveCommand(boolean isWin32) {
-        if (isWin32) {
+    public static String resolveDefaultInteractiveShellCommand(boolean winOS) {
+        return winOS ? WINDOWS_SHELL_COMMAND_NAME : LINUX_SHELL_COMMAND_NAME + " -i -l";
+    }
+
+    public static List<String> resolveDefaultInteractiveCommandElements() {
+        return resolveDefaultInteractiveCommandElements(isWin32());
+    }
+
+    public static List<String> resolveDefaultInteractiveCommandElements(boolean winOS) {
+        if (winOS) {
             return WINDOWS_COMMAND;
         } else {
             return LINUX_COMMAND;

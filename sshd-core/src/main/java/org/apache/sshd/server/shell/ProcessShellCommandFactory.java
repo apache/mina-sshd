@@ -21,7 +21,6 @@ package org.apache.sshd.server.shell;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
@@ -45,8 +44,8 @@ public class ProcessShellCommandFactory implements CommandFactory {
     }
 
     @Override
-    public Command createCommand(ChannelSession channel,  String command) throws IOException {
-        ShellFactory factory = new ProcessShellFactory(GenericUtils.split(command, ' '));
+    public Command createCommand(ChannelSession channel, String command) throws IOException {
+        ShellFactory factory = new ProcessShellFactory(command, CommandFactory.split(command));
         return factory.createShell(channel);
     }
 }

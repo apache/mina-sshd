@@ -59,11 +59,15 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     private int lastSize;
     private boolean noDelay;
 
-    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
-        this(channel, remoteWindow, channel.getLongProperty(WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd, eofOnClose);
+    public ChannelOutputStream(
+            AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
+        this(channel, remoteWindow,
+            channel.getLongProperty(WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT),
+            log, cmd, eofOnClose);
     }
 
-    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
+    public ChannelOutputStream(
+            AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd, boolean eofOnClose) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
         this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
@@ -121,7 +125,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
             // packet we sent to allow the producer to race ahead and fill
             // out the next packet before we block and wait for space to
             // become available again.
-            long l2 = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
+            long minReqLen = Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize());
+            long l2 = Math.min(l, minReqLen - bufferLength);
             if (l2 <= 0) {
                 if (bufferLength > 0) {
                     flush();
@@ -135,7 +140,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     } catch (IOException e) {
                         if (debugEnabled) {
                             log.debug("write({}) failed ({}) to wait for space of len={}: {}",
-                                      this, e.getClass().getSimpleName(), l, e.getMessage());
+                                  this, e.getClass().getSimpleName(), l, e.getMessage());
                         }
 
                         if ((e instanceof WindowClosedException) && (!closedState.getAndSet(true))) {
@@ -146,14 +151,17 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
                         throw e;
                     } catch (InterruptedException e) {
-                        throw (IOException) new InterruptedIOException("Interrupted while waiting for remote space on write len=" + l + " to " + this).initCause(e);
+                        throw (IOException) new InterruptedIOException(
+                            "Interrupted while waiting for remote space on write len=" + l + " to " + this)
+                            .initCause(e);
                     }
                 }
                 session.resetIdleTimeout();
                 continue;
             }
 
-            ValidateUtils.checkTrue(l2 <= Integer.MAX_VALUE, "Accumulated bytes length exceeds int boundary: %d", l2);
+            ValidateUtils.checkTrue(l2 <= Integer.MAX_VALUE,
+                "Accumulated bytes length exceeds int boundary: %d", l2);
             buffer.putRawBytes(buf, s, (int) l2);
             bufferLength += l2;
             s += l2;
@@ -192,7 +200,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 } catch (IOException e) {
                     if (log.isDebugEnabled()) {
                         log.debug("flush({}) failed ({}) to wait for space of len={}: {}",
-                                  this, e.getClass().getSimpleName(), total, e.getMessage());
+                              this, e.getClass().getSimpleName(), total, e.getMessage());
                     }
 
                     throw e;
@@ -222,7 +230,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
                 if (traceEnabled) {
-                    log.trace("flush({}) send {} len={}", channel, SshConstants.getCommandMessageName(cmd), length);
+                    log.trace("flush({}) send {} len={}",
+                        channel, SshConstants.getCommandMessageName(cmd), length);
                 }
                 packetWriter.writePacket(buf);
             }
@@ -237,7 +246,9 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else if (e instanceof InterruptedException) {
-                throw (IOException) new InterruptedIOException("Interrupted while waiting for remote space flush len=" + bufferLength + " to " + this).initCause(e);
+                throw (IOException) new InterruptedIOException(
+                    "Interrupted while waiting for remote space flush len=" + bufferLength + " to " + this)
+                    .initCause(e);
             } else {
                 throw new SshException(e);
             }
