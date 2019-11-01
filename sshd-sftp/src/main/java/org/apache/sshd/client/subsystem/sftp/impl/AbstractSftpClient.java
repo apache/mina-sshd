@@ -957,7 +957,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
         if (log.isTraceEnabled()) {
-            log.trace("openDir({})[{}}: {}", getClientChannel(), path, handle);
+            log.trace("openDir({})[{}]: {}", getClientChannel(), path, handle);
         }
 
         return handle;
@@ -1004,7 +1004,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
             boolean debugEnabled = log.isDebugEnabled();
             if (debugEnabled) {
-                log.debug("checkDirResponse({}}[id={}] reading {} entries", channel, id, count);
+                log.debug("checkDirResponse({})[id={}] reading {} entries", channel, id, count);
             }
 
             List<DirEntry> entries = new ArrayList<>(count);
@@ -1031,7 +1031,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             }
 
             if (debugEnabled) {
-                log.debug("checkDirResponse({}}[id={}] read count={}, eol={}", channel, entries.size(), indicator);
+                log.debug("checkDirResponse({})[id={}] read count={}, eol={}",
+                        channel, id, entries.size(), indicator);
             }
             return entries;
         }

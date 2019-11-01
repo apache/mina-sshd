@@ -143,7 +143,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             socket.shutdownInput();
         } catch (IOException e) {
             if (debugEnabled) {
-                log.debug("suspend({}) failed {{}) to shutdown input: {}",
+                log.debug("suspend({}) failed ({}) to shutdown input: {}",
                     this, e.getClass().getSimpleName(), e.getMessage());
             }
         }
@@ -152,7 +152,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             socket.shutdownOutput();
         } catch (IOException e) {
             if (debugEnabled) {
-                log.debug("suspend({}) failed {{}) to shutdown output: {}",
+                log.debug("suspend({}) failed ({}) to shutdown output: {}",
                     this, e.getClass().getSimpleName(), e.getMessage());
             }
         }

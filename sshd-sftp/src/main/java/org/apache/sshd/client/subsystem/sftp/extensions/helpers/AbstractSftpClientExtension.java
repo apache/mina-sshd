@@ -182,7 +182,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isDebugEnabled()) {
-                log.debug("checkExtendedReplyBuffer({}}[id={}] - status: {} [{}] {}",
+                log.debug("checkExtendedReplyBuffer({})[id={}] - status: {} [{}] {}",
                           getName(), id, substatus, lang, msg);
             }
 
