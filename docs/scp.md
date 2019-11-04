@@ -128,5 +128,21 @@ different sensitivity via `DirectoryScanner#setCaseSensitive` call (or executes 
 
 ### Server-side SCP
 
+Setting up SCP support on the server side is straightforward - simply initialize a `ScpCommandFactory` and
+set it as the **primary** command factory. If support for commands other than SCP is also required then provide
+the extra commands factory as a **delegate** of the `ScpCommandFactory`. The SCP factory will intercept the SCP
+command and execute it, while propagating all other commands to the delegate. If no delegate configured then the
+non-SCP command is deemed as having failed (same as if it were rejected by the delegate).
+
+```java
+ScpCommandFactory factory = new ScpCommandFactory.Builder()
+    .withwithDelegate(new MyCommandDelegate())
+    .build();
+
+SshServer sshd = ...create an instance...
+sshd.setCommandFactory(factory);
+```
+
 The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTransferEventListener` having the same behavior as the client - i.e.,
-monitoring and intervention on the accessed local files.
+monitoring and intervention on the accessed local files. Furthermore, the factory can also be configured with a custom executor service for
+executing the requested copy commands as well as controlling the internal buffer sizes used to copy files.

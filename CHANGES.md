@@ -6,8 +6,8 @@
 
 ## Major code re-factoring
 
-* `SftpSubSystemFactory` and its `Builder` use a `Supplier<CloseableExecutorService>` instead of
-an executor instance in order to allow users to provide a "fresh" instance every time an SFTP
+* `SftpSubSystemFactory,ScpCommandFactory` and their respective `Builder`(s) use a `Supplier<CloseableExecutorService>`
+instead of an executor instance in order to allow users to provide a "fresh" instance every time an SFTP
 session is initiated and protect their instance from shutdown when session is destroyed:
 
 ```java
@@ -73,7 +73,8 @@ the message type=30 (old request).
 * [SSHD-930](https://issues.apache.org/jira/browse/SSHD-930) - Added configuration allowing the user to specify whether client should wait
 for the server's identification before sending its own.
 
-* [SSHD-931](https://issues.apache.org/jira/browse/SSHD-931) - Using an executor supplier instead of a specific instance in `SftpSubsystemFactory`.
+* [SSHD-931](https://issues.apache.org/jira/browse/SSHD-931) - Using an executor supplier instead of a specific instance in `SftpSubsystemFactory`
+and `ScpCommandFactory`.
 
 * [SSHD-934](https://issues.apache.org/jira/browse/SSHD-934) - Fixed ECDSA public key encoding into OpenSSH format.
 
@@ -96,3 +97,4 @@ for the server's identification before sending KEX-INIT message.
 * [SSHD-949](https://issues.apache.org/jira/browse/SSHD-949) - Session should use cipher block size and not IV size to calculate padding.
 
 * [SSHD-953](https://issues.apache.org/jira/browse/SSHD-953) - Parse and strip quoted command arguments when executing a server-side command via local shell.
+

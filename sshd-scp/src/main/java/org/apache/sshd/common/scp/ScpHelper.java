@@ -159,9 +159,14 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         });
     }
 
-    public void receive(Path local, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
-        Path localPath = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
-        Path path = opener.resolveIncomingReceiveLocation(getSession(), localPath, recursive, shouldBeDir, preserve);
+    public void receive(
+            Path local, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize)
+                throws IOException {
+        Path localPath = Objects.requireNonNull(local, "No local path")
+            .normalize()
+            .toAbsolutePath();
+        Path path = opener.resolveIncomingReceiveLocation(
+            getSession(), localPath, recursive, shouldBeDir, preserve);
         receive((session, line, isDir, time) -> {
             if (recursive && isDir) {
                 receiveDir(line, path, time, preserve, bufferSize);
@@ -226,9 +231,14 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
     }
 
-    public void receiveDir(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
-        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
-        if (log.isDebugEnabled()) {
+    public void receiveDir(
+            String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize)
+                throws IOException {
+        Path path = Objects.requireNonNull(local, "No local path")
+            .normalize()
+            .toAbsolutePath();
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("receiveDir({})[{}] Receiving directory {} - preserve={}, time={}, buffer-size={}",
                       this, header, path, preserve, time, bufferSize);
         }
@@ -244,7 +254,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
 
         Session session = getSession();
-        Path file = opener.resolveIncomingFilePath(session, path, name, preserve, perms, time);
+        Path file = opener.resolveIncomingFilePath(
+            session, path, name, preserve, perms, time);
 
         ack();
 
@@ -254,9 +265,10 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         try {
             for (;;) {
                 header = readLine();
-                if (log.isDebugEnabled()) {
+                if (debugEnabled) {
                     log.debug("receiveDir({})[{}] Received header: {}", this, file, header);
                 }
+
                 if (header.startsWith("C")) {
                     receiveFile(header, file, time, preserve, bufferSize);
                     time = null;
@@ -280,18 +292,25 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         listener.endFolderEvent(session, FileOperation.RECEIVE, path, perms, null);
     }
 
-    public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
-        Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
+    public void receiveFile(
+            String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize)
+                throws IOException {
+        Path path = Objects.requireNonNull(local, "No local path")
+            .normalize()
+            .toAbsolutePath();
         if (log.isDebugEnabled()) {
             log.debug("receiveFile({})[{}] Receiving file {} - preserve={}, time={}, buffer-size={}",
-                      this, header, path, preserve, time, bufferSize);
+                  this, header, path, preserve, time, bufferSize);
         }
 
-        ScpTargetStreamResolver targetStreamResolver = opener.createScpTargetStreamResolver(getSession(), path);
+        ScpTargetStreamResolver targetStreamResolver =
+            opener.createScpTargetStreamResolver(getSession(), path);
         receiveStream(header, targetStreamResolver, time, preserve, bufferSize);
     }
 
-    public void receiveStream(String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveStream(
+            String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve, int bufferSize)
+                throws IOException {
         if (!header.startsWith("C")) {
             throw new IOException("receiveStream(" + resolver + ") Expected a C message but got '" + header + "'");
         }
@@ -313,7 +332,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         if (length == 0L) {
             if (debugEnabled) {
                 log.debug("receiveStream({})[{}] zero file size (perhaps special file) using copy buffer size={}",
-                          this, resolver, MIN_RECEIVE_BUFFER_SIZE);
+                      this, resolver, MIN_RECEIVE_BUFFER_SIZE);
             }
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         } else {
@@ -377,7 +396,9 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         }
     }
 
-    public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
+    public void send(
+            Collection<String> paths, boolean recursive, boolean preserve, int bufferSize)
+                throws IOException {
         int readyCode = readAck(false);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {

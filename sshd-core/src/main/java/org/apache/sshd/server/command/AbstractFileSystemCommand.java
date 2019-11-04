@@ -35,7 +35,8 @@ public abstract class AbstractFileSystemCommand extends AbstractCommandSupport i
 
     protected FileSystem fileSystem;
 
-    public AbstractFileSystemCommand(String command, CloseableExecutorService executorService) {
+    public AbstractFileSystemCommand(
+            String command, CloseableExecutorService executorService) {
         super(command, executorService);
     }
 

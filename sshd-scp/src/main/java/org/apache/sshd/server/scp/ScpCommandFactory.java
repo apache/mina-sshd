@@ -20,6 +20,7 @@ package org.apache.sshd.server.scp;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
@@ -29,7 +30,6 @@ import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
@@ -44,9 +44,7 @@ import org.apache.sshd.server.command.CommandFactory;
  */
 public class ScpCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ScpFileOpenerHolder,
-        Cloneable,
-        ExecutorServiceCarrier {
+        implements ScpFileOpenerHolder, Cloneable {
 
     public static final String SCP_FACTORY_NAME = "scp";
 
@@ -70,8 +68,9 @@ public class ScpCommandFactory
             return this;
         }
 
-        public Builder withExecutorService(CloseableExecutorService service) {
-            factory.setExecutorService(service);
+        public Builder withExecutorServiceProvider(
+                Supplier<? extends CloseableExecutorService> provider) {
+            factory.setExecutorServiceProvider(provider);
             return this;
         }
 
@@ -101,7 +100,7 @@ public class ScpCommandFactory
         }
     }
 
-    private CloseableExecutorService executors;
+    private Supplier<? extends CloseableExecutorService> executorsProvider;
     private ScpFileOpener fileOpener;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
@@ -110,7 +109,8 @@ public class ScpCommandFactory
 
     public ScpCommandFactory() {
         super(SCP_FACTORY_NAME);
-        listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(
+            ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
     }
 
     @Override
@@ -123,20 +123,17 @@ public class ScpCommandFactory
         this.fileOpener = fileOpener;
     }
 
-    @Override
-    public CloseableExecutorService getExecutorService() {
-        return executors;
+    public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
+        return executorsProvider;
     }
 
     /**
-     * @param service An {@link CloseableExecutorService} to be used when
+     * @param provider A {@link Supplier} of {@link CloseableExecutorService} to be used when
      * starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     * ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     * when the command is terminated - unless it is the ad-hoc service, which will be
-     * shutdown regardless
+     * ad-hoc service is used.
      */
-    public void setExecutorService(CloseableExecutorService service) {
-        executors = service;
+    public void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider) {
+        executorsProvider = provider;
     }
 
     public int getSendBufferSize() {
@@ -211,9 +208,14 @@ public class ScpCommandFactory
     @Override
     protected Command executeSupportedCommand(String command) {
         return new ScpCommand(command,
-                getExecutorService(),
+                resolveExecutorService(command),
                 getSendBufferSize(), getReceiveBufferSize(),
                 getScpFileOpener(), listenerProxy);
+    }
+
+    protected CloseableExecutorService resolveExecutorService(String command) {
+        Supplier<? extends CloseableExecutorService> provider = getExecutorServiceProvider();
+        return (provider == null) ? null : provider.get();
     }
 
     @Override
@@ -222,7 +224,8 @@ public class ScpCommandFactory
             ScpCommandFactory other = getClass().cast(super.clone());
             // clone the listeners set as well
             other.listeners = new CopyOnWriteArraySet<>(this.listeners);
-            other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
+            other.listenerProxy = EventListenerUtils.proxyWrapper(
+                ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
             return other;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);    // un-expected...

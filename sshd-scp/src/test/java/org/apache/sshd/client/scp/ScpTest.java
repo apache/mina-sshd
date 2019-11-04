@@ -904,9 +904,10 @@ public class ScpTest extends BaseTestSupport {
         sshd.setCommandFactory(new ScpCommandFactory() {
             @Override
             public Command createCommand(ChannelSession channel, String command) {
-                ValidateUtils.checkTrue(command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
+                ValidateUtils.checkTrue(
+                    command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
                 return new InternalScpCommand(command,
-                        getExecutorService(),
+                        resolveExecutorService(command),
                         getSendBufferSize(), getReceiveBufferSize(),
                         DefaultScpFileOpener.INSTANCE,
                         ScpTransferEventListener.EMPTY);

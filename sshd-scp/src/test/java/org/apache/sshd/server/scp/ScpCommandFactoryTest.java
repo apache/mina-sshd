@@ -19,6 +19,8 @@
 
 package org.apache.sshd.server.scp;
 
+import java.util.function.Supplier;
+
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.CommandFactory;
@@ -48,7 +50,7 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
     public void testBuilderDefaultFactoryValues() {
         ScpCommandFactory factory = new ScpCommandFactory.Builder().build();
         assertNull("Mismatched delegate", factory.getDelegateCommandFactory());
-        assertNull("Mismatched executor", factory.getExecutorService());
+        assertNull("Mismatched executor", factory.getExecutorServiceProvider());
         assertEquals("Mismatched send size", ScpHelper.MIN_SEND_BUFFER_SIZE, factory.getSendBufferSize());
         assertEquals("Mismatched receive size", ScpHelper.MIN_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
     }
@@ -60,16 +62,17 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
     public void testBuilderCorrectlyInitializesFactory() {
         CommandFactory delegate = dummyFactory();
         CloseableExecutorService service = dummyExecutor();
+        Supplier<CloseableExecutorService> provider = () -> service;
         int receiveSize = Short.MAX_VALUE;
         int sendSize = receiveSize + Long.SIZE;
         ScpCommandFactory factory = new ScpCommandFactory.Builder()
                 .withDelegate(delegate)
-                .withExecutorService(service)
+                .withExecutorServiceProvider(provider)
                 .withSendBufferSize(sendSize)
                 .withReceiveBufferSize(receiveSize)
                 .build();
         assertSame("Mismatched delegate", delegate, factory.getDelegateCommandFactory());
-        assertSame("Mismatched executor", service, factory.getExecutorService());
+        assertSame("Mismatched executor", provider, factory.getExecutorServiceProvider());
         assertEquals("Mismatched send size", sendSize, factory.getSendBufferSize());
         assertEquals("Mismatched receive size", receiveSize, factory.getReceiveBufferSize());
     }
