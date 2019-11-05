@@ -173,7 +173,7 @@ public class SshClientMain extends SshClientCliSupport {
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);
-                             OutputStream channelErr =  new NoCloseOutputStream(System.err)) {
+                             OutputStream channelErr = new NoCloseOutputStream(System.err)) {
                             channel.setOut(channelOut);
                             channel.setErr(channelErr);
                             channel.open().await(); // TODO use verify and a configurable timeout

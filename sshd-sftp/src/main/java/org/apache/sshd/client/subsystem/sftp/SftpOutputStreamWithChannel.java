@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.io.OutputStreamWithChannel;
 public class SftpOutputStreamWithChannel extends OutputStreamWithChannel {
     private final SftpClient client;
     private final String path;
-    private final byte[] bb =  new byte[1];
+    private final byte[] bb = new byte[1];
     private final byte[] buffer;
     private int index;
     private CloseableHandle handle;

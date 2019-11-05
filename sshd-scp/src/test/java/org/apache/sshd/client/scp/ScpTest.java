@@ -536,7 +536,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -573,7 +573,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -656,7 +656,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -700,7 +700,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -761,7 +761,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -837,7 +837,7 @@ public class ScpTest extends BaseTestSupport {
 
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -924,7 +924,7 @@ public class ScpTest extends BaseTestSupport {
             ScpClient scp = creator.createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
-            Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
@@ -1048,7 +1048,7 @@ public class ScpTest extends BaseTestSupport {
     public void testWithGanymede() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path scpRoot  = CommonTestSupportUtils.resolve(targetPath,
+        Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
             ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(scpRoot);
 

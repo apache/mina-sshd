@@ -86,7 +86,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
         this.delegate = Objects.requireNonNull(delegate, "No delegate provided");
         ValidateUtils.checkTrue(maxPendingPackets > 0, "Invalid pending packets limit: %d", maxPendingPackets);
         this.maxPendingPackets = maxPendingPackets;
-        this.availableCount =  new AtomicInteger(maxPendingPackets);
+        this.availableCount = new AtomicInteger(maxPendingPackets);
         ValidateUtils.checkTrue(maxWait > 0L, "Invalid max. pending wait time: %d", maxWait);
         this.maxWait = maxWait;
         this.traceEnabled = log.isTraceEnabled();

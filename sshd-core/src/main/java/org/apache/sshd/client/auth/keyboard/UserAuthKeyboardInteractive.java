@@ -164,7 +164,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         String[] prompt = (num > 0) ? new String[num] : GenericUtils.EMPTY_STRING_ARRAY;
-        boolean[] echo =  (num > 0) ? new boolean[num] : GenericUtils.EMPTY_BOOLEAN_ARRAY;
+        boolean[] echo = (num > 0) ? new boolean[num] : GenericUtils.EMPTY_BOOLEAN_ARRAY;
         boolean traceEnabled = log.isTraceEnabled();
         for (int i = 0; i < num; i++) {
             // TODO according to RFC4256: "The prompt field(s) MUST NOT be empty strings."

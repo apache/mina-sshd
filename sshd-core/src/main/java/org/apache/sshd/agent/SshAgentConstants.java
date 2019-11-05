@@ -53,7 +53,7 @@ public final class SshAgentConstants {
     public static final byte SSH2_AGENTC_ADD_ID_CONSTRAINED = 25;
 
     // Key-type independent requests from client to agent
-    public static final byte SSH_AGENTC_ADD_SMARTCARD_KEY  = 20;
+    public static final byte SSH_AGENTC_ADD_SMARTCARD_KEY = 20;
     public static final byte SSH_AGENTC_REMOVE_SMARTCARD_KEY = 21;
     public static final byte SSH_AGENTC_LOCK = 22;
     public static final byte SSH_AGENTC_UNLOCK = 23;

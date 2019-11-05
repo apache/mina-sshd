@@ -297,9 +297,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+            public void modifiedAttributes(
+                    ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
                 @SuppressWarnings("unchecked")
-                List<AclEntry> aclActual  = GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                List<AclEntry> aclActual =
+                    GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
                 } else {
@@ -309,9 +311,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         });
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Files.createDirectories(lclSftp.resolve("sub-folder"));
-        Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Path lclFile = assertHierarchyTargetFolderExists(lclSftp)
+            .resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();

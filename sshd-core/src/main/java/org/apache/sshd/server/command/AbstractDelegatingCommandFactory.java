@@ -39,7 +39,8 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
     private CommandFactory delegate;
 
     protected AbstractDelegatingCommandFactory(String name) {
-        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No delegating command factory name provided");
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(
+            name, "No delegating command factory name provided");
     }
 
     @Override
