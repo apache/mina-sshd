@@ -67,6 +67,8 @@ the message type=30 (old request).
 
 * The `MacInformation` interface has an extra `isEncryptThenMac` method (default=_false_) to enable distinction of this mode.
 
+* Provide configurable control over the client-side `ChannelSession` _stdin_ pump chunk size.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
@@ -39,11 +40,22 @@ import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
- * TODO Add javadoc
+ * Client side channel session
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractClientChannel {
+    /**
+     * On some platforms, a call to {@ode System.in.read(new byte[65536], 0, 32768)}
+     * always throws an {@link IOException}. So we need to protect against that and chunk
+     * the call into smaller calls. This problem was found on Windows, JDK 1.6.0_03-b05.
+     */
+    public static final String INPUT_STREAM_PUMP_CHUNK_SIZE = "stdin-pump-chunk-size";
+
+    /**
+     * Default (and also <U>minimum</U>) value of {@value #INPUT_STREAM_PUMP_CHUNK_SIZE}
+     */
+    public static final int DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE = 1024;
 
     private CloseableExecutorService pumperService;
     private Future<?> pumper;
@@ -93,7 +105,7 @@ public class ChannelSession extends AbstractClientChannel {
                 CloseableExecutorService service = getExecutorService();
                 if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor(
-                        "ClientInputStreamPump[" + this.toString() + "]");
+                        "ClientInputStreamPump[" + this + "]");
                 } else {
                     pumperService = ThreadUtils.noClose(service);
                 }
@@ -164,11 +176,15 @@ public class ChannelSession extends AbstractClientChannel {
             Session session = getSession();
             Window wRemote = getRemoteWindow();
             long packetSize = wRemote.getPacketSize();
-            ValidateUtils.checkTrue(packetSize < Integer.MAX_VALUE,
-                "Remote packet size exceeds int boundary: %d", packetSize);
+            ValidateUtils.checkTrue((packetSize > 0) && (packetSize < Integer.MAX_VALUE),
+                "Invalid remote packet size int boundary: %d", packetSize);
             byte[] buffer = new byte[(int) packetSize];
+            int maxChunkSize = PropertyResolverUtils.getIntProperty(
+                session, INPUT_STREAM_PUMP_CHUNK_SIZE, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
+            maxChunkSize = Math.max(maxChunkSize, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
+
             while (!closeFuture.isClosed()) {
-                int len = securedRead(in, buffer, 0, buffer.length);
+                int len = securedRead(in, maxChunkSize, buffer, 0, buffer.length);
                 if (len < 0) {
                     if (log.isDebugEnabled()) {
                         log.debug("pumpInputStream({}) EOF signalled", this);
@@ -201,24 +217,23 @@ public class ChannelSession extends AbstractClientChannel {
         }
     }
 
-    //
-    // On some platforms, a call to System.in.read(new byte[65536], 0,32768) always throws an IOException.
-    // So we need to protect against that and chunk the call into smaller calls.
-    // This problem was found on Windows, JDK 1.6.0_03-b05.
-    //
-    protected int securedRead(InputStream in, byte[] buf, int off, int len) throws IOException {
-        int n = 0;
-        for (;;) {
-            int nread = in.read(buf, off + n, Math.min(1024, len - n));
+    protected int securedRead(
+            InputStream in, int maxChunkSize, byte[] buf, int off, int len)
+                throws IOException {
+        for (int n = 0;;) {
+            int nread = in.read(buf, off + n, Math.min(maxChunkSize, len - n));
             if (nread <= 0) {
                 return (n == 0) ? nread : n;
             }
+
             n += nread;
             if (n >= len) {
                 return n;
             }
+
             // if not closed but no bytes available, return
-            if (in.available() <= 0) {
+            int availLen = in.available();
+            if (availLen <= 0) {
                 return n;
             }
         }

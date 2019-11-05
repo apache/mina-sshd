@@ -77,7 +77,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
- * TODO Add javadocWindowInitTest
+ * Server side channel session
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -90,6 +90,10 @@ public class ChannelSession extends AbstractServerChannel {
      * until a {@link ChannelDataReceiver} for the data is registered
      */
     public static final String MAX_EXTDATA_BUFSIZE = "channel-session-max-extdata-bufsize";
+
+    /**
+     * Default value of {@value #MAX_EXTDATA_BUFSIZE}
+     */
     public static final int DEFAULT_MAX_EXTDATA_BUFSIZE = 0;
 
     protected String type;

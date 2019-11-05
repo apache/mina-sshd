@@ -145,7 +145,9 @@ public final class IoUtils {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static IOException closeQuietly(Closeable... closeables) {
-        return closeQuietly(GenericUtils.isEmpty(closeables) ? Collections.emptyList() : Arrays.asList(closeables));
+        return closeQuietly(GenericUtils.isEmpty(closeables)
+            ? Collections.emptyList()
+            : Arrays.asList(closeables));
     }
 
     /**
@@ -303,22 +305,23 @@ public final class IoUtils {
      *              owner if <U>any</U> of relevant the owner/group/others permission is set
      */
     public static void setPermissionsToFile(File f, Collection<PosixFilePermission> perms) {
-        boolean readable = perms != null
-                && (perms.contains(PosixFilePermission.OWNER_READ)
-                        || perms.contains(PosixFilePermission.GROUP_READ)
-                        || perms.contains(PosixFilePermission.OTHERS_READ));
+        boolean havePermissions = GenericUtils.isNotEmpty(perms);
+        boolean readable = havePermissions
+            && (perms.contains(PosixFilePermission.OWNER_READ)
+                    || perms.contains(PosixFilePermission.GROUP_READ)
+                    || perms.contains(PosixFilePermission.OTHERS_READ));
         f.setReadable(readable, false);
 
-        boolean writable = perms != null
-                && (perms.contains(PosixFilePermission.OWNER_WRITE)
-                        || perms.contains(PosixFilePermission.GROUP_WRITE)
-                        || perms.contains(PosixFilePermission.OTHERS_WRITE));
+        boolean writable = havePermissions
+            && (perms.contains(PosixFilePermission.OWNER_WRITE)
+                    || perms.contains(PosixFilePermission.GROUP_WRITE)
+                    || perms.contains(PosixFilePermission.OTHERS_WRITE));
         f.setWritable(writable, false);
 
-        boolean executable = perms != null
-                && (perms.contains(PosixFilePermission.OWNER_EXECUTE)
-                        || perms.contains(PosixFilePermission.GROUP_EXECUTE)
-                        || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
+        boolean executable = havePermissions
+            && (perms.contains(PosixFilePermission.OWNER_EXECUTE)
+                    || perms.contains(PosixFilePermission.GROUP_EXECUTE)
+                    || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
         f.setExecutable(executable, false);
     }
 
@@ -401,7 +404,9 @@ public final class IoUtils {
      * @throws IOException  if there is a problem reading the file
      * @throws EOFException if the number of bytes read was incorrect
      */
-    public static void readFully(InputStream input, byte[] buffer, int offset, int length) throws IOException {
+    public static void readFully(
+            InputStream input, byte[] buffer, int offset, int length)
+                throws IOException {
         int actual = read(input, buffer, offset, length);
         if (actual != length) {
             throw new EOFException("Premature EOF - expected=" + length + ", actual=" + actual);
@@ -430,7 +435,9 @@ public final class IoUtils {
      * @return actual length read; may be less than requested if EOF was reached
      * @throws IOException if a read error occurs
      */
-    public static int read(InputStream input, byte[] buffer, int offset, int length) throws IOException {
+    public static int read(
+            InputStream input, byte[] buffer, int offset, int length)
+                throws IOException {
         for (int remaining = length, curOffset = offset; remaining > 0;) {
             int count = input.read(buffer, curOffset, remaining);
             if (count == -1) { // EOF before achieved required length
@@ -450,7 +457,8 @@ public final class IoUtils {
      * @return The violating {@link PosixFilePermission} - {@code null}
      * if no violating permission found
      */
-    public static PosixFilePermission validateExcludedPermissions(Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded) {
+    public static PosixFilePermission validateExcludedPermissions(
+            Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded) {
         if (GenericUtils.isEmpty(perms) || GenericUtils.isEmpty(excluded)) {
             return null;
         }
@@ -474,6 +482,7 @@ public final class IoUtils {
         if (!Files.isDirectory(path, options)) {
             throw new UnsupportedOperationException("Not a directory: " + path);
         }
+
         return path;
     }
 
@@ -505,7 +514,9 @@ public final class IoUtils {
             return prefix;
         }
 
-        StringBuilder sb = new StringBuilder(prefix.length() + component.length() + File.separator.length()).append(prefix);
+        StringBuilder sb = new StringBuilder(
+                prefix.length() + component.length() + File.separator.length())
+            .append(prefix);
 
         if (sb.charAt(prefix.length() - 1) == File.separatorChar) {
             if (component.charAt(0) == File.separatorChar) {
@@ -554,13 +565,15 @@ public final class IoUtils {
      * @see #readAllLines(Reader)
      */
     public static List<String> readAllLines(InputStream stream) throws IOException {
-        try (Reader reader = new InputStreamReader(Objects.requireNonNull(stream, "No stream instance"), StandardCharsets.UTF_8)) {
+        try (Reader reader = new InputStreamReader(
+                Objects.requireNonNull(stream, "No stream instance"), StandardCharsets.UTF_8)) {
             return readAllLines(reader);
         }
     }
 
     public static List<String> readAllLines(Reader reader) throws IOException {
-        try (BufferedReader br = new BufferedReader(Objects.requireNonNull(reader, "No reader instance"), DEFAULT_COPY_SIZE)) {
+        try (BufferedReader br = new BufferedReader(
+                Objects.requireNonNull(reader, "No reader instance"), DEFAULT_COPY_SIZE)) {
             return readAllLines(br);
         }
     }
