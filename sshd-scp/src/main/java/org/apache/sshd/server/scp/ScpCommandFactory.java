@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
@@ -44,7 +45,7 @@ import org.apache.sshd.server.command.CommandFactory;
  */
 public class ScpCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ScpFileOpenerHolder, Cloneable {
+        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable {
 
     public static final String SCP_FACTORY_NAME = "scp";
 
@@ -123,16 +124,14 @@ public class ScpCommandFactory
         this.fileOpener = fileOpener;
     }
 
+    @Override
     public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
         return executorsProvider;
     }
 
-    /**
-     * @param provider A {@link Supplier} of {@link CloseableExecutorService} to be used when
-     * starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     * ad-hoc service is used.
-     */
-    public void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider) {
+    @Override
+    public void setExecutorServiceProvider(
+            Supplier<? extends CloseableExecutorService> provider) {
         executorsProvider = provider;
     }
 
@@ -147,7 +146,7 @@ public class ScpCommandFactory
     public void setSendBufferSize(int sendSize) {
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size "
-                    + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+                + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
         }
         sendBufferSize = sendSize;
     }
@@ -214,8 +213,7 @@ public class ScpCommandFactory
     }
 
     protected CloseableExecutorService resolveExecutorService(String command) {
-        Supplier<? extends CloseableExecutorService> provider = getExecutorServiceProvider();
-        return (provider == null) ? null : provider.get();
+        return resolveExecutorService();
     }
 
     @Override

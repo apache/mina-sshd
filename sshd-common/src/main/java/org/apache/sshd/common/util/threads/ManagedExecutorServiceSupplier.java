@@ -19,13 +19,16 @@
 
 package org.apache.sshd.common.util.threads;
 
+import java.util.function.Supplier;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FunctionalInterface
-public interface ExecutorServiceCarrier {
+public interface ManagedExecutorServiceSupplier extends ExecutorServiceProvider {
     /**
-     * @return The {@link CloseableExecutorService} to use
+     * @param provider The {@link Supplier} of {@link CloseableExecutorService}-s to be used
+     * when asynchronous execution is required. If {@code null} then a single-threaded
+     * ad-hoc service is used.
      */
-    CloseableExecutorService getExecutorService();
+    void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider);
 }

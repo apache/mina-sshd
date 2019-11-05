@@ -19,26 +19,28 @@
 
 package org.apache.sshd.git;
 
+import java.util.function.Supplier;
+
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ExecutorServiceProvider;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.shell.UnknownCommand;
 
 /**
- * TODO Add javadoc
+ * Helper class for various Git command factories
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractGitCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ExecutorServiceCarrier, GitLocationResolverCarrier {
+        implements ExecutorServiceProvider, GitLocationResolverCarrier {
     private final String cmdPrefix;
     private GitLocationResolver rootDirResolver;
-    private CloseableExecutorService executorService;
+    private Supplier<? extends CloseableExecutorService> executorsProvider;
 
     /**
      * @param name Command factory logical name
@@ -48,7 +50,8 @@ public abstract class AbstractGitCommandFactory
     protected AbstractGitCommandFactory(String name, String cmdPrefix) {
         super(name);
 
-        this.cmdPrefix = ValidateUtils.checkNotNullAndNotEmpty(cmdPrefix, "No command prefix provided");
+        this.cmdPrefix = ValidateUtils.checkNotNullAndNotEmpty(
+            cmdPrefix, "No command prefix provided");
     }
 
     public String getCommandPrefix() {
@@ -56,12 +59,18 @@ public abstract class AbstractGitCommandFactory
     }
 
     @Override
-    public CloseableExecutorService getExecutorService() {
-        return executorService;
+    public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
+        return executorsProvider;
     }
 
-    public AbstractGitCommandFactory withExecutorService(CloseableExecutorService executorService) {
-        this.executorService = executorService;
+    /**
+     * @param provider A {@link Supplier} of {@link CloseableExecutorService} to be used when
+     * starting a Git command execution. If {@code null} then a single-threaded ad-hoc service is used.
+     * @return Self instance
+     */
+    public AbstractGitCommandFactory withExecutorServiceProvider(
+            Supplier<? extends CloseableExecutorService> provider) {
+        this.executorsProvider = provider;
         return this;
     }
 
@@ -98,6 +107,10 @@ public abstract class AbstractGitCommandFactory
     @Override
     protected Command createUnsupportedCommand(String command) {
         return new UnknownCommand(command);
+    }
+
+    protected CloseableExecutorService resolveExecutorService(String command) {
+        return resolveExecutorService();
     }
 
     protected abstract AbstractGitCommand createGitCommand(String command);

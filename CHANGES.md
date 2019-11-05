@@ -6,9 +6,10 @@
 
 ## Major code re-factoring
 
-* `SftpSubSystemFactory,ScpCommandFactory` and their respective `Builder`(s) use a `Supplier<CloseableExecutorService>`
-instead of an executor instance in order to allow users to provide a "fresh" instance every time an SFTP
-session is initiated and protect their instance from shutdown when session is destroyed:
+* `SftpSubSystemFactory,ScpCommandFactory` and their respective `Builder`(s) as well as the
+`AbstractGitCommandFactory` use a `Supplier<CloseableExecutorService>` instead of an executor instance
+in order to allow users to provide a "fresh" instance every time a new command instance
+is initiated and protect their instance from shutdown when session is destroyed:
 
 ```java
     CloseableExecutorService mySpecialExecutor = ...;
