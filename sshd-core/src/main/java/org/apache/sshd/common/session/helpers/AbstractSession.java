@@ -496,7 +496,7 @@ public abstract class AbstractSession extends SessionHelper {
          *      the next packet MUST be silently ignored
          */
         boolean debugEnabled = log.isDebugEnabled();
-        for (KexProposalOption option : new KexProposalOption[]{KexProposalOption.ALGORITHMS, KexProposalOption.SERVERKEYS}) {
+        for (KexProposalOption option : KexProposalOption.FIRST_KEX_PACKET_GUESS_MATCHES) {
             Map.Entry<String, String> result = comparePreferredKexProposalOption(option);
             if (result != null) {
                 if (debugEnabled) {
@@ -514,10 +514,10 @@ public abstract class AbstractSession extends SessionHelper {
      * Compares the specified {@link KexProposalOption} option value for client vs. server
      *
      * @param option The option to check
-     * @return {@code null} if option is equal, otherwise a kex/value pair where key=client
+     * @return {@code null} if option is equal, otherwise a key/value pair where key=client
      * option value and value=the server-side one
      */
-    protected SimpleImmutableEntry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
+    protected Map.Entry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
         String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
         String clientValue = GenericUtils.isEmpty(clientPreferences) ? null : clientPreferences[0];
         String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');

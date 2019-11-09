@@ -19,11 +19,11 @@
 
 package org.apache.sshd.common.kex;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -43,21 +43,20 @@ public enum KexProposalOption {
     C2SLANG(Constants.PROPOSAL_LANG_CTOS, "languages (client to server)"),
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
 
-    public static final Collection<KexProposalOption> CIPHER_PROPOSALS =
-        Collections.unmodifiableSet(
-            EnumSet.of(KexProposalOption.C2SENC, KexProposalOption.S2CENC));
+    public static final Set<KexProposalOption> CIPHER_PROPOSALS =
+        Collections.unmodifiableSet(EnumSet.of(C2SENC, S2CENC));
 
-    public static final Collection<KexProposalOption> MAC_PROPOSALS =
-        Collections.unmodifiableSet(
-            EnumSet.of(KexProposalOption.C2SMAC, KexProposalOption.S2CMAC));
+    public static final Set<KexProposalOption> MAC_PROPOSALS =
+        Collections.unmodifiableSet(EnumSet.of(C2SMAC, S2CMAC));
 
-    public static final Collection<KexProposalOption> COMPRESSION_PROPOSALS =
-        Collections.unmodifiableSet(
-            EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
+    public static final Set<KexProposalOption> COMPRESSION_PROPOSALS =
+        Collections.unmodifiableSet(EnumSet.of(C2SCOMP, S2CCOMP));
 
-    public static final Collection<KexProposalOption> LANGUAGE_PROPOSALS =
-        Collections.unmodifiableSet(
-            EnumSet.of(KexProposalOption.C2SLANG, KexProposalOption.S2CLANG));
+    public static final Set<KexProposalOption> LANGUAGE_PROPOSALS =
+        Collections.unmodifiableSet(EnumSet.of(C2SLANG, S2CLANG));
+
+    public static final Set<KexProposalOption> FIRST_KEX_PACKET_GUESS_MATCHES =
+        Collections.unmodifiableSet(EnumSet.of(ALGORITHMS, SERVERKEYS));
 
     /**
      * Compares values according to {@link KexProposalOption#getProposalIndex()}
