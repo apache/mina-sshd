@@ -161,7 +161,7 @@ public final class SshServerConfigFileReader {
 
         if (GenericUtils.isEmpty(bannerOption)) {
             return "Welcome to SSHD\n";
-        } else if ("none".equals(bannerOption)) {
+        } else if (PropertyResolverUtils.isNoneValue(bannerOption)) {
             return null;
         } else if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
             return bannerOption;

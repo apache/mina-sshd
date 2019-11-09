@@ -57,6 +57,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.DHParameterSpec;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
@@ -337,7 +338,7 @@ public final class SecurityUtils {
             }
 
             String name = System.getProperty(PROP_DEFAULT_SECURITY_PROVIDER);
-            choice = (GenericUtils.isEmpty(name) || "none".equalsIgnoreCase(name))
+            choice = (GenericUtils.isEmpty(name) || PropertyResolverUtils.isNoneValue(name))
                     ? SecurityProviderChoice.EMPTY
                     : SecurityProviderChoice.toSecurityProviderChoice(name);
             DEFAULT_PROVIDER_HOLDER.set(choice);
@@ -389,7 +390,7 @@ public final class SecurityUtils {
             String regsList = System.getProperty(SECURITY_PROVIDER_REGISTRARS,
                     GenericUtils.join(DEFAULT_SECURITY_PROVIDER_REGISTRARS, ','));
             boolean bouncyCastleRegistered = false;
-            if ((GenericUtils.length(regsList) > 0) && (!"none".equalsIgnoreCase(regsList))) {
+            if ((GenericUtils.length(regsList) > 0) && (!PropertyResolverUtils.isNoneValue(regsList))) {
                 String[] classes = GenericUtils.split(regsList, ',');
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
                 boolean debugEnabled = logger.isDebugEnabled();

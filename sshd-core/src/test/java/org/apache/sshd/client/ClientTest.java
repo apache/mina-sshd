@@ -1143,24 +1143,29 @@ public class ClientTest extends BaseTestSupport {
     @Test   // see SSHD-504
     public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         Collection<String> mismatchedPrompts = new LinkedList<>();
-        client.setUserAuthFactories(Collections.singletonList(new UserAuthKeyboardInteractiveFactory() {
-            @Override
-            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
-                return new UserAuthKeyboardInteractive() {
+        client.setUserAuthFactories(
+            Collections.singletonList(
+                new UserAuthKeyboardInteractiveFactory() {
                     @Override
-                    protected boolean useCurrentPassword(
-                            String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                        boolean expected = GenericUtils.length(password) > 0;
-                        boolean actual = super.useCurrentPassword(password, name, instruction, lang, prompt, echo);
-                        if (expected != actual) {
-                            System.err.println("Mismatched usage result for prompt=" + prompt[0] + ": expected=" + expected + ", actual=actual");
-                            mismatchedPrompts.add(prompt[0]);
-                        }
-                        return actual;
+                    public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
+                        return new UserAuthKeyboardInteractive() {
+                            @Override
+                            protected boolean useCurrentPassword(
+                                    ClientSession session, String password, String name, String instruction,
+                                    String lang, String[] prompt, boolean[] echo) {
+                                boolean expected = GenericUtils.length(password) > 0;
+                                boolean actual = super.useCurrentPassword(
+                                    session, password, name, instruction, lang, prompt, echo);
+                                if (expected != actual) {
+                                    System.err.println("Mismatched usage result for prompt=" + prompt[0]
+                                        + ": expected=" + expected + ", actual=actual");
+                                    mismatchedPrompts.add(prompt[0]);
+                                }
+                                return actual;
+                            }
+                        };
                     }
-                };
-            }
-        }));
+                }));
         client.start();
 
         Function<String, String> stripper = input -> {
@@ -1179,21 +1184,22 @@ public class ClientTest extends BaseTestSupport {
                 input -> getCurrentTestName() + " " + stripper.apply(input) + " " + getCurrentTestName() + ":"
             ));
 
-        sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
-            private int xformerIndex;
+        sshd.setKeyboardInteractiveAuthenticator(
+            new DefaultKeyboardInteractiveAuthenticator() {
+                private int xformerIndex;
 
-            @Override
-            protected String getInteractionPrompt(ServerSession session) {
-                String original = super.getInteractionPrompt(session);
-                if (xformerIndex < xformers.size()) {
-                    Function<String, String> x = xformers.get(xformerIndex);
-                    xformerIndex++;
-                    return x.apply(original);
-                } else {
-                    return original;
+                @Override
+                protected String getInteractionPrompt(ServerSession session) {
+                    String original = super.getInteractionPrompt(session);
+                    if (xformerIndex < xformers.size()) {
+                        Function<String, String> x = xformers.get(xformerIndex);
+                        xformerIndex++;
+                        return x.apply(original);
+                    } else {
+                        return original;
+                    }
                 }
-            }
-        });
+            });
 
         try {
             for (int index = 0; index < xformers.size(); index++) {
@@ -1249,7 +1255,8 @@ public class ClientTest extends BaseTestSupport {
 
             @Override
             public String[] interactive(
-                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    ClientSession session, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 validateSession("interactive", session);
                 count.incrementAndGet();
                 return badResponse;
@@ -1320,7 +1327,8 @@ public class ClientTest extends BaseTestSupport {
 
                 @Override
                 public String[] interactive(
-                        ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                        ClientSession clientSession, String name, String instruction,
+                        String lang, String[] prompt, boolean[] echo) {
                     assertSame("Mismatched interactive session", session, clientSession);
                     count.incrementAndGet();
                     return new String[]{getCurrentTestName()};
@@ -1374,7 +1382,8 @@ public class ClientTest extends BaseTestSupport {
 
                 @Override
                 public String[] interactive(
-                        ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                        ClientSession clientSession, String name, String instruction,
+                        String lang, String[] prompt, boolean[] echo) {
                     assertSame("Mismatched interactive session", session, clientSession);
                     int attemptId = count.incrementAndGet();
                     return new String[]{"bad#" + attemptId};

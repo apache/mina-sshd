@@ -220,7 +220,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
                     @Override
                     public String[] interactive(
-                            ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                            ClientSession session, String name, String instruction,
+                            String lang, String[] prompt, boolean[] echo) {
                         return null;
                     }
 

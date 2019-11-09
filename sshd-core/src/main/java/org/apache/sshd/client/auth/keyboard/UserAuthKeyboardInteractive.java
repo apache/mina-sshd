@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
@@ -200,7 +201,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         int numResponses = rep.length;
-        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
+        buffer = session.createBuffer(
+            SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
         buffer.putInt(numResponses);
         for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
@@ -274,12 +276,16 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             return GenericUtils.EMPTY_STRING_ARRAY;
         }
 
-        String candidate = getCurrentPasswordCandidate();
-        if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) {
-            if (debugEnabled) {
-                log.debug("getUserResponses({}) use password candidate for interaction={}", session, name);
+        if (PropertyResolverUtils.getBooleanProperty(
+                session, UserInteraction.AUTO_DETECT_PASSWORD_PROMPT,
+                UserInteraction.DEFAULT_AUTO_DETECT_PASSWORD_PROMPT)) {
+            String candidate = getCurrentPasswordCandidate();
+            if (useCurrentPassword(session, candidate, name, instruction, lang, prompt, echo)) {
+                if (debugEnabled) {
+                    log.debug("getUserResponses({}) use password candidate for interaction={}", session, name);
+                }
+                return new String[]{candidate};
             }
-            return new String[]{candidate};
         }
 
         UserInteraction ui = session.getUserInteraction();
@@ -304,22 +310,55 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         return null;
     }
 
-    protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+    /**
+     * Checks if we have a candidate password and <U>exactly one</U> prompt is requested
+     * with no echo, and the prompt matches a configurable pattern.
+     *
+     * @param session The {@link ClientSession} through which the request is received
+     * @param password The current password candidate to use
+     * @param name The service name
+     * @param instruction The request instruction
+     * @param lang The reported language tag
+     * @param prompt The requested prompts
+     * @param echo The matching prompts echo flags
+     * @return Whether to use the password candidate as reply to the prompts
+     * @see UserInteraction#INTERACTIVE_PASSWORD_PROMPT INTERACTIVE_PASSWORD_PROMPT
+     * @see UserInteraction#CHECK_INTERACTIVE_PASSWORD_DELIM CHECK_INTERACTIVE_PASSWORD_DELIM
+     */
+    protected boolean useCurrentPassword(
+            ClientSession session, String password, String name,
+            String instruction, String lang, String[] prompt, boolean[] echo) {
         int num = GenericUtils.length(prompt);
         if ((num != 1) || (password == null) || echo[0]) {
             return false;
         }
 
-        // check that prompt is something like "XXX password YYY:"
-        String value = GenericUtils.trimToEmpty(prompt[0]).toLowerCase();
-        int passPos = value.lastIndexOf("password");
+        // check if prompt is something like "XXX password YYY:"
+        String value = GenericUtils.trimToEmpty(prompt[0]);
+        // Don't care about the case
+        value = value.toLowerCase();
+
+        String promptList = PropertyResolverUtils.getStringProperty(
+            session, UserInteraction.INTERACTIVE_PASSWORD_PROMPT,
+            UserInteraction.DEFAULT_INTERACTIVE_PASSWORD_PROMPT);
+        int passPos = UserInteraction.findPromptComponentLastPosition(value, promptList);
         if (passPos < 0) {  // no password keyword in prompt
             return false;
         }
 
-        int sepPos = value.lastIndexOf(':');
-        return sepPos > passPos;
+        String delimList = PropertyResolverUtils.getStringProperty(
+            session, UserInteraction.CHECK_INTERACTIVE_PASSWORD_DELIM,
+            UserInteraction.DEFAULT_CHECK_INTERACTIVE_PASSWORD_DELIM);
+        if (PropertyResolverUtils.isNoneValue(delimList)) {
+            return true;
+        }
 
+        int sepPos = UserInteraction.findPromptComponentLastPosition(value, delimList);
+        if (sepPos < passPos) {
+            return false;
+        }
+
+        return true;
     }
 
     public static String getAuthCommandName(int cmd) {

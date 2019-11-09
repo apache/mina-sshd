@@ -104,6 +104,12 @@ While RFC-4256 support is the primary purpose of this interface, it can also be 
 in [RFC 4252 section 5.4](https://www.ietf.org/rfc/rfc4252.txt) as well as its initial identification string as described
 in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
+In this context, regardless of whether such interaction is configured, the default implementation for the client side contains code
+that attempts to auto-detect a password prompt. If it detects it, then it attempts to use one of the registered passwords (if any) as
+the interactive response to the server's challenge - (see client-side implementation of `UserAuthKeyboardInteractive#useCurrentPassword`
+method). Basically, detection occurs by checking if the server sent **exactly one** challenge with no requested echo, and the challenge
+string looks like `"... password ...:"` (**Note:** the auto-detection and password prompt detection patterns are configurable).
+
 ## Using the `SshClient` to connect to a server
 
 Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server.

@@ -116,12 +116,16 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession session, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 return null;
             }
         });
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(7L, TimeUnit.SECONDS)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         }

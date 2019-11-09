@@ -502,7 +502,9 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession clientSession, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 int numPropmts = GenericUtils.length(prompt);
                 String[] answers = new String[numPropmts];
                 try {

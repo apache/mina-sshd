@@ -125,6 +125,9 @@ public class InteractiveChallenge implements Cloneable {
 
     @Override
     public String toString() {
-        return getInteractionName() + "[" + getInteractionInstruction() + "](" + getLanguageTag() + "): " + getPrompts();
+        return getInteractionName()
+            + "[" + getInteractionInstruction() + "]"
+            + "(" + getLanguageTag() + ")"
+            + ": " + getPrompts();
     }
 }

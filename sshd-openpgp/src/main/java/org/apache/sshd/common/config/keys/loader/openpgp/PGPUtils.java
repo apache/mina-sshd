@@ -27,6 +27,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -51,13 +52,13 @@ public final class PGPUtils {
     public static final String PGP_ENCRYPTED_FILE = "application/pgp-encrypted";
 
     /** Alias for {@link EncryptionAlgorithm#Unencrypted Unencrypted} */
-    public static final String NO_CIPHER_PLACEHOLDER = "none";
+    public static final String NO_CIPHER_PLACEHOLDER = PropertyResolverUtils.NONE_VALUE;
 
     public static final Set<EncryptionAlgorithm> CIPHERS =
         Collections.unmodifiableSet(EnumSet.allOf(EncryptionAlgorithm.class));
 
     /** Alias for {@link CompressionAlgorithm#Uncompressed Uncompressed} */
-    public static final String NO_COMPRESSION_PLACEHOLDER = "none";
+    public static final String NO_COMPRESSION_PLACEHOLDER = PropertyResolverUtils.NONE_VALUE;
 
     public static final Set<CompressionAlgorithm> COMPRESSIONS =
         Collections.unmodifiableSet(EnumSet.allOf(CompressionAlgorithm.class));

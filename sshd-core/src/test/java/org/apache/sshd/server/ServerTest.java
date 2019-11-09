@@ -860,7 +860,8 @@ public class ServerTest extends BaseTestSupport {
 
             @Override
             public String[] interactive(
-                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    ClientSession session, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 clientCount.incrementAndGet();
                 return replies;
             }

@@ -69,6 +69,8 @@ the message type=30 (old request).
 
 * Provide configurable control over the client-side `ChannelSession` _stdin_ pump chunk size.
 
+* Client side `UserAuthKeyboardInteractive` allows configurable detection of plain-text password prompt.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
@@ -101,3 +103,4 @@ for the server's identification before sending KEX-INIT message.
 
 * [SSHD-953](https://issues.apache.org/jira/browse/SSHD-953) - Parse and strip quoted command arguments when executing a server-side command via local shell.
 
+* [SSHD-955](https://issues.apache.org/jira/browse/SSHD-955) - Provide configurable control over auto-detected password prompt in client-side `UserAuthKeyboardInteractive` implementation.

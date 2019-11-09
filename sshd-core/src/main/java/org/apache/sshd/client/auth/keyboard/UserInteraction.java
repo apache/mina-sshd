@@ -21,6 +21,7 @@ package org.apache.sshd.client.auth.keyboard;
 import java.util.List;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Interface used by the ssh client to communicate with the end user.
@@ -29,6 +30,38 @@ import org.apache.sshd.client.session.ClientSession;
  * @see <a href="https://tools.ietf.org/html/rfc4256">RFC 4256</A>
  */
 public interface UserInteraction {
+    /**
+     * Whether to auto-detect password challenge prompt
+     *
+     * @see #INTERACTIVE_PASSWORD_PROMPT
+     * @see #CHECK_INTERACTIVE_PASSWORD_DELIM
+     */
+    String AUTO_DETECT_PASSWORD_PROMPT = "user-interaction-auto-detect-password-prompt";
+
+    /** Default value for {@value #AUTO_DETECT_PASSWORD_PROMPT} */
+    boolean DEFAULT_AUTO_DETECT_PASSWORD_PROMPT = true;
+
+    /**
+     * Comma separated list of values used to detect request for a
+     * password in interactive mode. <B>Note:</B> the matched prompt
+     * is assumed to be <U>lowercase</U>.
+     */
+    String INTERACTIVE_PASSWORD_PROMPT = "user-interaction-password-prompt";
+
+    /** Default value for {@value #INTERACTIVE_PASSWORD_PROMPT} */
+    String DEFAULT_INTERACTIVE_PASSWORD_PROMPT = "password";
+
+    /**
+     * If password prompt detected then check it ends with
+     * <U>any</U> of the comma separated list of these values.
+     * Use &quot;none&quot; to disable this extra check. <B>Note:</B>
+     * the matched prompt is assumed to be <U>lowercase</U>.
+     */
+    String CHECK_INTERACTIVE_PASSWORD_DELIM = "user-interaction-check-password-delimiter";
+
+    /** Default value of {@value #CHECK_INTERACTIVE_PASSWORD_DELIM} */
+    String DEFAULT_CHECK_INTERACTIVE_PASSWORD_DELIM = ":";
+
     /**
      * A useful &quot;placeholder&quot; that indicates that no interaction is expected.
      * <B>Note:</B> throws {@link IllegalStateException} is any of the interaction
@@ -41,7 +74,9 @@ public interface UserInteraction {
         }
 
         @Override
-        public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+        public String[] interactive(
+                ClientSession session, String name, String instruction,
+                String lang, String[] prompt, boolean[] echo) {
             throw new IllegalStateException("interactive(" + session + ")[" + name + "] unexpected call");
         }
 
@@ -105,7 +140,8 @@ public interface UserInteraction {
      * however we do not enforce it since it is defined as the <U>server's</U>
      * job to check and manage this violation.
      */
-    String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo);
+    String[] interactive(
+        ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo);
 
     /**
      * Invoked when the server returns an {@code SSH_MSG_USERAUTH_PASSWD_CHANGEREQ}
@@ -121,4 +157,26 @@ public interface UserInteraction {
      * be it other passwords, public keys, etc...)
      */
     String getUpdatedPassword(ClientSession session, String prompt, String lang);
+
+    /**
+     * @param prompt The user interaction prompt
+     * @param tokensList A comma-separated list of tokens whose
+     * <U>last</U> index is prompt is sought.
+     * @return The position of any token in the prompt - negative if not found
+     */
+    static int findPromptComponentLastPosition(String prompt, String tokensList) {
+        if (GenericUtils.isEmpty(prompt) || GenericUtils.isEmpty(tokensList)) {
+            return -1;
+        }
+
+        String[] tokens = GenericUtils.split(tokensList, ',');
+        for (String t : tokens) {
+            int pos = prompt.lastIndexOf(t);
+            if (pos >= 0) {
+                return pos;
+            }
+        }
+
+        return -1;
+    }
 }

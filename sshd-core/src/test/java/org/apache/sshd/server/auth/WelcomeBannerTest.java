@@ -173,7 +173,9 @@ public class WelcomeBannerTest extends BaseTestSupport {
                 }
 
                 @Override
-                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                public String[] interactive(
+                        ClientSession session, String name, String instruction,
+                        String lang, String[] prompt, boolean[] echo) {
                     throw new UnsupportedOperationException("Unexpected interactive call");
                 }
 
@@ -183,7 +185,10 @@ public class WelcomeBannerTest extends BaseTestSupport {
                 }
             });
             PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, getCurrentTestName());
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(7L, TimeUnit.SECONDS)
+                    .getSession()) {
                 assertTrue("Welcome not signalled on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
@@ -228,7 +233,9 @@ public class WelcomeBannerTest extends BaseTestSupport {
                 }
 
                 @Override
-                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                public String[] interactive(
+                        ClientSession session, String name, String instruction,
+                        String lang, String[] prompt, boolean[] echo) {
                     validateSession("interactive", session);
                     return null;
                 }

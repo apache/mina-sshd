@@ -192,7 +192,7 @@ public abstract class SshServerCliSupport extends CliSupport {
 
         String nameList =
             (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
-        if ("none".equalsIgnoreCase(nameList)) {
+        if (PropertyResolverUtils.isNoneValue(nameList)) {
             return Collections.emptyList();
         }
 
@@ -238,7 +238,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             return DEFAULT_SHELL_FACTORY;
         }
 
-        if ("none".equalsIgnoreCase(factory)) {
+        if (PropertyResolverUtils.isNoneValue(factory)) {
             return null;
         }
 

@@ -40,6 +40,7 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -412,7 +413,9 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
      * or just the original one with some changes in it
      * @throws NamingException If failed to set up the environment
      */
-    protected Map<String, Object> setupDirContextEnvironment(C queryContext, Map<String, Object> env, String username, String password) throws NamingException {
+    protected Map<String, Object> setupDirContextEnvironment(
+            C queryContext, Map<String, Object> env, String username, String password)
+                throws NamingException {
         if (!env.containsKey(Context.PROVIDER_URL)) {
             int port = getPort();
             ValidateUtils.checkTrue(port > 0, "No port configured");
@@ -423,7 +426,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         }
 
         String mode = Objects.toString(env.get(Context.SECURITY_AUTHENTICATION), null);
-        boolean anonymous = GenericUtils.isEmpty(mode) || "none".equalsIgnoreCase(mode);
+        boolean anonymous = GenericUtils.isEmpty(mode) || PropertyResolverUtils.isNoneValue(mode);
         if (!anonymous) {
             Object[] bindParams = {username, password};
             if (!env.containsKey(Context.SECURITY_PRINCIPAL)) {

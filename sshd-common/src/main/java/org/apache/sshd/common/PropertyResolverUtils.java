@@ -36,22 +36,34 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PropertyResolverUtils {
+    public static final String NONE_VALUE = "none";
+
     /**
      * Case <U>insensitive</U> {@link NavigableSet} of values considered {@code true} by {@link #parseBoolean(String)}
      */
     public static final NavigableSet<String> TRUE_VALUES =
         Collections.unmodifiableNavigableSet(
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "true", "t", "yes", "y", "on"));
+            GenericUtils.asSortedSet(
+                String.CASE_INSENSITIVE_ORDER, "true", "t", "yes", "y", "on"));
 
     /**
      * Case <U>insensitive</U> {@link NavigableSet} of values considered {@code false} by {@link #parseBoolean(String)}
      */
     public static final NavigableSet<String> FALSE_VALUES =
         Collections.unmodifiableNavigableSet(
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "false", "f", "no", "n", "off"));
+            GenericUtils.asSortedSet(
+                String.CASE_INSENSITIVE_ORDER, "false", "f", "no", "n", "off"));
 
     private PropertyResolverUtils() {
         throw new UnsupportedOperationException("No instance allowed");
+    }
+
+    /**
+     * @param v Value to examine
+     * @return {@code true} if equals to {@value #NONE_VALUE} - case <U>insensitive</U>
+     */
+    public static boolean isNoneValue(String v) {
+        return NONE_VALUE.equalsIgnoreCase(v);
     }
 
     /**
@@ -374,7 +386,8 @@ public final class PropertyResolverUtils {
      * @param defaultValue The default value to return if property not set or empty
      * @return The set value (if not {@code null}/empty) or default one
      */
-    public static String getStringProperty(PropertyResolver resolver, String name, String defaultValue) {
+    public static String getStringProperty(
+            PropertyResolver resolver, String name, String defaultValue) {
         String value = getString(resolver, name);
         if (GenericUtils.isEmpty(value)) {
             return defaultValue;
