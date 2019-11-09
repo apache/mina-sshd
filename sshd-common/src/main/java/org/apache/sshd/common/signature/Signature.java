@@ -56,7 +56,7 @@ public interface Signature extends AlgorithmNameProvider {
      * be {@code null} if not called within a session context
      * @param hash The hash data buffer
      * @throws Exception If failed to update
-     * @see #update(byte[], int, int)
+     * @see #update(SessionContext, byte[], int, int)
      */
     default void update(SessionContext session, byte[] hash) throws Exception {
         update(session, hash, 0, NumberUtils.length(hash));

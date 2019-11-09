@@ -113,7 +113,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      * @param session The {@link SessionContext} being used for authentication
      * @return {@code true} if the context is not {@code null} and the ciphers
      * have been established to anything other than &quot;none&quot;.
-     * @see {@value #ALLOW_INSECURE_AUTH}
+     * @see #ALLOW_INSECURE_AUTH
      * @see SessionContext#isSecureSessionTransport(SessionContext)
      */
     static boolean isSecureAuthenticationTransport(SessionContext session) {
@@ -134,7 +134,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      * @param session The {@link SessionContext} being used for authentication
      * @return {@code true} if the context is not {@code null} and the MAC(s)
      * used to verify packet integrity have been established.
-     * @see {@value #ALLOW_NON_INTEGRITY_AUTH}
+     * @see #ALLOW_NON_INTEGRITY_AUTH
      * @see SessionContext#isDataIntegrityTransport(SessionContext)
      */
     static boolean isDataIntegrityAuthenticationTransport(SessionContext session) {

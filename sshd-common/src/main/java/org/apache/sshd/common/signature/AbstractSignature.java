@@ -58,7 +58,7 @@ public abstract class AbstractSignature implements Signature {
      * @param session The {@link SessionContext} for calling this method - may
      * be {@code null} if not called within a session context
      * @param algo The signature's algorithm name
-     * @param the {@link Key} that is provided for initialization - a {@link PrivateKey}
+     * @param key the {@link Key} that is provided for initialization - a {@link PrivateKey}
      * for signing and a {@link PublicKey} for verification
      * @param forSigning If {@code true} then it is being initialized for signing,
      * otherwise for verifying a signature
