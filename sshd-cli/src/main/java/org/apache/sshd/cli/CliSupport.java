@@ -30,6 +30,9 @@ import java.util.logging.Level;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.auth.UserAuthFactoriesManager;
+import org.apache.sshd.common.auth.UserAuthInstance;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -40,6 +43,7 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -67,6 +71,18 @@ public abstract class CliSupport {
         }
 
         return true;
+    }
+
+    public static <S extends SessionContext,
+                M extends UserAuthInstance<S>, F extends UserAuthMethodFactory<S, M>,
+                I extends UserAuthFactoriesManager<S, M, F>>
+            void setupUserAuthFactories(
+                I manager, PropertyResolver options) {
+        String methods = options.getString(ConfigFileReaderSupport.PREFERRED_AUTHS_CONFIG_PROP);
+        if (GenericUtils.isNotEmpty(methods)) {
+            manager.setUserAuthFactoriesNameList(methods);
+            return;
+        }
     }
 
     /**
@@ -115,7 +131,8 @@ public abstract class CliSupport {
 
     public static BuiltinIoServiceFactoryFactories resolveBuiltinIoServiceFactory(
             PrintStream stderr, String argName, String provider) {
-        BuiltinIoServiceFactoryFactories factory = BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
+        BuiltinIoServiceFactoryFactories factory =
+            BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
         if (factory == null) {
             System.err.println(argName + " - unknown provider (" + provider + ")"
                 + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
@@ -170,7 +187,8 @@ public abstract class CliSupport {
 
             @Override
             public void abortEstablishedConnection(
-                    IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote, Throwable reason)
+                    IoConnector connector, SocketAddress local, AttributeRepository context,
+                    SocketAddress remote, Throwable reason)
                         throws IOException {
                 out.append("Abort established connection ").append(Objects.toString(connector))
                     .append(" - local=").append(Objects.toString(local))
@@ -182,8 +200,10 @@ public abstract class CliSupport {
             }
 
             @Override
-            public void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service)
-                    throws IOException {
+            public void connectionAccepted(
+                    IoAcceptor acceptor, SocketAddress local,
+                    SocketAddress remote, SocketAddress service)
+                            throws IOException {
                 out.append("Connection accepted via ").append(Objects.toString(acceptor))
                     .append(" - local=").append(Objects.toString(local))
                     .append(", remote=").append(Objects.toString(remote))
@@ -193,7 +213,8 @@ public abstract class CliSupport {
 
             @Override
             public void abortAcceptedConnection(
-                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service, Throwable reason)
+                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote,
+                    SocketAddress service, Throwable reason)
                         throws IOException {
                 out.append("Abort accepted connection ").append(Objects.toString(acceptor))
                     .append(" - local=").append(Objects.toString(local))

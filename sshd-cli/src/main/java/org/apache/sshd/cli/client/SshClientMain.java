@@ -121,11 +121,13 @@ public class SshClientMain extends SshClientCliSupport {
 
         ClientSession session = null;
         try (BufferedReader stdin = new BufferedReader(
-                new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
+                new InputStreamReader(
+                    new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             if (!error) {
                 setupLogging(level, stdout, stderr, logStream);
 
-                session = setupClientSession(SSH_CLIENT_PORT_OPTION, stdin, level, stdout, stderr, args);
+                session = setupClientSession(
+                    SSH_CLIENT_PORT_OPTION, stdin, level, stdout, stderr, args);
                 if (session == null) {
                     error = true;
                 }
@@ -158,7 +160,8 @@ public class SshClientMain extends SshClientCliSupport {
 
                 try {
                     if (socksPort >= 0) {
-                        session.startDynamicPortForwarding(new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
+                        session.startDynamicPortForwarding(
+                            new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
                         Thread.sleep(Long.MAX_VALUE);
                     } else {
                         Map<String, ?> env = resolveClientEnvironment(client);
@@ -169,7 +172,8 @@ public class SshClientMain extends SshClientCliSupport {
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            channel = session.createExecChannel(String.join(" ", command).trim(), ptyConfig, env);
+                            channel = session.createExecChannel(
+                                String.join(" ", command).trim(), ptyConfig, env);
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);

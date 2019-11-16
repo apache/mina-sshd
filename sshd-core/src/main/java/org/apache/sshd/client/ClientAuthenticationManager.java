@@ -20,18 +20,18 @@
 package org.apache.sshd.client;
 
 import java.security.KeyPair;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.auth.UserAuthFactoriesManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProviderHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -40,7 +40,9 @@ import org.apache.sshd.common.util.ValidateUtils;
  * Holds information required for the client to perform authentication with the server
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
+public interface ClientAuthenticationManager
+        extends UserAuthFactoriesManager<ClientSession, UserAuth, UserAuthFactory>,
+        KeyIdentityProviderHolder {
 
     /**
      * Ordered comma separated list of authentications methods.
@@ -128,40 +130,16 @@ public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
 
     void setUserInteraction(UserInteraction userInteraction);
 
-    /**
-     * @return a {@link List} of {@link UserAuthFactory}-ies - never
-     * {@code null}/empty
-     */
-    List<UserAuthFactory> getUserAuthFactories();
-
-    default String getUserAuthFactoriesNameList() {
-        return NamedResource.getNames(getUserAuthFactories());
-    }
-
-    default List<String> getUserAuthFactoriesNames() {
-        return NamedResource.getNameList(getUserAuthFactories());
-    }
-
-    void setUserAuthFactories(List<UserAuthFactory> userAuthFactories);
-
-    default void setUserAuthFactoriesNameList(String names) {
-        setUserAuthFactoriesNames(GenericUtils.split(names, ','));
-    }
-
-    default void setUserAuthFactoriesNames(String... names) {
-        setUserAuthFactoriesNames(
-            GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
-    }
-
+    @Override
     default void setUserAuthFactoriesNames(Collection<String> names) {
         BuiltinUserAuthFactories.ParseResult result =
             BuiltinUserAuthFactories.parseFactoriesList(names);
         List<UserAuthFactory> factories =
             ValidateUtils.checkNotNullAndNotEmpty(
-                result.getParsedFactories(), "No supported cipher factories: %s", names);
+                result.getParsedFactories(), "No supported user authentication factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(
-            GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
+            GenericUtils.isEmpty(unsupported), "Unsupported user authentication factories found: %s", unsupported);
         setUserAuthFactories(factories);
     }
 }

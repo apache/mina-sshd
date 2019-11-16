@@ -307,7 +307,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 currentMethod++;
             } else {
                 if (debugEnabled) {
-                    log.debug("tryNext({}) successfully processed initial buffer by method={}", session, userAuth.getName());
+                    log.debug("tryNext({}) successfully processed initial buffer by method={}",
+                        session, userAuth.getName());
                 }
                 return;
             }
@@ -337,7 +338,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
             userAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
             if (userAuth == null) {
-                throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
+                throw new UnsupportedOperationException(
+                    "Failed to find a user-auth factory for method=" + method);
             }
 
             if (debugEnabled) {

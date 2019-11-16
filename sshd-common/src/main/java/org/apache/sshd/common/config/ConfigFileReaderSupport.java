@@ -30,10 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -52,9 +56,29 @@ public final class ConfigFileReaderSupport {
     public static final String DEFAULT_COMPRESSION = CompressionConfigValue.NO.getName();
     public static final String MAX_SESSIONS_CONFIG_PROP = "MaxSessions";
     public static final int DEFAULT_MAX_SESSIONS = 10;
+
+    public static final String PUBKEY_AUTH_CONFIG_PROP = "PubkeyAuthentication";
+    public static final String DEFAULT_PUBKEY_AUTH = "yes";
+    public static final boolean DEFAULT_PUBKEY_AUTH_VALUE = parseBooleanValue(DEFAULT_PUBKEY_AUTH);
+
     public static final String PASSWORD_AUTH_CONFIG_PROP = "PasswordAuthentication";
-    public static final String DEFAULT_PASSWORD_AUTH = "no";
+    public static final String DEFAULT_PASSWORD_AUTH = "yes";
     public static final boolean DEFAULT_PASSWORD_AUTH_VALUE = parseBooleanValue(DEFAULT_PASSWORD_AUTH);
+
+    public static final String KBD_INTERACTIVE_CONFIG_PROP = "KbdInteractiveAuthentication";
+    public static final String DEFAULT_KBD_INTERACTIVE_AUTH = "yes";
+    public static final boolean DEFAULT_KBD_INTERACTIVE_AUTH_VALUE = parseBooleanValue(DEFAULT_KBD_INTERACTIVE_AUTH);
+
+    public static final String PREFERRED_AUTHS_CONFIG_PROP = "PreferredAuthentications";
+    public static final List<String> DEFAULT_PREFERRED_AUTHS =
+        Collections.unmodifiableList(
+            Arrays.asList(
+                UserAuthMethodFactory.PUBLIC_KEY,
+                UserAuthMethodFactory.KB_INTERACTIVE,
+                UserAuthMethodFactory.PASSWORD));
+    public static final String DEFAULT_PREFERRED_AUTHS_VALUE =
+        GenericUtils.join(DEFAULT_PREFERRED_AUTHS, ',');
+
     public static final String LISTEN_ADDRESS_CONFIG_PROP = "ListenAddress";
     public static final String DEFAULT_BIND_ADDRESS = SshdSocketAddress.IPV4_ANYADDR;
     public static final String PORT_CONFIG_PROP = "Port";
@@ -63,9 +87,6 @@ public final class ConfigFileReaderSupport {
     public static final String USE_DNS_CONFIG_PROP = "UseDNS";
     // NOTE: the usual default is TRUE
     public static final boolean DEFAULT_USE_DNS = true;
-    public static final String PUBKEY_AUTH_CONFIG_PROP = "PubkeyAuthentication";
-    public static final String DEFAULT_PUBKEY_AUTH = "yes";
-    public static final boolean DEFAULT_PUBKEY_AUTH_VALUE = parseBooleanValue(DEFAULT_PUBKEY_AUTH);
     public static final String AUTH_KEYS_FILE_CONFIG_PROP = "AuthorizedKeysFile";
     public static final String MAX_AUTH_TRIES_CONFIG_PROP = "MaxAuthTries";
     public static final int DEFAULT_MAX_AUTH_TRIES = 6;

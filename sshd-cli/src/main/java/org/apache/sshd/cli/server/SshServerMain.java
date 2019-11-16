@@ -152,7 +152,9 @@ public class SshServerMain extends SshServerCliSupport {
         Level level = resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
             ? null
-            : setupIoServiceFactory(SshServer.setUpDefaultServer(), resolver, level, System.out, System.err, args);
+            : setupIoServiceFactory(
+                SshServer.setUpDefaultServer(), resolver,
+                level, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -166,7 +168,8 @@ public class SshServerMain extends SshServerCliSupport {
         props.putAll(options);
 
         SshServerConfigFileReader.setupServerHeartbeat(sshd, resolver);
-        KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
+        KeyPairProvider hostKeyProvider =
+            resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
@@ -185,6 +188,7 @@ public class SshServerMain extends SshServerCliSupport {
 
         sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        setupUserAuthFactories(sshd, resolver);
         setupServerForwarding(sshd, level, System.out, System.err, resolver);
         sshd.setCommandFactory(new ScpCommandFactory.Builder()
             .withDelegate(ProcessShellCommandFactory.INSTANCE)
