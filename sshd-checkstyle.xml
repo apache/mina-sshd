@@ -23,13 +23,13 @@
 	<module name="Translation" />
 
 	<!--<module name="StrictDuplicateCode" />-->
+    <module name="LineLength">
+        <property name="max" value="180" />
+        <property name="fileExtensions" value="java" />
+    </module>
 
 	<module name="TreeWalker">
-        <module name="LineLength">
-            <property name="max" value="180" />
-        </module>
-        <property name="fileExtensions" value="java" />
-
+        <property name="tabWidth" value="4"/>
             <!-- Checks for Javadoc comments.                     -->
             <!-- See http://checkstyle.sf.net/config_javadoc.html -->
             <!--
