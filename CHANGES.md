@@ -71,6 +71,8 @@ the message type=30 (old request).
 
 * Client side `UserAuthKeyboardInteractive` allows configurable detection of plain-text password prompt.
 
+* Moved a few informative getters from `Session` to `SessionContext`.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.

@@ -30,8 +30,6 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
-import org.apache.sshd.common.cipher.CipherInformation;
-import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingInformationProvider;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -40,7 +38,6 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -64,36 +61,6 @@ public interface Session
                 FactoryManagerHolder,
                 PortForwardingInformationProvider,
                 PacketWriter {
-
-    /**
-     * Retrieves current cipher information - <B>Note:</B> may change if
-     * key re-exchange executed
-     *
-     * @param incoming If {@code true} then the cipher for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link CipherInformation} - or {@code null} if not negotiated yet.
-     */
-    CipherInformation getCipherInformation(boolean incoming);
-
-    /**
-     * Retrieves current compression information - <B>Note:</B> may change if
-     * key re-exchange executed
-     *
-     * @param incoming If {@code true} then the compression for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link CompressionInformation} - or {@code null} if not negotiated yet.
-     */
-    CompressionInformation getCompressionInformation(boolean incoming);
-
-    /**
-     * Retrieves current MAC information - <B>Note:</B> may change if
-     * key re-exchange executed
-     *
-     * @param incoming If {@code true} then the MAC for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link MacInformation} - or {@code null} if not negotiated yet.
-     */
-    MacInformation getMacInformation(boolean incoming);
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space

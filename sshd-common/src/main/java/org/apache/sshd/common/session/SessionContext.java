@@ -25,8 +25,11 @@ import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherInformation;
+import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
+import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
@@ -121,6 +124,36 @@ public interface SessionContext
      * @see #getKexState()
      */
     String getNegotiatedKexParameter(KexProposalOption paramType);
+
+    /**
+     * Retrieves current cipher information - <B>Note:</B> may change if
+     * key re-exchange executed
+     *
+     * @param incoming If {@code true} then the cipher for the incoming data,
+     * otherwise for the outgoing data
+     * @return The {@link CipherInformation} - or {@code null} if not negotiated yet.
+     */
+    CipherInformation getCipherInformation(boolean incoming);
+
+    /**
+     * Retrieves current compression information - <B>Note:</B> may change if
+     * key re-exchange executed
+     *
+     * @param incoming If {@code true} then the compression for the incoming data,
+     * otherwise for the outgoing data
+     * @return The {@link CompressionInformation} - or {@code null} if not negotiated yet.
+     */
+    CompressionInformation getCompressionInformation(boolean incoming);
+
+    /**
+     * Retrieves current MAC information - <B>Note:</B> may change if
+     * key re-exchange executed
+     *
+     * @param incoming If {@code true} then the MAC for the incoming data,
+     * otherwise for the outgoing data
+     * @return The {@link MacInformation} - or {@code null} if not negotiated yet.
+     */
+    MacInformation getMacInformation(boolean incoming);
 
     /**
      * @return {@code true} if session has successfully completed the authentication phase
