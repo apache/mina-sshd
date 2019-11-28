@@ -22,6 +22,7 @@ package org.apache.sshd.common.session;
 import java.util.Map;
 
 import org.apache.sshd.common.AttributeStore;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -38,7 +39,8 @@ public interface SessionContext
         extends ConnectionEndpointsIndicator,
                 UsernameHolder,
                 SessionHeartbeatController,
-                AttributeStore {
+                AttributeStore,
+                Closeable {
     /**
      * Default prefix expected for the client / server identification string
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>

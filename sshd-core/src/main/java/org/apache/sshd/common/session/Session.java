@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.Service;
@@ -64,8 +63,7 @@ public interface Session
                 UnknownChannelReferenceHandlerManager,
                 FactoryManagerHolder,
                 PortForwardingInformationProvider,
-                PacketWriter,
-                Closeable {
+                PacketWriter {
 
     /**
      * Quick indication if this is a server or client session (instead of
