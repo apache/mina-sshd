@@ -72,6 +72,14 @@ public interface SessionContext
     byte[] getSessionId();
 
     /**
+     * Quick indication if this is a server or client session (instead of
+     * having to ask {@code instanceof}).
+     *
+     * @return {@code true} if this is a server session
+     */
+    boolean isServerSession();
+
+    /**
      * Retrieve the client version for this session.
      *
      * @return the client version - may be {@code null}/empty if versions not yet exchanged

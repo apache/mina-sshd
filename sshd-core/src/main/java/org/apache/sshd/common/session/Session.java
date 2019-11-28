@@ -66,14 +66,6 @@ public interface Session
                 PacketWriter {
 
     /**
-     * Quick indication if this is a server or client session (instead of
-     * having to ask {@code instanceof}).
-     *
-     * @return {@code true} if this is a server session
-     */
-    boolean isServerSession();
-
-    /**
      * Retrieves current cipher information - <B>Note:</B> may change if
      * key re-exchange executed
      *
