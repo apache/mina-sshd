@@ -287,11 +287,11 @@ public final class GenericUtils {
     }
 
     public static int size(Collection<?> c) {
-        return c == null ? 0 : c.size();
+        return (c == null) ? 0 : c.size();
     }
 
     public static boolean isEmpty(Collection<?> c) {
-        return (c == null) || c.isEmpty();
+        return size(c) <= 0;
     }
 
     public static boolean isNotEmpty(Collection<?> c) {
@@ -299,11 +299,11 @@ public final class GenericUtils {
     }
 
     public static int size(Map<?, ?> m) {
-        return m == null ? 0 : m.size();
+        return (m == null) ? 0 : m.size();
     }
 
     public static boolean isEmpty(Map<?, ?> m) {
-        return (m == null) || m.isEmpty();
+        return size(m) <= 0;
     }
 
     public static boolean isNotEmpty(Map<?, ?> m) {
@@ -312,7 +312,7 @@ public final class GenericUtils {
 
     @SafeVarargs
     public static <T> int length(T... a) {
-        return a == null ? 0 : a.length;
+        return (a == null) ? 0 : a.length;
     }
 
     public static <T> boolean isEmpty(Iterable<? extends T> iter) {
@@ -330,7 +330,7 @@ public final class GenericUtils {
     }
 
     public static <T> boolean isEmpty(Iterator<? extends T> iter) {
-        return iter == null || !iter.hasNext();
+        return (iter == null) || (!iter.hasNext());
     }
 
     public static <T> boolean isNotEmpty(Iterator<? extends T> iter) {
@@ -472,7 +472,8 @@ public final class GenericUtils {
         }
     }
 
-    public static <T> boolean containsAny(Collection<? extends T> coll, Iterable<? extends T> values) {
+    public static <T> boolean containsAny(
+            Collection<? extends T> coll, Iterable<? extends T> values) {
         if (isEmpty(coll)) {
             return false;
         }
@@ -486,13 +487,15 @@ public final class GenericUtils {
         return false;
     }
 
-    public static <T> void forEach(Iterable<? extends T> values, Consumer<? super T> consumer) {
+    public static <T> void forEach(
+            Iterable<? extends T> values, Consumer<? super T> consumer) {
         if (isNotEmpty(values)) {
             values.forEach(consumer);
         }
     }
 
-    public static <T, U> List<U> map(Collection<? extends T> values, Function<? super T, ? extends U> mapper) {
+    public static <T, U> List<U> map(
+            Collection<? extends T> values, Function<? super T, ? extends U> mapper) {
         return stream(values).map(mapper).collect(Collectors.toList());
     }
 
@@ -508,7 +511,9 @@ public final class GenericUtils {
     }
 
     public static <T, K, U> Collector<T, ?, NavigableMap<K, U>> toSortedMap(
-            Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends U> valueMapper, Comparator<? super K> comparator) {
+            Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends U> valueMapper,
+            Comparator<? super K> comparator) {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
     }
 
@@ -587,28 +592,13 @@ public final class GenericUtils {
      * @return A {@link NavigableSet} containing the values (if any) sorted
      * using the provided comparator
      */
-    public static <V> NavigableSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
+    public static <V> NavigableSet<V> asSortedSet(
+            Comparator<? super V> comp, Collection<? extends V> values) {
         NavigableSet<V> set = new TreeSet<>(Objects.requireNonNull(comp, "No comparator"));
         if (size(values) > 0) {
             set.addAll(values);
         }
         return set;
-    }
-
-    @SafeVarargs
-    public static <E extends Enum<E>> Set<E> asEnumSet(E... values) {
-        if (isEmpty(values)) {
-            return Collections.emptySet();
-        }
-
-        Set<E> s = EnumSet.of(values[0]);
-        for (int index = 1 /* we used [0] to populate the initial set */; index < values.length; index++) {
-            if (!s.add(values[index])) {
-                continue;   // debug breakpoint
-            }
-        }
-
-        return s;
     }
 
     /**
@@ -668,7 +658,9 @@ public final class GenericUtils {
      * that 2 (or more) values are not mapped to the same key
      */
     public static <K, V, M extends Map<K, V>> M mapValues(
-            Function<? super V, ? extends K> keyMapper, Supplier<? extends M> mapCreator, Collection<? extends V> values) {
+            Function<? super V, ? extends K> keyMapper,
+            Supplier<? extends M> mapCreator,
+            Collection<? extends V> values) {
         M map = mapCreator.get();
         for (V v : values) {
             K k = keyMapper.apply(v);
@@ -683,10 +675,12 @@ public final class GenericUtils {
 
     @SafeVarargs
     public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, T... values) {
-        return findFirstMatchingMember(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+        return findFirstMatchingMember(acceptor,
+            isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
-    public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, Collection<? extends T> values) {
+    public static <T> T findFirstMatchingMember(
+            Predicate<? super T> acceptor, Collection<? extends T> values) {
         List<T> matches = selectMatchingMembers(acceptor, values);
         return GenericUtils.isEmpty(matches) ? null : matches.get(0);
     }
@@ -701,7 +695,8 @@ public final class GenericUtils {
      */
     @SafeVarargs
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T... values) {
-        return selectMatchingMembers(acceptor, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+        return selectMatchingMembers(acceptor,
+            isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
@@ -712,7 +707,8 @@ public final class GenericUtils {
      * @param values The values to be scanned
      * @return A {@link List} of all the values that were accepted by the predicate
      */
-    public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, Collection<? extends T> values) {
+    public static <T> List<T> selectMatchingMembers(
+            Predicate<? super T> acceptor, Collection<? extends T> values) {
         return GenericUtils.stream(values)
             .filter(acceptor)
             .collect(Collectors.toList());
@@ -954,16 +950,19 @@ public final class GenericUtils {
         return (iter == null) ? Collections.emptyIterator() : iter;
     }
 
-    public static <U, V> Iterable<V> wrapIterable(Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
+    public static <U, V> Iterable<V> wrapIterable(
+            Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
         return () -> wrapIterator(iter, mapper);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static <U, V> Iterator<V> wrapIterator(Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
+    public static <U, V> Iterator<V> wrapIterator(
+            Iterable<? extends U> iter, Function<? super U, ? extends V> mapper) {
         return (Iterator) stream(iter).map(mapper).iterator();
     }
 
-    public static <U, V> Iterator<V> wrapIterator(Iterator<? extends U> iter, Function<? super U, ? extends V> mapper) {
+    public static <U, V> Iterator<V> wrapIterator(
+            Iterator<? extends U> iter, Function<? super U, ? extends V> mapper) {
         Iterator<? extends U> iterator = iteratorOf(iter);
         return new Iterator<V>() {
             @Override

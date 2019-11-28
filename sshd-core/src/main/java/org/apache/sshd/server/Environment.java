@@ -77,7 +77,7 @@ public interface Environment {
      * @param signals The (never {@code null}/empty) {@link Signal}s the listener is interested in
      */
     default void addSignalListener(SignalListener listener, Signal... signals) {
-        addSignalListener(listener, GenericUtils.asEnumSet(signals));
+        addSignalListener(listener, GenericUtils.of(signals));
     }
 
     /**
