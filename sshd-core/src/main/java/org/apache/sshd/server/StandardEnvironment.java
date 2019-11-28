@@ -38,9 +38,9 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     private final Map<PtyMode, Integer> ptyModes;
 
     public StandardEnvironment() {
-        listeners = new ConcurrentHashMap<>(3);
+        listeners = new ConcurrentHashMap<>(Signal.SIGNALS.size());
         env = new ConcurrentHashMap<>();
-        ptyModes = new ConcurrentHashMap<>();
+        ptyModes = new ConcurrentHashMap<>(PtyMode.MODES.size());
     }
 
     /*
