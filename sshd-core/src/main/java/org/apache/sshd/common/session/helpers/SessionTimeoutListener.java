@@ -31,8 +31,10 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @see org.apache.sshd.common.session.helpers.AbstractSession#checkForTimeouts()
  */
-public class SessionTimeoutListener extends AbstractLoggingBean implements SessionListener, Runnable {
-    private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<>();
+public class SessionTimeoutListener
+        extends AbstractLoggingBean
+        implements SessionListener, Runnable {
+    protected final Set<SessionHelper> sessions = new CopyOnWriteArraySet<>();
 
     public SessionTimeoutListener() {
         super();
@@ -40,8 +42,9 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
 
     @Override
     public void sessionCreated(Session session) {
-        if ((session instanceof AbstractSession) && ((session.getAuthTimeout() > 0L) || (session.getIdleTimeout() > 0L))) {
-            sessions.add((AbstractSession) session);
+        if ((session instanceof SessionHelper)
+                && ((session.getAuthTimeout() > 0L) || (session.getIdleTimeout() > 0L))) {
+            sessions.add((SessionHelper) session);
             if (log.isDebugEnabled()) {
                 log.debug("sessionCreated({}) tracking", session);
             }
@@ -53,14 +56,10 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
     }
 
     @Override
-    public void sessionEvent(Session session, Event event) {
-        // ignored
-    }
-
-    @Override
     public void sessionException(Session session, Throwable t) {
         if (log.isDebugEnabled()) {
-            log.debug("sessionException({}) {}: {}", session, t.getClass().getSimpleName(), t.getMessage());
+            log.debug("sessionException({}) {}: {}",
+                session, t.getClass().getSimpleName(), t.getMessage());
         }
         if (log.isTraceEnabled()) {
             log.trace("sessionException(" + session + ") details", t);
@@ -84,11 +83,12 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
 
     @Override
     public void run() {
-        for (AbstractSession session : sessions) {
+        for (SessionHelper session : sessions) {
             try {
                 session.checkForTimeouts();
             } catch (Exception e) {
-                log.warn(e.getClass().getSimpleName() + " while checking session=" + session + " timeouts: " + e.getMessage(), e);
+                log.warn(e.getClass().getSimpleName() + " while checking"
+                    + " session=" + session + " timeouts: " + e.getMessage(), e);
             }
         }
     }

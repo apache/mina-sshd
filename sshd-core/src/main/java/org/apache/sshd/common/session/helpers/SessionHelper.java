@@ -225,13 +225,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         if ((!isOpen()) || isClosing() || isClosed()) {
             if (log.isDebugEnabled()) {
                 log.debug("checkForTimeouts({}) session closing", this);
-                return TimeoutIndicator.NONE;
             }
+            return TimeoutIndicator.NONE;
         }
 
         // If already detected a timeout don't check again
         TimeoutIndicator result = timeoutStatus.get();
-        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
+        TimeoutStatus status =
+            (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
         if ((status != null) && (status != TimeoutStatus.NoTimeout)) {
             if (log.isDebugEnabled()) {
                 log.debug("checkForTimeouts({}) already detected {}", this, result);
@@ -289,7 +290,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         timeoutStatus.set(result);
 
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-            "Detected " + status + " after " + result.getExpiredValue() + "/" + result.getThresholdValue() + " ms.");
+            "Detected " + status + " after " + result.getExpiredValue()
+            + "/" + result.getThresholdValue() + " ms.");
         return result;
     }
 
