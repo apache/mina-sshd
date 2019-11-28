@@ -104,3 +104,5 @@ for the server's identification before sending KEX-INIT message.
 * [SSHD-953](https://issues.apache.org/jira/browse/SSHD-953) - Parse and strip quoted command arguments when executing a server-side command via local shell.
 
 * [SSHD-955](https://issues.apache.org/jira/browse/SSHD-955) - Provide configurable control over auto-detected password prompt in client-side `UserAuthKeyboardInteractive` implementation.
+
+* [SSHD-956](https://issues.apache.org/jira/browse/SSHD-956) - Using `System#nanoTime` to measure session idle/authentication timeouts

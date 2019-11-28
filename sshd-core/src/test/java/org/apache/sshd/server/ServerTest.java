@@ -89,6 +89,7 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -206,13 +207,15 @@ public class ServerTest extends BaseTestSupport {
         AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
         sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
             @Override
-            public boolean handleTimeoutDisconnectReason(Session session, TimeoutIndicator timeoutStatus)
-                    throws IOException {
+            public boolean handleTimeoutDisconnectReason(
+                    Session session, TimeoutIndicator timeoutStatus)
+                        throws IOException {
                 outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
 
                 TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
                 if (prev != TimeoutIndicator.NONE) {
-                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                    throw new StreamCorruptedException(
+                        "Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
             }
@@ -238,7 +241,8 @@ public class ServerTest extends BaseTestSupport {
         }
 
         TimeoutIndicator status = timeoutHolder.getAndSet(null);
-        assertSame("Mismatched timeout status reported", TimeoutIndicator.TimeoutStatus.AuthTimeout, status.getStatus());
+        assertSame("Mismatched timeout status reported",
+            TimeoutIndicator.TimeoutStatus.AuthTimeout, status.getStatus());
     }
 
     @Test
@@ -250,12 +254,14 @@ public class ServerTest extends BaseTestSupport {
         TestEchoShell.latch = new CountDownLatch(1);
         sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
             @Override
-            public boolean handleTimeoutDisconnectReason(Session session, TimeoutIndicator timeoutStatus)
-                    throws IOException {
+            public boolean handleTimeoutDisconnectReason(
+                    Session session, TimeoutIndicator timeoutStatus)
+                        throws IOException {
                 outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
                 TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
                 if (prev != TimeoutIndicator.NONE) {
-                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                    throw new StreamCorruptedException(
+                        "Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
             }
@@ -314,15 +320,20 @@ public class ServerTest extends BaseTestSupport {
             shell.setErr(err);
             shell.open().verify(9L, TimeUnit.SECONDS);
 
-            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
-            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in activated channels",
+                channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in open channels",
+                channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             long waitStart = System.currentTimeMillis();
             Collection<ClientSession.ClientSessionEvent> res =
                 s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testIdleTimeout);
             long waitEnd = System.currentTimeMillis();
             assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
-                res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
+                res.containsAll(
+                    EnumSet.of(
+                        ClientSession.ClientSessionEvent.CLOSED,
+                        ClientSession.ClientSessionEvent.AUTHED)));
         } finally {
             client.stop();
         }
@@ -344,10 +355,12 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testServerIdleTimeoutWithForce() throws Exception {
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, idleTimeoutValue);
+        PropertyResolverUtils.updateProperty(
+            sshd, FactoryManager.IDLE_TIMEOUT, idleTimeoutValue);
 
         final long disconnectTimeoutValue = TimeUnit.SECONDS.toMillis(2L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
+        PropertyResolverUtils.updateProperty(
+            sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
 
         CountDownLatch latch = new CountDownLatch(1);
         sshd.setCommandFactory((channel, command) -> new StreamCommand(command));
@@ -364,7 +377,8 @@ public class ServerTest extends BaseTestSupport {
 
             @Override
             public void sessionException(Session session, Throwable t) {
-                outputDebugMessage("Session %s exception %s caught: %s", session, t.getClass().getSimpleName(), t.getMessage());
+                outputDebugMessage("Session %s exception %s caught: %s",
+                    session, t.getClass().getSimpleName(), t.getMessage());
             }
 
             @Override
@@ -393,16 +407,21 @@ public class ServerTest extends BaseTestSupport {
             shell.setOut(pos);
             shell.open().verify(5L, TimeUnit.SECONDS);
 
-            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
-            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in activated channels",
+                channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue("No changes in open channels",
+                channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
 
             try (AbstractSession serverSession = GenericUtils.head(sshd.getActiveSessions())) {
-                AbstractConnectionService service = serverSession.getService(AbstractConnectionService.class);
+                AbstractConnectionService service =
+                    serverSession.getService(AbstractConnectionService.class);
                 Collection<? extends Channel> channels = service.getChannels();
 
                 try (Channel channel = GenericUtils.head(channels)) {
-                    final long maxTimeoutValue = idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
-                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
+                    final long maxTimeoutValue =
+                        idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
+                    final long maxWaitNanos =
+                        TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
                     Window wRemote = channel.getRemoteWindow();
                     for (long totalNanoTime = 0L; wRemote.getSize() > 0;) {
                         long nanoStart = System.nanoTime();
@@ -414,7 +433,8 @@ public class ServerTest extends BaseTestSupport {
                         assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < maxWaitNanos);
                     }
 
-                    LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
+                    Logger logger = LoggerFactory.getLogger(getClass());
+                    logger.info("Waiting for session idle timeouts");
 
                     long t0 = System.currentTimeMillis();
                     latch.await(1L, TimeUnit.MINUTES);

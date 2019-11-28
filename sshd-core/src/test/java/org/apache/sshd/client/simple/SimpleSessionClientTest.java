@@ -53,7 +53,8 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         client.start();
 
-        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(
+                TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             assertEquals("Mismatched session username", getCurrentTestName(), session.getUsername());
         }
     }
@@ -74,8 +75,10 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         client.start();
 
-        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
-            assertEquals("Mismatched session username", getCurrentTestName(), session.getUsername());
+        try (ClientSession session = simple.sessionLogin(
+                TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
+            assertEquals("Mismatched session username",
+                getCurrentTestName(), session.getUsername());
             assertTrue("User identity not queried", identityQueried.get());
         }
     }
@@ -95,7 +98,8 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         client.start();
 
         long nanoStart = System.nanoTime();
-        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(
+                TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();
@@ -110,7 +114,8 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
     public void testAuthenticationTimeout() throws Exception {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
-        PasswordAuthenticator delegate = Objects.requireNonNull(sshd.getPasswordAuthenticator(), "No password authenticator");
+        PasswordAuthenticator delegate = Objects.requireNonNull(
+            sshd.getPasswordAuthenticator(), "No password authenticator");
         sshd.setPasswordAuthenticator((username, password, session) -> {
             try {
                 Thread.sleep(AUTH_TIMEOUT + 150L);
@@ -122,7 +127,8 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         client.start();
 
         long nanoStart = System.nanoTime();
-        try (ClientSession session = simple.sessionLogin(TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
+        try (ClientSession session = simple.sessionLogin(
+                TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
             fail("Unexpected connection success");
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();

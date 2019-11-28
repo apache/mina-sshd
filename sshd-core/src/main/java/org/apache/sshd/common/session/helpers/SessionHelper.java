@@ -80,6 +80,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /** Session level lock for regulating access to sensitive data */
     protected final Object sessionLock = new Object();
 
+    // Session timeout measurements
+    protected long authNanoStart = System.nanoTime();
+    protected long idleNanoStart = System.nanoTime();
+
     /** Client or server side */
     private final boolean serverSession;
 
@@ -213,13 +217,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     /**
-     * Checks whether the session has timed out (both auth and idle timeouts are checked).
+     * Checks whether the session has timed out (both authentication and idle timeouts are checked).
      * If the session has timed out, a DISCONNECT message will be sent.
      *
      * @return An indication whether timeout has been detected
      * @throws IOException If failed to check
-     * @see #checkAuthenticationTimeout(long, long)
-     * @see #checkIdleTimeout(long, long)
+     * @see #checkAuthenticationTimeout(long, long, long)
+     * @see #checkIdleTimeout(long, long, long)
      */
     protected TimeoutIndicator checkForTimeouts() throws IOException {
         if ((!isOpen()) || isClosing() || isClosed()) {
@@ -241,9 +245,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
 
         long now = System.currentTimeMillis();
-        result = checkAuthenticationTimeout(now, getAuthTimeout());
+        long nanoTime = System.nanoTime();
+        result = checkAuthenticationTimeout(now, nanoTime, getAuthTimeout());
         if (result == null) {
-            result = checkIdleTimeout(now, getIdleTimeout());
+            result = checkIdleTimeout(now, nanoTime, getIdleTimeout());
         }
 
         status = (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
@@ -304,6 +309,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     public long resetAuthTimeout() {
         long value = getAuthTimeoutStart();
         this.authTimeoutStart = System.currentTimeMillis();
+        this.authNanoStart = System.nanoTime();
         return value;
     }
 
@@ -311,15 +317,18 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * Checks if authentication timeout expired
      *
      * @param now           The current time in millis
+     * @param nanoTime      {@link System#nanoTime()} value
      * @param authTimeoutMs The configured timeout in millis - if non-positive then no timeout
      * @return A {@link TimeoutIndicator} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getAuthTimeout()
      */
-    protected TimeoutIndicator checkAuthenticationTimeout(long now, long authTimeoutMs) {
-        long authDiff = now - getAuthTimeoutStart();
-        if ((!isAuthenticated()) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
-            return new TimeoutIndicator(TimeoutStatus.AuthTimeout, authTimeoutMs, authDiff);
+    protected TimeoutIndicator checkAuthenticationTimeout(
+            long now, long nanoTime, long authTimeoutMs) {
+        long authDiffNano = nanoTime - authNanoStart;
+        long authDiffMs = TimeUnit.NANOSECONDS.toMillis(authDiffNano);
+        if ((!isAuthenticated()) && (authTimeoutMs > 0L) && (authDiffMs > authTimeoutMs)) {
+            return new TimeoutIndicator(TimeoutStatus.AuthTimeout, authTimeoutMs, authDiffMs);
         } else {
             return null;
         }
@@ -334,15 +343,18 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * Checks if idle timeout expired
      *
      * @param now           The current time in millis
+     * @param nanoTime      {@link System#nanoTime()} value
      * @param idleTimeoutMs The configured timeout in millis - if non-positive then no timeout
      * @return A {@link TimeoutIndicator} specifying the timeout status and disconnect reason
      * message if timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
      * @see #getIdleTimeout()
      */
-    protected TimeoutIndicator checkIdleTimeout(long now, long idleTimeoutMs) {
-        long idleDiff = now - getIdleTimeoutStart();
-        if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
-            return new TimeoutIndicator(TimeoutStatus.IdleTimeout, idleTimeoutMs, idleDiff);
+    protected TimeoutIndicator checkIdleTimeout(
+            long now, long nanoTime, long idleTimeoutMs) {
+        long idleDiffNano = nanoTime - idleNanoStart;
+        long idleDiffMs = TimeUnit.NANOSECONDS.toMillis(idleDiffNano);
+        if ((idleTimeoutMs > 0L) && (idleDiffMs > idleTimeoutMs)) {
+            return new TimeoutIndicator(TimeoutStatus.IdleTimeout, idleTimeoutMs, idleDiffMs);
         } else {
             return null;
         }
@@ -352,6 +364,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     public long resetIdleTimeout() {
         long value = getIdleTimeoutStart();
         this.idleTimeoutStart = System.currentTimeMillis();
+        this.idleNanoStart = System.nanoTime();
         return value;
     }
 
