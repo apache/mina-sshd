@@ -304,7 +304,7 @@ public abstract class AbstractConnectionService
     @Override
     public ForwardingFilter getForwardingFilter() {
         ForwardingFilter forwarder;
-        AbstractSession session = getSession();
+        Session session = getSession();
         synchronized (forwarderHolder) {
             forwarder = forwarderHolder.get();
             if (forwarder != null) {
@@ -330,7 +330,7 @@ public abstract class AbstractConnectionService
         super.preClose();
     }
 
-    protected ForwardingFilter createForwardingFilter(AbstractSession session) {
+    protected ForwardingFilter createForwardingFilter(Session session) {
         FactoryManager manager =
             Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         ForwardingFilterFactory factory =
@@ -343,7 +343,7 @@ public abstract class AbstractConnectionService
     @Override
     public X11ForwardSupport getX11ForwardSupport() {
         X11ForwardSupport x11Support;
-        AbstractSession session = getSession();
+        Session session = getSession();
         synchronized (x11ForwardHolder) {
             x11Support = x11ForwardHolder.get();
             if (x11Support != null) {
@@ -361,14 +361,14 @@ public abstract class AbstractConnectionService
         return x11Support;
     }
 
-    protected X11ForwardSupport createX11ForwardSupport(AbstractSession session) {
+    protected X11ForwardSupport createX11ForwardSupport(Session session) {
         return new DefaultX11ForwardSupport(this);
     }
 
     @Override
     public AgentForwardSupport getAgentForwardSupport() {
         AgentForwardSupport agentForward;
-        AbstractSession session = getSession();
+        Session session = getSession();
         synchronized (agentForwardHolder) {
             agentForward = agentForwardHolder.get();
             if (agentForward != null) {
@@ -387,7 +387,7 @@ public abstract class AbstractConnectionService
         return agentForward;
     }
 
-    protected AgentForwardSupport createAgentForwardSupport(AbstractSession session) {
+    protected AgentForwardSupport createAgentForwardSupport(Session session) {
         return new DefaultAgentForwardSupport(this);
     }
 
@@ -405,7 +405,7 @@ public abstract class AbstractConnectionService
 
     @Override
     public int registerChannel(Channel channel) throws IOException {
-        AbstractSession session = getSession();
+        Session session = getSession();
         int maxChannels = this.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
@@ -741,7 +741,7 @@ public abstract class AbstractConnectionService
             return handler;
         }
 
-        AbstractSession s = getSession();
+        Session s = getSession();
         return (s == null) ? null : s.resolveUnknownChannelReferenceHandler();
     }
 
@@ -772,7 +772,7 @@ public abstract class AbstractConnectionService
             return;
         }
 
-        AbstractSession session = getSession();
+        Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Channel channel = ChannelFactory.createChannel(session, manager.getChannelFactories(), type);
         if (channel == null) {
@@ -836,7 +836,7 @@ public abstract class AbstractConnectionService
                   this, sender, SshConstants.getOpenErrorCodeName(reasonCode), lang, message);
         }
 
-        AbstractSession session = getSession();
+        Session session = getSession();
         Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE,
             Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
         buf.putInt(sender);
@@ -863,7 +863,7 @@ public abstract class AbstractConnectionService
             log.debug("globalRequest({}) received SSH_MSG_GLOBAL_REQUEST {} want-reply={}", this, req, wantReply);
         }
 
-        AbstractSession session = getSession();
+        Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Collection<RequestHandler<ConnectionService>> handlers = manager.getGlobalRequestHandlers();
         if (GenericUtils.size(handlers) > 0) {

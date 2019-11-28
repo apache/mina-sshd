@@ -26,10 +26,11 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Task that iterates over all currently open {@link AbstractSession}s and checks each of them for timeouts. If
- * the {@link AbstractSession} has timed out (either auth or idle timeout), the session will be disconnected.
+ * Task that iterates over all currently open {@link Session}s and checks each of them for timeouts. If
+ * the {@link AbstractSession} has timed out (either authentication or idle timeout), the session
+ * will be disconnected.
  *
- * @see org.apache.sshd.common.session.helpers.AbstractSession#checkForTimeouts()
+ * @see SessionHelper#checkForTimeouts()
  */
 public class SessionTimeoutListener
         extends AbstractLoggingBean
