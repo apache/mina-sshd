@@ -1107,7 +1107,8 @@ public class DefaultForwardingFilter
                       session, channel, totalMessages, message.available());
             }
 
-            OpenFuture future = channel.getOpenFuture();
+            ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
+            OpenFuture future = messagesQueue.getCompletedFuture();
             Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
                 try {
                     exceptionCaught(session, e);
@@ -1117,7 +1118,7 @@ public class DefaultForwardingFilter
                         e.getMessage(), channel, err.getMessage());
                 }
             };
-            ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
+
             int pendCount = messagesQueue.handleIncomingMessage(buffer, errHandler);
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={} pend count={} after processing message",
