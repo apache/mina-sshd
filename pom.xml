@@ -120,8 +120,8 @@
         <bytebuddy.version>1.10.6</bytebuddy.version>
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
-        <maven.archiver.version>3.4.0</maven.archiver.version>
-        <plexus.archiver.version>4.1.0</plexus.archiver.version>
+        <maven.archiver.version>3.5.0</maven.archiver.version>
+        <plexus.archiver.version>4.2.1</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.20.0</pmd.version>
     </properties>
@@ -1266,7 +1266,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.2.0</version>
                 <inherited>true</inherited>
                 <configuration>
                     <archive>
