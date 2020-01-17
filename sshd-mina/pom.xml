@@ -160,6 +160,8 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
                     <excludes>
                             <!-- These tests use NIO explicitly -->
                         <exclude>**/*LoadTest.java</exclude>
