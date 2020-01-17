@@ -19,6 +19,10 @@ RemoteSystemsTempFiles/
 .springBeans
 .externalToolBuilders
 
+# Pre-release temporary files
+*.releaseBackup
+release.properties
+
 # VS Code
 .vscode/
 *.code-workspace
