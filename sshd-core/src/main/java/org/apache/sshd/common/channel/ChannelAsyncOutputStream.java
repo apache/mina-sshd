@@ -60,7 +60,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     @Override
     public synchronized IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (isClosing()) {
-            throw new EOFException("Closed");
+            throw new EOFException("Closing: " + state);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);

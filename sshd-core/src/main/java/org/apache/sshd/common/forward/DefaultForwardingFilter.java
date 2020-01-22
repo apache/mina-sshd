@@ -192,11 +192,8 @@ public class DefaultForwardingFilter
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
         Objects.requireNonNull(remote, "Remote address is null");
 
-        if (isClosed()) {
-            throw new IllegalStateException("TcpipForwarder is closed");
-        }
-        if (isClosing()) {
-            throw new IllegalStateException("TcpipForwarder is closing");
+        if (isClosed() || isClosing()) {
+            throw new IllegalStateException("TcpipForwarder is closed or closing: " + state);
         }
 
         InetSocketAddress bound = null;
@@ -453,11 +450,8 @@ public class DefaultForwardingFilter
         Objects.requireNonNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
-        if (isClosed()) {
-            throw new IllegalStateException("TcpipForwarder is closed");
-        }
-        if (isClosing()) {
-            throw new IllegalStateException("TcpipForwarder is closing");
+        if (isClosed() || isClosing()) {
+            throw new IllegalStateException("TcpipForwarder is closed or closing: " + state);
         }
 
         SocksProxy proxy = null;

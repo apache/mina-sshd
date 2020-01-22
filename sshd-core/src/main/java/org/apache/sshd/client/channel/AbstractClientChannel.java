@@ -318,7 +318,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public synchronized OpenFuture open() throws IOException {
         if (isClosing()) {
-            throw new SshException("Session has been closed");
+            throw new SshException("Session has been closed: " + state);
         }
 
         openFuture = new DefaultOpenFuture(this.toString(), futureLock);
@@ -399,6 +399,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
+            if (log.isDebugEnabled()) {
+                log.debug("doWriteData({}) ignored (len={}) channel state={}", this, len, state);
+            }
+
             return;
         }
         ValidateUtils.checkTrue(

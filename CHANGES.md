@@ -11,3 +11,5 @@
 ## Minor code helpers
 
 ## Behavioral changes and enhancements
+
+* [SSHD-964](https://issues.apache.org/jira/browse/SSHD-964) - Send SSH_MSG_CHANNEL_EOF when tunnel channel being closed.

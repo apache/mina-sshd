@@ -52,7 +52,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         if (isClosing()) {
-            throw new SshException("SocksProxy is closing or closed");
+            throw new SshException("SocksProxy is closing or closed: " + state);
         }
     }
 
@@ -65,7 +65,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
     }
 
     @Override
-    public void messageReceived(final IoSession session, org.apache.sshd.common.util.Readable message) throws Exception {
+    public void messageReceived(IoSession session, org.apache.sshd.common.util.Readable message) throws Exception {
         Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
         buffer.putBuffer(message);
         Proxy proxy = proxies.get(session);

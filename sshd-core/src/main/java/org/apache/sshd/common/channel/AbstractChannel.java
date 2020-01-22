@@ -780,19 +780,19 @@ public abstract class AbstractChannel
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        Session s = getSession();
         if (!isClosing()) {
+            Session s = getSession();
             return s.writePacket(buffer);
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("writePacket({}) Discarding output packet because channel is being closed", this);
-            }
-            return new AbstractIoWriteFuture(s.toString(), null) {
-                {
-                    setValue(new EOFException("Channel is being closed"));
-                }
-            };
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("writePacket({}) Discarding output packet because channel state={}", this, state);
+        }
+        return new AbstractIoWriteFuture(toString(), null) {
+            {
+                setValue(new EOFException("Channel is being closed"));
+            }
+        };
     }
 
     @Override
@@ -921,29 +921,43 @@ public abstract class AbstractChannel
 
     protected abstract void doWriteExtendedData(byte[] data, int off, long len) throws IOException;
 
-    protected void sendEof() throws IOException {
-        if (isClosing()) {
+    /**
+     * Sends {@code SSH_MSG_CHANNEL_EOF} provided not already sent
+     * and current channel state allows it.
+     *
+     * @return The {@link IoWriteFuture} of the sent packet - {@code null}
+     * if message not sent due to channel state (or already sent)
+     * @throws IOException If failed to send the packet
+     */
+    protected IoWriteFuture sendEof() throws IOException {
+        State channelState = state.get();
+        // OK to send EOF if channel is open or being closed gracefully
+        if ((channelState != State.Opened) && (channelState != State.Graceful)) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already closing or closed", this);
+                log.debug("sendEof({}) already closing or closed - state={}", this, state);
             }
-            return;
+            return null;
         }
 
         if (eofSent.getAndSet(true)) {
             if (log.isDebugEnabled()) {
-                log.debug("sendEof({}) already sent", this);
+                log.debug("sendEof({}) already sent (state={})", this, channelState);
             }
-            return;
+            return null;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF", this);
+            log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF (state={})", this, channelState);
         }
 
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
         buffer.putInt(getRecipient());
-        writePacket(buffer);
+        /*
+         * The default "writePacket" does not send packets if state
+         * is not open so we need to bypass it.
+         */
+        return s.writePacket(buffer);
     }
 
     public boolean isEofSent() {

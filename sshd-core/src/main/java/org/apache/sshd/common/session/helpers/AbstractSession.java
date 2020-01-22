@@ -1942,7 +1942,7 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         return ValidateUtils.checkNotNull(
-            kexFutureHolder.get(), "No current KEX future on state=%s", kexState.get());
+            kexFutureHolder.get(), "No current KEX future on state=%s", kexState);
     }
 
     /**
@@ -1970,7 +1970,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected KeyExchangeFuture requestNewKeysExchange() throws IOException, GeneralSecurityException {
         if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             if (log.isDebugEnabled()) {
-                log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState.get());
+                log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState);
             }
 
             return null;
