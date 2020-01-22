@@ -224,6 +224,6 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        serverSession.shudownOutputStream();
+        serverSession.shutdownOutputStream();
     }
 }

@@ -414,7 +414,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public void shudownOutputStream() {
+        public void shutdownOutputStream() {
           // do nothing
         }
     }

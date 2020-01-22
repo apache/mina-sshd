@@ -300,7 +300,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     @Override
-    public void shudownOutputStream() throws IOException {
+    public void shutdownOutputStream() throws IOException {
         AsynchronousSocketChannel socket = getSocket();
         if (socket.isOpen()) {
             if (log.isDebugEnabled()) {

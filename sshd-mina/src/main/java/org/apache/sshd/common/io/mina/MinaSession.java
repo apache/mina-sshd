@@ -209,7 +209,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     }
 
     @Override   // see SSHD-902
-    public void shudownOutputStream() throws IOException {
+    public void shutdownOutputStream() throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (!(session instanceof NioSession)) {
             if (debugEnabled) {

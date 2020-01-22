@@ -166,7 +166,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     }
 
     @Override   // see SSHD-902
-    public void shudownOutputStream() throws IOException {
+    public void shutdownOutputStream() throws IOException {
         Channel ch = context.channel();
         boolean debugEnabled = log.isDebugEnabled();
         if (!(ch instanceof AbstractNioChannel)) {
