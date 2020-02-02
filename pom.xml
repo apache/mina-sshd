@@ -111,7 +111,7 @@
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
         <bouncycastle.version>1.64</bouncycastle.version>
-        <slf4j.version>1.7.29</slf4j.version>
+        <slf4j.version>1.7.30</slf4j.version>
         <spring.version>5.2.2.RELEASE</spring.version>
         <jgit.version>5.6.0.201912101111-r</jgit.version>
         <junit.version>4.12</junit.version>
