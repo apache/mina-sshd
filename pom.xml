@@ -119,6 +119,10 @@
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
         <maven.archiver.version>3.5.0</maven.archiver.version>
+        <!--
+            NOTE: upgrading beyond this version causes
+            exceptions in the javadoc plugin
+        -->
         <plexus.archiver.version>4.1.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.21.0</pmd.version>
