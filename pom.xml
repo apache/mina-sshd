@@ -115,7 +115,7 @@
         <spring.version>5.2.2.RELEASE</spring.version>
         <jgit.version>5.6.0.201912101111-r</jgit.version>
         <junit.version>4.13</junit.version>
-        <bytebuddy.version>1.10.6</bytebuddy.version>
+        <bytebuddy.version>1.10.7</bytebuddy.version>
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
         <maven.archiver.version>3.5.0</maven.archiver.version>
