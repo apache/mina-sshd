@@ -121,7 +121,7 @@
         <maven.archiver.version>3.5.0</maven.archiver.version>
         <plexus.archiver.version>4.1.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.20.0</pmd.version>
+        <pmd.version>6.21.0</pmd.version>
     </properties>
 
     <profiles>
