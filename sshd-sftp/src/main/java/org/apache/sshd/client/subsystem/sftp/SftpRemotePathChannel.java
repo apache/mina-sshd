@@ -262,7 +262,7 @@ public class SftpRemotePathChannel extends FileChannel {
                 while (totalRead < count) {
                     int read = sftp.read(handle, curPos, buffer, 0, buffer.length);
                     if (read > 0) {
-                        ByteBuffer wrap = ByteBuffer.wrap(buffer);
+                        ByteBuffer wrap = ByteBuffer.wrap(buffer, 0,  (int) Math.min(count - totalRead, buffer.length));
                         while (wrap.remaining() > 0) {
                             target.write(wrap);
                         }
