@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
@@ -44,7 +42,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -159,7 +156,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testWriteOffsetIgnoredForAppendMode() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         Files.deleteIfExists(testFile);
 
@@ -178,7 +176,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             try (SftpClient sftp = createSftpClient(session)) {
                 String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
 
-                try (CloseableHandle handle = sftp.open(file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
+                try (CloseableHandle handle = sftp.open(
+                        file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
                     sftp.write(handle, 7365L, expectedRandom);
                     byte[] actualRandom = new byte[expectedRandom.length];
                     int readLen = sftp.read(handle, 0L, actualRandom);
@@ -195,7 +194,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
 
         byte[] actualBytes = Files.readAllBytes(testFile);
-        assertEquals("Mismatched result file size", expectedRandom.length + expectedText.length, actualBytes.length);
+        assertEquals("Mismatched result file size",
+            expectedRandom.length + expectedText.length, actualBytes.length);
 
         byte[] actualRandom = Arrays.copyOfRange(actualBytes, 0, expectedRandom.length);
         assertArrayEquals("Mismatched random part", expectedRandom, actualRandom);
@@ -208,7 +208,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testReadBufferLimit() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] expected = new byte[1024];
 
@@ -228,7 +229,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 byte[] actual = new byte[expected.length];
                 int maxAllowed = actual.length / 4;
                 // allow less than actual
-                PropertyResolverUtils.updateProperty(sshd, AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
+                PropertyResolverUtils.updateProperty(
+                    sshd, AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
                 try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                     int readLen = sftp.read(handle, 0L, actual);
                     assertEquals("Mismatched read len", maxAllowed, readLen);
@@ -283,8 +285,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private void testCannotEscapeRoot(boolean useAbsolutePath) throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        assertHierarchyTargetFolderExists(lclSftp);
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        lclSftp = assertHierarchyTargetFolderExists(lclSftp);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(lclSftp));
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -351,7 +354,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testNormalizeRemotePathsValues() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
         String[] comps = GenericUtils.split(file, '/');
@@ -405,7 +409,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testOpen() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path clientFolder = lclSftp.resolve("client");
         Path testFile = clientFolder.resolve("file.txt");
         String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
@@ -458,7 +463,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 javaFile.setWritable(true, false);
 
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write))) {
+                try (SftpClient.CloseableHandle h = sftp.open(
+                        file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write))) {
                     // OK should succeed
                     assertTrue("Handle not marked as open for file=" + file, h.isOpen());
                 }
@@ -524,7 +530,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             try (SftpClient sftp = createSftpClient(session)) {
                 Collection<PosixFilePermission> initialPermissions = IoUtils.getPermissions(testFile);
                 assertTrue("File does not have enough initial permissions: " + initialPermissions,
-                    initialPermissions.containsAll(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
+                    initialPermissions.containsAll(
+                        EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
 
                 try (CloseableHandle handle = sendRawAttributeImpactOpen(file, sftp)) {
                     outputDebugMessage("%s - handle=%s", getCurrentTestName(), handle);
@@ -541,7 +548,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     private CloseableHandle sendRawAttributeImpactOpen(String path, SftpClient sftpClient) throws Exception {
-        RawSftpClient sftp = assertObjectInstanceOf("Not a raw SFTP client used", RawSftpClient.class, sftpClient);
+        RawSftpClient sftp = assertObjectInstanceOf(
+            "Not a raw SFTP client used", RawSftpClient.class, sftpClient);
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
         buffer.putString(path, StandardCharsets.UTF_8);
         //access
@@ -573,7 +581,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testInputStreamSkipAndReset() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path localFile = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path localFile = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Files.createDirectories(localFile.getParent());
         byte[] data = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
         Files.write(localFile, data, StandardOpenOption.CREATE);
@@ -584,7 +593,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (SftpClient sftp = createSftpClient(session);
-                 InputStream stream = sftp.read(CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+                 InputStream stream = sftp.read(
+                     CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
                 assertFalse("Stream reported mark supported", stream.markSupported());
                 try {
                     stream.mark(data.length);
@@ -650,7 +660,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        ServerSession session, SftpEventListenerManager subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+                        ServerSession session, SftpEventListenerManager subsystem,
+                        DirectoryHandle dirHandle, Path dir, String handle)
                             throws IOException {
                     dirHolder.set(dir);
                     return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dirHandle, dir, handle);
@@ -801,8 +812,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             @Override
             @SuppressWarnings("checkstyle:ParameterNumber")
-            public void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-                    long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown) {
+            public void read(
+                    ServerSession session, String remoteHandle, FileHandle localHandle, long offset,
+                    byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown) {
                 readSize.addAndGet(readLen);
                 if (log.isDebugEnabled()) {
                     log.debug("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen + ", read=" + readLen);
@@ -810,7 +822,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
+            public void read(
+                    ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
                 int numEntries = GenericUtils.size(entries);
                 entriesCount.addAndGet(numEntries);
 
@@ -945,7 +958,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             Path targetPath = detectTargetFolder();
-            Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+            Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(lclSftp);
 
             Path parentPath = targetPath.getParent();
@@ -963,13 +977,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 PropertyResolverUtils.updateProperty(clientChannel, AbstractSftpClient.WRITE_CHUNK_SIZE,
                     Math.min(SftpClient.DEFAULT_WRITE_BUFFER_SIZE, AbstractSftpClient.DEFAULT_WRITE_CHUNK_SIZE) - Byte.MAX_VALUE);
 
-                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "bufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT + 1, "bufferMaxLenPlusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (int) (1.5 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT), "1point5BufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, 2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "2TimesBufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "bufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT + 1, "bufferMaxLenPlusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (int) (1.5 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT), "1point5BufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "2TimesBufferMaxLenFile.txt");
+                uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
                 uploadAndVerifyFile(sftp, clientFolder, dir, 200000, "largerFile.txt");
 
                 // test erroneous calls that check for negative values
@@ -986,7 +1007,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         // generate random file and upload it
         String randomData = randomString(5);
         byte[] randomBytes = randomData.getBytes(StandardCharsets.UTF_8);
-        try (SftpClient.CloseableHandle handle = sftp.open(filePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
+        try (SftpClient.CloseableHandle handle = sftp.open(
+                filePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
             try {
                 sftp.write(handle, -1, randomBytes, 0, 0);
                 fail("should not have been able to write file with invalid file offset for " + filePath);
@@ -1023,11 +1045,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertFalse("File should not be there: " + file.toString(), Files.exists(file));
     }
 
-    private void uploadAndVerifyFile(SftpClient sftp, Path clientFolder, String remoteDir, int size, String filename) throws Exception {
+    private void uploadAndVerifyFile(
+            SftpClient sftp, Path clientFolder, String remoteDir, int size, String filename)
+                throws Exception {
         // generate random file and upload it
         String remotePath = remoteDir + "/" + filename;
         String randomData = randomString(size);
-        try (SftpClient.CloseableHandle handle = sftp.open(remotePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
+        try (SftpClient.CloseableHandle handle = sftp.open(
+                remotePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
             sftp.write(handle, 0, randomData.getBytes(StandardCharsets.UTF_8), 0, randomData.length());
         }
 
@@ -1046,7 +1071,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         String d = getCurrentTestName() + "\n";
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path target = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
@@ -1072,7 +1098,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     public void testReadWriteWithOffset() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path localPath = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
@@ -1150,7 +1177,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     public void testRename() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path parentPath = targetPath.getParent();
@@ -1348,7 +1376,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             } catch (SocketTimeoutException | EOFException | WindowClosedException | SshChannelClosedException e) {
                 // expected - ignored
             } finally {
-                PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, SftpClient.DEFAULT_CHANNEL_OPEN_TIMEOUT);
+                PropertyResolverUtils.updateProperty(
+                    session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, SftpClient.DEFAULT_CHANNEL_OPEN_TIMEOUT);
             }
         } finally {
             sshd.setSubsystemFactories(factories);
@@ -1357,7 +1386,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private void testClient(FactoryManager manager, SftpClient sftp) throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(
+            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path parentPath = targetPath.getParent();
@@ -1366,7 +1396,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         sftp.mkdir(dir);
 
         String file = dir + "/" + getCurrentTestName() + "-file.txt";
-        try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
+        try (SftpClient.CloseableHandle h = sftp.open(
+                file, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
             byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
             sftp.write(h, 0, d, 0, d.length);
             sftp.write(h, d.length, d, 0, d.length);
@@ -1466,7 +1497,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void linked(ServerSession session, Path src, Path target, boolean symLink, Throwable thrown) {
+            public void linked(
+                    ServerSession session, Path src, Path target, boolean symLink, Throwable thrown) {
                 LinkData data = linkDataHolder.get();
                 assertNotNull("No previous linking call", data);
                 assertSame("Mismatched source", data.getSource(), src);
@@ -1537,44 +1569,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         assertNotNull("No symlink signalled", linkDataHolder.getAndSet(null));
     }
 
-    @Test   // see SSHD-697
-    public void testFileChannel() throws IOException {
-        Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
-        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
-        Files.deleteIfExists(lclFile);
-        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
-
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
-
-            try (SftpClient sftp = createSftpClient(session)) {
-                Path parentPath = targetPath.getParent();
-                String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
-
-                try (FileChannel fc = sftp.openRemotePathChannel(
-                        remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-                    int writeLen = fc.write(ByteBuffer.wrap(expected));
-                    assertEquals("Mismatched written length", expected.length, writeLen);
-
-                    FileChannel fcPos = fc.position(0L);
-                    assertSame("Mismatched positioned file channel", fc, fcPos);
-
-                    byte[] actual = new byte[expected.length];
-                    int readLen = fc.read(ByteBuffer.wrap(actual));
-                    assertEquals("Mismatched read len", writeLen, readLen);
-                    assertArrayEquals("Mismatched read data", expected, actual);
-                }
-            }
-        }
-
-        byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
-    }
-
     @Test   // see SSHD-903
     public void testForcedVersionNegotiation() throws Exception {
         PropertyResolverUtils.updateProperty(sshd, SftpSubsystemEnvironment.SFTP_VERSION, SftpConstants.SFTP_V3);
@@ -1601,7 +1595,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 bos.write(buffer, 0, count);
             }
 
-            return bos.toString();
+            return bos.toString(StandardCharsets.UTF_8.name());
         } finally {
             c.disconnect();
         }

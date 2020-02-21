@@ -20,6 +20,7 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
@@ -33,24 +34,29 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpRemotePathChannel extends FileChannel {
+    /** Internal allocate buffer size when copying data to/from the channel */
     public static final String COPY_BUFSIZE_PROP = "sftp-channel-copy-buf-size";
+    /** Default value for {@value #COPY_BUFSIZE_PROP} setting */
     public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
     public static final Set<SftpClient.OpenMode> READ_MODES =
@@ -64,16 +70,21 @@ public class SftpRemotePathChannel extends FileChannel {
                 SftpClient.OpenMode.Create,
                 SftpClient.OpenMode.Truncate));
 
-    private final String path;
-    private final Collection<SftpClient.OpenMode> modes;
-    private final boolean closeOnExit;
-    private final SftpClient sftp;
-    private final SftpClient.CloseableHandle handle;
-    private final Object lock = new Object();
-    private final AtomicLong posTracker = new AtomicLong(0L);
-    private final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<>(null);
+    protected final Logger log;
+    protected final Collection<SftpClient.OpenMode> modes;
+    protected final boolean closeOnExit;
+    protected final SftpClient sftp;
+    protected final SftpClient.CloseableHandle handle;
+    protected final Object lock = new Object();
+    protected final AtomicLong posTracker = new AtomicLong(0L);
+    protected final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<>(null);
 
-    public SftpRemotePathChannel(String path, SftpClient sftp, boolean closeOnExit, Collection<SftpClient.OpenMode> modes) throws IOException {
+    private final String path;
+
+    public SftpRemotePathChannel(
+            String path, SftpClient sftp, boolean closeOnExit, Collection<SftpClient.OpenMode> modes)
+                throws IOException {
+        this.log = LoggerFactory.getLogger(getClass());
         this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote file path specified");
         this.modes = Objects.requireNonNull(modes, "No channel modes specified");
         this.sftp = Objects.requireNonNull(sftp, "No SFTP client instance");
@@ -87,41 +98,69 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        return (int) doRead(Collections.singletonList(dst), -1);
+        long totalRead = doRead(Collections.singletonList(dst), -1L);
+        if (totalRead >= Integer.MAX_VALUE) {
+            throw new StreamCorruptedException("Total read size exceeds integer: " + totalRead);
+        }
+        return (int) totalRead;
     }
 
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
-        if (position < 0) {
-            throw new IllegalArgumentException("read(" + getRemotePath() + ") illegal position to read from: " + position);
+        if (position < 0L) {
+            throw new IllegalArgumentException("read(" + getRemotePath() + ")"
+                + " illegal position to read from: " + position);
         }
-        return (int) doRead(Collections.singletonList(dst), position);
+
+        long totalRead = doRead(Collections.singletonList(dst), position);
+        if (totalRead >= Integer.MAX_VALUE) {
+            throw new StreamCorruptedException("Total read size exceeds integer: " + totalRead);
+        }
+        return (int) totalRead;
     }
 
     @Override
     public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-        List<ByteBuffer> buffers = Arrays.asList(dsts).subList(offset, offset + length);
-        return doRead(buffers, -1);
+        Collection<ByteBuffer> buffers = Arrays.asList(dsts)
+            .subList(offset, offset + length);
+        return doRead(buffers, -1L);
     }
 
-    protected long doRead(List<ByteBuffer> buffers, long position) throws IOException {
+    protected long doRead(Collection<? extends ByteBuffer> buffers, long position) throws IOException {
         ensureOpen(READ_MODES);
+
+        ClientSession clientSession = sftp.getClientSession();
+        int copySize = clientSession.getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("doRead({})[position={}] fill {} buffers using copySize={}",
+                this, position, buffers.size(), copySize);
+        }
+
+        boolean completed = false;
+        boolean eof = false;
+        long totalRead = 0;
+        int numBufsUsed = 0;
+
         synchronized (lock) {
-            boolean completed = false;
-            boolean eof = false;
             long curPos = (position >= 0L) ? position : posTracker.get();
             try {
-                long totalRead = 0;
-                beginBlocking();
+                beginBlocking("doRead");
+
                 loop:
                 for (ByteBuffer buffer : buffers) {
+                    numBufsUsed++;
+
                     while (buffer.remaining() > 0) {
                         ByteBuffer wrap = buffer;
                         if (!buffer.hasArray()) {
-                            wrap = ByteBuffer.allocate(Math.min(IoUtils.DEFAULT_COPY_SIZE, buffer.remaining()));
+                            wrap = ByteBuffer.allocate(Math.min(copySize, buffer.remaining()));
                         }
-                        int read = sftp.read(handle, curPos, wrap.array(), wrap.arrayOffset() + wrap.position(), wrap.remaining());
+
+                        int read = sftp.read(handle, curPos, wrap.array(),
+                            wrap.arrayOffset() + wrap.position(), wrap.remaining());
                         if (read > 0) {
+                            // reference equality on purpose
                             if (wrap == buffer) {
                                 wrap.position(wrap.position() + read);
                             } else {
@@ -136,60 +175,97 @@ public class SftpRemotePathChannel extends FileChannel {
                     }
                 }
                 completed = true;
-                if (totalRead > 0) {
-                    return totalRead;
-                }
-
-                if (eof) {
-                    return -1;
-                } else {
-                    return 0;
-                }
             } finally {
                 if (position < 0L) {
                     posTracker.set(curPos);
                 }
-                endBlocking(completed);
+                endBlocking("doRead", completed);
             }
+        }
+
+        if (debugEnabled) {
+            log.debug("doRead({})[position={}] filled {}/{} with copySize={} - totalRead={}, completed={}, eof={}",
+                this, position, numBufsUsed, buffers.size(), copySize, totalRead, completed, eof);
+        }
+
+        if (totalRead > 0L) {
+            return totalRead;
+        }
+
+        if (eof) {
+            return -1L;
+        } else {
+            return 0L;
         }
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        return (int) doWrite(Collections.singletonList(src), -1);
+        long totalWritten = doWrite(Collections.singletonList(src), -1L);
+        if (totalWritten >= Integer.MAX_VALUE) {
+            throw new StreamCorruptedException("Total written size exceeds integer: " + totalWritten);
+        }
+
+        return (int) totalWritten;
     }
 
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
         if (position < 0L) {
-            throw new IllegalArgumentException("write(" + getRemotePath() + ") illegal position to write to: " + position);
+            throw new IllegalArgumentException("write(" + getRemotePath() + ")"
+                + " illegal position to write to: " + position);
         }
-        return (int) doWrite(Collections.singletonList(src), position);
+
+        long totalWritten = doWrite(Collections.singletonList(src), position);
+        if (totalWritten >= Integer.MAX_VALUE) {
+            throw new StreamCorruptedException("Total written size exceeds integer: " + totalWritten);
+        }
+
+        return (int) totalWritten;
     }
 
     @Override
     public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-        List<ByteBuffer> buffers = Arrays.asList(srcs).subList(offset, offset + length);
-        return doWrite(buffers, -1);
+        Collection<ByteBuffer> buffers = Arrays.asList(srcs)
+            .subList(offset, offset + length);
+        return doWrite(buffers, -1L);
     }
 
-    protected long doWrite(List<ByteBuffer> buffers, long position) throws IOException {
+    protected long doWrite(Collection<? extends ByteBuffer> buffers, long position) throws IOException {
         ensureOpen(WRITE_MODES);
+
+        ClientSession clientSession = sftp.getClientSession();
+        int copySize = clientSession.getIntProperty(
+            COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("doWrite({})[position={}] write {} buffers using copySize={}",
+                this, position, buffers.size(), copySize);
+        }
+
+        boolean completed = false;
+        long totalWritten = 0L;
+        int numBufsUsed = 0;
+
         synchronized (lock) {
-            boolean completed = false;
             long curPos = (position >= 0L) ? position : posTracker.get();
             try {
-                long totalWritten = 0L;
-                beginBlocking();
+                beginBlocking("doWrite");
+
                 for (ByteBuffer buffer : buffers) {
+                    numBufsUsed++;
+
                     while (buffer.remaining() > 0) {
                         ByteBuffer wrap = buffer;
                         if (!buffer.hasArray()) {
-                            wrap = ByteBuffer.allocate(Math.min(IoUtils.DEFAULT_COPY_SIZE, buffer.remaining()));
+                            wrap = ByteBuffer.allocate(Math.min(copySize, buffer.remaining()));
                             buffer.get(wrap.array(), wrap.arrayOffset(), wrap.remaining());
                         }
+
                         int written = wrap.remaining();
-                        sftp.write(handle, curPos, wrap.array(), wrap.arrayOffset() + wrap.position(), written);
+                        sftp.write(handle, curPos, wrap.array(),
+                            wrap.arrayOffset() + wrap.position(), written);
+                        // reference equality on purpose
                         if (wrap == buffer) {
                             wrap.position(wrap.position() + written);
                         }
@@ -198,14 +274,20 @@ public class SftpRemotePathChannel extends FileChannel {
                     }
                 }
                 completed = true;
-                return totalWritten;
             } finally {
                 if (position < 0L) {
                     posTracker.set(curPos);
                 }
-                endBlocking(completed);
+                endBlocking("doWrite", completed);
             }
         }
+
+        if (debugEnabled) {
+            log.debug("doWrite({})[position={}] used {}/{} with copySize={} - totalWritten={}, completed={}",
+                this, position, numBufsUsed, buffers.size(), copySize, totalWritten, completed);
+        }
+
+        return totalWritten;
     }
 
     @Override
@@ -217,7 +299,8 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public FileChannel position(long newPosition) throws IOException {
         if (newPosition < 0L) {
-            throw new IllegalArgumentException("position(" + getRemotePath() + ") illegal file channel position: " + newPosition);
+            throw new IllegalArgumentException("position(" + getRemotePath() + ")"
+                + " illegal file channel position: " + newPosition);
         }
 
         ensureOpen(Collections.emptySet());
@@ -228,7 +311,8 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public long size() throws IOException {
         ensureOpen(Collections.emptySet());
-        return sftp.stat(handle).getSize();
+        Attributes stat = sftp.stat(handle);
+        return stat.getSize();
     }
 
     @Override
@@ -245,24 +329,37 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
-        if ((position < 0) || (count < 0)) {
-            throw new IllegalArgumentException("transferTo(" + getRemotePath() + ") illegal position (" + position + ") or count (" + count + ")");
+        if ((position < 0L) || (count < 0L)) {
+            throw new IllegalArgumentException("transferTo(" + getRemotePath() + ")"
+                + " illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen(READ_MODES);
-        synchronized (lock) {
-            boolean completed = false;
-            boolean eof = false;
-            long curPos = position;
-            try {
-                beginBlocking();
 
-                int bufSize = (int) Math.min(count, Short.MAX_VALUE + 1);
-                byte[] buffer = new byte[bufSize];
-                long totalRead = 0L;
+        ClientSession clientSession = sftp.getClientSession();
+        int copySize = clientSession.getIntProperty(
+            COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("transferTo({})[position={}, count={}] use copySize={} for target={}",
+                this, position, count, copySize, target);
+        }
+
+        boolean completed = false;
+        boolean eof = false;
+        long curPos = position;
+        int bufSize = (int) Math.min(count, copySize);
+        byte[] buffer = new byte[bufSize];
+        long totalRead = 0L;
+
+        synchronized (lock) {
+            try {
+                beginBlocking("transferTo");
+
                 while (totalRead < count) {
-                    int read = sftp.read(handle, curPos, buffer, 0, buffer.length);
+                    int read = sftp.read(handle, curPos, buffer, 0,
+                        (int) Math.min(count - totalRead, buffer.length));
                     if (read > 0) {
-                        ByteBuffer wrap = ByteBuffer.wrap(buffer);
+                        ByteBuffer wrap = ByteBuffer.wrap(buffer, 0, read);
                         while (wrap.remaining() > 0) {
                             target.write(wrap);
                         }
@@ -273,21 +370,35 @@ public class SftpRemotePathChannel extends FileChannel {
                     }
                 }
                 completed = true;
-                return totalRead > 0 ? totalRead : eof ? -1 : 0;
             } finally {
-                endBlocking(completed);
+                endBlocking("transferTo", completed);
             }
         }
+
+        if (debugEnabled) {
+            log.debug("transferTo({})[position={}, count={}] with copySize={} - totalRead={}, eo{} for target={}",
+                this, position, count, copySize, totalRead, eof, target);
+        }
+
+        return totalRead > 0L ? totalRead : eof ? -1L : 0L;
     }
 
     @Override
     public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-        if ((position < 0) || (count < 0)) {
-            throw new IllegalArgumentException("transferFrom(" + getRemotePath() + ") illegal position (" + position + ") or count (" + count + ")");
+        if ((position < 0L) || (count < 0L)) {
+            throw new IllegalArgumentException("transferFrom(" + getRemotePath() + ")"
+                + " illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen(WRITE_MODES);
 
-        int copySize = sftp.getClientSession().getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        ClientSession clientSession = sftp.getClientSession();
+        int copySize = clientSession.getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("transferFrom({})[position={}, count={}] use copySize={} for source={}",
+                this, position, count, copySize, src);
+        }
+
         boolean completed = false;
         long curPos = (position >= 0L) ? position : posTracker.get();
         long totalRead = 0L;
@@ -295,10 +406,11 @@ public class SftpRemotePathChannel extends FileChannel {
 
         synchronized (lock) {
             try {
-                beginBlocking();
+                beginBlocking("transferFrom");
 
                 while (totalRead < count) {
-                    ByteBuffer wrap = ByteBuffer.wrap(buffer, 0, (int) Math.min(buffer.length, count - totalRead));
+                    ByteBuffer wrap = ByteBuffer.wrap(
+                        buffer, 0, (int) Math.min(buffer.length, count - totalRead));
                     int read = src.read(wrap);
                     if (read > 0) {
                         sftp.write(handle, curPos, buffer, 0, read);
@@ -309,16 +421,22 @@ public class SftpRemotePathChannel extends FileChannel {
                     }
                 }
                 completed = true;
-                return totalRead;
             } finally {
-                endBlocking(completed);
+                endBlocking("transferFrom", completed);
             }
         }
+
+        if (debugEnabled) {
+            log.debug("transferFrom({})[position={}, count={}] use copySize={} - totalRead={}, completed={} for source={}",
+                this, position, count, copySize, totalRead, completed, src);
+        }
+        return totalRead;
     }
 
     @Override
     public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
-        throw new UnsupportedOperationException("map(" + getRemotePath() + ")[" + mode + "," + position + "," + size + "] N/A");
+        throw new UnsupportedOperationException("map(" + getRemotePath() + ")"
+            + "[" + mode + "," + position + "," + size + "] N/A");
     }
 
     @Override
@@ -327,7 +445,7 @@ public class SftpRemotePathChannel extends FileChannel {
     }
 
     @Override
-    public FileLock tryLock(final long position, final long size, boolean shared) throws IOException {
+    public FileLock tryLock(long position, long size, boolean shared) throws IOException {
         ensureOpen(Collections.emptySet());
 
         try {
@@ -347,7 +465,6 @@ public class SftpRemotePathChannel extends FileChannel {
                 return acquiredBy().isOpen() && valid.get();
             }
 
-            @SuppressWarnings("synthetic-access")
             @Override
             public void release() throws IOException {
                 if (valid.compareAndSet(true, false)) {
@@ -359,6 +476,10 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     protected void implCloseChannel() throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("implCloseChannel({}) closeOnExit={}", this, closeOnExit);
+        }
+
         try {
             Thread thread = blockingThreadHolder.get();
             if (thread != null) {
@@ -375,12 +496,21 @@ public class SftpRemotePathChannel extends FileChannel {
         }
     }
 
-    private void beginBlocking() {
+    protected void beginBlocking(Object actionHint) {
+        if (log.isDebugEnabled()) {
+            log.debug("beginBlocking({})[{}]", this, actionHint);
+        }
+
         begin();
         blockingThreadHolder.set(Thread.currentThread());
     }
 
-    private void endBlocking(boolean completed) throws AsynchronousCloseException {
+    protected void endBlocking(Object actionHint, boolean completed)
+            throws AsynchronousCloseException {
+        if (log.isDebugEnabled()) {
+            log.debug("endBlocking({})[{}] completed={}", this, actionHint, completed);
+        }
+
         blockingThreadHolder.set(null);
         end(completed);
     }
@@ -390,8 +520,7 @@ public class SftpRemotePathChannel extends FileChannel {
      * at least one of the required ones
      *
      * @param reqModes The required modes - ignored if {@code null}/empty
-     * @throws IOException If channel not open or the required modes are not
-     *                     satisfied
+     * @throws IOException If channel not open or the required modes are not satisfied
      */
     private void ensureOpen(Collection<SftpClient.OpenMode> reqModes) throws IOException {
         if (!isOpen()) {
@@ -405,7 +534,9 @@ public class SftpRemotePathChannel extends FileChannel {
                 }
             }
 
-            throw new IOException("ensureOpen(" + getRemotePath() + ") current channel modes (" + this.modes + ") do contain any of the required: " + reqModes);
+            throw new IOException("ensureOpen(" + getRemotePath() + ")"
+                + " current channel modes (" + this.modes + ")"
+                + " do contain any of the required ones: " + reqModes);
         }
     }
 
