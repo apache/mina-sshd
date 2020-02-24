@@ -431,6 +431,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
         resetIdleTimeout();
 
+        doHandleUnimplemented(buffer);
+    }
+
+    protected void doHandleUnimplemented(Buffer buffer) throws Exception {
         ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
         handler.handleUnimplementedMessage(this, SshConstants.SSH_MSG_UNIMPLEMENTED, buffer);
     }

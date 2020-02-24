@@ -175,6 +175,8 @@ public abstract class AbstractSession extends SessionHelper {
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
+    // There are some cases where we need to know the sequence number
+    protected final AtomicLong requestSeqo = new AtomicLong(-1);
 
     /*
      * Rekeying
@@ -980,6 +982,7 @@ public abstract class AbstractSession extends SessionHelper {
                     }
 
                     result = requestResult.getAndSet(null);
+                    requestSeqo.set(-1);
                 }
             } catch (InterruptedException e) {
                 throw (InterruptedIOException) new InterruptedIOException(
@@ -1069,6 +1072,11 @@ public abstract class AbstractSession extends SessionHelper {
             // Check that the packet has some free space for the header
             int curPos = buffer.rpos();
             int cmd = buffer.rawByte(curPos) & 0xFF;  // usually the 1st byte is an SSH opcode
+
+            if (cmd == SshConstants.SSH_MSG_GLOBAL_REQUEST) {
+                requestSeqo.set(seqo);
+            }
+
             if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
                 log.warn("encode({}) command={}[{}] performance cost: available buffer packet header length ({}) below min. required ({})",
                      this, cmd, SshConstants.getCommandMessageName(cmd),
@@ -1792,11 +1800,38 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception If failed to handle the message
      */
     protected void requestFailure(Buffer buffer) throws Exception {
+        signalRequestFailure();
+    }
+
+    /**
+     * Marks the current pending global request result as failed
+     *
+     * @throws Exception If failed to signal
+     */
+    protected void signalRequestFailure() throws Exception {
         synchronized (requestResult) {
             requestResult.set(GenericUtils.NULL);
             resetIdleTimeout();
             requestResult.notifyAll();
         }
+    }
+
+    @Override
+    protected void doHandleUnimplemented(Buffer buffer) throws Exception {
+        // Some servers do respond to requests with the SSH_MSG_UNIMPLEMENTED
+        // message instead of SSH_MSG_REQUEST_FAILURE, so deal with it
+        if (requestSeqo.get() >= 0) {
+            synchronized (requestResult) {
+                int rpos = buffer.rpos();
+                long seq = buffer.getUInt();
+                if (requestSeqo.get() == seq) {
+                    signalRequestFailure();
+                    return;
+                }
+                buffer.rpos(rpos);
+            }
+        }
+        super.doHandleUnimplemented(buffer);
     }
 
     @Override
