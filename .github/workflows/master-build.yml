@@ -43,6 +43,6 @@ jobs:
         with:
           maven-version: 3.6.3
       - name: mvn package
-        run: mvn package
+        run: mvn --no-transfer-progress package
 
 
