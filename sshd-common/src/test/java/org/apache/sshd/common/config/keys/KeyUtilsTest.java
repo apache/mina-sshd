@@ -40,6 +40,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -126,6 +127,8 @@ public class KeyUtilsTest extends JUnitTestSupport {
 
     @Test   // see SSHD-606
     public void testValidateStrictKeyFilePermissions() throws IOException {
+        Assume.assumeTrue("Test does not always work on Windows", !OsUtils.isWin32());
+
         Path file = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         outputDebugMessage("%s deletion result=%s", file, Files.deleteIfExists(file));
         assertNull("Unexpected violation for non-existent file: " + file, KeyUtils.validateStrictKeyFilePermissions(file));
