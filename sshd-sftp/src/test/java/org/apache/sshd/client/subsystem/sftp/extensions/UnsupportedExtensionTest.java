@@ -20,7 +20,6 @@
 package org.apache.sshd.client.subsystem.sftp.extensions;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
