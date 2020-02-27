@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Set;
 
@@ -112,6 +113,18 @@ public interface ClientChannel extends Channel, ClientSessionHolder {
      * if timeout expired before the expected event was signaled
      */
     Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout);
+
+    /**
+     * Waits until any of the specified events in the mask is signaled
+     *
+     * @param mask The {@link ClientChannelEvent}s mask
+     * @param timeout The timeout to wait - if null then forever
+     * @return The actual signaled event - includes {@link ClientChannelEvent#TIMEOUT}
+     * if timeout expired before the expected event was signaled
+     */
+    default Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, Duration timeout) {
+        return waitFor(mask, timeout != null ? timeout.toMillis() : -1);
+    }
 
     /**
      * @return The signaled exit status via &quot;exit-status&quot; request

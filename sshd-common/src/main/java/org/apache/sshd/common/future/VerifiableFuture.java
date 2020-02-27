@@ -20,6 +20,7 @@
 package org.apache.sshd.common.future;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,6 +56,18 @@ public interface VerifiableFuture<T> {
      */
     default T verify(long timeout, TimeUnit unit) throws IOException {
         return verify(unit.toMillis(timeout));
+    }
+
+    /**
+     * Wait and verify that the operation was successful
+     *
+     * @param timeout The maximum duration to wait, <code>null</code> to wait forever
+     * @return The (same) future instance
+     * @throws IOException If failed to verify successfully on time
+     * @see #verify(long)
+     */
+    default T verify(Duration timeout) throws IOException {
+        return timeout != null ? verify(timeout.toMillis()) : verify();
     }
 
     /**

@@ -20,6 +20,7 @@
 package org.apache.sshd.common.future;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -68,6 +69,19 @@ public interface WaitableFuture {
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
      *
+     * @param timeout   The maximum duration to wait, <code>null</code> to wait forever
+     * @return {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
+     *                     if waiting was interrupted
+     * @see #await(long)
+     */
+    default boolean await(Duration timeout) throws IOException {
+        return timeout != null ? await(timeout.toMillis()) : await();
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout.
+     *
      * @param timeoutMillis Wait time in milliseconds
      * @return {@code true} if the operation is completed.
      * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
@@ -98,6 +112,17 @@ public interface WaitableFuture {
      */
     default boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         return awaitUninterruptibly(unit.toMillis(timeout));
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout
+     * uninterruptibly.
+     *
+     * @param timeoutMillis Wait time, <code>null</code> to wait forever
+     * @return {@code true} if the operation is finished.
+     */
+    default boolean awaitUninterruptibly(Duration timeoutMillis) {
+        return timeoutMillis != null ? awaitUninterruptibly(timeoutMillis.toMillis()) : awaitUninterruptibly();
     }
 
     /**
