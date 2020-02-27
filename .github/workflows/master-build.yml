@@ -39,6 +39,6 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with maven
-        run: mvn --no-transfer-progress package
+        run: mvn --activate-profiles ci --no-transfer-progress package
 
 
