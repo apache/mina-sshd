@@ -1069,15 +1069,18 @@ public abstract class AbstractSession extends SessionHelper {
             // Check that the packet has some free space for the header
             int curPos = buffer.rpos();
             int cmd = buffer.rawByte(curPos) & 0xFF;  // usually the 1st byte is an SSH opcode
-            if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
-                log.warn("encode({}) command={}[{}] performance cost: available buffer packet header length ({}) below min. required ({})",
-                     this, cmd, SshConstants.getCommandMessageName(cmd),
-                     curPos, SshConstants.SSH_PACKET_HEADER_LEN);
-                Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
-                nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
-                nb.putBuffer(buffer);
+            Buffer nb = preProcessEncodeBuffer(cmd, buffer);
+            if (nb != buffer) {
                 buffer = nb;
                 curPos = buffer.rpos();
+
+                int newCmd = buffer.rawByte(curPos) & 0xFF;
+                if (cmd != newCmd) {
+                    log.warn("encode({}) - command changed from {}[{}] to {}[{}] by pre-processor",
+                        this, cmd, SshConstants.getCommandMessageName(cmd),
+                        newCmd, SshConstants.getCommandMessageName(newCmd));
+                    cmd = newCmd;
+                }
             }
 
             // Grab the length of the packet (excluding the 5 header bytes)
