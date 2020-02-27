@@ -996,9 +996,40 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
     }
 
+    /**
+     * Invoked by the session before encoding the buffer in order to make sure that it is
+     * at least of size {@link SshConstants#SSH_PACKET_HEADER_LEN SSH_PACKET_HEADER_LEN}.
+     * This is required in order to efficiently handle the encoding. If necessary, it
+     * re-allocates a new buffer and returns it instead.
+     *
+     * @param cmd The command stored in the buffer
+     * @param buffer The original {@link Buffer} - assumed to be properly formatted
+     * and be of at least the required minimum length.
+     * @return The adjusted {@link Buffer}. <B>Note:</B> users may use this method to
+     * totally alter the contents of the buffer being sent but it is highly discouraged
+     * as it may have unexpected results.
+     * @throws IOException If failed to process the buffer
+     */
+    protected Buffer preProcessEncodeBuffer(int cmd, Buffer buffer) throws IOException {
+        int curPos = buffer.rpos();
+        if (curPos >= SshConstants.SSH_PACKET_HEADER_LEN) {
+            return buffer;
+        }
+
+        log.warn("preProcessEncodeBuffer({}) command={}[{}] performance cost:"
+            + " available buffer packet header length ({}) below min. required ({})",
+            this, cmd, SshConstants.getCommandMessageName(cmd),
+            curPos, SshConstants.SSH_PACKET_HEADER_LEN);
+        Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
+        nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
+        nb.putBuffer(buffer);
+        return nb;
+    }
+
     @Override
     public void disconnect(int reason, String msg) throws IOException {
-        log.info("Disconnecting({}): {} - {}", this, SshConstants.getDisconnectReasonName(reason), msg);
+        log.info("Disconnecting({}): {} - {}",
+            this, SshConstants.getDisconnectReasonName(reason), msg);
         String languageTag = "";    // TODO configure language...
         signalDisconnect(reason, msg, languageTag, true);
 
