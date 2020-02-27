@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.scp.ScpClient;
