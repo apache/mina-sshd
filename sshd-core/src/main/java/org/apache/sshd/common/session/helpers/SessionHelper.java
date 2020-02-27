@@ -556,10 +556,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return writePacket(buffer);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
         IoWriteFuture writeFuture = writePacket(buffer);
+        @SuppressWarnings("unchecked")
         DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         FactoryManager factoryManager = getFactoryManager();
         ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
