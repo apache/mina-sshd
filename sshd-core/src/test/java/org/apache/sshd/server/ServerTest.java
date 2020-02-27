@@ -148,7 +148,7 @@ public class ServerTest extends BaseTestSupport {
         ));
         client.start();
 
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             int nbTrials = 0;
             Collection<ClientSession.ClientSessionEvent> res = Collections.emptySet();
             Collection<ClientSession.ClientSessionEvent> mask =
@@ -178,7 +178,7 @@ public class ServerTest extends BaseTestSupport {
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
@@ -186,7 +186,7 @@ public class ServerTest extends BaseTestSupport {
                 assertTrue("Number of trials below max.", nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                assertTrue("Authentication wait failed", authFuture.await(5L, TimeUnit.SECONDS));
+                assertTrue("Authentication wait failed", authFuture.await(AUTH_TIMEOUT));
                 assertTrue("Authentication not done", authFuture.isDone());
                 assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
             } while (authFuture.getException() == null);
@@ -228,8 +228,7 @@ public class ServerTest extends BaseTestSupport {
         sshd.start();
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             long waitStart = System.currentTimeMillis();
             Collection<ClientSession.ClientSessionEvent> res =
                 s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testAuthTimeout);
@@ -318,7 +317,7 @@ public class ServerTest extends BaseTestSupport {
              ByteArrayOutputStream err = new ByteArrayOutputStream()) {
             shell.setOut(out);
             shell.setErr(err);
-            shell.open().verify(9L, TimeUnit.SECONDS);
+            shell.open().verify(OPEN_TIMEOUT);
 
             assertTrue("No changes in activated channels",
                 channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
@@ -405,7 +404,7 @@ public class ServerTest extends BaseTestSupport {
              PipedOutputStream pos = new PipedOutputStream(pis)) {
 
             shell.setOut(pos);
-            shell.open().verify(5L, TimeUnit.SECONDS);
+            shell.open().verify(OPEN_TIMEOUT);
 
             assertTrue("No changes in activated channels",
                 channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
@@ -506,8 +505,7 @@ public class ServerTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertTrue("Failed to receive signal on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
         } finally {
             client.stop();
@@ -578,8 +576,7 @@ public class ServerTest extends BaseTestSupport {
         client.start();
         try {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 assertTrue("Session closing not signalled on time", sigSem.tryAcquire(5L, TimeUnit.SECONDS));
                 for (boolean incoming : new boolean[]{true, false}) {
                     assertNull("Unexpected compression information for incoming=" + incoming, s.getCompressionInformation(incoming));
@@ -685,7 +682,7 @@ public class ServerTest extends BaseTestSupport {
                     stateChangeHints.add(hint);
                 }
             });
-            shell.open().verify(9L, TimeUnit.SECONDS);
+            shell.open().verify(OPEN_TIMEOUT);
 
             assertTrue("Timeout while wait for exit signal", exitSignal.tryAcquire(15L, TimeUnit.SECONDS));
             Collection<ClientChannelEvent> result =
@@ -763,7 +760,7 @@ public class ServerTest extends BaseTestSupport {
                 shell.setEnv(ee.getKey(), ee.getValue());
             }
 
-            shell.open().verify(5L, TimeUnit.SECONDS);
+            shell.open().verify(OPEN_TIMEOUT);
 
             assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
             assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
@@ -824,10 +821,9 @@ public class ServerTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             AuthFuture auth = session.auth();
-            assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
+            assertTrue("Failed to complete authentication on time", auth.await(CLOSE_TIMEOUT));
             assertFalse("Unexpected authentication success", auth.isSuccess());
             assertEquals("Mismatched interactive challenge calls", 1, challengeCount.get());
         } finally {
@@ -894,10 +890,9 @@ public class ServerTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             AuthFuture auth = session.auth();
-            assertTrue("Failed to complete authentication on time", auth.await(17L, TimeUnit.SECONDS));
+            assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
             assertFalse("Unexpected authentication success", auth.isSuccess());
             assertEquals("Mismatched interactive server challenge calls",
                 ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
@@ -1041,11 +1036,10 @@ public class ServerTest extends BaseTestSupport {
 
     private ClientSession createTestClientSession(SshServer server) throws Exception {
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

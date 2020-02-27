@@ -43,10 +43,9 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
     @Test   // see SSHD-890
     public void testUnsupportedExtension() throws IOException {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftpClient = createSftpClient(session)) {
                 String opcode = getCurrentTestName();

@@ -20,7 +20,6 @@
 package org.apache.sshd.server.auth;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
@@ -49,6 +48,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class WelcomeBannerPhaseTest extends BaseTestSupport {
+
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -124,10 +124,10 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
         });
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
+                .verify(CONNECT_TIMEOUT)
                 .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         }
 
         Object banner = welcomeHolder.getAndSet(null);

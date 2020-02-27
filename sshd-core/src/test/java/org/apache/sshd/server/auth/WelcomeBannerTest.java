@@ -51,6 +51,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WelcomeBannerTest extends BaseTestSupport {
+
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
@@ -187,11 +188,11 @@ public class WelcomeBannerTest extends BaseTestSupport {
             PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, getCurrentTestName());
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                assertTrue("Welcome not signalled on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
+                assertTrue("Welcome not signalled on time", sigSem.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
             }
 
         } finally {
@@ -253,9 +254,10 @@ public class WelcomeBannerTest extends BaseTestSupport {
                 }
             });
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
                 if (expectedWelcome != null) {
                     assertSame("Mismatched sessions", session, sessionHolder.get());
                 } else {

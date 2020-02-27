@@ -52,6 +52,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeepAliveTest extends BaseTestSupport {
+
     private static final long HEARTBEAT = TimeUnit.SECONDS.toMillis(2L);
     private static final long TIMEOUT = HEARTBEAT * 2L;
     private static final long WAIT = 3L * TIMEOUT;
@@ -110,10 +111,10 @@ public class KeepAliveTest extends BaseTestSupport {
     @Test
     public void testIdleClient() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
+                .verify(CONNECT_TIMEOUT)
                 .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
                 long waitStart = System.currentTimeMillis();
@@ -130,10 +131,10 @@ public class KeepAliveTest extends BaseTestSupport {
     public void testClientWithHeartBeat() throws Exception {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
+                .verify(CONNECT_TIMEOUT)
                 .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
                 long waitStart = System.currentTimeMillis();
@@ -151,10 +152,10 @@ public class KeepAliveTest extends BaseTestSupport {
         TestEchoShell.latch = new CountDownLatch(1);
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
                  ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -162,9 +163,9 @@ public class KeepAliveTest extends BaseTestSupport {
 
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
-                assertTrue("Latch time out", TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
+                assertTrue("Latch time out", TestEchoShell.latch.await(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
 
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result =

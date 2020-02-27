@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -46,8 +45,6 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientSessionTest extends BaseTestSupport {
-    private static final long CONNECT_TIMEOUT = 7L;
-    private static final long AUTH_TIMEOUT = 5L;
 
     private static SshServer sshd;
     private static SshClient client;
@@ -106,10 +103,10 @@ public class ClientSessionTest extends BaseTestSupport {
         });
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String actualResponse = session.executeRemoteCommand(expectedCommand + "\n");
@@ -138,10 +135,10 @@ public class ClientSessionTest extends BaseTestSupport {
 
         String actualErrorMessage = null;
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String response = session.executeRemoteCommand(expectedCommand + "\n");
@@ -188,10 +185,10 @@ public class ClientSessionTest extends BaseTestSupport {
 
         String actualErrorMessage = null;
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String response = session.executeRemoteCommand(expectedCommand + "\n");
@@ -230,10 +227,10 @@ public class ClientSessionTest extends BaseTestSupport {
             client.addSessionListener(listener);
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port, expected)
-                        .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                        .verify(CONNECT_TIMEOUT)
                         .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Session listener invocation count mismatch", 1, creationCount.getAndSet(0));
             }
         } finally {

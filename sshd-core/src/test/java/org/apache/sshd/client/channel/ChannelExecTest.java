@@ -21,7 +21,6 @@ package org.apache.sshd.client.channel;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -89,10 +88,9 @@ public class ChannelExecTest extends BaseTestSupport {
     @Test   // see SSHD-692
     public void testMultipleRemoteCommandExecutions() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             for (int index = 1; index <= Byte.SIZE; index++) {
                 String expected = getCurrentTestName() + "[" + index + "]";

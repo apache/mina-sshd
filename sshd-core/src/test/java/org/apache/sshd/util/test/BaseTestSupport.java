@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.util.test;
 
+import java.time.Duration;
 import java.util.Collection;
 
 import org.apache.sshd.client.SshClient;
@@ -42,6 +43,12 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
     public static final String TEST_LOCALHOST =
         System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
+
+    public static final Duration CONNECT_TIMEOUT = getTimeout("connect", Duration.ofSeconds(7));
+    public static final Duration AUTH_TIMEOUT = getTimeout("auth", Duration.ofSeconds(5));
+    public static final Duration OPEN_TIMEOUT = getTimeout("open", Duration.ofSeconds(9));
+    public static final Duration DEFAULT_TIMEOUT = getTimeout("default", Duration.ofSeconds(5));
+    public static final Duration CLOSE_TIMEOUT = getTimeout("close", Duration.ofSeconds(15));
 
     @Rule
     public final TestWatcher rule = new TestWatcher() {
@@ -78,6 +85,25 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
 
     protected BaseTestSupport() {
         super();
+    }
+
+    public static Duration getTimeout(String property, Duration def) {
+        long dur;
+        String str = System.getProperty("org.apache.sshd.test.timeout." + property);
+        if (str == null) {
+            String fstr = System.getProperty("org.apache.sshd.test.timeout.factor");
+            double factor;
+            if (fstr != null) {
+                factor = Double.parseDouble(fstr);
+            } else {
+                factor = 1.0;
+            }
+            dur = (long) (def.toMillis() * factor);
+        } else {
+            dur = Long.parseLong(str);
+        }
+        System.err.println("Timeout " + property + " configured to " + dur + " ms");
+        return Duration.ofMillis(dur);
     }
 
     protected SshServer setupTestServer() {

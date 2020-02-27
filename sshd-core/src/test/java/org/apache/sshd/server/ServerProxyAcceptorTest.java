@@ -134,10 +134,10 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(11L, TimeUnit.SECONDS);
-            assertTrue("Failed to receive session signal on time", sessionSignal.tryAcquire(13L, TimeUnit.SECONDS));
+            session.auth().verify(AUTH_TIMEOUT);
+            assertTrue("Failed to receive session signal on time", sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.SECONDS));
         } finally {
             client.stop();
         }

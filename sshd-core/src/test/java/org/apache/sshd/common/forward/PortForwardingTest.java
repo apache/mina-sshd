@@ -650,7 +650,7 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
 
             try (ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -811,9 +811,9 @@ public class PortForwardingTest extends BaseTestSupport {
             client.addPortForwardingEventListener(listener);
         }
 
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(CONNECT_TIMEOUT).getSession();
         session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify(11L, TimeUnit.SECONDS);
+        session.auth().verify(AUTH_TIMEOUT);
         return session;
     }
 }

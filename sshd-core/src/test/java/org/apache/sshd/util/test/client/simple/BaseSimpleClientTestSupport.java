@@ -19,8 +19,6 @@
 
 package org.apache.sshd.util.test.client.simple;
 
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.server.SshServer;
@@ -32,8 +30,6 @@ import org.junit.Before;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class BaseSimpleClientTestSupport extends BaseTestSupport {
-    public static final long CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
-    public static final long AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(7L);
 
     protected SshServer sshd;
     protected SshClient client;
@@ -52,8 +48,8 @@ public abstract class BaseSimpleClientTestSupport extends BaseTestSupport {
         client = setupTestClient();
 
         simple = SshClient.wrapAsSimpleClient(client);
-        simple.setConnectTimeout(CONNECT_TIMEOUT);
-        simple.setAuthenticationTimeout(AUTH_TIMEOUT);
+        simple.setConnectTimeout(CONNECT_TIMEOUT.toMillis());
+        simple.setAuthenticationTimeout(AUTH_TIMEOUT.toMillis());
     }
 
     @After

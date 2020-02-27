@@ -22,7 +22,6 @@ package org.apache.sshd.client.simple;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.session.ClientSession;
@@ -89,7 +88,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             @Override
             public void sessionCreated(Session session) {
                 try {
-                    Thread.sleep(CONNECT_TIMEOUT + 150L);
+                    Thread.sleep(CONNECT_TIMEOUT.toMillis() + 150L);
                 } catch (InterruptedException e) {
                     // ignored
                 }
@@ -104,7 +103,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();
             long nanoDuration = nanoEnd - nanoStart;
-            long nanoTimeout = TimeUnit.MILLISECONDS.toNanos(CONNECT_TIMEOUT);
+            long nanoTimeout = CONNECT_TIMEOUT.toNanos();
             // we allow the timeout to be shorter than the connect timeout, but no more than 3 times its value
             assertTrue("Expired time (" + nanoDuration + ") too long", nanoDuration < (nanoTimeout * 3L));
         }
@@ -118,7 +117,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             sshd.getPasswordAuthenticator(), "No password authenticator");
         sshd.setPasswordAuthenticator((username, password, session) -> {
             try {
-                Thread.sleep(AUTH_TIMEOUT + 150L);
+                Thread.sleep(AUTH_TIMEOUT.toMillis() + 150L);
             } catch (InterruptedException e) {
                 // ignored
             }
@@ -133,7 +132,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         } catch (IOException e) {
             long nanoEnd = System.nanoTime();
             long nanoDuration = nanoEnd - nanoStart;
-            long nanoTimeout = TimeUnit.MILLISECONDS.toNanos(AUTH_TIMEOUT);
+            long nanoTimeout = AUTH_TIMEOUT.toNanos();
             // we allow the timeout to be shorter than the connect timeout, but no more than 3 times its value
             assertTrue("Expired time (" + nanoDuration + ") too long", nanoDuration < (nanoTimeout * 3L));
         }

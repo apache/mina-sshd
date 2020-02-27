@@ -108,14 +108,15 @@ public class WindowAdjustTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(11L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (ClientChannel channel = session.createShellChannel()) {
                     channel.setOut(new VerifyingOutputStream(channel, END_FILE));
                     channel.setErr(new NoCloseOutputStream(System.err));
-                    channel.open().verify(15L, TimeUnit.SECONDS);
+                    channel.open().verify(OPEN_TIMEOUT);
 
                     Collection<ClientChannelEvent> result =
                             channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(2L));

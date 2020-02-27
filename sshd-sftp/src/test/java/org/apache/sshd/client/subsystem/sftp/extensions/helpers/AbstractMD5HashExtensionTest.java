@@ -135,10 +135,9 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);

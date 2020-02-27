@@ -127,10 +127,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
                     out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
@@ -144,10 +144,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test
     public void testSftpVersionSelector() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
@@ -164,10 +164,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 Attributes attrs = sftp.lstat(remotePath);
@@ -204,10 +204,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -325,10 +325,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -447,10 +447,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 for (DirEntry entry : sftp.readDir(remotePath)) {
@@ -478,10 +478,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     @Test   // see SSHD-623
     public void testEndOfListIndicator() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
                 AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
