@@ -1624,8 +1624,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @see #sendNotImplemented(long)
      */
     protected IoWriteFuture notImplemented(int cmd, Buffer buffer) throws Exception {
-        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
-        if (handler.handleUnimplementedMessage(this, cmd, buffer)) {
+        if (doInvokeUnimplementedMessageHandler(cmd, buffer)) {
             return null;
         }
 

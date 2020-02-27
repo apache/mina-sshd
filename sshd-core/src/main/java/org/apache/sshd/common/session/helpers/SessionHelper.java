@@ -404,8 +404,22 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return;
         }
         resetIdleTimeout();
+        doInvokeIgnoreMessageHandler(buffer);
+    }
 
-        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+    /**
+     * Invoked by {@link #handleDebug(Buffer)} after validating that the buffer
+     * structure seems well-formed and also resetting the idle timeout. By default,
+     * retrieves the {@link #resolveReservedSessionMessagesHandler() ReservedSessionMessagesHandler}
+     * and invokes its {@link ReservedSessionMessagesHandler#handleIgnoreMessage(Session, Buffer) handleIgnoreMessage}
+     * method.
+     *
+     * @param buffer The input {@link Buffer}
+     * @throws Exception if failed to handle the message
+     */
+    protected void doInvokeIgnoreMessageHandler(Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler =
+            resolveReservedSessionMessagesHandler();
         handler.handleIgnoreMessage(this, buffer);
     }
 
@@ -430,9 +444,19 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return;
         }
         resetIdleTimeout();
+        doInvokeUnimplementedMessageHandler(SshConstants.SSH_MSG_UNIMPLEMENTED, buffer);
+    }
 
-        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
-        handler.handleUnimplementedMessage(this, SshConstants.SSH_MSG_UNIMPLEMENTED, buffer);
+    /**
+     * @param cmd The unimplemented command
+     * @param buffer The input {@link Buffer}
+     * @return Result of invoking {@link ReservedSessionMessagesHandler#handleUnimplementedMessage(Session, int, Buffer) handleUnimplementedMessage}
+     * @throws Exception if failed to handle the message
+     */
+    protected boolean doInvokeUnimplementedMessageHandler(int cmd, Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler =
+            resolveReservedSessionMessagesHandler();
+        return handler.handleUnimplementedMessage(this, cmd, buffer);
     }
 
     @Override
@@ -456,9 +480,24 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             }
             return;
         }
-        resetIdleTimeout();
 
-        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
+        resetIdleTimeout();
+        doInvokeDebugMessageHandler(buffer);
+    }
+
+    /**
+     * Invoked by {@link #handleDebug(Buffer)} after validating that the buffer
+     * structure seems well-formed and also resetting the idle timeout. By default,
+     * retrieves the {@link #resolveReservedSessionMessagesHandler() ReservedSessionMessagesHandler}
+     * and invokes its {@link ReservedSessionMessagesHandler#handleDebugMessage(Session, Buffer) handleDebugMessage}
+     * method.
+     *
+     * @param buffer The input {@link Buffer}
+     * @throws Exception if failed to handle the message
+     */
+    protected void doInvokeDebugMessageHandler(Buffer buffer) throws Exception {
+        ReservedSessionMessagesHandler handler =
+            resolveReservedSessionMessagesHandler();
         handler.handleDebugMessage(this, buffer);
     }
 
