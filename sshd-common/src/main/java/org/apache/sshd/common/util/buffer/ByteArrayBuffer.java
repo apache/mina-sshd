@@ -163,6 +163,11 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
+    public long rawUInt(int pos) {
+        return BufferUtils.getUInt(data, pos, Integer.BYTES);
+    }
+
+    @Override
     public void compact() {
         int avail = available();
         if (avail > 0) {
