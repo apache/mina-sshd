@@ -355,7 +355,7 @@ public class SftpRemotePathChannel extends FileChannel {
             try {
                 beginBlocking("transferTo");
 
-                while (totalRead < count) {
+                while (totalRead < count && !eof) {
                     int read = sftp.read(handle, curPos, buffer, 0,
                         (int) Math.min(count - totalRead, buffer.length));
                     if (read > 0) {
