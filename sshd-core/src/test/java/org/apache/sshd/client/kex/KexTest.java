@@ -63,7 +63,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class KexTest extends BaseTestSupport {
-    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
@@ -126,10 +126,10 @@ public class KexTest extends BaseTestSupport {
             client.setKeyExchangeFactories(Collections.singletonList(kex));
             try (ClientSession session =
                     client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                        .verify(TIMEOUT)
+                        .verify(CONNECT_TIMEOUT)
                         .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(TIMEOUT);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL);
                      PipedOutputStream pipedIn = new PipedOutputStream();
