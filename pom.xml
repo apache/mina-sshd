@@ -1004,13 +1004,16 @@
                             <artifactId>ant</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
-                        <dependency>    <!--Artificial dependency for tools.jar in case we invoke javac or javah -->
+                        <!--Artificial dependency for tools.jar in case we invoke javac or javah -->
+                        <!--
+                        <dependency>
                             <groupId>com.sun</groupId>
                             <artifactId>tools</artifactId>
                             <version>${java.version}</version>
                             <scope>system</scope>
                             <systemPath>${java.home}/../lib/tools.jar</systemPath>
                         </dependency>
+                        -->
                     </dependencies>
                 </plugin>
             </plugins>
