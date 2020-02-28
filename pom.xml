@@ -128,6 +128,7 @@
         <pmd.version>6.21.0</pmd.version>
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
+        <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
     </properties>
 
     <profiles>
@@ -135,6 +136,7 @@
             <id>ci</id>
             <properties>
                 <sshd.tests.timeout.factor>4.0</sshd.tests.timeout.factor>
+                <sshd.tests.rerun.count>4</sshd.tests.rerun.count>
             </properties>
         </profile>
 
@@ -1324,7 +1326,7 @@
                     </systemPropertyVariables>
                     <trimStackTrace>false</trimStackTrace>
                     <!-- lets re-run the failed test one more time, just to be sure -->
-                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
+                    <rerunFailingTestsCount>${sshd.tests.rerun.count}</rerunFailingTestsCount>
                 </configuration>
                 <dependencies>
                     <!-- make sure using OUR version -->
