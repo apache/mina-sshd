@@ -134,7 +134,7 @@
         <profile>
             <id>ci</id>
             <properties>
-                <sshd.tests.timeout.factor>3.0</sshd.tests.timeout.factor>
+                <sshd.tests.timeout.factor>4.0</sshd.tests.timeout.factor>
             </properties>
         </profile>
 
