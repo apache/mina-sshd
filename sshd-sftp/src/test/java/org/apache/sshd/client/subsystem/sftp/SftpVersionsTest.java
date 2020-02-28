@@ -87,9 +87,6 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 .boxed()
                 .collect(Collectors.toList()));
 
-    private static final long CONNECT_TIMEOUT = 7L;
-    private static final long AUTH_TIMEOUT = 5L;
-
     private final int testVersion;
 
     public SftpVersionsTest(int version) throws IOException {
