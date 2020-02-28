@@ -238,7 +238,10 @@ the `ClientSession` (for specific session configuration).
     * If specified timeout expires for the `wantReply` option then session will be **closed**.
 
     * *Any* response - including [`SSH_MSH_REQUEST_FAILURE`](https://tools.ietf.org/html/rfc4254#page-4)
-    is considered a "good" response for the heartbeat request.
+    is considered a "good" response for the heartbeat request. In this context, a special patch
+    has been introduced in [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968) that converts
+    an `SSH_MSG_UNIMPLEMENTED` response to such a global request into a `SSH_MSH_REQUEST_FAILURE`
+    since some servers have been found that violate the standard and reply with it to the request.
 
 * When using the CLI, these options can be configured using the following `-o key=value` properties:
 

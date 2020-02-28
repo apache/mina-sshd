@@ -115,11 +115,25 @@ public abstract class Buffer implements Readable {
 
     /**
      * @param pos A position in the <U>raw</U> underlying data bytes
-     * @return The byte at that position
+     * @return The byte at the specified position without changing the
+     * current {@link #rpos() read position}. <B>Note:</B> no validation
+     * is made whether the position lies within array boundaries
      */
     public byte rawByte(int pos) {
         byte[] data = array();
         return data[pos];
+    }
+
+    /**
+     * @param pos A position in the <U>raw</U> underlying data bytes
+     * @return The unsigned 32 bit integer at the specified position
+     * without changing the current {@link #rpos() read position}.
+     * <B>Note:</B> no validation is made whether the position and
+     * the required extra 4 bytes lie within array boundaries
+     */
+    public long rawUInt(int pos) {
+        byte[] data = array();
+        return BufferUtils.getUInt(data, pos, Integer.BYTES);
     }
 
     /**

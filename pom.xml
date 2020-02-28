@@ -1,5 +1,4 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
     <!--
 
         Licensed to the Apache Software Foundation (ASF) under one or more
@@ -112,10 +111,10 @@
 
         <bouncycastle.version>1.64</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <spring.version>5.2.3.RELEASE</spring.version>
-        <jgit.version>5.6.0.201912101111-r</jgit.version>
+        <spring.version>5.2.4.RELEASE</spring.version>
+        <jgit.version>5.6.1.202002131546-r</jgit.version>
         <junit.version>4.13</junit.version>
-        <bytebuddy.version>1.10.7</bytebuddy.version>
+        <bytebuddy.version>1.10.8</bytebuddy.version>
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
         <maven.archiver.version>3.5.0</maven.archiver.version>
@@ -553,7 +552,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>3.2.4</version>
+                <version>3.3.0</version>
             </dependency>
                 <!-- Used by mockito -->
             <dependency>

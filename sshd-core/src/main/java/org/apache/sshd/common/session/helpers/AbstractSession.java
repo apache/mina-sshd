@@ -193,6 +193,9 @@ public abstract class AbstractSession extends SessionHelper {
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
+    // SSHD-968 - outgoing sequence number and request name of last sent global request
+    protected final AtomicLong globalRequestSeqo = new AtomicLong(-1L);
+    protected final AtomicReference<String> pendingGlobalRequest = new AtomicReference<>();
 
     // SSH_MSG_IGNORE stream padding
     protected int ignorePacketDataLength = FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE;
@@ -797,10 +800,7 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         // if anyone waiting for global response notify them about the closing session
-        synchronized (requestResult) {
-            requestResult.set(GenericUtils.NULL);
-            requestResult.notifyAll();
-        }
+        signalRequestFailure();
 
         // Fire 'close' event
         try {
@@ -834,6 +834,21 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
+    }
+
+    @Override
+    protected Buffer preProcessEncodeBuffer(int cmd, Buffer buffer) throws IOException {
+        buffer = super.preProcessEncodeBuffer(cmd, buffer);
+        // SSHD-968 - remember global request outgoing sequence number
+        if (cmd == SshConstants.SSH_MSG_GLOBAL_REQUEST) {
+            long prev = globalRequestSeqo.getAndSet(seqo);
+            if (log.isDebugEnabled()) {
+                log.debug("preProcessEncodeBuffer({}) outgoing SSH_MSG_GLOBAL_REQUEST seqNo={} => {}",
+                    this, prev, globalRequestSeqo);
+            }
+        }
+
+        return buffer;
     }
 
     @Override
@@ -957,11 +972,18 @@ public abstract class AbstractSession extends SessionHelper {
 
         Object result;
         boolean traceEnabled = log.isTraceEnabled();
+        long prevGlobalReqSeqNo = -1L;
         synchronized (requestLock) {
             try {
                 writePacket(buffer);
 
+                if (traceEnabled) {
+                    log.debug("request({})[{}] sent with seqNo={}", this, request, globalRequestSeqo);
+                }
+
                 synchronized (requestResult) {
+                    pendingGlobalRequest.set(request);
+
                     while (isOpen() && (maxWaitMillis > 0L) && (requestResult.get() == null)) {
                         if (traceEnabled) {
                             log.trace("request({})[{}] remaining wait={}", this, request, maxWaitMillis);
@@ -980,6 +1002,9 @@ public abstract class AbstractSession extends SessionHelper {
                     }
 
                     result = requestResult.getAndSet(null);
+                    // SSHD-968 reset tracked request name and sequence number
+                    prevGlobalReqSeqNo = globalRequestSeqo.getAndSet(-1L);
+                    pendingGlobalRequest.set(null);
                 }
             } catch (InterruptedException e) {
                 throw (InterruptedIOException) new InterruptedIOException(
@@ -988,16 +1013,18 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         if (!isOpen()) {
-            throw new IOException("Session is closed or closing while awaiting reply for request=" + request);
+            throw new IOException(
+                "Session is closed or closing while awaiting reply for request=" + request);
         }
 
         if (debugEnabled) {
-            log.debug("request({}) request={}, timeout={} {}, result received={}",
-                  this, request, timeout, unit, result != null);
+            log.debug("request({}) request={}, timeout={} {}, requestSeqNo={}, result received={}",
+                this, request, timeout, unit, prevGlobalReqSeqNo, result != null);
         }
 
         if (result == null) {
-            throw new SocketTimeoutException("No response received after " + timeout + " " + unit + " for request=" + request);
+            throw new SocketTimeoutException(
+                "No response received after " + timeout + " " + unit + " for request=" + request);
         }
 
         if (result instanceof Buffer) {
@@ -1005,6 +1032,50 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         return null;
+    }
+
+    @Override
+    protected boolean doInvokeUnimplementedMessageHandler(int cmd, Buffer buffer) throws Exception {
+        /*
+         * SSHD-968 Some servers respond to global requests with SSH_MSG_UNIMPLEMENTED
+         * instead of SSH_MSG_REQUEST_FAILURE (as mandated by https://tools.ietf.org/html/rfc4254#section-4)
+         * so deal with it
+         */
+        long reqSeqNo = -1L;
+        long msgSeqNo = -1L;
+        String reqGlobal = null;
+        boolean propagateCall = true;
+        if ((cmd == SshConstants.SSH_MSG_UNIMPLEMENTED)
+                && (globalRequestSeqo.get() >= 0L)) {
+            int rpos = buffer.rpos();
+            msgSeqNo = buffer.rawUInt(rpos);
+
+            synchronized (requestResult) {
+                // must re-fetch value under correct lock
+                reqSeqNo = globalRequestSeqo.get();
+                if (reqSeqNo == msgSeqNo) {
+                    reqGlobal = pendingGlobalRequest.get();
+                    propagateCall = false;
+                    signalRequestFailure();
+                }
+            }
+        }
+
+        if (propagateCall) {
+            if (log.isTraceEnabled()) {
+                log.trace("doInvokeUnimplementedMessageHandler({}) reqSeqNo={}, msgSeqNo={}, reqGlobal={}",
+                    this, reqSeqNo, msgSeqNo, reqGlobal);
+            }
+
+            return super.doInvokeUnimplementedMessageHandler(cmd, buffer);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doInvokeUnimplementedMessageHandler({}) report global request={} failure for seqNo={}",
+                this, reqGlobal, reqSeqNo);
+        }
+
+        return true;    // message handled internally
     }
 
     @Override
@@ -1069,15 +1140,18 @@ public abstract class AbstractSession extends SessionHelper {
             // Check that the packet has some free space for the header
             int curPos = buffer.rpos();
             int cmd = buffer.rawByte(curPos) & 0xFF;  // usually the 1st byte is an SSH opcode
-            if (curPos < SshConstants.SSH_PACKET_HEADER_LEN) {
-                log.warn("encode({}) command={}[{}] performance cost: available buffer packet header length ({}) below min. required ({})",
-                     this, cmd, SshConstants.getCommandMessageName(cmd),
-                     curPos, SshConstants.SSH_PACKET_HEADER_LEN);
-                Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
-                nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
-                nb.putBuffer(buffer);
+            Buffer nb = preProcessEncodeBuffer(cmd, buffer);
+            if (nb != buffer) {
                 buffer = nb;
                 curPos = buffer.rpos();
+
+                int newCmd = buffer.rawByte(curPos) & 0xFF;
+                if (cmd != newCmd) {
+                    log.warn("encode({}) - command changed from {}[{}] to {}[{}] by pre-processor",
+                        this, cmd, SshConstants.getCommandMessageName(cmd),
+                        newCmd, SshConstants.getCommandMessageName(newCmd));
+                    cmd = newCmd;
+                }
             }
 
             // Grab the length of the packet (excluding the 5 header bytes)
@@ -1621,8 +1695,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @see #sendNotImplemented(long)
      */
     protected IoWriteFuture notImplemented(int cmd, Buffer buffer) throws Exception {
-        ReservedSessionMessagesHandler handler = resolveReservedSessionMessagesHandler();
-        if (handler.handleUnimplementedMessage(this, cmd, buffer)) {
+        if (doInvokeUnimplementedMessageHandler(cmd, buffer)) {
             return null;
         }
 
@@ -1777,7 +1850,8 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected void requestSuccess(Buffer buffer) throws Exception {
         // use a copy of the original data in case it is re-used on return
-        Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
+        Buffer resultBuf = ByteArrayBuffer.getCompactClone(
+            buffer.array(), buffer.rpos(), buffer.available());
         synchronized (requestResult) {
             requestResult.set(resultBuf);
             resetIdleTimeout();
@@ -1792,6 +1866,13 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception If failed to handle the message
      */
     protected void requestFailure(Buffer buffer) throws Exception {
+        signalRequestFailure();
+    }
+
+    /**
+     * Marks the current pending global request result as failed
+     */
+    protected void signalRequestFailure() {
         synchronized (requestResult) {
             requestResult.set(GenericUtils.NULL);
             resetIdleTimeout();
