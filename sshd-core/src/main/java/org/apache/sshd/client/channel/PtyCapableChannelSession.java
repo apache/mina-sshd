@@ -47,9 +47,9 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * try (client = SshClient.setUpDefaultClient()) {
  *      client.start();
  *
- *      try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+ *      try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(CONNECT_TIMEOUT).getSession()) {
  *          s.addPasswordIdentity(getCurrentTestName());
- *          s.auth().verify(5L, TimeUnit.SECONDS);
+ *          s.auth().verify(AUTH_TIMEOUT);
  *
  *          try (ChannelExec shell = s.createExecChannel("my super duper command")) {
  *              shell.setEnv("var1", "val1");
@@ -60,7 +60,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *              shell.setPtyLines(...);
  *              ...etc...
  *
- *              shell.open().verify(5L, TimeUnit.SECONDS);
+ *              shell.open().verify(OPEN_TIMEOUT);
  *              shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
  *
  *              Integer status = shell.getExitStatus();

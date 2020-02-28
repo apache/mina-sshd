@@ -79,9 +79,9 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         sshd.setReservedSessionMessagesHandler(handler);
 
         client.start();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             testReservedSessionMessagesHandler(session, handler);
         } finally {
             client.stop();
@@ -116,9 +116,9 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             });
 
             client.start();
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
                 assertTrue("Failed to complete test on time", signal.tryAcquire(31L, TimeUnit.SECONDS));
             } finally {
                 client.stop();

@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -98,9 +97,9 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
                     String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
@@ -150,10 +149,9 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
                     String folder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);

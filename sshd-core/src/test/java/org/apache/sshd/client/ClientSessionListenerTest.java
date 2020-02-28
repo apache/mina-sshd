@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -167,11 +166,10 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     private ClientSession createTestClientSession() throws IOException {
         ClientSession session =
             client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

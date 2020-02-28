@@ -42,6 +42,7 @@ import java.security.spec.ECField;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -541,6 +542,10 @@ public abstract class JUnitTestSupport extends Assert {
         assertFileLength(file.toPath(), length, timeout);
     }
 
+    public static void assertFileLength(File file, long length, Duration timeout) throws Exception {
+        assertFileLength(file.toPath(), length, timeout);
+    }
+
     /**
      * Waits the specified timeout for the file to exist and have the required length
      *
@@ -549,12 +554,20 @@ public abstract class JUnitTestSupport extends Assert {
      * @param timeout Timeout (msec.) to wait for satisfying the requirements
      * @throws Exception If failed to access the file
      */
+    public static void assertFileLength(Path file, long length, Duration timeout) throws Exception {
+        assertFileLength(file, length, timeout.toMillis());
+    }
+
     public static void assertFileLength(Path file, long length, long timeout) throws Exception {
         if (waitForFile(file, length, timeout)) {
             return;
         }
         assertTrue("File not found: " + file, Files.exists(file));
         assertEquals("Mismatched file size for " + file, length, Files.size(file));
+    }
+
+    public static boolean waitForFile(Path file, long length, Duration timeout) throws Exception {
+        return waitForFile(file, length, timeout.toMillis());
     }
 
     public static boolean waitForFile(Path file, long length, long timeout) throws Exception {

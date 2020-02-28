@@ -24,7 +24,6 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -97,10 +96,10 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsaGood);
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 assertEquals("Mismatched authentication invocations count", 2, count.size());
 
@@ -135,12 +134,12 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsaGood);
 
                 AuthFuture auth = session.auth();
-                assertTrue("Failed to authenticate on time", auth.await(5L, TimeUnit.SECONDS));
+                assertTrue("Failed to authenticate on time", auth.await(AUTH_TIMEOUT));
                 assertTrue("Authentication failed", auth.isSuccess());
             } finally {
                 client.stop();

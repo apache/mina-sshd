@@ -56,9 +56,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     private static final int SSHD_NIO_WORKERS = 8;
     private static final int PORT_FORWARD_CLIENT_COUNT = 12;
 
-    // For very large numbers of clients and small numbers of threads this may
-    // need to be increased
-    private static final int TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10L);
+    private static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10L);
 
     // SSHD Server State
     private static int sshServerPort;
@@ -148,8 +146,8 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
 
     @AfterClass
     public static void stopServer() throws IOException {
-        if (!server.close(true).await(TIMEOUT)) {
-            LOG.warn("Failed to close server within {} sec.", TimeUnit.MILLISECONDS.toSeconds(TIMEOUT));
+        if (!server.close(true).await(CLOSE_TIMEOUT)) {
+            LOG.warn("Failed to close server within {} sec.", CLOSE_TIMEOUT.toMillis() / 1000);
         }
     }
 
@@ -159,10 +157,10 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
         LOG.debug("Connecting...");
-        session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(TIMEOUT).getSession();
+        session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(CONNECT_TIMEOUT).getSession();
         LOG.debug("Authenticating...");
         session.addPasswordIdentity("foo");
-        session.auth().verify(TIMEOUT);
+        session.auth().verify(AUTH_TIMEOUT);
         LOG.debug("Authenticated");
     }
 
@@ -170,7 +168,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     public void stopClient() throws Exception {
         LOG.debug("Disconnecting Client");
         try {
-            assertTrue("Failed to close session", session.close(true).await(TIMEOUT));
+            assertTrue("Failed to close session", session.close(true).await(CLOSE_TIMEOUT));
         } finally {
             session = null;
         }
@@ -240,7 +238,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         outputDebugMessage("readInLoop(port=%d)", serverPort);
 
         final Socket s = new Socket();
-        s.setSoTimeout(TIMEOUT);
+        s.setSoTimeout(SO_TIMEOUT);
 
         barrier.await();
 

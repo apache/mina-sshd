@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -201,11 +200,10 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
         sshd.setKeyPairProvider(provider);
         client.setSignatureFactories(signatures);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
-            s.auth().verify(30L, TimeUnit.SECONDS);
+            s.auth().verify(AUTH_TIMEOUT.multipliedBy(3));
         }
     }
 }

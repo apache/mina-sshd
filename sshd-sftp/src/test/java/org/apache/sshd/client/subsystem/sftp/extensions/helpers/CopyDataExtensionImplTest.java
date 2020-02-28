@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
@@ -162,10 +161,9 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         }
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);

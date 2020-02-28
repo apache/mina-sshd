@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -94,7 +93,7 @@ import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthenticationTest extends BaseTestSupport {
-    private static final long CONNECT_TIMEOUT = 7L;
+
     private static final AttributeRepository.AttributeKey<Boolean> PASSWORD_ATTR =
         new AttributeRepository.AttributeKey<>();
 
@@ -130,7 +129,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
             try (ClientSession s = client.connect("user", TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity("bad password");
                 assertAuthenticationResult(getCurrentTestName(), s.auth(), false);
@@ -144,11 +143,11 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> mask =
                     EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
-                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, TimeUnit.SECONDS.toMillis(11L));
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting on session events", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 String password = "the-password";
@@ -162,7 +161,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
-                result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(3L));
+                result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), DEFAULT_TIMEOUT);
                 assertTrue("Mismatched client session close mask: " + result, result.containsAll(mask));
             } finally {
                 client.stop();
@@ -253,10 +252,10 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("No password change request generated", 2, attemptsCount.get());
                 assertEquals("No password change handled", 1, changesCount.get());
                 assertEquals("No user interaction invoked", 1, updatesCount.get());
@@ -273,11 +272,11 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> result =
                     s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                            DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 String password = getCurrentTestName();
@@ -302,11 +301,11 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> result =
                     s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                            DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
@@ -379,11 +378,11 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 Collection<ClientSession.ClientSessionEvent> result =
                     s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                            DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
@@ -503,9 +502,9 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Bad generated challenge count", 1, genCount.get());
                 assertEquals("Bad authentication count", 1, authCount.get());
                 assertEquals("Bad interactive count", 1, interactiveCount.get());
@@ -559,10 +558,10 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("No password change request generated", 2, attemptsCount.get());
                 assertEquals("No user interaction invoked", 1, updatesCount.get());
             } finally {
@@ -594,12 +593,12 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
 
                 AuthFuture future = s.auth();
-                assertTrue("Failed to complete auth in allocated time", future.await(11L, TimeUnit.SECONDS));
+                assertTrue("Failed to complete auth in allocated time", future.await(DEFAULT_TIMEOUT));
                 assertFalse("Unexpected authentication success", future.isSuccess());
 
                 Throwable signalled = future.getException();
@@ -635,9 +634,9 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Mismatched load passwords count", 1, loadCount.get());
                 assertSame("Mismatched passwords identity provider", provider, s.getPasswordIdentityProvider());
             } finally {
@@ -695,10 +694,10 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPublicKeyIdentity(clientIdentity);
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
             } finally {
                 client.stop();
             }
@@ -748,10 +747,10 @@ public class AuthenticationTest extends BaseTestSupport {
             try {
                 for (int index = 1; index <= 4; index++) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                            .getSession()) {
+                            .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
                         s.addPublicKeyIdentity(clientIdentity);
-                        s.auth().verify(17L, TimeUnit.SECONDS);
+                        s.auth().verify(AUTH_TIMEOUT);
                         assertEquals("Mismatched number of challenges", 3, challengeCounter.get());
                         break;
                     } catch (SshException e) {   // expected
@@ -796,9 +795,9 @@ public class AuthenticationTest extends BaseTestSupport {
             client.setUserAuthFactories(Collections.singletonList(factory));
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Mismatched authenticator invocation count", 1, invocationCount.get());
             } finally {
                 client.stop();
@@ -836,13 +835,13 @@ public class AuthenticationTest extends BaseTestSupport {
             try {
                 for (int index = 1; index < 3; index++) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                            .getSession()) {
+                            .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
                         s.addPasswordIdentity(getCurrentTestName());
                         s.addPublicKeyIdentity(kp);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("Failed to complete authentication on time", auth.await(11L, TimeUnit.SECONDS));
+                        assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
                         if (auth.isSuccess()) {
                             assertTrue("Premature authentication success", index > 1);
                             break;
@@ -874,12 +873,12 @@ public class AuthenticationTest extends BaseTestSupport {
                     " ", "    ", "  " + getCurrentTestName(), getCurrentTestName() + "    "
                 }) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-                            .getSession()) {
+                            .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
                         s.addPasswordIdentity(password);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("No authentication result in time for password='" + password + "'", auth.await(11L, TimeUnit.SECONDS));
+                        assertTrue("No authentication result in time for password='" + password + "'", auth.await(AUTH_TIMEOUT));
                         assertTrue("Failed to authenticate with password='" + password + "'", auth.isSuccess());
                     }
                 }
@@ -895,7 +894,7 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 String keyLocation = "super-secret-passphrase-RSA-AES-128-key";
                 FilePasswordProvider passwordProvider = new FilePasswordProvider() {
@@ -937,7 +936,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         return Collections.singletonList(kp);
                     }
                 });
-                s.auth().verify(17L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
 
                 Boolean passwordRequested = s.getAttribute(PASSWORD_ATTR);
                 assertNotNull("Password provider not invoked", passwordRequested);
@@ -949,7 +948,7 @@ public class AuthenticationTest extends BaseTestSupport {
     }
 
     private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
-        assertTrue(message + ": failed to get result on time", future.await(5L, TimeUnit.SECONDS));
+        assertTrue(message + ": failed to get result on time", future.await(AUTH_TIMEOUT));
         assertEquals(message + ": mismatched authentication result", expected, future.isSuccess());
     }
 

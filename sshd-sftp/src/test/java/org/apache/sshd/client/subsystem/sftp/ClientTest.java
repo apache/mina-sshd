@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
@@ -318,7 +317,7 @@ public class ClientTest extends BaseTestSupport {
             assertListenerSizes("ClientSessionOpen", clientListeners, 0, 0);
 
             try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 TestChannelListener channelListener = new TestChannelListener(channel.getClass().getSimpleName());
                 // need to emulate them since we are adding the listener AFTER the channel is open
@@ -388,12 +387,11 @@ public class ClientTest extends BaseTestSupport {
 
     private ClientSession createTestClientSession(String host) throws IOException {
         ClientSession session = client.connect(getCurrentTestName(), host, port)
-            .verify(7L, TimeUnit.SECONDS)
-            .getSession();
+            .verify(CONNECT_TIMEOUT).getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
             assertNotNull("No reported connect address", addr);

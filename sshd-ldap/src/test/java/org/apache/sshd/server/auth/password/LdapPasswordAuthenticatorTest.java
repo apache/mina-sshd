@@ -20,15 +20,17 @@
 package org.apache.sshd.server.auth.password;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.directory.server.core.DirectoryService;
-import org.apache.directory.server.ldap.LdapServer;
+import org.apache.directory.server.annotations.CreateLdapServer;
+import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.core.annotations.ApplyLdifFiles;
+import org.apache.directory.server.core.annotations.CreateDS;
+import org.apache.directory.server.core.annotations.CreatePartition;
+import org.apache.directory.server.core.integ.CreateLdapServerRule;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -38,32 +40,31 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@CreateDS(name = "myDS",
+        partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
+@CreateLdapServer(allowAnonymousAccess = true,
+        transports = { @CreateTransport(protocol = "LDAP", address = "localhost")})
+@ApplyLdifFiles({"auth-users.ldif"})
 public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
-    private static final AtomicReference<Map.Entry<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
+
+    @ClassRule
+    public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
+
     private static Map<String, String> usersMap;
 
     public LdapPasswordAuthenticatorTest() {
         super();
     }
 
-    @BeforeClass
-    public static void startApacheDs() throws Exception {
-        LDAP_CONTEX_HOLDER.set(startApacheDs(LdapPasswordAuthenticatorTest.class));
-        usersMap = populateUsers(LDAP_CONTEX_HOLDER.get().getValue(), LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
-        assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
-    }
-
-    @AfterClass
-    public static void stopApacheDs() throws Exception {
-        stopApacheDs(LDAP_CONTEX_HOLDER.getAndSet(null));
-    }
-
     @Test   // the user's password is compared with the LDAP stored one
     public void testPasswordComparison() throws Exception {
-        Map.Entry<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
+        usersMap = populateUsers(serverRule.getLdapServer().getDirectoryService(),
+                LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
+        assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
+
         LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
-        auth.setHost(getHost(ldapContext));
-        auth.setPort(getPort(ldapContext));
+        auth.setHost(getHost(serverRule.getLdapServer()));
+        auth.setPort(getPort(serverRule.getLdapServer()));
         auth.setBaseDN(BASE_DN_TEST);
 
         ServerSession session = Mockito.mock(ServerSession.class);

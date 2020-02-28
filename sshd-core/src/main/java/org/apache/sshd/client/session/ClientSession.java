@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -385,6 +386,19 @@ public interface ClientSession
      * {@link ClientSessionEvent#TIMEOUT} value is set)
      */
     Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout);
+
+    /**
+     * Wait for any one of a specific state to be signaled.
+     *
+     * @param mask    The request {@link ClientSessionEvent}s mask
+     * @param timeout Wait time - null means forever
+     * @return The actual state that was detected either due to the mask
+     * yielding one of the states or due to timeout (in which case the
+     * {@link ClientSessionEvent#TIMEOUT} value is set)
+     */
+    default Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, Duration timeout) {
+        return waitFor(mask, timeout != null ? timeout.toMillis() : -1);
+    }
 
     /**
      * Access to the metadata.

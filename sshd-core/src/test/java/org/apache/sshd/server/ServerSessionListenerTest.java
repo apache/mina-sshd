@@ -26,7 +26,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -241,11 +240,10 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     private ClientSession createTestClientSession() throws Exception {
         ClientSession session =
             client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(11L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

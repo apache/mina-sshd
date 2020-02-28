@@ -63,9 +63,9 @@ public class GitPgmCommandTest extends BaseTestSupport {
                 try (SshClient client = setupTestClient()) {
                     client.start();
 
-                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port).verify(CONNECT_TIMEOUT).getSession()) {
                         session.addPasswordIdentity(getCurrentTestName());
-                        session.auth().verify(5L, TimeUnit.SECONDS);
+                        session.auth().verify(AUTH_TIMEOUT);
 
                         Path repo = serverDir.resolve(getCurrentTestName());
                         Git.init().setDirectory(repo.toFile()).call();
@@ -90,7 +90,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
         try (ChannelExec channel = session.createExecChannel(command)) {
             channel.setOut(System.out);
             channel.setErr(System.err);
-            channel.open().verify(11L, TimeUnit.SECONDS);
+            channel.open().verify(OPEN_TIMEOUT);
 
             Collection<ClientChannelEvent> result =
                     channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));

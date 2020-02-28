@@ -116,6 +116,7 @@ import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
@@ -126,6 +127,7 @@ import org.slf4j.LoggerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientTest extends BaseTestSupport {
+
     private SshServer sshd;
     private SshClient client;
     private int port;
@@ -305,12 +307,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertSame("Session established",
                 sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             assertSame("Session authenticated",
                 sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
 
@@ -326,7 +327,7 @@ public class ClientTest extends BaseTestSupport {
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
             }
         } finally {
             client.stop();
@@ -399,7 +400,7 @@ public class ClientTest extends BaseTestSupport {
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
-                        channel.open().verify(11L, TimeUnit.SECONDS);
+                        channel.open().verify(OPEN_TIMEOUT);
 
                         log.info("Channel established at retry#" + retryCount);
                         try (OutputStream stdin = channel.getInvertedIn()) {
@@ -517,7 +518,7 @@ public class ClientTest extends BaseTestSupport {
              ChannelShell channel = session.createShellChannel()) {
 
             channel.setStreaming(ClientChannel.Streaming.Async);
-            channel.open().verify(5L, TimeUnit.SECONDS);
+            channel.open().verify(OPEN_TIMEOUT);
 
             byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
             final int nbMessages = 1000;
@@ -554,7 +555,7 @@ public class ClientTest extends BaseTestSupport {
                         @Override
                         public void operationComplete(IoReadFuture future) {
                             try {
-                                future.verify(5L, TimeUnit.SECONDS);
+                                future.verify(DEFAULT_TIMEOUT);
 
                                 Buffer buffer = future.getBuffer();
                                 baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
@@ -575,7 +576,7 @@ public class ClientTest extends BaseTestSupport {
                         @Override
                         public void operationComplete(IoReadFuture future) {
                             try {
-                                future.verify(5L, TimeUnit.SECONDS);
+                                future.verify(DEFAULT_TIMEOUT);
 
                                 Buffer buffer = future.getBuffer();
                                 baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
@@ -683,7 +684,7 @@ public class ClientTest extends BaseTestSupport {
 
             channel.setOut(stdout);
             channel.setErr(stderr);
-            channel.open().verify(9L, TimeUnit.SECONDS);
+            channel.open().verify(OPEN_TIMEOUT);
             Thread.sleep(125L);
             try {
                 byte[] data = "a".getBytes(StandardCharsets.UTF_8);
@@ -699,10 +700,10 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Collection<ClientChannelEvent> mask = EnumSet.of(ClientChannelEvent.CLOSED);
-            Collection<ClientChannelEvent> result = channel.waitFor(mask, TimeUnit.SECONDS.toMillis(15L));
+            Collection<ClientChannelEvent> result = channel.waitFor(mask, CLOSE_TIMEOUT);
             assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
             assertTrue("Missing close event: " + result, result.containsAll(mask));
-            assertTrue("Failed to close session on time", session.close(false).await(7L, TimeUnit.SECONDS));
+            assertTrue("Failed to close session on time", session.close(false).await(CLOSE_TIMEOUT));
         } finally {
             client.stop();
         }
@@ -744,7 +745,7 @@ public class ClientTest extends BaseTestSupport {
                 teeOut.flush();
 
                 Collection<ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
                 assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
                 channel.close(false);
@@ -771,7 +772,7 @@ public class ClientTest extends BaseTestSupport {
 
             channel.setOut(out);
             channel.setErr(err);
-            channel.open().verify(9L, TimeUnit.SECONDS);
+            channel.open().verify(OPEN_TIMEOUT);
 
             try (OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
                 pipedIn.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
@@ -789,7 +790,7 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Collection<ClientChannelEvent> result =
-                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
             assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
             channel.close(false);
@@ -816,8 +817,8 @@ public class ClientTest extends BaseTestSupport {
             session.getService(ConnectionService.class).registerChannel(channel);
             channel.setOut(out);
             channel.setErr(err);
-            channel.open().verify(5L, TimeUnit.SECONDS);
-            assertTrue("Failed to close channel on time", channel.close(false).await(7L, TimeUnit.SECONDS));
+            channel.open().verify(OPEN_TIMEOUT);
+            assertTrue("Failed to close channel on time", channel.close(false).await(CLOSE_TIMEOUT));
         } finally {
             client.stop();
         }
@@ -855,7 +856,7 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Collection<ClientChannelEvent> result =
-                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
             assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
 
             channel.close(false);
@@ -889,7 +890,7 @@ public class ClientTest extends BaseTestSupport {
             channel.setIn(inPipe);
             channel.setOut(out);
             channel.setErr(err);
-            channel.open().verify(9L, TimeUnit.SECONDS);
+            channel.open().verify(OPEN_TIMEOUT);
 
             int bytes = 0;
             byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes(StandardCharsets.UTF_8);
@@ -912,7 +913,7 @@ public class ClientTest extends BaseTestSupport {
 
             outputDebugMessage("Waiting for channel to be closed");
             Collection<ClientChannelEvent> result =
-                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(35L));
+                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT.multipliedBy(2));
             assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
             channel.close(false);
             client.stop();
@@ -956,8 +957,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
 
@@ -965,8 +965,8 @@ public class ClientTest extends BaseTestSupport {
             CloseFuture closeFuture = session.close(false);
 
             authLatch.countDown();
-            assertTrue("Authentication writing not completed in time", authFuture.await(11L, TimeUnit.SECONDS));
-            assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
+            assertTrue("Authentication writing not completed in time", authFuture.await(AUTH_TIMEOUT));
+            assertTrue("Session closing not complete in time", closeFuture.await(CLOSE_TIMEOUT));
             assertNotNull("No authentication exception", authFuture.getException());
             assertTrue("Future not closed", closeFuture.isClosed());
         } finally {
@@ -992,8 +992,8 @@ public class ClientTest extends BaseTestSupport {
 
             OpenFuture openFuture = channel.open();
             CloseFuture closeFuture = session.close(false);
-            assertTrue("Channel not open in time", openFuture.await(11L, TimeUnit.SECONDS));
-            assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
+            assertTrue("Channel not open in time", openFuture.await(DEFAULT_TIMEOUT));
+            assertTrue("Session closing not complete in time", closeFuture.await(DEFAULT_TIMEOUT));
             assertTrue("Not open", openFuture.isOpened());
             assertTrue("Not closed", closeFuture.isClosed());
         } finally {
@@ -1023,8 +1023,8 @@ public class ClientTest extends BaseTestSupport {
             assertNull("Session closure not signalled", clientSessionHolder.get());
 
             channelLatch.countDown();
-            assertTrue("Channel not open in time", openFuture.await(11L, TimeUnit.SECONDS));
-            assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
+            assertTrue("Channel not open in time", openFuture.await(DEFAULT_TIMEOUT));
+            assertTrue("Session closing not complete in time", closeFuture.await(DEFAULT_TIMEOUT));
             assertNotNull("No open exception", openFuture.getException());
             assertTrue("Not closed", closeFuture.isClosed());
         } finally {
@@ -1040,12 +1040,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             KeyPairProvider keys = createTestHostKeyProvider();
             session.addPublicKeyIdentity(keys.loadKey(session, KeyPairProvider.SSH_RSA));
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
@@ -1064,12 +1063,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPublicKeyIdentity(provider.loadKey(session, KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
@@ -1096,12 +1094,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
@@ -1128,12 +1125,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
@@ -1204,14 +1200,14 @@ public class ClientTest extends BaseTestSupport {
         try {
             for (int index = 0; index < xformers.size(); index++) {
                 try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                        .verify(7, TimeUnit.SECONDS)
+                        .verify(CONNECT_TIMEOUT)
                         .getSession()) {
                     assertNotNull("Client session creation not signalled at iteration #" + index, clientSessionHolder.get());
                     String password = "bad-" + getCurrentTestName() + "-" + index;
                     session.addPasswordIdentity(password);
 
                     AuthFuture future = session.auth();
-                    assertTrue("Failed to verify password=" + password + " in time", future.await(5L, TimeUnit.SECONDS));
+                    assertTrue("Failed to verify password=" + password + " in time", future.await(AUTH_TIMEOUT));
                     assertFalse("Unexpected success for password=" + password, future.isSuccess());
                     session.removePasswordIdentity(password);
                 }
@@ -1281,12 +1277,11 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
 
             AuthFuture future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(15L, TimeUnit.SECONDS));
+            assertTrue("Failed to complete authentication on time", future.await(DEFAULT_TIMEOUT));
             assertTrue("Unexpected authentication success", future.isFailure());
             assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
         } finally {
@@ -1305,8 +1300,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
@@ -1341,7 +1335,7 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(15L, TimeUnit.SECONDS));
+            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
             assertTrue("Authentication not marked as success", future.isSuccess());
             assertFalse("Authentication marked as failure", future.isFailure());
             assertEquals("Mismatched authentication attempts count", 1, count.get());
@@ -1360,8 +1354,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
@@ -1396,7 +1389,7 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            assertTrue("Authentication not completed in time", future.await(11L, TimeUnit.SECONDS));
+            assertTrue("Authentication not completed in time", future.await(AUTH_TIMEOUT));
             assertTrue("Authentication not, marked as failure", future.isFailure());
             assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
         } finally {
@@ -1422,7 +1415,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.setIn(inPipe);
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 AbstractSession cs = (AbstractSession) session;
                 Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT, Integer.SIZE);
@@ -1431,7 +1424,7 @@ public class ClientTest extends BaseTestSupport {
                 buffer.putString("");   // TODO add language tag
 
                 IoWriteFuture f = cs.writePacket(buffer);
-                assertTrue("Packet writing not completed in time", f.await(11L, TimeUnit.SECONDS));
+                assertTrue("Packet writing not completed in time", f.await(DEFAULT_TIMEOUT));
                 suspend(cs.getIoSession());
 
                 TestEchoShell.latch.await();
@@ -1458,8 +1451,7 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             Collection<ClientSession.ClientSessionEvent> result =
                 session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH), TimeUnit.SECONDS.toMillis(10L));
@@ -1502,6 +1494,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
+    @Ignore
     public void testConnectUsingIPv6Address() throws IOException {
         client.start();
 
@@ -1559,12 +1552,11 @@ public class ClientTest extends BaseTestSupport {
 
     private ClientSession createTestClientSession(String host) throws IOException {
         ClientSession session = client.connect(getCurrentTestName(), host, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
             assertNotNull("No reported connect address", addr);

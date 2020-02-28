@@ -28,6 +28,7 @@ import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -79,6 +80,9 @@ import com.jcraft.jsch.Session;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingTest extends BaseTestSupport {
+
+    public static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(13L);
+
     @SuppressWarnings("checkstyle:anoninnerlength")
     private static final PortForwardingEventListener SERVER_SIDE_LISTENER = new PortForwardingEventListener() {
         private final org.slf4j.Logger log = LoggerFactory.getLogger(PortForwardingEventListener.class);
@@ -239,8 +243,8 @@ public class PortForwardingTest extends BaseTestSupport {
         }
     }
 
-    private void waitForForwardingRequest(String expected, long timeout) throws InterruptedException {
-        for (long remaining = timeout; remaining > 0L;) {
+    private void waitForForwardingRequest(String expected, Duration timeout) throws InterruptedException {
+        for (long remaining = timeout.toMillis(); remaining > 0L;) {
             long waitStart = System.currentTimeMillis();
             String actual = REQUESTS_QUEUE.poll(remaining, TimeUnit.MILLISECONDS);
             long waitEnd = System.currentTimeMillis();
@@ -265,7 +269,7 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
@@ -296,19 +300,19 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
-            waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -338,7 +342,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -435,7 +439,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -473,7 +477,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -574,7 +578,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -627,7 +631,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 for (int i = 0; i < 1000; i++) {
                     output.write(bytes);
@@ -650,7 +654,7 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
 
             try (ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -677,7 +681,7 @@ public class PortForwardingTest extends BaseTestSupport {
             // 1. Create a Port Forward
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             // 2. Establish a connection through it
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort)) {
@@ -811,9 +815,9 @@ public class PortForwardingTest extends BaseTestSupport {
             client.addPortForwardingEventListener(listener);
         }
 
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(CONNECT_TIMEOUT).getSession();
         session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify(11L, TimeUnit.SECONDS);
+        session.auth().verify(AUTH_TIMEOUT);
         return session;
     }
 }

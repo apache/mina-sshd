@@ -25,18 +25,20 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.directory.server.core.DirectoryService;
-import org.apache.directory.server.ldap.LdapServer;
+import org.apache.directory.server.annotations.CreateLdapServer;
+import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.core.annotations.ApplyLdifFiles;
+import org.apache.directory.server.core.annotations.CreateDS;
+import org.apache.directory.server.core.annotations.CreatePartition;
+import org.apache.directory.server.core.integ.CreateLdapServerRule;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -46,8 +48,16 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@CreateDS(name = "myDS",
+        partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
+@CreateLdapServer(allowAnonymousAccess = true,
+        transports = { @CreateTransport(protocol = "LDAP", address = "localhost")})
+@ApplyLdifFiles({"auth-users.ldif"})
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
-    private static final AtomicReference<Map.Entry<LdapServer, DirectoryService>> LDAP_CONTEX_HOLDER = new AtomicReference<>();
+
+    @ClassRule
+    public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
+
     private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
     private static final String TEST_ATTR_NAME = "description";
@@ -56,11 +66,10 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         super();
     }
 
-    @BeforeClass
-    public static void startApacheDs() throws Exception {
-        LDAP_CONTEX_HOLDER.set(startApacheDs(LdapPublickeyAuthenticatorTest.class));
-        Map<String, String> credentials =
-                populateUsers(LDAP_CONTEX_HOLDER.get().getValue(), LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
+    @Test
+    public void testPublicKeyComparison() throws Exception {
+        Map<String, String> credentials = populateUsers(serverRule.getLdapServer().getDirectoryService(),
+                        LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
         assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
 
         // Cannot use forEach because of the potential GeneraSecurityException being thrown
@@ -71,19 +80,10 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
                 .resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
             KEYS_MAP.put(username, key);
         }
-    }
 
-    @AfterClass
-    public static void stopApacheDs() throws Exception {
-        stopApacheDs(LDAP_CONTEX_HOLDER.getAndSet(null));
-    }
-
-    @Test
-    public void testPublicKeyComparison() throws Exception {
-        Map.Entry<LdapServer, DirectoryService> ldapContext = LDAP_CONTEX_HOLDER.get();
         LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
-        auth.setHost(getHost(ldapContext));
-        auth.setPort(getPort(ldapContext));
+        auth.setHost(getHost(serverRule.getLdapServer()));
+        auth.setPort(getPort(serverRule.getLdapServer()));
         auth.setBaseDN(BASE_DN_TEST);
         auth.setKeyAttributeName(TEST_ATTR_NAME);
         auth.setRetrievedAttributes(TEST_ATTR_NAME);

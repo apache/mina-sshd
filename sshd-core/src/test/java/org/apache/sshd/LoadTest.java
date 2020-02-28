@@ -123,9 +123,9 @@ public class LoadTest extends BaseTestSupport {
             client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.apply(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Collections.singletonList(BuiltinCiphers.blowfishcbc));
             client.start();
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                      ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -134,7 +134,7 @@ public class LoadTest extends BaseTestSupport {
                     channel.setErr(err);
 
                     try {
-                        channel.open().verify(9L, TimeUnit.SECONDS);
+                        channel.open().verify(OPEN_TIMEOUT);
                         try (OutputStream pipedIn = channel.getInvertedIn()) {
                             msg += "\nexit\n";
                             pipedIn.write(msg.getBytes(StandardCharsets.UTF_8));

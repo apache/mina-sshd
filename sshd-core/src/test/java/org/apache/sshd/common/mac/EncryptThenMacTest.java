@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -121,10 +120,9 @@ public class EncryptThenMacTest extends BaseTestSupport {
     @Test
     public void testClientConnection() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(11L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             String expected = factory.getName();
             for (KexProposalOption opt : KexProposalOption.MAC_PROPOSALS) {

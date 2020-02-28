@@ -73,13 +73,12 @@ public class ChannelSessionTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
-                    channel.open().verify(7L, TimeUnit.SECONDS);
+                    channel.open().verify(OPEN_TIMEOUT);
 
                     OutputStream invertedIn = channel.getInvertedIn();
                     String cmdSent = "echo foo\nexit\n";

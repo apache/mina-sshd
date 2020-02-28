@@ -32,8 +32,7 @@
 
     <properties>
         <projectRoot>${project.basedir}/..</projectRoot>
-        <apacheds.version>1.5.7</apacheds.version>
-        <apache.shared.version>0.9.19</apache.shared.version>
+        <apacheds.version>2.0.0.AM25</apacheds.version>
     </properties>
 
     <dependencyManagement>
@@ -59,29 +58,10 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-cursor</artifactId>
-                <version>${apache.shared.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-ldap</artifactId>
-                <version>${apache.shared.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-ldap-schema</artifactId>
-                <version>${apache.shared.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-ldap-schema-loader</artifactId>
-                <version>${apache.shared.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-ldap-schema-manager</artifactId>
-                <version>${apache.shared.version}</version>
+                <groupId>org.apache.directory.server</groupId>
+                <artifactId>apacheds-test-framework</artifactId>
+                <version>${apacheds.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -105,6 +85,7 @@
             <version>${apacheds.version}</version>
             <scope>test</scope>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.apache.directory.server</groupId>
             <artifactId>apacheds-server-integ</artifactId>
@@ -117,6 +98,7 @@
             <version>${apacheds.version}</version>
             <scope>test</scope>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.apache.sshd</groupId>

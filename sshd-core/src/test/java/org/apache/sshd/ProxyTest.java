@@ -297,9 +297,9 @@ public class ProxyTest extends BaseTestSupport {
         }
         client.start();
 
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(CONNECT_TIMEOUT).getSession();
         session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify(11L, TimeUnit.SECONDS);
+        session.auth().verify(AUTH_TIMEOUT);
         return session;
     }
 }

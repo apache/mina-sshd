@@ -27,7 +27,6 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.local.LocalAgentFactory;
 import org.apache.sshd.agent.local.ProxyAgentFactory;
@@ -144,8 +143,8 @@ public class AgentTest extends BaseTestSupport {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
 
-                    try (ClientSession session1 = client1.connect(username, TEST_LOCALHOST, port1).verify(7L, TimeUnit.SECONDS).getSession()) {
-                        session1.auth().verify(15L, TimeUnit.SECONDS);
+                    try (ClientSession session1 = client1.connect(username, TEST_LOCALHOST, port1).verify(CONNECT_TIMEOUT).getSession()) {
+                        session1.auth().verify(AUTH_TIMEOUT);
 
                         try (ChannelShell channel1 = session1.createShellChannel();
                              ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -154,7 +153,7 @@ public class AgentTest extends BaseTestSupport {
                             channel1.setOut(out);
                             channel1.setErr(err);
                             channel1.setAgentForwarding(true);
-                            channel1.open().verify(9L, TimeUnit.SECONDS);
+                            channel1.open().verify(OPEN_TIMEOUT);
 
                             try (OutputStream pipedIn = channel1.getInvertedIn()) {
                                 synchronized (shellFactory.shell) {
@@ -169,15 +168,15 @@ public class AgentTest extends BaseTestSupport {
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();
 
-                                    try (ClientSession session2 = client2.connect(username, TEST_LOCALHOST, port2).verify(7L, TimeUnit.SECONDS).getSession()) {
-                                        session2.auth().verify(15L, TimeUnit.SECONDS);
+                                    try (ClientSession session2 = client2.connect(username, TEST_LOCALHOST, port2).verify(CONNECT_TIMEOUT).getSession()) {
+                                        session2.auth().verify(AUTH_TIMEOUT);
 
                                         try (ChannelShell channel2 = session2.createShellChannel()) {
                                             channel2.setIn(shellFactory.shell.getInputStream());
                                             channel2.setOut(shellFactory.shell.getOutputStream());
                                             channel2.setErr(shellFactory.shell.getErrorStream());
                                             channel2.setAgentForwarding(true);
-                                            channel2.open().verify(9L, TimeUnit.SECONDS);
+                                            channel2.open().verify(OPEN_TIMEOUT);
 
                                             pipedIn.write("foo\n".getBytes(StandardCharsets.UTF_8));
                                             pipedIn.flush();

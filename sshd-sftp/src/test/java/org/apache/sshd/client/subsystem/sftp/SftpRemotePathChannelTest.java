@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
 import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -64,10 +63,9 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 Path parentPath = targetPath.getParent();
@@ -118,10 +116,9 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session);
                  FileChannel srcChannel = sftp.openRemotePathChannel(
@@ -158,10 +155,9 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session);
                  FileChannel srcChannel = sftp.openRemotePathChannel(
@@ -203,10 +199,9 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session);
                  FileChannel dstChannel = sftp.openRemotePathChannel(

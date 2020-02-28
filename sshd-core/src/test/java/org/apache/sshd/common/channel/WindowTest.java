@@ -154,13 +154,12 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel()) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -207,10 +206,9 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel();
                  PipedInputStream inPis = new PipedInputStream();
@@ -220,7 +218,7 @@ public class WindowTest extends BaseTestSupport {
 
                 channel.setIn(inPis);
                 channel.setOut(outPos);
-                channel.open().verify(7L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -266,14 +264,13 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel()) {
                 channel.setStreaming(ClientChannel.Streaming.Async);
-                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -289,13 +286,13 @@ public class WindowTest extends BaseTestSupport {
                     IoInputStream input = channel.getAsyncOut();
                     for (int i = 0; i < nbMessages; i++) {
                         Buffer buffer = new ByteArrayBuffer(bytes);
-                        output.writePacket(buffer).verify(5L, TimeUnit.SECONDS);
+                        output.writePacket(buffer).verify(DEFAULT_TIMEOUT);
 
                         waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
 
                         Buffer buf = new ByteArrayBuffer(16);
                         IoReadFuture future = input.read(buf);
-                        future.verify(5L, TimeUnit.SECONDS);
+                        future.verify(DEFAULT_TIMEOUT);
                         assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
                         assertEquals("Mismatched data at line #" + i, message,
                                 new String(buf.array(), buf.rpos(), buf.available(), StandardCharsets.UTF_8));

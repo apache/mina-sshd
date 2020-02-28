@@ -58,7 +58,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -341,10 +340,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (FileSystem fs = createSftpFileSystem(session, selector)) {
                     assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
