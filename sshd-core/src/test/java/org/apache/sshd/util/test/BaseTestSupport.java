@@ -102,7 +102,6 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         } else {
             dur = Long.parseLong(str);
         }
-        System.err.println("Timeout " + property + " configured to " + dur + " ms");
         return Duration.ofMillis(dur);
     }
 
