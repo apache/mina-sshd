@@ -73,6 +73,10 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
         }
 
+        return decodePublicKey(curve, keyData);
+    }
+
+    ECPublicKey decodePublicKey(ECCurves curve, InputStream keyData) throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
@@ -146,12 +150,16 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         ECParameterSpec params = Objects.requireNonNull(key.getParams(), "No EC parameters available");
         ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
         String keyType = curve.getKeyType();
+        encodePublicKey(s, keyType, curve, key.getW());
+        return keyType;
+    }
+
+    static void encodePublicKey(OutputStream s, String keyType, ECCurves curve, ECPoint w) throws IOException {
         String curveName = curve.getName();
         KeyEntryResolver.encodeString(s, keyType);
         // see rfc5656 section 3.1
         KeyEntryResolver.encodeString(s, curveName);
-        ECCurves.ECPointCompression.UNCOMPRESSED.writeECPoint(s, curveName, key.getW());
-        return keyType;
+        ECCurves.ECPointCompression.UNCOMPRESSED.writeECPoint(s, curveName, w);
     }
 
     @Override

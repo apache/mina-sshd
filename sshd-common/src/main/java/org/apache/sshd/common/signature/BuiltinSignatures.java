@@ -38,6 +38,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -119,6 +120,17 @@ public enum BuiltinSignatures implements SignatureFactory {
         @Override
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA521();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isECCSupported();
+        }
+    },
+    sk_ecdsa_sha2_nistp256(SkECDSAPublicKeyEntryDecoder.KEY_TYPE) {
+        @Override
+        public Signature create() {
+            return new SignatureSkECDSA();
         }
 
         @Override

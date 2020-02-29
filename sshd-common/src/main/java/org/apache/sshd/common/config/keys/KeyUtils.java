@@ -69,11 +69,13 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
+import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
@@ -157,6 +159,7 @@ public final class KeyUtils {
 
         if (SecurityUtils.isECCSupported()) {
             registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
+            registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
         }
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
@@ -988,6 +991,8 @@ public final class KeyUtils {
             return compareDSAKeys(DSAPublicKey.class.cast(k1), DSAPublicKey.class.cast(k2));
         } else if ((k1 instanceof ECPublicKey) && (k2 instanceof ECPublicKey)) {
             return compareECKeys(ECPublicKey.class.cast(k1), ECPublicKey.class.cast(k2));
+        } else if ((k1 instanceof SkEcdsaPublicKey) && (k2 instanceof SkEcdsaPublicKey)) {
+            return compareSkEcdsaKeys(SkEcdsaPublicKey.class.cast(k1), SkEcdsaPublicKey.class.cast(k2));
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
                     && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
@@ -1145,6 +1150,18 @@ public final class KeyUtils {
                 && (s1.getCofactor() == s2.getCofactor())
                 && Objects.equals(s1.getGenerator(), s2.getGenerator())
                 && Objects.equals(s1.getCurve(), s2.getCurve());
+        }
+    }
+
+    public static boolean compareSkEcdsaKeys(SkEcdsaPublicKey k1, SkEcdsaPublicKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false;   // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getAppName(), k2.getAppName())
+                    && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
+                    && compareECKeys(k1.getEcPublicKey(), k2.getEcPublicKey());
         }
     }
 }

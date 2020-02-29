@@ -58,6 +58,7 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
                     RSABufferPublicKeyParser.INSTANCE,
                     DSSBufferPublicKeyParser.INSTANCE,
                     ECBufferPublicKeyParser.INSTANCE,
+                    SkECBufferPublicKeyParser.INSTANCE,
                     ED25519BufferPublicKeyParser.INSTANCE));
 
     /**
