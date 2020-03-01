@@ -59,7 +59,8 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
                     DSSBufferPublicKeyParser.INSTANCE,
                     ECBufferPublicKeyParser.INSTANCE,
                     SkECBufferPublicKeyParser.INSTANCE,
-                    ED25519BufferPublicKeyParser.INSTANCE));
+                    ED25519BufferPublicKeyParser.INSTANCE,
+                    SkED25519BufferPublicKeyParser.INSTANCE));
 
     /**
      * @param keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;

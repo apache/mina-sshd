@@ -70,11 +70,13 @@ import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
@@ -163,6 +165,7 @@ public final class KeyUtils {
         }
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
+            registerPublicKeyEntryDecoder(SkED25519PublicKeyEntryDecoder.INSTANCE);
         }
     }
 
@@ -996,6 +999,8 @@ public final class KeyUtils {
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
                     && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
+        } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
+            return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
         } else {
             return false;   // either key is null or not of same class
         }
@@ -1162,6 +1167,18 @@ public final class KeyUtils {
             return Objects.equals(k1.getAppName(), k2.getAppName())
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
                     && compareECKeys(k1.getEcPublicKey(), k2.getEcPublicKey());
+        }
+    }
+
+    public static boolean compareSkEd25519Keys(SkED25519PublicKey k1, SkED25519PublicKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false;   // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getAppName(), k2.getAppName())
+                    && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
+                    && SecurityUtils.compareEDDSAPPublicKeys(k1.getEdDSAPublicKey(), k2.getEdDSAPublicKey());
         }
     }
 }

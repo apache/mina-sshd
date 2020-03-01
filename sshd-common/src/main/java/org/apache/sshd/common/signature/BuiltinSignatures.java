@@ -39,6 +39,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -142,6 +143,17 @@ public enum BuiltinSignatures implements SignatureFactory {
         @Override
         public Signature create() {
             return SecurityUtils.getEDDSASigner();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isEDDSACurveSupported();
+        }
+    },
+    sk_ssh_ed25519(SkED25519PublicKeyEntryDecoder.KEY_TYPE) {
+        @Override
+        public Signature create() {
+            return new SignatureSkED25519();
         }
 
         @Override

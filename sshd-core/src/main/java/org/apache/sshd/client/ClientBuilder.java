@@ -81,6 +81,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
                 BuiltinSignatures.nistp521,
                 BuiltinSignatures.sk_ecdsa_sha2_nistp256,
                 BuiltinSignatures.ed25519,
+                BuiltinSignatures.sk_ssh_ed25519,
                 BuiltinSignatures.rsa,
                 BuiltinSignatures.dsa
             ));
