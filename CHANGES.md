@@ -26,3 +26,5 @@ where the former validate the messages and deal with the idle timeout, and the l
 * [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968) - Interpret SSH_MSG_UNIMPLEMENTED response to a heartbeat request as a liveness indicator
 
 * [SSHD-970](https://issues.apache.org/jira/browse/SSHD-970) - `transferTo` function of `SftpRemotePathChannel` will loop if count parameter is greater than file size
+
+* [SSHD-972](https://issues.apache.org/jira/browse/SSHD-972) - Add support for peers using OpenSSH "security key" key types

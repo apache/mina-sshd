@@ -33,6 +33,8 @@ based applications requiring SSH support.
     initialization - see [section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3) and also the
     above mentioned hooks for [RFC 8308](https://tools.ietf.org/html/rfc8308).
 * [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
+* [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
+    * **Note:** the server side supports these keys by default. The client side requires specific initialization
 * SFTP version 3-6 + extensions
     * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
     * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)
@@ -56,7 +58,8 @@ based applications requiring SSH support.
 , diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
 , ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521
 * **Compressions**: none, zlib, zlib@openssh.com
-* **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
+* **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
+, ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
 
 # [Release notes](./CHANGES.md)
 
