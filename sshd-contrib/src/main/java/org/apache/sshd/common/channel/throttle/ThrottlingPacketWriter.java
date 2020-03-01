@@ -78,7 +78,8 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
             TimeUnit.SECONDS, PropertyResolverUtils.getLongProperty(resolver, WAIT_TIME_PROP, DEFAULT_MAX_WAIT_TIME));
     }
 
-    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
+    public ThrottlingPacketWriter(
+            PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
         this(delegate, maxPendingPackets, waitUnit.toMillis(waitCount));
     }
 

@@ -20,6 +20,7 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +40,7 @@ import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -124,6 +126,39 @@ public interface Session
      * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
      *
      * @param buffer  the buffer to encode and spend
+     * @param timeout the (never {@code null}) timeout value - its
+     * {@link Duration#toMillis() milliseconds} value will be used
+     * @return a future that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding sending the packet
+     * @see #writePacket(Buffer, long)
+     */
+    default IoWriteFuture writePacket(Buffer buffer, Duration timeout) throws IOException {
+        Objects.requireNonNull(timeout, "No timeout was specified");
+        return writePacket(buffer, timeout.toMillis());
+    }
+
+    /**
+     * Encode and send the given buffer with the specified timeout.
+     * If the buffer could not be written before the timeout elapses, the returned
+     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
+     *
+     * @param buffer the buffer to encode and spend
+     * @param maxWaitMillis the timeout in milliseconds
+     * @return a future that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding sending the packet
+     */
+    default IoWriteFuture writePacket(Buffer buffer, long maxWaitMillis) throws IOException {
+        return writePacket(buffer, maxWaitMillis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Encode and send the given buffer with the specified timeout.
+     * If the buffer could not be written before the timeout elapses, the returned
+     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
+     *
+     * @param buffer  the buffer to encode and spend
      * @param timeout the timeout
      * @param unit    the time unit of the timeout parameter
      * @return a future that can be used to check when the packet has actually been sent
@@ -141,8 +176,44 @@ public interface Session
      * @param unit The {@link TimeUnit} to wait for the response
      * @return the return buffer if the request was successful, {@code null} otherwise.
      * @throws IOException if an error occurred when encoding sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
-    Buffer request(String request, Buffer buffer, long timeout, TimeUnit unit) throws IOException;
+    default Buffer request(
+            String request, Buffer buffer, long timeout, TimeUnit unit)
+                throws IOException {
+        ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
+        return request(request, buffer, TimeUnit.MILLISECONDS.convert(timeout, unit));
+    }
+
+    /**
+     *
+     * Send a global request and wait for the response. This must only be used when sending
+     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     *
+     * @param request the request name - used mainly for logging and debugging
+     * @param buffer the buffer containing the global request
+     * @param timeout The (never {@code null}) timeout to wait - its milliseconds value is used
+     * @return the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
+     */
+    default Buffer request(String request, Buffer buffer, Duration timeout) throws IOException {
+        Objects.requireNonNull(timeout, "No timeout specified");
+        return request(request, buffer, timeout.toMillis());
+    }
+
+    /**
+     * Send a global request and wait for the response. This must only be used when sending
+     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     *
+     * @param request the request name - used mainly for logging and debugging
+     * @param buffer the buffer containing the global request
+     * @param maxWaitMillis Max. time to wait for response (millis) - must be <U>positive</U>
+     * @return the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
+     */
+    Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException;
 
     /**
      * Handle any exceptions that occurred on this session.

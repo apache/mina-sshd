@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.session;
 
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -87,5 +88,16 @@ public interface SessionHeartbeatController extends PropertyResolver {
         Objects.requireNonNull(unit, "No heartbeat time unit provided");
         PropertyResolverUtils.updateProperty(this, SESSION_HEARTBEAT_TYPE, type);
         PropertyResolverUtils.updateProperty(this, SESSION_HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS.convert(count, unit));
+    }
+
+    /**
+     * Set the session heartbeat
+     *
+     * @param type The type of {@link HeartbeatType heartbeat} to use
+     * @param interval The (never {@code null}) heartbeat interval - its milliseconds value is used
+     */
+    default void setSessionHeartbeat(HeartbeatType type, Duration interval) {
+        Objects.requireNonNull(interval, "No interval specified");
+        setSessionHeartbeat(type, TimeUnit.MILLISECONDS, interval.toMillis());
     }
 }

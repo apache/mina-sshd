@@ -17,6 +17,8 @@ been received - see [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968).
 * Handling of debug/ignore/unimplemented messages has been split into `handleXXX` and `doInvokeXXXMsgHandler` methods
 where the former validate the messages and deal with the idle timeout, and the latter execute the actual invcation.
 
+* Added overloaded methods that accept a `java.time.Duration` specifier for timeout value.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-964](https://issues.apache.org/jira/browse/SSHD-964) - Send SSH_MSG_CHANNEL_EOF when tunnel channel being closed.

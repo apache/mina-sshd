@@ -956,18 +956,15 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     @Override
-    public Buffer request(String request, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
-        ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
-
-        long maxWaitMillis = TimeUnit.MILLISECONDS.convert(timeout, unit);
+    public Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException {
         if (maxWaitMillis <= 0L) {
             throw new IllegalArgumentException(
-                "Requested timeout for " + request + " below 1 msec: " + timeout + " " + unit);
+                "Requested timeout for " + request + " below 1 msec: " + maxWaitMillis);
         }
 
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("request({}) request={}, timeout={} {}", this, request, timeout, unit);
+            log.debug("request({}) request={}, timeout={}ms", this, request, maxWaitMillis);
         }
 
         Object result;
@@ -1018,13 +1015,13 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         if (debugEnabled) {
-            log.debug("request({}) request={}, timeout={} {}, requestSeqNo={}, result received={}",
-                this, request, timeout, unit, prevGlobalReqSeqNo, result != null);
+            log.debug("request({}) request={}, timeout={}ms, requestSeqNo={}, result received={}",
+                this, request, maxWaitMillis, prevGlobalReqSeqNo, result != null);
         }
 
         if (result == null) {
             throw new SocketTimeoutException(
-                "No response received after " + timeout + " " + unit + " for request=" + request);
+                "No response received after " + maxWaitMillis + "ms for request=" + request);
         }
 
         if (result instanceof Buffer) {
