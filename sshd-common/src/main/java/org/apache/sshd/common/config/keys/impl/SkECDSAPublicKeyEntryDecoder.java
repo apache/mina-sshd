@@ -61,11 +61,7 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
             throw new InvalidKeySpecException("Invalid keyType: " + keyType);
         }
 
-        boolean noTouchRequired = false;
-        if (headers.containsKey(NO_TOUCH_REQUIRED_HEADER)) {
-            noTouchRequired = Boolean.parseBoolean(headers.get(NO_TOUCH_REQUIRED_HEADER));
-        }
-
+        boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
         ECPublicKey ecPublicKey = ECDSAPublicKeyEntryDecoder.INSTANCE.decodePublicKey(ECCurves.nistp256, keyData);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
         return new SkEcdsaPublicKey(appName, noTouchRequired, ecPublicKey);

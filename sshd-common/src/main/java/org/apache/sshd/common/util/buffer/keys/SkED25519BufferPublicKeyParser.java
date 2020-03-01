@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.buffer.keys;
 
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
-import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -38,11 +37,6 @@ public class SkED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParse
 
     public SkED25519BufferPublicKeyParser() {
         super(SkED25519PublicKey.class, SkED25519PublicKeyEntryDecoder.KEY_TYPE);
-    }
-
-    @Override
-    public Collection<String> getSupportedKeyTypes() {
-        return super.getSupportedKeyTypes();
     }
 
     @Override

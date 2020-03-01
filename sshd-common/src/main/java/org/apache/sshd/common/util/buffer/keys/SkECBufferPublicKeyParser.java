@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.buffer.keys;
 
 import java.security.GeneralSecurityException;
 import java.security.interfaces.ECPublicKey;
-import java.util.Collection;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
@@ -36,11 +35,6 @@ public class SkECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<SkE
 
     public SkECBufferPublicKeyParser() {
         super(SkEcdsaPublicKey.class, SkECDSAPublicKeyEntryDecoder.KEY_TYPE);
-    }
-
-    @Override
-    public Collection<String> getSupportedKeyTypes() {
-        return super.getSupportedKeyTypes();
     }
 
     @Override

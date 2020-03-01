@@ -22,6 +22,8 @@ import java.security.interfaces.ECPublicKey;
 
 public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
+    public static final String ALGORITHM = "ECDSA-SK";
+
     private static final long serialVersionUID = -8758432826838775097L;
 
     private final String appName;
@@ -36,7 +38,7 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
     @Override
     public String getAlgorithm() {
-        return "SK-ECDSA";
+        return ALGORITHM;
     }
 
     @Override
@@ -62,5 +64,14 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
     @Override
     public ECPublicKey getDelegatePublicKey() {
         return delegatePublicKey;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+                + "[appName=" + getAppName()
+                + ", noTouchRequired=" + isNoTouchRequired()
+                + ", delegatePublicKey=" + getDelegatePublicKey()
+                + "]";
     }
 }

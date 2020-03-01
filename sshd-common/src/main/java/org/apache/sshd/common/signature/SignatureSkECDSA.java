@@ -23,13 +23,15 @@ import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
 
 public class SignatureSkECDSA extends AbstractSecurityKeySignature {
 
+    public static final String ALGORITHM = "ECDSA-SK";
+
     public SignatureSkECDSA() {
         super(SkECDSAPublicKeyEntryDecoder.KEY_TYPE);
     }
 
     @Override
     public String getAlgorithm() {
-        return "ECDSA-SK";
+        return ALGORITHM;
     }
 
     @Override

@@ -22,6 +22,8 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
 
+    public static final String ALGORITHM = "ED25519-SK";
+
     private static final long serialVersionUID = 4587115316266869640L;
 
     private final String appName;
@@ -36,7 +38,7 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
 
     @Override
     public String getAlgorithm() {
-        return "SK-ED25519";
+        return ALGORITHM;
     }
 
     @Override
@@ -62,5 +64,14 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
     @Override
     public EdDSAPublicKey getDelegatePublicKey() {
         return delegatePublicKey;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName()
+                + "[appName=" + getAppName()
+                + ", noTouchRequired=" + isNoTouchRequired()
+                + ", delegatePublicKey=" + getDelegatePublicKey()
+                + "]";
     }
 }

@@ -19,6 +19,7 @@
 package org.apache.sshd.common.signature;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -26,6 +27,7 @@ import java.security.PublicKey;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 public abstract class AbstractSecurityKeySignature implements Signature {
 
@@ -36,22 +38,17 @@ public abstract class AbstractSecurityKeySignature implements Signature {
     private SecurityKeyPublicKey publicKey;
     private MessageDigest challengeDigest;
 
-    public AbstractSecurityKeySignature(String keyType) {
+    protected AbstractSecurityKeySignature(String keyType) {
         this.keyType = keyType;
     }
 
     @Override
-    public String getAlgorithm() {
-        return "SK-ED25519";
-    }
-
-    @Override
-    public void initVerifier(SessionContext session, PublicKey key) throws Exception {
+    public void initVerifier(SessionContext session, PublicKey key) throws GeneralSecurityException {
         if (!(key instanceof SecurityKeyPublicKey)) {
             throw new IllegalArgumentException("Only instances of SecurityKeyPublicKey can be used");
         }
         this.publicKey = (SecurityKeyPublicKey) key;
-        this.challengeDigest = MessageDigest.getInstance("SHA-256");
+        this.challengeDigest = SecurityUtils.getMessageDigest("SHA-256");
     }
 
     @Override
@@ -95,7 +92,7 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         encoded.putString(getSignatureKeyType());
         encoded.putBytes(rawSig);
 
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        MessageDigest md = SecurityUtils.getMessageDigest("SHA-256");
         byte[] appNameDigest = md.digest(publicKey.getAppName().getBytes(StandardCharsets.UTF_8));
         byte[] challengeDigest = this.challengeDigest.digest();
         ByteArrayBuffer counterData = new ByteArrayBuffer(Integer.BYTES, false);

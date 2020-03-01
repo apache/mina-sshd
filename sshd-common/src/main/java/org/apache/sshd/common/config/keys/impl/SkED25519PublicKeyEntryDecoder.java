@@ -63,11 +63,7 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
             throw new InvalidKeySpecException("Invalid keyType: " + keyType);
         }
 
-        boolean noTouchRequired = false;
-        if (headers.containsKey(NO_TOUCH_REQUIRED_HEADER)) {
-            noTouchRequired = Boolean.parseBoolean(headers.get(NO_TOUCH_REQUIRED_HEADER));
-        }
-
+        boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
         EdDSAPublicKey edDSAPublicKey = Ed25519PublicKeyDecoder.INSTANCE.decodePublicKey(session, KeyPairProvider.SSH_ED25519, keyData, headers);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
         return new SkED25519PublicKey(appName, noTouchRequired, edDSAPublicKey);

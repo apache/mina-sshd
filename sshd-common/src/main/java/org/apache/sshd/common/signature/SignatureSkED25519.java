@@ -24,13 +24,15 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 public class SignatureSkED25519 extends AbstractSecurityKeySignature {
 
+    public static final String ALGORITHM = "ED25519-SK";
+
     public SignatureSkED25519() {
         super(SkED25519PublicKeyEntryDecoder.KEY_TYPE);
     }
 
     @Override
     public String getAlgorithm() {
-        return "ED25519-SK";
+        return ALGORITHM;
     }
 
     @Override
