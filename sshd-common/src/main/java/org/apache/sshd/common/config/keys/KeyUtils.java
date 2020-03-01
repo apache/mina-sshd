@@ -1166,7 +1166,7 @@ public final class KeyUtils {
         } else {
             return Objects.equals(k1.getAppName(), k2.getAppName())
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
-                    && compareECKeys(k1.getEcPublicKey(), k2.getEcPublicKey());
+                    && compareECKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
     }
 
@@ -1178,7 +1178,7 @@ public final class KeyUtils {
         } else {
             return Objects.equals(k1.getAppName(), k2.getAppName())
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
-                    && SecurityUtils.compareEDDSAPPublicKeys(k1.getEdDSAPublicKey(), k2.getEdDSAPublicKey());
+                    && SecurityUtils.compareEDDSAPPublicKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
     }
 }

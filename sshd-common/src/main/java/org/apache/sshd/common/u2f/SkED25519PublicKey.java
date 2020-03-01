@@ -18,22 +18,20 @@
  */
 package org.apache.sshd.common.u2f;
 
-import java.security.PublicKey;
-
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
-public class SkED25519PublicKey implements PublicKey {
+public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
 
     private static final long serialVersionUID = 4587115316266869640L;
 
     private final String appName;
     private final boolean noTouchRequired;
-    private final EdDSAPublicKey edDSAPublicKey;
+    private final EdDSAPublicKey delegatePublicKey;
 
-    public SkED25519PublicKey(String appName, boolean noTouchRequired, EdDSAPublicKey edDSAPublicKey) {
+    public SkED25519PublicKey(String appName, boolean noTouchRequired, EdDSAPublicKey delegatePublicKey) {
         this.appName = appName;
         this.noTouchRequired = noTouchRequired;
-        this.edDSAPublicKey = edDSAPublicKey;
+        this.delegatePublicKey = delegatePublicKey;
     }
 
     @Override
@@ -51,15 +49,18 @@ public class SkED25519PublicKey implements PublicKey {
         return null;
     }
 
+    @Override
     public String getAppName() {
         return appName;
     }
 
+    @Override
     public boolean isNoTouchRequired() {
         return noTouchRequired;
     }
 
-    public EdDSAPublicKey getEdDSAPublicKey() {
-        return edDSAPublicKey;
+    @Override
+    public EdDSAPublicKey getDelegatePublicKey() {
+        return delegatePublicKey;
     }
 }

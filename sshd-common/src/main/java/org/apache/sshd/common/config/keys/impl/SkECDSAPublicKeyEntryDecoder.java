@@ -77,13 +77,13 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
             return null;
         }
 
-        return new SkEcdsaPublicKey(key.getAppName(), key.isNoTouchRequired(), ECDSAPublicKeyEntryDecoder.INSTANCE.clonePublicKey(key.getEcPublicKey()));
+        return new SkEcdsaPublicKey(key.getAppName(), key.isNoTouchRequired(), ECDSAPublicKeyEntryDecoder.INSTANCE.clonePublicKey(key.getDelegatePublicKey()));
     }
 
     @Override
     public String encodePublicKey(OutputStream s, SkEcdsaPublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
-        ECDSAPublicKeyEntryDecoder.encodePublicKey(s, KEY_TYPE, ECCurves.nistp256, key.getEcPublicKey().getW());
+        ECDSAPublicKeyEntryDecoder.encodePublicKey(s, KEY_TYPE, ECCurves.nistp256, key.getDelegatePublicKey().getW());
         KeyEntryResolver.encodeString(s, key.getAppName());
         return KEY_TYPE;
     }

@@ -18,21 +18,20 @@
  */
 package org.apache.sshd.common.u2f;
 
-import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 
-public class SkEcdsaPublicKey implements PublicKey {
+public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
     private static final long serialVersionUID = -8758432826838775097L;
 
     private final String appName;
     private final boolean noTouchRequired;
-    private final ECPublicKey ecPublicKey;
+    private final ECPublicKey delegatePublicKey;
 
-    public SkEcdsaPublicKey(String appName, boolean noTouchRequired, ECPublicKey ecPublicKey) {
+    public SkEcdsaPublicKey(String appName, boolean noTouchRequired, ECPublicKey delegatePublicKey) {
         this.appName = appName;
         this.noTouchRequired = noTouchRequired;
-        this.ecPublicKey = ecPublicKey;
+        this.delegatePublicKey = delegatePublicKey;
     }
 
     @Override
@@ -50,15 +49,18 @@ public class SkEcdsaPublicKey implements PublicKey {
         return null;
     }
 
+    @Override
     public String getAppName() {
         return appName;
     }
 
+    @Override
     public boolean isNoTouchRequired() {
         return noTouchRequired;
     }
 
-    public ECPublicKey getEcPublicKey() {
-        return ecPublicKey;
+    @Override
+    public ECPublicKey getDelegatePublicKey() {
+        return delegatePublicKey;
     }
 }

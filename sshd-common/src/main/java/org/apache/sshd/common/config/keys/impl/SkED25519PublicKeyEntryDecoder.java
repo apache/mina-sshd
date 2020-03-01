@@ -79,14 +79,14 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
             return null;
         }
 
-        return new SkED25519PublicKey(key.getAppName(), key.isNoTouchRequired(), key.getEdDSAPublicKey());
+        return new SkED25519PublicKey(key.getAppName(), key.isNoTouchRequired(), key.getDelegatePublicKey());
     }
 
     @Override
     public String encodePublicKey(OutputStream s, SkED25519PublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         KeyEntryResolver.encodeString(s, KEY_TYPE);
-        byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(key.getEdDSAPublicKey());
+        byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(key.getDelegatePublicKey());
         KeyEntryResolver.writeRLEBytes(s, seed);
         KeyEntryResolver.encodeString(s, key.getAppName());
         return KEY_TYPE;

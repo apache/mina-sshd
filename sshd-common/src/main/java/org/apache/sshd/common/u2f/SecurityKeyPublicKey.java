@@ -16,30 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.signature;
+package org.apache.sshd.common.u2f;
 
-import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
+import java.security.PublicKey;
 
-public class SignatureSkECDSA extends AbstractSecurityKeySignature {
+public interface SecurityKeyPublicKey<K extends PublicKey> extends PublicKey {
+    String getAppName();
 
-    public SignatureSkECDSA() {
-        super(SkECDSAPublicKeyEntryDecoder.KEY_TYPE);
-    }
+    boolean isNoTouchRequired();
 
-    @Override
-    public String getAlgorithm() {
-        return "ECDSA-SK";
-    }
-
-    @Override
-    protected String getSignatureKeyType() {
-        return ECCurves.nistp256.getKeyType();
-    }
-
-    @Override
-    protected Signature getDelegateSignature() {
-        return new SignatureECDSA.SignatureECDSA256();
-    }
-
+    K getDelegatePublicKey();
 }
