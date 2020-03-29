@@ -19,10 +19,12 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
@@ -98,14 +100,20 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         }
     }
 
-    private void runAuthorizedKeysTests(Collection<AuthorizedKeyEntry> entries) throws Exception {
-        testReadAuthorizedKeys(entries);
-        testAuthorizedKeysAuth(entries);
+    @Test
+    @Ignore("Used to test specific files")
+    public void testSpecificFile() throws Exception {
+        Path path = Paths.get("C:" + File.separator + "Temp", "id_ed25519.pub");
+        testReadAuthorizedKeys(AuthorizedKeyEntry.readAuthorizedKeys(path));
     }
 
-    private static Collection<AuthorizedKeyEntry> testReadAuthorizedKeys(
-            Collection<AuthorizedKeyEntry> entries)
-                throws Exception {
+    private <C extends Collection<AuthorizedKeyEntry>> C runAuthorizedKeysTests(C entries) throws Exception {
+        testReadAuthorizedKeys(entries);
+        testAuthorizedKeysAuth(entries);
+        return entries;
+    }
+
+    private static <C extends Collection<AuthorizedKeyEntry>> C testReadAuthorizedKeys(C entries) throws Exception {
         assertFalse("No entries read", GenericUtils.isEmpty(entries));
 
         Exception err = null;
@@ -117,8 +125,8 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
                     entry);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName()).append(')')
-                        .append(" to resolve key of entry=").append(entry.toString())
-                        .append(": ").println(e.getMessage());
+                    .append(" to resolve key of entry=").append(entry.toString())
+                    .append(": ").println(e.getMessage());
                 err = e;
             }
         }
@@ -138,7 +146,8 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
             PublickeyAuthenticator.fromAuthorizedEntries(
                 getCurrentTestName(), null, entries, PublicKeyEntryResolver.FAILING);
         for (PublicKey key : keySet) {
-            assertTrue("Failed to authenticate with key=" + key.getAlgorithm(), auth.authenticate(getCurrentTestName(), key, null));
+            assertTrue("Failed to authenticate with key=" + key.getAlgorithm(),
+                auth.authenticate(getCurrentTestName(), key, null));
         }
 
         return auth;
