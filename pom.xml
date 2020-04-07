@@ -947,7 +947,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.12.0</version>
+                   <version>3.13.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
@@ -971,6 +971,16 @@
                        <dependency>
                           <groupId>net.sourceforge.pmd</groupId>
                           <artifactId>pmd-java</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-javascript</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-jsp</artifactId>
                           <version>${pmd.version}</version>
                        </dependency>
                    </dependencies>
