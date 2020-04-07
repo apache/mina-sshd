@@ -109,6 +109,9 @@
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
+            <!-- NOTE: BC 1.65+ seems to have an NPE bug in Key#getAlgorithm()
+                * see https://github.com/bcgit/bc-java/issues/684
+            -->
         <bouncycastle.version>1.64</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring.version>5.2.5.RELEASE</spring.version>

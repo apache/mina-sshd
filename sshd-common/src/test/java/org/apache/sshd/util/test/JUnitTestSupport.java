@@ -422,10 +422,12 @@ public abstract class JUnitTestSupport extends Assert {
             assertECPublicKeyEquals(message, ECPublicKey.class.cast(expected), ECPublicKey.class.cast(actual));
         } else if (expected instanceof RSAPrivateKey) {
             assertRSAPrivateKeyEquals(message, RSAPrivateKey.class.cast(expected), RSAPrivateKey.class.cast(actual));
+        } else if (expected instanceof DSAPrivateKey) {
+            assertDSAPrivateKeyEquals(message, DSAPrivateKey.class.cast(expected), DSAPrivateKey.class.cast(actual));
         } else if (expected instanceof ECPrivateKey) {
             assertECPrivateKeyEquals(message, ECPrivateKey.class.cast(expected), ECPrivateKey.class.cast(actual));
         }
-        assertArrayEquals(message + "[encdoded-data]", expected.getEncoded(), actual.getEncoded());
+        assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
     }
 
     public static void assertRSAPublicKeyEquals(String message, RSAPublicKey expected, RSAPublicKey actual) {
