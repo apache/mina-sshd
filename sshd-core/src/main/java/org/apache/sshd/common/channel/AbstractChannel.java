@@ -130,8 +130,7 @@ public abstract class AbstractChannel
         gracefulFuture = new DefaultCloseFuture(discriminator, futureLock);
         localWindow = new Window(this, null, client, true);
         remoteWindow = new Window(this, null, client, false);
-        channelListenerProxy = EventListenerUtils.proxyWrapper(
-            ChannelListener.class, getClass().getClassLoader(), channelListeners);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
         executor = executorService;
         addRequestHandlers(handlers);
     }

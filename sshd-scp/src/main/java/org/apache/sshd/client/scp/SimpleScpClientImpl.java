@@ -120,7 +120,7 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
     }
 
     protected CloseableScpClient createScpClient(ClientSession session, ScpClient client) throws IOException {
-        ClassLoader loader = getClass().getClassLoader();
+        ClassLoader loader = CloseableScpClient.class.getClassLoader();
         Class<?>[] interfaces = {CloseableScpClient.class};
         return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
             String name = method.getName();

@@ -36,7 +36,7 @@ public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBe
     private final PortForwardingEventListener listenerProxy;
 
     protected AbstractConnectionServiceFactory() {
-        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

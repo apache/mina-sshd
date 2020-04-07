@@ -100,13 +100,12 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private IoServiceEventListener eventListener;
 
     protected AbstractFactoryManager() {
-        ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy =
-            EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
+            EventListenerUtils.proxyWrapper(SessionListener.class, sessionListeners);
         channelListenerProxy =
-            EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
+            EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
         tunnelListenerProxy =
-            EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, loader, tunnelListeners);
+            EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, tunnelListeners);
     }
 
     @Override

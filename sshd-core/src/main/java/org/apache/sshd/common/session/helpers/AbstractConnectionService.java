@@ -120,8 +120,7 @@ public abstract class AbstractConnectionService
 
     protected AbstractConnectionService(AbstractSession session) {
         sessionInstance = Objects.requireNonNull(session, "No session");
-        listenerProxy = EventListenerUtils.proxyWrapper(
-            PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

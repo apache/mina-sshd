@@ -32,7 +32,7 @@ public abstract class AbstractSftpEventListenerManager implements SftpEventListe
     private final SftpEventListener sftpEventListenerProxy;
 
     protected AbstractSftpEventListenerManager() {
-        sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, getClass().getClassLoader(), sftpEventListeners);
+        sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, sftpEventListeners);
     }
 
     public Collection<SftpEventListener> getRegisteredListeners() {
