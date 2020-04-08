@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -85,6 +86,16 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
 
     protected BaseTestSupport() {
         super();
+    }
+
+    @BeforeClass
+    public static void setupRootLoggerLevel() {
+        String levelName = System.getProperty(
+            "org.apache.sshd.test.root.log.level", org.apache.log4j.Level.INFO.toString());
+        org.apache.log4j.Level level = org.apache.log4j.Level.toLevel(
+            levelName.toUpperCase(), org.apache.log4j.Level.INFO);
+        org.apache.log4j.Logger logger = org.apache.log4j.Logger.getRootLogger();
+        logger.setLevel(level);
     }
 
     public static Duration getTimeout(String property, Duration def) {
