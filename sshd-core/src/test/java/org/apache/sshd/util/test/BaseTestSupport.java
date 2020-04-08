@@ -98,22 +98,27 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         logger.setLevel(level);
     }
 
-    public static Duration getTimeout(String property, Duration def) {
-        long dur;
+    public static Duration getTimeout(String property, Duration defaultValue) {
+        // Do we have a specific timeout value ?
         String str = System.getProperty("org.apache.sshd.test.timeout." + property);
-        if (str == null) {
-            String fstr = System.getProperty("org.apache.sshd.test.timeout.factor");
-            double factor;
-            if (fstr != null) {
-                factor = Double.parseDouble(fstr);
-            } else {
-                factor = 1.0;
-            }
-            dur = (long) (def.toMillis() * factor);
-        } else {
-            dur = Long.parseLong(str);
+        if (GenericUtils.isNotEmpty(str)) {
+            return Duration.ofMillis(Long.parseLong(str));
         }
-        return Duration.ofMillis(dur);
+
+        // Do we have a specific factor ?
+        str = System.getProperty("org.apache.sshd.test.timeout.factor." + property);
+        if (GenericUtils.isEmpty(str)) {
+            // Do we have a global factor ?
+            str = System.getProperty("org.apache.sshd.test.timeout.factor");
+        }
+
+        if (GenericUtils.isNotEmpty(str)) {
+            double factor = Double.parseDouble(str);
+            long dur = Math.round(defaultValue.toMillis() * factor);
+            return Duration.ofMillis(dur);
+        }
+
+        return defaultValue;
     }
 
     protected SshServer setupTestServer() {
