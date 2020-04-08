@@ -51,6 +51,7 @@ import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.forward.ForwardingFilter;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -546,10 +547,28 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         IoSession networkSession = getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = kex.getServerKey();
-        boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
-        if (log.isDebugEnabled()) {
-            log.debug("checkKeys({}) key={}-{}, verified={}",
-                this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+
+        boolean verified = false;
+        if (serverKey instanceof OpenSshCertificate) {
+            // check if we trust the CA
+            verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, ((OpenSshCertificate) serverKey).getCaPubKey());
+            if (log.isDebugEnabled()) {
+                log.debug("checkCA({}) key={}-{}, verified={}",
+                    this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+            }
+
+            if (!verified) {
+                // fallback to actual public host key
+                serverKey = ((OpenSshCertificate) serverKey).getServerHostKey();
+            }
+        }
+
+        if (!verified) {
+            verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
+            if (log.isDebugEnabled()) {
+                log.debug("checkKeys({}) key={}-{}, verified={}",
+                    this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+            }
         }
 
         if (!verified) {

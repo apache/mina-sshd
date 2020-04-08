@@ -158,6 +158,13 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
+    public byte[] getBytesConsumed() {
+        byte[] consumed = new byte[rpos];
+        System.arraycopy(data, 0, consumed, 0, rpos);
+        return consumed;
+    }
+
+    @Override
     public byte rawByte(int pos) {
         return data[pos];
     }

@@ -73,6 +73,16 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     String ECDSA_SHA2_NISTP521 = ECCurves.nistp521.getKeyType();
 
     /**
+     * SSH identifier for openssh cert keys
+     */
+    String SSH_RSA_CERT = "ssh-rsa-cert-v01@openssh.com";
+    String SSH_DSS_CERT = "ssh-dss-cert-v01@openssh.com";
+    String SSH_ED25519_CERT = "ssh-ed25519-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP256_CERT = "ecdsa-sha2-nistp256-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP384_CERT = "ecdsa-sha2-nistp384-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP521_CERT = "ecdsa-sha2-nistp521-cert-v01@openssh.com";
+
+    /**
      * A {@link KeyPairProvider} that has no keys
      */
     KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
@@ -84,7 +94,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
 
             @Override
             public Iterable<String> getKeyTypes(SessionContext session) {
-                return Collections.emptyList();
+                return Collections.emptySet();
             }
 
             @Override
@@ -122,7 +132,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     /**
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @return The available {@link Iterable} key types in preferred order - never {@code null}
+     * @return The available {@link Iterable} key types - never {@code null}
      * @throws IOException If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
      */

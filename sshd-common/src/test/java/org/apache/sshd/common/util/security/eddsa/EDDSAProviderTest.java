@@ -30,7 +30,6 @@ import java.security.Signature;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -118,7 +117,8 @@ public class EDDSAProviderTest extends JUnitTestSupport {
         assertNotNull("No public key generated", pubKey);
         assertEquals("Mismatched public key algorithm", SecurityUtils.EDDSA, pubKey.getAlgorithm());
 
-        Buffer buf = SecurityUtils.putRawEDDSAPublicKey(new ByteArrayBuffer(), pubKey);
+        ByteArrayBuffer buf = new ByteArrayBuffer();
+        buf.putRawPublicKey(pubKey);
         PublicKey actual = buf.getRawPublicKey();
         assertEquals("Mismatched key algorithm", pubKey.getAlgorithm(), actual.getAlgorithm());
         assertEquals("Mismatched recovered key", pubKey, actual);

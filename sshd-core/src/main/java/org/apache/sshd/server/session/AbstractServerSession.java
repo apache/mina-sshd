@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
@@ -37,6 +39,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -46,6 +49,7 @@ import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
+import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
@@ -81,6 +85,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     private HostBasedAuthenticator hostBasedAuthenticator;
     private List<UserAuthFactory> userAuthFactories;
     private KeyPairProvider keyPairProvider;
+    private HostKeyCertificateProvider hostKeyCertificateProvider;
 
     protected AbstractServerSession(ServerFactoryManager factoryManager, IoSession ioSession) {
         super(true, factoryManager, ioSession);
@@ -187,6 +192,15 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveProvider(KeyPairProvider.class, keyPairProvider,
             (parent == null) ? null : ((ServerAuthenticationManager) parent).getKeyPairProvider());
+    }
+
+    public HostKeyCertificateProvider getHostKeyCertificateProvider() {
+        ServerFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(HostKeyCertificateProvider.class, hostKeyCertificateProvider, manager.getHostKeyCertificateProvider());
+    }
+
+    public void setHostKeyCertificateProvider(HostKeyCertificateProvider hostKeyCertificateProvider) {
+        this.hostKeyCertificateProvider = hostKeyCertificateProvider;
     }
 
     @Override
@@ -367,9 +381,25 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         KeyPairProvider kpp = getKeyPairProvider();
         boolean debugEnabled = log.isDebugEnabled();
-        Iterable<String> provided;
+        Set<String> provided = null;
         try {
-            provided = (kpp == null) ? null : kpp.getKeyTypes(this);
+            if (kpp != null) {
+                provided = GenericUtils.stream(kpp.getKeyTypes(this)).collect(Collectors.toSet());
+
+                HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
+                if (hostKeyCertificateProvider != null) {
+                    Iterable<OpenSshCertificate> certificates = hostKeyCertificateProvider.loadCertificates(this);
+                    for (OpenSshCertificate certificate : certificates) {
+                        // Add the certificate alg only if the corresponding keyPair type is available
+                        if (provided.contains(certificate.getRawKeyType())) {
+                            provided.add(certificate.getKeyType());
+                        } else {
+                            log.info("No private key for provided certificate available. Missing private key type: {}",
+                                certificate.getRawKeyType());
+                        }
+                    }
+                }
+            }
         } catch (Error e) {
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
                  this, e.getClass().getSimpleName(), e.getMessage());
@@ -498,7 +528,16 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         KeyPairProvider provider =
             Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
+            HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
+            if (hostKeyCertificateProvider != null) {
+                OpenSshCertificate publicKey = hostKeyCertificateProvider.loadCertificate(this, keyType);
+                if (publicKey != null) {
+                    KeyPair keyPair = provider.loadKey(this, publicKey.getRawKeyType());
+                    return new KeyPair(publicKey, keyPair.getPrivate());
+                }
+            }
             return provider.loadKey(this, keyType);
+
         } catch (IOException | GeneralSecurityException | Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
                  this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());

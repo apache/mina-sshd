@@ -30,7 +30,6 @@ import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -187,7 +186,6 @@ public final class EdDSASecurityProviderUtils {
         EdDSAPublicKey edKey = ValidateUtils.checkInstanceOf(key, EdDSAPublicKey.class, "Not an EDDSA public key: %s", key);
         byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(edKey);
         ValidateUtils.checkNotNull(seed, "No seed extracted from key: %s", edKey.getA());
-        buffer.putString(KeyPairProvider.SSH_ED25519);
         buffer.putBytes(seed);
         return buffer;
     }

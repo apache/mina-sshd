@@ -114,6 +114,12 @@ public interface ClientFactoryManager
     boolean DEFAULT_IGNORE_INVALID_IDENTITIES = true;
 
     /**
+     * Defines if we should abort in case we encounter an invalid (e.g. expired) openssh certificate.
+     * The default is to ignore the certificate and proceed with the plain host key.
+     */
+    String ABORT_ON_INVALID_CERTIFICATE = "abort-on-invalid-certificate";
+
+    /**
      * @return The {@link HostConfigEntryResolver} to use in order to resolve the
      * effective session parameters - never {@code null}
      */

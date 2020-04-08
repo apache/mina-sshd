@@ -78,7 +78,9 @@ public abstract class SignatureRSA extends AbstractSignature {
              *      corresponds to a good-faith implementation and is considered safe to accept.
              */
             String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
-            ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(canonicalName), "Mismatched key type: %s", keyType);
+            if (!KeyPairProvider.SSH_RSA.equals(canonicalName) && !KeyPairProvider.SSH_RSA_CERT.equals(canonicalName)) {
+                throw new IllegalArgumentException("Mismatched key type: " + keyType);
+            }
             data = encoding.getValue();
         }
 

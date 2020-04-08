@@ -104,6 +104,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+
         Signature sig = ValidateUtils.checkNotNull(
             NamedFactory.create(session.getSignatureFactories(), algo),
             "Unknown negotiated server keys: %s", algo);

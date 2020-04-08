@@ -68,6 +68,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.OpenSSHCertificateDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
@@ -140,6 +141,8 @@ public final class KeyUtils {
     /** @see <A HREF="">https://tools.ietf.org/html/rfc8332#section-3</A> */
     public static final String RSA_SHA256_KEY_TYPE_ALIAS = "rsa-sha2-256";
     public static final String RSA_SHA512_KEY_TYPE_ALIAS = "rsa-sha2-512";
+    public static final String RSA_SHA256_CERT_TYPE_ALIAS = "rsa-sha2-256-cert-v01@openssh.com";
+    public static final String RSA_SHA512_CERT_TYPE_ALIAS = "rsa-sha2-512-cert-v01@openssh.com";
 
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
@@ -153,9 +156,12 @@ public final class KeyUtils {
         NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
             .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
             .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+            .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
+            .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
             .build();
 
     static {
+        registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
 
@@ -800,6 +806,8 @@ public final class KeyUtils {
             }
         } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
             return KeyPairProvider.SSH_ED25519;
+        } else if (key instanceof OpenSshCertificate) {
+            return ((OpenSshCertificate) key).getKeyType();
         }
 
         return null;

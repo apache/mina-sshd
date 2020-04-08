@@ -60,6 +60,7 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
                     ECBufferPublicKeyParser.INSTANCE,
                     SkECBufferPublicKeyParser.INSTANCE,
                     ED25519BufferPublicKeyParser.INSTANCE,
+                    OpenSSHCertPublicKeyParser.INSTANCE,
                     SkED25519BufferPublicKeyParser.INSTANCE));
 
     /**
