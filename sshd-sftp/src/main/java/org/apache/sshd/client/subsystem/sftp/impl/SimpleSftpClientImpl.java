@@ -143,7 +143,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
     }
 
     protected SftpClient createSftpClient(ClientSession session, SftpClient client) throws IOException {
-        ClassLoader loader = getClass().getClassLoader();
+        ClassLoader loader = SftpClient.class.getClassLoader();
         Class<?>[] interfaces = {SftpClient.class};
         return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
             Throwable err = null;

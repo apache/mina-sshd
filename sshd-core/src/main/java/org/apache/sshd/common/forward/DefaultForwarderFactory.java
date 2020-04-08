@@ -51,7 +51,7 @@ public class DefaultForwarderFactory implements ForwardingFilterFactory, PortFor
     private final PortForwardingEventListener listenerProxy;
 
     public DefaultForwarderFactory() {
-        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

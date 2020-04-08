@@ -211,7 +211,7 @@ public abstract class AbstractSftpSubsystemHelper
         fileSystemAccessor =
             Objects.requireNonNull(accessor, "No file system accessor");
         sftpEventListenerProxy =
-            EventListenerUtils.proxyWrapper(SftpEventListener.class, getClass().getClassLoader(), sftpEventListeners);
+            EventListenerUtils.proxyWrapper(SftpEventListener.class, sftpEventListeners);
         errorStatusDataHandler =
             Objects.requireNonNull(handler, "No error status data handler");
     }

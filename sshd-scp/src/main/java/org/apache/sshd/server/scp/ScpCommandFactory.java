@@ -110,8 +110,7 @@ public class ScpCommandFactory
 
     public ScpCommandFactory() {
         super(SCP_FACTORY_NAME);
-        listenerProxy = EventListenerUtils.proxyWrapper(
-            ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, listeners);
     }
 
     @Override
@@ -222,8 +221,7 @@ public class ScpCommandFactory
             ScpCommandFactory other = getClass().cast(super.clone());
             // clone the listeners set as well
             other.listeners = new CopyOnWriteArraySet<>(this.listeners);
-            other.listenerProxy = EventListenerUtils.proxyWrapper(
-                ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
+            other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, other.listeners);
             return other;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);    // un-expected...

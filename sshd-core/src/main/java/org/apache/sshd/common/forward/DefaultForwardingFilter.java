@@ -117,7 +117,7 @@ public class DefaultForwardingFilter
     public DefaultForwardingFilter(ConnectionService service) {
         this.service = Objects.requireNonNull(service, "No connection service");
         this.sessionInstance = Objects.requireNonNull(service.getSession(), "No session");
-        this.listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        this.listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

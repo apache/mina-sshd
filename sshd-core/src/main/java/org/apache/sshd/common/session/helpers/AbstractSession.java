@@ -238,13 +238,12 @@ public abstract class AbstractSession extends SessionHelper {
 
         refreshConfiguration();
 
-        ClassLoader loader = getClass().getClassLoader();
         sessionListenerProxy = EventListenerUtils.proxyWrapper(
-            SessionListener.class, loader, sessionListeners);
+            SessionListener.class, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(
-            ChannelListener.class, loader, channelListeners);
+            ChannelListener.class, channelListeners);
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(
-            PortForwardingEventListener.class, loader, tunnelListeners);
+            PortForwardingEventListener.class, tunnelListeners);
 
         try {
             signalSessionEstablished(ioSession);
