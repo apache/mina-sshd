@@ -1195,13 +1195,24 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>install</id>
+                        <id>download-sources</id>
                         <phase>install</phase>
                         <goals>    <!-- automatically download the dependency sources - useful for debugging -->
                             <goal>sources</goal>
                         </goals>
                         <configuration>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>download-javadoc</id>
+                        <phase>install</phase>
+                        <goals>    <!-- automatically download the dependency javadoc - useful for debugging -->
+                            <goal>resolve</goal>
+                        </goals>
+                        <configuration>
+                            <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                            <classifier>javadoc</classifier>
                         </configuration>
                     </execution>
                 </executions>
