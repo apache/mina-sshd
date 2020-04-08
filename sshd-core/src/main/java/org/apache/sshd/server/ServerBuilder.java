@@ -98,6 +98,12 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
     public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
         Collections.unmodifiableList(
             Arrays.asList(
+                BuiltinSignatures.nistp256_cert,
+                BuiltinSignatures.nistp384_cert,
+                BuiltinSignatures.nistp521_cert,
+                BuiltinSignatures.ed25519_cert,
+                BuiltinSignatures.rsa_cert,
+                BuiltinSignatures.dsa_cert,
                 BuiltinSignatures.nistp256,
                 BuiltinSignatures.nistp384,
                 BuiltinSignatures.nistp521,

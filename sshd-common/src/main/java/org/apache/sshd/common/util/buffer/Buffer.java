@@ -114,6 +114,11 @@ public abstract class Buffer implements Readable {
     public abstract byte[] array();
 
     /**
+     * @return The bytes consumed so far
+     */
+    public abstract byte[] getBytesConsumed();
+
+    /**
      * @param pos A position in the <U>raw</U> underlying data bytes
      * @return The byte at the specified position without changing the
      * current {@link #rpos() read position}. <B>Note:</B> no validation

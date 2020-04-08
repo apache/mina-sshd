@@ -57,7 +57,19 @@ public enum BuiltinSignatures implements SignatureFactory {
             return new SignatureDSA();
         }
     },
+    dsa_cert(KeyPairProvider.SSH_DSS_CERT) {
+        @Override
+        public Signature create() {
+            return new SignatureDSA();
+        }
+    },
     rsa(KeyPairProvider.SSH_RSA) {
+        @Override
+        public Signature create() {
+            return new SignatureRSASHA1();
+        }
+    },
+    rsa_cert(KeyPairProvider.SSH_RSA_CERT) {
         @Override
         public Signature create() {
             return new SignatureRSASHA1();
@@ -106,6 +118,17 @@ public enum BuiltinSignatures implements SignatureFactory {
             return SecurityUtils.isECCSupported();
         }
     },
+    nistp256_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT) {
+        @Override
+        public Signature create() {
+            return new SignatureECDSA.SignatureECDSA256();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isECCSupported();
+        }
+    },
     nistp384(KeyPairProvider.ECDSA_SHA2_NISTP384) {
         @Override
         public Signature create() {
@@ -117,7 +140,29 @@ public enum BuiltinSignatures implements SignatureFactory {
             return SecurityUtils.isECCSupported();
         }
     },
+    nistp384_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT) {
+        @Override
+        public Signature create() {
+            return new SignatureECDSA.SignatureECDSA384();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isECCSupported();
+        }
+    },
     nistp521(KeyPairProvider.ECDSA_SHA2_NISTP521) {
+        @Override
+        public Signature create() {
+            return new SignatureECDSA.SignatureECDSA521();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isECCSupported();
+        }
+    },
+    nistp521_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT) {
         @Override
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA521();
@@ -140,6 +185,17 @@ public enum BuiltinSignatures implements SignatureFactory {
         }
     },
     ed25519(KeyPairProvider.SSH_ED25519) {
+        @Override
+        public Signature create() {
+            return SecurityUtils.getEDDSASigner();
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isEDDSACurveSupported();
+        }
+    },
+    ed25519_cert(KeyPairProvider.SSH_ED25519_CERT) {
         @Override
         public Signature create() {
             return SecurityUtils.getEDDSASigner();

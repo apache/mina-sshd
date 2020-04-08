@@ -73,6 +73,16 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     String ECDSA_SHA2_NISTP521 = ECCurves.nistp521.getKeyType();
 
     /**
+     * SSH identifier for openssh cert keys
+     */
+    String SSH_RSA_CERT = "ssh-rsa-cert-v01@openssh.com";
+    String SSH_DSS_CERT = "ssh-dss-cert-v01@openssh.com";
+    String SSH_ED25519_CERT = "ssh-ed25519-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP256_CERT = "ecdsa-sha2-nistp256-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP384_CERT = "ecdsa-sha2-nistp384-cert-v01@openssh.com";
+    String SSH_ECDSA_SHA2_NISTP521_CERT = "ecdsa-sha2-nistp521-cert-v01@openssh.com";
+
+    /**
      * A {@link KeyPairProvider} that has no keys
      */
     KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
