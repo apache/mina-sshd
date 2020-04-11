@@ -187,21 +187,17 @@ public class ScpCommand
                 writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
                 if (debugEnabled) {
-                    log.debug("run({})[{}] Failed ({}) to send error response: {}",
-                          session, command, e.getClass().getSimpleName(), e.getMessage());
+                    log.error("run(" + session + ")[" + command + "] error response failure details", e2);
                 }
-                if (log.isTraceEnabled()) {
-                    log.trace("run(" + session + ")[" + command + "] error response failure details", e2);
-                }
+                log.error("run({})[{}] Failed ({}) to send error response: {}",
+                        session, command, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (debugEnabled) {
-                log.debug("run({})[{}] Failed ({}) to run command: {}",
-                      session, command, e.getClass().getSimpleName(), e.getMessage());
+                log.error("run(" + session + ")[" + command + "] command execution failure details", e);
             }
-            if (log.isTraceEnabled()) {
-                log.trace("run(" + session + ")[" + command + "] command execution failure details", e);
-            }
+            log.error("run({})[{}] Failed ({}) to run command: {}",
+                    session, command, e.getClass().getSimpleName(), e.getMessage());
         } finally {
             if (callback != null) {
                 callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
