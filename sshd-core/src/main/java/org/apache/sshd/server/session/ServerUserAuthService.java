@@ -193,12 +193,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 return;
             } catch (Exception e) {
                 // Continue
+                log.warn("process({}) Failed ({}) to authenticate using current method={}: {}",
+                      session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 if (debugEnabled) {
-                    log.debug("process({}) Failed ({}) to authenticate using current method={}: {}",
-                          session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("process(" + session + ") current authentication=" + currentAuth.getName() + " failure details", e);
+                    log.warn("process(" + session + ") current authentication=" + currentAuth.getName() + " failure details", e);
                 }
             }
         }
@@ -276,7 +274,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                         this.authUserName, username, this.authService, service,
                         nbAuthRequests, maxAuthRequests, e.getMessage());
                     if (debugEnabled) {
-                        log.debug("process(" + session + ") disconnect handler auth requests count invocation exception", e);
+                        log.warn("process(" + session + ") disconnect handler auth requests count invocation exception", e);
                     }
                 }
 
@@ -304,7 +302,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     session, e.getClass().getSimpleName(),
                     this.authUserName, username, this.authService, service, e.getMessage());
                 if (debugEnabled) {
-                    log.debug("handleUserAuthRequestMessage(" + session + ") disconnect handler auth mismatched parameters invocation exception", e);
+                    log.warn("handleUserAuthRequestMessage(" + session + ") disconnect handler auth mismatched parameters invocation exception", e);
                 }
             }
 
@@ -347,12 +345,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             async.addListener(authenticated -> asyncAuth(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer, authenticated));
             return false;
         } catch (Exception e) {
+            log.warn("handleUserAuthRequestMessage({}) Failed ({}) to authenticate using factory method={}: {}",
+                  session, e.getClass().getSimpleName(), method, e.getMessage());
             if (debugEnabled) {
-                log.debug("handleUserAuthRequestMessage({}) Failed ({}) to authenticate using factory method={}: {}",
-                      session, e.getClass().getSimpleName(), method, e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("handleUserAuthRequestMessage(" + session + ") factory authentication=" + method + " failure details", e);
+                log.warn("handleUserAuthRequestMessage(" + session + ") factory authentication=" + method + " failure details", e);
             }
         }
 
@@ -367,7 +363,12 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 handleAuthenticationFailure(cmd, buffer);
             }
         } catch (Exception e) {
-            log.warn("Error performing async authentication: {}", e.getMessage(), e);
+            ServerSession session = getServerSession();
+            log.warn("asyncAuth({}) Error ({}) performing async authentication via cmd={}: {}",
+                session, e.getClass().getSimpleName(), cmd, e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.warn("asyncAuth(" + session + ")[cmd=" + cmd + "] exception details", e);
+            }
         }
     }
 
@@ -411,7 +412,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                         log.warn("handleAuthenticationSuccess({}@{}) failed ({}) to invoke disconnect handler due to {}/{} sessions count: {}",
                             username, session, e.getClass().getSimpleName(), currentSessionCount, maxSessionCount, e.getMessage());
                         if (debugEnabled) {
-                            log.debug("handleAuthenticationSuccess(" + username + "@" + session + ") invocation handler exception details", e);
+                            log.warn("handleAuthenticationSuccess(" + username + "@" + session + ") invocation handler exception details", e);
                         }
                     }
 

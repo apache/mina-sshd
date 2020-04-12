@@ -52,7 +52,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             return channel.getAgent();
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {
-                log.debug("createClient(" + service.getSession() + ")[" + getId() + ")"
+                log.warn("createClient(" + service.getSession() + ")[" + getId() + ")"
                         + " failed (" + t.getClass().getSimpleName() + ")"
                         + " to create client: " + t.getMessage());
             }

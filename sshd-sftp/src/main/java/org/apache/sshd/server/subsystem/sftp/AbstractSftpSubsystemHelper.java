@@ -1466,12 +1466,10 @@ public abstract class AbstractSftpSubsystemHelper
                             try {
                                 attrs = getAttributes(p, options);
                             } catch (IOException e) {
-                                if (debugEnabled) {
-                                    log.debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
-                                          session, e.getClass().getSimpleName(), p, e.getMessage());
-                                }
-                                if (log.isTraceEnabled()) {
-                                    log.trace("doRealPath(" + session + ")[" + p + "] attributes retrieval failure details", e);
+                                log.warn("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
+                                      session, e.getClass().getSimpleName(), p, e.getMessage());
+                                if (log.isDebugEnabled()) {
+                                    log.warn("doRealPath(" + session + ")[" + p + "] attributes retrieval failure details", e);
                                 }
                             }
                         } else {
@@ -2414,6 +2412,7 @@ public abstract class AbstractSftpSubsystemHelper
             Path file, int flags, Map<String, Object> current, LinkOption... options)
                 throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
+        ServerSession session = getServerSession();
         NavigableMap<String, Object> attrs = null;
         // Cannot use forEach because the attrs variable is not effectively final
         for (Map.Entry<String, FileInfoExtractor<?>> re : SftpFileSystemAccessor.FILEATTRS_RESOLVERS.entrySet()) {
@@ -2434,15 +2433,13 @@ public abstract class AbstractSftpSubsystemHelper
 
                 if (debugEnabled) {
                     log.debug("resolveMissingFileAttributes({})[{}[{}]] replace {} with {}",
-                          getServerSession(), file, name, value, resolved);
+                          session, file, name, value, resolved);
                 }
             } catch (IOException e) {
-                if (debugEnabled) {
-                    log.debug("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
-                          getServerSession(), file, name, e.getClass().getSimpleName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("resolveMissingFileAttributes(" + getServerSession() + ")"
+                log.warn("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
+                      session, file, name, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.warn("resolveMissingFileAttributes(" + session + ")"
                             + "[" + file + "[" + name + "]] missing value resolution failure details", e);
                 }
             }

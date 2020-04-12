@@ -78,7 +78,10 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 packetWriter.close();
             } catch (IOException e) {
                 log.error("preClose({}) Failed ({}) to pre-close packet writer: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.error("preClose(" + this + ") packet writer close exception details", e);
+                }
             }
         }
 

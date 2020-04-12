@@ -279,7 +279,7 @@ public class SftpSubsystem
             CloseableExecutorService executor = getExecutorService();
             pendingFuture = executor.submit(this);
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
-            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command: " + e.toString(), e);
+            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command: " + e.getMessage(), e);
             throw new IOException(e);
         }
     }
@@ -324,7 +324,7 @@ public class SftpSubsystem
                 log.error("run({}) {} caught in SFTP subsystem: {}",
                     session, t.getClass().getSimpleName(), t.getMessage());
                 if (log.isDebugEnabled()) {
-                    log.debug("run(" + session + ") caught exception details", t);
+                    log.error("run(" + session + ") caught exception details", t);
                 }
             }
         } finally {
@@ -1011,7 +1011,7 @@ public class SftpSubsystem
             log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
                 session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("destroy(" + session + ") destruction announcement failure details", e);
+                log.warn("destroy(" + session + ") destruction announcement failure details", e);
             }
         }
 
@@ -1043,7 +1043,7 @@ public class SftpSubsystem
             }
         } catch (IOException e) {
             if (debugEnabled) {
-                log.debug("destroy(" + session + ")"
+                log.warn("destroy(" + session + ")"
                         + " failed (" + e.getClass().getSimpleName() + ")"
                         + " to close file system: " + e.getMessage(), e);
             }

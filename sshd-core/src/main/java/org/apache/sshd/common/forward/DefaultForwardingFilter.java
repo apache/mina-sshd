@@ -702,9 +702,9 @@ public class DefaultForwardingFilter
             }
         } catch (Error e) {
             log.warn("localPortForwardingRequested({})[{}] failed ({}) to consult forwarding filter: {}",
-                     session, local, e.getClass().getSimpleName(), e.getMessage());
+                 session, local, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("localPortForwardingRequested(" + this + ")[" + local + "] filter consultation failure details", e);
+                log.warn("localPortForwardingRequested(" + session + ")[" + local + "] filter consultation failure details", e);
             }
             throw new RuntimeSshException(e);
         }
@@ -974,7 +974,7 @@ public class DefaultForwardingFilter
             }
             return (InetSocketAddress) GenericUtils.head(after);
         } catch (IOException bindErr) {
-            Set<SocketAddress> after = acceptor.getBoundAddresses();
+            Collection<SocketAddress> after = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(after)) {
                 close();
             }
@@ -1123,11 +1123,9 @@ public class DefaultForwardingFilter
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             session.setAttribute(TcpipForwardingExceptionMarker.class, cause);
+            log.warn("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
             if (debugEnabled) {
-                log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
-            }
-            if (traceEnabled) {
-                log.trace("exceptionCaught(" + session + ") caught exception details", cause);
+                log.warn("exceptionCaught(" + session + ") caught exception details", cause);
             }
             session.close(true);
         }

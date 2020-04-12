@@ -52,7 +52,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         if (isClosing()) {
-            throw new EOFException("Closed");
+            throw new EOFException("Closed - state=" + state);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(getId(), buffer);
@@ -71,36 +71,40 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
             return;
         }
 
-        out.writePacket(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
-            public void operationComplete(IoWriteFuture f) {
-                if (f.isWritten()) {
-                    future.setValue(Boolean.TRUE);
-                } else {
-                    future.setValue(f.getException());
+        out.writePacket(future.getBuffer()).addListener(
+            new SshFutureListener<IoWriteFuture>() {
+                @Override
+                public void operationComplete(IoWriteFuture f) {
+                    if (f.isWritten()) {
+                        future.setValue(Boolean.TRUE);
+                    } else {
+                        future.setValue(f.getException());
+                    }
+                    finishWrite(future);
                 }
-                finishWrite();
-            }
+            });
+    }
 
-            @SuppressWarnings("synthetic-access")
-            private void finishWrite() {
-                writes.remove(future);
-                currentWrite.compareAndSet(future, null);
-                try {
-                    startWriting();
-                } catch (IOException e) {
-                    log.error("finishWrite({}) failed ({}) re-start writing", out, e.getClass().getSimpleName());
-                }
+    protected void finishWrite(IoWriteFutureImpl future) {
+        writes.remove(future);
+        currentWrite.compareAndSet(future, null);
+        try {
+            startWriting();
+        } catch (IOException e) {
+            log.error("finishWrite({}) failed ({}) re-start writing: {}",
+                out, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.error("finishWrite(" + out + ") exception details", e);
             }
-        });
+        }
     }
 
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .when(getId(), writes)
-                .close(out)
-                .build();
+            .when(getId(), writes)
+            .close(out)
+            .build();
     }
 
     @Override

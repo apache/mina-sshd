@@ -265,7 +265,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 log.warn("startService({})[{}] failed ({}) to invoke disconnect handler: {}",
                     this, name, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
-                    log.debug("startService(" + this + ")[" + name + "] disconnect handler invocation exception details", e);
+                    log.warn("startService(" + this + ")[" + name + "] disconnect handler invocation exception details", e);
                 }
             }
 
@@ -336,7 +336,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             log.warn("handleServiceAccept({}) failed ({}) to invoke disconnect handler of unknown service={}: {}",
                 this, e.getClass().getSimpleName(), serviceName, e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("handleServiceAccept(" + this + ")[" + serviceName + "] handler invocation exception details", e);
+                log.warn("handleServiceAccept(" + this + ")[" + serviceName + "] handler invocation exception details", e);
             }
         }
 
@@ -374,7 +374,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
                  this, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
+                log.warn("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
             }
 
             throw new RuntimeSshException(e);
@@ -430,7 +430,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
                      this, t.getClass().getSimpleName(), t.getMessage());
                 if (debugEnabled) {
-                    log.debug("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
+                    log.warn("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
                 }
 
                 if (t instanceof IOException) {
@@ -503,7 +503,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
                  this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("getHostKey(" + this + ") " + proposedKey + "[" + keyType + "] key load failure details", e);
+                log.warn("getHostKey(" + this + ") " + proposedKey + "[" + keyType + "] key load failure details", e);
             }
 
             throw new RuntimeSshException(e);

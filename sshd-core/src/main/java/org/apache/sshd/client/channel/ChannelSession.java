@@ -156,13 +156,11 @@ public class ChannelSession extends AbstractClientChannel {
 
                 pumperService.shutdownNow();
             } catch (Exception e) {
-                // we log it as DEBUG since it is relatively harmless
+                // we log it as WARN since it is relatively harmless
+                log.warn("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
+                      this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
-                    log.debug("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
-                          this, e.getClass().getSimpleName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);
+                    log.warn("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);
                 }
             } finally {
                 pumper = null;
@@ -172,6 +170,7 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     protected void pumpInputStream() {
+        boolean debugEnabled = log.isDebugEnabled();
         try {
             Session session = getSession();
             Window wRemote = getRemoteWindow();
@@ -186,7 +185,7 @@ public class ChannelSession extends AbstractClientChannel {
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, maxChunkSize, buffer, 0, buffer.length);
                 if (len < 0) {
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("pumpInputStream({}) EOF signalled", this);
                     }
                     sendEof();
@@ -200,17 +199,15 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
 
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("pumpInputStream({}) close future closed", this);
             }
         } catch (Exception e) {
             if (!isClosing()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("pumpInputStream({}) Caught {} : {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("pumpInputStream(" + this + ") caught exception details", e);
+                log.error("pumpInputStream({}) Caught {} : {}",
+                    this, e.getClass().getSimpleName(), e.getMessage());
+                if (debugEnabled) {
+                    log.error("pumpInputStream(" + this + ") caught exception details", e);
                 }
                 close(false);
             }

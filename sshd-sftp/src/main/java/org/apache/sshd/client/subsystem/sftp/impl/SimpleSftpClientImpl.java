@@ -102,13 +102,11 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                 try {
                     client.close();
                 } catch (Exception t) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("createSftpClient({}) failed ({}) to close client: {}",
-                                session, t.getClass().getSimpleName(), t.getMessage());
-                    }
+                    log.warn("createSftpClient({}) failed ({}) to close client: {}",
+                        session, t.getClass().getSimpleName(), t.getMessage());
 
-                    if (log.isTraceEnabled()) {
-                        log.trace("createSftpClient(" + session + ") client close failure details", t);
+                    if (log.isDebugEnabled()) {
+                        log.warn("createSftpClient(" + session + ") client close failure details", t);
                     }
                     err = GenericUtils.accumulateException(err, t);
                 }
@@ -119,18 +117,16 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
 
         // This point is reached if error occurred
         log.warn("createSftpClient({}) failed ({}) to create session: {}",
-                session, err.getClass().getSimpleName(), err.getMessage());
+            session, err.getClass().getSimpleName(), err.getMessage());
 
         try {
             session.close();
         } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("createSftpClient({}) failed ({}) to close session: {}",
-                        session, e.getClass().getSimpleName(), e.getMessage());
-            }
+            log.warn("createSftpClient({}) failed ({}) to close session: {}",
+                session, e.getClass().getSimpleName(), e.getMessage());
 
-            if (log.isTraceEnabled()) {
-                log.trace("createSftpClient(" + session + ") session close failure details", e);
+            if (log.isDebugEnabled()) {
+                log.warn("createSftpClient(" + session + ") session close failure details", e);
             }
             err = GenericUtils.accumulateException(err, e);
         }
@@ -152,9 +148,9 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
             try {
                 result = method.invoke(client, args);
             } catch (Throwable t) {
-                if (log.isTraceEnabled()) {
-                    log.trace("invoke(SftpClient#{}) failed ({}) to execute: {}",
-                            name, t.getClass().getSimpleName(), t.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.warn("invoke(SftpClient#{}) failed ({}) to execute: {}",
+                        name, t.getClass().getSimpleName(), t.getMessage());
                 }
                 err = GenericUtils.accumulateException(err, t);
             }
@@ -165,8 +161,8 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                     session.close();
                 } catch (Throwable t) {
                     if (log.isDebugEnabled()) {
-                        log.debug("invoke(ClientSession#{}) failed ({}) to execute: {}",
-                                name, t.getClass().getSimpleName(), t.getMessage());
+                        log.warn("invoke(ClientSession#{}) failed ({}) to execute: {}",
+                            name, t.getClass().getSimpleName(), t.getMessage());
                     }
                     err = GenericUtils.accumulateException(err, t);
                 }

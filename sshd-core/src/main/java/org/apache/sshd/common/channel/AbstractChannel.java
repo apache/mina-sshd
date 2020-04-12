@@ -276,7 +276,7 @@ public abstract class AbstractChannel
                      this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
                      req, wantReply, e.getMessage());
                 if (debugEnabled) {
-                    log.debug("handleRequest(" + this + ") request=" + req
+                    log.warn("handleRequest(" + this + ") request=" + req
                         + "[want-reply=" + wantReply + "] processing failure details",
                           e);
                 }
@@ -444,14 +444,12 @@ public abstract class AbstractChannel
             log.warn("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
                  this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("doInit(" + this + ") inform listener open failure details", ignored);
-            }
+                log.warn("doInit(" + this + ") inform listener open failure details", ignored);
 
-            if (log.isTraceEnabled()) {
                 Throwable[] suppressed = ignored.getSuppressed();
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable s : suppressed) {
-                        log.trace("signalChannelOpenFailure(" + this + ") suppressed channel open failure signalling", s);
+                        log.warn("signalChannelOpenFailure(" + this + ") suppressed channel open failure signalling", s);
                     }
                 }
             }
@@ -477,7 +475,7 @@ public abstract class AbstractChannel
             log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
                  this, hint, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
+                log.warn("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
             }
         } finally {
             synchronized (futureLock) {
@@ -633,13 +631,11 @@ public abstract class AbstractChannel
                         }
                     });
                 } catch (IOException e) {
-                    if (debugEnabled) {
-                        log.debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
-                              channel, immediately, e.getClass().getSimpleName(), e.getMessage());
-                    }
+                    log.warn("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
+                          channel, immediately, e.getClass().getSimpleName(), e.getMessage());
 
-                    if (log.isTraceEnabled()) {
-                        log.trace("close(" + channel + ")[immediately=" + immediately + "] packet write failure details", e);
+                    if (log.isDebugEnabled()) {
+                        log.warn("close(" + channel + ")[immediately=" + immediately + "] packet write failure details", e);
                     }
                     channel.close(true);
                 }
@@ -730,13 +726,12 @@ public abstract class AbstractChannel
             Throwable e = GenericUtils.peelException(err);
             log.warn("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
-                log.debug("signalChannelClosed(" + this + ") channel closed signalling failure details", e);
-            }
-            if (log.isTraceEnabled()) {
+                log.warn("signalChannelClosed(" + this + ") channel closed signalling failure details", e);
+
                 Throwable[] suppressed = e.getSuppressed();
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable s : suppressed) {
-                        log.trace("signalChannelClosed(" + this + ") suppressed closed channel signalling failure", s);
+                        log.warn("signalChannelClosed(" + this + ") suppressed closed channel signalling failure", s);
                     }
                 }
             }

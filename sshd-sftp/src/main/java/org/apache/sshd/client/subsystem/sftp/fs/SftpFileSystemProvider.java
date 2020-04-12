@@ -267,7 +267,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         session.close();
                     } catch (IOException t) {
                         if (log.isDebugEnabled()) {
-                            log.debug("Failed (" + t.getClass().getSimpleName() + ")"
+                            log.warn("Failed (" + t.getClass().getSimpleName() + ")"
                                     + " to close session for new file system on " + host + ":" + port
                                     + " due to " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]"
                                     + ": " + t.getMessage());
@@ -293,7 +293,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return fileSystem;
     }
 
-    protected SftpVersionSelector resolveSftpVersionSelector(URI uri, SftpVersionSelector defaultSelector, PropertyResolver resolver) {
+    protected SftpVersionSelector resolveSftpVersionSelector(
+            URI uri, SftpVersionSelector defaultSelector, PropertyResolver resolver) {
         String preference = resolver.getString(VERSION_PARAM);
         if (GenericUtils.isEmpty(preference)) {
             return defaultSelector;

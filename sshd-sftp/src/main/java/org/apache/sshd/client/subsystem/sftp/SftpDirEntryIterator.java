@@ -177,8 +177,8 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
             try {
                 close();
             } catch (IOException t) {
-                if (log.isTraceEnabled()) {
-                    log.trace(t.getClass().getSimpleName() + " while close handle=" + handle
+                if (log.isDebugEnabled()) {
+                    log.warn(t.getClass().getSimpleName() + " while close handle=" + handle
                             + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
                             + ": " + t.getMessage());
                 }

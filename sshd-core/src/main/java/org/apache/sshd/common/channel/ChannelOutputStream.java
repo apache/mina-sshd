@@ -138,10 +138,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                             log.trace("write({}) len={} - available={}", this, l, available);
                         }
                     } catch (IOException e) {
-                        if (debugEnabled) {
-                            log.debug("write({}) failed ({}) to wait for space of len={}: {}",
-                                  this, e.getClass().getSimpleName(), l, e.getMessage());
-                        }
+                        log.error("write({}) failed ({}) to wait for space of len={}: {}",
+                              this, e.getClass().getSimpleName(), l, e.getMessage());
 
                         if ((e instanceof WindowClosedException) && (!closedState.getAndSet(true))) {
                             if (debugEnabled) {
@@ -198,11 +196,11 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                         log.trace("flush({}) len={}, available={}", this, total, available);
                     }
                 } catch (IOException e) {
+                    log.error("flush({}) failed ({}) to wait for space of len={}: {}",
+                          this, e.getClass().getSimpleName(), total, e.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.debug("flush({}) failed ({}) to wait for space of len={}: {}",
-                              this, e.getClass().getSimpleName(), total, e.getMessage());
+                        log.error("flush(" + this + ") wait for space len=" + total + " exception details", e);
                     }
-
                     throw e;
                 }
 

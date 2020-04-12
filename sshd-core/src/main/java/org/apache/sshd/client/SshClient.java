@@ -442,12 +442,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     "Failed to receive closure confirmation within " + maxWait + " millis");
             }
         } catch (IOException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(e.getClass().getSimpleName() + " while stopping client: " + e.getMessage());
-            }
+            log.warn(e.getClass().getSimpleName() + " while stopping client: " + e.getMessage());
 
-            if (log.isTraceEnabled()) {
-                log.trace("Stop exception details", e);
+            if (log.isDebugEnabled()) {
+                log.warn("Stop exception details", e);
             }
         } finally {
             // clear the attributes since we close stop the client

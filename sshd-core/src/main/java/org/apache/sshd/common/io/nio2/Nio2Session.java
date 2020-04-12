@@ -138,23 +138,18 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     public void suspend() {
         AsynchronousSocketChannel socket = getSocket();
-        boolean debugEnabled = log.isDebugEnabled();
         try {
             socket.shutdownInput();
         } catch (IOException e) {
-            if (debugEnabled) {
-                log.debug("suspend({}) failed ({}) to shutdown input: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            }
+            log.warn("suspend({}) failed ({}) to shutdown input: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
         }
 
         try {
             socket.shutdownOutput();
         } catch (IOException e) {
-            if (debugEnabled) {
-                log.debug("suspend({}) failed ({}) to shutdown output: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            }
+            log.warn("suspend({}) failed ({}) to shutdown output: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
         }
     }
 
@@ -194,13 +189,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 handler.exceptionCaught(this, exc);
             } catch (Throwable e) {
                 Throwable t = GenericUtils.peelException(e);
-                if (log.isDebugEnabled()) {
-                    log.debug("exceptionCaught({}) Exception handler threw {}, closing the session: {}",
-                        this, t.getClass().getSimpleName(), t.getMessage());
-                }
+                log.warn("exceptionCaught({}) Exception handler threw {}, closing the session: {}",
+                    this, t.getClass().getSimpleName(), t.getMessage());
 
-                if (log.isTraceEnabled()) {
-                    log.trace("exceptionCaught(" + this + ") exception handler failure details", t);
+                if (log.isDebugEnabled()) {
+                    log.warn("exceptionCaught(" + this + ") exception handler failure details", t);
                 }
             }
         }
@@ -263,12 +256,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             if (debugEnabled) {
                 log.debug("doCloseImmediately({}) socket={} closed", this, socket);
             }
-
         } catch (IOException e) {
             log.info("doCloseImmediately({}) {} caught while closing socket={}: {}",
                 this, e.getClass().getSimpleName(), socket, e.getMessage());
             if (debugEnabled) {
-                log.debug("doCloseImmediately(" + this + ") socket=" + socket + " close failure details", e);
+                log.info("doCloseImmediately(" + this + ") socket=" + socket + " close failure details", e);
             }
         }
 
@@ -279,13 +271,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         try {
             handler.sessionClosed(this);
         } catch (Throwable e) {
-            if (debugEnabled) {
-                log.debug("doCloseImmediately({}) {} while calling IoHandler#sessionClosed: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace("doCloseImmediately(" + this + ") IoHandler#sessionClosed failure details", e);
+            log.warn("doCloseImmediately({}) {} while calling IoHandler#sessionClosed: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.warn("doCloseImmediately(" + this + ") IoHandler#sessionClosed failure details", e);
             }
         }
 
@@ -457,8 +446,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             try {
                 socket.write(buffer, null, completionHandler);
             } catch (Throwable t) {
+                log.warn("handleCompletedWriteCycle({}) {} while writing to socket len={}: {}",
+                    this, t.getClass().getSimpleName(), writeLen, t.getMessage());
                 if (log.isDebugEnabled()) {
-                    log.debug("handleCompletedWriteCycle(" + this + ") Exception caught while writing " + writeLen + " bytes", t);
+                    log.warn("handleCompletedWriteCycle(" + this + ") Exception caught while writing " + writeLen + " bytes", t);
                 }
                 future.setWritten();
                 finishWrite(future);
@@ -485,8 +476,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 this, exc.getClass().getSimpleName(), writeLen, exc.getMessage());
         }
 
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
+        if (log.isTraceEnabled()) {
             log.trace("handleWriteCycleFailure(" + this + ") len=" + writeLen + " failure details", exc);
         }
         future.setException(exc);
@@ -496,10 +486,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         try {
             finishWrite(future);
         } catch (RuntimeException e) {
-            if (traceEnabled) {
-                log.trace("handleWriteCycleFailure({}) failed ({}) to finish writing: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            }
+            log.warn("handleWriteCycleFailure({}) failed ({}) to finish writing: {}",
+                this, e.getClass().getSimpleName(), e.getMessage());
         }
     }
 

@@ -84,12 +84,16 @@ public class SessionTimeoutListener
 
     @Override
     public void run() {
+        boolean debugEnabled = log.isDebugEnabled();
         for (SessionHelper session : sessions) {
             try {
                 session.checkForTimeouts();
             } catch (Exception e) {
                 log.warn(e.getClass().getSimpleName() + " while checking"
                     + " session=" + session + " timeouts: " + e.getMessage(), e);
+                if (debugEnabled) {
+                    log.warn("Session " + session + " timeouts check exception details", e);
+                }
             }
         }
     }

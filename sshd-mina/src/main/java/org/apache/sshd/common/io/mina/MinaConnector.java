@@ -98,8 +98,10 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
                 try {
                     listener.abortEstablishedConnection(this, local, context, remote, e);
                 } catch (Exception exc) {
+                    log.warn("sessionCreated({}) ignoring abort connection failure={}: {}",
+                        session, exc.getClass().getSimpleName(), exc.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.debug("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
+                        log.warn("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
                     }
                 }
             }
