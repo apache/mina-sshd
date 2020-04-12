@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 import org.apache.sshd.server.session.ServerSession;
@@ -41,9 +42,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand
-        extends AbstractFileSystemCommand {
-
+public class ScpCommand extends AbstractFileSystemCommand {
     protected final int sendBufferSize;
     protected final int receiveBufferSize;
     protected final ScpFileOpener opener;
@@ -159,7 +158,9 @@ public class ScpCommand
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
         ServerSession session = getServerSession();
-        ScpHelper helper = new ScpHelper(session, in, out, fileSystem, opener, listener);
+        String command = getCommand();
+        ScpHelper helper = new ScpHelper(
+            session, getInputStream(), getOutputStream(), fileSystem, opener, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
@@ -199,6 +200,7 @@ public class ScpCommand
                 log.error("run(" + session + ")[" + command + "] command execution failure details", e);
             }
         } finally {
+            ExitCallback callback = getExitCallback();
             if (callback != null) {
                 callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
             }
@@ -210,11 +212,11 @@ public class ScpCommand
             log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
                   getServerSession(), command, exitValue, exitMessage);
         }
-        ScpHelper.sendResponseMessage(out, exitValue, exitMessage);
+        ScpHelper.sendResponseMessage(getOutputStream(), exitValue, exitMessage);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + getSession() + ") " + command;
+        return super.toString() + "[" + getSession() + "]";
     }
 }

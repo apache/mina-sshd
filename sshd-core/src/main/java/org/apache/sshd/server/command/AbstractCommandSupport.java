@@ -48,17 +48,18 @@ public abstract class AbstractCommandSupport
         extends AbstractLoggingBean
         implements Command, Runnable, ExecutorServiceCarrier, SessionAware,
         SessionHolder<ServerSession>, ServerSessionHolder {
-    protected final String command;
-    protected InputStream in;
-    protected OutputStream out;
-    protected OutputStream err;
-    protected ExitCallback callback;
-    protected Environment environment;
-    protected Future<?> cmdFuture;
     protected volatile Thread cmdRunner;
     protected CloseableExecutorService executorService;
     protected boolean cbCalled;
-    protected ServerSession serverSession;
+
+    private final String command;
+    private InputStream in;
+    private OutputStream out;
+    private OutputStream err;
+    private ExitCallback callback;
+    private Environment environment;
+    private Future<?> cmdFuture;
+    private ServerSession serverSession;
 
     protected AbstractCommandSupport(String command, CloseableExecutorService executorService) {
         this.command = command;
@@ -144,9 +145,11 @@ public abstract class AbstractCommandSupport
     @Override
     public void start(ChannelSession channel, Environment env) throws IOException {
         environment = env;
+
+        String cmd = getCommand();
         try {
             if (log.isDebugEnabled()) {
-                log.debug("start({}) starting runner for command={}", channel, command);
+                log.debug("start({}) starting runner for command={}", channel, cmd);
             }
 
             CloseableExecutorService executors = getExecutorService();
@@ -157,7 +160,7 @@ public abstract class AbstractCommandSupport
         } catch (RuntimeException e) {    // e.g., RejectedExecutionException
             log.error("start(" + channel + ")"
                 + " Failed (" + e.getClass().getSimpleName() + ")"
-                + " to start command=" + command + ": " + e.getMessage(), e);
+                + " to start command=" + cmd + ": " + e.getMessage(), e);
             throw new IOException(e);
         }
     }
