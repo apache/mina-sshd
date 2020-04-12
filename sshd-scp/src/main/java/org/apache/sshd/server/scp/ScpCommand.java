@@ -158,7 +158,8 @@ public class ScpCommand
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, opener, listener);
+        ServerSession session = getServerSession();
+        ScpHelper helper = new ScpHelper(session, in, out, fileSystem, opener, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
@@ -168,7 +169,6 @@ public class ScpCommand
                 throw new IOException("Unsupported mode");
             }
         } catch (IOException e) {
-            ServerSession session = getServerSession();
             boolean debugEnabled = log.isDebugEnabled();
             try {
                 Integer statusCode = null;
@@ -186,21 +186,17 @@ public class ScpCommand
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
+                log.error("run({})[{}] Failed ({}) to send error response: {}",
+                    session, command, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
-                    log.debug("run({})[{}] Failed ({}) to send error response: {}",
-                          session, command, e.getClass().getSimpleName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("run(" + session + ")[" + command + "] error response failure details", e2);
+                    log.error("run(" + session + ")[" + command + "] error response failure details", e2);
                 }
             }
 
+            log.error("run({})[{}] Failed ({}) to run command: {}",
+                session, command, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("run({})[{}] Failed ({}) to run command: {}",
-                      session, command, e.getClass().getSimpleName(), e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("run(" + session + ")[" + command + "] command execution failure details", e);
+                log.error("run(" + session + ")[" + command + "] command execution failure details", e);
             }
         } finally {
             if (callback != null) {
