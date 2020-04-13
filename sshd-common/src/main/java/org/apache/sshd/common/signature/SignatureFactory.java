@@ -90,7 +90,6 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
             return Collections.emptyList();
         }
 
-        // We want to preserve the original available order as it indicates the preference
         Set<String> providedKeys = new HashSet<>();
         for (String providedType : provided) {
             Collection<String> equivTypes =
@@ -102,6 +101,7 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
             return Collections.emptyList();
         }
 
+        // We want to preserve the original available order as it indicates the preference
         List<String> supported = new ArrayList<>(available);
         for (int index = 0; index < supported.size(); index++) {
             String kt = supported.get(index);

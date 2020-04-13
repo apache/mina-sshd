@@ -132,7 +132,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     /**
      * @param session The {@link SessionContext} for invoking this load command - may
      * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @return The available {@link Iterable} key types in preferred order - never {@code null}
+     * @return The available {@link Iterable} key types - never {@code null}
      * @throws IOException If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
      */
