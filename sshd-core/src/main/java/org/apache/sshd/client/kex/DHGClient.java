@@ -129,11 +129,12 @@ public class DHGClient extends AbstractDHClientKeyExchange {
 
         buffer = new ByteArrayBuffer(k_s);
         serverKey = buffer.getRawPublicKey();
+        PublicKey serverPublicHostKey = serverKey;
 
         OpenSshCertificate openSshKey = null;
         if (serverKey instanceof OpenSshCertificate) {
             openSshKey = (OpenSshCertificate) serverKey;
-            serverKey = openSshKey.getServerHostKey();
+            serverPublicHostKey = openSshKey.getServerHostKey();
 
             // verify signature
             PublicKey signatureKey = openSshKey.getCaPubKey();
@@ -185,10 +186,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             }
         }
 
-        String keyAlg = KeyUtils.getKeyType(serverKey);
+        String keyAlg = KeyUtils.getKeyType(serverPublicHostKey);
         if (GenericUtils.isEmpty(keyAlg)) {
-            throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm()
-                + "[" + serverKey.getFormat() + "]");
+            throw new SshException("Unsupported server key type: " + serverPublicHostKey.getAlgorithm()
+                + "[" + serverPublicHostKey.getFormat() + "]");
         }
 
         buffer = new ByteArrayBuffer();
@@ -206,17 +207,11 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         Signature verif = ValidateUtils.checkNotNull(
             NamedFactory.create(session.getSignatureFactories(), keyAlg),
             "No verifier located for algorithm=%s", keyAlg);
-        verif.initVerifier(session, serverKey);
+        verif.initVerifier(session, serverPublicHostKey);
         verif.update(session, h);
         if (!verif.verify(session, sig)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                 "KeyExchange signature verification failed for key type=" + keyAlg);
-        }
-
-        if (openSshKey != null) {
-            // replace the actual server host key with the CA pub key to be verified by the ServerKeyVerifier
-            // this way we don't need to modify the ServerKeyVerifier to support @cert-authority entries
-            serverKey = openSshKey.getCaPubKey();
         }
 
         return true;
