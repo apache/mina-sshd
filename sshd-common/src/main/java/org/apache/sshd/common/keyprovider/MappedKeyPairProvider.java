@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 
@@ -72,7 +73,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
     }
 
     @Override
-    public Iterable<String> getKeyTypes(SessionContext session) {
+    public Set<String> getKeyTypes(SessionContext session) {
         return pairsMap.keySet();
     }
 

@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.cipher.ECCurves;
@@ -93,8 +93,8 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             }
 
             @Override
-            public Iterable<String> getKeyTypes(SessionContext session) {
-                return Collections.emptyList();
+            public Set<String> getKeyTypes(SessionContext session) {
+                return Collections.emptySet();
             }
 
             @Override
@@ -136,7 +136,7 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * @throws IOException If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
      */
-    default Iterable<String> getKeyTypes(SessionContext session)
+    default Set<String> getKeyTypes(SessionContext session)
             throws IOException, GeneralSecurityException {
         return GenericUtils.stream(loadKeys(session))
                 .map(KeyUtils::getKeyType)
@@ -183,9 +183,9 @@ public interface KeyPairProvider extends KeyIdentityProvider {
             }
 
             @Override
-            public Iterable<String> getKeyTypes(SessionContext session) {
+            public Set<String> getKeyTypes(SessionContext session) {
                 // use a LinkedHashSet so as to preserve the order but avoid duplicates
-                Collection<String> types = new LinkedHashSet<>();
+                Set<String> types = new LinkedHashSet<>();
                 for (KeyPair kp : pairs) {
                     String t = KeyUtils.getKeyType(kp);
                     if (GenericUtils.isEmpty(t)) {

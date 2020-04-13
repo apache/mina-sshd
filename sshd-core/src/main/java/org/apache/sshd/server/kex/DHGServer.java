@@ -19,11 +19,13 @@
 package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -104,13 +106,19 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+
+        PublicKey publicKey = kp.getPublic();
+        if (publicKey instanceof OpenSshCertificate) {
+            algo = ((OpenSshCertificate) publicKey).getRawKeyType();
+        }
+
         Signature sig = ValidateUtils.checkNotNull(
             NamedFactory.create(session.getSignatureFactories(), algo),
             "Unknown negotiated server keys: %s", algo);
         sig.initSigner(session, kp.getPrivate());
 
         buffer = new ByteArrayBuffer();
-        buffer.putRawPublicKey(kp.getPublic());
+        buffer.putRawPublicKey(publicKey);
         byte[] k_s = buffer.getCompactData();
 
         buffer.clear();

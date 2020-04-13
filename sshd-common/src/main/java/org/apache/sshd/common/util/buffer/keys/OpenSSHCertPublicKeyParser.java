@@ -25,24 +25,22 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.u2f.OpenSshPublicKey;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<PublicKey> {
-    public static final int SSH_CERT_TYPE_USER = 1;
-    public static final int SSH_CERT_TYPE_HOST = 2;
 
     public static final OpenSSHCertPublicKeyParser INSTANCE = new OpenSSHCertPublicKeyParser(PublicKey.class,
-            Arrays.asList(
-                    KeyPairProvider.SSH_RSA_CERT,
-                    KeyPairProvider.SSH_DSS_CERT,
-                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
-                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
-                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
-                    KeyPairProvider.SSH_ED25519_CERT
-            ));
+        Arrays.asList(
+            KeyPairProvider.SSH_RSA_CERT,
+            KeyPairProvider.SSH_DSS_CERT,
+            KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
+            KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
+            KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
+            KeyPairProvider.SSH_ED25519_CERT
+        ));
 
     public OpenSSHCertPublicKeyParser(Class<PublicKey> keyClass, Collection<String> supported) {
         super(keyClass, supported);
@@ -51,10 +49,10 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
     @Override
     public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
 
-        buffer.getString(); // nonce
+        byte[] nonce = buffer.getBytes();
 
-        String realKeyType = keyType.split("@")[0].substring(0, keyType.indexOf("-cert"));
-        PublicKey publicKey = DEFAULT.getRawPublicKey(realKeyType, buffer);
+        String rawKeyType = OpenSshCertificate.getRawKeyType(keyType);
+        PublicKey publicKey = DEFAULT.getRawPublicKey(rawKeyType, buffer);
 
         long serial = buffer.getLong();
         int userOrHostType = buffer.getInt();
@@ -68,7 +66,7 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
         List<String> criticalOptions = buffer.getNameList();
         List<String> extensions = buffer.getNameList();
 
-        buffer.getString(); // reserved
+        String reserved = buffer.getString();
 
         PublicKey signatureKey;
         try {
@@ -77,17 +75,30 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
             throw new GeneralSecurityException("Could not parse public CA key.", ex);
         }
 
-        return OpenSshPublicKey.OpenSshPublicKeyBuilder.anOpenSshPublicKey()
-                .withCaPubKey(publicKey)
-                .withSerial(serial)
-                .withType(userOrHostType)
-                .withId(id)
-                .withPrincipals(vPrincipals)
-                .withValidAfter(vAfter)
-                .withValidBefore(vBefore)
-                .withCriticalOptions(criticalOptions)
-                .withExtensions(extensions)
-                .withCaPubKey(signatureKey)
-                .build();
+        byte[] message = buffer.getBytesConsumed();
+        byte[] signature = buffer.getBytes();
+
+        if (buffer.rpos() != buffer.wpos()) {
+            throw new GeneralSecurityException("KeyExchange signature verification failed, got more data than expected: "
+                + buffer.rpos() + ", actual: " + buffer.wpos());
+        }
+
+        return OpenSshCertificate.OpenSshPublicKeyBuilder.anOpenSshCertificate()
+            .withKeyType(keyType)
+            .withNonce(nonce)
+            .withServerHostPublicKey(publicKey)
+            .withSerial(serial)
+            .withType(userOrHostType)
+            .withId(id)
+            .withPrincipals(vPrincipals)
+            .withValidAfter(vAfter)
+            .withValidBefore(vBefore)
+            .withCriticalOptions(criticalOptions)
+            .withExtensions(extensions)
+            .withReserved(reserved)
+            .withCaPubKey(signatureKey)
+            .withMessage(message)
+            .withSignature(signature)
+            .build();
     }
 }

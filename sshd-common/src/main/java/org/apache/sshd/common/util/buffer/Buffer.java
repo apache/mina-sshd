@@ -60,6 +60,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -898,18 +899,21 @@ public abstract class Buffer implements Readable {
     }
 
     public void putRawPublicKey(PublicKey key) {
+        putString(KeyUtils.getKeyType(key));
+        putRawPublicKeyBytes(key);
+    }
+
+    public void putRawPublicKeyBytes(PublicKey key) {
         Objects.requireNonNull(key, "No key");
         if (key instanceof RSAPublicKey) {
             RSAPublicKey rsaPub = (RSAPublicKey) key;
 
-            putString(KeyPairProvider.SSH_RSA);
             putMPInt(rsaPub.getPublicExponent());
             putMPInt(rsaPub.getModulus());
         } else if (key instanceof DSAPublicKey) {
             DSAPublicKey dsaPub = (DSAPublicKey) key;
             DSAParams dsaParams = dsaPub.getParams();
 
-            putString(KeyPairProvider.SSH_DSS);
             putMPInt(dsaParams.getP());
             putMPInt(dsaParams.getQ());
             putMPInt(dsaParams.getG());
@@ -923,11 +927,30 @@ public abstract class Buffer implements Readable {
             }
 
             byte[] ecPoint = ECCurves.encodeECPoint(ecKey.getW(), ecParams);
-            putString(curve.getKeyType());
             putString(curve.getName());
             putBytes(ecPoint);
         } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm())) {
             SecurityUtils.putRawEDDSAPublicKey(this, key);
+        } else if (key instanceof OpenSshCertificate) {
+            OpenSshCertificate cert = (OpenSshCertificate) key;
+
+            putBytes(cert.getNonce());
+            putRawPublicKeyBytes(cert.getServerHostKey());
+            putLong(cert.getSerial());
+            putInt(cert.getType());
+            putString(cert.getId());
+            ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
+            tmpBuffer.putNameList(cert.getPrincipals());
+            putBytes(tmpBuffer.getCompactData());
+            putLong(cert.getValidAfter());
+            putLong(cert.getValidBefore());
+            putNameList(cert.getCriticalOptions());
+            putNameList(cert.getExtensions());
+            putString(cert.getReserved());
+            tmpBuffer = new ByteArrayBuffer();
+            tmpBuffer.putRawPublicKey(cert.getCaPubKey());
+            putBytes(tmpBuffer.getCompactData());
+            putBytes(cert.getSignature());
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
         }

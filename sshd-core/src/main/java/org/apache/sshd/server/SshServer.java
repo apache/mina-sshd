@@ -39,6 +39,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -105,6 +106,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private List<SubsystemFactory> subsystemFactories;
     private List<UserAuthFactory> userAuthFactories;
     private KeyPairProvider keyPairProvider;
+    private HostKeyCertificateProvider hostKeyCertificateProvider;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
     private KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -258,6 +260,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
         this.keyPairProvider = keyPairProvider;
+    }
+
+    @Override
+    public HostKeyCertificateProvider getHostKeyCertificateProvider() {
+        return hostKeyCertificateProvider;
+    }
+
+    public void setHostKeyCertificateProvider(HostKeyCertificateProvider hostKeyCertificateProvider) {
+        this.hostKeyCertificateProvider = hostKeyCertificateProvider;
     }
 
     @Override

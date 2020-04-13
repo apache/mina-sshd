@@ -55,6 +55,7 @@ public final class ServerIdentity {
      * The server's keys configuration multi-value
      */
     public static final String HOST_KEY_CONFIG_PROP = "HostKey";
+    public static final String HOST_CERT_CONFIG_PROP = "HostCertificate";
 
     public static final Function<String, String> ID_GENERATOR =
             ServerIdentity::getIdentityFileName;
@@ -137,11 +138,31 @@ public final class ServerIdentity {
      * @see org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path, java.nio.file.OpenOption...)
      */
     public static Map<String, Path> findIdentities(Properties props, LinkOption... options) throws IOException {
+        return getLocations(HOST_KEY_CONFIG_PROP, props, options);
+    }
+
+    /**
+     * @param props   The {@link Properties} holding the server's configuration - ignored
+     *                if {@code null}/empty
+     * @param options The {@link LinkOption}s to use when checking files existence
+     * @return A {@link Map} of the found certificates where key=the identity type
+     * (case <U>insensitive</U>) and value=the {@link Path} of the file holding
+     * the specific type key
+     * @throws IOException If failed to access the file system
+     * @see #getIdentityType(String)
+     * @see #HOST_CERT_CONFIG_PROP
+     * @see org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path, java.nio.file.OpenOption...)
+     */
+    public static Map<String, Path> findCertificates(Properties props, LinkOption... options) throws IOException {
+        return getLocations(HOST_CERT_CONFIG_PROP, props, options);
+    }
+
+    private static Map<String, Path> getLocations(String configPropKey, Properties props, LinkOption... options) throws IOException {
         if (GenericUtils.isEmpty(props)) {
             return Collections.emptyMap();
         }
 
-        String keyList = props.getProperty(HOST_KEY_CONFIG_PROP);
+        String keyList = props.getProperty(configPropKey);
         String[] paths = GenericUtils.split(keyList, ',');
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyMap();

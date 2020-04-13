@@ -27,18 +27,17 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.u2f.OpenSshPublicKey;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.buffer.keys.OpenSSHCertPublicKeyParser;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -131,19 +130,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         buffer = new ByteArrayBuffer(k_s);
         serverKey = buffer.getRawPublicKey();
 
-        OpenSshPublicKey openSshKey = null;
-        if (serverKey instanceof OpenSshPublicKey) {
-            openSshKey = (OpenSshPublicKey) serverKey;
+        OpenSshCertificate openSshKey = null;
+        if (serverKey instanceof OpenSshCertificate) {
+            openSshKey = (OpenSshCertificate) serverKey;
             serverKey = openSshKey.getServerHostKey();
-
-            byte[] data = buffer.getBytesConsumed();
-            byte[] signature = buffer.getBytes();
-
-            if (buffer.rpos() != buffer.wpos()) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "KeyExchange signature verification failed, got more data than expected: "
-                                + buffer.rpos() + ", actual: " + buffer.wpos());
-            }
 
             // verify signature
             PublicKey signatureKey = openSshKey.getCaPubKey();
@@ -152,13 +142,13 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     NamedFactory.create(session.getSignatureFactories(), keyAlg),
                     "No verifier located for algorithm=%s", keyAlg);
             verif.initVerifier(session, signatureKey);
-            verif.update(session, data);
-            if (!verif.verify(session, signature)) {
+            verif.update(session, openSshKey.getMessage());
+            if (!verif.verify(session, openSshKey.getSignature())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange CA signature verification failed for key type=" + keyAlg);
             }
 
-            if (openSshKey.getType() != OpenSSHCertPublicKeyParser.SSH_CERT_TYPE_HOST) {
+            if (openSshKey.getType() != OpenSshCertificate.SSH_CERT_TYPE_HOST) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange signature verification failed, not a host key (2): "
                                 + openSshKey.getType());

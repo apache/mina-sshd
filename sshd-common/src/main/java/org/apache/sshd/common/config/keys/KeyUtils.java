@@ -68,6 +68,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.impl.OpenSSHCertificateDecoder;
 import org.apache.sshd.common.config.keys.impl.RSAPublicKeyDecoder;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
@@ -156,6 +157,7 @@ public final class KeyUtils {
             .build();
 
     static {
+        registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
 
@@ -800,6 +802,8 @@ public final class KeyUtils {
             }
         } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
             return KeyPairProvider.SSH_ED25519;
+        } else if (key instanceof OpenSshCertificate) {
+            return ((OpenSshCertificate) key).getKeyType();
         }
 
         return null;

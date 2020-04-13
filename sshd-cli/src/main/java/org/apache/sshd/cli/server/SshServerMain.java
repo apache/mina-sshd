@@ -19,6 +19,7 @@
 
 package org.apache.sshd.cli.server;
 
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,12 +27,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
+import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
@@ -62,6 +66,7 @@ public class SshServerMain extends SshServerCliSupport {
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         int hostKeySize = 0;
         Collection<String> keyFiles = null;
+        Collection<String> certFiles = null;
         Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         int numArgs = GenericUtils.length(args);
@@ -140,6 +145,11 @@ public class SshServerMain extends SshServerCliSupport {
                         keyFiles = new LinkedList<>();
                     }
                     keyFiles.add(optValue);
+                } else if (ServerIdentity.HOST_CERT_CONFIG_PROP.equals(optName)) {
+                    if (certFiles == null) {
+                        certFiles = new LinkedList<>();
+                    }
+                    certFiles.add(optValue);
                 } else if (ConfigFileReaderSupport.PORT_CONFIG_PROP.equals(optName)) {
                     port = Integer.parseInt(optValue);
                 } else {
@@ -171,6 +181,11 @@ public class SshServerMain extends SshServerCliSupport {
         KeyPairProvider hostKeyProvider =
             resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
+        if (certFiles != null) {
+            HostKeyCertificateProvider certProvider = new FileHostKeyCertificateProvider(
+                    certFiles.stream().map(Paths::get).collect(Collectors.toList()));
+            sshd.setHostKeyCertificateProvider(certProvider);
+        }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
         sshd.setPort(port);
