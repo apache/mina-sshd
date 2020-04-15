@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
@@ -383,7 +384,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         Set<String> provided = null;
         try {
             if (kpp != null) {
-                provided = kpp.getKeyTypes(this);
+                provided = GenericUtils.stream(kpp.getKeyTypes(this)).collect(Collectors.toSet());
 
                 HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
                 if (hostKeyCertificateProvider != null) {
@@ -530,11 +531,12 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
             if (hostKeyCertificateProvider != null) {
                 OpenSshCertificate publicKey = hostKeyCertificateProvider.loadCertificate(this, keyType);
-                KeyPair keyPair = provider.loadKey(this, publicKey.getRawKeyType());
-                return new KeyPair(publicKey, keyPair.getPrivate());
-            } else {
-                return provider.loadKey(this, keyType);
+                if (publicKey != null) {
+                    KeyPair keyPair = provider.loadKey(this, publicKey.getRawKeyType());
+                    return new KeyPair(publicKey, keyPair.getPrivate());
+                }
             }
+            return provider.loadKey(this, keyType);
 
         } catch (IOException | GeneralSecurityException | Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",

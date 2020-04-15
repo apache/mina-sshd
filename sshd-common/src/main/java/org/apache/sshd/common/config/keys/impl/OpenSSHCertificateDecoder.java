@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.config.keys.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +32,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
@@ -71,8 +72,6 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
             throw new GeneralSecurityException("The provided certificate is not a Host certificate.");
         }
 
-        cert.setRawData(bytes); // bytes includes the signature
-
         return cert;
     }
 
@@ -80,20 +79,28 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
     public String encodePublicKey(OutputStream s, OpenSshCertificate key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
 
-        String keyType = key.getKeyType();
-        KeyEntryResolver.encodeString(s, keyType);
-        s.write(key.getRawData());
-        return keyType;
+        ByteArrayBuffer buffer = new ByteArrayBuffer();
+        buffer.putRawPublicKeyBytes(key);
+        s.write(buffer.getCompactData());
+
+        return key.getKeyType();
     }
 
     @Override
     public OpenSshCertificate clonePublicKey(OpenSshCertificate key) throws GeneralSecurityException {
-        return null;
+        try (ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
+            String keyType = encodePublicKey(outStream, key);
+            try (InputStream inStream = new ByteArrayInputStream(outStream.toByteArray())) {
+                return decodePublicKey(null, keyType, inStream, null);
+            }
+        } catch (IOException e) {
+            throw new GeneralSecurityException("Unable to clone key.", e);
+        }
     }
 
     @Override
     public OpenSshCertificate clonePrivateKey(OpenSshCertificate key) throws GeneralSecurityException {
-        return null;
+        return clonePublicKey(key);
     }
 
     @Override

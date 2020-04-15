@@ -22,241 +22,39 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.List;
 
-public final class OpenSshCertificate implements PublicKey, PrivateKey {
-    public static final int SSH_CERT_TYPE_USER = 1;
-    public static final int SSH_CERT_TYPE_HOST = 2;
+public interface OpenSshCertificate extends PublicKey, PrivateKey {
+    int SSH_CERT_TYPE_USER = 1;
+    int SSH_CERT_TYPE_HOST = 2;
 
-    private static final long serialVersionUID = -3592634724148744943L;
+    String getRawKeyType();
 
-    private String keyType;
-    private byte[] nonce;
-    private PublicKey serverHostKey;
-    private long serial;
-    private int type;
-    private String id;
-    private List<String> principals;
-    private long validAfter;
-    private long validBefore;
-    private List<String> criticalOptions;
-    private List<String> extensions;
-    private String reserved;
-    private PublicKey caPubKey;
-    private byte[] message;
-    private byte[] signature;
+    byte[] getNonce();
 
-    private byte[] rawData;
+    String getKeyType();
 
-    private OpenSshCertificate() {
-    }
+    PublicKey getServerHostKey();
 
-    public static String getRawKeyType(String keyType) {
-        return keyType.split("@")[0].substring(0, keyType.indexOf("-cert"));
-    }
+    long getSerial();
 
-    public String getRawKeyType() {
-        return getRawKeyType(keyType);
-    }
+    int getType();
 
-    public byte[] getNonce() {
-        return nonce;
-    }
+    String getId();
 
-    public String getKeyType() {
-        return keyType;
-    }
+    List<String> getPrincipals();
 
-    public PublicKey getServerHostKey() {
-        return serverHostKey;
-    }
+    long getValidAfter();
 
-    public long getSerial() {
-        return serial;
-    }
+    long getValidBefore();
 
-    public int getType() {
-        return type;
-    }
+    List<String> getCriticalOptions();
 
-    public String getId() {
-        return id;
-    }
+    List<String> getExtensions();
 
-    public List<String> getPrincipals() {
-        return principals;
-    }
+    String getReserved();
 
-    public long getValidAfter() {
-        return validAfter;
-    }
+    PublicKey getCaPubKey();
 
-    public long getValidBefore() {
-        return validBefore;
-    }
+    byte[] getMessage();
 
-    public List<String> getCriticalOptions() {
-        return criticalOptions;
-    }
-
-    public List<String> getExtensions() {
-        return extensions;
-    }
-
-    public String getReserved() {
-        return reserved;
-    }
-
-    public PublicKey getCaPubKey() {
-        return caPubKey;
-    }
-
-    public byte[] getMessage() {
-        return message;
-    }
-
-    public byte[] getSignature() {
-        return signature;
-    }
-
-    public void setRawData(byte[] rawData) {
-        this.rawData = rawData;
-    }
-
-    public byte[] getRawData() {
-        return rawData;
-    }
-
-    @Override
-    public String getAlgorithm() {
-        return null;
-    }
-
-    @Override
-    public String getFormat() {
-        return null;
-    }
-
-    @Override
-    public byte[] getEncoded() {
-        return new byte[0];
-    }
-
-    public static final class OpenSshPublicKeyBuilder {
-        private String keyType;
-        private byte[] nonce;
-        private PublicKey serverHostKey;
-        private long serial;
-        private int type;
-        private String id;
-        private List<String> principals;
-        private long validAfter;
-        private long validBefore;
-        private List<String> criticalOptions;
-        private List<String> extensions;
-        private String reserved;
-        private PublicKey caPubKey;
-        private byte[] message;
-        private byte[] signature;
-
-        private OpenSshPublicKeyBuilder() {
-        }
-
-        public static OpenSshPublicKeyBuilder anOpenSshCertificate() {
-            return new OpenSshPublicKeyBuilder();
-        }
-
-        public OpenSshPublicKeyBuilder withKeyType(String keyType) {
-            this.keyType = keyType;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withNonce(byte[] nonce) {
-            this.nonce = nonce;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withServerHostPublicKey(PublicKey serverHostKey) {
-            this.serverHostKey = serverHostKey;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withSerial(long serial) {
-            this.serial = serial;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withType(int type) {
-            this.type = type;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withPrincipals(List<String> principals) {
-            this.principals = principals;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withValidAfter(long validAfter) {
-            this.validAfter = validAfter;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withValidBefore(long validBefore) {
-            this.validBefore = validBefore;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withCriticalOptions(List<String> criticalOptions) {
-            this.criticalOptions = criticalOptions;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withExtensions(List<String> extensions) {
-            this.extensions = extensions;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withReserved(String reserved) {
-            this.reserved = reserved;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withCaPubKey(PublicKey caPubKey) {
-            this.caPubKey = caPubKey;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withMessage(byte[] message) {
-            this.message = message;
-            return this;
-        }
-
-        public OpenSshPublicKeyBuilder withSignature(byte[] signature) {
-            this.signature = signature;
-            return this;
-        }
-
-        public OpenSshCertificate build() {
-            OpenSshCertificate openSshCertificate = new OpenSshCertificate();
-            openSshCertificate.keyType = this.keyType;
-            openSshCertificate.nonce = this.nonce;
-            openSshCertificate.serverHostKey = this.serverHostKey;
-            openSshCertificate.serial = this.serial;
-            openSshCertificate.type = this.type;
-            openSshCertificate.id = this.id;
-            openSshCertificate.principals = this.principals;
-            openSshCertificate.validAfter = this.validAfter;
-            openSshCertificate.validBefore = this.validBefore;
-            openSshCertificate.criticalOptions = this.criticalOptions;
-            openSshCertificate.extensions = this.extensions;
-            openSshCertificate.reserved = this.reserved;
-            openSshCertificate.caPubKey = this.caPubKey;
-            openSshCertificate.message = this.message;
-            openSshCertificate.signature = this.signature;
-            return openSshCertificate;
-        }
-    }
+    byte[] getSignature();
 }

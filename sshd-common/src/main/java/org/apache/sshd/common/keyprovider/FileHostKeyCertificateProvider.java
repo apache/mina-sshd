@@ -18,10 +18,12 @@
  */
 package org.apache.sshd.common.keyprovider;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +36,8 @@ import java.util.stream.StreamSupport;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 public class FileHostKeyCertificateProvider extends AbstractLoggingBean implements HostKeyCertificateProvider {
@@ -49,7 +52,7 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
     }
 
     public FileHostKeyCertificateProvider(Path... files) {
-        this(Arrays.asList(files));
+        this(Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(files, "No path provided")));
     }
 
     public FileHostKeyCertificateProvider(Collection<? extends Path> files) {
@@ -65,12 +68,24 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
 
         List<OpenSshCertificate> certificates = new ArrayList<>();
         for (Path file : files) {
-            List<String> lines = IoUtils.readAllLines(new FileInputStream(file.toFile()));
+            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (String line : lines) {
+                line = GenericUtils.replaceWhitespaceAndTrim(line);
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
                 PublicKeyEntry publicKeyEntry = PublicKeyEntry.parsePublicKeyEntry(line);
-
+                if (publicKeyEntry == null) {
+                    continue;
+                }
                 PublicKey publicKey = publicKeyEntry.resolvePublicKey(session, null, null);
-
+                if (publicKey == null) {
+                    continue;
+                }
+                if (!(publicKey instanceof OpenSshCertificate)) {
+                    throw new InvalidKeyException("Got unexpected key type in " + file + ". Expected OpenSSHCertificate.");
+                }
                 certificates.add((OpenSshCertificate) publicKey);
             }
         }
@@ -81,30 +96,7 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
     @Override
     public OpenSshCertificate loadCertificate(SessionContext session, String keyType) throws IOException, GeneralSecurityException {
         return StreamSupport.stream(loadCertificates(session).spliterator(), false)
-                .filter(pubKey -> pubKey.getKeyType().equals(keyType))
-                .findFirst().orElse(null);
+            .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
+            .findFirst().orElse(null);
     }
-
-    //    public void setPaths(Collection<? extends Path> paths) {
-//        // use absolute path in order to have unique cache keys
-//        Collection<Path> resolved = GenericUtils.map(paths, Path::toAbsolutePath);
-//        resetCacheMap(resolved);
-//        files = resolved;
-//    }
-
-//    @Override
-//    public Iterable<Certificate> loadCertificate(SessionContext session) {
-//        return loadCertificates(session, getPaths());
-//    }
-//
-//    @Override
-//    protected IoResource<Path> getIoResource(SessionContext session, Path resource) {
-//        return (resource == null) ? null : new PathResource(resource);
-//    }
-//
-//    @Override
-//    protected Iterable<Certificate> doLoadCertificates(SessionContext session, Path resource)
-//            throws IOException, GeneralSecurityException {
-//        return super.doLoadCertificates(session, (resource == null) ? null : resource.toAbsolutePath());
-//    }
 }

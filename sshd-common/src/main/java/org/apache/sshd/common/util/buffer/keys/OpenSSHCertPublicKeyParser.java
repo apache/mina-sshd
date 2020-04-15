@@ -22,10 +22,9 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -49,56 +48,42 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
     @Override
     public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
 
-        byte[] nonce = buffer.getBytes();
+        OpenSshCertificateImpl certificate = new OpenSshCertificateImpl();
+        certificate.setKeyType(keyType);
 
-        String rawKeyType = OpenSshCertificate.getRawKeyType(keyType);
-        PublicKey publicKey = DEFAULT.getRawPublicKey(rawKeyType, buffer);
+        certificate.setNonce(buffer.getBytes());
 
-        long serial = buffer.getLong();
-        int userOrHostType = buffer.getInt();
+        String rawKeyType = certificate.getRawKeyType();
+        certificate.setServerHostKey(DEFAULT.getRawPublicKey(rawKeyType, buffer));
 
-        String id = buffer.getString();
+        certificate.setSerial(buffer.getLong());
+        certificate.setType(buffer.getInt());
 
-        List<String> vPrincipals = new ByteArrayBuffer(buffer.getBytes()).getNameList();
-        long vAfter = buffer.getLong();
-        long vBefore = buffer.getLong();
+        certificate.setId(buffer.getString());
 
-        List<String> criticalOptions = buffer.getNameList();
-        List<String> extensions = buffer.getNameList();
+        certificate.setPrincipals(new ByteArrayBuffer(buffer.getBytes()).getNameList());
+        certificate.setValidAfter(buffer.getLong());
+        certificate.setValidBefore(buffer.getLong());
 
-        String reserved = buffer.getString();
+        certificate.setCriticalOptions(buffer.getNameList());
+        certificate.setExtensions(buffer.getNameList());
 
-        PublicKey signatureKey;
+        certificate.setReserved(buffer.getString());
+
         try {
-            signatureKey = buffer.getPublicKey();
+            certificate.setCaPubKey(buffer.getPublicKey());
         } catch (SshException ex) {
-            throw new GeneralSecurityException("Could not parse public CA key.", ex);
+            throw new GeneralSecurityException("Could not parse public CA key with ID: " + certificate.getId(), ex);
         }
 
-        byte[] message = buffer.getBytesConsumed();
-        byte[] signature = buffer.getBytes();
+        certificate.setMessage(buffer.getBytesConsumed());
+        certificate.setSignature(buffer.getBytes());
 
         if (buffer.rpos() != buffer.wpos()) {
             throw new GeneralSecurityException("KeyExchange signature verification failed, got more data than expected: "
-                + buffer.rpos() + ", actual: " + buffer.wpos());
+                + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: " + certificate.getId());
         }
 
-        return OpenSshCertificate.OpenSshPublicKeyBuilder.anOpenSshCertificate()
-            .withKeyType(keyType)
-            .withNonce(nonce)
-            .withServerHostPublicKey(publicKey)
-            .withSerial(serial)
-            .withType(userOrHostType)
-            .withId(id)
-            .withPrincipals(vPrincipals)
-            .withValidAfter(vAfter)
-            .withValidBefore(vBefore)
-            .withCriticalOptions(criticalOptions)
-            .withExtensions(extensions)
-            .withReserved(reserved)
-            .withCaPubKey(signatureKey)
-            .withMessage(message)
-            .withSignature(signature)
-            .build();
+        return certificate;
     }
 }
