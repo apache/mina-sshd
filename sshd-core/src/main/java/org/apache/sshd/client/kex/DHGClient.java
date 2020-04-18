@@ -21,7 +21,7 @@ package org.apache.sshd.client.kex;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.PublicKey;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
@@ -31,8 +31,10 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -173,6 +175,19 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected void verifyCertificate(Session session, OpenSshCertificate openSshKey) throws Exception {
         PublicKey signatureKey = openSshKey.getCaPubKey();
         String keyAlg = KeyUtils.getKeyType(signatureKey);
+
+        if (KeyPairProvider.SSH_RSA_CERT.equals(openSshKey.getKeyType())) {
+            // allow sha2 signatures for legacy reasons
+            String variant = openSshKey.getSignatureAlg();
+            if (!GenericUtils.isEmpty(variant) && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
+                log.debug("Allowing to use variant {} instead of {}", variant, keyAlg);
+                keyAlg = variant;
+            } else {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Found invalid signature alg " + variant);
+            }
+        }
+
         Signature verif = ValidateUtils.checkNotNull(
                 NamedFactory.create(session.getSignatureFactories(), keyAlg),
                 "No verifier located for algorithm=%s", keyAlg);
@@ -207,7 +222,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         }
         if (connectSocketAddress instanceof InetSocketAddress) {
             String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
-            List<String> principals = openSshKey.getPrincipals();
+            Collection<String> principals = openSshKey.getPrincipals();
             if (GenericUtils.isEmpty(principals) || !principals.contains(hostName)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange signature verification failed, invalid principal: "

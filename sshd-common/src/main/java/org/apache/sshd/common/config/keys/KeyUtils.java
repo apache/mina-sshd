@@ -141,6 +141,8 @@ public final class KeyUtils {
     /** @see <A HREF="">https://tools.ietf.org/html/rfc8332#section-3</A> */
     public static final String RSA_SHA256_KEY_TYPE_ALIAS = "rsa-sha2-256";
     public static final String RSA_SHA512_KEY_TYPE_ALIAS = "rsa-sha2-512";
+    public static final String RSA_SHA256_CERT_TYPE_ALIAS = "rsa-sha2-256-cert-v01@openssh.com";
+    public static final String RSA_SHA512_CERT_TYPE_ALIAS = "rsa-sha2-512-cert-v01@openssh.com";
 
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
@@ -154,6 +156,8 @@ public final class KeyUtils {
         NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
             .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
             .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+            .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
+            .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
             .build();
 
     static {

@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
@@ -48,6 +49,8 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
     public OpenSSHCertificateDecoder() {
         super(OpenSshCertificate.class, OpenSshCertificate.class,
                 Collections.unmodifiableList(Arrays.asList(
+                        KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
+                        KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS,
                         KeyPairProvider.SSH_RSA_CERT,
                         KeyPairProvider.SSH_DSS_CERT,
                         KeyPairProvider.SSH_ED25519_CERT,

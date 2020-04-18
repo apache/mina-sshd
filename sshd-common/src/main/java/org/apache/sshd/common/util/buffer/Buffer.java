@@ -940,7 +940,7 @@ public abstract class Buffer implements Readable {
             putInt(cert.getType());
             putString(cert.getId());
             ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
-            tmpBuffer.putNameList(cert.getPrincipals());
+            tmpBuffer.putStringList(cert.getPrincipals(), false);
             putBytes(tmpBuffer.getCompactData());
             putLong(cert.getValidAfter());
             putLong(cert.getValidBefore());

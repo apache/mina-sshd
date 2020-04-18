@@ -19,7 +19,10 @@
 package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
+import java.util.Collection;
 import java.util.List;
+
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class OpenSshCertificateImpl implements OpenSshCertificate {
 
@@ -31,7 +34,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     private long serial;
     private int type;
     private String id;
-    private List<String> principals;
+    private Collection<String> principals;
     private long validAfter;
     private long validBefore;
     private List<String> criticalOptions;
@@ -81,7 +84,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public List<String> getPrincipals() {
+    public Collection<String> getPrincipals() {
         return principals;
     }
 
@@ -126,6 +129,11 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
+    public String getSignatureAlg() {
+        return new ByteArrayBuffer(signature).getString();
+    }
+
+    @Override
     public String getAlgorithm() {
         return null;
     }
@@ -164,7 +172,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         this.id = id;
     }
 
-    public void setPrincipals(List<String> principals) {
+    public void setPrincipals(Collection<String> principals) {
         this.principals = principals;
     }
 

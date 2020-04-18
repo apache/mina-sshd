@@ -61,7 +61,7 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
 
         certificate.setId(buffer.getString());
 
-        certificate.setPrincipals(new ByteArrayBuffer(buffer.getBytes()).getNameList());
+        certificate.setPrincipals(new ByteArrayBuffer(buffer.getBytes()).getStringList(false));
         certificate.setValidAfter(buffer.getLong());
         certificate.setValidBefore(buffer.getLong());
 

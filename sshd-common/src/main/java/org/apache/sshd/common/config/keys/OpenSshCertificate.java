@@ -20,6 +20,7 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Collection;
 import java.util.List;
 
 public interface OpenSshCertificate extends PublicKey, PrivateKey {
@@ -40,7 +41,7 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     String getId();
 
-    List<String> getPrincipals();
+    Collection<String> getPrincipals();
 
     long getValidAfter();
 
@@ -57,4 +58,6 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
     byte[] getMessage();
 
     byte[] getSignature();
+
+    String getSignatureAlg();
 }

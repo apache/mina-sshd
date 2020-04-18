@@ -102,6 +102,8 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                 BuiltinSignatures.nistp384_cert,
                 BuiltinSignatures.nistp521_cert,
                 BuiltinSignatures.ed25519_cert,
+                BuiltinSignatures.rsaSHA512_cert,
+                BuiltinSignatures.rsaSHA256_cert,
                 BuiltinSignatures.rsa_cert,
                 BuiltinSignatures.dsa_cert,
                 BuiltinSignatures.nistp256,

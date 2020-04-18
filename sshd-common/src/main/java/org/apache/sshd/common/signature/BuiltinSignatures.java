@@ -81,7 +81,39 @@ public enum BuiltinSignatures implements SignatureFactory {
             return new SignatureRSASHA256();
         }
     },
+    rsaSHA256_cert(KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS) {
+        @Override
+        public Signature create() {
+            return new SignatureRSASHA256();
+        }
+    },
     rsaSHA512(KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS) {
+        private final AtomicReference<Boolean> supportHolder = new AtomicReference<>();
+
+        @Override
+        public Signature create() {
+            return new SignatureRSASHA512();
+        }
+
+        @Override
+        public boolean isSupported() {
+            Boolean supported = supportHolder.get();
+            if (supported == null) {
+                try {
+                    java.security.Signature sig =
+                        SecurityUtils.getSignature(SignatureRSASHA512.ALGORITHM);
+                    supported = sig != null;
+                } catch (Exception e) {
+                    supported = Boolean.FALSE;
+                }
+
+                supportHolder.set(supported);
+            }
+
+            return supported;
+        }
+    },
+    rsaSHA512_cert(KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS) {
         private final AtomicReference<Boolean> supportHolder = new AtomicReference<>();
 
         @Override
