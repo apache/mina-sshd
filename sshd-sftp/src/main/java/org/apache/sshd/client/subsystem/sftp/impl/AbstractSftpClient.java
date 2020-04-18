@@ -21,6 +21,7 @@ package org.apache.sshd.client.subsystem.sftp.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -1278,6 +1279,55 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putLong(offset);
         buffer.putLong(length);
         checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
+    }
+
+    /**
+     * @param  path        The remote directory path
+     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (unlike
+     *                     {@link #readDir(Handle)})
+     * @throws IOException If failed to access the remote site
+     * @see                #readDir(Handle)
+     */
+    @Override
+    public Iterable<DirEntry> readDir(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("readDir(" + path + ") client is closed");
+        }
+
+        return new SftpIterableDirEntry(this, path);
+    }
+
+    /**
+     * @param  handle      A directory {@link Handle}
+     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (like
+     *                     {@link #readDir(String)}). <B>Note:</B> the iterable instance is not re-usable - i.e., files
+     *                     can be iterated only <U>once</U>
+     * @throws IOException If failed to access the directory
+     */
+    @Override
+    public Iterable<DirEntry> listDir(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("listDir(" + handle + ") client is closed");
+        }
+
+        return new StfpIterableDirHandle(this, handle);
+    }
+
+    /**
+     * Opens an {@link FileChannel} on the specified remote path
+     *
+     * @param  path        The remote path
+     * @param  modes       The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
+     * @return             The open {@link FileChannel} - <B>Note:</B> do not close this owner client instance until the
+     *                     channel is no longer needed since it uses the client for providing the channel's
+     *                     functionality.
+     * @throws IOException If failed to open the channel
+     * @see                java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
+     * @see                java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
+     */
+    @Override
+    public SftpRemotePathChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
+        return new SftpRemotePathChannel(path, this, false, GenericUtils.isEmpty(modes) ? DEFAULT_CHANNEL_MODES : modes);
     }
 
     @Override

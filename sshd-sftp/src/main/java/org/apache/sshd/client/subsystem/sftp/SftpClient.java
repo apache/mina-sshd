@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
@@ -771,13 +772,7 @@ public interface SftpClient extends SubsystemClient {
      *                     can be iterated only <U>once</U>
      * @throws IOException If failed to access the directory
      */
-    default Iterable<DirEntry> listDir(Handle handle) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("listDir(" + handle + ") client is closed");
-        }
-
-        return new StfpIterableDirHandle(this, handle);
-    }
+    Iterable<DirEntry> listDir(Handle handle) throws IOException;
 
     /**
      * The effective &quot;normalized&quot; remote path
@@ -875,34 +870,31 @@ public interface SftpClient extends SubsystemClient {
     // High level API
     //
 
-    default SftpRemotePathChannel openRemotePathChannel(String path, OpenOption... options) throws IOException {
+    default FileChannel openRemotePathChannel(String path, OpenOption... options) throws IOException {
         return openRemotePathChannel(path, GenericUtils.isEmpty(options) ? Collections.emptyList() : Arrays.asList(options));
     }
 
-    default SftpRemotePathChannel openRemotePathChannel(String path, Collection<? extends OpenOption> options)
-            throws IOException {
+    default FileChannel openRemotePathChannel(String path, Collection<? extends OpenOption> options) throws IOException {
         return openRemoteFileChannel(path, OpenMode.fromOpenOptions(options));
     }
 
-    default SftpRemotePathChannel openRemoteFileChannel(String path, OpenMode... modes) throws IOException {
+    default FileChannel openRemoteFileChannel(String path, OpenMode... modes) throws IOException {
         return openRemoteFileChannel(path, GenericUtils.isEmpty(modes) ? Collections.emptyList() : Arrays.asList(modes));
     }
 
     /**
-     * Opens an {@link SftpRemotePathChannel} on the specified remote path
+     * Opens an {@link FileChannel} on the specified remote path
      *
      * @param  path        The remote path
      * @param  modes       The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
-     * @return             The open {@link SftpRemotePathChannel} - <B>Note:</B> do not close this owner client instance
-     *                     until the channel is no longer needed since it uses the client for providing the channel's
+     * @return             The open {@link FileChannel} - <B>Note:</B> do not close this owner client instance until the
+     *                     channel is no longer needed since it uses the client for providing the channel's
      *                     functionality.
      * @throws IOException If failed to open the channel
      * @see                java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
      * @see                java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
      */
-    default SftpRemotePathChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
-        return new SftpRemotePathChannel(path, this, false, GenericUtils.isEmpty(modes) ? DEFAULT_CHANNEL_MODES : modes);
-    }
+    FileChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException;
 
     /**
      * @param  path        The remote directory path
@@ -911,13 +903,7 @@ public interface SftpClient extends SubsystemClient {
      * @throws IOException If failed to access the remote site
      * @see                #readDir(Handle)
      */
-    default Iterable<DirEntry> readDir(String path) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("readDir(" + path + ") client is closed");
-        }
-
-        return new SftpIterableDirEntry(this, path);
-    }
+    Iterable<DirEntry> readDir(String path) throws IOException;
 
     default InputStream read(String path) throws IOException {
         return read(path, DEFAULT_READ_BUFFER_SIZE);

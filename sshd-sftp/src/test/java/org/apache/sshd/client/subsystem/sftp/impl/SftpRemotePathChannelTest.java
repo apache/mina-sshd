@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -31,6 +31,8 @@ import java.util.Date;
 import java.util.EnumSet;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
