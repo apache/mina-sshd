@@ -76,9 +76,9 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
-import org.apache.sshd.client.subsystem.sftp.SftpRemotePathChannel;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
+import org.apache.sshd.client.subsystem.sftp.impl.SftpRemotePathChannel;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -480,9 +480,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
             throws IOException {
-        Collection<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(options);
+        Collection<OpenMode> modes = OpenMode.fromOpenOptions(options);
         if (modes.isEmpty()) {
-            modes = EnumSet.of(SftpClient.OpenMode.Read, SftpClient.OpenMode.Write);
+            modes = EnumSet.of(OpenMode.Read, OpenMode.Write);
         }
         // TODO: process file attributes
         SftpPath p = toSftpPath(path);
@@ -491,9 +491,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
-        Collection<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(Arrays.asList(options));
+        Collection<OpenMode> modes = OpenMode.fromOpenOptions(Arrays.asList(options));
         if (modes.isEmpty()) {
-            modes = EnumSet.of(SftpClient.OpenMode.Read);
+            modes = EnumSet.of(OpenMode.Read);
         }
         SftpPath p = toSftpPath(path);
         return p.getFileSystem().getClient().read(p.toString(), modes);
@@ -501,7 +501,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
-        Set<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(Arrays.asList(options));
+        Set<OpenMode> modes = OpenMode.fromOpenOptions(Arrays.asList(options));
         if (modes.contains(OpenMode.Read)) {
             throw new IllegalArgumentException("READ not allowed");
         }

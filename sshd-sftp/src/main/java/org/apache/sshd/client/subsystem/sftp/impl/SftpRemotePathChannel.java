@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp;
+package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
@@ -41,10 +41,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
-import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
-import org.apache.sshd.client.subsystem.sftp.impl.SftpInputStreamAsync;
-import org.apache.sshd.client.subsystem.sftp.impl.SftpOutputStreamAsync;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -62,17 +61,13 @@ public class SftpRemotePathChannel extends FileChannel {
     /** Default value for {@value #COPY_BUFSIZE_PROP} setting */
     public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
-    public static final Set<SftpClient.OpenMode> READ_MODES = Collections.unmodifiableSet(EnumSet.of(SftpClient.OpenMode.Read));
+    public static final Set<OpenMode> READ_MODES = Collections.unmodifiableSet(EnumSet.of(OpenMode.Read));
 
-    public static final Set<SftpClient.OpenMode> WRITE_MODES = Collections.unmodifiableSet(
-            EnumSet.of(
-                    SftpClient.OpenMode.Write,
-                    SftpClient.OpenMode.Append,
-                    SftpClient.OpenMode.Create,
-                    SftpClient.OpenMode.Truncate));
+    public static final Set<OpenMode> WRITE_MODES = Collections.unmodifiableSet(
+            EnumSet.of(OpenMode.Write, OpenMode.Append, OpenMode.Create, OpenMode.Truncate));
 
     protected final Logger log;
-    protected final Collection<SftpClient.OpenMode> modes;
+    protected final Collection<OpenMode> modes;
     protected final boolean closeOnExit;
     protected final SftpClient sftp;
     protected final SftpClient.CloseableHandle handle;
@@ -82,9 +77,8 @@ public class SftpRemotePathChannel extends FileChannel {
 
     private final String path;
 
-    public SftpRemotePathChannel(
-                                 String path, SftpClient sftp, boolean closeOnExit, Collection<SftpClient.OpenMode> modes)
-                                                                                                                           throws IOException {
+    public SftpRemotePathChannel(String path, SftpClient sftp, boolean closeOnExit,
+                                 Collection<OpenMode> modes) throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote file path specified");
         this.modes = Objects.requireNonNull(modes, "No channel modes specified");
@@ -533,13 +527,13 @@ public class SftpRemotePathChannel extends FileChannel {
      * @param  reqModes    The required modes - ignored if {@code null}/empty
      * @throws IOException If channel not open or the required modes are not satisfied
      */
-    private void ensureOpen(Collection<SftpClient.OpenMode> reqModes) throws IOException {
+    private void ensureOpen(Collection<OpenMode> reqModes) throws IOException {
         if (!isOpen()) {
             throw new ClosedChannelException();
         }
 
         if (GenericUtils.size(reqModes) > 0) {
-            for (SftpClient.OpenMode m : reqModes) {
+            for (OpenMode m : reqModes) {
                 if (this.modes.contains(m)) {
                     return;
                 }
