@@ -23,10 +23,12 @@
 	<module name="Translation" />
 
 	<!--<module name="StrictDuplicateCode" />-->
+    <!--
     <module name="LineLength">
         <property name="max" value="180" />
         <property name="fileExtensions" value="java" />
     </module>
+    -->
 
 	<module name="TreeWalker">
         <property name="tabWidth" value="4"/>
@@ -48,11 +50,13 @@
             <property name="violateExecutionOnNonTightHtml" value="false" />
         </module -->
 
+        <!--
         <module name="AnnotationLocation">
             <property name="allowSamelineMultipleAnnotations" value="false" />
             <property name="allowSamelineSingleParameterlessAnnotation" value="false" />
             <property name="allowSamelineParameterizedAnnotation" value="false" />
         </module>
+        -->
 
             <!-- Checks for Naming Conventions.                  -->
             <!-- See http://checkstyle.sf.net/config_naming.html -->
@@ -80,9 +84,10 @@
 
             <!-- Checks for imports                              -->
             <!-- See http://checkstyle.sf.net/config_imports.html -->
+        <!--
         <module name="AvoidStarImport" />
         <module name="AvoidStaticImport" />
-        <module name="IllegalImport" /><!-- defaults to sun.* packages -->
+        <module name="IllegalImport" />
         <module name="RedundantImport" />
         <module name="UnusedImports" />
         <module name="ImportOrder">
@@ -90,6 +95,7 @@
             <property name="ordered" value="true" />
             <property name="separated" value="true" />
         </module>
+        -->
 
             <!--
                 <module name="ImportControl">
@@ -122,6 +128,7 @@
 
             <!-- Checks for whitespace                               -->
             <!-- See http://checkstyle.sf.net/config_whitespace.html -->
+        <!--
         <module name="EmptyForIteratorPad" />
         <module name="EmptyForInitializerPad" />
         <module name="MethodParamPad" />
@@ -146,6 +153,7 @@
         <module name="WhitespaceAround">
             <property name="tokens" value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
         </module>
+        -->
 
             <!-- Modifier Checks                                    -->
             <!-- See http://checkstyle.sf.net/config_modifiers.html -->
@@ -288,10 +296,12 @@
 
             <!--<module name="UncommentedMain" />-->
             <!--module name="TrailingComment"/-->
+        <!--
         <module name="Indentation">
             <property name="caseIndent" value="4" />
             <property name="lineWrappingIndentation" value="0" />
         </module>
+        -->
             <!--<module name="RequiredRegexp">-->
         <!-- Make the @SuppressWarnings annotations available to Checkstyle -->
         <module name="SuppressWarningsHolder" />
@@ -312,11 +322,12 @@
         <property name="fileExtensions" value="java"/>
 	</module>
 	<!-- <module name="RegexpHeader" /> -->
+    <!--
     <module name="RegexpSingleline">
         <property name="format" value="\s+$"/>
         <property name="message" value="Trailing whitespace"/>
-        <!-- <property name="fileExtensions" value="......" /> -->
     </module>
+    -->
 	<module name="FileLength">
 		<property name="max" value="4096" />
 	</module>
