@@ -139,7 +139,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             verifyCertificate(session, openSshKey);
         }
 
-        String keyAlg = KeyUtils.getKeyType(serverPublicHostKey);
+        String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         if (GenericUtils.isEmpty(keyAlg)) {
             throw new SshException("Unsupported server key type: " + serverPublicHostKey.getAlgorithm()
                 + "[" + serverPublicHostKey.getFormat() + "]");
