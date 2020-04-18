@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Objects;
 
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -138,7 +139,17 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             OpenSshCertificate openSshKey = (OpenSshCertificate) serverKey;
             serverPublicHostKey = openSshKey.getServerHostKey();
 
-            verifyCertificate(session, openSshKey);
+            try {
+                verifyCertificate(session, openSshKey);
+            } catch (SshException e) {
+                if (session.getBooleanProperty(ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, false)) {
+                    throw e;
+                } else {
+                    // ignore certificate
+                    serverKey = openSshKey.getServerHostKey();
+                    log.info("Ignoring invalid certificate {}", openSshKey.getId(), e);
+                }
+            }
         }
 
         String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
