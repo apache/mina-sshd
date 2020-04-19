@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -142,7 +143,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             try {
                 verifyCertificate(session, openSshKey);
             } catch (SshException e) {
-                if (session.getBooleanProperty(ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, false)) {
+                if (session.getBooleanProperty(
+                        ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
+                        ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE)) {
                     throw e;
                 } else {
                     // ignore certificate
@@ -186,41 +189,48 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected void verifyCertificate(Session session, OpenSshCertificate openSshKey) throws Exception {
         PublicKey signatureKey = openSshKey.getCaPubKey();
         String keyAlg = KeyUtils.getKeyType(signatureKey);
+        String keyId = openSshKey.getId();
 
         if (KeyPairProvider.SSH_RSA_CERT.equals(openSshKey.getKeyType())) {
             // allow sha2 signatures for legacy reasons
             String variant = openSshKey.getSignatureAlg();
-            if (!GenericUtils.isEmpty(variant) && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
-                log.debug("Allowing to use variant {} instead of {}", variant, keyAlg);
+            if ((!GenericUtils.isEmpty(variant))
+                    && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
+                if (log.isDebugEnabled()) {
+                    log.debug("verifyCertificate({})[id={}] Allowing to use variant {} instead of {}",
+                        session, keyId, variant, keyAlg);
+                }
                 keyAlg = variant;
             } else {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Found invalid signature alg " + variant);
+                    "Found invalid signature alg " + variant + " for key ID=" + keyId);
             }
         }
 
         Signature verif = ValidateUtils.checkNotNull(
-                NamedFactory.create(session.getSignatureFactories(), keyAlg),
-                "No verifier located for algorithm=%s", keyAlg);
+            NamedFactory.create(session.getSignatureFactories(), keyAlg),
+            "No KeyExchange CA verifier located for algorithm=%s of key ID=%s", keyAlg, keyId);
         verif.initVerifier(session, signatureKey);
         verif.update(session, openSshKey.getMessage());
+
         if (!verif.verify(session, openSshKey.getSignature())) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange CA signature verification failed for key type=" + keyAlg);
+                "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
 
         if (openSshKey.getType() != OpenSshCertificate.SSH_CERT_TYPE_HOST) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, not a host key (2): "
-                            + openSshKey.getType());
+                "KeyExchange signature verification failed, not a host key (2) "
+                + openSshKey.getType() + " for key ID=" + keyId);
         }
 
-        long now = System.currentTimeMillis() / 1000;
+        long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         // valid after <= current time < valid before
-        if (!(openSshKey.getValidAfter() <= now && now < openSshKey.getValidBefore())) {
+        if (!((openSshKey.getValidAfter() <= now) && (now < openSshKey.getValidBefore()))) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, CA expired: "
-                            + openSshKey.getValidAfter() + "-" + openSshKey.getValidBefore());
+                "KeyExchange signature verification failed, CA expired "
+                + openSshKey.getValidAfterDate() + " - " + openSshKey.getValidBeforeDate()
+                + " for key ID=" + keyId);
         }
 
         /*
@@ -231,24 +241,26 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         if (connectSocketAddress instanceof SshdSocketAddress) {
             connectSocketAddress = ((SshdSocketAddress) connectSocketAddress).toInetSocketAddress();
         }
+
         if (connectSocketAddress instanceof InetSocketAddress) {
             String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
             Collection<String> principals = openSshKey.getPrincipals();
-            if (GenericUtils.isEmpty(principals) || !principals.contains(hostName)) {
+            if (GenericUtils.isEmpty(principals) || (!principals.contains(hostName))) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "KeyExchange signature verification failed, invalid principal: "
-                                + principals);
+                    "KeyExchange signature verification failed, invalid principal "
+                        + hostName + " for key ID=" + keyId
+                        + " - allowed=" + principals);
             }
         } else {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, could not determine connect host.");
+                "KeyExchange signature verification failed, could not determine connect host for key ID=" + keyId);
         }
 
         if (!GenericUtils.isEmpty(openSshKey.getCriticalOptions())) {
             // no critical option defined for host keys yet
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, unrecognized critical option: "
-                            + openSshKey.getCriticalOptions());
+                "KeyExchange signature verification failed, unrecognized critical options "
+                    + openSshKey.getCriticalOptions() + " for key ID=" + keyId);
         }
     }
 }

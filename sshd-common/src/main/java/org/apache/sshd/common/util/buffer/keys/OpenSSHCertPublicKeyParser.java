@@ -19,49 +19,55 @@
 package org.apache.sshd.common.util.buffer.keys;
 
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
-public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<PublicKey> {
+public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<OpenSshCertificate> {
+    public static final List<String> KEY_TYPES =
+        Collections.unmodifiableList(
+            Arrays.asList(
+                KeyPairProvider.SSH_RSA_CERT,
+                KeyPairProvider.SSH_DSS_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
+                KeyPairProvider.SSH_ED25519_CERT));
 
-    public static final OpenSSHCertPublicKeyParser INSTANCE = new OpenSSHCertPublicKeyParser(PublicKey.class,
-        Arrays.asList(
-            KeyPairProvider.SSH_RSA_CERT,
-            KeyPairProvider.SSH_DSS_CERT,
-            KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
-            KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
-            KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
-            KeyPairProvider.SSH_ED25519_CERT
-        ));
+    public static final OpenSSHCertPublicKeyParser INSTANCE = new OpenSSHCertPublicKeyParser();
 
-    public OpenSSHCertPublicKeyParser(Class<PublicKey> keyClass, Collection<String> supported) {
-        super(keyClass, supported);
+    public OpenSSHCertPublicKeyParser() {
+        super(OpenSshCertificate.class, KEY_TYPES);
     }
 
     @Override
-    public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
-
+    public OpenSshCertificate getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
         OpenSshCertificateImpl certificate = new OpenSshCertificateImpl();
         certificate.setKeyType(keyType);
 
         certificate.setNonce(buffer.getBytes());
 
         String rawKeyType = certificate.getRawKeyType();
-        certificate.setServerHostKey(DEFAULT.getRawPublicKey(rawKeyType, buffer));
+        PublicKey serverHostKey = DEFAULT.getRawPublicKey(rawKeyType, buffer);
+        certificate.setServerHostKey(serverHostKey);
 
         certificate.setSerial(buffer.getLong());
         certificate.setType(buffer.getInt());
 
         certificate.setId(buffer.getString());
 
-        certificate.setPrincipals(new ByteArrayBuffer(buffer.getBytes()).getStringList(false));
+        Collection<String> principals = new ByteArrayBuffer(buffer.getBytes()).getStringList(false);
+        certificate.setPrincipals(principals);
         certificate.setValidAfter(buffer.getLong());
         certificate.setValidBefore(buffer.getLong());
 
@@ -73,14 +79,14 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Pu
         try {
             certificate.setCaPubKey(buffer.getPublicKey());
         } catch (SshException ex) {
-            throw new GeneralSecurityException("Could not parse public CA key with ID: " + certificate.getId(), ex);
+            throw new InvalidKeyException("Could not parse public CA key with ID: " + certificate.getId(), ex);
         }
 
         certificate.setMessage(buffer.getBytesConsumed());
         certificate.setSignature(buffer.getBytes());
 
         if (buffer.rpos() != buffer.wpos()) {
-            throw new GeneralSecurityException("KeyExchange signature verification failed, got more data than expected: "
+            throw new InvalidKeyException("KeyExchange signature verification failed, got more data than expected: "
                 + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: " + certificate.getId());
         }
 

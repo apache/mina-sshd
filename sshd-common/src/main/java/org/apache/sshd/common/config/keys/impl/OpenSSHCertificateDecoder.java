@@ -97,7 +97,7 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
                 return decodePublicKey(null, keyType, inStream, null);
             }
         } catch (IOException e) {
-            throw new GeneralSecurityException("Unable to clone key.", e);
+            throw new GeneralSecurityException("Unable to clone key ID=" + key.getId(), e);
         }
     }
 

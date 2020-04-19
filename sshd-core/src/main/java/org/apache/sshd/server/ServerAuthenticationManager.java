@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.auth.UserAuthFactoriesManager;
+import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -226,6 +227,13 @@ public interface ServerAuthenticationManager
     HostBasedAuthenticator getHostBasedAuthenticator();
 
     void setHostBasedAuthenticator(HostBasedAuthenticator hostBasedAuthenticator);
+
+    /**
+     * @return a {@link HostKeyCertificateProvider} if available, null as default
+     */
+    HostKeyCertificateProvider getHostKeyCertificateProvider();
+
+    void setHostKeyCertificateProvider(HostKeyCertificateProvider provider);
 
     /**
      * If user authentication factories already set, then simply returns them. Otherwise,

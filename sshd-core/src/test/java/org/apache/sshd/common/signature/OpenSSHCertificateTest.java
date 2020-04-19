@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.signature;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,29 +39,33 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.AfterClass;
-import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@Parameterized.UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class OpenSSHCertificateTest extends BaseTestSupport {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
+    private static List<NamedFactory<Signature>> defaultSignatureFactories;
 
     private final FileHostKeyCertificateProvider certificateProvider;
     private final FileKeyPairProvider keyPairProvider;
     private final List<NamedFactory<Signature>> signatureFactory;
 
     public OpenSSHCertificateTest(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory) {
-        this.keyPairProvider = new FileKeyPairProvider(getTestResourcesFolder().resolve(keyPath));
-        this.certificateProvider = new FileHostKeyCertificateProvider(getTestResourcesFolder().resolve(certPath));
+        Path testResourcesFolder = getTestResourcesFolder();
+        this.keyPairProvider = new FileKeyPairProvider(testResourcesFolder.resolve(keyPath));
+        this.certificateProvider = new FileHostKeyCertificateProvider(testResourcesFolder.resolve(certPath));
         this.signatureFactory = signatureFactory;
     }
 
@@ -72,6 +77,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
         client = CoreTestSupportUtils.setupTestClient(OpenSSHCertificateTest.class);
         client.start();
+        defaultSignatureFactories = client.getSignatureFactories();
     }
 
     @AfterClass
@@ -93,7 +99,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         }
     }
 
-    @Parameterized.Parameters(name = "type={2}")
+    @Parameters(name = "type={2}")
     public static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
 
@@ -113,49 +119,57 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         return Collections.unmodifiableList(list);
     }
 
-    @Test
-    public void testOpenSshCertificates() throws Exception {
+    @Before
+    public void setUp() {
         sshd.setKeyPairProvider(keyPairProvider);
         sshd.setHostKeyCertificateProvider(certificateProvider);
+
+        PropertyResolverUtils.updateProperty(client,
+            ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
+            ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE);
+
         if (signatureFactory != null) {
             client.setSignatureFactories(signatureFactory);
+        } else {
+            client.setSignatureFactories(defaultSignatureFactories);
         }
+    }
 
+    @Test
+    public void testOpenSshCertificates() throws Exception {
         // default client
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-            .verify(CONNECT_TIMEOUT).getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(AUTH_TIMEOUT);
         }
     }
 
-    @Test
-    public void testPrincipal() throws Exception {
-        sshd.setKeyPairProvider(keyPairProvider);
-        sshd.setHostKeyCertificateProvider(certificateProvider);
-        if (signatureFactory != null) {
-            client.setSignatureFactories(signatureFactory);
-        }
-
-        // invalid principal, but continue
+    @Test   // invalid principal, but continue
+    public void testContinueOnInvalidPrincipal() throws Exception {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, false);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
-            .verify(CONNECT_TIMEOUT).getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(AUTH_TIMEOUT);
         }
+    }
 
-        // invalid principal, abort
+    @Test // invalid principal, abort
+    public void testAbortOnInvalidPrincipal() throws Exception {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, true);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
-            .verify(CONNECT_TIMEOUT).getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(AUTH_TIMEOUT);
 
             // in case client does not support cert, no exception should be thrown
-            Assert.assertFalse(client.getSignatureFactories().contains(BuiltinSignatures.rsa_cert));
+            assertFalse(client.getSignatureFactories().contains(BuiltinSignatures.rsa_cert));
         } catch (SshException e) {
-            Assert.assertEquals(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, e.getDisconnectCode());
+            assertEquals(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, e.getDisconnectCode());
         }
     }
 }

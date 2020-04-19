@@ -41,22 +41,18 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 public class FileHostKeyCertificateProvider extends AbstractLoggingBean implements HostKeyCertificateProvider {
-    private Collection<? extends Path> files;
-
-    public FileHostKeyCertificateProvider() {
-        super();
-    }
+    private final Collection<? extends Path> files;
 
     public FileHostKeyCertificateProvider(Path path) {
-        this(Collections.singletonList(Objects.requireNonNull(path, "No path provided")));
+        this((path == null) ? Collections.emptyList() : Collections.singletonList(path));
     }
 
     public FileHostKeyCertificateProvider(Path... files) {
-        this(Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(files, "No path provided")));
+        this(GenericUtils.isEmpty(files) ? Collections.emptyList() : Arrays.asList(files));
     }
 
     public FileHostKeyCertificateProvider(Collection<? extends Path> files) {
-        this.files = files;
+        this.files = ValidateUtils.checkNotNullAndNotEmpty(files, "No paths provided");
     }
 
     public Collection<? extends Path> getPaths() {
@@ -64,14 +60,14 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
     }
 
     @Override
-    public Iterable<OpenSshCertificate> loadCertificates(SessionContext session) throws IOException, GeneralSecurityException {
-
+    public Iterable<OpenSshCertificate> loadCertificates(SessionContext session)
+            throws IOException, GeneralSecurityException {
         List<OpenSshCertificate> certificates = new ArrayList<>();
-        for (Path file : files) {
+        for (Path file : getPaths()) {
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (String line : lines) {
                 line = GenericUtils.replaceWhitespaceAndTrim(line);
-                if (line.isEmpty() || line.startsWith("#")) {
+                if (GenericUtils.isEmpty(line) || line.startsWith("#")) {
                     continue;
                 }
 
@@ -94,9 +90,12 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
     }
 
     @Override
-    public OpenSshCertificate loadCertificate(SessionContext session, String keyType) throws IOException, GeneralSecurityException {
-        return StreamSupport.stream(loadCertificates(session).spliterator(), false)
+    public OpenSshCertificate loadCertificate(SessionContext session, String keyType)
+            throws IOException, GeneralSecurityException {
+        Iterable<OpenSshCertificate> certificates = loadCertificates(session);
+        return StreamSupport.stream(certificates.spliterator(), false)
             .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
-            .findFirst().orElse(null);
+            .findFirst()
+            .orElse(null);
     }
 }

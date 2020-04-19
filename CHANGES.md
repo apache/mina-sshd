@@ -32,3 +32,5 @@ where the former validate the messages and deal with the idle timeout, and the l
 * [SSHD-972](https://issues.apache.org/jira/browse/SSHD-972) - Add support for peers using OpenSSH "security key" key types
 
 * [SSHD-977](https://issues.apache.org/jira/browse/SSHD-977) - Apply consistent logging policy to caught exceptions
+
+* [SSHD-660](https://issues.apache.org/jira/browse/SSHD-660) - Added support for server-side signed certificate keys

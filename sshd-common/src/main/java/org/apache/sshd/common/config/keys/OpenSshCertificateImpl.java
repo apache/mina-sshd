@@ -22,6 +22,8 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class OpenSshCertificateImpl implements OpenSshCertificate {
@@ -50,7 +52,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     @Override
     public String getRawKeyType() {
-        return keyType.split("@")[0].substring(0, keyType.indexOf("-cert"));
+        return GenericUtils.isEmpty(keyType) ? null : keyType.split("@")[0].substring(0, keyType.indexOf("-cert"));
     }
 
     @Override
@@ -130,7 +132,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     @Override
     public String getSignatureAlg() {
-        return new ByteArrayBuffer(signature).getString();
+        return NumberUtils.isEmpty(signature) ? null : new ByteArrayBuffer(signature).getString();
     }
 
     @Override
@@ -145,7 +147,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     @Override
     public byte[] getEncoded() {
-        return new byte[0];
+        return GenericUtils.EMPTY_BYTE_ARRAY;
     }
 
     public void setKeyType(String keyType) {
@@ -206,5 +208,16 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     public void setSignature(byte[] signature) {
         this.signature = signature;
+    }
+
+    @Override
+    public String toString() {
+        return getKeyType()
+            + "[id=" + getId()
+            + ", serial=" + getSerial()
+            + ", type=" + getType()
+            + ", validAfter=" + getValidAfterDate()
+            + ", validBefore=" + getValidBeforeDate()
+            + "]";
     }
 }

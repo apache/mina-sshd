@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.FactoryManager;
@@ -194,11 +193,14 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             (parent == null) ? null : ((ServerAuthenticationManager) parent).getKeyPairProvider());
     }
 
+    @Override
     public HostKeyCertificateProvider getHostKeyCertificateProvider() {
         ServerFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(HostKeyCertificateProvider.class, hostKeyCertificateProvider, manager.getHostKeyCertificateProvider());
+        return resolveEffectiveProvider(HostKeyCertificateProvider.class,
+            hostKeyCertificateProvider, manager.getHostKeyCertificateProvider());
     }
 
+    @Override
     public void setHostKeyCertificateProvider(HostKeyCertificateProvider hostKeyCertificateProvider) {
         this.hostKeyCertificateProvider = hostKeyCertificateProvider;
     }
@@ -381,21 +383,23 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         KeyPairProvider kpp = getKeyPairProvider();
         boolean debugEnabled = log.isDebugEnabled();
-        Set<String> provided = null;
+        Collection<String> provided = null;
         try {
             if (kpp != null) {
                 provided = GenericUtils.stream(kpp.getKeyTypes(this)).collect(Collectors.toSet());
 
                 HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
                 if (hostKeyCertificateProvider != null) {
-                    Iterable<OpenSshCertificate> certificates = hostKeyCertificateProvider.loadCertificates(this);
+                    Iterable<OpenSshCertificate> certificates =
+                        hostKeyCertificateProvider.loadCertificates(this);
                     for (OpenSshCertificate certificate : certificates) {
                         // Add the certificate alg only if the corresponding keyPair type is available
-                        if (provided.contains(certificate.getRawKeyType())) {
+                        String rawKeyType = certificate.getRawKeyType();
+                        if (provided.contains(rawKeyType)) {
                             provided.add(certificate.getKeyType());
                         } else {
-                            log.info("No private key for provided certificate available. Missing private key type: {}",
-                                certificate.getRawKeyType());
+                            log.info("resolveAvailableSignaturesProposal({}) No private key of type={} available in provided certificate",
+                                this, rawKeyType);
                         }
                     }
                 }
@@ -530,14 +534,23 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         try {
             HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
             if (hostKeyCertificateProvider != null) {
-                OpenSshCertificate publicKey = hostKeyCertificateProvider.loadCertificate(this, keyType);
+                OpenSshCertificate publicKey =
+                    hostKeyCertificateProvider.loadCertificate(this, keyType);
                 if (publicKey != null) {
-                    KeyPair keyPair = provider.loadKey(this, publicKey.getRawKeyType());
+                    String rawKeyType = publicKey.getRawKeyType();
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("getHostKey({}) using certified key {}/{} with ID={}",
+                            this, keyType, rawKeyType, publicKey.getId());
+                    }
+
+                    KeyPair keyPair = provider.loadKey(this, rawKeyType);
+                    ValidateUtils.checkNotNull(keyPair, "No certified private key of type=%s available", rawKeyType);
                     return new KeyPair(publicKey, keyPair.getPrivate());
                 }
             }
-            return provider.loadKey(this, keyType);
 
+            return provider.loadKey(this, keyType);
         } catch (IOException | GeneralSecurityException | Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
                  this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());

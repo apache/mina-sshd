@@ -181,9 +181,9 @@ public class SshServerMain extends SshServerCliSupport {
         KeyPairProvider hostKeyProvider =
             resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
-        if (certFiles != null) {
+        if (GenericUtils.isNotEmpty(certFiles)) {
             HostKeyCertificateProvider certProvider = new FileHostKeyCertificateProvider(
-                    certFiles.stream().map(Paths::get).collect(Collectors.toList()));
+                certFiles.stream().map(Paths::get).collect(Collectors.toList()));
             sshd.setHostKeyCertificateProvider(certProvider);
         }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed

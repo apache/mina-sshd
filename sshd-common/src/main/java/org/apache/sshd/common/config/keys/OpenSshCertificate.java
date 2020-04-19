@@ -21,7 +21,9 @@ package org.apache.sshd.common.config.keys;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public interface OpenSshCertificate extends PublicKey, PrivateKey {
     int SSH_CERT_TYPE_USER = 1;
@@ -43,9 +45,19 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     Collection<String> getPrincipals();
 
+    // Seconds after epoch
     long getValidAfter();
 
+    default Date getValidAfterDate() {
+        return getValidDate(getValidAfter());
+    }
+
+    // Seconds after epoch
     long getValidBefore();
+
+    default Date getValidBeforeDate() {
+        return getValidDate(getValidBefore());
+    }
 
     List<String> getCriticalOptions();
 
@@ -60,4 +72,8 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
     byte[] getSignature();
 
     String getSignatureAlg();
+
+    static Date getValidDate(long timestamp) {
+        return (timestamp == 0L) ? null : new Date(TimeUnit.SECONDS.toMillis(timestamp));
+    }
 }

@@ -267,6 +267,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return hostKeyCertificateProvider;
     }
 
+    @Override
     public void setHostKeyCertificateProvider(HostKeyCertificateProvider hostKeyCertificateProvider) {
         this.hostKeyCertificateProvider = hostKeyCertificateProvider;
     }

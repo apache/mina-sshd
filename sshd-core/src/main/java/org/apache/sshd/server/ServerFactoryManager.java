@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerProxyAcceptorHolder;
 import org.apache.sshd.server.shell.ShellFactory;
@@ -111,9 +110,4 @@ public interface ServerFactoryManager
      * or {@code null}/empty if subsystems are not supported on this server
      */
     List<SubsystemFactory> getSubsystemFactories();
-
-    /**
-     * @return a {@link HostKeyCertificateProvider} if available, null as default
-     */
-    HostKeyCertificateProvider getHostKeyCertificateProvider();
 }
