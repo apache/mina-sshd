@@ -54,7 +54,7 @@ public class NoCloseWriterTest extends JUnitTestSupport {
         String expected = getClass().getName() + "#" + getCurrentTestName() + "@" + new Date();
         try (OutputStream fileStream = Files.newOutputStream(file);
              Writer w = new OutputStreamWriter(fileStream, StandardCharsets.UTF_8);
-                Writer shielded = new NoCloseWriter(w)) {
+             Writer shielded = new NoCloseWriter(w)) {
             int index = 0;
             int availLen = expected.length();
             for (; index < (availLen / 2); index++) {

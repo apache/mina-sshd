@@ -35,8 +35,8 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Wraps an {@link ExecutorService} as a {@link CloseableExecutorService}
- * and avoids calling its {@code shutdown} methods when the wrapper is shut down
+ * Wraps an {@link ExecutorService} as a {@link CloseableExecutorService} and avoids calling its {@code shutdown}
+ * methods when the wrapper is shut down
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

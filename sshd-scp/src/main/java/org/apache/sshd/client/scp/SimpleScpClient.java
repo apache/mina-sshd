@@ -39,11 +39,11 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param username Username
-     * @param password Password
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host name or address
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(String host, String username, String password) throws IOException {
@@ -53,26 +53,27 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param host The target host name or address
-     * @param port The target port
-     * @param username Username
-     * @param password Password
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host name or address
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(String host, int port, String username, String password) throws IOException {
-        return scpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
+        return scpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username,
+                password);
     }
 
     /**
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host name or address
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(String host, String username, KeyPair identity) throws IOException {
@@ -82,26 +83,27 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param host The target host name or address
-     * @param port The target port
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host name or address
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(String host, int port, String username, KeyPair identity) throws IOException {
-        return scpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
+        return scpLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username,
+                identity);
     }
 
     /**
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param username Username
-     * @param password Password
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host {@link InetAddress}
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(InetAddress host, String username, String password) throws IOException {
@@ -111,12 +113,12 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param port The target port
-     * @param username Username
-     * @param password Password
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host {@link InetAddress}
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(InetAddress host, int port, String username, String password) throws IOException {
@@ -126,11 +128,11 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session on the default port and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host {@link InetAddress}
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(InetAddress host, String username, KeyPair identity) throws IOException {
@@ -140,12 +142,12 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param port The target port
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  host        The target host {@link InetAddress}
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     default CloseableScpClient scpLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
@@ -155,11 +157,11 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param target The target {@link SocketAddress}
-     * @param username Username
-     * @param password Password
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  target      The target {@link SocketAddress}
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     CloseableScpClient scpLogin(SocketAddress target, String username, String password) throws IOException;
@@ -167,11 +169,11 @@ public interface SimpleScpClient extends Channel {
     /**
      * Creates an SCP session using the provided credentials
      *
-     * @param target The target {@link SocketAddress}
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
-     * underlying session
+     * @param  target      The target {@link SocketAddress}
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link CloseableScpClient} - <B>Note:</B> closing the client also closes its
+     *                     underlying session
      * @throws IOException If failed to login or authenticate
      */
     CloseableScpClient scpLogin(SocketAddress target, String username, KeyPair identity) throws IOException;

@@ -22,10 +22,9 @@ package org.apache.sshd.common.channel;
 import org.apache.sshd.common.util.SshdEventListener;
 
 /**
- * Provides a simple listener for client / server channels being established
- * or torn down. <B>Note:</B> for server-side listeners, some of the established
- * channels may be <U>client</U> - especially where connection proxy or forwarding
- * is concerned
+ * Provides a simple listener for client / server channels being established or torn down. <B>Note:</B> for server-side
+ * listeners, some of the established channels may be <U>client</U> - especially where connection proxy or forwarding is
+ * concerned
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -40,9 +39,8 @@ public interface ChannelListener extends SshdEventListener {
     /**
      * Called to inform about initial setup of a channel via the
      * {@link Channel#init(org.apache.sshd.common.session.ConnectionService, org.apache.sshd.common.session.Session, int)}
-     * method. <B>Note:</B> this method is guaranteed to be called
-     * before either of the {@link #channelOpenSuccess(Channel)} or
-     * {@link #channelOpenFailure(Channel, Throwable)} will be called
+     * method. <B>Note:</B> this method is guaranteed to be called before either of the
+     * {@link #channelOpenSuccess(Channel)} or {@link #channelOpenFailure(Channel, Throwable)} will be called
      *
      * @param channel The initialized {@link Channel}
      */
@@ -51,9 +49,8 @@ public interface ChannelListener extends SshdEventListener {
     }
 
     /**
-     * Called to inform about a channel being successfully opened for a
-     * session. <B>Note:</B> when the call is made, the channel is known
-     * to be open but nothing beyond that.
+     * Called to inform about a channel being successfully opened for a session. <B>Note:</B> when the call is made, the
+     * channel is known to be open but nothing beyond that.
      *
      * @param channel The newly opened {@link Channel}
      */
@@ -65,38 +62,32 @@ public interface ChannelListener extends SshdEventListener {
      * Called to inform about the failure to open a channel
      *
      * @param channel The failed {@link Channel}
-     * @param reason The {@link Throwable} reason - <B>Note:</B> if the
-     * {@link #channelOpenSuccess(Channel)} notification throws an exception
-     * it will cause this method to be invoked
+     * @param reason  The {@link Throwable} reason - <B>Note:</B> if the {@link #channelOpenSuccess(Channel)}
+     *                notification throws an exception it will cause this method to be invoked
      */
     default void channelOpenFailure(Channel channel, Throwable reason) {
         // ignored
     }
 
     /**
-     * Called to inform that the channel state may have changed - e.g.,
-     * received EOF, window adjustment, etc..
+     * Called to inform that the channel state may have changed - e.g., received EOF, window adjustment, etc..
      *
      * @param channel The {@link Channel} whose state has changed
-     * @param hint A &quot;hint&quot; as to the nature of the state change.
-     * it can be a request name or a {@code SSH_MSG_CHANNEL_XXX} command
-     * or the name of an exception class
+     * @param hint    A &quot;hint&quot; as to the nature of the state change. it can be a request name or a
+     *                {@code SSH_MSG_CHANNEL_XXX} command or the name of an exception class
      */
     default void channelStateChanged(Channel channel, String hint) {
         // ignored
     }
 
     /**
-     * Called to inform about a channel being closed. <B>Note:</B> when the call
-     * is made there are no guarantees about the channel's actual state
-     * except that it either has been already closed or may be in the process
-     * of being closed. <B>Note:</B> this method is guaranteed to be called
-     * regardless of whether {@link #channelOpenSuccess(Channel)} or
-     * {@link #channelOpenFailure(Channel, Throwable)} have been called
+     * Called to inform about a channel being closed. <B>Note:</B> when the call is made there are no guarantees about
+     * the channel's actual state except that it either has been already closed or may be in the process of being
+     * closed. <B>Note:</B> this method is guaranteed to be called regardless of whether
+     * {@link #channelOpenSuccess(Channel)} or {@link #channelOpenFailure(Channel, Throwable)} have been called
      *
      * @param channel The referenced {@link Channel}
-     * @param reason The reason why the channel is being closed - if {@code null}
-     * then normal closure
+     * @param reason  The reason why the channel is being closed - if {@code null} then normal closure
      */
     default void channelClosed(Channel channel, Throwable reason) {
         // ignored

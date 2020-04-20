@@ -60,7 +60,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class KexTest extends BaseTestSupport {
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
@@ -112,7 +112,7 @@ public class KexTest extends BaseTestSupport {
     public void testClientKeyExchange() throws Exception {
         if (factory.isGroupExchange()) {
             assertEquals(factory.getName() + " not supported even though DH group exchange supported",
-                         SecurityUtils.isDHGroupExchangeSupported(), factory.isSupported());
+                    SecurityUtils.isDHGroupExchangeSupported(), factory.isSupported());
         }
 
         Assume.assumeTrue(factory.getName() + " not supported", factory.isSupported());
@@ -124,10 +124,9 @@ public class KexTest extends BaseTestSupport {
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             client.setKeyExchangeFactories(Collections.singletonList(kex));
-            try (ClientSession session =
-                    client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                        .verify(CONNECT_TIMEOUT)
-                        .getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
 
@@ -155,8 +154,7 @@ public class KexTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TIMEOUT);
+                    Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TIMEOUT);
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                 }
             }

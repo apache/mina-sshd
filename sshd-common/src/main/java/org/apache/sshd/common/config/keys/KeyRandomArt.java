@@ -41,18 +41,16 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Draw an ASCII-Art representing the fingerprint so human brain can
- * profit from its built-in pattern recognition ability.
- * This technique is called "random art" and can be found in some
- * scientific publications like this original paper:
+ * Draw an ASCII-Art representing the fingerprint so human brain can profit from its built-in pattern recognition
+ * ability. This technique is called "random art" and can be found in some scientific publications like this original
+ * paper:
  *
- * &quot;Hash Visualization: a New Technique to improve Real-World Security&quot;,
- * Perrig A. and Song D., 1999, International Workshop on Cryptographic
- * Techniques and E-Commerce (CrypTEC '99)
+ * &quot;Hash Visualization: a New Technique to improve Real-World Security&quot;, Perrig A. and Song D., 1999,
+ * International Workshop on Cryptographic Techniques and E-Commerce (CrypTEC '99)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf">Original article</a>
- * @see <a href="http://opensource.apple.com/source/OpenSSH/OpenSSH-175/openssh/key.c">C implementation</a>
+ * @see    <a href="http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf">Original article</a>
+ * @see    <a href="http://opensource.apple.com/source/OpenSSH/OpenSSH-175/openssh/key.c">C implementation</a>
  */
 public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
     public static final int FLDBASE = 8;
@@ -80,8 +78,8 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
 
     /**
      * @param algorithm The key algorithm
-     * @param keySize The key size in bits
-     * @param digest The key digest
+     * @param keySize   The key size in bits
+     * @param digest    The key digest
      */
     public KeyRandomArt(String algorithm, int keySize, byte[] digest) {
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm provided");
@@ -114,14 +112,13 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
             }
         }
 
-        /* mark starting point and end point*/
+        /* mark starting point and end point */
         field[FLDSIZE_X / 2][FLDSIZE_Y / 2] = (char) (len - 1);
         field[x][y] = (char) len;
     }
 
     /**
-     * @return The algorithm that was used to generate the key - e.g.,
-     * &quot;RSA&quot;, &quot;DSA&quot;, &quot;EC&quot;.
+     * @return The algorithm that was used to generate the key - e.g., &quot;RSA&quot;, &quot;DSA&quot;, &quot;EC&quot;.
      */
     @Override
     public String getAlgorithm() {
@@ -136,9 +133,9 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
     /**
      * Outputs the generated random art
      *
-     * @param <A> The {@link Appendable} output writer
-     * @param sb The writer
-     * @return The updated writer instance
+     * @param  <A>         The {@link Appendable} output writer
+     * @param  sb          The writer
+     * @return             The updated writer instance
      * @throws IOException If failed to write the combined result
      */
     public <A extends Appendable> A append(A sb) throws IOException {
@@ -179,17 +176,16 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
         try {
             return append(new StringBuilder((FLDSIZE_X + 4) * (FLDSIZE_Y + 3))).toString();
         } catch (IOException e) {
-            return e.getClass().getSimpleName();    // unexpected
+            return e.getClass().getSimpleName(); // unexpected
         }
     }
 
     /**
      * Combines the arts in a user-friendly way so they are aligned with each other
      *
-     * @param separator The separator to use between the arts - if empty char
-     * ('\0') then no separation is done
-     * @param arts The {@link KeyRandomArt}s to combine - ignored if {@code null}/empty
-     * @return The combined result
+     * @param  separator The separator to use between the arts - if empty char ('\0') then no separation is done
+     * @param  arts      The {@link KeyRandomArt}s to combine - ignored if {@code null}/empty
+     * @return           The combined result
      */
     public static String combine(char separator, Collection<? extends KeyRandomArt> arts) {
         if (GenericUtils.isEmpty(arts)) {
@@ -199,64 +195,60 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
         try {
             return combine(new StringBuilder(arts.size() * (FLDSIZE_X + 4) * (FLDSIZE_Y + 3)), separator, arts).toString();
         } catch (IOException e) {
-            return e.getClass().getSimpleName();    // unexpected
+            return e.getClass().getSimpleName(); // unexpected
         }
     }
 
     /**
      * Creates the combined representation of the random art entries for the provided keys
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param separator The separator to use between the arts - if empty char
-     * ('\0') then no separation is done
-     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
-     * or has no keys to provide
-     * @return The combined representation
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool or session unknown).
+     * @param  separator The separator to use between the arts - if empty char ('\0') then no separation is done
+     * @param  provider  The {@link KeyIdentityProvider} - ignored if {@code null} or has no keys to provide
+     * @return           The combined representation
      * @throws Exception If failed to extract or combine the entries
-     * @see #combine(SessionContext, Appendable, char, KeyIdentityProvider)
+     * @see              #combine(SessionContext, Appendable, char, KeyIdentityProvider)
      */
     public static String combine(
             SessionContext session, char separator, KeyIdentityProvider provider)
-                throws Exception {
+            throws Exception {
         return combine(session, new StringBuilder(4 * (FLDSIZE_X + 4) * (FLDSIZE_Y + 3)), separator, provider).toString();
     }
 
     /**
      * Appends the combined random art entries for the provided keys
      *
-     * @param <A> The {@link Appendable} output writer
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param sb The writer
-     * @param separator The separator to use between the arts - if empty char
-     * ('\0') then no separation is done
-     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
-     * or has no keys to provide
-     * @return The updated writer instance
+     * @param  <A>       The {@link Appendable} output writer
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool or session unknown).
+     * @param  sb        The writer
+     * @param  separator The separator to use between the arts - if empty char ('\0') then no separation is done
+     * @param  provider  The {@link KeyIdentityProvider} - ignored if {@code null} or has no keys to provide
+     * @return           The updated writer instance
      * @throws Exception If failed to extract or write the entries
-     * @see #generate(SessionContext, KeyIdentityProvider)
-     * @see #combine(Appendable, char, Collection)
+     * @see              #generate(SessionContext, KeyIdentityProvider)
+     * @see              #combine(Appendable, char, Collection)
      */
     public static <A extends Appendable> A combine(
-            SessionContext session, A sb, char separator, KeyIdentityProvider provider) throws Exception {
+            SessionContext session, A sb, char separator, KeyIdentityProvider provider)
+            throws Exception {
         return combine(sb, separator, generate(session, provider));
     }
 
     /**
      * Extracts and generates random art entries for all key in the provider
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param provider The {@link KeyIdentityProvider} - ignored if {@code null}
-     * or has no keys to provide
-     * @return The extracted {@link KeyRandomArt}s
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool or session unknown).
+     * @param  provider  The {@link KeyIdentityProvider} - ignored if {@code null} or has no keys to provide
+     * @return           The extracted {@link KeyRandomArt}s
      * @throws Exception If failed to extract the entries
-     * @see KeyIdentityProvider#loadKeys(SessionContext)
+     * @see              KeyIdentityProvider#loadKeys(SessionContext)
      */
     public static Collection<KeyRandomArt> generate(
             SessionContext session, KeyIdentityProvider provider)
-                throws Exception {
+            throws Exception {
         Iterable<KeyPair> keys = (provider == null) ? null : provider.loadKeys(session);
         Iterator<KeyPair> iter = (keys == null) ? null : keys.iterator();
         if ((iter == null) || (!iter.hasNext())) {
@@ -276,15 +268,15 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
     /**
      * Combines the arts in a user-friendly way so they are aligned with each other
      *
-     * @param <A> The {@link Appendable} output writer
-     * @param sb The writer
-     * @param separator The separator to use between the arts - if empty char
-     * ('\0') then no separation is done
-     * @param arts The {@link KeyRandomArt}s to combine - ignored if {@code null}/empty
-     * @return The updated writer instance
+     * @param  <A>         The {@link Appendable} output writer
+     * @param  sb          The writer
+     * @param  separator   The separator to use between the arts - if empty char ('\0') then no separation is done
+     * @param  arts        The {@link KeyRandomArt}s to combine - ignored if {@code null}/empty
+     * @return             The updated writer instance
      * @throws IOException If failed to write the combined result
      */
-    public static <A extends Appendable> A combine(A sb, char separator, Collection<? extends KeyRandomArt> arts) throws IOException {
+    public static <A extends Appendable> A combine(A sb, char separator, Collection<? extends KeyRandomArt> arts)
+            throws IOException {
         if (GenericUtils.isEmpty(arts)) {
             return sb;
         }
@@ -298,7 +290,8 @@ public class KeyRandomArt implements AlgorithmNameProvider, KeySizeIndicator {
                 numLines = lines.length;
             } else {
                 if (numLines != lines.length) {
-                    throw new StreamCorruptedException("Mismatched lines count: expected=" + numLines + ", actual=" + lines.length);
+                    throw new StreamCorruptedException(
+                            "Mismatched lines count: expected=" + numLines + ", actual=" + lines.length);
                 }
             }
 

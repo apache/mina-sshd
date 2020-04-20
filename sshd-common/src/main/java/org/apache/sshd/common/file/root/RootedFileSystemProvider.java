@@ -57,8 +57,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * File system provider which provides a rooted file system.
- * The file system only gives access to files under the root directory.
+ * File system provider which provides a rooted file system. The file system only gives access to files under the root
+ * directory.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -168,7 +168,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+            throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newFileChannel(r, options, attrs);
@@ -177,14 +178,15 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     @Override
     public AsynchronousFileChannel newAsynchronousFileChannel(
             Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs)
-                throws IOException {
+            throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newAsynchronousFileChannel(r, options, executor, attrs);
     }
 
     @Override
-    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+            throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newByteChannel(r, options, attrs);
@@ -352,7 +354,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
                 Path root = fse.getKey();
                 RootedFileSystem fs = fse.getValue();
                 if (real.equals(root)) {
-                    return fs;  // we were lucky to have the root
+                    return fs; // we were lucky to have the root
                 }
 
                 if (!real.startsWith(root)) {
@@ -393,7 +395,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
+    public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
+            throws IOException {
         Path r = unroot(path);
         if (log.isTraceEnabled()) {
             log.trace("readAttributes({})[{}] type={}", path, r, type.getSimpleName());
@@ -440,29 +443,28 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * @param path The original (rooted) {@link Path}
-     * @return The actual <U>absolute <B>local</B></U> {@link Path} represented
-     * by the rooted one
-     * @see #resolveLocalPath(RootedPath)
-     * @throws IllegalArgumentException if {@code null} path argument
+     * @param  path                      The original (rooted) {@link Path}
+     * @return                           The actual <U>absolute <B>local</B></U> {@link Path} represented by the rooted
+     *                                   one
+     * @see                              #resolveLocalPath(RootedPath)
+     * @throws IllegalArgumentException  if {@code null} path argument
      * @throws ProviderMismatchException if not a {@link RootedPath}
      */
     protected Path unroot(Path path) {
         Objects.requireNonNull(path, "No path to unroot");
         if (!(path instanceof RootedPath)) {
-            throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
-                    + " but rather a " + path.getClass().getSimpleName());
+            throw new ProviderMismatchException(
+                    "unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
+                                                + " but rather a " + path.getClass().getSimpleName());
         }
 
         return resolveLocalPath((RootedPath) path);
     }
 
     /**
-     * @param path The original {@link RootedPath} - never {@code null}
-     * @return The actual <U>absolute <B>local</B></U> {@link Path} represented
-     * by the rooted one
-     * @throws InvalidPathException If the resolved path is not a proper sub-path
-     * of the rooted file system
+     * @param  path                 The original {@link RootedPath} - never {@code null}
+     * @return                      The actual <U>absolute <B>local</B></U> {@link Path} represented by the rooted one
+     * @throws InvalidPathException If the resolved path is not a proper sub-path of the rooted file system
      */
     protected Path resolveLocalPath(RootedPath path) {
         RootedPath absPath = Objects.requireNonNull(path, "No rooted path to resolve").toAbsolutePath();
@@ -492,9 +494,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         }
 
         /*
-         * This can happen for Windows since we represent its paths as /C:/some/path,
-         * so substring(1) yields C:/some/path - which is resolved as an absolute path
-         * (which we don't want).
+         * This can happen for Windows since we represent its paths as /C:/some/path, so substring(1) yields
+         * C:/some/path - which is resolved as an absolute path (which we don't want).
          */
         if (!resolved.startsWith(root)) {
             throw new InvalidPathException(r, "Not under root");

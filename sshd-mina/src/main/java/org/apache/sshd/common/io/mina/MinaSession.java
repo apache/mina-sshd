@@ -49,8 +49,7 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaSession extends AbstractInnerCloseable implements IoSession {
-    public static final Field NIO_SESSION_CHANNEL_FIELD =
-        Stream.of(NioSession.class.getDeclaredFields())
+    public static final Field NIO_SESSION_CHANNEL_FIELD = Stream.of(NioSession.class.getDeclaredFields())
             .filter(f -> "channel".equals(f.getName()))
             .map(f -> {
                 f.setAccessible(true);
@@ -123,8 +122,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     protected Closeable getInnerCloseable() {
         return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
-            private final DefaultCloseFuture future =
-                new DefaultCloseFuture(MinaSession.this.toString(), futureLock);
+            private final DefaultCloseFuture future = new DefaultCloseFuture(MinaSession.this.toString(), futureLock);
 
             @SuppressWarnings("synthetic-access")
             @Override
@@ -151,8 +149,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             @SuppressWarnings("synthetic-access")
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
-                org.apache.mina.core.future.CloseFuture cf =
-                    immediately ? session.closeNow() : session.closeOnFlush();
+                org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
                 cf.addListener(f -> future.setValue(Boolean.TRUE));
                 return future;
             }
@@ -178,14 +175,14 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     public IoWriteFuture write(IoBuffer buffer) {
         Future future = new Future(sessionWriteId, null);
         session.write(buffer)
-            .addListener((IoFutureListener<WriteFuture>) cf -> {
-                Throwable t = cf.getException();
-                if (t != null) {
-                    future.setException(t);
-                } else {
-                    future.setWritten();
-                }
-            });
+                .addListener((IoFutureListener<WriteFuture>) cf -> {
+                    Throwable t = cf.getException();
+                    if (t != null) {
+                        future.setException(t);
+                    } else {
+                        future.setWritten();
+                    }
+                });
         return future;
     }
 
@@ -208,13 +205,13 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         return service;
     }
 
-    @Override   // see SSHD-902
+    @Override // see SSHD-902
     public void shutdownOutputStream() throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (!(session instanceof NioSession)) {
             if (debugEnabled) {
                 log.debug("shudownOutputStream({}) not a NioSession: {}",
-                    session, (session == null) ? null : session.getClass().getSimpleName());
+                        session, (session == null) ? null : session.getClass().getSimpleName());
             }
             return;
         }
@@ -222,7 +219,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         if (NIO_SESSION_CHANNEL_FIELD == null) {
             if (debugEnabled) {
                 log.debug("shudownOutputStream({}) missing channel field",
-                    session, (session == null) ? null : session.getClass().getSimpleName());
+                        session, (session == null) ? null : session.getClass().getSimpleName());
             }
             return;
         }
@@ -233,14 +230,14 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         } catch (Exception t) {
             Throwable e = GenericUtils.peelException(t);
             log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
-                session, e.getClass().getSimpleName(), e.getMessage());
+                    session, e.getClass().getSimpleName(), e.getMessage());
             return;
         }
 
         if (!(channel instanceof SocketChannel)) {
             if (debugEnabled) {
                 log.debug("shudownOutputStream({}) not a SocketChannel: {}",
-                    session, (channel == null) ? null : channel.getClass().getSimpleName());
+                        session, (channel == null) ? null : channel.getClass().getSimpleName());
             }
             return;
         }
@@ -257,8 +254,8 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[local=" + session.getLocalAddress()
-            + ", remote=" + session.getRemoteAddress()
-            + "]";
+               + "[local=" + session.getLocalAddress()
+               + ", remote=" + session.getRemoteAddress()
+               + "]";
     }
 }

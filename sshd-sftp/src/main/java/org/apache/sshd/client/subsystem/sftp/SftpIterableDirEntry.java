@@ -25,8 +25,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Provides an {@link Iterable} implementation of the {@link DirEntry}-ies
- * for a remote directory
+ * Provides an {@link Iterable} implementation of the {@link DirEntry}-ies for a remote directory
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -36,7 +35,7 @@ public class SftpIterableDirEntry implements Iterable<DirEntry> {
 
     /**
      * @param client The {@link SftpClient} instance to use for the iteration
-     * @param path The remote directory path
+     * @param path   The remote directory path
      */
     public SftpIterableDirEntry(SftpClient client, String path) {
         this.client = Objects.requireNonNull(client, "No client instance");

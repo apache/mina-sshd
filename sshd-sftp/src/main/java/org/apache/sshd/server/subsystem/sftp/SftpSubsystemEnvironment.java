@@ -40,7 +40,7 @@ public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, 
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
 
-    int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to and including
+    int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; // .. up to and including
 
     String ALL_SFTP_IMPL = IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
             .mapToObj(Integer::toString)
@@ -57,8 +57,7 @@ public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, 
     int getVersion();
 
     /**
-     * @return The {@link SftpFileSystemAccessor} used to access effective
-     * server-side paths
+     * @return The {@link SftpFileSystemAccessor} used to access effective server-side paths
      */
     SftpFileSystemAccessor getFileSystemAccessor();
 
@@ -68,8 +67,7 @@ public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, 
     UnsupportedAttributePolicy getUnsupportedAttributePolicy();
 
     /**
-     * @return The default root directory used to resolve relative paths
-     * - a.k.a. the {@code chroot} location
+     * @return The default root directory used to resolve relative paths - a.k.a. the {@code chroot} location
      */
     Path getDefaultDirectory();
 }

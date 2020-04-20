@@ -190,9 +190,9 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
                 return ((Number) v).intValue();
             } else {
                 throw formatExceptionMessage(
-                    IllegalStateException::new,
-                    "Unknown read value type: %s",
-                    (v == null) ? "null" : v.getClass().getName());
+                        IllegalStateException::new,
+                        "Unknown read value type: %s",
+                        (v == null) ? "null" : v.getClass().getName());
             }
         }
 

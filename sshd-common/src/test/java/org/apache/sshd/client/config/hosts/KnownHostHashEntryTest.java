@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KnownHostHashEntryTest extends JUnitTestSupport {
@@ -56,26 +56,26 @@ public class KnownHostHashEntryTest extends JUnitTestSupport {
         this.host = host;
         this.port = port;
         this.comment = comment;
-        this.line = GenericUtils.join(new Object[]{hashValue, keyType, keyData, comment}, ' ');
+        this.line = GenericUtils.join(new Object[] { hashValue, keyType, keyData, comment }, ' ');
     }
 
     @Parameters(name = "{5}")
     public static List<Object[]> parameters() {
         return Arrays.asList(
-            // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
-            new Object[] {
-                "localhost", SshConstants.DEFAULT_PORT,
-                "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ=", "ecdsa-sha2-nistp256",
-                "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJTsDTYFSYyRMlOec6JBfC8dEFqHNNWu7n8N0niS1zmHpggX+L4cndxhJPE0ILi9otHO7h0mp0cmqqho2tsX8lc=",
-                "xenon@localhost"
-            },
-            // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
-            new Object[] {
-                "localhost", 10022,
-                "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg=", "ecdsa-sha2-nistp256",
-                "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJTsDTYFSYyRMlOec6JBfC8dEFqHNNWu7n8N0niS1zmHpggX+L4cndxhJPE0ILi9otHO7h0mp0cmqqho2tsX8lc=",
-                "xenon@localhost:10022"
-            });
+                // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
+                new Object[] {
+                        "localhost", SshConstants.DEFAULT_PORT,
+                        "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ=", "ecdsa-sha2-nistp256",
+                        "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJTsDTYFSYyRMlOec6JBfC8dEFqHNNWu7n8N0niS1zmHpggX+L4cndxhJPE0ILi9otHO7h0mp0cmqqho2tsX8lc=",
+                        "xenon@localhost"
+                },
+                // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
+                new Object[] {
+                        "localhost", 10022,
+                        "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg=", "ecdsa-sha2-nistp256",
+                        "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJTsDTYFSYyRMlOec6JBfC8dEFqHNNWu7n8N0niS1zmHpggX+L4cndxhJPE0ILi9otHO7h0mp0cmqqho2tsX8lc=",
+                        "xenon@localhost:10022"
+                });
     }
 
     @Test

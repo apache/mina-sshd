@@ -54,12 +54,12 @@ public class DefaultCloseableHandle extends CloseableHandle {
         }
     }
 
-    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    @Override // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
     public int hashCode() {
         return super.hashCode();
     }
 
-    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    @Override // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
     public boolean equals(Object obj) {
         return super.equals(obj);
     }

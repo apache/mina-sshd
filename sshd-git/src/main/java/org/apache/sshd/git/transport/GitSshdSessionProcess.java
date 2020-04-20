@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitSshdSessionProcess extends Process {
-    public static final Set<ClientChannelEvent> CLOSE_WAIT_EVENTS =
-        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
+    public static final Set<ClientChannelEvent> CLOSE_WAIT_EVENTS
+            = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.CLOSED));
 
     protected final ChannelExec channel;
     protected final String commandName;
@@ -67,7 +67,7 @@ public class GitSshdSessionProcess extends Process {
         return channel.getInvertedErr();
     }
 
-    @Override   // TODO in Java-8 implement also waitFor(long, TimeUnit)
+    @Override // TODO in Java-8 implement also waitFor(long, TimeUnit)
     public int waitFor() throws InterruptedException {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
@@ -89,12 +89,12 @@ public class GitSshdSessionProcess extends Process {
     @Override
     public int exitValue() {
         Integer status = channel.getExitStatus();
-        if (status == null) {   // NOTE: MUST use IllegalThreadStateException as per the Javadoc
+        if (status == null) { // NOTE: MUST use IllegalThreadStateException as per the Javadoc
             throw new IllegalThreadStateException("No channel status available");
         }
         if (log.isTraceEnabled()) {
             log.trace("exitValue({}) channel={}, timeout={} millis.: {}",
-                  commandName, channel, waitTimeout, status);
+                    commandName, channel, waitTimeout, status);
         }
         return status;
     }

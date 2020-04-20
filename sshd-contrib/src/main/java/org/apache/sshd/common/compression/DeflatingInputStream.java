@@ -89,7 +89,7 @@ public class DeflatingInputStream extends InputStream {
                         return -1;
                     }
 
-                    break;  // report whatever we compressed so far
+                    break; // report whatever we compressed so far
                 }
             }
         }

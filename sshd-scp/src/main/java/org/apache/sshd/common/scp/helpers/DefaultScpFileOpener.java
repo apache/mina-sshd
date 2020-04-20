@@ -45,8 +45,8 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     public static final DefaultScpFileOpener INSTANCE = new DefaultScpFileOpener();
 
     private static final OpenOption[] DEFAULT_SYNC_OPTIONS = {
-        StandardOpenOption.SYNC, StandardOpenOption.CREATE,
-        StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
+            StandardOpenOption.SYNC, StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
     };
 
     public DefaultScpFileOpener() {
@@ -56,10 +56,10 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     @Override
     public InputStream openRead(
             Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
-                throws IOException {
+            throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("openRead({}) size={}, permissions={}, file={}, options={}",
-                  session, size, permissions, file, Arrays.toString(options));
+                    session, size, permissions, file, Arrays.toString(options));
         }
 
         return Files.newInputStream(file, options);
@@ -68,7 +68,7 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     @Override
     public OutputStream openWrite(
             Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
-                throws IOException {
+            throws IOException {
         options = resolveOpenOptions(session, file, size, permissions, options);
         if (log.isDebugEnabled()) {
             log.debug("openWrite({}) size={}, permissions={}, file={}, options={}",
@@ -79,7 +79,7 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
 
     protected OpenOption[] resolveOpenOptions(
             Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
-                throws IOException {
+            throws IOException {
         if (!session.getBooleanProperty(PROP_AUTO_SYNC_FILE_ON_WRITE, DEFAULT_AUTO_SYNC_FILE_ON_WRITE)) {
             return options;
         }
@@ -90,9 +90,9 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
         }
 
         OpenOption syncOption = Stream.of(options)
-            .filter(o -> o == StandardOpenOption.SYNC)
-            .findFirst()
-            .orElse(null);
+                .filter(o -> o == StandardOpenOption.SYNC)
+                .findFirst()
+                .orElse(null);
         if (syncOption != null) {
             return options;
         }
@@ -102,7 +102,7 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
         tmp[numOptions] = StandardOpenOption.SYNC;
         if (log.isDebugEnabled()) {
             log.debug("resolveOpenOptions({}) modify options from {} to {} for {}",
-                session, Arrays.toString(options), Arrays.toString(tmp), file);
+                    session, Arrays.toString(options), Arrays.toString(tmp), file);
         }
 
         return tmp;

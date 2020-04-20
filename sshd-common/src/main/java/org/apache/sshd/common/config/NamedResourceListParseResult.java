@@ -25,8 +25,8 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * @param <R> Type of result {@link NamedResource}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <R> Type of result {@link NamedResource}
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class NamedResourceListParseResult<R extends NamedResource> extends ListParseResult<R> {
     protected NamedResourceListParseResult(List<R> parsed, List<String> unsupported) {
@@ -34,16 +34,15 @@ public abstract class NamedResourceListParseResult<R extends NamedResource> exte
     }
 
     /**
-     * @return The {@link List} of successfully parsed {@link NamedResource} instances
-     * in the <U>same order</U> as they were encountered during parsing
+     * @return The {@link List} of successfully parsed {@link NamedResource} instances in the <U>same order</U> as they
+     *         were encountered during parsing
      */
     public final List<R> getParsedResources() {
         return getParsedValues();
     }
 
     /**
-     * @return A {@link List} of unknown/unsupported configuration values for
-     * the resources
+     * @return A {@link List} of unknown/unsupported configuration values for the resources
      */
     public List<String> getUnsupportedResources() {
         return getUnsupportedValues();
@@ -52,6 +51,6 @@ public abstract class NamedResourceListParseResult<R extends NamedResource> exte
     @Override
     public String toString() {
         return "parsed=" + NamedResource.getNames(getParsedResources())
-                + ";unknown=" + GenericUtils.join(getUnsupportedResources(), ',');
+               + ";unknown=" + GenericUtils.join(getUnsupportedResources(), ',');
     }
 }

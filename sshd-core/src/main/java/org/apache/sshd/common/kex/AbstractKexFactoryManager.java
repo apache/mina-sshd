@@ -36,8 +36,8 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKexFactoryManager
-              extends AbstractInnerCloseable
-              implements KexFactoryManager {
+        extends AbstractInnerCloseable
+        implements KexFactoryManager {
     private final KexFactoryManager delegate;
     private List<KeyExchangeFactory> keyExchangeFactories;
     private List<NamedFactory<Cipher>> cipherFactories;
@@ -62,7 +62,7 @@ public abstract class AbstractKexFactoryManager
     public List<KeyExchangeFactory> getKeyExchangeFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(keyExchangeFactories,
-            (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
+                (parent == null) ? Collections.emptyList() : parent.getKeyExchangeFactories());
     }
 
     @Override
@@ -74,7 +74,7 @@ public abstract class AbstractKexFactoryManager
     public List<NamedFactory<Cipher>> getCipherFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(cipherFactories,
-            (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
+                (parent == null) ? Collections.emptyList() : parent.getCipherFactories());
     }
 
     @Override
@@ -86,7 +86,7 @@ public abstract class AbstractKexFactoryManager
     public List<NamedFactory<Compression>> getCompressionFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(compressionFactories,
-            (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
+                (parent == null) ? Collections.emptyList() : parent.getCompressionFactories());
     }
 
     @Override
@@ -98,7 +98,7 @@ public abstract class AbstractKexFactoryManager
     public List<NamedFactory<Mac>> getMacFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(macFactories,
-            (parent == null) ? Collections.emptyList() : parent.getMacFactories());
+                (parent == null) ? Collections.emptyList() : parent.getMacFactories());
     }
 
     @Override
@@ -110,7 +110,7 @@ public abstract class AbstractKexFactoryManager
     public List<NamedFactory<Signature>> getSignatureFactories() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveFactories(signatureFactories,
-            (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
+                (parent == null) ? Collections.emptyList() : parent.getSignatureFactories());
     }
 
     @Override
@@ -122,7 +122,7 @@ public abstract class AbstractKexFactoryManager
     public KexExtensionHandler getKexExtensionHandler() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveProvider(
-            KexExtensionHandler.class, kexExtensionHandler, (parent == null) ? null : parent.getKexExtensionHandler());
+                KexExtensionHandler.class, kexExtensionHandler, (parent == null) ? null : parent.getKexExtensionHandler());
     }
 
     @Override

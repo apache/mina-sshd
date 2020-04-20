@@ -60,8 +60,8 @@ public abstract class ServerEventListenerHelper implements NamedResource {
     protected String outputMessage(Appendable out, String format, Object... args) throws IOException {
         String message = String.format(format, args);
         out.append(getName())
-            .append(": ").append(message)
-            .append(System.lineSeparator());
+                .append(": ").append(message)
+                .append(System.lineSeparator());
         if (out instanceof Flushable) {
             ((Flushable) out).flush();
         }

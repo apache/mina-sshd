@@ -30,8 +30,8 @@ import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * {@link ChannelDataReceiver} that buffers the received data into byte buffer
- * and provides an {@link InputStream} to consume them.
+ * {@link ChannelDataReceiver} that buffers the received data into byte buffer and provides an {@link InputStream} to
+ * consume them.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -60,6 +60,7 @@ public class PipeDataReceiver extends AbstractLoggingBean implements ChannelData
     @Override
     public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
         out.write(buf, start, len);
-        return 0; // ChannelPipedOutputStream calls consume method on its own, so here we return 0 to make the ends meet.
+        return 0; // ChannelPipedOutputStream calls consume method on its own, so here we return 0 to make the ends
+                  // meet.
     }
 }

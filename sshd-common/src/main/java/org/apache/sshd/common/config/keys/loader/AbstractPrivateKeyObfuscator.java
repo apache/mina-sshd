@@ -63,14 +63,14 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
     @Override
     public <A extends Appendable> A appendPrivateKeyEncryptionContext(
             A sb, PrivateKeyEncryptionContext encContext)
-                throws IOException {
+            throws IOException {
         if (encContext == null) {
             return sb;
         }
 
         sb.append("DEK-Info: ").append(encContext.getCipherName())
-          .append('-').append(encContext.getCipherType())
-          .append('-').append(encContext.getCipherMode());
+                .append('-').append(encContext.getCipherType())
+                .append('-').append(encContext.getCipherMode());
 
         byte[] initVector = encContext.getInitVector();
         Objects.requireNonNull(initVector, "No encryption init vector");
@@ -87,7 +87,7 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         }
 
         byte[] initVector = new byte[keySize];
-        Random randomizer = new SecureRandom();  // TODO consider using some pre-created singleton instance
+        Random randomizer = new SecureRandom(); // TODO consider using some pre-created singleton instance
         randomizer.nextBytes(initVector);
         return initVector;
     }
@@ -114,7 +114,7 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
             byte[] keyValue = new byte[outputKeyLength];
             MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.Constants.MD5);
             for (int index = 0, remLen = keyValue.length; index < keyValue.length;) {
-                hash.reset();    // just making sure
+                hash.reset(); // just making sure
 
                 hash.update(prevHash, 0, prevHash.length);
                 hash.update(passBytes, 0, passBytes.length);
@@ -130,14 +130,14 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
             return keyValue;
         } finally {
             password = null;
-            Arrays.fill(passBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
-            Arrays.fill(prevHash, (byte) 0);   // clean up sensitive data a.s.a.p.
+            Arrays.fill(passBytes, (byte) 0); // clean up sensitive data a.s.a.p.
+            Arrays.fill(prevHash, (byte) 0); // clean up sensitive data a.s.a.p.
         }
     }
 
     protected byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, int numBits, byte[] keyValue, boolean encryptIt)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Objects.requireNonNull(encContext, "No encryption context");
         String cipherName = ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherName(), "No cipher name");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherType(), "No cipher type");
@@ -155,9 +155,9 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
             throw new InvalidKeySpecException(
-                "applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
-                    + " required key length (" + numBits + ")"
-                    + " exceeds max. available: " + maxAllowedBits);
+                    "applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
+                                              + " required key length (" + numBits + ")"
+                                              + " exceeds max. available: " + maxAllowedBits);
         }
 
         SecretKeySpec skeySpec = new SecretKeySpec(keyValue, cipherName);

@@ -41,18 +41,18 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
         super();
     }
 
-    @Test   // NOTE: this also checks indirectly SshSocketAddress host comparison case-insensitive
+    @Test // NOTE: this also checks indirectly SshSocketAddress host comparison case-insensitive
     public void testCaseInsensitiveMatching() {
         LocalForwardingEntry expected = new LocalForwardingEntry(getClass().getSimpleName(), getCurrentTestName(), 7365);
         String hostname = expected.getHostName();
         String alias = expected.getAlias();
         int port = expected.getPort();
         List<LocalForwardingEntry> entries = IntStream.rangeClosed(1, 4)
-            .mapToObj(seed -> new LocalForwardingEntry(hostname + "-" + seed, alias + "-" + seed, port + seed))
-            .collect(Collectors.toCollection(ArrayList::new));
+                .mapToObj(seed -> new LocalForwardingEntry(hostname + "-" + seed, alias + "-" + seed, port + seed))
+                .collect(Collectors.toCollection(ArrayList::new));
         entries.add(expected);
 
-        for (String host : new String[] {hostname, alias}) {
+        for (String host : new String[] { hostname, alias }) {
             for (int index = 1; index <= 4; index++) {
                 Collections.shuffle(entries);
 

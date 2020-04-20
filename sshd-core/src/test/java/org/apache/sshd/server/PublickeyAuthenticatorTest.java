@@ -61,7 +61,8 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
     }
 
     private void testStaticPublickeyAuthenticator(StaticPublickeyAuthenticator authenticator) throws Throwable {
-        Method method = PublickeyAuthenticator.class.getMethod("authenticate", String.class, PublicKey.class, ServerSession.class);
+        Method method
+                = PublickeyAuthenticator.class.getMethod("authenticate", String.class, PublicKey.class, ServerSession.class);
         RSAPublicKey key = Mockito.mock(RSAPublicKey.class);
         Mockito.when(key.getAlgorithm()).thenReturn(getCurrentTestName());
         Mockito.when(key.getEncoded()).thenReturn(GenericUtils.EMPTY_BYTE_ARRAY);
@@ -70,9 +71,9 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
         Mockito.when(key.getPublicExponent()).thenReturn(BigInteger.ONE);
 
         ServerSession session = Mockito.mock(ServerSession.class);
-        Object[] invArgs = new Object[] {null /* username */, null /* key */, null /* server session */};
+        Object[] invArgs = new Object[] { null /* username */, null /* key */, null /* server session */ };
         boolean expected = authenticator.isAccepted();
-        boolean[] flags = new boolean[] {false, true};
+        boolean[] flags = new boolean[] { false, true };
         for (boolean useUsername : flags) {
             invArgs[0] = useUsername ? getCurrentTestName() : null;
 
@@ -86,17 +87,18 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
                     try {
                         result = method.invoke(authenticator, invArgs);
                     } catch (InvocationTargetException e) {
-                        Throwable t = e.getTargetException();   // peel of the real exception
+                        Throwable t = e.getTargetException(); // peel of the real exception
                         System.err.println("Failed (" + t.getClass().getSimpleName() + ")"
-                                          + " to invoke with user=" + useUsername
-                                          + ", key=" + useKey
-                                          + ", session=" + useSession
-                                          + ": " + t.getMessage());
+                                           + " to invoke with user=" + useUsername
+                                           + ", key=" + useKey
+                                           + ", session=" + useSession
+                                           + ": " + t.getMessage());
                         throw t;
                     }
 
                     assertTrue("No boolean result", result instanceof Boolean);
-                    assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
+                    assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected,
+                            ((Boolean) result).booleanValue());
                 }
             }
         }

@@ -102,19 +102,16 @@ public final class SecurityUtils {
     public static final String CURVE_ED25519_SHA512 = "NONEwithEdDSA";
 
     /**
-     * System property used to configure the value for the maximum supported Diffie-Hellman
-     * Group Exchange key size. If not set, then an internal auto-discovery mechanism is employed.
-     * If set to negative value then Diffie-Hellman Group Exchange is disabled. If set to a
-     * negative value then Diffie-Hellman Group Exchange is disabled
+     * System property used to configure the value for the maximum supported Diffie-Hellman Group Exchange key size. If
+     * not set, then an internal auto-discovery mechanism is employed. If set to negative value then Diffie-Hellman
+     * Group Exchange is disabled. If set to a negative value then Diffie-Hellman Group Exchange is disabled
      */
     public static final String MAX_DHGEX_KEY_SIZE_PROP = "org.apache.sshd.maxDHGexKeySize";
 
     /**
-     * The min. key size value used for testing whether Diffie-Hellman Group Exchange
-     * is supported or not. According to <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A>
-     * section 3: &quot;Servers and clients SHOULD support groups with a modulus length of k
-     * bits, where 1024 <= k <= 8192&quot;.
-     * </code>
+     * The min. key size value used for testing whether Diffie-Hellman Group Exchange is supported or not. According to
+     * <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A> section 3: &quot;Servers and clients SHOULD support
+     * groups with a modulus length of k bits, where 1024 <= k <= 8192&quot;. </code>
      */
     public static final int MIN_DHGEX_KEY_SIZE = 1024;
     // Keys of size > 1024 are not support by default with JCE
@@ -123,37 +120,34 @@ public final class SecurityUtils {
     public static final int MAX_DHGEX_KEY_SIZE = 8192;
 
     /**
-     * Comma separated list of fully qualified {@link SecurityProviderRegistrar}s
-     * to automatically register
+     * Comma separated list of fully qualified {@link SecurityProviderRegistrar}s to automatically register
      */
     public static final String SECURITY_PROVIDER_REGISTRARS = "org.apache.sshd.security.registrars";
-    public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS =
-        Collections.unmodifiableList(
+    public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS = Collections.unmodifiableList(
             Arrays.asList(
-                "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
-                "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
-
+                    "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
+                    "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
 
     /**
-     * System property used to control whether to automatically register the
-     * {@code Bouncyastle} JCE provider
+     * System property used to control whether to automatically register the {@code Bouncyastle} JCE provider
+     * 
      * @deprecated Please use &quot;org.apache.sshd.security.provider.BC.enabled&quot;
      */
     @Deprecated
     public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
 
     /**
-     * System property used to control whether Elliptic Curves are supported or not.
-     * If not set then the support is auto-detected. <B>Note:</B> if set to {@code true}
-     * it is up to the user to make sure that indeed there is a provider for them
+     * System property used to control whether Elliptic Curves are supported or not. If not set then the support is
+     * auto-detected. <B>Note:</B> if set to {@code true} it is up to the user to make sure that indeed there is a
+     * provider for them
      */
     public static final String ECC_SUPPORTED_PROP = "org.apache.sshd.eccSupport";
 
     /**
-     * System property used to decide whether EDDSA curves are supported or not
-     * (in addition or even in spite of {@link #isEDDSACurveSupported()}). If not
-     * set or set to {@code true}, then the existence of the optional support classes
-     * determines the support.
+     * System property used to decide whether EDDSA curves are supported or not (in addition or even in spite of
+     * {@link #isEDDSACurveSupported()}). If not set or set to {@code true}, then the existence of the optional support
+     * classes determines the support.
+     * 
      * @deprecated Please use &quot;org.apache.sshd.security.provider.EdDSA.enabled&qupt;
      */
     @Deprecated
@@ -164,8 +158,8 @@ public final class SecurityUtils {
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     /*
-     * NOTE: we use a LinkedHashMap in order to preserve registration order
-     * in case several providers support the same security entity
+     * NOTE: we use a LinkedHashMap in order to preserve registration order in case several providers support the same
+     * security entity
      */
     private static final Map<String, SecurityProviderRegistrar> REGISTERED_PROVIDERS = new LinkedHashMap<>();
     private static final AtomicReference<KeyPairResourceParser> KEYPAIRS_PARSER_HODLER = new AtomicReference<>();
@@ -183,9 +177,9 @@ public final class SecurityUtils {
     }
 
     /**
-     * @param name The provider's name - never {@code null}/empty
-     * @return {@code true} if the provider is marked as disabled a-priori
-     * @see #setAPrioriDisabledProvider(String, boolean)
+     * @param  name The provider's name - never {@code null}/empty
+     * @return      {@code true} if the provider is marked as disabled a-priori
+     * @see         #setAPrioriDisabledProvider(String, boolean)
      */
     public static boolean isAPrioriDisabledProvider(String name) {
         ValidateUtils.checkNotNullAndNotEmpty(name, "No provider name specified");
@@ -195,15 +189,14 @@ public final class SecurityUtils {
     }
 
     /**
-     * Marks a provider's registrar as &quot;a-priori&quot; <U>programatically</U>
-     * so that when its {@link SecurityProviderRegistrar#isEnabled()} is eventually
-     * consulted it will return {@code false} regardless of the configured value for
-     * the specific provider registrar instance. <B>Note:</B> has no effect if the
-     * provider has already been registered.
+     * Marks a provider's registrar as &quot;a-priori&quot; <U>programatically</U> so that when its
+     * {@link SecurityProviderRegistrar#isEnabled()} is eventually consulted it will return {@code false} regardless of
+     * the configured value for the specific provider registrar instance. <B>Note:</B> has no effect if the provider has
+     * already been registered.
      *
-     * @param name The provider's name - never {@code null}/empty
+     * @param name     The provider's name - never {@code null}/empty
      * @param disabled {@code true} whether to disable it a-priori
-     * @see #isAPrioriDisabledProvider(String)
+     * @see            #isAPrioriDisabledProvider(String)
      */
     public static void setAPrioriDisabledProvider(String name, boolean disabled) {
         ValidateUtils.checkNotNullAndNotEmpty(name, "No provider name specified");
@@ -227,7 +220,7 @@ public final class SecurityUtils {
 
     /**
      * @return {@code true} if Elliptic Curve Cryptography is supported
-     * @see #ECC_SUPPORTED_PROP
+     * @see    #ECC_SUPPORTED_PROP
      */
     public static boolean isECCSupported() {
         if (hasEcc == null) {
@@ -251,25 +244,23 @@ public final class SecurityUtils {
 
     /**
      * @return {@code true} if Diffie-Hellman Group Exchange is supported
-     * @see #getMaxDHGroupExchangeKeySize()
+     * @see    #getMaxDHGroupExchangeKeySize()
      */
     public static boolean isDHGroupExchangeSupported() {
         return getMaxDHGroupExchangeKeySize() > 0;
     }
 
     /**
-     * @param keySize The expected key size
-     * @return {@code true} if Oakely Diffie-Hellman Group Exchange is supported
-     * for the specified key size
-     * @see #getMaxDHGroupExchangeKeySize()
+     * @param  keySize The expected key size
+     * @return         {@code true} if Oakely Diffie-Hellman Group Exchange is supported for the specified key size
+     * @see            #getMaxDHGroupExchangeKeySize()
      */
     public static boolean isDHOakelyGroupSupported(int keySize) {
         return getMaxDHGroupExchangeKeySize() >= keySize;
     }
 
     /**
-     * @return The maximum supported Diffie-Hellman Group Exchange key size,
-     * or non-positive if not supported
+     * @return The maximum supported Diffie-Hellman Group Exchange key size, or non-positive if not supported
      */
     public static int getMaxDHGroupExchangeKeySize() {
         int maxSupportedKeySize;
@@ -306,8 +297,9 @@ public final class SecurityUtils {
 
     /**
      * Set programmatically the reported value for {@link #getMaxDHGroupExchangeKeySize()}
-     * @param keySize The reported key size - if zero, then it will be auto-detected, if
-     * negative then DH group exchange will be disabled
+     * 
+     * @param keySize The reported key size - if zero, then it will be auto-detected, if negative then DH group exchange
+     *                will be disabled
      */
     public static void setMaxDHGroupExchangeKeySize(int keySize) {
         synchronized (MAX_DHG_KEY_SIZE_HOLDER) {
@@ -397,11 +389,12 @@ public final class SecurityUtils {
                 for (String registrarClass : classes) {
                     SecurityProviderRegistrar r;
                     try {
-                        r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class, registrarClass);
+                        r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class,
+                                registrarClass);
                     } catch (ReflectiveOperationException t) {
                         Throwable e = GenericUtils.peelException(t);
                         logger.error("Failed ({}) to create default {} registrar instance: {}",
-                                     e.getClass().getSimpleName(), registrarClass, e.getMessage());
+                                e.getClass().getSimpleName(), registrarClass, e.getMessage());
                         if (e instanceof RuntimeException) {
                             throw (RuntimeException) e;
                         } else if (e instanceof Error) {
@@ -416,9 +409,9 @@ public final class SecurityUtils {
                     if (registeredInstance == null) {
                         if (debugEnabled) {
                             logger.debug("register({}) not registered - enabled={}, supported={}",
-                                         name, r.isEnabled(), r.isSupported());
+                                    name, r.isEnabled(), r.isSupported());
                         }
-                        continue;   // provider not registered - e.g., disabled, not supported
+                        continue; // provider not registered - e.g., disabled, not supported
                     }
 
                     if (BOUNCY_CASTLE.equalsIgnoreCase(name)) {
@@ -437,10 +430,9 @@ public final class SecurityUtils {
     }
 
     /**
-     * @param registrar The registrar instance to register
-     * @return The registered instance - may be different than required
-     * if already registered. Returns {@code null} if not already registered
-     * and not enabled or not supported registrar.
+     * @param  registrar The registrar instance to register
+     * @return           The registered instance - may be different than required if already registered. Returns
+     *                   {@code null} if not already registered and not enabled or not supported registrar.
      */
     public static SecurityProviderRegistrar registerSecurityProvider(SecurityProviderRegistrar registrar) {
         Objects.requireNonNull(registrar, "No registrar instance to register");
@@ -457,7 +449,7 @@ public final class SecurityUtils {
             } catch (Throwable t) {
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
                 logger.error("Failed {} to register {} as a JCE provider: {}",
-                             t.getClass().getSimpleName(), name, t.getMessage());
+                        t.getClass().getSimpleName(), name, t.getMessage());
                 throw new RuntimeException("Failed to register " + name + " as a JCE provider", t);
             }
         }
@@ -470,20 +462,20 @@ public final class SecurityUtils {
     /* -------------------------------------------------------------------- */
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @param resourceKey An identifier of the key being loaded - used as
-     * argument to the {@code FilePasswordProvider#getPassword} invocation
-     * @param inputStream The {@link InputStream} for the <U>private</U> key
-     * @param provider    A {@link FilePasswordProvider} - may be {@code null}
-     *                    if the loaded key is <U>guaranteed</U> not to be encrypted
-     * @return The loaded {@link KeyPair}-s - or {@code null} if none loaded
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @param  resourceKey              An identifier of the key being loaded - used as argument to the
+     *                                  {@code FilePasswordProvider#getPassword} invocation
+     * @param  inputStream              The {@link InputStream} for the <U>private</U> key
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded key is
+     *                                  <U>guaranteed</U> not to be encrypted
+     * @return                          The loaded {@link KeyPair}-s - or {@code null} if none loaded
      * @throws IOException              If failed to read/parse the input stream
      * @throws GeneralSecurityException If failed to generate the keys
      */
     public static Iterable<KeyPair> loadKeyPairIdentities(
             SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         KeyPairResourceParser parser = getKeyPairResourceParser();
         if (parser == null) {
             throw new NoSuchProviderException("No registered key-pair resource parser");
@@ -511,8 +503,8 @@ public final class SecurityUtils {
     }
 
     /**
-     * @return If {@link #isBouncyCastleRegistered()} then a {@link BouncyCastleRandomFactory}
-     * instance, otherwise a {@link JceRandomFactory} one
+     * @return If {@link #isBouncyCastleRegistered()} then a {@link BouncyCastleRandomFactory} instance, otherwise a
+     *         {@link JceRandomFactory} one
      */
     public static RandomFactory getRandomFactory() {
         if (isBouncyCastleRegistered()) {
@@ -643,8 +635,8 @@ public final class SecurityUtils {
             }
 
             parser = KeyPairResourceParser.aggregate(
-                PEMResourceParserUtils.PROXY,
-                OpenSSHKeyPairResourceParser.INSTANCE);
+                    PEMResourceParserUtils.PROXY,
+                    OpenSSHKeyPairResourceParser.INSTANCE);
             KEYPAIRS_PARSER_HODLER.set(parser);
         }
 
@@ -652,9 +644,8 @@ public final class SecurityUtils {
     }
 
     /**
-     * @param parser The system-wide {@code KeyPairResourceParser} to use.
-     * If set to {@code null}, then the default parser will be re-constructed
-     * on next call to {@link #getKeyPairResourceParser()}
+     * @param parser The system-wide {@code KeyPairResourceParser} to use. If set to {@code null}, then the default
+     *               parser will be re-constructed on next call to {@link #getKeyPairResourceParser()}
      */
     public static void setKeyPairResourceParser(KeyPairResourceParser parser) {
         synchronized (KEYPAIRS_PARSER_HODLER) {
@@ -669,8 +660,7 @@ public final class SecurityUtils {
             Class<T> entityType, String algorithm, Predicate<? super SecurityProviderRegistrar> entitySelector) {
         Map<String, SecurityEntityFactory<?>> factoriesMap;
         synchronized (SECURITY_ENTITY_FACTORIES) {
-            factoriesMap =
-                SECURITY_ENTITY_FACTORIES.computeIfAbsent(
+            factoriesMap = SECURITY_ENTITY_FACTORIES.computeIfAbsent(
                     entityType, k -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
         }
 
@@ -678,7 +668,7 @@ public final class SecurityUtils {
         SecurityEntityFactory<?> factoryEntry;
         synchronized (factoriesMap) {
             factoryEntry = factoriesMap.computeIfAbsent(
-                effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
+                    effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
         }
 
         return (SecurityEntityFactory<T>) factoryEntry;
@@ -690,9 +680,8 @@ public final class SecurityUtils {
 
         SecurityProviderRegistrar registrar;
         synchronized (REGISTERED_PROVIDERS) {
-            registrar =
-                 SecurityProviderRegistrar.findSecurityProviderRegistrarBySecurityEntity(
-                     entitySelector, REGISTERED_PROVIDERS.values());
+            registrar = SecurityProviderRegistrar.findSecurityProviderRegistrarBySecurityEntity(
+                    entitySelector, REGISTERED_PROVIDERS.values());
         }
 
         try {
@@ -710,50 +699,50 @@ public final class SecurityUtils {
     }
 
     public static KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyFactory> factory =
-            resolveSecurityEntityFactory(KeyFactory.class, algorithm, r -> r.isKeyFactorySupported(algorithm));
+        SecurityEntityFactory<KeyFactory> factory
+                = resolveSecurityEntityFactory(KeyFactory.class, algorithm, r -> r.isKeyFactorySupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Cipher getCipher(String transformation) throws GeneralSecurityException {
-        SecurityEntityFactory<Cipher> factory =
-            resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
+        SecurityEntityFactory<Cipher> factory
+                = resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
         return factory.getInstance(transformation);
     }
 
     public static MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<MessageDigest> factory =
-            resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
+        SecurityEntityFactory<MessageDigest> factory
+                = resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyPairGenerator> factory =
-            resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm, r -> r.isKeyPairGeneratorSupported(algorithm));
+        SecurityEntityFactory<KeyPairGenerator> factory = resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm,
+                r -> r.isKeyPairGeneratorSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyAgreement> factory =
-            resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
+        SecurityEntityFactory<KeyAgreement> factory
+                = resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Mac getMac(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<Mac> factory =
-            resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
+        SecurityEntityFactory<Mac> factory
+                = resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static Signature getSignature(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<Signature> factory =
-            resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
+        SecurityEntityFactory<Signature> factory
+                = resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
         return factory.getInstance(algorithm);
     }
 
     public static CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
-        SecurityEntityFactory<CertificateFactory> factory =
-            resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
+        SecurityEntityFactory<CertificateFactory> factory
+                = resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
         return factory.getInstance(type);
     }
 }

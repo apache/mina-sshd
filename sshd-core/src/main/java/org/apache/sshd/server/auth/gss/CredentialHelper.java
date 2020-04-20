@@ -75,12 +75,14 @@ public final class CredentialHelper {
                 params.put("keyTab", keytab);
             }
 
-            entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, params);
+            entry = new AppConfigurationEntry(
+                    "com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                    params);
         }
 
         @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-            return new AppConfigurationEntry[]{entry};
+            return new AppConfigurationEntry[] { entry };
         }
 
         @Override
@@ -105,7 +107,8 @@ public final class CredentialHelper {
 
         @Override
         public GSSCredential run() throws GSSException {
-            return mgr.createCredential(null, GSSCredential.INDEFINITE_LIFETIME, UserAuthGSS.KRB5_MECH, GSSCredential.ACCEPT_ONLY);
+            return mgr.createCredential(null, GSSCredential.INDEFINITE_LIFETIME, UserAuthGSS.KRB5_MECH,
+                    GSSCredential.ACCEPT_ONLY);
         }
     }
 }

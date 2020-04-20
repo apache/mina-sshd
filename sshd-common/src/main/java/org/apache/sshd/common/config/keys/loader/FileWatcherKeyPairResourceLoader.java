@@ -40,8 +40,8 @@ import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.common.util.io.resource.PathResource;
 
 /**
- * Tracks a file containing {@link KeyPair}-s an re-loads it whenever a change
- * has been sensed in the monitored file (if it exists)
+ * Tracks a file containing {@link KeyPair}-s an re-loads it whenever a change has been sensed in the monitored file (if
+ * it exists)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -54,7 +54,7 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
     }
 
     public FileWatcherKeyPairResourceLoader(
-            Path file, KeyPairResourceLoader delegateLoader, LinkOption... options) {
+                                            Path file, KeyPairResourceLoader delegateLoader, LinkOption... options) {
         super(file, options);
         this.delegateLoader = Objects.requireNonNull(delegateLoader, "No delegate loader provided");
     }
@@ -71,11 +71,11 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
     public Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey,
             FilePasswordProvider passwordProvider, List<String> lines)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
 
         Collection<KeyPair> ids = keysHolder.get();
         if (GenericUtils.isEmpty(ids) || checkReloadRequired()) {
-            keysHolder.set(Collections.emptyList());    // mark stale
+            keysHolder.set(Collections.emptyList()); // mark stale
 
             if (!exists()) {
                 return keysHolder.get();
@@ -86,7 +86,7 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
             int numKeys = GenericUtils.size(ids);
             if (log.isDebugEnabled()) {
                 log.debug("loadKeyPairs({})[{}] reloaded {} keys from {}",
-                    session, resourceKey, numKeys, path);
+                        session, resourceKey, numKeys, path);
             }
 
             if (numKeys > 0) {
@@ -101,9 +101,9 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
     protected Collection<KeyPair> reloadKeyPairs(
             SessionContext session, NamedResource resourceKey,
             FilePasswordProvider passwordProvider, List<String> lines)
-                throws IOException, GeneralSecurityException {
-        KeyPairResourceLoader loader =
-            ValidateUtils.checkNotNull(getKeyPairResourceLoader(), "No resource loader for %s", resourceKey.getName());
+            throws IOException, GeneralSecurityException {
+        KeyPairResourceLoader loader
+                = ValidateUtils.checkNotNull(getKeyPairResourceLoader(), "No resource loader for %s", resourceKey.getName());
         return loader.loadKeyPairs(session, resourceKey, passwordProvider, lines);
     }
 }

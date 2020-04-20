@@ -52,7 +52,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
@@ -69,15 +69,15 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (Integer ks : RSA_SIZES) {
-            params.add(new Object[]{KeyUtils.RSA_ALGORITHM, ks});
+            params.add(new Object[] { KeyUtils.RSA_ALGORITHM, ks });
         }
         for (Integer ks : DSS_SIZES) {
-            params.add(new Object[]{KeyUtils.DSS_ALGORITHM, ks});
+            params.add(new Object[] { KeyUtils.DSS_ALGORITHM, ks });
         }
         return params;
     }
 
-    @Test   // see SSHD-760
+    @Test // see SSHD-760
     public void testPkcs8() throws IOException, GeneralSecurityException {
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
         if (keySize > 0) {

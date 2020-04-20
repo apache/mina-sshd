@@ -46,11 +46,11 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
- * Uses the <A HREF="http://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-ldap.html">
- * LDAP Naming Service Provider for the Java Naming and Directory Interface (JNDI)</A>
+ * Uses the <A HREF="http://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-ldap.html"> LDAP Naming Service
+ * Provider for the Java Naming and Directory Interface (JNDI)</A>
  *
- * @param <C> Type of context being passed to {@link #resolveAttributes(String, String, Object)}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <C> Type of context being passed to {@link #resolveAttributes(String, String, Object)}
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LdapNetworkConnector<C> extends NetworkConnector {
     public static final String DEFAULT_LDAP_PROTOCOL = "ldap";
@@ -79,12 +79,13 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     public static final String DEFAULT_LDAP_BIND_PASSWORD_PATTERN = "{1}";
     /**
      * A list of known binary attributes
+     * 
      * @see <A HREF="http://docs.oracle.com/javase/jndi/tutorial/ldap/misc/attrs.html">LDAP Attributes</A>
      */
-    public static final String DEFAULT_BINARY_ATTRIBUTES =
-             "photo,personalSignature,audio,jpegPhoto,javaSerializedData,thumbnailPhoto,thumbnailLogo"
-           + ",userPassword,userCertificate,cACertificate,authorityRevocationList,certificateRevocationList"
-           + ",crossCertificatePair,x500UniqueIdentifier";
+    public static final String DEFAULT_BINARY_ATTRIBUTES
+            = "photo,personalSignature,audio,jpegPhoto,javaSerializedData,thumbnailPhoto,thumbnailLogo"
+              + ",userPassword,userCertificate,cACertificate,authorityRevocationList,certificateRevocationList"
+              + ",crossCertificatePair,x500UniqueIdentifier";
 
     protected final SearchControls searchControls = new SearchControls();
     protected final Map<String, Object> ldapEnv = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -111,7 +112,8 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     @Override
     public void setConnectTimeout(long connectTimeout) {
         // value must fit in an integer
-        ValidateUtils.checkTrue((connectTimeout >= Integer.MIN_VALUE) && (connectTimeout <= Integer.MAX_VALUE), "Invalid connect timeout: %d", connectTimeout);
+        ValidateUtils.checkTrue((connectTimeout >= Integer.MIN_VALUE) && (connectTimeout <= Integer.MAX_VALUE),
+                "Invalid connect timeout: %d", connectTimeout);
         ldapEnv.put("com.sun.jndi.ldap.connect.timeout", Long.toString(connectTimeout));
         super.setConnectTimeout(connectTimeout);
     }
@@ -119,7 +121,8 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     @Override
     public void setReadTimeout(long readTimeout) {
         // value must fit in an integer
-        ValidateUtils.checkTrue((readTimeout >= Integer.MIN_VALUE) && (readTimeout <= Integer.MAX_VALUE), "Invalid read timeout: %d", readTimeout);
+        ValidateUtils.checkTrue((readTimeout >= Integer.MIN_VALUE) && (readTimeout <= Integer.MAX_VALUE),
+                "Invalid read timeout: %d", readTimeout);
         super.setReadTimeout(readTimeout);
         ldapEnv.put("com.sun.jndi.ldap.read.timeout", Long.toString(readTimeout));
     }
@@ -141,7 +144,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @param p The base DN pattern - the arguments to the pattern depend on the actual usage
-     * @see MessageFormat#format(String, Object...)
+     * @see     MessageFormat#format(String, Object...)
      */
     public void setBaseDN(String p) {
         baseDNPattern = new MessageFormat(ValidateUtils.checkNotNullAndNotEmpty(p, "No base DN pattern"));
@@ -173,9 +176,9 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @return The search scope
-     * @see SearchControls#OBJECT_SCOPE
-     * @see SearchControls#ONELEVEL_SCOPE
-     * @see SearchControls#SUBTREE_SCOPE
+     * @see    SearchControls#OBJECT_SCOPE
+     * @see    SearchControls#ONELEVEL_SCOPE
+     * @see    SearchControls#SUBTREE_SCOPE
      */
     public int getSearchScope() {
         return searchControls.getSearchScope();
@@ -183,9 +186,9 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @param scope The search scope
-     * @see SearchControls#OBJECT_SCOPE
-     * @see SearchControls#ONELEVEL_SCOPE
-     * @see SearchControls#SUBTREE_SCOPE
+     * @see         SearchControls#OBJECT_SCOPE
+     * @see         SearchControls#ONELEVEL_SCOPE
+     * @see         SearchControls#SUBTREE_SCOPE
      */
     public void setSearchScope(int scope) {
         searchControls.setSearchScope(scope);
@@ -217,7 +220,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @return {@code true} whether links should be de-referenced
-     * @see SearchControls#getDerefLinkFlag()
+     * @see    SearchControls#getDerefLinkFlag()
      */
     public boolean isDerefLink() {
         return searchControls.getDerefLinkFlag();
@@ -244,9 +247,9 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     /**
-     * @param attrs Comma separated list of attributes to retrieve - if
-     * {@code null}/empty then no attributes are retrieved
-     * @see SearchControls#setReturningAttributes(String[])
+     * @param attrs Comma separated list of attributes to retrieve - if {@code null}/empty then no attributes are
+     *              retrieved
+     * @see         SearchControls#setReturningAttributes(String[])
      */
     public void setRetrievedAttributes(String attrs) {
         if (GenericUtils.isEmpty(attrs)) {
@@ -268,7 +271,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @return {@code true} if objects are returned as result of the query
-     * @see SearchControls#getReturningObjFlag()
+     * @see    SearchControls#getReturningObjFlag()
      */
     public boolean isReturningObjFlag() {
         return searchControls.getReturningObjFlag();
@@ -280,7 +283,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @return Authentication mode to use: &qout;none&quot;, &quot;simple&quot;, etc.
-     * @see Context#SECURITY_AUTHENTICATION
+     * @see    Context#SECURITY_AUTHENTICATION
      */
     public String getAuthenticationMode() {
         return Objects.toString(ldapEnv.get(Context.SECURITY_AUTHENTICATION), null);
@@ -292,7 +295,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     /**
      * @return How referrals encountered by the service provider are to be processed
-     * @see Context#REFERRAL
+     * @see    Context#REFERRAL
      */
     public String getReferralMode() {
         return Objects.toString(ldapEnv.get(Context.REFERRAL), null);
@@ -316,17 +319,17 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     /**
-     * @return Comma separated list of attributes known to be binary
-     * so that they are returned as {@code byte[]} value rather than strings
+     * @return Comma separated list of attributes known to be binary so that they are returned as {@code byte[]} value
+     *         rather than strings
      */
     public String getBinaryAttributes() {
         return Objects.toString(ldapEnv.get("java.naming.ldap.attributes.binary"), "").replace(' ', ',');
     }
 
     /**
-     * @param value Comma separated list of attributes known to be binary
-     * so that they are returned as {@code byte[]} value rather than strings
-     * @see <A HREF="http://docs.oracle.com/javase/jndi/tutorial/ldap/misc/attrs.html">LDAP Attributes</A>
+     * @param value Comma separated list of attributes known to be binary so that they are returned as {@code byte[]}
+     *              value rather than strings
+     * @see         <A HREF="http://docs.oracle.com/javase/jndi/tutorial/ldap/misc/attrs.html">LDAP Attributes</A>
      */
     public void setBinaryAttributes(String value) {
         value = ValidateUtils.checkNotNullAndNotEmpty(value, "No attributes").replace(',', ' ');
@@ -334,17 +337,17 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     /**
-     * @param username Username to be used either to access the LDAP or retrieve the user's attributes -
-     *                 may be {@code null}/empty if not required for the specific query
-     * @param password Password Password to be used if necessary - may be {@code null}/empty if not
-     *                 required for the specific query
-     * @param queryContext User specific query context - relevant for derived classes that want
-     *                 to override some of query processing methods
-     * @return A {@link Map} of the retrieved attributes - <B>Note:</B> if {@link #isAccumulateMultiValues()}
-     * is {@code true} and multiple values are encountered for an attribute then a {@link List} of them is
-     * mapped as its value
+     * @param  username        Username to be used either to access the LDAP or retrieve the user's attributes - may be
+     *                         {@code null}/empty if not required for the specific query
+     * @param  password        Password Password to be used if necessary - may be {@code null}/empty if not required for
+     *                         the specific query
+     * @param  queryContext    User specific query context - relevant for derived classes that want to override some of
+     *                         query processing methods
+     * @return                 A {@link Map} of the retrieved attributes - <B>Note:</B> if
+     *                         {@link #isAccumulateMultiValues()} is {@code true} and multiple values are encountered
+     *                         for an attribute then a {@link List} of them is mapped as its value
      * @throws NamingException If failed to executed the LDAP query
-     * @see #queryAttributes(Object, DirContext, Map, String, String)
+     * @see                    #queryAttributes(Object, DirContext, Map, String, String)
      */
     public Map<String, Object> resolveAttributes(String username, String password, C queryContext) throws NamingException {
         // create a copy of the original environment so we can change it
@@ -357,23 +360,25 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     /**
-     * @param queryContext The user-specific query context
-     * @param context The initialized {@link DirContext}
-     * @param ldapConfig The LDAP environment setup
-     * @param username The username
-     * @param password The password
-     * @return A {@link Map} of the retrieved attributes - <B>Note:</B> if {@link #isAccumulateMultiValues()}
-     * is {@code true} and multiple values are encountered for an attribute then a {@link List} of them is
-     * mapped as its value
+     * @param  queryContext    The user-specific query context
+     * @param  context         The initialized {@link DirContext}
+     * @param  ldapConfig      The LDAP environment setup
+     * @param  username        The username
+     * @param  password        The password
+     * @return                 A {@link Map} of the retrieved attributes - <B>Note:</B> if
+     *                         {@link #isAccumulateMultiValues()} is {@code true} and multiple values are encountered
+     *                         for an attribute then a {@link List} of them is mapped as its value
      * @throws NamingException If failed to executed the LDAP query
      */
-    protected Map<String, Object> queryAttributes(C queryContext, DirContext context, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
+    protected Map<String, Object> queryAttributes(
+            C queryContext, DirContext context, Map<?, ?> ldapConfig, String username, String password)
+            throws NamingException {
         String baseDN = resolveBaseDN(queryContext, ldapConfig, username, password);
         String filter = resolveSearchFilter(queryContext, ldapConfig, username, password);
-        NamingEnumeration<? extends SearchResult> result =
-                context.search(ValidateUtils.checkNotNullAndNotEmpty(baseDN, "No base DN"),
-                               ValidateUtils.checkNotNullAndNotEmpty(filter, "No filter"),
-                               searchControls);
+        NamingEnumeration<? extends SearchResult> result
+                = context.search(ValidateUtils.checkNotNullAndNotEmpty(baseDN, "No base DN"),
+                        ValidateUtils.checkNotNullAndNotEmpty(filter, "No filter"),
+                        searchControls);
         try {
             Map<String, Object> attrsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             String referralMode = Objects.toString(ldapConfig.get(Context.REFERRAL), null);
@@ -396,7 +401,8 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         }
     }
 
-    protected DirContext initializeDirContext(C queryContext, Map<String, Object> env, String username, String password) throws NamingException {
+    protected DirContext initializeDirContext(C queryContext, Map<String, Object> env, String username, String password)
+            throws NamingException {
         Map<String, ?> ldapConfig = setupDirContextEnvironment(queryContext, env, username, password);
         return new InitialDirContext(new Hashtable<>(ldapConfig));
     }
@@ -405,37 +411,38 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
      * Called in order to set up the environment configuration passed to the
      * {@link InitialDirContext#InitialDirContext(Hashtable)} constructor
      *
-     * @param queryContext The caller-specific query context
-     * @param env The current environment setup
-     * @param username The username - may be {@code null}/empty
-     * @param password The password  - may be {@code null}/empty
-     * @return An updated environment configuration - can be a <U>new</U> instance
-     * or just the original one with some changes in it
+     * @param  queryContext    The caller-specific query context
+     * @param  env             The current environment setup
+     * @param  username        The username - may be {@code null}/empty
+     * @param  password        The password - may be {@code null}/empty
+     * @return                 An updated environment configuration - can be a <U>new</U> instance or just the original
+     *                         one with some changes in it
      * @throws NamingException If failed to set up the environment
      */
     protected Map<String, Object> setupDirContextEnvironment(
             C queryContext, Map<String, Object> env, String username, String password)
-                throws NamingException {
+            throws NamingException {
         if (!env.containsKey(Context.PROVIDER_URL)) {
             int port = getPort();
             ValidateUtils.checkTrue(port > 0, "No port configured");
             String url = ValidateUtils.checkNotNullAndNotEmpty(getProtocol(), "No protocol")
-                       + "://" + ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host")
-                       + ":" + port;
+                         + "://" + ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host")
+                         + ":" + port;
             env.put(Context.PROVIDER_URL, url);
         }
 
         String mode = Objects.toString(env.get(Context.SECURITY_AUTHENTICATION), null);
         boolean anonymous = GenericUtils.isEmpty(mode) || PropertyResolverUtils.isNoneValue(mode);
         if (!anonymous) {
-            Object[] bindParams = {username, password};
+            Object[] bindParams = { username, password };
             if (!env.containsKey(Context.SECURITY_PRINCIPAL)) {
                 String bindDN = Objects.requireNonNull(bindDNPattern, "No bind DN pattern").format(bindParams);
                 env.put(Context.SECURITY_PRINCIPAL, ValidateUtils.checkNotNullAndNotEmpty(bindDN, "No bind DN"));
             }
 
             if (!env.containsKey(Context.SECURITY_CREDENTIALS)) {
-                String bindPassword = Objects.requireNonNull(bindPasswordPattern, "No bind password pattern").format(bindParams);
+                String bindPassword
+                        = Objects.requireNonNull(bindPasswordPattern, "No bind password pattern").format(bindParams);
                 env.put(Context.SECURITY_CREDENTIALS, ValidateUtils.checkNotNullAndNotEmpty(bindPassword, "No bind password"));
             }
         }
@@ -443,24 +450,27 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         return env;
     }
 
-    protected String resolveBaseDN(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
-        Object[] bindParams = {username, password};
+    protected String resolveBaseDN(C queryContext, Map<?, ?> ldapConfig, String username, String password)
+            throws NamingException {
+        Object[] bindParams = { username, password };
         return Objects.requireNonNull(baseDNPattern, "No base DN pattern").format(bindParams);
     }
 
-    protected String resolveSearchFilter(C queryContext, Map<?, ?> ldapConfig, String username, String password) throws NamingException {
-        Object[] bindParams = {username, password};
+    protected String resolveSearchFilter(C queryContext, Map<?, ?> ldapConfig, String username, String password)
+            throws NamingException {
+        Object[] bindParams = { username, password };
         return Objects.requireNonNull(searchFilterPattern, "No search filter pattern").format(bindParams);
     }
 
-    protected void processSearchResult(C queryContext, Map<?, ?> ldapConfig, Map<String, Object> attrsMap,
+    protected void processSearchResult(
+            C queryContext, Map<?, ?> ldapConfig, Map<String, Object> attrsMap,
             int resultIndex, SearchResult result)
-                    throws NamingException {
+            throws NamingException {
         String dn = result.getName();
         accumulateAttributeValue(queryContext, attrsMap, Context.AUTHORITATIVE, dn);
 
         Attributes attrs = result.getAttributes();
-        NamingEnumeration<? extends Attribute>  attrVals = attrs.getAll();
+        NamingEnumeration<? extends Attribute> attrVals = attrs.getAll();
         try {
             while (attrVals.hasMore()) {
                 processResultAttributeValue(queryContext, ldapConfig, dn, resultIndex, attrsMap, attrVals.next());
@@ -471,20 +481,21 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     }
 
     // returns the most up-to-date value mapped for the attribute
-    protected Object processResultAttributeValue(C queryContext, Map<?, ?> ldapConfig,
+    protected Object processResultAttributeValue(
+            C queryContext, Map<?, ?> ldapConfig,
             String dn, int resultIndex, Map<String, Object> attrsMap, Attribute a)
-                    throws NamingException {
+            throws NamingException {
         String attrID = a.getID();
         int numValues = a.size();
         for (int index = 0; index < numValues; index++) {
             Object attrVal = a.get(index);
 
             if (attrVal != null) {
-                Object  prev = accumulateAttributeValue(queryContext, attrsMap, attrID, attrVal);
+                Object prev = accumulateAttributeValue(queryContext, attrsMap, attrID, attrVal);
                 if (log.isTraceEnabled()) {
                     if (prev != null) {
                         log.trace("processResultAttributeValue({})[{}] multiple values: {} / {}",
-                                  dn, attrID, toString(prev), toString(attrVal));
+                                dn, attrID, toString(prev), toString(attrVal));
                     } else {
                         log.trace("processResultAttributeValue({}) {} = {}", dn, attrID, toString(attrVal));
                     }
@@ -498,7 +509,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
             if ((numValues > 1) && (!isAccumulateMultiValues())) {
                 if (log.isTraceEnabled()) {
                     log.trace("processResultAttributeValue({})[{}] skip remaining {} values",
-                              dn, attrID, numValues - 1);
+                            dn, attrID, numValues - 1);
                 }
 
                 break;
@@ -512,7 +523,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     protected Object accumulateAttributeValue(C queryContext, Map<String, Object> attrsMap, String attrID, Object attrVal) {
         Object prev = attrsMap.put(attrID, attrVal);
         if (prev == null) {
-            return null;    // debug breakpoint
+            return null; // debug breakpoint
         }
 
         List<Object> values = null;

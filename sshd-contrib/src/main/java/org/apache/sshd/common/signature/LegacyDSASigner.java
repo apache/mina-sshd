@@ -45,7 +45,7 @@ import org.apache.sshd.common.util.io.der.DERWriter;
  * A special signer for DSA that uses SHA-1 regardless of the key size
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://issues.apache.org/jira/browse/SSHD-945">SSHD-945 issue</a>
+ * @see    <a href="https://issues.apache.org/jira/browse/SSHD-945">SSHD-945 issue</a>
  */
 public class LegacyDSASigner extends java.security.Signature {
     public static final String LEGACY_SIGNATURE = "LegacySHA1withDSA";
@@ -106,20 +106,20 @@ public class LegacyDSASigner extends java.security.Signature {
 
             BigInteger r = generateR(params.getP(), q, params.getG(), k);
             byte[] rEncoding;
-            try (DERWriter w = new DERWriter(SignatureDSA.MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+            try (DERWriter w = new DERWriter(SignatureDSA.MAX_SIGNATURE_VALUE_LENGTH + 4)) { // in case length > 0x7F
                 w.writeBigInteger(r);
                 rEncoding = w.toByteArray();
             }
 
             BigInteger s = generateS(x, q, r, k);
             byte[] sEncoding;
-            try (DERWriter w = new DERWriter(SignatureDSA.MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+            try (DERWriter w = new DERWriter(SignatureDSA.MAX_SIGNATURE_VALUE_LENGTH + 4)) { // in case length > 0x7F
                 w.writeBigInteger(s);
                 sEncoding = w.toByteArray();
             }
 
             int length = rEncoding.length + sEncoding.length;
-            try (DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+            try (DERWriter w = new DERWriter(1 + length + 4)) { // in case length > 0x7F
                 w.write(0x30); // SEQUENCE
                 w.writeLength(length);
                 w.write(rEncoding);
@@ -210,7 +210,7 @@ public class LegacyDSASigner extends java.security.Signature {
                 int type = parser.read();
                 if (type != 0x30) {
                     throw new SignatureException(
-                        "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                            "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
                 }
 
                 // length of remaining encoding of the 2 integers
@@ -218,13 +218,12 @@ public class LegacyDSASigner extends java.security.Signature {
                 /*
                  * There are supposed to be 2 INTEGERs, each encoded with:
                  *
-                 *  - one byte representing the fact that it is an INTEGER
-                 *  - one byte of the integer encoding length
-                 *  - at least one byte of integer data (zero length is not an option)
+                 * - one byte representing the fact that it is an INTEGER - one byte of the integer encoding length - at
+                 * least one byte of integer data (zero length is not an option)
                  */
                 if (remainLen < (2 * 3)) {
                     throw new SignatureException(
-                        "Invalid signature format - not enough encoded data length: " + remainLen);
+                            "Invalid signature format - not enough encoded data length: " + remainLen);
                 }
 
                 r = parser.readBigInteger();
@@ -234,8 +233,8 @@ public class LegacyDSASigner extends java.security.Signature {
             }
 
             /*
-             * Some implementations do not correctly encode values in the ASN.1
-             * 2's complement format - we need positive values for validation
+             * Some implementations do not correctly encode values in the ASN.1 2's complement format - we need positive
+             * values for validation
              */
             if (r.signum() < 0) {
                 r = new BigInteger(1, r.toByteArray());
@@ -298,4 +297,3 @@ public class LegacyDSASigner extends java.security.Signature {
         md.update(b);
     }
 }
-

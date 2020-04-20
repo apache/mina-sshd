@@ -25,9 +25,9 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedResource;
 
 /**
- * @param <T> Result type
- * @param <F> Factory type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Result type
+ * @param  <F> Factory type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class FactoriesListParseResult<T, F extends NamedResource> extends ListParseResult<F> {
     protected FactoriesListParseResult(List<F> parsed, List<String> unsupported) {
@@ -35,16 +35,15 @@ public abstract class FactoriesListParseResult<T, F extends NamedResource> exten
     }
 
     /**
-     * @return The {@link List} of successfully parsed {@link Factory} instances
-     * in the <U>same order</U> as they were encountered during parsing
+     * @return The {@link List} of successfully parsed {@link Factory} instances in the <U>same order</U> as they were
+     *         encountered during parsing
      */
     public final List<F> getParsedFactories() {
         return getParsedValues();
     }
 
     /**
-     * @return A {@link List} of unknown/unsupported configuration values for
-     * the factories
+     * @return A {@link List} of unknown/unsupported configuration values for the factories
      */
     public List<String> getUnsupportedFactories() {
         return getUnsupportedValues();

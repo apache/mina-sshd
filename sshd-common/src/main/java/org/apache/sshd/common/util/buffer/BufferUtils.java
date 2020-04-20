@@ -74,8 +74,8 @@ public final class BufferUtils {
             SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver,
             char sep, byte[] data, int offset, int len) {
         dumpHex(logger, level, prefix, sep,
-            resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE),
-            data, offset, len);
+                resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE),
+                data, offset, len);
     }
 
     public static void dumpHex(
@@ -93,7 +93,7 @@ public final class BufferUtils {
         StringBuilder sb = new StringBuilder(chunkSize * 3 /* HEX */ + prefix.length() + Long.SIZE /* some extra */);
         sb.append(prefix);
         for (int remainLen = len, chunkIndex = 1, curOffset = offset, totalLen = 0; remainLen > 0; chunkIndex++) {
-            sb.setLength(prefix.length());    // reset for next chunk
+            sb.setLength(prefix.length()); // reset for next chunk
 
             sb.append(" [chunk #").append(chunkIndex).append(']');
 
@@ -103,7 +103,7 @@ public final class BufferUtils {
 
             try {
                 appendHex(sb.append(' '), data, curOffset, dumpSize, sep);
-            } catch (IOException e) {   // unexpected
+            } catch (IOException e) { // unexpected
                 sb.append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
             }
 
@@ -150,7 +150,7 @@ public final class BufferUtils {
 
         try {
             return appendHex(new StringBuilder(len * 3 /* 2 HEX + sep */), array, offset, len, sep).toString();
-        } catch (IOException e) {   // unexpected
+        } catch (IOException e) { // unexpected
             return e.getClass().getSimpleName() + ": " + e.getMessage();
         }
     }
@@ -161,7 +161,7 @@ public final class BufferUtils {
 
     public static <A extends Appendable> A appendHex(
             A sb, byte[] array, int offset, int len, char sep)
-                throws IOException {
+            throws IOException {
         if (len <= 0) {
             return sb;
         }
@@ -179,25 +179,25 @@ public final class BufferUtils {
     }
 
     /**
-     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
-     * @param csq The {@link CharSequence} containing the HEX encoded bytes
-     * @return The decoded bytes
+     * @param  separator                The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param  csq                      The {@link CharSequence} containing the HEX encoded bytes
+     * @return                          The decoded bytes
      * @throws IllegalArgumentException If invalid HEX sequence length
-     * @throws NumberFormatException If invalid HEX characters found
-     * @see #decodeHex(char, CharSequence, int, int)
+     * @throws NumberFormatException    If invalid HEX characters found
+     * @see                             #decodeHex(char, CharSequence, int, int)
      */
     public static byte[] decodeHex(char separator, CharSequence csq) {
         return decodeHex(separator, csq, 0, GenericUtils.length(csq));
     }
 
     /**
-     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
-     * @param csq The {@link CharSequence} containing the HEX encoded bytes
-     * @param start Start offset of the HEX sequence (inclusive)
-     * @param end End offset of the HEX sequence (exclusive)
-     * @return The decoded bytes
+     * @param  separator                The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param  csq                      The {@link CharSequence} containing the HEX encoded bytes
+     * @param  start                    Start offset of the HEX sequence (inclusive)
+     * @param  end                      End offset of the HEX sequence (exclusive)
+     * @return                          The decoded bytes
      * @throws IllegalArgumentException If invalid HEX sequence length
-     * @throws NumberFormatException If invalid HEX characters found
+     * @throws NumberFormatException    If invalid HEX characters found
      */
     public static byte[] decodeHex(char separator, CharSequence csq, int start, int end) {
         int len = end - start;
@@ -228,37 +228,37 @@ public final class BufferUtils {
     }
 
     /**
-     * @param <S> The {@link OutputStream} generic type
-     * @param stream The target {@link OutputStream}
-     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
-     * @param csq The {@link CharSequence} containing the HEX encoded bytes
-     * @return The number of bytes written to the stream
-     * @throws IOException If failed to write
+     * @param  <S>                      The {@link OutputStream} generic type
+     * @param  stream                   The target {@link OutputStream}
+     * @param  separator                The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param  csq                      The {@link CharSequence} containing the HEX encoded bytes
+     * @return                          The number of bytes written to the stream
+     * @throws IOException              If failed to write
      * @throws IllegalArgumentException If invalid HEX sequence length
-     * @throws NumberFormatException If invalid HEX characters found
-     * @see #decodeHex(OutputStream, char, CharSequence, int, int)
+     * @throws NumberFormatException    If invalid HEX characters found
+     * @see                             #decodeHex(OutputStream, char, CharSequence, int, int)
      */
     public static <S extends OutputStream> int decodeHex(
             S stream, char separator, CharSequence csq)
-                throws IOException {
+            throws IOException {
         return decodeHex(stream, separator, csq, 0, GenericUtils.length(csq));
     }
 
     /**
-     * @param <S> The {@link OutputStream} generic type
-     * @param stream The target {@link OutputStream}
-     * @param separator The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
-     * @param csq The {@link CharSequence} containing the HEX encoded bytes
-     * @param start Start offset of the HEX sequence (inclusive)
-     * @param end End offset of the HEX sequence (exclusive)
-     * @return The number of bytes written to the stream
-     * @throws IOException If failed to write
+     * @param  <S>                      The {@link OutputStream} generic type
+     * @param  stream                   The target {@link OutputStream}
+     * @param  separator                The separator between the HEX values - may be {@link #EMPTY_HEX_SEPARATOR}
+     * @param  csq                      The {@link CharSequence} containing the HEX encoded bytes
+     * @param  start                    Start offset of the HEX sequence (inclusive)
+     * @param  end                      End offset of the HEX sequence (exclusive)
+     * @return                          The number of bytes written to the stream
+     * @throws IOException              If failed to write
      * @throws IllegalArgumentException If invalid HEX sequence length
-     * @throws NumberFormatException If invalid HEX characters found
+     * @throws NumberFormatException    If invalid HEX characters found
      */
     public static <S extends OutputStream> int decodeHex(
             S stream, char separator, CharSequence csq, int start, int end)
-                throws IOException {
+            throws IOException {
         int len = end - start;
         ValidateUtils.checkTrue(len >= 0, "Bad HEX sequence length: %d", len);
 
@@ -283,7 +283,7 @@ public final class BufferUtils {
         int hiValue = HEX_DIGITS.indexOf(((hi >= 'A') && (hi <= 'F')) ? ('a' + (hi - 'A')) : hi);
         int loValue = HEX_DIGITS.indexOf(((lo >= 'A') && (lo <= 'F')) ? ('a' + (lo - 'A')) : lo);
         if ((hiValue < 0) || (loValue < 0)) {
-            throw new NumberFormatException("fromHex(" + new String(new char[]{hi, lo}) + ") non-HEX characters");
+            throw new NumberFormatException("fromHex(" + new String(new char[] { hi, lo }) + ") non-HEX characters");
         }
 
         return (byte) ((hiValue << 4) + loValue);
@@ -292,11 +292,11 @@ public final class BufferUtils {
     /**
      * Read a 32-bit value in network order
      *
-     * @param input The {@link InputStream}
-     * @param buf   Work buffer to use
-     * @return The read 32-bit value
+     * @param  input       The {@link InputStream}
+     * @param  buf         Work buffer to use
+     * @return             The read 32-bit value
      * @throws IOException If failed to read 4 bytes or not enough room in work buffer
-     * @see #readInt(InputStream, byte[], int, int)
+     * @see                #readInt(InputStream, byte[], int, int)
      */
     public static int readInt(InputStream input, byte[] buf) throws IOException {
         return readInt(input, buf, 0, NumberUtils.length(buf));
@@ -305,13 +305,13 @@ public final class BufferUtils {
     /**
      * Read a 32-bit value in network order
      *
-     * @param input  The {@link InputStream}
-     * @param buf    Work buffer to use
-     * @param offset Offset in buffer to us
-     * @param len    Available length - must have at least 4 bytes available
-     * @return The read 32-bit value
+     * @param  input       The {@link InputStream}
+     * @param  buf         Work buffer to use
+     * @param  offset      Offset in buffer to us
+     * @param  len         Available length - must have at least 4 bytes available
+     * @return             The read 32-bit value
      * @throws IOException If failed to read 4 bytes or not enough room in work buffer
-     * @see #readUInt(InputStream, byte[], int, int)
+     * @see                #readUInt(InputStream, byte[], int, int)
      */
     public static int readInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
         return (int) readUInt(input, buf, offset, len);
@@ -320,11 +320,11 @@ public final class BufferUtils {
     /**
      * Read a 32-bit value in network order
      *
-     * @param input The {@link InputStream}
-     * @param buf   Work buffer to use
-     * @return The read 32-bit value
+     * @param  input       The {@link InputStream}
+     * @param  buf         Work buffer to use
+     * @return             The read 32-bit value
      * @throws IOException If failed to read 4 bytes or not enough room in work buffer
-     * @see #readUInt(InputStream, byte[], int, int)
+     * @see                #readUInt(InputStream, byte[], int, int)
      */
     public static long readUInt(InputStream input, byte[] buf) throws IOException {
         return readUInt(input, buf, 0, NumberUtils.length(buf));
@@ -333,46 +333,46 @@ public final class BufferUtils {
     /**
      * Read a 32-bit value in network order
      *
-     * @param input  The {@link InputStream}
-     * @param buf    Work buffer to use
-     * @param offset Offset in buffer to us
-     * @param len    Available length - must have at least 4 bytes available
-     * @return The read 32-bit value
+     * @param  input       The {@link InputStream}
+     * @param  buf         Work buffer to use
+     * @param  offset      Offset in buffer to us
+     * @param  len         Available length - must have at least 4 bytes available
+     * @return             The read 32-bit value
      * @throws IOException If failed to read 4 bytes or not enough room in work buffer
-     * @see #getUInt(byte[], int, int)
+     * @see                #getUInt(byte[], int, int)
      */
     public static long readUInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
         try {
             if (len < Integer.BYTES) {
-                throw new IllegalArgumentException("Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
+                throw new IllegalArgumentException(
+                        "Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
             }
 
             IoUtils.readFully(input, buf, offset, Integer.BYTES);
             return getUInt(buf, offset, len);
         } catch (RuntimeException | Error e) {
-            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to read UINT value: " + e.getMessage());
+            throw new StreamCorruptedException(
+                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                               + " to read UINT value: " + e.getMessage());
         }
     }
 
     /**
-     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
-     * format. <B>Note:</B> if more than 4 bytes are available, then only the
-     * <U>first</U> 4 bytes in the buffer will be used
-     * @return The result as a {@code long} whose 32 high-order bits are zero
-     * @see #getUInt(byte[], int, int)
+     * @param  buf A buffer holding a 32-bit unsigned integer in <B>big endian</B> format. <B>Note:</B> if more than 4
+     *             bytes are available, then only the <U>first</U> 4 bytes in the buffer will be used
+     * @return     The result as a {@code long} whose 32 high-order bits are zero
+     * @see        #getUInt(byte[], int, int)
      */
     public static long getUInt(byte... buf) {
         return getUInt(buf, 0, NumberUtils.length(buf));
     }
 
     /**
-     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B> format.
-     * @param off The offset of the data in the buffer
-     * @param len The available data length. <B>Note:</B> if more than 4 bytes
-     * are available, then only the <U>first</U> 4 bytes in the buffer will be
-     * used (starting at the specified <tt>offset</tt>)
-     * @return The result as a {@code long} whose 32 high-order bits are zero
+     * @param  buf A buffer holding a 32-bit unsigned integer in <B>big endian</B> format.
+     * @param  off The offset of the data in the buffer
+     * @param  len The available data length. <B>Note:</B> if more than 4 bytes are available, then only the
+     *             <U>first</U> 4 bytes in the buffer will be used (starting at the specified <tt>offset</tt>)
+     * @return     The result as a {@code long} whose 32 high-order bits are zero
      */
     public static long getUInt(byte[] buf, int off, int len) {
         if (len < Integer.BYTES) {
@@ -389,11 +389,11 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param output The {@link OutputStream} to write the value
-     * @param value  The 32-bit value
-     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
+     * @param  output      The {@link OutputStream} to write the value
+     * @param  value       The 32-bit value
+     * @param  buf         A work buffer to use - must have enough space to contain 4 bytes
      * @throws IOException If failed to write the value or work buffer too small
-     * @see #writeInt(OutputStream, int, byte[], int, int)
+     * @see                #writeInt(OutputStream, int, byte[], int, int)
      */
     public static void writeInt(OutputStream output, int value, byte[] buf) throws IOException {
         writeUInt(output, value, buf, 0, NumberUtils.length(buf));
@@ -402,28 +402,28 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param output The {@link OutputStream} to write the value
-     * @param value  The 32-bit value
-     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
-     * @param off    The offset to write the value
-     * @param len    The available space
+     * @param  output      The {@link OutputStream} to write the value
+     * @param  value       The 32-bit value
+     * @param  buf         A work buffer to use - must have enough space to contain 4 bytes
+     * @param  off         The offset to write the value
+     * @param  len         The available space
      * @throws IOException If failed to write the value or work buffer too small
-     * @see #writeUInt(OutputStream, long, byte[], int, int)
+     * @see                #writeUInt(OutputStream, long, byte[], int, int)
      */
     public static void writeInt(
             OutputStream output, int value, byte[] buf, int off, int len)
-                throws IOException {
+            throws IOException {
         writeUInt(output, value & 0xFFFFFFFFL, buf, off, len);
     }
 
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param output The {@link OutputStream} to write the value
-     * @param value  The 32-bit value
-     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
+     * @param  output      The {@link OutputStream} to write the value
+     * @param  value       The 32-bit value
+     * @param  buf         A work buffer to use - must have enough space to contain 4 bytes
      * @throws IOException If failed to write the value or work buffer too small
-     * @see #writeUInt(OutputStream, long, byte[], int, int)
+     * @see                #writeUInt(OutputStream, long, byte[], int, int)
      */
     public static void writeUInt(OutputStream output, long value, byte[] buf) throws IOException {
         writeUInt(output, value, buf, 0, NumberUtils.length(buf));
@@ -432,34 +432,35 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param output The {@link OutputStream} to write the value
-     * @param value  The 32-bit value
-     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
-     * @param off    The offset to write the value
-     * @param len    The available space
+     * @param  output      The {@link OutputStream} to write the value
+     * @param  value       The 32-bit value
+     * @param  buf         A work buffer to use - must have enough space to contain 4 bytes
+     * @param  off         The offset to write the value
+     * @param  len         The available space
      * @throws IOException If failed to write the value or work buffer to small
-     * @see #putUInt(long, byte[], int, int)
+     * @see                #putUInt(long, byte[], int, int)
      */
     public static void writeUInt(
             OutputStream output, long value, byte[] buf, int off, int len)
-                throws IOException {
+            throws IOException {
         try {
             int writeLen = putUInt(value, buf, off, len);
             output.write(buf, off, writeLen);
         } catch (RuntimeException | Error e) {
-            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to write UINT value=" + value + ": " + e.getMessage());
+            throw new StreamCorruptedException(
+                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                               + " to write UINT value=" + value + ": " + e.getMessage());
         }
     }
 
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   The buffer
-     * @return The number of bytes used in the buffer
+     * @param  value                    The 32-bit value
+     * @param  buf                      The buffer
+     * @return                          The number of bytes used in the buffer
      * @throws IllegalArgumentException if not enough space available
-     * @see #putUInt(long, byte[], int, int)
+     * @see                             #putUInt(long, byte[], int, int)
      */
     public static int putUInt(long value, byte[] buf) {
         return putUInt(value, buf, 0, NumberUtils.length(buf));
@@ -468,11 +469,11 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   The buffer
-     * @param off   The offset to write the value
-     * @param len   The available space
-     * @return The number of bytes used in the buffer
+     * @param  value                    The 32-bit value
+     * @param  buf                      The buffer
+     * @param  off                      The offset to write the value
+     * @param  len                      The available space
+     * @return                          The number of bytes used in the buffer
      * @throws IllegalArgumentException if not enough space available
      */
     public static int putUInt(long value, byte[] buf, int off, int len) {
@@ -520,23 +521,20 @@ public final class BufferUtils {
         return (value < Byte.SIZE)
                 ? Byte.SIZE
                 : (value > (1 << 30))
-                    ? value
-                    : NumberUtils.getNextPowerOf2(value);
+                        ? value
+                : NumberUtils.getNextPowerOf2(value);
     }
 
     /**
-     * Used for encodings where we don't know the data length before adding it
-     * to the buffer. The idea is to place a 32-bit &quot;placeholder&quot;,
-     * encode the data and then return back to the placeholder and update the
-     * length. The method calculates the encoded data length, moves the write
-     * position to the specified placeholder position, updates the length value
-     * and then moves the write position it back to its original value.
+     * Used for encodings where we don't know the data length before adding it to the buffer. The idea is to place a
+     * 32-bit &quot;placeholder&quot;, encode the data and then return back to the placeholder and update the length.
+     * The method calculates the encoded data length, moves the write position to the specified placeholder position,
+     * updates the length value and then moves the write position it back to its original value.
      *
-     * @param buffer The {@link Buffer}
-     * @param lenPos The offset in the buffer where the length placeholder is
-     *               to be update - <B>Note:</B> assumption is that the encoded data starts
-     *               <U>immediately</U> after the placeholder
-     * @return The amount of data that has been encoded
+     * @param  buffer The {@link Buffer}
+     * @param  lenPos The offset in the buffer where the length placeholder is to be update - <B>Note:</B> assumption is
+     *                that the encoded data starts <U>immediately</U> after the placeholder
+     * @return        The amount of data that has been encoded
      */
     public static int updateLengthPlaceholder(Buffer buffer, int lenPos) {
         int startPos = lenPos + Integer.BYTES;
@@ -551,14 +549,12 @@ public final class BufferUtils {
     }
 
     /**
-     * Updates a 32-bit &quot;placeholder&quot; location for data length - moves
-     * the write position to the specified placeholder position, updates the length
-     * value and then moves the write position it back to its original value.
+     * Updates a 32-bit &quot;placeholder&quot; location for data length - moves the write position to the specified
+     * placeholder position, updates the length value and then moves the write position it back to its original value.
      *
      * @param buffer     The {@link Buffer}
-     * @param lenPos     The offset in the buffer where the length placeholder is
-     *                   to be update - <B>Note:</B> assumption is that the encoded data starts
-     *                   <U>immediately</U> after the placeholder
+     * @param lenPos     The offset in the buffer where the length placeholder is to be update - <B>Note:</B> assumption
+     *                   is that the encoded data starts <U>immediately</U> after the placeholder
      * @param dataLength The length to update
      */
     public static void updateLengthPlaceholder(Buffer buffer, int lenPos, int dataLength) {
@@ -571,9 +567,9 @@ public final class BufferUtils {
     /**
      * Invokes {@link Buffer#clear()}
      *
-     * @param <B>    The generic buffer type
-     * @param buffer A {@link Buffer} instance - ignored if {@code null}
-     * @return The same as the input instance
+     * @param  <B>    The generic buffer type
+     * @param  buffer A {@link Buffer} instance - ignored if {@code null}
+     * @return        The same as the input instance
      */
     public static <B extends Buffer> B clear(B buffer) {
         if (buffer != null) {

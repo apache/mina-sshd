@@ -25,7 +25,7 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.agent">OpenSSH agent protocol</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.agent">OpenSSH agent protocol</A>
  */
 public final class SshAgentConstants {
     // Generic replies from agent to client
@@ -82,13 +82,13 @@ public final class SshAgentConstants {
     }
 
     private static final class LazyMessagesMapHolder {
-        private static final Map<Integer, String> MESSAGES_MAP =
-            LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
-                String name = f.getName();
-                return !name.startsWith("SSH_AGENT_CONSTRAIN")
-                        && (name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT"));
+        private static final Map<Integer, String> MESSAGES_MAP
+                = LoggingUtils.generateMnemonicMap(SshAgentConstants.class, f -> {
+                    String name = f.getName();
+                    return !name.startsWith("SSH_AGENT_CONSTRAIN")
+                            && (name.startsWith("SSH_AGENT") || name.startsWith("SSH2_AGENT"));
 
-            });
+                });
 
         private LazyMessagesMapHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -98,9 +98,9 @@ public final class SshAgentConstants {
     /**
      * Converts a command value to a user-friendly name
      *
-     * @param cmd The command value
-     * @return The user-friendly name - if not one of the defined {@code SSH2_AGENT}
-     * values then returns the string representation of the command's value
+     * @param  cmd The command value
+     * @return     The user-friendly name - if not one of the defined {@code SSH2_AGENT} values then returns the string
+     *             representation of the command's value
      */
     public static String getCommandMessageName(int cmd) {
         @SuppressWarnings("synthetic-access")

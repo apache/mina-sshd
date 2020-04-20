@@ -39,20 +39,24 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * <P>A simple socket address holding the host name and port number. The reason
- * it does not extend {@link InetSocketAddress} is twofold:</P>
+ * <P>
+ * A simple socket address holding the host name and port number. The reason it does not extend
+ * {@link InetSocketAddress} is twofold:
+ * </P>
  * <OL>
- * <LI><P>
- * The {@link InetSocketAddress} performs a DNS resolution on the
- * provided host name - which we don't want do use until we want to
- * create a connection using this address (thus the {@link #toInetSocketAddress()}
- * call which executes this query
- * </P></LI>
+ * <LI>
+ * <P>
+ * The {@link InetSocketAddress} performs a DNS resolution on the provided host name - which we don't want do use until
+ * we want to create a connection using this address (thus the {@link #toInetSocketAddress()} call which executes this
+ * query
+ * </P>
+ * </LI>
  *
- * <LI><P>
- * If empty host name is provided we replace it with the <I>any</I>
- * address of 0.0.0.0
- * </P></LI>
+ * <LI>
+ * <P>
+ * If empty host name is provided we replace it with the <I>any</I> address of 0.0.0.0
+ * </P>
+ * </LI>
  * </OL>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -62,10 +66,9 @@ public class SshdSocketAddress extends SocketAddress {
     public static final String LOCALHOST_IPV4 = "127.0.0.1";
     public static final String IPV4_ANYADDR = "0.0.0.0";
 
-    public static final Set<String> WELL_KNOWN_IPV4_ADDRESSES =
-        Collections.unmodifiableSet(
+    public static final Set<String> WELL_KNOWN_IPV4_ADDRESSES = Collections.unmodifiableSet(
             new LinkedHashSet<>(
-                Arrays.asList(LOCALHOST_IPV4, IPV4_ANYADDR)));
+                    Arrays.asList(LOCALHOST_IPV4, IPV4_ANYADDR)));
 
     // 10.0.0.0 - 10.255.255.255
     public static final String PRIVATE_CLASS_A_PREFIX = "10.";
@@ -90,12 +93,11 @@ public class SshdSocketAddress extends SocketAddress {
     public static final String IPV6_LONG_LOCALHOST = "0:0:0:0:0:0:0:1";
     public static final String IPV6_SHORT_LOCALHOST = "::1";
 
-    public static final Set<String> WELL_KNOWN_IPV6_ADDRESSES =
-        Collections.unmodifiableSet(
+    public static final Set<String> WELL_KNOWN_IPV6_ADDRESSES = Collections.unmodifiableSet(
             new LinkedHashSet<>(
-                Arrays.asList(
-                    IPV6_LONG_LOCALHOST, IPV6_SHORT_LOCALHOST,
-                    IPV6_LONG_ANY_ADDRESS, IPV6_SHORT_ANY_ADDRESS)));
+                    Arrays.asList(
+                            IPV6_LONG_LOCALHOST, IPV6_SHORT_LOCALHOST,
+                            IPV6_LONG_ANY_ADDRESS, IPV6_SHORT_ANY_ADDRESS)));
 
     /**
      * A dummy placeholder that can be used instead of {@code null}s
@@ -103,8 +105,8 @@ public class SshdSocketAddress extends SocketAddress {
     public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress(LOCALHOST_IPV4, 0);
 
     /**
-     * Compares {@link InetAddress}-es according to their {@link InetAddress#getHostAddress()}
-     * value case <U>insensitive</U>
+     * Compares {@link InetAddress}-es according to their {@link InetAddress#getHostAddress()} value case
+     * <U>insensitive</U>
      *
      * @see #toAddressString(InetAddress)
      */
@@ -115,8 +117,8 @@ public class SshdSocketAddress extends SocketAddress {
     };
 
     /**
-     * Compares {@link SocketAddress}-es according to their host case <U>insensitive</U>
-     * and if equals, then according to their port value (if any)
+     * Compares {@link SocketAddress}-es according to their host case <U>insensitive</U> and if equals, then according
+     * to their port value (if any)
      *
      * @see #toAddressString(SocketAddress)
      * @see #toAddressPort(SocketAddress)
@@ -189,7 +191,7 @@ public class SshdSocketAddress extends SocketAddress {
             return true;
         } else {
             return (this.getPort() == that.getPort())
-                && (GenericUtils.safeCompare(this.getHostName(), that.getHostName(), false) == 0);
+                    && (GenericUtils.safeCompare(this.getHostName(), that.getHostName(), false) == 0);
         }
     }
 
@@ -210,10 +212,10 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * Returns the first external network address assigned to this
-     * machine or null if one is not found.
-     * @return Inet4Address associated with an external interface
-     * DevNote:  We actually return InetAddress here, as Inet4Addresses are final and cannot be mocked.
+     * Returns the first external network address assigned to this machine or null if one is not found.
+     * 
+     * @return Inet4Address associated with an external interface DevNote: We actually return InetAddress here, as
+     *         Inet4Addresses are final and cannot be mocked.
      */
     public static InetAddress getFirstExternalNetwork4Address() {
         List<? extends InetAddress> addresses = getExternalNetwork4Addresses();
@@ -221,21 +223,22 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * @return a {@link List} of local network addresses which are not multicast
-     * or localhost sorted according to {@link #BY_HOST_ADDRESS}
+     * @return a {@link List} of local network addresses which are not multicast or localhost sorted according to
+     *         {@link #BY_HOST_ADDRESS}
      */
     public static List<InetAddress> getExternalNetwork4Addresses() {
         List<InetAddress> addresses = new ArrayList<>();
         try {
-            for (Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces(); (nets != null) && nets.hasMoreElements();) {
+            for (Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+                 (nets != null) && nets.hasMoreElements();) {
                 NetworkInterface netint = nets.nextElement();
-                /* TODO - uncomment when 1.5 compatibility no longer required
-                if (!netint.isUp()) {
-                    continue;    // ignore non-running interfaces
-                }
-                */
+                /*
+                 * TODO - uncomment when 1.5 compatibility no longer required if (!netint.isUp()) { continue; // ignore
+                 * non-running interfaces }
+                 */
 
-                for (Enumeration<InetAddress> inetAddresses = netint.getInetAddresses(); (inetAddresses != null) && inetAddresses.hasMoreElements();) {
+                for (Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+                     (inetAddresses != null) && inetAddresses.hasMoreElements();) {
                     InetAddress inetAddress = inetAddresses.nextElement();
                     if (isValidHostAddress(inetAddress)) {
                         addresses.add(inetAddress);
@@ -254,18 +257,22 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * @param addr The {@link InetAddress} to be verified
-     * @return <P><code>true</code> if the address is:</P></BR>
-     * <UL>
-     *         <LI>Not {@code null}</LI>
-     *         <LI>An {@link Inet4Address}</LI>
-     *         <LI>Not link local</LI>
-     *         <LI>Not a multicast</LI>
-     *         <LI>Not a loopback</LI>
-     * </UL>
-     * @see InetAddress#isLinkLocalAddress()
-     * @see InetAddress#isMulticastAddress()
-     * @see InetAddress#isMulticastAddress()
+     * @param  addr The {@link InetAddress} to be verified
+     * @return
+     *              <P>
+     *              <code>true</code> if the address is:
+     *              </P>
+     *              </BR>
+     *              <UL>
+     *              <LI>Not {@code null}</LI>
+     *              <LI>An {@link Inet4Address}</LI>
+     *              <LI>Not link local</LI>
+     *              <LI>Not a multicast</LI>
+     *              <LI>Not a loopback</LI>
+     *              </UL>
+     * @see         InetAddress#isLinkLocalAddress()
+     * @see         InetAddress#isMulticastAddress()
+     * @see         InetAddress#isMulticastAddress()
      */
     public static boolean isValidHostAddress(InetAddress addr) {
         if (addr == null) {
@@ -281,7 +288,7 @@ public class SshdSocketAddress extends SocketAddress {
         }
 
         if (!(addr instanceof Inet4Address)) {
-            return false;   // TODO add support for IPv6 - see SSHD-746
+            return false; // TODO add support for IPv6 - see SSHD-746
         }
 
         return !isLoopback(addr);
@@ -289,12 +296,12 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * @param addr The {@link InetAddress} to be considered
-     * @return <code>true</code> if the address is a loopback one.
-     * <B>Note:</B> if {@link InetAddress#isLoopbackAddress()}
-     * returns <code>false</code> the address <U>string</U> is checked
-     * @see #toAddressString(InetAddress)
-     * @see #isLoopback(String)
+     * @param  addr The {@link InetAddress} to be considered
+     * @return      <code>true</code> if the address is a loopback one. <B>Note:</B> if
+     *              {@link InetAddress#isLoopbackAddress()} returns <code>false</code> the address <U>string</U> is
+     *              checked
+     * @see         #toAddressString(InetAddress)
+     * @see         #isLoopback(String)
      */
     public static boolean isLoopback(InetAddress addr) {
         if (addr == null) {
@@ -310,9 +317,8 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * @param ip IP value to be tested
-     * @return <code>true</code> if the IP is &quot;localhost&quot; or
-     * &quot;127.x.x.x&quot;.
+     * @param  ip IP value to be tested
+     * @return    <code>true</code> if the IP is &quot;localhost&quot; or &quot;127.x.x.x&quot;.
      */
     public static boolean isLoopback(String ip) {
         if (GenericUtils.isEmpty(ip)) {
@@ -355,8 +361,9 @@ public class SshdSocketAddress extends SocketAddress {
             InetSocketAddress isockAddress = (InetSocketAddress) addr;
             return new SshdSocketAddress(isockAddress.getHostName(), isockAddress.getPort());
         } else {
-            throw new UnsupportedOperationException("Cannot convert " + addr.getClass().getSimpleName()
-                    + "=" + addr + " to " + SshdSocketAddress.class.getSimpleName());
+            throw new UnsupportedOperationException(
+                    "Cannot convert " + addr.getClass().getSimpleName()
+                                                    + "=" + addr + " to " + SshdSocketAddress.class.getSimpleName());
         }
     }
 
@@ -375,8 +382,8 @@ public class SshdSocketAddress extends SocketAddress {
     /**
      * Attempts to resolve the port value
      *
-     * @param addr The {@link SocketAddress} to examine
-     * @return The associated port value - negative if failed to resolve
+     * @param  addr The {@link SocketAddress} to examine
+     * @return      The associated port value - negative if failed to resolve
      */
     public static int toAddressPort(SocketAddress addr) {
         if (addr instanceof InetSocketAddress) {
@@ -389,17 +396,19 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * <P>Converts a {@code SocketAddress} into an {@link InetSocketAddress} if possible:</P></BR>
+     * <P>
+     * Converts a {@code SocketAddress} into an {@link InetSocketAddress} if possible:
+     * </P>
+     * </BR>
      * <UL>
-     *      <LI>If already an {@link InetSocketAddress} then cast it as such</LI>
-     *      <LI>If an {@code SshdSocketAddress} then invoke {@link #toInetSocketAddress()}</LI>
-     *      <LI>Otherwise, throw an exception</LI>
+     * <LI>If already an {@link InetSocketAddress} then cast it as such</LI>
+     * <LI>If an {@code SshdSocketAddress} then invoke {@link #toInetSocketAddress()}</LI>
+     * <LI>Otherwise, throw an exception</LI>
      * </UL>
      *
-     * @param remoteAddress The {@link SocketAddress} - ignored if {@code null}
-     * @return The {@link InetSocketAddress} instance
-     * @throws ClassCastException if argument is not already an {@code InetSocketAddress}
-     * or a {@code SshdSocketAddress}
+     * @param  remoteAddress      The {@link SocketAddress} - ignored if {@code null}
+     * @return                    The {@link InetSocketAddress} instance
+     * @throws ClassCastException if argument is not already an {@code InetSocketAddress} or a {@code SshdSocketAddress}
      */
     public static InetSocketAddress toInetSocketAddress(SocketAddress remoteAddress) {
         if (remoteAddress == null) {
@@ -448,15 +457,15 @@ public class SshdSocketAddress extends SocketAddress {
 
     /**
      * Checks if the address is one of the allocated private blocks
-     * @param addr The address string
-     * @return {@code true} if this is one of the allocated private
-     * blocks. <B>Note:</B> it assumes that the address string is
-     * indeed an IPv4 address
-     * @see #isIPv4Address(String)
-     * @see #PRIVATE_CLASS_A_PREFIX
-     * @see #PRIVATE_CLASS_B_PREFIX
-     * @see #PRIVATE_CLASS_C_PREFIX
-     * @see <A HREF="http://en.wikipedia.org/wiki/Private_network#Private_IPv4_address_spaces">Wiki page</A>
+     * 
+     * @param  addr The address string
+     * @return      {@code true} if this is one of the allocated private blocks. <B>Note:</B> it assumes that the
+     *              address string is indeed an IPv4 address
+     * @see         #isIPv4Address(String)
+     * @see         #PRIVATE_CLASS_A_PREFIX
+     * @see         #PRIVATE_CLASS_B_PREFIX
+     * @see         #PRIVATE_CLASS_C_PREFIX
+     * @see         <A HREF="http://en.wikipedia.org/wiki/Private_network#Private_IPv4_address_spaces">Wiki page</A>
      */
     public static boolean isPrivateIPv4Address(String addr) {
         if (GenericUtils.isEmpty(addr)) {
@@ -487,9 +496,9 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * @param addr The address to be checked
-     * @return {@code true} if the address is in the 100.64.0.0/10 range
-     * @see <A HREF="http://tools.ietf.org/html/rfc6598">RFC6598</A>
+     * @param  addr The address to be checked
+     * @return      {@code true} if the address is in the 100.64.0.0/10 range
+     * @see         <A HREF="http://tools.ietf.org/html/rfc6598">RFC6598</A>
      */
     public static boolean isCarrierGradeNatIPv4Address(String addr) {
         if (GenericUtils.isEmpty(addr)) {
@@ -515,14 +524,18 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     /**
-     * <P>Checks if the provided argument is a valid IPv4 address component:</P></BR>
+     * <P>
+     * Checks if the provided argument is a valid IPv4 address component:
+     * </P>
+     * </BR>
      * <UL>
-     *     <LI>Not {@code null}/empty</LI>
-     *     <LI>Has at most 3 <U>digits</U></LI>
-     *     <LI>Its value is &le; 255</LI>
+     * <LI>Not {@code null}/empty</LI>
+     * <LI>Has at most 3 <U>digits</U></LI>
+     * <LI>Its value is &le; 255</LI>
      * </UL>
-     * @param c The {@link CharSequence} to be validate
-     * @return {@code true} if valid IPv4 address component
+     * 
+     * @param  c The {@link CharSequence} to be validate
+     * @return   {@code true} if valid IPv4 address component
      */
     public static boolean isValidIPv4AddressComponent(CharSequence c) {
         if (GenericUtils.isEmpty(c) || (c.length() > 3)) {
@@ -583,7 +596,7 @@ public class SshdSocketAddress extends SocketAddress {
         int emptyOctets = 0; // consecutive empty chunks
         for (int index = 0; index < numOctests; index++) {
             String octet = octetList.get(index);
-            int pos = octet.indexOf('%');   // is it a zone index
+            int pos = octet.indexOf('%'); // is it a zone index
             if (pos >= 0) {
                 // zone index must come last
                 if (index != (numOctests - 1)) {

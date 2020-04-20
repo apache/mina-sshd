@@ -29,9 +29,8 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
- * This shell have inverted streams, such as the one obtained when launching a
- * new {@link Process} from java. This interface is meant to be used with
- * {@link InvertedShellWrapper} class as an implementation of
+ * This shell have inverted streams, such as the one obtained when launching a new {@link Process} from java. This
+ * interface is meant to be used with {@link InvertedShellWrapper} class as an implementation of
  * {@link org.apache.sshd.common.Factory}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -48,14 +47,13 @@ public interface InvertedShell
     }
 
     /**
-     * @return The {@link ChannelSession} instance through which
-     * the shell was created - may be {@code null} if shell not started yet
+     * @return The {@link ChannelSession} instance through which the shell was created - may be {@code null} if shell
+     *         not started yet
      */
     ChannelSession getChannelSession();
 
     /**
-     * Returns the output stream used to feed the shell.
-     * This method is called after the shell has been started.
+     * Returns the output stream used to feed the shell. This method is called after the shell has been started.
      *
      * @return The {@link OutputStream} used to feed the shell
      */
@@ -79,8 +77,7 @@ public interface InvertedShell
     boolean isAlive();
 
     /**
-     * Retrieve the exit value of the shell.
-     * This method must only be called when the shell is not alive anymore.
+     * Retrieve the exit value of the shell. This method must only be called when the shell is not alive anymore.
      *
      * @return the exit value of the shell
      */

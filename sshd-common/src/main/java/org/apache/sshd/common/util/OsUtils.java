@@ -31,20 +31,20 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class OsUtils {
 
     /**
-     * Property that can be used to override the reported value from {@link #getCurrentUser()}.
-     * If not set then &quot;user.name&quot; system property is used
+     * Property that can be used to override the reported value from {@link #getCurrentUser()}. If not set then
+     * &quot;user.name&quot; system property is used
      */
     public static final String CURRENT_USER_OVERRIDE_PROP = "org.apache.sshd.currentUser";
 
     /**
-     * Property that can be used to override the reported value from {@link #getJavaVersion()}.
-     * If not set then &quot;java.version&quot; system property is used
+     * Property that can be used to override the reported value from {@link #getJavaVersion()}. If not set then
+     * &quot;java.version&quot; system property is used
      */
     public static final String JAVA_VERSION_OVERRIDE_PROP = "org.apache.sshd.javaVersion";
 
     /**
-     * Property that can be used to override the reported value from {@link #isWin32()}.
-     * If not set then &quot;os.name&quot; system property is used
+     * Property that can be used to override the reported value from {@link #isWin32()}. If not set then
+     * &quot;os.name&quot; system property is used
      */
     public static final String OS_TYPE_OVERRIDE_PROP = "org.apache.sshd.osType";
 
@@ -53,10 +53,10 @@ public final class OsUtils {
 
     public static final String ROOT_USER = "root";
 
-    public static final List<String> LINUX_COMMAND =
-        Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
-    public static final List<String> WINDOWS_COMMAND =
-        Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
+    public static final List<String> LINUX_COMMAND
+            = Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
+    public static final List<String> WINDOWS_COMMAND
+            = Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
 
     private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
     private static final AtomicReference<VersionInfo> JAVA_VERSION_HOLDER = new AtomicReference<>(null);
@@ -75,14 +75,14 @@ public final class OsUtils {
 
     /**
      * @return true if the host is Windows (and not UNIX).
-     * @see #OS_TYPE_OVERRIDE_PROP
-     * @see #setWin32(Boolean)
+     * @see    #OS_TYPE_OVERRIDE_PROP
+     * @see    #setWin32(Boolean)
      */
     public static boolean isWin32() {
         Boolean typeValue;
         synchronized (OS_TYPE_HOLDER) {
             typeValue = OS_TYPE_HOLDER.get();
-            if (typeValue != null) {    // is it the 1st time
+            if (typeValue != null) { // is it the 1st time
                 return typeValue;
             }
 
@@ -96,8 +96,9 @@ public final class OsUtils {
 
     /**
      * Can be used to enforce Win32 or Linux report from {@link #isWin32()} or {@link #isUNIX()}
+     * 
      * @param win32 The value to set - if {@code null} then O/S type is auto-detected
-     * @see #isWin32()
+     * @see         #isWin32()
      */
     public static void setWin32(Boolean win32) {
         synchronized (OS_TYPE_HOLDER) {
@@ -129,13 +130,13 @@ public final class OsUtils {
      * Get current user name
      *
      * @return Current user
-     * @see #CURRENT_USER_OVERRIDE_PROP
+     * @see    #CURRENT_USER_OVERRIDE_PROP
      */
     public static String getCurrentUser() {
         String username = null;
         synchronized (CURRENT_USER_HOLDER) {
             username = CURRENT_USER_HOLDER.get();
-            if (username != null) {  // have we already resolved it ?
+            if (username != null) { // have we already resolved it ?
                 return username;
             }
 
@@ -150,8 +151,8 @@ public final class OsUtils {
     /**
      * Remove {@code Windows} domain and/or group prefix as well as &quot;(User);&quot suffix
      *
-     * @param user The original username - ignored if {@code null}/empty
-     * @return The canonical user - unchanged if {@code Unix} O/S
+     * @param  user The original username - ignored if {@code null}/empty
+     * @return      The canonical user - unchanged if {@code Unix} O/S
      */
     public static String getCanonicalUser(String user) {
         if (GenericUtils.isEmpty(user)) {
@@ -177,9 +178,9 @@ public final class OsUtils {
     /**
      * Attempts to resolve canonical group name for {@code Windows}
      *
-     * @param group The original group name - used if not {@code null}/empty
-     * @param user The owner name - sometimes it contains a group name
-     * @return The canonical group name
+     * @param  group The original group name - used if not {@code null}/empty
+     * @param  user  The owner name - sometimes it contains a group name
+     * @return       The canonical group name
      */
     public static String resolveCanonicalGroup(String group, String user) {
         if (isUNIX()) {
@@ -198,8 +199,8 @@ public final class OsUtils {
 
     /**
      * Can be used to programmatically set the username reported by {@link #getCurrentUser()}
-     * @param username The username to set - if {@code null} then {@link #CURRENT_USER_OVERRIDE_PROP}
-     * will be consulted
+     * 
+     * @param username The username to set - if {@code null} then {@link #CURRENT_USER_OVERRIDE_PROP} will be consulted
      */
     public static void setCurrentUser(String username) {
         synchronized (CURRENT_USER_HOLDER) {
@@ -208,16 +209,17 @@ public final class OsUtils {
     }
 
     /**
-     * Resolves the reported Java version by consulting {@link #JAVA_VERSION_OVERRIDE_PROP}.
-     * If not set, then &quot;java.version&quot; property is used
+     * Resolves the reported Java version by consulting {@link #JAVA_VERSION_OVERRIDE_PROP}. If not set, then
+     * &quot;java.version&quot; property is used
+     * 
      * @return The resolved {@link VersionInfo} - never {@code null}
-     * @see #setJavaVersion(VersionInfo)
+     * @see    #setJavaVersion(VersionInfo)
      */
     public static VersionInfo getJavaVersion() {
         VersionInfo version;
         synchronized (JAVA_VERSION_HOLDER) {
             version = JAVA_VERSION_HOLDER.get();
-            if (version != null) {  // first time ?
+            if (version != null) { // first time ?
                 return version;
             }
 
@@ -244,6 +246,7 @@ public final class OsUtils {
 
     /**
      * Set programmatically the reported Java version
+     * 
      * @param version The version - if {@code null} then it will be automatically resolved
      */
     public static void setJavaVersion(VersionInfo version) {
@@ -253,10 +256,9 @@ public final class OsUtils {
     }
 
     /**
-     * @param path The original path
-     * @return A path that can be compared with another one where case
-     * sensitivity of the underlying O/S has been taken into account -
-     * never {@code null}
+     * @param  path The original path
+     * @return      A path that can be compared with another one where case sensitivity of the underlying O/S has been
+     *              taken into account - never {@code null}
      */
     public static String getComparablePath(String path) {
         String p = (path == null) ? "" : path;

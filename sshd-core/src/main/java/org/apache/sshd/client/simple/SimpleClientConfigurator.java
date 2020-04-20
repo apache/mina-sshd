@@ -28,12 +28,12 @@ public interface SimpleClientConfigurator {
     /**
      * Default connect timeout (msec.) unless {@link #setConnectTimeout(long)} is used
      */
-    long DEFAULT_CONNECT_TIMEOUT = Long.MAX_VALUE;  // virtually infinite
+    long DEFAULT_CONNECT_TIMEOUT = Long.MAX_VALUE; // virtually infinite
 
     /**
      * Default authentication timeout (msec.) unless {@link #setAuthenticationTimeout(long)} is used
      */
-    long DEFAULT_AUTHENTICATION_TIMEOUT = Long.MAX_VALUE;   // virtually infinite
+    long DEFAULT_AUTHENTICATION_TIMEOUT = Long.MAX_VALUE; // virtually infinite
 
     int DEFAULT_PORT = SshConstants.DEFAULT_PORT;
 

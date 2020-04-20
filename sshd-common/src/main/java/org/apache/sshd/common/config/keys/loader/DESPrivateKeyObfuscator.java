@@ -28,10 +28,9 @@ import java.util.List;
  */
 public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     public static final int DEFAULT_KEY_LENGTH = 24 /* hardwired size for 3DES */;
-    public static final List<Integer> AVAILABLE_KEY_LENGTHS =
-        Collections.unmodifiableList(
+    public static final List<Integer> AVAILABLE_KEY_LENGTHS = Collections.unmodifiableList(
             Collections.singletonList(
-                Integer.valueOf(DEFAULT_KEY_LENGTH)));
+                    Integer.valueOf(DEFAULT_KEY_LENGTH)));
     public static final DESPrivateKeyObfuscator INSTANCE = new DESPrivateKeyObfuscator();
 
     public DESPrivateKeyObfuscator() {
@@ -41,7 +40,7 @@ public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @Override
     public byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException, IOException {
+            throws GeneralSecurityException, IOException {
         PrivateKeyEncryptionContext effContext = resolveEffectiveContext(encContext);
         byte[] keyValue = deriveEncryptionKey(effContext, DEFAULT_KEY_LENGTH);
         return applyPrivateKeyCipher(bytes, effContext, keyValue.length * Byte.SIZE, keyValue, encryptIt);

@@ -60,8 +60,8 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     public AgentServer(SshAgent agent, CloseableExecutorService executor) {
         this.agent = agent;
         this.service = (executor == null)
-            ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]")
-            : executor;
+                ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]")
+                : executor;
     }
 
     public SshAgent getAgent() {
@@ -92,7 +92,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
             try {
                 while (true) {
                     long clientSock = Local.accept(handle);
-                    Socket.timeoutSet(clientSock, 10000000L);    // TODO make this configurable
+                    Socket.timeoutSet(clientSock, 10000000L); // TODO make this configurable
                     new SshAgentSession(clientSock, agent).run();
                 }
             } catch (Exception e) {
@@ -177,7 +177,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     /**
      * transform an APR error number in a more fancy exception
      *
-     * @param code APR error code
+     * @param  code                APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     private static void throwException(int code) throws IOException {

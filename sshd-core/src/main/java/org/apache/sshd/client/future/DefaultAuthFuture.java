@@ -39,9 +39,9 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result) {
             throw formatExceptionMessage(
-                SshException::new,
-                "Authentication failed while waiting %d msec.",
-                timeoutMillis);
+                    SshException::new,
+                    "Authentication failed while waiting %d msec.",
+                    timeoutMillis);
         }
 
         return this;

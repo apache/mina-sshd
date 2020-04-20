@@ -34,14 +34,13 @@ public interface AgentForwardingFilter {
      * </p>
      *
      * <p>
-     * This server process will open a new listen socket locally and export
-     * the address in the {@link org.apache.sshd.agent.SshAgent#SSH_AUTHSOCKET_ENV_NAME} environment
-     * variable.
+     * This server process will open a new listen socket locally and export the address in the
+     * {@link org.apache.sshd.agent.SshAgent#SSH_AUTHSOCKET_ENV_NAME} environment variable.
      * </p>
      *
-     * @param session The {@link Session} requesting permission to forward the agent.
-     * @param requestType The request type string that triggered this call
-     * @return true if the agent forwarding is permitted, false if denied.
+     * @param  session     The {@link Session} requesting permission to forward the agent.
+     * @param  requestType The request type string that triggered this call
+     * @return             true if the agent forwarding is permitted, false if denied.
      */
     boolean canForwardAgent(Session session, String requestType);
 

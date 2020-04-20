@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc4254#section-6.10">RFC4254 section 6.10</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc4254#section-6.10">RFC4254 section 6.10</A>
  */
 public class ExitSignalChannelRequestHandler extends AbstractChannelExitRequestHandler<String> {
     public static final String NAME = "exit-signal";
@@ -45,10 +45,11 @@ public class ExitSignalChannelRequestHandler extends AbstractChannelExitRequestH
         return processRequestValue(channel, buffer.getString(), buffer.getBoolean(), buffer.getString(), buffer.getString());
     }
 
-    protected String processRequestValue(Channel channel, String signalName, boolean coreDumped, String message, String lang) throws Exception {
+    protected String processRequestValue(Channel channel, String signalName, boolean coreDumped, String message, String lang)
+            throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("processRequestValue({}) signal={}, core={}, error={}, lang={}",
-                      channel, signalName, coreDumped, message, lang);
+                    channel, signalName, coreDumped, message, lang);
         }
 
         return signalName;

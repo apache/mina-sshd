@@ -38,7 +38,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * SOCKS proxy server, supporting simple socks4/5 protocols.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS">SOCKS Wikipedia</A>
+ * @see    <A HREF="https://en.wikipedia.org/wiki/SOCKS">SOCKS Wikipedia</A>
  */
 public class SocksProxy extends AbstractCloseable implements IoHandler {
 
@@ -139,9 +139,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 }
                 int port = getUShort(buffer);
                 String host = Integer.toString(getUByte(buffer)) + "."
-                        + Integer.toString(getUByte(buffer)) + "."
-                        + Integer.toString(getUByte(buffer)) + "."
-                        + Integer.toString(getUByte(buffer));
+                              + Integer.toString(getUByte(buffer)) + "."
+                              + Integer.toString(getUByte(buffer)) + "."
+                              + Integer.toString(getUByte(buffer));
                 String userId = getNTString(buffer);
                 // Socks4a
                 if (host.startsWith("0.0.0.")) {
@@ -182,7 +182,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 session.writePacket(buffer);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
-                log.error("Failed ({}) to send channel open packet for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+                log.error("Failed ({}) to send channel open packet for {}: {}", e.getClass().getSimpleName(), channel,
+                        e.getMessage());
                 throw new IllegalStateException("Failed to send packet", e);
             }
         }
@@ -249,20 +250,20 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 String host;
                 if (type == 0x01) {
                     host = Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer));
+                           + Integer.toString(getUByte(buffer)) + "."
+                           + Integer.toString(getUByte(buffer)) + "."
+                           + Integer.toString(getUByte(buffer));
                 } else if (type == 0x03) {
                     host = getBLString(buffer);
                 } else if (type == 0x04) {
                     host = Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer)) + ":"
-                            + Integer.toHexString(getUShort(buffer));
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer)) + ":"
+                           + Integer.toHexString(getUShort(buffer));
                 } else {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
@@ -299,7 +300,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             try {
                 session.writePacket(response);
             } catch (IOException e) {
-                log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel, e.getMessage());
+                log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel,
+                        e.getMessage());
                 throw new IllegalStateException("Failed to send packet", e);
             }
         }

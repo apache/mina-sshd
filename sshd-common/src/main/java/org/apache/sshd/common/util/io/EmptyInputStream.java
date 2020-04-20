@@ -56,7 +56,8 @@ public class EmptyInputStream extends InputStream {
 
     @Override
     public synchronized void mark(int readlimit) {
-        throw new UnsupportedOperationException("mark(" + readlimit + ") called despite the fact that markSupported=" + markSupported());
+        throw new UnsupportedOperationException(
+                "mark(" + readlimit + ") called despite the fact that markSupported=" + markSupported());
     }
 
     @Override

@@ -45,8 +45,8 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
                 continue;
             }
             String name = f.getName();
-            IoServiceFactoryFactory factoryInstance =
-                DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
+            IoServiceFactoryFactory factoryInstance
+                    = DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
             Class<?> expected = f.getFactoryClass();
             Class<?> actual = factoryInstance.getClass();
             assertSame(name, expected, actual);
@@ -76,7 +76,8 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
 
                 try (IoServiceFactory factory = defaultFactory.create(manager)) {
 
-                    CloseableExecutorService svc = (CloseableExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
+                    CloseableExecutorService svc
+                            = (CloseableExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
                     assertSame(name + " - mismatched executor service", service, svc);
                 } catch (NoSuchMethodException e) {
                     // ignore if there's no executor service

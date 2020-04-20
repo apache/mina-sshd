@@ -47,21 +47,18 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     }
 
     /**
-     * Configurable value of the {@link org.apache.sshd.common.FactoryManager}
-     * for controlling the wait timeout for opening a channel for an SCP command
-     * in milliseconds. If not specified, then {@link #DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT}
-     * value is used
+     * Configurable value of the {@link org.apache.sshd.common.FactoryManager} for controlling the wait timeout for
+     * opening a channel for an SCP command in milliseconds. If not specified, then
+     * {@link #DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT} value is used
      */
     String SCP_EXEC_CHANNEL_OPEN_TIMEOUT = "scp-exec-channel-open-timeout";
     long DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     /**
-     * Configurable value of the {@link org.apache.sshd.common.FactoryManager}
-     * for controlling the wait timeout for waiting on a channel exit status'
-     * for an SCP command in milliseconds. If not specified, then
-     * {@link #DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT}
-     * value is used. If non-positive, then no wait is performed and the command
-     * is assumed to have completed successfully.
+     * Configurable value of the {@link org.apache.sshd.common.FactoryManager} for controlling the wait timeout for
+     * waiting on a channel exit status' for an SCP command in milliseconds. If not specified, then
+     * {@link #DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT} value is used. If non-positive, then no wait is performed and
+     * the command is assumed to have completed successfully.
      */
     String SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = "scp-exec-channel-exit-status-timeout";
     long DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
@@ -110,7 +107,8 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     }
 
     default void upload(String local, String remote, Collection<Option> options) throws IOException {
-        upload(new String[]{ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local)}, remote, options);
+        upload(new String[] { ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local) }, remote,
+                options);
     }
 
     default void upload(Path local, String remote, Option... options) throws IOException {
@@ -118,7 +116,8 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     }
 
     default void upload(Path local, String remote, Collection<Option> options) throws IOException {
-        upload(new Path[]{ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local)}, remote, GenericUtils.of(options));
+        upload(new Path[] { ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local) }, remote,
+                GenericUtils.of(options));
     }
 
     default void upload(String[] local, String remote, Option... options) throws IOException {
@@ -135,17 +134,21 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
 
     // NOTE: due to SCP command limitations, the amount of data to be uploaded must be known a-priori
     // To upload a dynamic amount of data use SFTP
-    default void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    default void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time)
+            throws IOException {
         upload(data, 0, data.length, remote, perms, time);
     }
 
-    default void upload(byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    default void upload(
+            byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time)
+            throws IOException {
         try (InputStream local = new ByteArrayInputStream(data, offset, len)) {
             upload(local, remote, len, perms, time);
         }
     }
 
-    void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException;
+    void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time)
+            throws IOException;
 
     static String createSendCommand(String remote, Collection<Option> options) {
         StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);

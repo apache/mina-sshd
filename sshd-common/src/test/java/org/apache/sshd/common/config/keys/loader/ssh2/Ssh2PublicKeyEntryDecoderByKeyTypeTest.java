@@ -49,7 +49,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
@@ -82,7 +82,7 @@ public class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
             }
 
             private void addKey(String k) {
-                add(new Object[] {k});
+                add(new Object[] { k });
             }
         };
     }
@@ -91,10 +91,8 @@ public class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
     public void testDecodePublicKey() throws Exception {
         PublicKey expected;
         try (InputStream keyData = getPublicKeyDataStream("pub")) {
-            Collection<? extends PublicKeyEntry> entries =
-                AuthorizedKeyEntry.readAuthorizedKeys(keyData, true);
-            List<PublicKey> keys =
-                PublicKeyEntry.resolvePublicKeyEntries(null, entries, null);
+            Collection<? extends PublicKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(keyData, true);
+            List<PublicKey> keys = PublicKeyEntry.resolvePublicKeyEntries(null, entries, null);
             assertEquals("Mismatched expected public entries count", 1, GenericUtils.size(keys));
 
             expected = keys.get(0);

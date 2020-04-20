@@ -44,7 +44,8 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     protected int backlog = DEFAULT_BACKLOG;
     protected boolean reuseAddress = DEFAULT_REUSE_ADDRESS;
 
-    public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+    public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler,
+                        IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
 
         backlog = manager.getIntProperty(FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
@@ -102,9 +103,10 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
                     listener.abortAcceptedConnection(this, local, remote, service, e);
                 } catch (Exception exc) {
                     log.warn("sessionCreated({})[{}] ignoring abort event failure={}: {}",
-                        session, listener, exc.getClass().getSimpleName(), exc.getMessage());
+                            session, listener, exc.getClass().getSimpleName(), exc.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.warn("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
+                        log.warn("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception",
+                                exc);
                     }
                 }
             }

@@ -59,17 +59,15 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport {
-    private static final List<Integer> DATA_SIZES =
-        Collections.unmodifiableList(
+    private static final List<Integer> DATA_SIZES = Collections.unmodifiableList(
             Arrays.asList(
-                (int) Byte.MAX_VALUE,
-                SftpConstants.MD5_QUICK_HASH_SIZE,
-                IoUtils.DEFAULT_COPY_SIZE,
-                Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
-            ));
+                    (int) Byte.MAX_VALUE,
+                    SftpConstants.MD5_QUICK_HASH_SIZE,
+                    IoUtils.DEFAULT_COPY_SIZE,
+                    Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE));
 
     private final int size;
 
@@ -98,7 +96,8 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     }
 
     private void testMD5HashExtension(int dataSize) throws Exception {
-        byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + "-" + dataSize + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
+        byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + "-" + dataSize + IoUtils.EOL)
+                .getBytes(StandardCharsets.UTF_8);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);
@@ -126,7 +125,8 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         }
 
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp
+                = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("data-" + data.length + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
@@ -143,7 +143,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                 try {
                     byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
                     fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
-                } catch (IOException e) {    // expected - not allowed to hash a folder
+                } catch (IOException e) { // expected - not allowed to hash a folder
                     assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
                 }
 
@@ -152,21 +152,22 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                     try {
                         byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
                         fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
-                    } catch (IOException e) {    // expected - not allowed to hash a folder
+                    } catch (IOException e) { // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
                     }
                 }
 
                 try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                    for (byte[] qh : new byte[][]{GenericUtils.EMPTY_BYTE_ARRAY, quickHash}) {
-                        for (boolean useFile : new boolean[]{true, false}) {
-                            byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
+                    for (byte[] qh : new byte[][] { GenericUtils.EMPTY_BYTE_ARRAY, quickHash }) {
+                        for (boolean useFile : new boolean[] { true, false }) {
+                            byte[] actualHash
+                                    = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
                             String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
                             if (!Arrays.equals(expectedHash, actualHash)) {
                                 fail("Mismatched hash for quick=" + BufferUtils.toHex(':', qh)
-                                        + " using " + type + " on " + srcFile
-                                        + ": expected=" + BufferUtils.toHex(':', expectedHash)
-                                        + ", actual=" + BufferUtils.toHex(':', actualHash));
+                                     + " using " + type + " on " + srcFile
+                                     + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                                     + ", actual=" + BufferUtils.toHex(':', actualHash));
                             }
                         }
                     }

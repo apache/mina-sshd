@@ -39,7 +39,8 @@ public class SkECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<SkE
 
     @Override
     public SkEcdsaPublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
-        // The "sk-ecdsa-sha2-nistp256@openssh.com" keytype has the same format as the "ecdsa-sha2-nistp256" keytype with an appname on the end
+        // The "sk-ecdsa-sha2-nistp256@openssh.com" keytype has the same format as the "ecdsa-sha2-nistp256" keytype
+        // with an appname on the end
         ECPublicKey ecPublicKey = ECBufferPublicKeyParser.INSTANCE.getRawPublicKey(ECCurves.nistp256.getKeyType(), buffer);
         String appName = buffer.getString();
         return new SkEcdsaPublicKey(appName, false, ecPublicKey);

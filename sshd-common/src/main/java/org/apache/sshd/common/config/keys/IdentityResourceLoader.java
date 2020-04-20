@@ -23,26 +23,23 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 /**
- * @param <PUB> Type of {@link PublicKey}
- * @param <PRV> Type of {@link PrivateKey}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey}
+ * @param  <PRV> Type of {@link PrivateKey}
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey> extends KeyTypeNamesSupport {
     /**
-     * A reasonable max. number of octets used for a {@link BigInteger} in the
-     * context of keys based on such numbers
+     * A reasonable max. number of octets used for a {@link BigInteger} in the context of keys based on such numbers
      */
     int MAX_BIGINT_OCTETS_COUNT = Short.MAX_VALUE;
 
     /**
-     * @return The {@link Class} of the {@link PublicKey} that is
-     * the result of decoding
+     * @return The {@link Class} of the {@link PublicKey} that is the result of decoding
      */
     Class<PUB> getPublicKeyType();
 
     /**
-     * @return The {@link Class} of the {@link PrivateKey} that
-     * matches the public one
+     * @return The {@link Class} of the {@link PrivateKey} that matches the public one
      */
     Class<PRV> getPrivateKeyType();
 }

@@ -95,7 +95,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     @Test
     public void testKnownDefaultCipherFactoriesList() {
         testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_CIPHERS, BuiltinCiphers::fromFactoryName,
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "cast128-cbc", "arcfour"));
+                GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "cast128-cbc", "arcfour"));
     }
 
     @Test
@@ -109,14 +109,16 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     @Test
     public void testKnownDefaultMacFactoriesList() {
         testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_MACS, BuiltinMacs::fromFactoryName,
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "umac-64@openssh.com", "hmac-ripemd160", "hmac-sha2-256-96", "hmac-sha2-512-96"));
+                GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "umac-64@openssh.com", "hmac-ripemd160",
+                        "hmac-sha2-256-96", "hmac-sha2-512-96"));
     }
 
     @Test
     public void testParseSignaturesList() {
         List<? extends NamedResource> expected = ClientBuilder.DEFAULT_SIGNATURE_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
-        BuiltinSignatures.ParseResult result = SshConfigFileReader.getSignatures(PropertyResolverUtils.toPropertyResolver(props));
+        BuiltinSignatures.ParseResult result
+                = SshConfigFileReader.getSignatures(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -129,7 +131,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     public void testParseKexFactoriesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_KEX_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP, expected);
-        BuiltinDHFactories.ParseResult result = SshConfigFileReader.getKexFactories(PropertyResolverUtils.toPropertyResolver(props));
+        BuiltinDHFactories.ParseResult result
+                = SshConfigFileReader.getKexFactories(PropertyResolverUtils.toPropertyResolver(props));
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
@@ -138,7 +141,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         testKnownDefaultFactoriesList(ConfigFileReaderSupport.DEFAULT_KEX_ALGORITHMS, BuiltinDHFactories::fromFactoryName);
     }
 
-    private static void testKnownDefaultFactoriesList(String factories, Function<? super String, ? extends NamedResource> resolver) {
+    private static void testKnownDefaultFactoriesList(
+            String factories, Function<? super String, ? extends NamedResource> resolver) {
         testKnownDefaultFactoriesList(factories, resolver, Collections.emptySet());
     }
 
@@ -170,7 +174,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testConfigureAbstractFactoryManagerWithDefaults() {
-        Properties props = new Properties();   // empty means use defaults
+        Properties props = new Properties(); // empty means use defaults
         AbstractFactoryManager expected = new AbstractFactoryManager() {
             @Override
             protected Closeable getInnerCloseable() {
@@ -179,7 +183,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         };
         // must be lenient since we do not cover the full default spectrum
         AbstractFactoryManager actual = SshConfigFileReader.configure(
-            expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
+                expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
         assertSame("Mismatched configured result", expected, actual);
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
@@ -231,7 +235,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testConfigureCompressionFromStringAcceptsCombinedValues() {
-        testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class, e -> (e == null) ? null : e.name());
+        testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class,
+                e -> (e == null) ? null : e.name());
         testConfigureCompressionFromStringAcceptsCombinedValues(BuiltinCompressions.class, NamedResource.NAME_EXTRACTOR);
     }
 
@@ -244,7 +249,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         }
     }
 
-    @Test   // SSHD-774
+    @Test // SSHD-774
     public void testTabDelimiter() throws IOException {
         String name = getClass().getSimpleName();
         String expected = getCurrentTestName();
@@ -278,7 +283,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         }
     }
 
-    private static <M extends FactoryManager> M validateAbstractFactoryManagerConfiguration(M manager, Properties props, boolean lenient) {
+    private static <M extends FactoryManager> M validateAbstractFactoryManagerConfiguration(
+            M manager, Properties props, boolean lenient) {
         validateFactoryManagerCiphers(manager, props);
         validateFactoryManagerSignatures(manager, props);
         validateFactoryManagerMacs(manager, props);
@@ -288,7 +294,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     private static <M extends FactoryManager> M validateFactoryManagerCiphers(M manager, Properties props) {
         return validateFactoryManagerCiphers(manager,
-            props.getProperty(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_CIPHERS));
+                props.getProperty(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_CIPHERS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCiphers(M manager, String value) {
@@ -299,7 +305,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     private static <M extends FactoryManager> M validateFactoryManagerSignatures(M manager, Properties props) {
         return validateFactoryManagerSignatures(manager,
-            props.getProperty(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS));
+                props.getProperty(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP,
+                        ConfigFileReaderSupport.DEFAULT_HOST_KEY_ALGORITHMS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerSignatures(M manager, String value) {
@@ -310,7 +317,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     private static <M extends FactoryManager> M validateFactoryManagerMacs(M manager, Properties props) {
         return validateFactoryManagerMacs(manager,
-            props.getProperty(ConfigFileReaderSupport.MACS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_MACS));
+                props.getProperty(ConfigFileReaderSupport.MACS_CONFIG_PROP, ConfigFileReaderSupport.DEFAULT_MACS));
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerMacs(M manager, String value) {
@@ -319,29 +326,35 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         return manager;
     }
 
-    private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, Properties props, boolean lenient) {
+    private static <
+            M extends FactoryManager> M validateFactoryManagerCompressions(M manager, Properties props, boolean lenient) {
         return validateFactoryManagerCompressions(manager,
-            props.getProperty(ConfigFileReaderSupport.COMPRESSION_PROP, ConfigFileReaderSupport.DEFAULT_COMPRESSION), lenient);
+                props.getProperty(ConfigFileReaderSupport.COMPRESSION_PROP, ConfigFileReaderSupport.DEFAULT_COMPRESSION),
+                lenient);
     }
 
     private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, String value, boolean lenient) {
         NamedFactory<Compression> factory = CompressionConfigValue.fromName(value);
         assertTrue("Unknown compression: " + value, lenient || (factory != null));
         if (factory != null) {
-            validateFactoryManagerFactories(Compression.class, Collections.singletonList(factory), manager.getCompressionFactories());
+            validateFactoryManagerFactories(Compression.class, Collections.singletonList(factory),
+                    manager.getCompressionFactories());
         }
         return manager;
     }
 
-    private static <T, F extends NamedFactory<T>> void validateFactoryManagerFactories(Class<T> type, List<? extends F> expected, List<? extends F> actual) {
+    private static <T, F extends NamedFactory<T>> void validateFactoryManagerFactories(
+            Class<T> type, List<? extends F> expected, List<? extends F> actual) {
         validateFactoryManagerSettings(type, expected, actual);
     }
 
-    private static <R extends NamedResource> void validateFactoryManagerSettings(Class<?> type, List<? extends R> expected, List<? extends R> actual) {
+    private static <R extends NamedResource> void validateFactoryManagerSettings(
+            Class<?> type, List<? extends R> expected, List<? extends R> actual) {
         validateFactoryManagerSettings(type.getSimpleName(), expected, actual);
     }
 
-    private static <R extends NamedResource> void validateFactoryManagerSettings(String type, List<? extends R> expected, List<? extends R> actual) {
+    private static <R extends NamedResource> void validateFactoryManagerSettings(
+            String type, List<? extends R> expected, List<? extends R> actual) {
         assertListEquals(type, expected, actual);
     }
 
@@ -360,7 +373,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         return actual;
     }
 
-    private static <R extends NamedResource> Properties initNamedResourceProperties(String key, Collection<? extends R> values) {
+    private static <
+            R extends NamedResource> Properties initNamedResourceProperties(String key, Collection<? extends R> values) {
         return initProperties(key, NamedResource.getNames(values));
     }
 

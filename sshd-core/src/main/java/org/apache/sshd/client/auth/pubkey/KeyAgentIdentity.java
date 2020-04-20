@@ -59,7 +59,7 @@ public class KeyAgentIdentity implements PublicKeyIdentity {
     public String toString() {
         PublicKey pubKey = getPublicKey();
         return getClass().getSimpleName() + "[" + KeyUtils.getKeyType(pubKey) + "]"
-             + " fingerprint=" + KeyUtils.getFingerPrint(pubKey)
-             + ", comment=" + getComment();
+               + " fingerprint=" + KeyUtils.getFingerPrint(pubKey)
+               + ", comment=" + getComment();
     }
 }

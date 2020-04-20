@@ -43,8 +43,7 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that the builder returns a factory with the default values
-     * if no {@code withXXX} method is invoked
+     * Make sure that the builder returns a factory with the default values if no {@code withXXX} method is invoked
      */
     @Test
     public void testBuilderDefaultFactoryValues() {
@@ -79,16 +78,11 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
 
     /**
      * <UL>
-     * <LI>
-     * Make sure the builder returns new instances on every call to
-     * {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method
-     * </LI>
+     * <LI>Make sure the builder returns new instances on every call to
+     * {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method</LI>
      *
-     * <LI>
-     * Make sure values are preserved between successive invocations
-     * of the {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method
-     * </LI>
-     * </UL
+     * <LI>Make sure values are preserved between successive invocations of the
+     * {@link org.apache.sshd.server.scp.ScpCommandFactory.Builder#build()} method</LI> </UL
      */
     @Test
     public void testBuilderUniqueInstance() {

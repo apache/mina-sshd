@@ -48,7 +48,7 @@ public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
         super();
     }
 
-    @Test   // see SSHD-860
+    @Test // see SSHD-860
     public void testLazyKeyIdentityMultiProvider() throws IOException, GeneralSecurityException {
         List<KeyPair> expected = new ArrayList<>();
         for (int index = 1; index <= Short.SIZE; index++) {

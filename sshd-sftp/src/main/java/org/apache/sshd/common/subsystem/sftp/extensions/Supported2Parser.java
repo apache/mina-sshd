@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class Supported2Parser extends AbstractParser<Supported2> {
     /**
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
+     * @see    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
      */
     public static class Supported2 {
         // CHECKSTYLE:OFF
@@ -59,14 +59,14 @@ public class Supported2Parser extends AbstractParser<Supported2> {
         @Override
         public String toString() {
             return "attrsMask=0x" + Integer.toHexString(supportedAttributeMask)
-                + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
-                + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
-                + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
-                + ",maxRead=" + maxReadSize
-                + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
-                + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
-                + ",attribs=" + attribExtensionNames
-                + ",exts=" + extensionNames;
+                   + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
+                   + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
+                   + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
+                   + ",maxRead=" + maxReadSize
+                   + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
+                   + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
+                   + ",attribs=" + attribExtensionNames
+                   + ",exts=" + extensionNames;
         }
     }
 

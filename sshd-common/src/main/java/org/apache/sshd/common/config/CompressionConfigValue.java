@@ -29,8 +29,8 @@ import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Provides a &quot;bridge&quot; between the configuration values and the
- * actual {@link org.apache.sshd.common.NamedFactory} for the {@link Compression}.
+ * Provides a &quot;bridge&quot; between the configuration values and the actual
+ * {@link org.apache.sshd.common.NamedFactory} for the {@link Compression}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -39,8 +39,8 @@ public enum CompressionConfigValue implements CompressionFactory {
     NO(BuiltinCompressions.none),
     DELAYED(BuiltinCompressions.delayedZlib);
 
-    public static final Set<CompressionConfigValue> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
+    public static final Set<CompressionConfigValue> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
 
     private final CompressionFactory factory;
 

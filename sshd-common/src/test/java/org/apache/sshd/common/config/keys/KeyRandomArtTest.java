@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KeyRandomArtTest extends JUnitTestSupport {
@@ -67,22 +67,22 @@ public class KeyRandomArtTest extends JUnitTestSupport {
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (int keySize : RSA_SIZES) {
-            params.add(new Object[]{KeyUtils.RSA_ALGORITHM, keySize});
+            params.add(new Object[] { KeyUtils.RSA_ALGORITHM, keySize });
         }
 
         for (int keySize : DSS_SIZES) {
-            params.add(new Object[]{KeyUtils.DSS_ALGORITHM, keySize});
+            params.add(new Object[] { KeyUtils.DSS_ALGORITHM, keySize });
         }
 
         if (SecurityUtils.isECCSupported()) {
             for (ECCurves curve : ECCurves.VALUES) {
-                params.add(new Object[]{KeyUtils.EC_ALGORITHM, curve.getKeySize()});
+                params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
             }
         }
 
         if (SecurityUtils.isEDDSACurveSupported()) {
             for (int keySize : ED25519_SIZES) {
-                params.add(new Object[]{SecurityUtils.EDDSA, keySize});
+                params.add(new Object[] { SecurityUtils.EDDSA, keySize });
             }
         }
         return params;
@@ -111,7 +111,8 @@ public class KeyRandomArtTest extends JUnitTestSupport {
             }
             System.out.append('\t').println(l);
 
-            assertTrue("Mismatched line length #" + (index + 1) + ": " + l.length(), l.length() >= (KeyRandomArt.FLDSIZE_X + 2));
+            assertTrue("Mismatched line length #" + (index + 1) + ": " + l.length(),
+                    l.length() >= (KeyRandomArt.FLDSIZE_X + 2));
         }
     }
 }

@@ -28,8 +28,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Represents a server &quot;challenge&quot; as per
- * <A HREF="https://tools.ietf.org/html/rfc4256">RFC-4256</A>
+ * Represents a server &quot;challenge&quot; as per <A HREF="https://tools.ietf.org/html/rfc4256">RFC-4256</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -126,8 +125,8 @@ public class InteractiveChallenge implements Cloneable {
     @Override
     public String toString() {
         return getInteractionName()
-            + "[" + getInteractionInstruction() + "]"
-            + "(" + getLanguageTag() + ")"
-            + ": " + getPrompts();
+               + "[" + getInteractionInstruction() + "]"
+               + "(" + getLanguageTag() + ")"
+               + ": " + getPrompts();
     }
 }

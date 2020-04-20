@@ -44,7 +44,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
@@ -82,17 +82,16 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
     @Parameters(name = "expected={0}, test={1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(
-            new Object[] {MD5_FULL, MD5_FULL},
-            new Object[] {MD5_FULL, MD5_FULL.toUpperCase()},
-            new Object[] {MD5_FULL, MD5_FULL.toLowerCase()},
-            new Object[] {MD5_FULL, MD5_PREFIX.toUpperCase() + MD5},
-            new Object[] {MD5_FULL, MD5_PREFIX.toLowerCase() + MD5},
-            new Object[] {MD5_FULL, MD5.toLowerCase()},
-            new Object[] {MD5_FULL, MD5.toUpperCase()},
-            new Object[] {SHA1_FULL, SHA1_FULL},
-            new Object[] {SHA1_FULL, SHA1_PREFIX.toUpperCase() + SHA1},
-            new Object[] {SHA1_FULL, SHA1_PREFIX.toLowerCase() + SHA1}
-        );
+                new Object[] { MD5_FULL, MD5_FULL },
+                new Object[] { MD5_FULL, MD5_FULL.toUpperCase() },
+                new Object[] { MD5_FULL, MD5_FULL.toLowerCase() },
+                new Object[] { MD5_FULL, MD5_PREFIX.toUpperCase() + MD5 },
+                new Object[] { MD5_FULL, MD5_PREFIX.toLowerCase() + MD5 },
+                new Object[] { MD5_FULL, MD5.toLowerCase() },
+                new Object[] { MD5_FULL, MD5.toUpperCase() },
+                new Object[] { SHA1_FULL, SHA1_FULL },
+                new Object[] { SHA1_FULL, SHA1_PREFIX.toUpperCase() + SHA1 },
+                new Object[] { SHA1_FULL, SHA1_PREFIX.toLowerCase() + SHA1 });
     }
 
     @Test

@@ -82,9 +82,9 @@ public class KnownHostHashValue {
     /**
      * Checks if the host matches the hash
      *
-     * @param host The host name/address - ignored if {@code null}/empty
-     * @param port The access port - ignored if non-positive or SSH default
-     * @return {@code true} if host matches the hash
+     * @param  host             The host name/address - ignored if {@code null}/empty
+     * @param  port             The access port - ignored if non-positive or SSH default
+     * @return                  {@code true} if host matches the hash
      * @throws RuntimeException If entry not properly initialized
      */
     public boolean isHostMatch(String host, int port) {
@@ -100,8 +100,8 @@ public class KnownHostHashValue {
             if (t instanceof RuntimeException) {
                 throw (RuntimeException) t;
             }
-            throw new RuntimeSshException("Failed (" + t.getClass().getSimpleName() + ")"
-                    + " to calculate hash value: " + t.getMessage(), t);
+            throw new RuntimeSshException(
+                    "Failed (" + t.getClass().getSimpleName() + ")" + " to calculate hash value: " + t.getMessage(), t);
         }
     }
 
@@ -109,19 +109,20 @@ public class KnownHostHashValue {
     public String toString() {
         if ((getDigester() == null) || NumberUtils.isEmpty(getSaltValue()) || NumberUtils.isEmpty(getDigestValue())) {
             return Objects.toString(getDigester(), null)
-                 + "-" + BufferUtils.toHex(':', getSaltValue())
-                 + "-" + BufferUtils.toHex(':', getDigestValue());
+                   + "-" + BufferUtils.toHex(':', getSaltValue())
+                   + "-" + BufferUtils.toHex(':', getDigestValue());
         }
 
         try {
             return append(new StringBuilder(Byte.MAX_VALUE), this).toString();
-        } catch (IOException | RuntimeException e) {    // unexpected
+        } catch (IOException | RuntimeException e) { // unexpected
             return e.getClass().getSimpleName() + ": " + e.getMessage();
         }
     }
 
     // see http://nms.lcs.mit.edu/projects/ssh/README.hashed-hosts
-    public static byte[] calculateHashValue(String host, int port, Factory<? extends Mac> factory, byte[] salt) throws Exception {
+    public static byte[] calculateHashValue(String host, int port, Factory<? extends Mac> factory, byte[] salt)
+            throws Exception {
         return calculateHashValue(host, port, factory.create(), salt);
     }
 
@@ -142,8 +143,10 @@ public class KnownHostHashValue {
         try {
             return appendHostPattern(new StringBuilder(host.length() + 8 /* port if necessary */), host, port).toString();
         } catch (IOException e) {
-            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
-                + " to generate host pattern of " + host + ":" + port + ": " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Unexpected (" + e.getClass().getSimpleName() + ") failure" + " to generate host pattern of " + host + ":"
+                                       + port + ": " + e.getMessage(),
+                    e);
         }
     }
 
@@ -162,7 +165,8 @@ public class KnownHostHashValue {
     }
 
     public static <A extends Appendable> A append(A sb, KnownHostHashValue hashValue) throws IOException {
-        return (hashValue == null) ? sb : append(sb, hashValue.getDigester(), hashValue.getSaltValue(), hashValue.getDigestValue());
+        return (hashValue == null)
+                ? sb : append(sb, hashValue.getDigester(), hashValue.getSaltValue(), hashValue.getDigestValue());
     }
 
     public static <A extends Appendable> A append(A sb, NamedResource factory, byte[] salt, byte[] digest) throws IOException {
@@ -185,12 +189,13 @@ public class KnownHostHashValue {
         }
 
         String[] components = GenericUtils.split(pattern, HASHED_HOST_DELIMITER);
-        ValidateUtils.checkTrue(components.length == 4 /* 1st one is empty */, "Invalid hash pattern (insufficient data): %s", pattern);
-        ValidateUtils.checkTrue(GenericUtils.isEmpty(components[0]), "Invalid hash pattern (unexpected extra data): %s", pattern);
+        ValidateUtils.checkTrue(components.length == 4 /* 1st one is empty */, "Invalid hash pattern (insufficient data): %s",
+                pattern);
+        ValidateUtils.checkTrue(GenericUtils.isEmpty(components[0]), "Invalid hash pattern (unexpected extra data): %s",
+                pattern);
 
-        NamedFactory<Mac> factory =
-                ValidateUtils.checkNotNull(KnownHostDigest.fromName(components[1]),
-                        "Invalid hash pattern (unknown digest): %s", pattern);
+        NamedFactory<Mac> factory = ValidateUtils.checkNotNull(KnownHostDigest.fromName(components[1]),
+                "Invalid hash pattern (unknown digest): %s", pattern);
         Base64.Decoder decoder = Base64.getDecoder();
         value.setDigester(factory);
         value.setSaltValue(decoder.decode(components[2]));

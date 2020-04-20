@@ -53,8 +53,8 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
  */
 public class ClientUserAuthService extends AbstractCloseable implements Service, ClientSessionHolder {
     /**
-     * The AuthFuture that is being used by the current auth request. This encodes the state.
-     * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
+     * The AuthFuture that is being used by the current auth request. This encodes the state. isSuccess ->
+     * authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
     private final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
@@ -70,9 +70,9 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     public ClientUserAuthService(Session s) {
         clientSession = ValidateUtils.checkInstanceOf(
-            s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
+                s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
         authFactories = ValidateUtils.checkNotNullAndNotEmpty(
-            clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
+                clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
 
         String prefs = s.getString(ClientAuthenticationManager.PREFERRED_AUTHS);
@@ -87,8 +87,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             }
 
             for (String pref : GenericUtils.split(prefs, ',')) {
-                UserAuthFactory factory =
-                    NamedResource.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
+                UserAuthFactory factory = NamedResource.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
                 if (factory != null) {
                     clientMethods.add(pref);
                 } else {
@@ -141,7 +140,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 }
             } else {
                 currentFuture.setException(
-                    new InterruptedIOException("New authentication started before previous completed"));
+                        new InterruptedIOException("New authentication started before previous completed"));
             }
         }
 
@@ -162,7 +161,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
         String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-            username.length() + service.length() + Integer.SIZE);
+                username.length() + service.length() + Integer.SIZE);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString("none");
@@ -178,13 +177,13 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         boolean debugEnabled = log.isDebugEnabled();
         if ((authFuture != null) && authFuture.isSuccess()) {
             log.error("process({}) unexpected authenticated client command: {}",
-                  session, SshConstants.getCommandMessageName(cmd));
+                    session, SshConstants.getCommandMessageName(cmd));
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if ((authFuture != null) && authFuture.isDone()) {
             // ignore for now; TODO: random packets
             if (debugEnabled) {
                 log.debug("process({}) Ignoring random message - cmd={}",
-                      session, SshConstants.getCommandMessageName(cmd));
+                        session, SshConstants.getCommandMessageName(cmd));
             }
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
@@ -200,7 +199,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 }
             } catch (Error e) {
                 log.warn("process({}) failed ({}) to consult interaction: {}",
-                     session, e.getClass().getSimpleName(), e.getMessage());
+                        session, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("process(" + session + ") interaction consultation failure details", e);
                 }
@@ -216,7 +215,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     /**
      * Execute one step in user authentication.
      *
-     * @param buffer The input {@link Buffer}
+     * @param  buffer    The input {@link Buffer}
      * @throws Exception If failed to process
      */
     protected void processUserAuth(Buffer buffer) throws Exception {
@@ -225,7 +224,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) SSH_MSG_USERAUTH_SUCCESS Succeeded with {}",
-                      session, (userAuth == null) ? "<unknown>" : userAuth.getName());
+                        session, (userAuth == null) ? "<unknown>" : userAuth.getName());
             }
             if (userAuth != null) {
                 try {
@@ -237,8 +236,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             session.setAuthenticated();
             ((ClientSessionImpl) session).switchToNextService();
 
-            AuthFuture authFuture =
-                Objects.requireNonNull(authFutureHolder.get(), "No current future");
+            AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
             // Will wake up anyone sitting in waitFor
             authFuture.setAuthed(true);
             return;
@@ -249,7 +247,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             boolean partial = buffer.getBoolean();
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}",
-                      session, partial, mths);
+                        session, partial, mths);
             }
             if (partial || (serverMethods == null)) {
                 serverMethods = Arrays.asList(GenericUtils.split(mths, ','));
@@ -269,12 +267,12 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
         if (userAuth == null) {
             throw new IllegalStateException(
-                "Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
+                    "Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
 
         if (log.isDebugEnabled()) {
             log.debug("processUserAuth({}) delegate processing of {} to {}",
-                  session, SshConstants.getCommandMessageName(cmd), userAuth.getName());
+                    session, SshConstants.getCommandMessageName(cmd), userAuth.getName());
         }
 
         buffer.rpos(buffer.rpos() - 1);
@@ -291,7 +289,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             if (userAuth == null) {
                 if (debugEnabled) {
                     log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",
-                          session, clientMethods, serverMethods);
+                            session, clientMethods, serverMethods);
                 }
             } else if (!userAuth.process(null)) {
                 if (debugEnabled) {
@@ -308,7 +306,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             } else {
                 if (debugEnabled) {
                     log.debug("tryNext({}) successfully processed initial buffer by method={}",
-                        session, userAuth.getName());
+                            session, userAuth.getName());
                 }
                 return;
             }
@@ -324,22 +322,21 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             if (currentMethod >= clientMethods.size()) {
                 if (debugEnabled) {
                     log.debug("tryNext({}) exhausted all methods - client={}, server={}",
-                          session, clientMethods, serverMethods);
+                            session, clientMethods, serverMethods);
                 }
 
                 // also wake up anyone sitting in waitFor
-                AuthFuture authFuture =
-                    Objects.requireNonNull(authFutureHolder.get(), "No current future");
+                AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
                 authFuture.setException(new SshException(
-                    SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
-                    "No more authentication methods available"));
+                        SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
+                        "No more authentication methods available"));
                 return;
             }
 
             userAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
             if (userAuth == null) {
                 throw new UnsupportedOperationException(
-                    "Failed to find a user-auth factory for method=" + method);
+                        "Failed to find a user-auth factory for method=" + method);
             }
 
             if (debugEnabled) {

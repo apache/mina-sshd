@@ -54,7 +54,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
@@ -97,7 +97,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
             @SuppressWarnings("synthetic-access")
             public ResourceDecodeResult handleDecodeAttemptResult(
                     SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 if (err == null) {
                     return null;
                 }
@@ -126,13 +126,13 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
 
             {
                 for (ResourceDecodeResult result : ResourceDecodeResult.values()) {
-                    add(new Object[] {"super-secret-passphrase-RSA-2048-v1p0-private.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-RSA-2048-v1p6p1-private.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-RSA-4096-v2p0p8-private.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-DSA-2048-gpg4win-3.1.3.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-EC-256-gpg2-private.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-EC-384-v1p0-private.gpg", result, PASSWORD});
-                    add(new Object[] {"super-secret-passphrase-EC-521-gpg2-private.gpg", result, PASSWORD});
+                    add(new Object[] { "super-secret-passphrase-RSA-2048-v1p0-private.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-RSA-2048-v1p6p1-private.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-RSA-4096-v2p0p8-private.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-DSA-2048-gpg4win-3.1.3.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-EC-256-gpg2-private.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-EC-384-v1p0-private.gpg", result, PASSWORD });
+                    add(new Object[] { "super-secret-passphrase-EC-521-gpg2-private.gpg", result, PASSWORD });
                     // TODO add(new Object[] {"super-secret-passphrase-ed25519-gpg4win-3.1.3.gpg, result", PASSWORD});
                 }
             }
@@ -147,7 +147,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         Collection<KeyPair> keys;
         try {
             keys = PGPKeyPairResourceParser.INSTANCE.loadKeyPairs(
-                null, NamedResource.ofName(resourceName), passwordProvider, stream);
+                    null, NamedResource.ofName(resourceName), passwordProvider, stream);
         } catch (Exception e) {
             if (result != ResourceDecodeResult.TERMINATE) {
                 fail("Mismatched result mode for " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]");

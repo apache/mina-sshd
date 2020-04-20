@@ -57,10 +57,10 @@ public interface PtyChannelConfigurationMutator extends PtyChannelConfigurationH
     /**
      * Uses O/S detection to initialize some default PTY related values
      *
-     * @param <M> Generic {@link PtyChannelConfigurationMutator} instance
-     * @param mutator The mutator to update - ignored if {@code null}
-     * @return The updated mutator
-     * @throws IOException If failed to access some O/S related configuration
+     * @param  <M>                  Generic {@link PtyChannelConfigurationMutator} instance
+     * @param  mutator              The mutator to update - ignored if {@code null}
+     * @return                      The updated mutator
+     * @throws IOException          If failed to access some O/S related configuration
      * @throws InterruptedException If interrupted during access of O/S related configuration
      */
     static <M extends PtyChannelConfigurationMutator> M setupSensitiveDefaultPtyConfiguration(M mutator)

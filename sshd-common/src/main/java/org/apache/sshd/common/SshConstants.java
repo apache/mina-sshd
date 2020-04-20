@@ -121,15 +121,14 @@ public final class SshConstants {
     public static final int SSH_OPEN_RESOURCE_SHORTAGE = 4;
 
     // Some more constants
-    public static final int SSH_EXTENDED_DATA_STDERR = 1;   // see RFC4254 section 5.2
+    public static final int SSH_EXTENDED_DATA_STDERR = 1; // see RFC4254 section 5.2
     // 32-bit length + 8-bit pad length
     public static final int SSH_PACKET_HEADER_LEN = Integer.BYTES + Byte.BYTES;
     /*
      * See https://tools.ietf.org/html/rfc4253#section-6.1:
      *
-     *      All implementations MUST be able to process packets with an
-     *      uncompressed payload length of 32768 bytes or less and a total packet
-     *      size of 35000 bytes or less
+     * All implementations MUST be able to process packets with an uncompressed payload length of 32768 bytes or less
+     * and a total packet size of 35000 bytes or less
      */
     public static final int SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT = 32768;
     public static final int SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT = 35000;
@@ -139,10 +138,9 @@ public final class SshConstants {
     }
 
     private static final class LazyAmbiguousOpcodesHolder {
-        private static final Set<Integer> AMBIGUOUS_OPCODES =
-            Collections.unmodifiableSet(
+        private static final Set<Integer> AMBIGUOUS_OPCODES = Collections.unmodifiableSet(
                 new HashSet<>(
-                    LoggingUtils.getAmbiguousMenmonics(SshConstants.class, "SSH_MSG_").values()));
+                        LoggingUtils.getAmbiguousMenmonics(SshConstants.class, "SSH_MSG_").values()));
 
         private LazyAmbiguousOpcodesHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -150,9 +148,9 @@ public final class SshConstants {
     }
 
     /**
-     * @param cmd The command value
-     * @return {@code true} if this value is used by several <U>different</U> messages
-     * @see #getAmbiguousOpcodes()
+     * @param  cmd The command value
+     * @return     {@code true} if this value is used by several <U>different</U> messages
+     * @see        #getAmbiguousOpcodes()
      */
     public static boolean isAmbiguousOpcode(int cmd) {
         Collection<Integer> ambiguousOpcodes = getAmbiguousOpcodes();
@@ -168,19 +166,18 @@ public final class SshConstants {
     }
 
     private static final class LazyMessagesMapHolder {
-        private static final Map<Integer, String> MESSAGES_MAP =
-            LoggingUtils.generateMnemonicMap(SshConstants.class, f -> {
-                String name = f.getName();
-                if (!name.startsWith("SSH_MSG_")) {
-                    return false;
-                }
+        private static final Map<Integer, String> MESSAGES_MAP = LoggingUtils.generateMnemonicMap(SshConstants.class, f -> {
+            String name = f.getName();
+            if (!name.startsWith("SSH_MSG_")) {
+                return false;
+            }
 
-                try {
-                    return !isAmbiguousOpcode(f.getByte(null));
-                } catch (Exception e) {
-                    return false;
-                }
-            });
+            try {
+                return !isAmbiguousOpcode(f.getByte(null));
+            } catch (Exception e) {
+                return false;
+            }
+        });
 
         private LazyMessagesMapHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -190,9 +187,9 @@ public final class SshConstants {
     /**
      * Converts a command value to a user-friendly name
      *
-     * @param cmd The command value
-     * @return The user-friendly name - if not one of the defined {@code SSH_MSG_XXX}
-     * values then returns the string representation of the command's value
+     * @param  cmd The command value
+     * @return     The user-friendly name - if not one of the defined {@code SSH_MSG_XXX} values then returns the string
+     *             representation of the command's value
      */
     public static String getCommandMessageName(int cmd) {
         @SuppressWarnings("synthetic-access")
@@ -205,8 +202,8 @@ public final class SshConstants {
     }
 
     private static final class LazyReasonsMapHolder {
-        private static final Map<Integer, String> REASONS_MAP =
-            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH2_DISCONNECT_");
+        private static final Map<Integer, String> REASONS_MAP
+                = LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH2_DISCONNECT_");
 
         private LazyReasonsMapHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -216,9 +213,9 @@ public final class SshConstants {
     /**
      * Converts a disconnect reason value to a user-friendly name
      *
-     * @param reason The disconnect reason value
-     * @return The user-friendly name - if not one of the defined {@code SSH2_DISCONNECT_}
-     * values then returns the string representation of the reason's value
+     * @param  reason The disconnect reason value
+     * @return        The user-friendly name - if not one of the defined {@code SSH2_DISCONNECT_} values then returns
+     *                the string representation of the reason's value
      */
     public static String getDisconnectReasonName(int reason) {
         @SuppressWarnings("synthetic-access")
@@ -231,8 +228,8 @@ public final class SshConstants {
     }
 
     private static final class LazyOpenCodesMapHolder {
-        private static final Map<Integer, String> OPEN_CODES_MAP =
-            LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_OPEN_");
+        private static final Map<Integer, String> OPEN_CODES_MAP
+                = LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_OPEN_");
 
         private LazyOpenCodesMapHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -242,9 +239,9 @@ public final class SshConstants {
     /**
      * Converts an open error value to a user-friendly name
      *
-     * @param code The open error value
-     * @return The user-friendly name - if not one of the defined {@code SSH_OPEN_}
-     * values then returns the string representation of the reason's value
+     * @param  code The open error value
+     * @return      The user-friendly name - if not one of the defined {@code SSH_OPEN_} values then returns the string
+     *              representation of the reason's value
      */
     public static String getOpenErrorCodeName(int code) {
         @SuppressWarnings("synthetic-access")

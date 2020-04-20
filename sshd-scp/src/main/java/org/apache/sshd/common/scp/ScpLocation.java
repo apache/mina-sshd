@@ -28,9 +28,9 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Represents a local or remote SCP location in the format {@code user@host:path}
- * for a remote path and a simple path for a local one. If user is omitted for a
- * remote path then current user is used.
+ * Represents a local or remote SCP location in the format {@code user@host:path} for a remote path and a simple path
+ * for a local one. If user is omitted for a remote path then current user is used.
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
@@ -48,8 +48,8 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     }
 
     /**
-     * @param locSpec The location specification - ignored if {@code null}/empty
-     * @see #update(String, ScpLocation)
+     * @param  locSpec                  The location specification - ignored if {@code null}/empty
+     * @see                             #update(String, ScpLocation)
      * @throws IllegalArgumentException if invalid specification
      */
     public ScpLocation(String locSpec) {
@@ -79,12 +79,11 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     }
 
     /**
-     * Resolves the effective username to use for a remote location.
-     * If username not set then uses the current username
+     * Resolves the effective username to use for a remote location. If username not set then uses the current username
      *
      * @return The resolved username
-     * @see #getUsername()
-     * @see OsUtils#getCurrentUser()
+     * @see    #getUsername()
+     * @see    OsUtils#getCurrentUser()
      */
     public String resolveUsername() {
         String user = getUsername();
@@ -137,14 +136,14 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
 
         // we know other is also remote or we would not have reached this point
         return Objects.equals(resolveUsername(), other.resolveUsername())
-            && Objects.equals(getHost(), other.getHost());
+                && Objects.equals(getHost(), other.getHost());
     }
 
     @Override
     public ScpLocation clone() {
         try {
             return getClass().cast(super.clone());
-        } catch (CloneNotSupportedException e) {    // unexpected
+        } catch (CloneNotSupportedException e) { // unexpected
             throw new RuntimeException("Failed to clone " + toString(), e);
         }
     }
@@ -157,19 +156,19 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
         }
 
         return resolveUsername()
-            + Character.toString(USERNAME_PART_SEPARATOR)
-            + getHost()
-            + Character.toString(HOST_PART_SEPARATOR)
-            + p;
+               + Character.toString(USERNAME_PART_SEPARATOR)
+               + getHost()
+               + Character.toString(HOST_PART_SEPARATOR)
+               + p;
     }
 
     /**
      * Parses a local or remote SCP location in the format {@code user@host:path}
      *
-     * @param locSpec The location specification - ignored if {@code null}/empty
-     * @return The {@link ScpLocation} or {@code null} if no specification provider
+     * @param  locSpec                  The location specification - ignored if {@code null}/empty
+     * @return                          The {@link ScpLocation} or {@code null} if no specification provider
      * @throws IllegalArgumentException if invalid specification
-     * @see #update(String, ScpLocation)
+     * @see                             #update(String, ScpLocation)
      */
     public static ScpLocation parse(String locSpec) {
         return GenericUtils.isEmpty(locSpec) ? null : update(locSpec, new ScpLocation());
@@ -178,10 +177,10 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     /**
      * Parses a local or remote SCP location in the format {@code user@host:path}
      *
-     * @param <L> Type of {@link ScpLocation} being updated
-     * @param locSpec The location specification - ignored if {@code null}/empty
-     * @param location The {@link ScpLocation} to update - never {@code null}
-     * @return The updated location (unless no specification)
+     * @param  <L>                      Type of {@link ScpLocation} being updated
+     * @param  locSpec                  The location specification - ignored if {@code null}/empty
+     * @param  location                 The {@link ScpLocation} to update - never {@code null}
+     * @return                          The updated location (unless no specification)
      * @throws IllegalArgumentException if invalid specification
      */
     public static <L extends ScpLocation> L update(String locSpec, L location) {
@@ -194,14 +193,14 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
         location.setUsername(null);
 
         int pos = locSpec.indexOf(HOST_PART_SEPARATOR);
-        if (pos < 0) {  // assume a local path
+        if (pos < 0) { // assume a local path
             location.setPath(locSpec);
             return location;
         }
 
         /*
-         * NOTE !!! in such a case there may be confusion with a host named 'a',
-         * but there is a limit to how smart we can be...
+         * NOTE !!! in such a case there may be confusion with a host named 'a', but there is a limit to how smart we
+         * can be...
          */
         if ((pos == 1) && OsUtils.isWin32()) {
             char drive = locSpec.charAt(0);

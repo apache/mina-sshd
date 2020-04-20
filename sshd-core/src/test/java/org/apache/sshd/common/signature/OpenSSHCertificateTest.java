@@ -50,7 +50,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class OpenSSHCertificateTest extends BaseTestSupport {
     private static SshServer sshd;
@@ -108,13 +108,15 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         String certificateSha512 = "ssh_host_rsa_key-cert.pub";
 
         // default client
-        list.add(new Object[]{key, certificate, null});
-        list.add(new Object[]{key, certificate, Arrays.asList(BuiltinSignatures.rsa_cert, BuiltinSignatures.rsa)});
+        list.add(new Object[] { key, certificate, null });
+        list.add(new Object[] { key, certificate, Arrays.asList(BuiltinSignatures.rsa_cert, BuiltinSignatures.rsa) });
         // client does not support cert
-        list.add(new Object[]{key, certificate, Collections.singletonList(BuiltinSignatures.rsa)});
+        list.add(new Object[] { key, certificate, Collections.singletonList(BuiltinSignatures.rsa) });
         // rsa variant
-        list.add(new Object[]{key, certificateSha512, Arrays.asList(BuiltinSignatures.rsaSHA512_cert, BuiltinSignatures.rsaSHA512)});
-        list.add(new Object[]{key, certificateSha512, Arrays.asList(BuiltinSignatures.rsa_cert, BuiltinSignatures.rsaSHA512)});
+        list.add(new Object[] {
+                key, certificateSha512, Arrays.asList(BuiltinSignatures.rsaSHA512_cert, BuiltinSignatures.rsaSHA512) });
+        list.add(new Object[] {
+                key, certificateSha512, Arrays.asList(BuiltinSignatures.rsa_cert, BuiltinSignatures.rsaSHA512) });
 
         return Collections.unmodifiableList(list);
     }
@@ -125,8 +127,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         sshd.setHostKeyCertificateProvider(certificateProvider);
 
         PropertyResolverUtils.updateProperty(client,
-            ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
-            ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE);
+                ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
+                ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE);
 
         if (signatureFactory != null) {
             client.setSignatureFactories(signatureFactory);
@@ -146,7 +148,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         }
     }
 
-    @Test   // invalid principal, but continue
+    @Test // invalid principal, but continue
     public void testContinueOnInvalidPrincipal() throws Exception {
         PropertyResolverUtils.updateProperty(client, ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, false);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)

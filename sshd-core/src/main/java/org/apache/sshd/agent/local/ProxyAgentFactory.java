@@ -53,8 +53,8 @@ public class ProxyAgentFactory implements SshAgentFactory {
     @Override
     public List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager) {
         return isPreferredUnixAgent(manager)
-            ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS
-            : LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
+                ? UnixAgentFactory.DEFAULT_FORWARDING_CHANNELS
+                : LocalAgentFactory.DEFAULT_FORWARDING_CHANNELS;
     }
 
     @Override

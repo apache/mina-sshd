@@ -31,7 +31,8 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 /**
  * Implements &quot;check-file-name&quot; extension
  *
- * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.1.2</A>
+ * @see    <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09
+ *         - section 9.1.2</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension implements CheckFileNameExtension {
@@ -42,7 +43,7 @@ public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension imple
     @Override
     public SimpleImmutableEntry<String, Collection<byte[]>> checkFileName(
             String name, Collection<String> algorithms, long startOffset, long length, int blockSize)
-                throws IOException {
+            throws IOException {
         return doGetHash(name, algorithms, startOffset, length, blockSize);
     }
 }

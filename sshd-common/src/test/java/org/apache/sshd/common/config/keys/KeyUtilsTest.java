@@ -125,7 +125,7 @@ public class KeyUtilsTest extends JUnitTestSupport {
         }
     }
 
-    @Test   // see SSHD-606
+    @Test // see SSHD-606
     public void testValidateStrictKeyFilePermissions() throws IOException {
         Assume.assumeTrue("Test does not always work on Windows", !OsUtils.isWin32());
 
@@ -135,34 +135,40 @@ public class KeyUtilsTest extends JUnitTestSupport {
 
         assertHierarchyTargetFolderExists(file.getParent());
         try (OutputStream output = Files.newOutputStream(file)) {
-            output.write((getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(System.currentTimeMillis())).getBytes(StandardCharsets.UTF_8));
+            output.write((getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(System.currentTimeMillis()))
+                    .getBytes(StandardCharsets.UTF_8));
         }
 
         Collection<PosixFilePermission> perms = IoUtils.getPermissions(file);
         if (GenericUtils.isEmpty(perms)) {
-            assertNull("Unexpected violation for no permissions file: " + file, KeyUtils.validateStrictKeyFilePermissions(file));
+            assertNull("Unexpected violation for no permissions file: " + file,
+                    KeyUtils.validateStrictKeyFilePermissions(file));
         } else if (OsUtils.isUNIX()) {
             Map.Entry<String, Object> violation = null;
             for (PosixFilePermission p : KeyUtils.STRICTLY_PROHIBITED_FILE_PERMISSION) {
                 if (perms.contains(p)) {
                     violation = KeyUtils.validateStrictKeyFilePermissions(file);
-                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms, violation);
+                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms,
+                            violation);
                     break;
                 }
             }
 
-            if (violation == null) {    // we expect a failure since the parent does not have the necessary permissions
-                assertNotNull("Unexpected UNIX success for file " + file + " permissions=" + perms, KeyUtils.validateStrictKeyFilePermissions(file));
+            if (violation == null) { // we expect a failure since the parent does not have the necessary permissions
+                assertNotNull("Unexpected UNIX success for file " + file + " permissions=" + perms,
+                        KeyUtils.validateStrictKeyFilePermissions(file));
             }
         } else {
-            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms, KeyUtils.validateStrictKeyFilePermissions(file));
+            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms,
+                    KeyUtils.validateStrictKeyFilePermissions(file));
         }
     }
 
-    @Test   // see SSHD-895
+    @Test // see SSHD-895
     public void testRSAKeyTypeAliases() {
-        for (String alias : new String[] {KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS}) {
-            assertEquals("Mismatched canonical name for " + alias, KeyPairProvider.SSH_RSA, KeyUtils.getCanonicalKeyType(alias));
+        for (String alias : new String[] { KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS }) {
+            assertEquals("Mismatched canonical name for " + alias, KeyPairProvider.SSH_RSA,
+                    KeyUtils.getCanonicalKeyType(alias));
         }
     }
 }

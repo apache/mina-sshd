@@ -24,9 +24,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * @param <S> The type of {@link SessionContext} being provided
- * @param <M> Type of user authentication method
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <S> The type of {@link SessionContext} being provided
+ * @param  <M> Type of user authentication method
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractUserAuthMethodFactory<S extends SessionContext, M extends UserAuthInstance<S>>
         extends AbstractLoggingBean

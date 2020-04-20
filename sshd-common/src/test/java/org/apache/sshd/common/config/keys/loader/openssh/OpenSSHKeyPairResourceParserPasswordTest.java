@@ -50,7 +50,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairResourceParserTestSupport {
@@ -61,15 +61,15 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
     private final FilePasswordProvider passwordProvider;
 
     public OpenSSHKeyPairResourceParserPasswordTest(
-            BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
+                                                    BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
         super(identity);
         this.decodeResult = reportedResult;
         this.passwordProvider = new FilePasswordProvider() {
             @Override
             public String getPassword(
                     SessionContext session, NamedResource resourceKey, int retryIndex)
-                        throws IOException {
-                switch(reportedResult) {
+                    throws IOException {
+                switch (reportedResult) {
                     case RETRY:
                         if (retryIndex >= MAX_RETRIES) {
                             return PASSWORD;
@@ -86,8 +86,8 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
             @Override
             public ResourceDecodeResult handleDecodeAttemptResult(
                     SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
-                        throws IOException, GeneralSecurityException {
-                switch(reportedResult) {
+                    throws IOException, GeneralSecurityException {
+                switch (reportedResult) {
                     case IGNORE:
                     case TERMINATE:
                         assertNotNull("No error reported", err);
@@ -98,7 +98,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
                             @SuppressWarnings("synthetic-access")
                             int curRetry = retriesCount.getAndIncrement();
                             assertEquals("Mismatched retry index", curRetry, retryIndex);
-                            assertTrue("Too many retries: " + retryIndex,  retryIndex < MAX_RETRIES);
+                            assertTrue("Too many retries: " + retryIndex, retryIndex < MAX_RETRIES);
                         } else {
                             assertEquals("Mismatched success retries count", MAX_RETRIES, retryIndex);
                         }
@@ -121,7 +121,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
             {
                 for (BuiltinIdentities id : BuiltinIdentities.VALUES) {
                     for (ResourceDecodeResult res : ResourceDecodeResult.VALUES) {
-                        add(new Object[]{id, res});
+                        add(new Object[] { id, res });
                     }
                 }
             }
@@ -153,7 +153,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
     @Override
     protected void testLoadKeyPairs(
             boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
-                throws Exception {
+            throws Exception {
         switch (decodeResult) {
             case IGNORE:
                 assertTrue("Unexpected key pairs recovered", GenericUtils.isEmpty(pairs));

@@ -21,22 +21,20 @@ package org.apache.sshd.common.future;
 import org.apache.sshd.common.util.SshdEventListener;
 
 /**
- * Something interested in being notified when the completion
- * of an asynchronous SSH operation : {@link SshFuture}.
+ * Something interested in being notified when the completion of an asynchronous SSH operation : {@link SshFuture}.
  *
- * @param <T> type of future
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> type of future
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @SuppressWarnings("rawtypes")
 @FunctionalInterface
 public interface SshFutureListener<T extends SshFuture> extends SshdEventListener {
 
     /**
-     * Invoked when the operation associated with the {@link SshFuture}
-     * has been completed even if you add the listener after the completion.
+     * Invoked when the operation associated with the {@link SshFuture} has been completed even if you add the listener
+     * after the completion.
      *
-     * @param future The source {@link SshFuture} which called this
-     *               callback.
+     * @param future The source {@link SshFuture} which called this callback.
      */
     void operationComplete(T future);
 }

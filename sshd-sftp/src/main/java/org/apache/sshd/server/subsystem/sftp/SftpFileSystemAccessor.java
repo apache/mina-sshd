@@ -49,19 +49,19 @@ public interface SftpFileSystemAccessor {
     List<String> DEFAULT_UNIX_VIEW = Collections.singletonList("unix:*");
 
     /**
-     * A case <U>insensitive</U> {@link NavigableMap} of {@link FileInfoExtractor}s to
-     * be used to complete attributes that are deemed important enough to warrant an
-     * extra effort if not accessible via the file system attributes views
+     * A case <U>insensitive</U> {@link NavigableMap} of {@link FileInfoExtractor}s to be used to complete attributes
+     * that are deemed important enough to warrant an extra effort if not accessible via the file system attributes
+     * views
      */
-    NavigableMap<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS =
-        NavigableMapBuilder.<String, FileInfoExtractor<?>>builder(String.CASE_INSENSITIVE_ORDER)
-            .put("isRegularFile", FileInfoExtractor.ISREG)
-            .put("isDirectory", FileInfoExtractor.ISDIR)
-            .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
-            .put("permissions", FileInfoExtractor.PERMISSIONS)
-            .put("size", FileInfoExtractor.SIZE)
-            .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
-            .immutable();
+    NavigableMap<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS
+            = NavigableMapBuilder.<String, FileInfoExtractor<?>> builder(String.CASE_INSENSITIVE_ORDER)
+                    .put("isRegularFile", FileInfoExtractor.ISREG)
+                    .put("isDirectory", FileInfoExtractor.ISDIR)
+                    .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
+                    .put("permissions", FileInfoExtractor.PERMISSIONS)
+                    .put("size", FileInfoExtractor.SIZE)
+                    .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
+                    .immutable();
 
     /** Whether to invoke {@link FileChannel#force(boolean)} on files open for write when closing */
     String PROP_AUTO_SYNC_FILE_ON_CLOSE = "sftp-auto-fsync-on-close";
@@ -79,27 +79,27 @@ public interface SftpFileSystemAccessor {
     /**
      * Called whenever a new file is opened
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param fileHandle The {@link FileHandle} representing the created channel - may be
-     * {@code null} if not invoked within the context of such a handle (special cases)
-     * @param file The requested <U>local</U> file {@link Path}
-     * @param handle The assigned file handle through which the remote peer references this file.
-     * May be {@code null}/empty if the request is due to some internal functionality
-     * instead of due to peer requesting a handle to a file.
-     * @param options The requested {@link OpenOption}s
-     * @param attrs The requested {@link FileAttribute}s
-     * @return The opened {@link SeekableByteChannel}
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  fileHandle  The {@link FileHandle} representing the created channel - may be {@code null} if not invoked
+     *                     within the context of such a handle (special cases)
+     * @param  file        The requested <U>local</U> file {@link Path}
+     * @param  handle      The assigned file handle through which the remote peer references this file. May be
+     *                     {@code null}/empty if the request is due to some internal functionality instead of due to
+     *                     peer requesting a handle to a file.
+     * @param  options     The requested {@link OpenOption}s
+     * @param  attrs       The requested {@link FileAttribute}s
+     * @return             The opened {@link SeekableByteChannel}
      * @throws IOException If failed to open
      */
     default SeekableByteChannel openFile(
             ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle,
             Path file, String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
-                throws IOException {
+            throws IOException {
         /*
          * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-33
          *
-         *      The 'attrs' field is ignored if an existing file is opened.
+         * The 'attrs' field is ignored if an existing file is opened.
          */
         if (Files.exists(file)) {
             attrs = IoUtils.EMPTY_FILE_ATTRIBUTES;
@@ -111,27 +111,27 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when locking a section of a file is requested
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param fileHandle The {@link FileHandle} representing the created channel
-     * @param file The requested <U>local</U> file {@link Path}
-     * @param handle The assigned file handle through which the remote peer references this file
-     * @param channel The original {@link Channel} that was returned by
-     * {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
-     * @param position The position at which the locked region is to start - must be non-negative
-     * @param size The size of the locked region; must be non-negative, and the sum
-     * <tt>position</tt>&nbsp;+&nbsp;<tt>size</tt> must be non-negative
-     * @param shared {@code true} to request a shared lock, {@code false} to request an exclusive lock
-     * @return A lock object representing the newly-acquired lock, or {@code null}
-     * if the lock could not be acquired because another program holds an overlapping lock
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  fileHandle  The {@link FileHandle} representing the created channel
+     * @param  file        The requested <U>local</U> file {@link Path}
+     * @param  handle      The assigned file handle through which the remote peer references this file
+     * @param  channel     The original {@link Channel} that was returned by
+     *                     {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
+     * @param  position    The position at which the locked region is to start - must be non-negative
+     * @param  size        The size of the locked region; must be non-negative, and the sum
+     *                     <tt>position</tt>&nbsp;+&nbsp;<tt>size</tt> must be non-negative
+     * @param  shared      {@code true} to request a shared lock, {@code false} to request an exclusive lock
+     * @return             A lock object representing the newly-acquired lock, or {@code null} if the lock could not be
+     *                     acquired because another program holds an overlapping lock
      * @throws IOException If failed to honor the request
-     * @see FileChannel#tryLock(long, long, boolean)
+     * @see                FileChannel#tryLock(long, long, boolean)
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
     default FileLock tryLock(
             ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle,
             Path file, String handle, Channel channel, long position, long size, boolean shared)
-                throws IOException {
+            throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to lock: " + channel);
         }
@@ -142,20 +142,22 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when file meta-data re-synchronization is required
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param fileHandle The {@link FileHandle} representing the created channel
-     * @param file The requested <U>local</U> file {@link Path}
-     * @param handle The assigned file handle through which the remote peer references this file
-     * @param channel The original {@link Channel} that was returned by
-     * {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  fileHandle  The {@link FileHandle} representing the created channel
+     * @param  file        The requested <U>local</U> file {@link Path}
+     * @param  handle      The assigned file handle through which the remote peer references this file
+     * @param  channel     The original {@link Channel} that was returned by
+     *                     {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
      * @throws IOException If failed to execute the request
-     * @see FileChannel#force(boolean)
-     * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH -  section 10</A>
+     * @see                FileChannel#force(boolean)
+     * @see                <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section
+     *                     10</A>
      */
     default void syncFileData(
-            ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle, Path file, String handle, Channel channel)
-                throws IOException {
+            ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle, Path file, String handle,
+            Channel channel)
+            throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to sync: " + channel);
         }
@@ -166,21 +168,21 @@ public interface SftpFileSystemAccessor {
     /**
      * Called to inform the accessor that it should close the file
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param fileHandle The {@link FileHandle} representing the created channel - may be
-     * {@code null} if not invoked within the context of such a handle (special cases)
-     * @param file The requested <U>local</U> file {@link Path}
-     * @param handle The assigned file handle through which the remote peer references this file
-     * @param channel The original {@link Channel} that was returned by
-     * {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
-     * @param options The original options used to open the channel
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  fileHandle  The {@link FileHandle} representing the created channel - may be {@code null} if not invoked
+     *                     within the context of such a handle (special cases)
+     * @param  file        The requested <U>local</U> file {@link Path}
+     * @param  handle      The assigned file handle through which the remote peer references this file
+     * @param  channel     The original {@link Channel} that was returned by
+     *                     {@link #openFile(ServerSession, SftpEventListenerManager, FileHandle, Path, String, Set, FileAttribute...)}
+     * @param  options     The original options used to open the channel
      * @throws IOException If failed to execute the request
      */
     default void closeFile(
             ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle,
             Path file, String handle, Channel channel, Set<? extends OpenOption> options)
-                throws IOException {
+            throws IOException {
         if ((channel == null) || (!channel.isOpen())) {
             return;
         }
@@ -198,36 +200,36 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when a new directory stream is requested
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param dirHandle The {@link DirectoryHandle} representing the stream
-     * @param dir The requested <U>local</U> directory
-     * @param handle The assigned directory handle through which the remote peer references this directory
-     * @return The opened {@link DirectoryStream}
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  dirHandle   The {@link DirectoryHandle} representing the stream
+     * @param  dir         The requested <U>local</U> directory
+     * @param  handle      The assigned directory handle through which the remote peer references this directory
+     * @return             The opened {@link DirectoryStream}
      * @throws IOException If failed to open
      */
     default DirectoryStream<Path> openDirectory(
             ServerSession session, SftpEventListenerManager subsystem, DirectoryHandle dirHandle, Path dir, String handle)
-                throws IOException {
+            throws IOException {
         return Files.newDirectoryStream(dir);
     }
 
     /**
      * Called when a directory stream is no longer required
      *
-     * @param session The {@link ServerSession} through which the request was received
-     * @param subsystem The SFTP subsystem instance that manages the session
-     * @param dirHandle The {@link DirectoryHandle} representing the stream - may be
-     * {@code null} if not invoked within the context of such a handle (special cases)
-     * @param dir The requested <U>local</U> directory
-     * @param handle The assigned directory handle through which the remote peer references this directory
-     * @param ds The disposed {@link DirectoryStream}
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  dirHandle   The {@link DirectoryHandle} representing the stream - may be {@code null} if not invoked
+     *                     within the context of such a handle (special cases)
+     * @param  dir         The requested <U>local</U> directory
+     * @param  handle      The assigned directory handle through which the remote peer references this directory
+     * @param  ds          The disposed {@link DirectoryStream}
      * @throws IOException If failed to open
      */
     default void closeDirectory(
             ServerSession session, SftpEventListenerManager subsystem, DirectoryHandle dirHandle,
             Path dir, String handle, DirectoryStream<Path> ds)
-                throws IOException {
+            throws IOException {
         if (ds == null) {
             return; // debug breakpoint
         }

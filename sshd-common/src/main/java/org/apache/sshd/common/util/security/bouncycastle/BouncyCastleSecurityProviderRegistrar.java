@@ -62,7 +62,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
         } catch (ReflectiveOperationException t) {
             Throwable e = GenericUtils.peelException(t);
             log.error("getSecurityProvider({}) failed ({}) to instantiate {}: {}",
-                      getName(), e.getClass().getSimpleName(), PROVIDER_CLASS, e.getMessage());
+                    getName(), e.getClass().getSimpleName(), PROVIDER_CLASS, e.getMessage());
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }

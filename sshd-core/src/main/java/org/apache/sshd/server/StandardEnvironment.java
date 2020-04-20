@@ -44,9 +44,8 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     }
 
     /*
-     * NOTE: we don't care if the collection is a Set or not - after all,
-     * we hold the listeners inside a Set, so even if we add several times
-     * the same listener to the same signal set, it is harmless
+     * NOTE: we don't care if the collection is a Set or not - after all, we hold the listeners inside a Set, so even if
+     * we add several times the same listener to the same signal set, it is harmless
      */
     @Override
     public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
@@ -104,14 +103,14 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
                 }
             } catch (RuntimeException e) {
                 log.warn("signal({}) Failed ({}) to signal {} to listener={}: {}",
-                     channel, e.getClass().getSimpleName(), signal, l, e.getMessage());
+                        channel, e.getClass().getSimpleName(), signal, l, e.getMessage());
             }
         }
     }
 
     /**
-     * Adds a variable to the environment. This method is called <code>set</code>
-     * according to the name of the appropriate posix command <code>set</code>
+     * Adds a variable to the environment. This method is called <code>set</code> according to the name of the
+     * appropriate posix command <code>set</code>
      *
      * @param key   environment variable name - never {@code null}/empty
      * @param value environment variable value
@@ -125,11 +124,10 @@ public class StandardEnvironment extends AbstractLoggingBean implements Environm
     /**
      * Retrieves the set of listeners registered for a signal
      *
-     * @param signal The specified {@link Signal}
-     * @param create If {@code true} and no current listeners are mapped then
-     *               creates a new {@link Collection}
-     * @return The {@link Collection} of listeners registered for the signal - may be
-     * {@code null} in case <tt>create</tt> is {@code false}
+     * @param  signal The specified {@link Signal}
+     * @param  create If {@code true} and no current listeners are mapped then creates a new {@link Collection}
+     * @return        The {@link Collection} of listeners registered for the signal - may be {@code null} in case
+     *                <tt>create</tt> is {@code false}
      */
     protected Collection<SignalListener> getSignalListeners(Signal signal, boolean create) {
         Collection<SignalListener> ls = listeners.get(signal);

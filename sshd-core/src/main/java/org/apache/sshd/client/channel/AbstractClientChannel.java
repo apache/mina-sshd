@@ -181,25 +181,25 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .when(openFuture)
-            .run(toString(), () -> {
-                // If the channel has not been opened yet,
-                // skip the SSH_MSG_CHANNEL_CLOSE exchange
-                if (openFuture == null) {
-                    gracefulFuture.setClosed();
-                }
-                // Close inverted streams after
-                // If the inverted stream is closed before, there's a small time window
-                // in which we have:
-                //    ChannelPipedInputStream#closed = true
-                //    ChannelPipedInputStream#writerClosed = false
-                // which leads to an IOException("Pipe closed") when reading.
-                IoUtils.closeQuietly(in, out, err);
-                IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
-            })
-            .parallel(asyncIn, asyncOut, asyncErr)
-            .close(super.getInnerCloseable())
-            .build();
+                .when(openFuture)
+                .run(toString(), () -> {
+                    // If the channel has not been opened yet,
+                    // skip the SSH_MSG_CHANNEL_CLOSE exchange
+                    if (openFuture == null) {
+                        gracefulFuture.setClosed();
+                    }
+                    // Close inverted streams after
+                    // If the inverted stream is closed before, there's a small time window
+                    // in which we have:
+                    // ChannelPipedInputStream#closed = true
+                    // ChannelPipedInputStream#writerClosed = false
+                    // which leads to an IOException("Pipe closed") when reading.
+                    IoUtils.closeQuietly(in, out, err);
+                    IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+                })
+                .parallel(asyncIn, asyncOut, asyncErr)
+                .close(super.getInnerCloseable())
+                .build();
     }
 
     @Override
@@ -209,8 +209,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         boolean traceEnabled = log.isTraceEnabled();
         long startTime = System.currentTimeMillis();
         /*
-         * NOTE !!! we must use the futureLock since some of the events that
-         * we wait on are related to open/close future(s)
+         * NOTE !!! we must use the futureLock since some of the events that we wait on are related to open/close
+         * future(s)
          */
         synchronized (futureLock) {
             long remWait = timeout;
@@ -239,7 +239,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     if ((usedTime >= timeout) || (remWait <= 0L)) {
                         if (traceEnabled) {
                             log.trace("waitFor({}) call timeout {}/{} for mask={}: {}",
-                                this, usedTime, timeout, mask, cond);
+                                    this, usedTime, timeout, mask, cond);
                         }
                         cond.add(ClientChannelEvent.TIMEOUT);
                         return cond;
@@ -248,7 +248,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
                 if (traceEnabled) {
                     log.trace("waitFor({}) waiting {} millis for lock - mask={}, cond={}",
-                        this, remWait, mask, cond);
+                            this, remWait, mask, cond);
                 }
 
                 long nanoStart = System.nanoTime();
@@ -266,8 +266,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
 
                     if (timeout > 0L) {
-                        long waitDuration =
-                            TimeUnit.MILLISECONDS.convert(nanoDuration, TimeUnit.NANOSECONDS);
+                        long waitDuration = TimeUnit.MILLISECONDS.convert(nanoDuration, TimeUnit.NANOSECONDS);
                         if (waitDuration <= 0L) {
                             waitDuration = 123L;
                         }
@@ -278,7 +277,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     long nanoDuration = nanoEnd - nanoStart;
                     if (traceEnabled) {
                         log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos",
-                            this, mask, nanoDuration);
+                                this, mask, nanoDuration);
                     }
                 }
             }
@@ -287,8 +286,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public Set<ClientChannelEvent> getChannelState() {
-        Set<ClientChannelEvent> cond =
-            EnumSet.noneOf(ClientChannelEvent.class);
+        Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);
         synchronized (futureLock) {
             return updateCurrentChannelState(cond);
         }
@@ -329,8 +327,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
         Session session = getSession();
         Window wLocal = getLocalWindow();
-        Buffer buffer =
-            session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());
@@ -342,7 +339,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
         throw new UnsupportedOperationException(
-            "open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+                "open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
@@ -350,8 +347,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         setRecipient(recipient);
 
         Session session = getSession();
-        FactoryManager manager =
-            Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
 
@@ -383,7 +379,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         String lang = buffer.getString();
         if (log.isDebugEnabled()) {
             log.debug("handleOpenFailure({}) reason={}, lang={}, msg={}",
-                this, SshConstants.getOpenErrorCodeName(reason), lang, msg);
+                    this, SshConstants.getOpenErrorCodeName(reason), lang, msg);
         }
 
         this.openFailureReason = reason;
@@ -406,7 +402,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             return;
         }
         ValidateUtils.checkTrue(
-            len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
+                len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
 
         if (asyncOut != null) {
             asyncOut.write(new ByteArrayBuffer(data, off, (int) len));
@@ -430,7 +426,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             return;
         }
         ValidateUtils.checkTrue(
-            len <= Integer.MAX_VALUE, "Extended data length exceeds int boundaries: %d", len);
+                len <= Integer.MAX_VALUE, "Extended data length exceeds int boundaries: %d", len);
 
         if (asyncErr != null) {
             asyncErr.write(new ByteArrayBuffer(data, off, (int) len));

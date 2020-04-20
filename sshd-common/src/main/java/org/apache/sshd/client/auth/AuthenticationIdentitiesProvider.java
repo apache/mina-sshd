@@ -35,8 +35,8 @@ import org.apache.sshd.common.util.helper.LazyMatchingTypeIterable;
 public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, PasswordIdentityProvider {
 
     /**
-     * Compares 2 password identities - returns zero ONLY if <U>both</U> compared
-     * objects are {@link String}s and equal to each other
+     * Compares 2 password identities - returns zero ONLY if <U>both</U> compared objects are {@link String}s and equal
+     * to each other
      */
     Comparator<Object> PASSWORD_IDENTITY_COMPARATOR = (o1, o2) -> {
         if (!(o1 instanceof String) || !(o2 instanceof String)) {
@@ -47,8 +47,8 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
     };
 
     /**
-     * Compares 2 {@link KeyPair} identities - returns zero ONLY if <U>both</U> compared
-     * objects are {@link KeyPair}s and equal to each other
+     * Compares 2 {@link KeyPair} identities - returns zero ONLY if <U>both</U> compared objects are {@link KeyPair}s
+     * and equal to each other
      */
     Comparator<Object> KEYPAIR_IDENTITY_COMPARATOR = (o1, o2) -> {
         if ((!(o1 instanceof KeyPair)) || (!(o2 instanceof KeyPair))) {
@@ -77,8 +77,8 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
     }
 
     /**
-     * @param identities The {@link Iterable} identities - OK if {@code null}/empty
-     * @return An {@link AuthenticationIdentitiesProvider} wrapping the identities
+     * @param  identities The {@link Iterable} identities - OK if {@code null}/empty
+     * @return            An {@link AuthenticationIdentitiesProvider} wrapping the identities
      */
     static AuthenticationIdentitiesProvider wrapIdentities(Iterable<?> identities) {
         return new AuthenticationIdentitiesProvider() {

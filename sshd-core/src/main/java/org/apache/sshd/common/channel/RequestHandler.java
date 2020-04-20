@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * A global request handler.
  *
- * @param <T> Request type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Request type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface RequestHandler<T> {
@@ -40,13 +40,11 @@ public interface RequestHandler<T> {
         ReplySuccess,
         ReplyFailure;
 
-        public static final Set<Result> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(Result.class));
+        public static final Set<Result> VALUES = Collections.unmodifiableSet(EnumSet.allOf(Result.class));
 
         /**
-         * @param name The result name - ignored if {@code null}/empty
-         * @return The matching {@link Result} value (case <U>insensitive</U>)
-         * or {@code null} if no match found
+         * @param  name The result name - ignored if {@code null}/empty
+         * @return      The matching {@link Result} value (case <U>insensitive</U>) or {@code null} if no match found
          */
         public static Result fromName(String name) {
             if (GenericUtils.isEmpty(name)) {
@@ -64,16 +62,16 @@ public interface RequestHandler<T> {
     }
 
     /**
-     * Process an SSH request. If an exception is thrown, the ConnectionService
-     * will send a failure message if needed and the request will be considered handled.
-     * @param t The input parameter
-     * @param request The request string
-     * @param wantReply Whether a reply is requested
-     * @param buffer The {@link Buffer} with request specific data
-     * @return The {@link Result}
-     * @throws Exception If failed to handle the request - <B>Note:</B> in
-     * order to signal an unsupported request the {@link Result#Unsupported}
-     * value should be returned
+     * Process an SSH request. If an exception is thrown, the ConnectionService will send a failure message if needed
+     * and the request will be considered handled.
+     * 
+     * @param  t         The input parameter
+     * @param  request   The request string
+     * @param  wantReply Whether a reply is requested
+     * @param  buffer    The {@link Buffer} with request specific data
+     * @return           The {@link Result}
+     * @throws Exception If failed to handle the request - <B>Note:</B> in order to signal an unsupported request the
+     *                   {@link Result#Unsupported} value should be returned
      */
     Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
 }

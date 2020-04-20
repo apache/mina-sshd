@@ -23,8 +23,8 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * A test {@link PasswordAuthenticator} that accepts an authentication
- * attempt if the username is not {@code null} and same as password
+ * A test {@link PasswordAuthenticator} that accepts an authentication attempt if the username is not {@code null} and
+ * same as password
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -40,7 +40,7 @@ public class BogusPasswordAuthenticator extends AbstractLoggingBean implements P
         boolean result = (username != null) && username.equals(password);
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}) {} / {} - success={}",
-                session, username, password, result);
+                    session, username, password, result);
         }
 
         return result;

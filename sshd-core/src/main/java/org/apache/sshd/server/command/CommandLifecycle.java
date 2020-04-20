@@ -29,26 +29,23 @@ import org.apache.sshd.server.channel.ChannelSession;
  */
 public interface CommandLifecycle {
     /**
-     * Starts the command execution. All streams must have been set <U>before</U>
-     * calling this method. The command should implement {@link java.lang.Runnable},
-     * and this method should spawn a new thread like:
+     * Starts the command execution. All streams must have been set <U>before</U> calling this method. The command
+     * should implement {@link java.lang.Runnable}, and this method should spawn a new thread like:
+     * 
      * <pre>
      * {@code Thread(this).start(); }
      * </pre>
      *
-     * @param channel The {@link ChannelSession} through which the command has been
-     * received
-     * @param env The {@link Environment}
+     * @param  channel     The {@link ChannelSession} through which the command has been received
+     * @param  env         The {@link Environment}
      * @throws IOException If failed to start
      */
     void start(ChannelSession channel, Environment env) throws IOException;
 
     /**
-     * This method is called by the SSH server to destroy the command because
-     * the client has disconnected somehow.
+     * This method is called by the SSH server to destroy the command because the client has disconnected somehow.
      *
-     * @param channel The {@link ChannelSession} through which the command has been
-     * received
+     * @param  channel   The {@link ChannelSession} through which the command has been received
      * @throws Exception if failed to destroy
      */
     void destroy(ChannelSession channel) throws Exception;

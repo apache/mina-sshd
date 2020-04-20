@@ -24,22 +24,20 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Represents an asynchronous operation whose successful result can be
- * verified somehow. The contract guarantees that if the {@code verifyXXX}
- * method returns without an exception then the operation was completed
- * <U>successfully</U>
+ * Represents an asynchronous operation whose successful result can be verified somehow. The contract guarantees that if
+ * the {@code verifyXXX} method returns without an exception then the operation was completed <U>successfully</U>
  *
- * @param <T> Type of verification result
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of verification result
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface VerifiableFuture<T> {
     /**
      * Wait {@link Long#MAX_VALUE} msec. and verify that the operation was successful
      *
-     * @return The (same) future instance
+     * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
-     * @see #verify(long)
+     * @see                #verify(long)
      */
     default T verify() throws IOException {
         return verify(Long.MAX_VALUE);
@@ -48,11 +46,11 @@ public interface VerifiableFuture<T> {
     /**
      * Wait and verify that the operation was successful
      *
-     * @param timeout The number of time units to wait
-     * @param unit    The wait {@link TimeUnit}
-     * @return The (same) future instance
+     * @param  timeout     The number of time units to wait
+     * @param  unit        The wait {@link TimeUnit}
+     * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
-     * @see #verify(long)
+     * @see                #verify(long)
      */
     default T verify(long timeout, TimeUnit unit) throws IOException {
         return verify(unit.toMillis(timeout));
@@ -61,10 +59,10 @@ public interface VerifiableFuture<T> {
     /**
      * Wait and verify that the operation was successful
      *
-     * @param timeout The maximum duration to wait, <code>null</code> to wait forever
-     * @return The (same) future instance
+     * @param  timeout     The maximum duration to wait, <code>null</code> to wait forever
+     * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
-     * @see #verify(long)
+     * @see                #verify(long)
      */
     default T verify(Duration timeout) throws IOException {
         return timeout != null ? verify(timeout.toMillis()) : verify();
@@ -73,9 +71,9 @@ public interface VerifiableFuture<T> {
     /**
      * Wait and verify that the operation was successful
      *
-     * @param timeoutMillis Wait timeout in milliseconds
-     * @return The (same) future instance
-     * @throws IOException If failed to verify successfully on time
+     * @param  timeoutMillis Wait timeout in milliseconds
+     * @return               The (same) future instance
+     * @throws IOException   If failed to verify successfully on time
      */
     T verify(long timeoutMillis) throws IOException;
 }

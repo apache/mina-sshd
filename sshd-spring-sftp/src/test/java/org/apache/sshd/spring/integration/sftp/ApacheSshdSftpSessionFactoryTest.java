@@ -35,6 +35,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.jcraft.jsch.ChannelSftp.LsEntry;
+import com.jcraft.jsch.SftpATTRS;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
@@ -59,9 +61,6 @@ import org.junit.runners.MethodSorters;
 import org.springframework.integration.file.remote.session.Session;
 import org.springframework.integration.file.remote.session.SessionFactory;
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
-
-import com.jcraft.jsch.ChannelSftp.LsEntry;
-import com.jcraft.jsch.SftpATTRS;
 
 /**
  * TODO Add javadoc
@@ -141,7 +140,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd.setFileSystemFactory(fileSystemFactory);   // just making sure
+        sshd.setFileSystemFactory(fileSystemFactory); // just making sure
     }
 
     @Test
@@ -175,9 +174,11 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testWriteRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         Path srcFile = Files.createDirectories(lclSftp).resolve("source.txt");
-        List<String> expectedLines = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        List<String> expectedLines
+                = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Files.deleteIfExists(srcFile);
         Files.write(srcFile, expectedLines, StandardCharsets.UTF_8);
 
@@ -194,7 +195,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
 
     private static void testWriteRemoteFileContents(
             String type, Session<?> session, Path srcFile, Path dstFile, String remotePath, List<String> expectedLines)
-                    throws Exception {
+            throws Exception {
         Files.deleteIfExists(dstFile);
 
         try (InputStream inputStream = Files.newInputStream(srcFile)) {
@@ -209,9 +210,11 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testRetrieveRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         Path lclFile = Files.createDirectories(lclSftp).resolve("source.txt");
-        List<String> expectedLines = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        List<String> expectedLines
+                = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Files.deleteIfExists(lclFile);
         Files.write(lclFile, expectedLines, StandardCharsets.UTF_8);
 
@@ -221,7 +224,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         SessionFactory<SftpClient.DirEntry> sshdFactory = getSshdSessionFactory();
         try (Session<LsEntry> legacySession = legacyFactory.getSession();
              Session<SftpClient.DirEntry> sshdSession = sshdFactory.getSession()) {
-            for (boolean directStream : new boolean[]{true, false}) {
+            for (boolean directStream : new boolean[] { true, false }) {
                 List<String> legacyLines = readRemoteFileLines(legacySession, remoteFile, directStream);
                 assertListEquals("Pure legacy lines - direct=" + directStream, expectedLines, legacyLines);
 
@@ -231,7 +234,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         }
     }
 
-    private static List<String> readRemoteFileLines(Session<?> session, String remoteFile, boolean directStream) throws Exception {
+    private static List<String> readRemoteFileLines(Session<?> session, String remoteFile, boolean directStream)
+            throws Exception {
         if (directStream) {
             try (InputStream rawStream = session.readRaw(remoteFile)) {
                 try {
@@ -254,7 +258,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @Test
     public void testListContents() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp); // start clean
 
         List<Path> subFolders = new ArrayList<>();
@@ -267,7 +272,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         List<Path> subFiles = new ArrayList<>();
         for (int index = 1; index <= Byte.SIZE; index++) {
             Path file = Files.write(lclSftp.resolve("file" + index + ".txt"),
-                (getClass().getSimpleName() + "#" + getCurrentTestName() + "-" + index).getBytes(StandardCharsets.UTF_8));
+                    (getClass().getSimpleName() + "#" + getCurrentTestName() + "-" + index).getBytes(StandardCharsets.UTF_8));
             subFiles.add(file);
         }
         Collections.sort(subFiles, BY_CASE_INSENSITIVE_FILE_PART);
@@ -347,7 +352,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         for (int index = 0; index < expected.size(); index++) {
             Path path = expected.get(index);
             SftpClient.DirEntry de = actual.get(index);
-            assertEquals("Mismatched filename at dirs=" + dirs + " index=" + index, Objects.toString(path.getFileName(), null), de.getFilename());
+            assertEquals("Mismatched filename at dirs=" + dirs + " index=" + index, Objects.toString(path.getFileName(), null),
+                    de.getFilename());
 
             Attributes deAttrs = de.getAttributes();
             assertEquals("Mismatched SSHD directory indicator for " + path, dirs, deAttrs.isDirectory());

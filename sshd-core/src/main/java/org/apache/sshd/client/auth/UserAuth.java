@@ -25,22 +25,22 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Represents a user authentication mechanism
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
     /**
-     * @param session The {@link ClientSession}
-     * @param service The requesting service name
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
      * @throws Exception If failed to initialize the mechanism
      */
     void init(ClientSession session, String service) throws Exception;
 
     /**
-     * @param buffer The {@link Buffer} to process - {@code null} if not a response buffer,
-     * i.e., the underlying authentication mechanism should initiate whatever challenge/response
-     * mechanism is required
-     * @return {@code true} if request handled - {@code false} if the next authentication
-     * mechanism should be used
+     * @param  buffer    The {@link Buffer} to process - {@code null} if not a response buffer, i.e., the underlying
+     *                   authentication mechanism should initiate whatever challenge/response mechanism is required
+     * @return           {@code true} if request handled - {@code false} if the next authentication mechanism should be
+     *                   used
      * @throws Exception If failed to process the request
      */
     boolean process(Buffer buffer) throws Exception;

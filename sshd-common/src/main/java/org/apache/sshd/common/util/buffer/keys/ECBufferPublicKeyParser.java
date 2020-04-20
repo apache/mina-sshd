@@ -55,10 +55,12 @@ public class ECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<ECPub
         return getRawECKey(curveName, params, buffer);
     }
 
-    protected ECPublicKey getRawECKey(String expectedCurve, ECParameterSpec spec, Buffer buffer) throws GeneralSecurityException {
+    protected ECPublicKey getRawECKey(String expectedCurve, ECParameterSpec spec, Buffer buffer)
+            throws GeneralSecurityException {
         String curveName = buffer.getString();
         if (!expectedCurve.equals(curveName)) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") curve name does not match expected: " + curveName);
+            throw new InvalidKeySpecException(
+                    "getRawECKey(" + expectedCurve + ") curve name does not match expected: " + curveName);
         }
 
         if (spec == null) {
@@ -70,9 +72,10 @@ public class ECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<ECPub
         try {
             w = ECCurves.octetStringToEcPoint(octets);
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
-                    + " cannot (" + e.getClass().getSimpleName() + ")"
-                    + " retrieve W value: " + e.getMessage(),
+            throw new InvalidKeySpecException(
+                    "getRawECKey(" + expectedCurve + ")"
+                                              + " cannot (" + e.getClass().getSimpleName() + ")"
+                                              + " retrieve W value: " + e.getMessage(),
                     e);
         }
 

@@ -42,7 +42,8 @@ public class StaticHostBasedAuthenticator extends AbstractLoggingBean implements
     }
 
     @Override
-    public final boolean authenticate(ServerSession session, String username, PublicKey clientHostKey,
+    public final boolean authenticate(
+            ServerSession session, String username, PublicKey clientHostKey,
             String clientHostName, String clientUsername, List<X509Certificate> certificates) {
         boolean accepted = isAccepted();
         if (accepted) {
@@ -54,19 +55,23 @@ public class StaticHostBasedAuthenticator extends AbstractLoggingBean implements
         return accepted;
     }
 
-    protected void handleAcceptance(ServerSession session, String username, PublicKey clientHostKey,
-            String clientHostName, String clientUsername, List<X509Certificate> certificates)  {
+    protected void handleAcceptance(
+            ServerSession session, String username, PublicKey clientHostKey,
+            String clientHostName, String clientUsername, List<X509Certificate> certificates) {
         // accepting without really checking is dangerous, thus the warning
         log.warn("authenticate({}[{}]: accepted without checking {}@{} key={} fingerprint={}",
-                 username, session, clientUsername, clientHostName, KeyUtils.getKeyType(clientHostKey), KeyUtils.getFingerPrint(clientHostKey));
+                username, session, clientUsername, clientHostName, KeyUtils.getKeyType(clientHostKey),
+                KeyUtils.getFingerPrint(clientHostKey));
 
     }
 
-    protected void handleRejection(ServerSession session, String username, PublicKey clientHostKey,
-            String clientHostName, String clientUsername, List<X509Certificate> certificates)  {
+    protected void handleRejection(
+            ServerSession session, String username, PublicKey clientHostKey,
+            String clientHostName, String clientUsername, List<X509Certificate> certificates) {
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}[{}]: rejected {}@{} key={} fingerprint={}",
-                    username, session, clientUsername, clientHostName, KeyUtils.getKeyType(clientHostKey), KeyUtils.getFingerPrint(clientHostKey));
+                    username, session, clientUsername, clientHostName, KeyUtils.getKeyType(clientHostKey),
+                    KeyUtils.getFingerPrint(clientHostKey));
         }
     }
 }

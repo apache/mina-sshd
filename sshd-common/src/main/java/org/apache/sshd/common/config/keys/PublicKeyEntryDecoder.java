@@ -38,9 +38,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * Represents a decoder of an {@code OpenSSH} encoded key data
  *
- * @param <PUB> Type of {@link PublicKey}
- * @param <PRV> Type of {@link PrivateKey}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey}
+ * @param  <PRV> Type of {@link PrivateKey}
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
         extends KeyEntryResolver<PUB, PRV>, PublicKeyRawDataDecoder<PUB>, PublicKeyEntryResolver {
@@ -48,7 +48,7 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
     @Override
     default PublicKey resolve(
             SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedKeyTypes();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
@@ -61,7 +61,7 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
     @Override
     default PUB decodePublicKeyByType(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
         if (GenericUtils.isEmpty(type)) {
@@ -77,12 +77,12 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
     }
 
     /**
-     * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same
-     * one used by the {@code decodePublicKey} method(s)
+     * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same one used by the {@code decodePublicKey}
+     * method(s)
      *
-     * @param s   The {@link OutputStream} to write the data to
-     * @param key The {@link PublicKey} - may not be {@code null}
-     * @return The key type value - one of the {@link #getSupportedKeyTypes()}
+     * @param  s           The {@link OutputStream} to write the data to
+     * @param  key         The {@link PublicKey} - may not be {@code null}
+     * @return             The key type value - one of the {@link #getSupportedKeyTypes()}
      * @throws IOException If failed to generate the encoding
      */
     String encodePublicKey(OutputStream s, PUB key) throws IOException;

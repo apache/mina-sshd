@@ -27,9 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Monitors the {@code ~/.ssh/config} file of the user currently running
- * the client, re-loading it if necessary. It also (optionally) enforces
- * the same permissions regime as {@code OpenSSH}
+ * Monitors the {@code ~/.ssh/config} file of the user currently running the client, re-loading it if necessary. It also
+ * (optionally) enforces the same permissions regime as {@code OpenSSH}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -42,10 +41,9 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
     private final boolean strict;
 
     /**
-     * @param strict If {@code true} then makes sure that the containing folder
-     * has 0700 access and the file 0644. <B>Note:</B> for <I>Windows</I> it
-     * does not check these permissions
-     * @see #validateStrictConfigFilePermissions(Path, LinkOption...)
+     * @param strict If {@code true} then makes sure that the containing folder has 0700 access and the file 0644.
+     *               <B>Note:</B> for <I>Windows</I> it does not check these permissions
+     * @see          #validateStrictConfigFilePermissions(Path, LinkOption...)
      */
     public DefaultConfigFileHostEntryResolver(boolean strict) {
         this(HostConfigEntry.getDefaultHostConfigFile(), strict);
@@ -57,17 +55,17 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
     }
 
     /**
-     * @return If {@code true} then makes sure that the containing folder
-     * has 0700 access and the file 0644. <B>Note:</B> for <I>Windows</I> it
-     * does not check these permissions
-     * @see #validateStrictConfigFilePermissions(Path, LinkOption...)
+     * @return If {@code true} then makes sure that the containing folder has 0700 access and the file 0644.
+     *         <B>Note:</B> for <I>Windows</I> it does not check these permissions
+     * @see    #validateStrictConfigFilePermissions(Path, LinkOption...)
      */
     public final boolean isStrict() {
         return strict;
     }
 
     @Override
-    protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username) throws IOException {
+    protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
+            throws IOException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
                 log.debug("reloadHostConfigEntries({}@{}:{}) check permissions of {}", username, host, port, path);
@@ -76,7 +74,7 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
             Map.Entry<String, ?> violation = validateStrictConfigFilePermissions(path);
             if (violation != null) {
                 log.warn("reloadHostConfigEntries({}@{}:{}) invalid file={} permissions: {}",
-                         username, host, port, path, violation.getKey());
+                        username, host, port, path, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }

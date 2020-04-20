@@ -43,11 +43,9 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Uses the authorized keys file to implement {@link PublickeyAuthenticator}
- * while automatically re-loading the keys if the file has changed when a
- * new authentication request is received. <B>Note:</B> by default, the only
- * validation of the username is that it is not {@code null}/empty - see
- * {@link #isValidUsername(String, ServerSession)}
+ * Uses the authorized keys file to implement {@link PublickeyAuthenticator} while automatically re-loading the keys if
+ * the file has changed when a new authentication request is received. <B>Note:</B> by default, the only validation of
+ * the username is that it is not {@code null}/empty - see {@link #isValidUsername(String, ServerSession)}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -58,16 +56,15 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     public static final String STD_AUTHORIZED_KEYS_FILENAME = "authorized_keys";
 
     private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final Path KEYS_FILE =
-            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
+        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
 
         private LazyDefaultAuthorizedKeysFileHolder() {
             throw new UnsupportedOperationException("No instance allowed");
         }
     }
 
-    private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
-        new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
+    private final AtomicReference<PublickeyAuthenticator> delegateHolder = // assumes initially reject-all
+            new AtomicReference<>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(Path file) {
         this(file, IoUtils.getLinkOptions(false));
@@ -83,25 +80,25 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         if (!isValidUsername(username, session)) {
             if (debugEnabled) {
                 log.debug("authenticate({})[{}][{}] invalid user name - file = {}",
-                    username, session, key.getAlgorithm(), getPath());
+                        username, session, key.getAlgorithm(), getPath());
             }
             return false;
         }
 
         try {
-            PublickeyAuthenticator delegate =
-                Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
+            PublickeyAuthenticator delegate
+                    = Objects.requireNonNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
             if (debugEnabled) {
                 log.debug("authenticate({})[{}][{}] invalid user name - accepted={} from file = {}",
-                    username, session, key.getAlgorithm(), accepted, getPath());
+                        username, session, key.getAlgorithm(), accepted, getPath());
             }
 
             return accepted;
         } catch (Throwable e) {
             if (debugEnabled) {
                 log.debug("authenticate({})[{}] failed ({}) to authenticate {} key from {}: {}",
-                    username, session, e.getClass().getSimpleName(), key.getAlgorithm(), getPath(), e.getMessage());
+                        username, session, e.getClass().getSimpleName(), key.getAlgorithm(), getPath(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -118,8 +115,9 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     protected PublickeyAuthenticator resolvePublickeyAuthenticator(String username, ServerSession session)
             throws IOException, GeneralSecurityException {
         if (checkReloadRequired()) {
-            /* Start fresh - NOTE: if there is any error then we want to reject all attempts
-             * since we don't want to remain with the previous data - safer that way
+            /*
+             * Start fresh - NOTE: if there is any error then we want to reject all attempts since we don't want to
+             * remain with the previous data - safer that way
              */
             delegateHolder.set(RejectAllPublickeyAuthenticator.INSTANCE);
 
@@ -127,8 +125,8 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             if (exists()) {
                 Collection<AuthorizedKeyEntry> entries = reloadAuthorizedKeys(path, username, session);
                 if (GenericUtils.size(entries) > 0) {
-                    PublickeyAuthenticator authDelegate =
-                        createDelegateAuthenticator(username, session, path, entries, getFallbackPublicKeyEntryResolver());
+                    PublickeyAuthenticator authDelegate = createDelegateAuthenticator(username, session, path, entries,
+                            getFallbackPublicKeyEntryResolver());
                     delegateHolder.set(authDelegate);
                 }
             } else {
@@ -142,7 +140,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     protected PublickeyAuthenticator createDelegateAuthenticator(
             String username, ServerSession session, Path path,
             Collection<AuthorizedKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return PublickeyAuthenticator.fromAuthorizedEntries(path, session, entries, fallbackResolver);
     }
 
@@ -152,10 +150,10 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
     protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
             Path path, String username, ServerSession session)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(path);
         log.info("reloadAuthorizedKeys({})[{}] loaded {} keys from {}",
-            username, session, GenericUtils.size(entries), path);
+                username, session, GenericUtils.size(entries), path);
         updateReloadAttributes();
         return entries;
     }
@@ -171,9 +169,9 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
     /**
      * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
      *
-     * @param options The {@link OpenOption}s to use when reading the file
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there -
-     * or empty if file does not exist
+     * @param  options     The {@link OpenOption}s to use when reading the file
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there - or empty if file does
+     *                     not exist
      * @throws IOException If failed to read keys from file
      */
     public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption... options) throws IOException {

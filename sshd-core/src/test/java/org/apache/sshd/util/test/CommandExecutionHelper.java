@@ -69,7 +69,7 @@ public abstract class CommandExecutionHelper extends AbstractCommandSupport {
                 stderr.write(message.getBytes(StandardCharsets.US_ASCII));
             } catch (IOException ioe) {
                 log.warn("Failed ({}) to write error message={}: {}",
-                         e.getClass().getSimpleName(), message, ioe.getMessage());
+                        e.getClass().getSimpleName(), message, ioe.getMessage());
             } finally {
                 onExit(-1, message);
             }
@@ -79,8 +79,8 @@ public abstract class CommandExecutionHelper extends AbstractCommandSupport {
     }
 
     /**
-     * @param command The command line
-     * @return {@code true} if continue accepting command
+     * @param  command   The command line
+     * @return           {@code true} if continue accepting command
      * @throws Exception If failed to handle the command line
      */
     protected abstract boolean handleCommandLine(String command) throws Exception;

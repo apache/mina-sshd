@@ -100,12 +100,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private IoServiceEventListener eventListener;
 
     protected AbstractFactoryManager() {
-        sessionListenerProxy =
-            EventListenerUtils.proxyWrapper(SessionListener.class, sessionListeners);
-        channelListenerProxy =
-            EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
-        tunnelListenerProxy =
-            EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, tunnelListeners);
+        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, sessionListeners);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
+        tunnelListenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, tunnelListeners);
     }
 
     @Override
@@ -205,8 +202,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     @Override
     public String getVersion() {
         String version = PropertyResolverUtils.getStringProperty(
-            VersionProperties.getVersionProperties(),
-            VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
+                VersionProperties.getVersionProperties(),
+                VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
         return version.toUpperCase();
     }
 
@@ -223,7 +220,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         int nb = this.getIntProperty(NIO_WORKERS, DEFAULT_NIO_WORKERS);
         if (nb > 0) {
             return nb;
-        } else {    // it may have been configured to a negative value
+        } else { // it may have been configured to a negative value
             return DEFAULT_NIO_WORKERS;
         }
     }
@@ -536,8 +533,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
         Objects.requireNonNull(getRandomFactory(), "RandomFactory not set");
 
         if (getIoServiceFactoryFactory() == null) {
-            IoServiceFactoryFactory defaultFactory =
-                DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
+            IoServiceFactoryFactory defaultFactory = DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance();
             setIoServiceFactoryFactory(defaultFactory);
         }
     }

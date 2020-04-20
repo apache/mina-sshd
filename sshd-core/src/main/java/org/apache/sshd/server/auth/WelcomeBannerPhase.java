@@ -24,11 +24,10 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Used to indicate at which authentication phase to send the welcome
- * banner (if any configured)
+ * Used to indicate at which authentication phase to send the welcome banner (if any configured)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://tools.ietf.org/html/rfc4252#section-5.4">RFC-4252 section 5.4</a>
+ * @see    <a href="https://tools.ietf.org/html/rfc4252#section-5.4">RFC-4252 section 5.4</a>
  */
 public enum WelcomeBannerPhase {
     /** Immediately after receiving &quot;ssh-userauth&quot; request */
@@ -42,12 +41,10 @@ public enum WelcomeBannerPhase {
     /** After user successfully authenticates */
     POST_SUCCESS,
     /**
-     * Do not send a welcome banner even if one is configured. <B>Note:</B>
-     * this option is useful when a global welcome banner has been configured
-     * but we want to disable it for a specific session.
+     * Do not send a welcome banner even if one is configured. <B>Note:</B> this option is useful when a global welcome
+     * banner has been configured but we want to disable it for a specific session.
      */
     NEVER;
 
-    public static final Set<WelcomeBannerPhase> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(WelcomeBannerPhase.class));
+    public static final Set<WelcomeBannerPhase> VALUES = Collections.unmodifiableSet(EnumSet.allOf(WelcomeBannerPhase.class));
 }

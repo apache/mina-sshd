@@ -78,7 +78,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     public void testScpUploadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
-                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                    ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
             Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -100,7 +100,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     public void testScpDownloadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
-                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                    ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
             CommonTestSupportUtils.deleteRecursive(scpRoot);
 
             Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));

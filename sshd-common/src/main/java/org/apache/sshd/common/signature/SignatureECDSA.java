@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.io.der.DERWriter;
  * Signature algorithm for EC keys using ECDSA.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://tools.ietf.org/html/rfc3278#section-8.2">RFC3278 section 8.2</A>
+ * @see    <A HREF="http://tools.ietf.org/html/rfc3278#section-8.2">RFC3278 section 8.2</A>
  */
 public class SignatureECDSA extends AbstractSignature {
     public static class SignatureECDSA256 extends SignatureECDSA {
@@ -73,7 +73,7 @@ public class SignatureECDSA extends AbstractSignature {
             int type = parser.read();
             if (type != 0x30) {
                 throw new StreamCorruptedException(
-                    "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                        "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
 
             // length of remaining encoding of the 2 integers
@@ -81,13 +81,12 @@ public class SignatureECDSA extends AbstractSignature {
             /*
              * There are supposed to be 2 INTEGERs, each encoded with:
              *
-             *  - one byte representing the fact that it is an INTEGER
-             *  - one byte of the integer encoding length
-             *  - at least one byte of integer data (zero length is not an option)
+             * - one byte representing the fact that it is an INTEGER - one byte of the integer encoding length - at
+             * least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
                 throw new StreamCorruptedException(
-                    "Invalid signature format - not enough encoded data length: " + remainLen);
+                        "Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -115,14 +114,14 @@ public class SignatureECDSA extends AbstractSignature {
         Buffer rsBuf = new ByteArrayBuffer(data);
         byte[] rArray = rsBuf.getMPIntAsBytes();
         byte[] rEncoding;
-        try (DERWriter w = new DERWriter(rArray.length + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(rArray.length + 4)) { // in case length > 0x7F
             w.writeBigInteger(rArray);
             rEncoding = w.toByteArray();
         }
 
         byte[] sArray = rsBuf.getMPIntAsBytes();
         byte[] sEncoding;
-        try (DERWriter w = new DERWriter(sArray.length + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(sArray.length + 4)) { // in case length > 0x7F
             w.writeBigInteger(sArray);
             sEncoding = w.toByteArray();
         }
@@ -134,7 +133,7 @@ public class SignatureECDSA extends AbstractSignature {
 
         int length = rEncoding.length + sEncoding.length;
         byte[] encoded;
-        try (DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+        try (DERWriter w = new DERWriter(1 + length + 4)) { // in case length > 0x7F
             w.write(0x30); // SEQUENCE
             w.writeLength(length);
             w.write(rEncoding);

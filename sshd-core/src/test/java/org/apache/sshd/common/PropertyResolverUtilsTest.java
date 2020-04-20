@@ -90,7 +90,7 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
             System.clearProperty(propKey);
         }
 
-        for (boolean expected : new boolean[]{false, true}) {
+        for (boolean expected : new boolean[] { false, true }) {
             try {
                 System.setProperty(propKey, Boolean.toString(expected));
                 testBooleanProperty(resolver, propName, expected);
@@ -176,11 +176,12 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testBooleanProperty() {
-        for (boolean expected : new boolean[]{false, true}) {
+        for (boolean expected : new boolean[] { false, true }) {
             String name = getCurrentTestName();
 
             Session session = createMockSession();
-            assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getBooleanProperty(session, name, expected));
+            assertEquals("Mismatched empty props value", expected,
+                    PropertyResolverUtils.getBooleanProperty(session, name, expected));
 
             PropertyResolverUtils.updateProperty(session, name, expected);
             testBooleanProperty(session, name, expected);
@@ -235,19 +236,20 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
     @Test
     public void testToEnumFromNonString() {
         Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
-        for (Object value : new Object[]{this, getClass(), new Date()}) {
+        for (Object value : new Object[] { this, getClass(), new Date() }) {
             try {
                 TimeUnit unit = PropertyResolverUtils.toEnum(TimeUnit.class, value, false, units);
                 fail("Unexpected success for value=" + value + ": " + unit);
             } catch (IllegalArgumentException e) {
-               // expected - ignored
+                // expected - ignored
             }
         }
     }
 
     @Test(expected = NoSuchElementException.class)
     public void testToEnumNoMatchFound() {
-        TimeUnit result = PropertyResolverUtils.toEnum(TimeUnit.class, getCurrentTestName(), true, EnumSet.allOf(TimeUnit.class));
+        TimeUnit result
+                = PropertyResolverUtils.toEnum(TimeUnit.class, getCurrentTestName(), true, EnumSet.allOf(TimeUnit.class));
         fail("Unexpected success: " + result);
     }
 

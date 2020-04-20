@@ -153,8 +153,8 @@ public class CloseableUtilsTest extends JUnitTestSupport {
                     throw new RuntimeException(e);
                 }
             });
-            future.setClosed();  // signal close complete
-            task.get(5L, TimeUnit.SECONDS);  // make sure #await call terminated
+            future.setClosed(); // signal close complete
+            task.get(5L, TimeUnit.SECONDS); // make sure #await call terminated
             assertEquals("Close immediate not called", 1, callsCount.get());
         } finally {
             service.shutdownNow();

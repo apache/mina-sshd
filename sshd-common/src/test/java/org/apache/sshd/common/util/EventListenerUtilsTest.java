@@ -66,14 +66,17 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
     @Test
     public void testListenerInstanceComparatorOnProxy() {
         Comparator<? super EventListener> comparator = EventListenerUtils.LISTENER_INSTANCE_COMPARATOR;
-        ProxyListener p1 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
+        ProxyListener p1
+                = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         assertEquals("Mismatched self reference comparison", 0, comparator.compare(p1, p1));
 
-        EventListener l = new EventListener() { /* nothing extra */ };
+        EventListener l = new EventListener() {
+            /* nothing extra */ };
         assertEquals("Mismatched proxy vs. non-proxy result", 1, Integer.signum(comparator.compare(p1, l)));
         assertEquals("Mismatched non-proxy vs. proxy result", -1, Integer.signum(comparator.compare(l, p1)));
 
-        ProxyListener p2 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
+        ProxyListener p2
+                = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         int p1vsp2 = Integer.signum(comparator.compare(p1, p2));
         assertNotEquals("Mismatched p1 vs. p2 comparison", 0, p1vsp2);
         assertEquals("Mismatched p2 vs. p1 comparison result", 0 - p1vsp2, Integer.signum(comparator.compare(p2, p1)));
@@ -82,10 +85,12 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
     @Test
     public void testListenerInstanceComparatorOnNonProxy() {
         Comparator<? super EventListener> comparator = EventListenerUtils.LISTENER_INSTANCE_COMPARATOR;
-        EventListener l1 = new EventListener() { /* nothing extra */ };
+        EventListener l1 = new EventListener() {
+            /* nothing extra */ };
         assertEquals("Mismatched self reference comparison", 0, comparator.compare(l1, l1));
 
-        EventListener l2 = new EventListener() { /* nothing extra */ };
+        EventListener l2 = new EventListener() {
+            /* nothing extra */ };
         int l1vsl2 = Integer.signum(comparator.compare(l1, l2));
         assertNotEquals("Mismatched l1 vs. l2 comparison result", 0, l1vsl2);
         assertEquals("Mismatched l2 vs. l1 comparison result", 0 - l1vsl2, Integer.signum(comparator.compare(l2, l1)));
@@ -93,7 +98,8 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testSynchronizedListenersSetOnProxies() {
-        ProxyListener p1 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
+        ProxyListener p1
+                = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         Set<ProxyListener> s = EventListenerUtils.synchronizedListenersSet();
         for (int index = 1; index <= Byte.SIZE; index++) {
             boolean modified = s.add(p1);
@@ -101,7 +107,8 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
             assertEquals("Mismatched p1 set size at attempt #" + index, 1, s.size());
         }
 
-        ProxyListener p2 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
+        ProxyListener p2
+                = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         for (int index = 1; index <= Byte.SIZE; index++) {
             boolean modified = s.add(p2);
             assertEquals("Mismatched p2 modification indicator at attempt #" + index, index == 1, modified);

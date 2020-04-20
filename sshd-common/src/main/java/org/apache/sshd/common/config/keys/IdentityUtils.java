@@ -48,10 +48,10 @@ public final class IdentityUtils {
     }
 
     private static final class LazyDefaultUserHomeFolderHolder {
-        private static final Path PATH =
-            Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
-                .toAbsolutePath()
-                .normalize();
+        private static final Path PATH
+                = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
+                        .toAbsolutePath()
+                        .normalize();
 
         private LazyDefaultUserHomeFolderHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -67,29 +67,28 @@ public final class IdentityUtils {
     }
 
     /**
-     * @param prefix The file name prefix - ignored if {@code null}/empty
-     * @param type   The identity type - ignored if {@code null}/empty
-     * @param suffix The file name suffix - ignored if {@code null}/empty
-     * @return The identity file name or {@code null} if no name
+     * @param  prefix The file name prefix - ignored if {@code null}/empty
+     * @param  type   The identity type - ignored if {@code null}/empty
+     * @param  suffix The file name suffix - ignored if {@code null}/empty
+     * @return        The identity file name or {@code null} if no name
      */
     public static String getIdentityFileName(String prefix, String type, String suffix) {
         if (GenericUtils.isEmpty(type)) {
             return null;
         } else {
             return GenericUtils.trimToEmpty(prefix)
-                 + type.toLowerCase()
-                 + GenericUtils.trimToEmpty(suffix);
+                   + type.toLowerCase()
+                   + GenericUtils.trimToEmpty(suffix);
         }
     }
 
     /**
-     * @param ids           A {@link Map} of the loaded identities where key=the identity type,
-     *                      value=the matching {@link KeyPair} - ignored if {@code null}/empty
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @return A {@link KeyPair} for the identities - {@code null} if no identities
-     * available (e.g., after filtering unsupported ones)
-     * @see BuiltinIdentities
+     * @param  ids           A {@link Map} of the loaded identities where key=the identity type, value=the matching
+     *                       {@link KeyPair} - ignored if {@code null}/empty
+     * @param  supportedOnly If {@code true} then ignore identities that are not supported internally
+     * @return               A {@link KeyPair} for the identities - {@code null} if no identities available (e.g., after
+     *                       filtering unsupported ones)
+     * @see                  BuiltinIdentities
      */
     public static KeyPairProvider createKeyPairProvider(Map<String, KeyPair> ids, boolean supportedOnly) {
         if (GenericUtils.isEmpty(ids)) {
@@ -114,7 +113,7 @@ public final class IdentityUtils {
 
             KeyPair prev = pairsMap.put(keyType, kp);
             if (prev != null) {
-                return;   // less of an offense if 2 pairs mapped to same key type
+                return; // less of an offense if 2 pairs mapped to same key type
             }
         });
 
@@ -126,23 +125,23 @@ public final class IdentityUtils {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param paths    A {@link Map} of the identities where key=identity type (case
-     *                 <U>insensitive</U>), value=the {@link Path} of file with the identity key
-     * @param provider A {@link FilePasswordProvider} - may be {@code null}
-     *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@code FilePasswordProvider#getPassword} is the path of the
-     *                 file whose key is to be loaded
-     * @param options  The {@link OpenOption}s to use when reading the key data
-     * @return A {@link NavigableMap} of the identities where key=identity type (case
-     * <U>insensitive</U>), value=the {@link KeyPair} of the identity
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  paths                    A {@link Map} of the identities where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link Path} of file with the identity key
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link OpenOption}s to use when reading the key data
+     * @return                          A {@link NavigableMap} of the identities where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
      */
     public static NavigableMap<String, KeyPair> loadIdentities(
             SessionContext session, Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyNavigableMap();
         }

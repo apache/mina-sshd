@@ -84,7 +84,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     public ServerUserAuthService(Session s) throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         serverSession = ValidateUtils.checkInstanceOf(
-            s, ServerSession.class, "Server side service used on client side: %s", s);
+                s, ServerSession.class, "Server side service used on client side: %s", s);
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }
@@ -93,10 +93,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, false, WelcomeBannerPhase.VALUES);
         welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;
         maxAuthRequests = this.getIntProperty(
-            ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
+                ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         List<UserAuthFactory> factories = ValidateUtils.checkNotNullAndNotEmpty(
-            serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
+                serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
         userAuthFactories = new ArrayList<>(factories);
         // Get authentication methods
         authMethods = new ArrayList<>();
@@ -117,8 +117,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Verify all required methods are supported
         for (List<String> l : authMethods) {
             for (String m : l) {
-                UserAuthFactory factory =
-                    NamedResource.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+                UserAuthFactory factory = NamedResource.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
                 if (factory == null) {
                     throw new SshException("Configured method is not supported: " + m);
                 }
@@ -127,7 +126,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         if (debugEnabled) {
             log.debug("ServerUserAuthService({}) authorized authentication methods: {}",
-                  s, NamedResource.getNames(userAuthFactories));
+                    s, NamedResource.getNames(userAuthFactories));
         }
 
         s.resetAuthTimeout();
@@ -177,12 +176,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             if (this.currentAuth == null) {
                 // This should not happen
-                throw new IllegalStateException("No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
+                throw new IllegalStateException(
+                        "No current authentication mechanism for cmd=" + SshConstants.getCommandMessageName(cmd));
             }
 
             if (debugEnabled) {
                 log.debug("process({}) Received authentication message={} for mechanism={}",
-                      session, SshConstants.getCommandMessageName(cmd), currentAuth.getName());
+                        session, SshConstants.getCommandMessageName(cmd), currentAuth.getName());
             }
 
             buffer.rpos(buffer.rpos() - 1);
@@ -194,9 +194,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             } catch (Exception e) {
                 // Continue
                 log.warn("process({}) Failed ({}) to authenticate using current method={}: {}",
-                      session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
+                        session, e.getClass().getSimpleName(), currentAuth.getName(), e.getMessage());
                 if (debugEnabled) {
-                    log.warn("process(" + session + ") current authentication=" + currentAuth.getName() + " failure details", e);
+                    log.warn("process(" + session + ") current authentication=" + currentAuth.getName() + " failure details",
+                            e);
                 }
             }
         }
@@ -212,15 +213,14 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     protected boolean handleUserAuthRequestMessage(
             ServerSession session, Buffer buffer, AtomicReference<Boolean> authHolder)
-                throws Exception {
+            throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         /*
          * According to RFC4252 section 5.1:
          *
          *
-         *      When SSH_MSG_USERAUTH_SUCCESS has been sent, any
-         *      further authentication requests received after that
-         *      SHOULD be silently ignored.
+         * When SSH_MSG_USERAUTH_SUCCESS has been sent, any further authentication requests received after that SHOULD
+         * be silently ignored.
          */
         if (session.isAuthenticated()) {
             String username = buffer.getString();
@@ -229,8 +229,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             if (debugEnabled) {
                 log.debug("handleUserAuthRequestMessage({}) ignore user={}, service={}, method={}"
-                    + " auth. request since session already authenticated",
-                    session, username, service, method);
+                          + " auth. request since session already authenticated",
+                        session, username, service, method);
             }
             return false;
         }
@@ -252,7 +252,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         String method = buffer.getString();
         if (debugEnabled) {
             log.debug("handleUserAuthRequestMessage({}) Received SSH_MSG_USERAUTH_REQUEST user={}, service={}, method={}",
-                  session, username, service, method);
+                    session, username, service, method);
         }
 
         if ((this.authUserName == null) || (this.authService == null)) {
@@ -265,14 +265,14 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 try {
                     SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
                     disconnectSession = (handler == null)
-                        || (!handler.handleAuthCountDisconnectReason(
-                                session, this, service, method, username, nbAuthRequests, maxAuthRequests));
+                            || (!handler.handleAuthCountDisconnectReason(
+                                    session, this, service, method, username, nbAuthRequests, maxAuthRequests));
                 } catch (IOException | RuntimeException e) {
                     log.warn("handleUserAuthRequestMessage({}) failed ({}) to invoke disconnect handler due to"
-                        + " user={}/{}, service={}/{} - {}/{} auth requests: {}",
-                        session, e.getClass().getSimpleName(),
-                        this.authUserName, username, this.authService, service,
-                        nbAuthRequests, maxAuthRequests, e.getMessage());
+                             + " user={}/{}, service={}/{} - {}/{} auth requests: {}",
+                            session, e.getClass().getSimpleName(),
+                            this.authUserName, username, this.authService, service,
+                            nbAuthRequests, maxAuthRequests, e.getMessage());
                     if (debugEnabled) {
                         log.warn("process(" + session + ") disconnect handler auth requests count invocation exception", e);
                     }
@@ -280,13 +280,14 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
                 if (disconnectSession) {
                     session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Too many authentication failures: " + nbAuthRequests);
+                            "Too many authentication failures: " + nbAuthRequests);
                     return false;
                 }
 
                 if (debugEnabled) {
-                    log.debug("handleUserAuthRequestMessage({}) ignore mismatched authentication counts: user={}/{}, service={}/{}: {}/{}",
-                        session, this.authUserName, username, this.authService, service, nbAuthRequests, maxAuthRequests);
+                    log.debug(
+                            "handleUserAuthRequestMessage({}) ignore mismatched authentication counts: user={}/{}, service={}/{}: {}/{}",
+                            session, this.authUserName, username, this.authService, service, nbAuthRequests, maxAuthRequests);
                 }
             }
         } else {
@@ -294,26 +295,29 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             try {
                 SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
                 disconnectSession = (handler == null)
-                    || (!handler.handleAuthParamsDisconnectReason(
-                            session, this, this.authUserName, username, this.authService, service));
+                        || (!handler.handleAuthParamsDisconnectReason(
+                                session, this, this.authUserName, username, this.authService, service));
             } catch (IOException | RuntimeException e) {
                 log.warn("handleUserAuthRequestMessage({}) failed ({}) to invoke disconnect handler due to"
-                    + " user={}/{}, service={}/{} mismatched parameters: {}",
-                    session, e.getClass().getSimpleName(),
-                    this.authUserName, username, this.authService, service, e.getMessage());
+                         + " user={}/{}, service={}/{} mismatched parameters: {}",
+                        session, e.getClass().getSimpleName(),
+                        this.authUserName, username, this.authService, service, e.getMessage());
                 if (debugEnabled) {
-                    log.warn("handleUserAuthRequestMessage(" + session + ") disconnect handler auth mismatched parameters invocation exception", e);
+                    log.warn("handleUserAuthRequestMessage(" + session
+                             + ") disconnect handler auth mismatched parameters invocation exception",
+                            e);
                 }
             }
 
             if (disconnectSession) {
                 session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                    "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ")"
-                    + " -> (" + username + ", " + service + ")");
+                        "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ")"
+                                                                                + " -> (" + username + ", " + service + ")");
             } else {
                 if (debugEnabled) {
-                    log.debug("handleUserAuthRequestMessage({}) ignore mismatched authentication parameters: user={}/{}, service={}/{}",
-                        session, this.authUserName, username, this.authService, service);
+                    log.debug(
+                            "handleUserAuthRequestMessage({}) ignore mismatched authentication parameters: user={}/{}, service={}/{}",
+                            session, this.authUserName, username, this.authService, service);
                 }
             }
             return false;
@@ -322,12 +326,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // TODO: verify that the service is supported
         this.authMethod = method;
         if (debugEnabled) {
-            log.debug("handleUserAuthRequestMessage({}) Authenticating user '{}' with service '{}' and method '{}' (attempt {} / {})",
-                  session, username, service, method, nbAuthRequests, maxAuthRequests);
+            log.debug(
+                    "handleUserAuthRequestMessage({}) Authenticating user '{}' with service '{}' and method '{}' (attempt {} / {})",
+                    session, username, service, method, nbAuthRequests, maxAuthRequests);
         }
 
         UserAuthFactory factory = NamedResource.findByName(
-            method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+                method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
         if (factory == null) {
             if (debugEnabled) {
                 log.debug("handleUserAuthRequestMessage({}) no authentication factory for method={}", session, method);
@@ -337,7 +342,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         currentAuth = ValidateUtils.checkNotNull(
-            factory.createUserAuth(session), "No authenticator created for method=%s", method);
+                factory.createUserAuth(session), "No authenticator created for method=%s", method);
         try {
             Boolean authed = currentAuth.auth(session, username, service, buffer);
             authHolder.set(authed);
@@ -346,9 +351,10 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return false;
         } catch (Exception e) {
             log.warn("handleUserAuthRequestMessage({}) Failed ({}) to authenticate using factory method={}: {}",
-                  session, e.getClass().getSimpleName(), method, e.getMessage());
+                    session, e.getClass().getSimpleName(), method, e.getMessage());
             if (debugEnabled) {
-                log.warn("handleUserAuthRequestMessage(" + session + ") factory authentication=" + method + " failure details", e);
+                log.warn("handleUserAuthRequestMessage(" + session + ") factory authentication=" + method + " failure details",
+                        e);
             }
         }
 
@@ -365,7 +371,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         } catch (Exception e) {
             ServerSession session = getServerSession();
             log.warn("asyncAuth({}) Error ({}) performing async authentication via cmd={}: {}",
-                session, e.getClass().getSimpleName(), cmd, e.getMessage());
+                    session, e.getClass().getSimpleName(), cmd, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.warn("asyncAuth(" + session + ")[cmd=" + cmd + "] exception details", e);
             }
@@ -376,7 +382,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationInProgress({}@{}) {}",
-                  username, getServerSession(), SshConstants.getCommandMessageName(cmd));
+                    username, getServerSession(), SshConstants.getCommandMessageName(cmd));
         }
     }
 
@@ -386,7 +392,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("handleAuthenticationSuccess({}@{}) {}",
-                username, session, SshConstants.getCommandMessageName(cmd));
+                    username, session, SshConstants.getCommandMessageName(cmd));
         }
 
         boolean success = false;
@@ -406,25 +412,30 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                     try {
                         SessionDisconnectHandler handler = session.getSessionDisconnectHandler();
                         disconnectSession = (handler == null)
-                            || (!handler.handleSessionsCountDisconnectReason(
-                                    session, this, username, currentSessionCount, maxSessionCount));
+                                || (!handler.handleSessionsCountDisconnectReason(
+                                        session, this, username, currentSessionCount, maxSessionCount));
                     } catch (IOException | RuntimeException e) {
-                        log.warn("handleAuthenticationSuccess({}@{}) failed ({}) to invoke disconnect handler due to {}/{} sessions count: {}",
-                            username, session, e.getClass().getSimpleName(), currentSessionCount, maxSessionCount, e.getMessage());
+                        log.warn(
+                                "handleAuthenticationSuccess({}@{}) failed ({}) to invoke disconnect handler due to {}/{} sessions count: {}",
+                                username, session, e.getClass().getSimpleName(), currentSessionCount, maxSessionCount,
+                                e.getMessage());
                         if (debugEnabled) {
-                            log.warn("handleAuthenticationSuccess(" + username + "@" + session + ") invocation handler exception details", e);
+                            log.warn("handleAuthenticationSuccess(" + username + "@" + session
+                                     + ") invocation handler exception details",
+                                    e);
                         }
                     }
 
                     if (disconnectSession) {
                         session.disconnect(SshConstants.SSH2_DISCONNECT_TOO_MANY_CONNECTIONS,
-                            "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
+                                "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: "
+                                                                                              + maxSessionCount);
                         return;
                     }
 
                     if (debugEnabled) {
                         log.debug("handleAuthenticationSuccess({}@{}) ignore {}/{} sessions count due to handler intervention",
-                            username, session, currentSessionCount, maxSessionCount);
+                                username, session, currentSessionCount, maxSessionCount);
                     }
                 }
             }
@@ -436,9 +447,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             session.signalAuthenticationSuccess(username, authService, buffer);
         } else {
             String remaining = authMethods.stream()
-                .filter(GenericUtils::isNotEmpty)
-                .map(l -> l.get(0))
-                .collect(Collectors.joining(","));
+                    .filter(GenericUtils::isNotEmpty)
+                    .map(l -> l.get(0))
+                    .collect(Collectors.joining(","));
 
             if (debugEnabled) {
                 log.debug("handleAuthenticationSuccess({}@{}) remaining methods={}", username, session, remaining);
@@ -446,7 +457,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
             Buffer response = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
             response.putString(remaining);
-            response.putBoolean(true);    // partial success ...
+            response.putBoolean(true); // partial success ...
             session.writePacket(response);
         }
 
@@ -467,7 +478,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (debugEnabled) {
             log.debug("handleAuthenticationFailure({}@{}) {}",
-                  username, session, SshConstants.getCommandMessageName(cmd));
+                    username, session, SshConstants.getCommandMessageName(cmd));
         }
 
         StringBuilder sb = new StringBuilder((authMethods.size() + 1) * Byte.SIZE);
@@ -490,7 +501,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, remaining.length() + Byte.SIZE);
         buffer.putString(remaining);
-        buffer.putBoolean(false);   // no partial success ...
+        buffer.putBoolean(false); // no partial success ...
         session.writePacket(buffer);
 
         if (currentAuth != null) {
@@ -505,8 +516,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     /**
      * Sends the welcome banner (if any configured) and if not already invoked
      *
-     * @param session The {@link ServerSession} to send the welcome banner to
-     * @return The sent welcome banner {@link IoWriteFuture} - {@code null} if none sent
+     * @param  session     The {@link ServerSession} to send the welcome banner to
+     * @return             The sent welcome banner {@link IoWriteFuture} - {@code null} if none sent
      * @throws IOException If failed to send the banner
      */
     public IoWriteFuture sendWelcomeBanner(ServerSession session) throws IOException {
@@ -523,16 +534,16 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         String lang = this.getStringProperty(
-            ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE,
-            ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE,
+                ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
-            welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
+                welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
         buffer.putString(welcomeBanner);
         buffer.putString(lang);
 
         if (log.isDebugEnabled()) {
             log.debug("sendWelcomeBanner({}) send banner (length={}, lang={})",
-                  session, welcomeBanner.length(), lang);
+                    session, welcomeBanner.length(), lang);
         }
         return session.writePacket(buffer);
     }
@@ -569,7 +580,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 bannerValue = new URI(message);
             } catch (URISyntaxException e) {
                 log.error("resolveWelcomeBanner({}) bad path URI {}: {}", session, message, e.getMessage());
-                throw new MalformedURLException(e.getClass().getSimpleName() + " - bad URI (" + message + "): " + e.getMessage());
+                throw new MalformedURLException(
+                        e.getClass().getSimpleName() + " - bad URI (" + message + "): " + e.getMessage());
             }
 
             if (message.startsWith("file:/")) {
@@ -598,7 +610,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
         if (bannerValue instanceof URL) {
             Charset cs = this.getCharset(
-                ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
+                    ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
             return loadWelcomeBanner(session, (URL) bannerValue, cs);
         }
 

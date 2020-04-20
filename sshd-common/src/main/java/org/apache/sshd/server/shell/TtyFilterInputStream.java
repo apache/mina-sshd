@@ -34,14 +34,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * Handles the input while taking into account the {@link PtyMode}s for
- * handling CR / LF
+ * Handles the input while taking into account the {@link PtyMode}s for handling CR / LF
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterInputStream extends FilterInputStream {
-    public static final Set<PtyMode> INPUT_OPTIONS =
-        Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
+    public static final Set<PtyMode> INPUT_OPTIONS
+            = Collections.unmodifiableSet(EnumSet.of(PtyMode.ONLCR, PtyMode.OCRNL, PtyMode.ONLRET, PtyMode.ONOCR));
 
     private final Set<PtyMode> ttyOptions;
     private Buffer buffer = new ByteArrayBuffer(Integer.SIZE, false);
@@ -54,7 +53,7 @@ public class TtyFilterInputStream extends FilterInputStream {
     public TtyFilterInputStream(InputStream in, Collection<PtyMode> ttyOptions) {
         super(Objects.requireNonNull(in, "No input stream provided"));
         // we create a copy of the options so as to avoid concurrent modifications
-        this.ttyOptions = GenericUtils.of(ttyOptions);  // TODO validate non-conflicting options
+        this.ttyOptions = GenericUtils.of(ttyOptions); // TODO validate non-conflicting options
     }
 
     public synchronized void write(int c) {
@@ -93,7 +92,7 @@ public class TtyFilterInputStream extends FilterInputStream {
 
     protected int handleCR() throws IOException {
         if (ttyOptions.contains(PtyMode.OCRNL)) {
-            return '\n';    // Translate carriage return to newline
+            return '\n'; // Translate carriage return to newline
         } else {
             return '\r';
         }
@@ -104,7 +103,7 @@ public class TtyFilterInputStream extends FilterInputStream {
         if ((ttyOptions.contains(PtyMode.ONLCR) || ttyOptions.contains(PtyMode.ONOCR)) && (lastChar != '\r')) {
             buffer = insertCharacter(buffer, '\n');
             return '\r';
-        } else if (ttyOptions.contains(PtyMode.ONLRET)) {   // Newline performs a carriage return
+        } else if (ttyOptions.contains(PtyMode.ONLRET)) { // Newline performs a carriage return
             return '\r';
         } else {
             return '\n';

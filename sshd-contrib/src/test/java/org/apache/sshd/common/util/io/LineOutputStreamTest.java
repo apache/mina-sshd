@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class LineOutputStreamTest extends JUnitTestSupport {
@@ -58,7 +58,7 @@ public class LineOutputStreamTest extends JUnitTestSupport {
 
     @Parameters(name = "CR={0}")
     public static List<Object[]> parameters() {
-        return Arrays.asList(new Object[] {Boolean.TRUE}, new Object[] {Boolean.FALSE});
+        return Arrays.asList(new Object[] { Boolean.TRUE }, new Object[] { Boolean.FALSE });
     }
 
     @Test
@@ -70,7 +70,7 @@ public class LineOutputStreamTest extends JUnitTestSupport {
         }
 
         Path targetFile = getTargetRelativeFile(
-            getClass().getSimpleName(), getCurrentTestName() + "-" + (withCR ? "CR" : "LF") + ".txt");
+                getClass().getSimpleName(), getCurrentTestName() + "-" + (withCR ? "CR" : "LF") + ".txt");
         Files.createDirectories(targetFile.getParent());
         try (OutputStream fout = Files.newOutputStream(targetFile)) {
             int lineCount = 0;

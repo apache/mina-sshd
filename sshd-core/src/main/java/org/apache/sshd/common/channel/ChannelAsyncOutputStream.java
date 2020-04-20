@@ -78,7 +78,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 packetWriter.close();
             } catch (IOException e) {
                 log.error("preClose({}) Failed ({}) to pre-close packet writer: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.error("preClose(" + this + ") packet writer close exception details", e);
                 }
@@ -120,7 +120,9 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 }
 
                 if (length >= (Integer.MAX_VALUE - 12)) {
-                    throw new IllegalArgumentException("Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length + ") exceeds int boundaries");
+                    throw new IllegalArgumentException(
+                            "Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length
+                                                       + ") exceeds int boundaries");
                 }
 
                 Session s = channel.getSession();
@@ -158,7 +160,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                                 boolean nullified = pendingWrite.compareAndSet(future, null);
                                 if (log.isTraceEnabled()) {
                                     log.trace("doWriteIfPossible({}) completed write len={}, more={}",
-                                              stream, total, !nullified);
+                                            stream, total, !nullified);
                                 }
                                 future.setValue(Boolean.TRUE);
                             }
@@ -168,7 +170,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                         private void handleOperationFailed(Throwable reason) {
                             if (log.isDebugEnabled()) {
                                 log.debug("doWriteIfPossible({}) failed ({}) to complete write of {} out of {}: {}",
-                                          stream, reason.getClass().getSimpleName(), length, total, reason.getMessage());
+                                        stream, reason.getClass().getSimpleName(), length, total, reason.getMessage());
                             }
 
                             if (log.isTraceEnabled()) {
@@ -178,7 +180,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                             boolean nullified = pendingWrite.compareAndSet(future, null);
                             if (log.isTraceEnabled()) {
                                 log.trace("doWriteIfPossible({}) failed write len={}, more={}",
-                                          stream, total, !nullified);
+                                        stream, total, !nullified);
                             }
                             future.setValue(reason);
                         }

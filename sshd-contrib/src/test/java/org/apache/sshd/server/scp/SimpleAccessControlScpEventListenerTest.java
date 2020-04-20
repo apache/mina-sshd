@@ -85,7 +85,8 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
 
         try (SshClient client = setupTestClient()) {
             client.start();
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
 
@@ -93,7 +94,8 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
                 ScpClient scp = creator.createScpClient(session);
                 Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = CommonTestSupportUtils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                Path scpRoot = CommonTestSupportUtils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX,
+                        getClass().getSimpleName(), getCurrentTestName());
                 CommonTestSupportUtils.deleteRecursive(scpRoot);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));

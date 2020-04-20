@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * Handler for &quot;no-more-sessions@xxx&quot; global request.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol section 2.2</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol section 2.2</A>
  */
 public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandler {
     public static final NoMoreSessionsHandler INSTANCE = new NoMoreSessionsHandler();
@@ -38,7 +38,7 @@ public class NoMoreSessionsHandler extends AbstractConnectionServiceRequestHandl
     @Override
     public Result process(
             ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
-                throws Exception {
+            throws Exception {
         if (request.startsWith("no-more-sessions@")) {
             connectionService.setAllowMoreSessions(false);
             return Result.ReplyFailure;

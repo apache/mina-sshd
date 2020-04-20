@@ -64,36 +64,31 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  * </p>
  *
  * <p>
- * The SshServer has to be configured before being started. Such configuration can be
- * done either using a dependency injection mechanism (such as the Spring framework)
- * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
- * method, which will known ciphers, macs, channels, etc...
- * Besides this basic setup, a few things have to be manually configured such as the
- * port number, {@link Factory}, the {@link org.apache.sshd.common.keyprovider.KeyPairProvider}
- * and the {@link PasswordAuthenticator}.
+ * The SshServer has to be configured before being started. Such configuration can be done either using a dependency
+ * injection mechanism (such as the Spring framework) or programmatically. Basic setup is usually done using the
+ * {@link #setUpDefaultServer()} method, which will known ciphers, macs, channels, etc... Besides this basic setup, a
+ * few things have to be manually configured such as the port number, {@link Factory}, the
+ * {@link org.apache.sshd.common.keyprovider.KeyPairProvider} and the {@link PasswordAuthenticator}.
  * </p>
  *
  * <p>
- * Some properties can also be configured using the {@link PropertyResolverUtils}
- * {@code updateProperty} methods.
+ * Some properties can also be configured using the {@link PropertyResolverUtils} {@code updateProperty} methods.
  * </p>
  *
- * Once the SshServer instance has been configured, it can be started using the
- * {@link #start()} method and stopped using the {@link #stop()} method.
+ * Once the SshServer instance has been configured, it can be started using the {@link #start()} method and stopped
+ * using the {@link #stop()} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see ServerFactoryManager
- * @see org.apache.sshd.common.FactoryManager
+ * @see    ServerFactoryManager
+ * @see    org.apache.sshd.common.FactoryManager
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
     public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = SshServer::new;
 
-    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-        Collections.unmodifiableList(
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES = Collections.unmodifiableList(
             Arrays.asList(
-                ServerUserAuthServiceFactory.INSTANCE,
-                ServerConnectionServiceFactory.INSTANCE));
-
+                    ServerUserAuthServiceFactory.INSTANCE,
+                    ServerConnectionServiceFactory.INSTANCE));
 
     protected IoAcceptor acceptor;
     protected String host;
@@ -140,8 +135,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     /**
-     * @return The currently bound addresses - valid only after server {@link #start() started}
-     * and while not {@link #stop() stopped}
+     * @return The currently bound addresses - valid only after server {@link #start() started} and while not
+     *         {@link #stop() stopped}
      */
     public Set<SocketAddress> getBoundAddresses() {
         return (acceptor == null) ? Collections.emptySet() : acceptor.getBoundAddresses();
@@ -278,10 +273,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
-        List<UserAuthFactory> authFactories =
-            ServerAuthenticationManager.resolveUserAuthFactories(this);
+        List<UserAuthFactory> authFactories = ServerAuthenticationManager.resolveUserAuthFactories(this);
         setUserAuthFactories(
-            ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
+                ValidateUtils.checkNotNullAndNotEmpty(authFactories, "UserAuthFactories not set"));
 
         ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");
         Objects.requireNonNull(getKeyPairProvider(), "HostKeyProvider not set");
@@ -297,8 +291,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     /**
-     * Start the SSH server and accept incoming exceptions on the configured port.
-     * Ignored if already {@link #isStarted() started}
+     * Start the SSH server and accept incoming exceptions on the configured port. Ignored if already
+     * {@link #isStarted() started}
      *
      * @throws IOException If failed to start
      */
@@ -334,8 +328,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
                     acceptor.bind(new InetSocketAddress(inetAddress, port));
                     if (port == 0) {
-                        SocketAddress selectedAddress =
-                            GenericUtils.head(acceptor.getBoundAddresses());
+                        SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
                         port = ((InetSocketAddress) selectedAddress).getPort();
                         log.info("start() listen on auto-allocated port=" + port);
                     }
@@ -344,8 +337,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         } else {
             acceptor.bind(new InetSocketAddress(port));
             if (port == 0) {
-                SocketAddress selectedAddress =
-                    GenericUtils.head(acceptor.getBoundAddresses());
+                SocketAddress selectedAddress = GenericUtils.head(acceptor.getBoundAddresses());
                 port = ((InetSocketAddress) selectedAddress).getPort();
                 log.info("start() listen on auto-allocated port=" + port);
             }
@@ -356,6 +348,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     /**
      * Stop the SSH server. This method will block until all resources are actually disposed.
+     * 
      * @throws IOException if stopping failed somehow
      */
     public void stop() throws IOException {
@@ -369,8 +362,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         try {
             long maxWait = immediately
-                ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME)
-                : Long.MAX_VALUE;
+                    ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME)
+                    : Long.MAX_VALUE;
             boolean successful = close(immediately).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
@@ -389,20 +382,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected Closeable getInnerCloseable() {
         Object closeId = toString();
         return builder()
-            .run(closeId, () -> removeSessionTimeout(sessionFactory))
-            .sequential(acceptor, ioServiceFactory)
-            .run(closeId, () -> {
-                acceptor = null;
-                ioServiceFactory = null;
-                if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                    try {
-                        executor.shutdownNow();
-                    } finally {
-                        executor = null;
+                .run(closeId, () -> removeSessionTimeout(sessionFactory))
+                .sequential(acceptor, ioServiceFactory)
+                .run(closeId, () -> {
+                    acceptor = null;
+                    ioServiceFactory = null;
+                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                        try {
+                            executor.shutdownNow();
+                        } finally {
+                            executor = null;
+                        }
                     }
-                }
-            })
-            .build();
+                })
+                .build();
     }
 
     /**
@@ -434,8 +427,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[" + Integer.toHexString(hashCode()) + "]"
-            + "(port=" + getPort() + ")";
+               + "[" + Integer.toHexString(hashCode()) + "]"
+               + "(port=" + getPort() + ")";
     }
 
     /**

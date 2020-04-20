@@ -25,10 +25,9 @@ import java.util.Objects;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 
 /**
- * An {@link SftpErrorStatusDataHandler} implementation that returns an elaborate
- * message string for the thrown exception - thus potentially &quot;leaking&quot;
- * information about the internal implementation and/or real paths. Recommended for
- * debugging or systems where such leakage is not considered a security risk
+ * An {@link SftpErrorStatusDataHandler} implementation that returns an elaborate message string for the thrown
+ * exception - thus potentially &quot;leaking&quot; information about the internal implementation and/or real paths.
+ * Recommended for debugging or systems where such leakage is not considered a security risk
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -48,9 +47,9 @@ public class DetailedSftpErrorStatusDataHandler implements SftpErrorStatusDataHa
             String otherFile = fse.getOtherFile();
             String message = fse.getReason();
             return e.getClass().getSimpleName()
-                + "[file=" + file + "]"
-                + (Objects.equals(file, otherFile) ? "" : "[other=" + otherFile + "]")
-                + ": " + message;
+                   + "[file=" + file + "]"
+                   + (Objects.equals(file, otherFile) ? "" : "[other=" + otherFile + "]")
+                   + ": " + message;
         } else if (e instanceof SftpException) {
             return e.toString();
         } else {

@@ -48,13 +48,13 @@ public class LazyIterablesConcatenatorTest extends JUnitTestSupport {
     @Test
     public void testLazyConcatenateIterables() {
         Collection<String> l1 = Arrays.asList(
-            getCurrentTestName(),
-            getClass().getSimpleName(),
-            getClass().getPackage().getName());
+                getCurrentTestName(),
+                getClass().getSimpleName(),
+                getClass().getPackage().getName());
         Collection<String> l2 = Arrays.asList(
-            LocalDateTime.now().toString(),
-            LocalTime.now().toString(),
-            LocalDate.now().toString());
+                LocalDateTime.now().toString(),
+                LocalTime.now().toString(),
+                LocalDate.now().toString());
         List<String> expected = Stream.concat(l1.stream(), l2.stream()).collect(Collectors.toList());
         Iterable<String> iter = LazyIterablesConcatenator.lazyConcatenateIterables(Arrays.asList(l1, l2));
         List<String> actual = new ArrayList<>(expected.size());

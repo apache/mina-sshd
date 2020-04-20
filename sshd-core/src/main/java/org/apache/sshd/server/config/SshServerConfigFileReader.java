@@ -41,11 +41,10 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 
 /**
- * Reads and interprets some useful configurations from an OpenSSH
- * configuration file.
+ * Reads and interprets some useful configurations from an OpenSSH configuration file.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="http://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5">sshd_config(5)</a>
+ * @see    <a href="http://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5">sshd_config(5)</a>
  */
 public final class SshServerConfigFileReader {
     // Some well known configuration properties names and values
@@ -78,7 +77,7 @@ public final class SshServerConfigFileReader {
         }
 
         long interval = PropertyResolverUtils.getLongProperty(
-            props, SERVER_ALIVE_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
+                props, SERVER_ALIVE_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
         if (interval <= 0L) {
             return server;
         }
@@ -129,13 +128,13 @@ public final class SshServerConfigFileReader {
 
     public static AgentForwardingFilter resolveAgentForwardingFilter(PropertyResolver options) {
         String value = PropertyResolverUtils.getStringProperty(options,
-            ALLOW_AGENT_FORWARDING_CONFIG_PROP, DEFAULT_AGENT_FORWARDING);
+                ALLOW_AGENT_FORWARDING_CONFIG_PROP, DEFAULT_AGENT_FORWARDING);
         return AgentForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
     public static TcpForwardingFilter resolveTcpForwardingFilter(PropertyResolver options) {
         String value = PropertyResolverUtils.getStringProperty(options,
-            ALLOW_TCP_FORWARDING_CONFIG_PROP, DEFAULT_TCP_FORWARDING);
+                ALLOW_TCP_FORWARDING_CONFIG_PROP, DEFAULT_TCP_FORWARDING);
         TcpForwardingFilter filter = AllowTcpForwardingValue.fromString(value);
         ValidateUtils.checkNotNull(filter, "Unknown %s value: %s", ALLOW_TCP_FORWARDING_CONFIG_PROP, value);
         return filter;
@@ -143,7 +142,7 @@ public final class SshServerConfigFileReader {
 
     public static X11ForwardingFilter resolveX11ForwardingFilter(PropertyResolver options) {
         String value = PropertyResolverUtils.getStringProperty(options,
-            ALLOW_X11_FORWARDING_CONFIG_PROP, DEFAULT_X11_FORWARDING);
+                ALLOW_X11_FORWARDING_CONFIG_PROP, DEFAULT_X11_FORWARDING);
         return X11ForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
@@ -151,7 +150,7 @@ public final class SshServerConfigFileReader {
         String bannerOption = PropertyResolverUtils.getString(options, BANNER_CONFIG_PROP);
         if (GenericUtils.isEmpty(bannerOption)) {
             bannerOption = PropertyResolverUtils.getStringProperty(options,
-                VISUAL_HOST_KEY, DEFAULT_VISUAL_HOST_KEY);
+                    VISUAL_HOST_KEY, DEFAULT_VISUAL_HOST_KEY);
             if (ConfigFileReaderSupport.parseBooleanValue(bannerOption)) {
                 bannerOption = ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE;
             } else {

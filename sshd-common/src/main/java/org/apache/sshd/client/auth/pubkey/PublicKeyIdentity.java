@@ -36,10 +36,10 @@ public interface PublicKeyIdentity {
     /**
      * Proves the public key identity by signing the given data
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param data Data to sign
-     * @return Signed data - using the identity
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  data      Data to sign
+     * @return           Signed data - using the identity
      * @throws Exception If failed to sign the data
      */
     byte[] sign(SessionContext session, byte[] data) throws Exception;

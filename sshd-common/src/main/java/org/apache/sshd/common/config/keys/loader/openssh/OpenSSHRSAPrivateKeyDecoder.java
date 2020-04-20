@@ -52,13 +52,14 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
     public static final OpenSSHRSAPrivateKeyDecoder INSTANCE = new OpenSSHRSAPrivateKeyDecoder();
 
     public OpenSSHRSAPrivateKeyDecoder() {
-        super(RSAPublicKey.class, RSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
+        super(RSAPublicKey.class, RSAPrivateKey.class,
+              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
     }
 
     @Override
     public RSAPrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_RSA.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }

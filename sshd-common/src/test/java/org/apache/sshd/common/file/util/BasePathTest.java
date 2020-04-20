@@ -77,21 +77,21 @@ public class BasePathTest extends JUnitTestSupport {
         assertPathEquals("/foo/bar", "///foo/bar");
         assertPathEquals("/foo/bar", "/foo///bar//");
         assertPathEquals("/foo/bar/baz", "/foo", "/bar", "baz/");
-        //assertPathEquals("/foo/bar/baz", "/foo\\/bar//\\\\/baz\\/");
+        // assertPathEquals("/foo/bar/baz", "/foo\\/bar//\\\\/baz\\/");
     }
 
     @Test
     public void testRootPath() {
         new PathTester(fileSystem, "/")
-            .root("/")
-            .test("/");
+                .root("/")
+                .test("/");
     }
 
     @Test
     public void testRelativePathSingleName() {
         new PathTester(fileSystem, "test")
-            .names("test")
-            .test("test");
+                .names("test")
+                .test("test");
 
         Path path = parsePath("test");
         assertEquals(path, path.getFileName());
@@ -100,39 +100,39 @@ public class BasePathTest extends JUnitTestSupport {
     @Test
     public void testRelativePathTwoNames() {
         new PathTester(fileSystem, "foo/bar")
-            .names("foo", "bar")
-            .test("foo/bar");
+                .names("foo", "bar")
+                .test("foo/bar");
     }
 
     @Test
     public void testRelativePathFourNames() {
         new PathTester(fileSystem, "foo/bar/baz/test")
-            .names("foo", "bar", "baz", "test")
-            .test("foo/bar/baz/test");
+                .names("foo", "bar", "baz", "test")
+                .test("foo/bar/baz/test");
     }
 
     @Test
     public void testAbsolutePathSingleName() {
         new PathTester(fileSystem, "/foo")
-            .root("/")
-            .names("foo")
-            .test("/foo");
+                .root("/")
+                .names("foo")
+                .test("/foo");
     }
 
     @Test
     public void testAbsolutePathTwoNames() {
         new PathTester(fileSystem, "/foo/bar")
-            .root("/")
-            .names("foo", "bar")
-            .test("/foo/bar");
+                .root("/")
+                .names("foo", "bar")
+                .test("/foo/bar");
     }
 
     @Test
     public void testAbsoluteMultiNamePathFourNames() {
         new PathTester(fileSystem, "/foo/bar/baz/test")
-            .root("/")
-            .names("foo", "bar", "baz", "test")
-            .test("/foo/bar/baz/test");
+                .root("/")
+                .names("foo", "bar", "baz", "test")
+                .test("/foo/bar/baz/test");
     }
 
     @Test
@@ -442,8 +442,8 @@ public class BasePathTest extends JUnitTestSupport {
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
                     new PathTester(fileSystem, nameAtIndex)
-                        .names(nameAtIndex)
-                        .test(pathAtIndex);
+                            .names(nameAtIndex)
+                            .test(pathAtIndex);
                 }
             }
 
@@ -453,8 +453,8 @@ public class BasePathTest extends JUnitTestSupport {
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
                     new PathTester(fileSystem, fileName)
-                        .names(fileName)
-                        .test(path.getFileName());
+                            .names(fileName)
+                            .test(path.getFileName());
                 }
             }
         }
@@ -468,9 +468,9 @@ public class BasePathTest extends JUnitTestSupport {
             if (parent != null) {
                 String parentName = names.size() == 1 ? root : string.substring(0, string.lastIndexOf('/'));
                 new PathTester(fileSystem, parentName)
-                    .root(root)
-                    .names(names.subList(0, names.size() - 1))
-                    .test(parent);
+                        .root(root)
+                        .names(names.subList(0, names.size() - 1))
+                        .test(parent);
             }
         }
 
@@ -487,17 +487,17 @@ public class BasePathTest extends JUnitTestSupport {
                 // actually tests most possible subpaths multiple times but... eh
                 Path startSubpath = path.subpath(1, nameCount);
                 List<String> startNames = split(stringWithoutRoot, '/')
-                    .subList(1, nameCount);
+                        .subList(1, nameCount);
                 new PathTester(fileSystem, GenericUtils.join(startNames, '/'))
-                    .names(startNames)
-                    .test(startSubpath);
+                        .names(startNames)
+                        .test(startSubpath);
 
                 Path endSubpath = path.subpath(0, nameCount - 1);
                 List<String> endNames = split(stringWithoutRoot, '/')
-                    .subList(0, nameCount - 1);
+                        .subList(0, nameCount - 1);
                 new PathTester(fileSystem, GenericUtils.join(endNames, '/'))
-                    .names(endNames)
-                    .test(endSubpath);
+                        .names(endNames)
+                        .test(endSubpath);
             }
         }
 

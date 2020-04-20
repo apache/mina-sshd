@@ -53,14 +53,15 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         setupServer();
     }
 
-    @Test   // see SSHD-697
+    @Test // see SSHD-697
     public void testFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
-            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         Files.deleteIfExists(lclFile);
-        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
+        byte[] expected
+                = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
@@ -73,7 +74,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
                 try (FileChannel fc = sftp.openRemotePathChannel(
                         remFilePath, EnumSet.of(
-                            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                                StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
                     int writeLen = fc.write(ByteBuffer.wrap(expected));
                     assertEquals("Mismatched written length", expected.length, writeLen);
 
@@ -92,11 +93,11 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         assertArrayEquals("Mismatched persisted data", expected, actual);
     }
 
-    @Test   // see SSHD-967
+    @Test // see SSHD-967
     public void testTransferToFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
-            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-src.txt");
         Path parentPath = targetPath.getParent();
 
@@ -104,8 +105,8 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
             String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
             for (long totalWritten = 0L;
-                totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
-                totalWritten += seed.length()) {
+                 totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
+                 totalWritten += seed.length()) {
                 output.append(seed).append(System.lineSeparator());
             }
         }
@@ -122,9 +123,9 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
             try (SftpClient sftp = createSftpClient(session);
                  FileChannel srcChannel = sftp.openRemotePathChannel(
-                     remFilePath, EnumSet.of(StandardOpenOption.READ));
+                         remFilePath, EnumSet.of(StandardOpenOption.READ));
                  FileChannel dstChannel = FileChannel.open(dstFile,
-                      StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+                         StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                 long numXfered = srcChannel.transferTo(0L, expected.length, dstChannel);
                 assertEquals("Mismatched reported transfer count", expected.length, numXfered);
             }
@@ -164,7 +165,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                          remFilePath, EnumSet.of(StandardOpenOption.READ));
                  FileChannel dstChannel = FileChannel.open(dstFile,
                          StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                //SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
+                // SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
                 long numXfered = srcChannel.transferTo(0L, SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE, dstChannel);
                 assertEquals("Mismatched reported transfer count", expected.length, numXfered);
             }
@@ -175,11 +176,11 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         assertArrayEquals("Mismatched transferred data", expected, actual);
     }
 
-    @Test   // see SSHD-967
+    @Test // see SSHD-967
     public void testTransferFromFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
-            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-src.txt");
         Path parentPath = targetPath.getParent();
 
@@ -187,8 +188,8 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
             String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
             for (long totalWritten = 0L;
-                totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
-                totalWritten += seed.length()) {
+                 totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
+                 totalWritten += seed.length()) {
                 output.append(seed).append(System.lineSeparator());
             }
         }
@@ -205,7 +206,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
 
             try (SftpClient sftp = createSftpClient(session);
                  FileChannel dstChannel = sftp.openRemotePathChannel(
-                     remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+                         remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
                  FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
                 long numXfered = dstChannel.transferFrom(srcChannel, 0L, expected.length);
                 assertEquals("Mismatched reported transfer count", expected.length, numXfered);

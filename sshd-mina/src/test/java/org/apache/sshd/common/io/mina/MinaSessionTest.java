@@ -35,7 +35,7 @@ public class MinaSessionTest extends JUnitTestSupport {
         super();
     }
 
-    @Test   // SSHD-902
+    @Test // SSHD-902
     public void testNioSessionChannelFieldExistsAndAccessible() {
         assertNotNull("Field has not been detected", MinaSession.NIO_SESSION_CHANNEL_FIELD);
         assertTrue("Field is inaccessible", MinaSession.NIO_SESSION_CHANNEL_FIELD.isAccessible());

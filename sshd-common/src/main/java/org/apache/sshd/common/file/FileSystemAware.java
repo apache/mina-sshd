@@ -21,8 +21,8 @@ package org.apache.sshd.common.file;
 import java.nio.file.FileSystem;
 
 /**
- * Interface that can be implemented by a command to be able to access the
- * file system in which this command will be used.
+ * Interface that can be implemented by a command to be able to access the file system in which this command will be
+ * used.
  */
 @FunctionalInterface
 public interface FileSystemAware {

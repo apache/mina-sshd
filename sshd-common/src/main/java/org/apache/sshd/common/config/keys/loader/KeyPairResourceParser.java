@@ -41,14 +41,14 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public interface KeyPairResourceParser extends KeyPairResourceLoader {
     /**
-     * An empty parser that never fails, but always report that it cannot
-     * extract key pairs and returns empty list if asked to load
+     * An empty parser that never fails, but always report that it cannot extract key pairs and returns empty list if
+     * asked to load
      */
     KeyPairResourceParser EMPTY = new KeyPairResourceParser() {
         @Override
         public Collection<KeyPair> loadKeyPairs(
                 SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
             return Collections.emptyList();
         }
 
@@ -65,24 +65,23 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     };
 
     /**
-     * @param resourceKey A hint as to the origin of the text lines
-     * @param lines The resource lines
-     * @return {@code true} if the parser can extract some key pairs from the lines
-     * @throws IOException If failed to process the lines
-     * @throws GeneralSecurityException If failed to extract information regarding
-     * the possibility to extract the key pairs
+     * @param  resourceKey              A hint as to the origin of the text lines
+     * @param  lines                    The resource lines
+     * @return                          {@code true} if the parser can extract some key pairs from the lines
+     * @throws IOException              If failed to process the lines
+     * @throws GeneralSecurityException If failed to extract information regarding the possibility to extract the key
+     *                                  pairs
      */
     boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
-        throws IOException, GeneralSecurityException;
+            throws IOException, GeneralSecurityException;
 
     /**
-     * Converts the lines assumed to contain BASE-64 encoded data into
-     * the actual content bytes.
+     * Converts the lines assumed to contain BASE-64 encoded data into the actual content bytes.
      *
-     * @param lines The data lines - empty lines and spaces are automatically
-     * deleted <U>before</U> BASE-64 decoding takes place.
-     * @return The decoded data bytes
-     * @see #joinDataLines(Collection)
+     * @param  lines The data lines - empty lines and spaces are automatically deleted <U>before</U> BASE-64 decoding
+     *               takes place.
+     * @return       The decoded data bytes
+     * @see          #joinDataLines(Collection)
      */
     static byte[] extractDataBytes(Collection<String> lines) {
         String data = joinDataLines(lines);
@@ -99,7 +98,7 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
 
     static boolean containsMarkerLine(List<String> lines, String marker) {
         return containsMarkerLine(
-            lines, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(marker, "No marker")));
+                lines, Collections.singletonList(ValidateUtils.checkNotNullAndNotEmpty(marker, "No marker")));
     }
 
     static boolean containsMarkerLine(List<String> lines, List<String> markers) {
@@ -109,11 +108,11 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     /**
      * Attempts to locate a line that contains one of the markers
      *
-     * @param lines The list of lines to scan - ignored if {@code null}/empty
-     * @param markers The markers to match - ignored if {@code null}/empty
-     * @return A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index
-     * that matched and value the matched marker index - {@code null} if no match found
-     * @see #findMarkerLine(List, int, List)
+     * @param  lines   The list of lines to scan - ignored if {@code null}/empty
+     * @param  markers The markers to match - ignored if {@code null}/empty
+     * @return         A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index that matched and value
+     *                 the matched marker index - {@code null} if no match found
+     * @see            #findMarkerLine(List, int, List)
      */
     static SimpleImmutableEntry<Integer, Integer> findMarkerLine(List<String> lines, List<String> markers) {
         return findMarkerLine(lines, 0, markers);
@@ -122,11 +121,11 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
     /**
      * Attempts to locate a line that contains one of the markers
      *
-     * @param lines The list of lines to scan - ignored if {@code null}/empty
-     * @param startLine The scan start line index
-     * @param markers The markers to match - ignored if {@code null}/empty
-     * @return A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index
-     * that matched and value the matched marker index - {@code null} if no match found
+     * @param  lines     The list of lines to scan - ignored if {@code null}/empty
+     * @param  startLine The scan start line index
+     * @param  markers   The markers to match - ignored if {@code null}/empty
+     * @return           A {@link SimpleImmutableEntry} whose key is the <U>first</U> line index that matched and value
+     *                   the matched marker index - {@code null} if no match found
      */
     static SimpleImmutableEntry<Integer, Integer> findMarkerLine(List<String> lines, int startLine, List<String> markers) {
         if (GenericUtils.isEmpty(lines) || GenericUtils.isEmpty(markers)) {
@@ -155,8 +154,9 @@ public interface KeyPairResourceParser extends KeyPairResourceLoader {
         return new KeyPairResourceParser() {
             @Override
             public Collection<KeyPair> loadKeyPairs(
-                    SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                        throws IOException, GeneralSecurityException {
+                    SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider,
+                    List<String> lines)
+                    throws IOException, GeneralSecurityException {
                 Collection<KeyPair> keyPairs = Collections.emptyList();
                 for (KeyPairResourceParser p : parsers) {
                     if (!p.canExtractKeyPairs(resourceKey, lines)) {

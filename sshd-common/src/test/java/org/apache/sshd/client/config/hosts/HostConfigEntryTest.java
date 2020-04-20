@@ -110,7 +110,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         Pattern pattern = HostPatternsHolder.toPattern(sb.append(HostPatternsHolder.WILDCARD_PATTERN)).getPattern();
         for (int v = 0; v <= 255; v++) {
-            sb.setLength(sbLen);    // start from scratch
+            sb.setLength(sbLen); // start from scratch
             sb.append(v);
 
             String address = sb.toString();
@@ -122,7 +122,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     public void testHostSingleCharPatternMatching() {
         String value = getCurrentTestName();
         StringBuilder sb = new StringBuilder(value);
-        for (boolean restoreOriginal : new boolean[] {true, false}) {
+        for (boolean restoreOriginal : new boolean[] { true, false }) {
             for (int index = 0; index < value.length(); index++) {
                 sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
                 testCaseInsensitivePatternMatching(value, HostPatternsHolder.toPattern(sb.toString()).getPattern(), true);
@@ -139,7 +139,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         int sbLen = sb.length();
 
         for (int v = 0; v <= 255; v++) {
-            sb.setLength(sbLen);    // start from scratch
+            sb.setLength(sbLen); // start from scratch
             sb.append(v);
 
             String address = sb.toString();
@@ -150,14 +150,16 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
             String pattern = sb.toString();
             HostPatternValue pp = HostPatternsHolder.toPattern(pattern);
-            assertTrue("No match for " + address + " on pattern=" + pattern, HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
+            assertTrue("No match for " + address + " on pattern=" + pattern,
+                    HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
         }
     }
 
     @Test
     public void testIsValidPatternChar() {
         for (char ch = '\0'; ch <= ' '; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")",
+                    HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 'a'; ch <= 'z'; ch++) {
@@ -172,20 +174,22 @@ public class HostConfigEntryTest extends JUnitTestSupport {
             assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
-        for (char ch : new char[] {'-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN}) {
+        for (char ch : new char[] {
+                '-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN }) {
             assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch : new char[] {
-            '(', ')', '{', '}', '[', ']', '@',
-            '#', '$', '^', '&', '%', '~', '<', '>',
-            ',', '/', '\\', '\'', '"', ':', ';'
+                '(', ')', '{', '}', '[', ']', '@',
+                '#', '$', '^', '&', '%', '~', '<', '>',
+                ',', '/', '\\', '\'', '"', ':', ';'
         }) {
             assertFalse("Unexpected valid character: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
 
         for (char ch = 0x7E; ch <= 0xFF; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")", HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")",
+                    HostPatternsHolder.isValidPatternChar(ch));
         }
     }
 
@@ -194,11 +198,11 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         final int originalPort = Short.MAX_VALUE;
         final int preferredPort = 7365;
         assertEquals("Mismatched entry port preference",
-            preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
+                preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
 
-        for (int entryPort : new int[] {-1, 0}) {
+        for (int entryPort : new int[] { -1, 0 }) {
             assertEquals("Non-preferred original port for entry port=" + entryPort,
-                originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
+                    originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
         }
     }
 
@@ -209,9 +213,9 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         assertSame("Mismatched entry user preference",
                 preferredUser, HostConfigEntry.resolveUsername(originalUser, preferredUser));
 
-        for (String entryUser : new String[] {null, ""}) {
+        for (String entryUser : new String[] { null, "" }) {
             assertSame("Non-preferred original user for entry user='" + entryUser + "'",
-                originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
+                    originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
         }
     }
 
@@ -254,19 +258,19 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         Exception err = null;
         for (String pattern : new String[] {
-            "~/.ssh/%h.key",
-            "%d/.ssh/%h.key",
-            "/home/%u/.ssh/id_rsa_%p",
-            "/home/%u/.ssh/id_%r_rsa",
-            "/home/%u/.ssh/%h/%l.key"
+                "~/.ssh/%h.key",
+                "%d/.ssh/%h.key",
+                "/home/%u/.ssh/id_rsa_%p",
+                "/home/%u/.ssh/id_%r_rsa",
+                "/home/%u/.ssh/%h/%l.key"
         }) {
             try {
                 String result = HostConfigEntry.resolveIdentityFilePath(pattern, hostValue, portValue, userValue);
                 System.out.append('\t').append(pattern).append(" => ").println(result);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName())
-                          .append(") to process pattern=").append(pattern)
-                          .append(": ").println(e.getMessage());
+                        .append(") to process pattern=").append(pattern)
+                        .append(": ").println(e.getMessage());
                 err = e;
             }
         }
@@ -281,10 +285,12 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         final String hostValue = getCurrentTestName();
         HostConfigEntry expected = new HostConfigEntry(hostValue, hostValue, 7365, hostValue);
         List<HostConfigEntry> matches = new ArrayList<>();
-        matches.add(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN,
-            getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(new HostConfigEntry(hostValue + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
-            getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(
+                HostPatternsHolder.ALL_HOSTS_PATTERN,
+                getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
+        matches.add(new HostConfigEntry(
+                hostValue + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
+                getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
         matches.add(expected);
 
         for (int index = 0; index < matches.size(); index++) {

@@ -87,7 +87,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * A naive implementation of <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1">ssh-keyscan(1)</A>
+ * A naive implementation of
+ * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1">ssh-keyscan(1)</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -95,11 +96,10 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     /**
      * Default key types if not overridden from the command line
      */
-    public static final List<String> DEFAULT_KEY_TYPES =
-        Collections.unmodifiableList(
+    public static final List<String> DEFAULT_KEY_TYPES = Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinIdentities.Constants.RSA,
-                BuiltinIdentities.Constants.ECDSA));
+                    BuiltinIdentities.Constants.RSA,
+                    BuiltinIdentities.Constants.ECDSA));
     public static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final Level DEFAULT_LEVEL = Level.INFO;
 
@@ -183,10 +183,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         Collection<String> typeNames = getKeyTypes();
         Map<String, List<KeyPair>> pairsMap = createKeyPairs(typeNames);
         /*
-         * We will need to switch signature factories for each specific
-         * key type in order to force the server to send ONLY that specific
-         * key, so pre-create the factories map according to the selected
-         * key types
+         * We will need to switch signature factories for each specific key type in order to force the server to send
+         * ONLY that specific key, so pre-create the factories map according to the selected key types
          */
         SortedMap<String, List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Collection<String> sigTypes = GenericUtils.asSortedSet(sigFactories.comparator(), pairsMap.keySet());
@@ -297,9 +295,10 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         return null;
     }
 
-    protected void resolveServerKeys(SshClient client, String host,
+    protected void resolveServerKeys(
+            SshClient client, String host,
             Map<String, List<KeyPair>> pairsMap, Map<String, List<NamedFactory<Signature>>> sigFactories)
-                throws IOException {
+            throws IOException {
         // Cannot use forEach because of the potential for throwing IOException by the invoked code
         for (Map.Entry<String, List<KeyPair>> pe : pairsMap.entrySet()) {
             String kt = pe.getKey();
@@ -310,9 +309,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             List<NamedFactory<Signature>> current = client.getSignatureFactories();
             try {
                 /*
-                 * Replace whatever factories there are right now with the
-                 * specific one for the key in order to extract only the
-                 * specific host key type
+                 * Replace whatever factories there are right now with the specific one for the key in order to extract
+                 * only the specific host key type
                  */
                 List<NamedFactory<Signature>> forced = sigFactories.get(kt);
                 client.setSignatureFactories(forced);
@@ -326,7 +324,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                     return; // makes no sense to try again with another key type...
                 }
             } finally {
-                client.setSignatureFactories(current);  // don't have to, but be nice...
+                client.setSignatureFactories(current); // don't have to, but be nice...
             }
         }
     }
@@ -340,9 +338,10 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         ConnectFuture future = client.connect(UUID.randomUUID().toString(), host, connectPort);
         long waitTime = getTimeout();
         if (!future.await(waitTime)) {
-            throw new ConnectException("Failed to connect to " + host + ":" + connectPort
-                    + " within " + waitTime + " msec."
-                    + " to retrieve key type=" + kt);
+            throw new ConnectException(
+                    "Failed to connect to " + host + ":" + connectPort
+                                       + " within " + waitTime + " msec."
+                                       + " to retrieve key type=" + kt);
         }
 
         try (ClientSession session = future.getSession()) {
@@ -424,7 +423,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     @Override
-    public void sessionNegotiationEnd(Session session, Map<KexProposalOption, String> clientProposal,
+    public void sessionNegotiationEnd(
+            Session session, Map<KexProposalOption, String> clientProposal,
             Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions,
             Throwable reason) {
         if (reason == null) {
@@ -505,8 +505,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                     log(Level.FINER, "Resolve signature factory for curve=" + n);
                 }
 
-                NamedFactory<Signature> f =
-                        ValidateUtils.checkNotNull(BuiltinSignatures.fromString(n), "Unknown curve signature: %s", n);
+                NamedFactory<Signature> f
+                        = ValidateUtils.checkNotNull(BuiltinSignatures.fromString(n), "Unknown curve signature: %s", n);
                 factories.add(f);
             }
 
@@ -526,7 +526,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         Map<String, List<KeyPair>> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : typeNames) {
             if ("*".equalsIgnoreCase(kt) || "all".equalsIgnoreCase(kt)) {
-                ValidateUtils.checkTrue(typeNames.size() == 1, "Wildcard key type must be the only one specified: %s", typeNames);
+                ValidateUtils.checkTrue(typeNames.size() == 1, "Wildcard key type must be the only one specified: %s",
+                        typeNames);
                 return createKeyPairs(BuiltinIdentities.NAMES);
             }
 
@@ -679,14 +680,14 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                 }
 
                 String provider = args[++index];
-                BuiltinIoServiceFactoryFactories factory =
-                    CliSupport.resolveBuiltinIoServiceFactory(System.err, optName, provider);
+                BuiltinIoServiceFactoryFactories factory
+                        = CliSupport.resolveBuiltinIoServiceFactory(System.err, optName, provider);
                 if (factory != null) {
                     System.setProperty(IoServiceFactory.class.getName(), factory.getFactoryClassName());
                 } else {
                     break;
                 }
-            } else {    // stop at first non-option - assume the rest are host names/addresses
+            } else { // stop at first non-option - assume the rest are host names/addresses
                 ValidateUtils.checkTrue(optName.charAt(0) != '-', "Unknown option: %s", optName);
 
                 int remaining = numArgs - index;

@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Default {@link ThreadFactory} used by {@link ThreadUtils} to create
- * thread pools if user did provide one
+ * Default {@link ThreadFactory} used by {@link ThreadUtils} to create thread pools if user did provide one
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -50,8 +49,8 @@ public class SshdThreadFactory extends AbstractLoggingBean implements ThreadFact
         try {
             // see SSHD-668
             if (System.getSecurityManager() != null) {
-                t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () ->
-                        new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0));
+                t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () -> new Thread(
+                        group, r, namePrefix + threadNumber.getAndIncrement(), 0));
             } else {
                 t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
             }

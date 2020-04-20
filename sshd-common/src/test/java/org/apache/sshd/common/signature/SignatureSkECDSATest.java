@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -38,15 +37,20 @@ import org.junit.runners.MethodSorters;
 public class SignatureSkECDSATest extends JUnitTestSupport {
 
     @SuppressWarnings("checkstyle:linelength")
-    private static final String AUTHORIZED_KEY_ENTRY = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBPxnZ6t8ROtXWc3d1mfyz7TRf7qvwefl0cNYSP7G5ePyBeFLka/YeMAc96UEvtn0JIVqrcVDOeLCCr9CcMLAYkUAAAAEc3NoOg==";
+    private static final String AUTHORIZED_KEY_ENTRY
+            = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBPxnZ6t8ROtXWc3d1mfyz7TRf7qvwefl0cNYSP7G5ePyBeFLka/YeMAc96UEvtn0JIVqrcVDOeLCCr9CcMLAYkUAAAAEc3NoOg==";
     @SuppressWarnings("checkstyle:linelength")
-    private static final String MSG1 = "AAAAIKUkyXDJeM7SrL7YAjI19MXcnGMzABrtyZcMPmngO63gMgAAAAZpaGFrZW4AAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAAfwAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAACG5pc3RwMjU2AAAAQQT8Z2erfETrV1nN3dZn8s+00X+6r8Hn5dHDWEj+xuXj8gXhS5Gv2HjAHPelBL7Z9CSFaq3FQzniwgq/QnDCwGJFAAAABHNzaDo=";
+    private static final String MSG1
+            = "AAAAIKUkyXDJeM7SrL7YAjI19MXcnGMzABrtyZcMPmngO63gMgAAAAZpaGFrZW4AAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAAfwAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAACG5pc3RwMjU2AAAAQQT8Z2erfETrV1nN3dZn8s+00X+6r8Hn5dHDWEj+xuXj8gXhS5Gv2HjAHPelBL7Z9CSFaq3FQzniwgq/QnDCwGJFAAAABHNzaDo=";
     @SuppressWarnings("checkstyle:linelength")
-    private static final String MSG2 = "AAAAID7kQ1C7gjPZxbodpPXMX4V0MdXBLZX7ruadV05Bad+QMgAAAAZpaGFrZW4AAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAAfwAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAACG5pc3RwMjU2AAAAQQT8Z2erfETrV1nN3dZn8s+00X+6r8Hn5dHDWEj+xuXj8gXhS5Gv2HjAHPelBL7Z9CSFaq3FQzniwgq/QnDCwGJFAAAABHNzaDo=";
+    private static final String MSG2
+            = "AAAAID7kQ1C7gjPZxbodpPXMX4V0MdXBLZX7ruadV05Bad+QMgAAAAZpaGFrZW4AAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAAfwAAACJzay1lY2RzYS1zaGEyLW5pc3RwMjU2QG9wZW5zc2guY29tAAAACG5pc3RwMjU2AAAAQQT8Z2erfETrV1nN3dZn8s+00X+6r8Hn5dHDWEj+xuXj8gXhS5Gv2HjAHPelBL7Z9CSFaq3FQzniwgq/QnDCwGJFAAAABHNzaDo=";
     @SuppressWarnings("checkstyle:linelength")
-    private static final String SIG_FOR_MSG1_WITH_TOUCH = "AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAABIAAAAIAfLMrNrJkM2ol83FlDWQ6BYnKUG4U+WfrNL0zoMNm9UAAAAIDd3dMT1Xl02N7wxxlMKZtPyI3GXkGPVyF1n7X00RxtSAQAABBM=";
+    private static final String SIG_FOR_MSG1_WITH_TOUCH
+            = "AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAABIAAAAIAfLMrNrJkM2ol83FlDWQ6BYnKUG4U+WfrNL0zoMNm9UAAAAIDd3dMT1Xl02N7wxxlMKZtPyI3GXkGPVyF1n7X00RxtSAQAABBM=";
     @SuppressWarnings("checkstyle:linelength")
-    private static final String SIG_FOR_MSG2_WITH_NO_TOUCH = "AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAABJAAAAIFaWRnqMCe5haZ99AibwyYhi0ui2Uqn2PbWEPOX2afCIAAAAIQDLE7tAhkuazXL+vnU9KXCvleRAbiCoU2Qu4kHfzGbAwQAAAAQp";
+    private static final String SIG_FOR_MSG2_WITH_NO_TOUCH
+            = "AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAABJAAAAIFaWRnqMCe5haZ99AibwyYhi0ui2Uqn2PbWEPOX2afCIAAAAIQDLE7tAhkuazXL+vnU9KXCvleRAbiCoU2Qu4kHfzGbAwQAAAAQp";
 
     private static final Base64.Decoder B64_DECODER = Base64.getDecoder();
 

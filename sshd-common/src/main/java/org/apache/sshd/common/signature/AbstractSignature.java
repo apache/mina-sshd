@@ -43,8 +43,7 @@ public abstract class AbstractSignature implements Signature {
     private final String algorithm;
 
     protected AbstractSignature(String algorithm) {
-        this.algorithm =
-            ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified");
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified");
     }
 
     @Override
@@ -55,26 +54,25 @@ public abstract class AbstractSignature implements Signature {
     /**
      * Initializes the internal signature instance
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param algo The signature's algorithm name
-     * @param key the {@link Key} that is provided for initialization - a {@link PrivateKey}
-     * for signing and a {@link PublicKey} for verification
-     * @param forSigning If {@code true} then it is being initialized for signing,
-     * otherwise for verifying a signature
-     * @return The {@link java.security.Signature} instance
+     * @param  session                  The {@link SessionContext} for calling this method - may be {@code null} if not
+     *                                  called within a session context
+     * @param  algo                     The signature's algorithm name
+     * @param  key                      the {@link Key} that is provided for initialization - a {@link PrivateKey} for
+     *                                  signing and a {@link PublicKey} for verification
+     * @param  forSigning               If {@code true} then it is being initialized for signing, otherwise for
+     *                                  verifying a signature
+     * @return                          The {@link java.security.Signature} instance
      * @throws GeneralSecurityException if failed to initialize
      */
     protected java.security.Signature doInitSignature(
             SessionContext session, String algo, Key key, boolean forSigning)
-                throws GeneralSecurityException {
+            throws GeneralSecurityException {
         return SecurityUtils.getSignature(algo);
     }
 
     /**
-     * @return The current {@link java.security.Signature} instance
-     * - {@code null} if not initialized
-     * @see #doInitSignature(SessionContext, String, Key, boolean)
+     * @return The current {@link java.security.Signature} instance - {@code null} if not initialized
+     * @see    #doInitSignature(SessionContext, String, Key, boolean)
      */
     protected java.security.Signature getSignature() {
         return signatureInstance;
@@ -82,8 +80,7 @@ public abstract class AbstractSignature implements Signature {
 
     @Override
     public byte[] sign(SessionContext session) throws Exception {
-        java.security.Signature signature =
-            Objects.requireNonNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         return signature.sign();
     }
 
@@ -91,7 +88,7 @@ public abstract class AbstractSignature implements Signature {
     public void initVerifier(SessionContext session, PublicKey key) throws Exception {
         String algo = getAlgorithm();
         signatureInstance = Objects.requireNonNull(
-            doInitSignature(session, algo, key, false), "No signature instance create");
+                doInitSignature(session, algo, key, false), "No signature instance create");
         signatureInstance.initVerify(Objects.requireNonNull(key, "No public key provided"));
     }
 
@@ -99,23 +96,22 @@ public abstract class AbstractSignature implements Signature {
     public void initSigner(SessionContext session, PrivateKey key) throws Exception {
         String algo = getAlgorithm();
         signatureInstance = Objects.requireNonNull(
-            doInitSignature(session, algo, key, true), "No signature instance create");
+                doInitSignature(session, algo, key, true), "No signature instance create");
         signatureInstance.initSign(Objects.requireNonNull(key, "No private key provided"));
     }
 
     @Override
     public void update(SessionContext session, byte[] hash, int off, int len) throws Exception {
-        java.security.Signature signature =
-            Objects.requireNonNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         signature.update(hash, off, len);
     }
 
     /**
      * Makes an attempt to detect if the signature is encoded or pure data
      *
-     * @param sig The original signature
-     * @return A {@link SimpleImmutableEntry} where first value is the key type and second
-     * value is the data - {@code null} if not encoded
+     * @param  sig The original signature
+     * @return     A {@link SimpleImmutableEntry} where first value is the key type and second value is the data -
+     *             {@code null} if not encoded
      */
     protected SimpleImmutableEntry<String, byte[]> extractEncodedSignature(byte[] sig) {
         final int dataLen = NumberUtils.length(sig);
@@ -151,8 +147,7 @@ public abstract class AbstractSignature implements Signature {
     }
 
     protected boolean doVerify(byte[] data) throws SignatureException {
-        java.security.Signature signature =
-            Objects.requireNonNull(getSignature(), "Signature not initialized");
+        java.security.Signature signature = Objects.requireNonNull(getSignature(), "Signature not initialized");
         return signature.verify(data);
     }
 

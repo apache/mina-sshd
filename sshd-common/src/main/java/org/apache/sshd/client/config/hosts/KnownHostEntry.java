@@ -46,7 +46,7 @@ import org.apache.sshd.common.util.io.NoCloseReader;
  * Contains a representation of an entry in the <code>known_hosts</code> file
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://www.manpagez.com/man/8/sshd/">sshd(8) man page</A>
+ * @see    <A HREF="http://www.manpagez.com/man/8/sshd/">sshd(8) man page</A>
  */
 public class KnownHostEntry extends HostPatternsHolder {
     /**
@@ -60,8 +60,7 @@ public class KnownHostEntry extends HostPatternsHolder {
     public static final String STD_HOSTS_FILENAME = "known_hosts";
 
     private static final class LazyDefaultConfigFileHolder {
-        private static final Path HOSTS_FILE =
-            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
+        private static final Path HOSTS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
 
         private LazyDefaultConfigFileHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -155,7 +154,8 @@ public class KnownHostEntry extends HostPatternsHolder {
     }
 
     public static List<KnownHostEntry> readKnownHostEntries(InputStream inStream, boolean okToClose) throws IOException {
-        try (Reader reader = new InputStreamReader(NoCloseInputStream.resolveInputStream(inStream, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader reader
+                = new InputStreamReader(NoCloseInputStream.resolveInputStream(inStream, okToClose), StandardCharsets.UTF_8)) {
             return readKnownHostEntries(reader, true);
         }
     }
@@ -169,8 +169,8 @@ public class KnownHostEntry extends HostPatternsHolder {
     /**
      * Reads configuration entries
      *
-     * @param rdr The {@link BufferedReader} to use
-     * @return The {@link List} of read {@link KnownHostEntry}-ies
+     * @param  rdr         The {@link BufferedReader} to use
+     * @return             The {@link List} of read {@link KnownHostEntry}-ies
      * @throws IOException If failed to parse the read configuration
      */
     public static List<KnownHostEntry> readKnownHostEntries(BufferedReader rdr) throws IOException {
@@ -203,9 +203,10 @@ public class KnownHostEntry extends HostPatternsHolder {
                     entries = new ArrayList<>();
                 }
                 entries.add(entry);
-            } catch (RuntimeException | Error e) {   // TODO consider consulting a user callback
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                        + " to parse line #" + lineNumber + " '" + line + "': " + e.getMessage());
+            } catch (RuntimeException | Error e) { // TODO consider consulting a user callback
+                throw new StreamCorruptedException(
+                        "Failed (" + e.getClass().getSimpleName() + ")" + " to parse line #" + lineNumber + " '" + line + "': "
+                                                   + e.getMessage());
             }
         }
 
@@ -244,8 +245,7 @@ public class KnownHostEntry extends HostPatternsHolder {
         line = line.substring(pos + 1).trim();
 
         if (hostPattern.charAt(0) == KnownHostHashValue.HASHED_HOST_DELIMITER) {
-            KnownHostHashValue hash =
-                ValidateUtils.checkNotNull(KnownHostHashValue.parse(hostPattern),
+            KnownHostHashValue hash = ValidateUtils.checkNotNull(KnownHostHashValue.parse(hostPattern),
                     "Failed to extract host hash value from line=%s", data);
             entry.setHashedEntry(hash);
             entry.setPatterns(null);
@@ -254,8 +254,7 @@ public class KnownHostEntry extends HostPatternsHolder {
             entry.setPatterns(parsePatterns(GenericUtils.split(hostPattern, ',')));
         }
 
-        AuthorizedKeyEntry key =
-            ValidateUtils.checkNotNull(AuthorizedKeyEntry.parseAuthorizedKeyEntry(line),
+        AuthorizedKeyEntry key = ValidateUtils.checkNotNull(AuthorizedKeyEntry.parseAuthorizedKeyEntry(line),
                 "No valid key entry recovered from line=%s", data);
         entry.setKeyEntry(key);
         return entry;

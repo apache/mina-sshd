@@ -38,14 +38,14 @@ public class VersionParserTest extends JUnitTestSupport {
         super();
     }
 
-    @Test   // see SSHD-909
+    @Test // see SSHD-909
     public void testIgnoreNonNumbersWhenResolvingAvailableVersions() {
         List<Integer> expected = Arrays.asList(3, 4, 5, 6);
         List<String> values = expected.stream()
-            .map(Object::toString)
-            .collect(Collectors.toList());
+                .map(Object::toString)
+                .collect(Collectors.toList());
         values.addAll(Arrays.asList(
-            "draft-ietf-secsh-filexfer-11@vandyke.com", "partial-v6@vandyke.com"));
+                "draft-ietf-secsh-filexfer-11@vandyke.com", "partial-v6@vandyke.com"));
         Versions v = new Versions(values);
         List<Integer> actual = v.resolveAvailableVersions(3);
         assertListEquals(getCurrentTestName(), expected, actual);

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrarTestSupport;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -34,8 +35,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -61,12 +60,14 @@ public class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistra
         assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true,
                 SecurityUtils.CURVE_ED25519_SHA512, Signature.class);
 
-        Collection<Class<?>> supported = new HashSet<>(Arrays.asList(KeyPairGenerator.class, KeyFactory.class, Signature.class));
+        Collection<Class<?>> supported
+                = new HashSet<>(Arrays.asList(KeyPairGenerator.class, KeyFactory.class, Signature.class));
         for (Class<?> entity : SecurityProviderRegistrar.SECURITY_ENTITIES) {
             if (supported.contains(entity)) {
                 continue;
             }
-            assertFalse("Unexpected support for " + entity.getSimpleName(), registrarInstance.isSecurityEntitySupported(entity, registrarInstance.getName()));
+            assertFalse("Unexpected support for " + entity.getSimpleName(),
+                    registrarInstance.isSecurityEntitySupported(entity, registrarInstance.getName()));
         }
     }
 

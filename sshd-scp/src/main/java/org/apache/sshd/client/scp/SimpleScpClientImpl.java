@@ -79,7 +79,8 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
         return createScpClient(client -> client.sessionLogin(target, username, identity));
     }
 
-    protected CloseableScpClient createScpClient(IOFunction<? super SimpleClient, ? extends ClientSession> sessionProvider) throws IOException {
+    protected CloseableScpClient createScpClient(IOFunction<? super SimpleClient, ? extends ClientSession> sessionProvider)
+            throws IOException {
         SimpleClient client = getClient();
         ClientSession session = sessionProvider.apply(client);
         try {
@@ -100,13 +101,13 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
             return createScpClient(session, client);
         } catch (Exception e) {
             log.warn("createScpClient({}) failed ({}) to create proxy: {}",
-                     session, e.getClass().getSimpleName(), e.getMessage());
+                    session, e.getClass().getSimpleName(), e.getMessage());
             try {
                 session.close();
             } catch (Exception t) {
                 if (log.isDebugEnabled()) {
                     log.debug("createScpClient({}) failed ({}) to close session: {}",
-                              session, t.getClass().getSimpleName(), t.getMessage());
+                            session, t.getClass().getSimpleName(), t.getMessage());
                 }
 
                 if (log.isTraceEnabled()) {
@@ -121,7 +122,7 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
 
     protected CloseableScpClient createScpClient(ClientSession session, ScpClient client) throws IOException {
         ClassLoader loader = CloseableScpClient.class.getClassLoader();
-        Class<?>[] interfaces = {CloseableScpClient.class};
+        Class<?>[] interfaces = { CloseableScpClient.class };
         return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
             String name = method.getName();
             try {
@@ -134,7 +135,7 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
             } catch (Throwable t) {
                 if (log.isTraceEnabled()) {
                     log.trace("invoke(CloseableScpClient#{}) failed ({}) to execute: {}",
-                              name, t.getClass().getSimpleName(), t.getMessage());
+                            name, t.getClass().getSimpleName(), t.getMessage());
                 }
                 throw t;
             }

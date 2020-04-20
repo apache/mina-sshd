@@ -27,9 +27,8 @@ import java.util.function.Supplier;
 @FunctionalInterface
 public interface ExecutorServiceProvider {
     /**
-     * @return A {@link Supplier} of {@link CloseableExecutorService} to be used when
-     * asynchronous execution required. If {@code null} then a single-threaded
-     * ad-hoc service is used.
+     * @return A {@link Supplier} of {@link CloseableExecutorService} to be used when asynchronous execution required.
+     *         If {@code null} then a single-threaded ad-hoc service is used.
      */
     Supplier<? extends CloseableExecutorService> getExecutorServiceProvider();
 

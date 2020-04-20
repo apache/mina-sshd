@@ -38,8 +38,8 @@ public interface SftpClientFactory {
     /**
      * Create an SFTP client from this session.
      *
-     * @param session The {@link ClientSession} to be used for creating the SFTP client
-     * @return The created {@link SftpClient}
+     * @param  session     The {@link ClientSession} to be used for creating the SFTP client
+     * @return             The created {@link SftpClient}
      * @throws IOException if failed to create the client
      */
     default SftpClient createSftpClient(ClientSession session) throws IOException {
@@ -49,10 +49,10 @@ public interface SftpClientFactory {
     /**
      * Creates an SFTP client using the specified version
      *
-     * @param session The {@link ClientSession} to be used for creating the SFTP client
-     * @param version The version to use - <B>Note:</B> if the specified
-     * version is not supported by the server then an exception will occur
-     * @return The created {@link SftpClient}
+     * @param  session     The {@link ClientSession} to be used for creating the SFTP client
+     * @param  version     The version to use - <B>Note:</B> if the specified version is not supported by the server
+     *                     then an exception will occur
+     * @return             The created {@link SftpClient}
      * @throws IOException If failed to create the client or use the specified version
      */
     default SftpClient createSftpClient(ClientSession session, int version) throws IOException {
@@ -60,9 +60,9 @@ public interface SftpClientFactory {
     }
 
     /**
-     * @param session The {@link ClientSession} to which the SFTP client should be attached
-     * @param selector The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
-     * @return The created {@link SftpClient} instance
+     * @param  session     The {@link ClientSession} to which the SFTP client should be attached
+     * @param  selector    The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
+     * @return             The created {@link SftpClient} instance
      * @throws IOException If failed to create the client
      */
     SftpClient createSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException;
@@ -76,26 +76,31 @@ public interface SftpClientFactory {
     }
 
     default SftpFileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {
-        return createSftpFileSystem(session, selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+        return createSftpFileSystem(session, selector, SftpClient.DEFAULT_READ_BUFFER_SIZE,
+                SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
     }
 
-    default SftpFileSystem createSftpFileSystem(ClientSession session, int version, int readBufferSize, int writeBufferSize) throws IOException {
-        return createSftpFileSystem(session, SftpVersionSelector.fixedVersionSelector(version), readBufferSize, writeBufferSize);
+    default SftpFileSystem createSftpFileSystem(ClientSession session, int version, int readBufferSize, int writeBufferSize)
+            throws IOException {
+        return createSftpFileSystem(session, SftpVersionSelector.fixedVersionSelector(version), readBufferSize,
+                writeBufferSize);
     }
 
-    default SftpFileSystem createSftpFileSystem(ClientSession session, int readBufferSize, int writeBufferSize) throws IOException {
+    default SftpFileSystem createSftpFileSystem(ClientSession session, int readBufferSize, int writeBufferSize)
+            throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
     }
 
     /**
-     * @param session The {@link ClientSession} to which the SFTP client backing the file system should be attached
-     * @param selector The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
-     * @param readBufferSize Default I/O read buffer size
-     * @param writeBufferSize Default I/O write buffer size
-     * @return The created {@link SftpFileSystem} instance
-     * @throws IOException If failed to create the instance
+     * @param  session         The {@link ClientSession} to which the SFTP client backing the file system should be
+     *                         attached
+     * @param  selector        The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
+     * @param  readBufferSize  Default I/O read buffer size
+     * @param  writeBufferSize Default I/O write buffer size
+     * @return                 The created {@link SftpFileSystem} instance
+     * @throws IOException     If failed to create the instance
      */
     SftpFileSystem createSftpFileSystem(
-        ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
+            ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
             throws IOException;
 }

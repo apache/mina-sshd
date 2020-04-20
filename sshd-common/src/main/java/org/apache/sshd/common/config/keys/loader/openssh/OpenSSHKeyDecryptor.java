@@ -32,6 +32,6 @@ public interface OpenSSHKeyDecryptor {
     boolean isEncrypted();
 
     byte[] decodePrivateKeyBytes(
-        SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
+            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
             throws IOException, GeneralSecurityException;
 }

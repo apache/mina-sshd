@@ -65,7 +65,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 assertTrue("Invalid location: " + location, isValidLocation(location));
                 return Collections.singletonList(identity);
             }
@@ -109,7 +109,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
     private static void touchIdentityFile(Path idFile) throws IOException {
         OpenOption[] options = IoUtils.EMPTY_OPEN_OPTIONS;
         if (Files.exists(idFile, IoUtils.EMPTY_LINK_OPTIONS)) {
-            options = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.APPEND};
+            options = new OpenOption[] { StandardOpenOption.WRITE, StandardOpenOption.APPEND };
         }
 
         try (OutputStream out = Files.newOutputStream(idFile, options)) {
@@ -120,7 +120,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
 
     private static void testIdentityReload(
             String phase, Number reloadCount, ClientIdentityProvider provider, KeyPair expectedIdentity, int expectedCount)
-                throws Exception {
+            throws Exception {
         Iterable<KeyPair> ids = provider.getClientIdentities(null);
         KeyPair actualIdentity = GenericUtils.head(ids);
         assertSame(phase + ": mismatched identity", expectedIdentity, actualIdentity);

@@ -96,7 +96,8 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsaGood);
                 session.auth().verify(AUTH_TIMEOUT);
@@ -134,7 +135,8 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsaGood);
 

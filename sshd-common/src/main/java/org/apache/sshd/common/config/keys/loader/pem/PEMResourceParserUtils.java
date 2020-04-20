@@ -46,10 +46,11 @@ public final class PEMResourceParserUtils {
         @Override
         public Collection<KeyPair> loadKeyPairs(
                 SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
             @SuppressWarnings("synthetic-access")
             KeyPairResourceParser proxy = PROXY_HOLDER.get();
-            return (proxy == null) ? Collections.emptyList() : proxy.loadKeyPairs(session, resourceKey, passwordProvider, lines);
+            return (proxy == null)
+                    ? Collections.emptyList() : proxy.loadKeyPairs(session, resourceKey, passwordProvider, lines);
         }
 
         @Override
@@ -63,7 +64,8 @@ public final class PEMResourceParserUtils {
 
     private static final Map<String, KeyPairPEMResourceParser> BY_OID_MAP = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private static final Map<String, KeyPairPEMResourceParser> BY_ALGORITHM_MAP = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private static final AtomicReference<KeyPairResourceParser> PROXY_HOLDER = new AtomicReference<>(KeyPairResourceParser.EMPTY);
+    private static final AtomicReference<KeyPairResourceParser> PROXY_HOLDER
+            = new AtomicReference<>(KeyPairResourceParser.EMPTY);
 
     static {
         registerPEMResourceParser(RSAPEMResourceKeyPairParser.INSTANCE);

@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * Parses a known KEX extension
  *
- * @param <T> Extension generic type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Extension generic type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KexExtensionParser<T> extends NamedResource {
     default T parseExtension(byte[] data) throws IOException {
@@ -45,8 +45,8 @@ public interface KexExtensionParser<T> extends NamedResource {
     /**
      * Adds the name + value to the buffer
      *
-     * @param value The value of the extension
-     * @param buffer The target {@link Buffer}
+     * @param  value       The value of the extension
+     * @param  buffer      The target {@link Buffer}
      * @throws IOException If failed to encode
      */
     void putExtension(T value, Buffer buffer) throws IOException;

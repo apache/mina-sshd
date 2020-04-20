@@ -123,7 +123,8 @@ public class LoadTest extends BaseTestSupport {
             client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.apply(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Collections.singletonList(BuiltinCiphers.blowfishcbc));
             client.start();
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
 
@@ -141,8 +142,8 @@ public class LoadTest extends BaseTestSupport {
                             pipedIn.flush();
                         }
 
-                        Collection<ClientChannelEvent> result =
-                                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                        Collection<ClientChannelEvent> result
+                                = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                         assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                     } finally {
                         channel.close(false);

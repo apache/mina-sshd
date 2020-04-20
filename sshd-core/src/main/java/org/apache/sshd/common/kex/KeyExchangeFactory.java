@@ -27,10 +27,9 @@ import org.apache.sshd.common.session.Session;
  */
 public interface KeyExchangeFactory extends NamedResource {
     /**
-     * @param session The {@link Session} for which the factory is invoked
-     * @return The {@link KeyExchange} instance to be used
+     * @param  session   The {@link Session} for which the factory is invoked
+     * @return           The {@link KeyExchange} instance to be used
      * @throws Exception If failed to create
      */
     KeyExchange createKeyExchange(Session session) throws Exception;
 }
-

@@ -40,7 +40,7 @@ public class SftpFileSystemInitializationContext {
     private long maxAuthTime;
 
     /**
-     * @param id The unique identifier assigned to the file-system being created
+     * @param id  The unique identifier assigned to the file-system being created
      * @param uri The original {@link URI} that triggered the file-system creation
      * @param env The environment settings passed along with the URI (may be {@code null})
      */
@@ -102,8 +102,7 @@ public class SftpFileSystemInitializationContext {
     }
 
     /**
-     * @return A {@link PropertyResolver} for easy access of any query parameters
-     * encoded in the URI
+     * @return A {@link PropertyResolver} for easy access of any query parameters encoded in the URI
      */
     public PropertyResolver getPropertyResolver() {
         return propertyResolver;

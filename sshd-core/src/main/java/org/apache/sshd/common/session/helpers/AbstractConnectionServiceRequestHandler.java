@@ -36,7 +36,8 @@ public abstract class AbstractConnectionServiceRequestHandler
     }
 
     @Override
-    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
+            throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("process({}) request={}, want-reply={}", connectionService, request, wantReply);
         }

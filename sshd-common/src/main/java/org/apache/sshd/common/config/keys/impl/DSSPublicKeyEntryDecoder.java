@@ -50,13 +50,14 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
     public static final DSSPublicKeyEntryDecoder INSTANCE = new DSSPublicKeyEntryDecoder();
 
     public DSSPublicKeyEntryDecoder() {
-        super(DSAPublicKey.class, DSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
+        super(DSAPublicKey.class, DSAPrivateKey.class,
+              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
     }
 
     @Override
     public DSAPublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }

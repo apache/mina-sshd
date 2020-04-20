@@ -70,19 +70,16 @@ import org.junit.runner.RunWith;
 @RunWith(JUnit4SingleInstanceClassRunner.class)
 public abstract class JUnitTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
-    public static final boolean OUTPUT_DEBUG_MESSAGES =
-        Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
+    public static final boolean OUTPUT_DEBUG_MESSAGES
+            = Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
     public static final String MAIN_SUBFOLDER = "main";
     public static final String TEST_SUBFOLDER = "test";
     public static final String RESOURCES_SUBFOLDER = "resources";
 
     // useful test sizes for keys
-    public static final List<Integer> DSS_SIZES =
-        Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
-    public static final List<Integer> RSA_SIZES =
-        Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
-    public static final List<Integer> ED25519_SIZES =
-        Collections.unmodifiableList(Arrays.asList(256));
+    public static final List<Integer> DSS_SIZES = Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
+    public static final List<Integer> RSA_SIZES = Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
+    public static final List<Integer> ED25519_SIZES = Collections.unmodifiableList(Arrays.asList(256));
 
     @Rule
     public final TestName testNameHolder = new TestName();
@@ -99,41 +96,40 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     /**
-     * Attempts to build a <U>relative</U> path whose root is the location
-     * of the TEMP sub-folder of the Maven &quot;target&quot; folder associated
-     * with the project
+     * Attempts to build a <U>relative</U> path whose root is the location of the TEMP sub-folder of the Maven
+     * &quot;target&quot; folder associated with the project
      *
-     * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link Path} representing the result - same as target folder if no components
-     * @see #TEMP_SUBFOLDER_NAME
-     * @see #getTargetRelativeFile(Collection)
+     * @param  comps The path components - ignored if {@code null}/empty
+     * @return       The {@link Path} representing the result - same as target folder if no components
+     * @see          #TEMP_SUBFOLDER_NAME
+     * @see          #getTargetRelativeFile(Collection)
      */
     protected Path getTempTargetRelativeFile(String... comps) {
         return getTempTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
     /**
-     * Attempts to build a <U>relative</U> path whose root is the location
-     * of the TEMP sub-folder of the Maven &quot;target&quot; folder associated
-     * with the project
+     * Attempts to build a <U>relative</U> path whose root is the location of the TEMP sub-folder of the Maven
+     * &quot;target&quot; folder associated with the project
      *
-     * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link Path} representing the result - same as target folder if no components
-     * @see #TEMP_SUBFOLDER_NAME
-     * @see #getTempTargetFolder()
+     * @param  comps The path components - ignored if {@code null}/empty
+     * @return       The {@link Path} representing the result - same as target folder if no components
+     * @see          #TEMP_SUBFOLDER_NAME
+     * @see          #getTempTargetFolder()
      */
     protected Path getTempTargetRelativeFile(Collection<String> comps) {
         return CommonTestSupportUtils.resolve(getTempTargetFolder(), comps);
     }
 
     /**
-     * @return The TEMP sub-folder {@link Path} of the Maven &quot;target&quot; folder
-     * associated with the project - never {@code null}
+     * @return The TEMP sub-folder {@link Path} of the Maven &quot;target&quot; folder associated with the project -
+     *         never {@code null}
      */
     protected Path getTempTargetFolder() {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (tempFolder == null) {
-                tempFolder = Objects.requireNonNull(detectTargetFolder(), "No target folder detected").resolve(TEMP_SUBFOLDER_NAME);
+                tempFolder = Objects.requireNonNull(detectTargetFolder(), "No target folder detected")
+                        .resolve(TEMP_SUBFOLDER_NAME);
             }
         }
 
@@ -141,34 +137,33 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     /**
-     * Attempts to build a <U>relative</U> path whose root is the location
-     * of the Maven &quot;target&quot; folder associated with the project
+     * Attempts to build a <U>relative</U> path whose root is the location of the Maven &quot;target&quot; folder
+     * associated with the project
      *
-     * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link Path} representing the result - same as target folder if no components
+     * @param  comps The path components - ignored if {@code null}/empty
+     * @return       The {@link Path} representing the result - same as target folder if no components
      */
     protected Path getTargetRelativeFile(String... comps) {
         return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.emptyList() : Arrays.asList(comps));
     }
 
     /**
-     * Attempts to build a <U>relative</U> path whose root is the location
-     * of the Maven &quot;target&quot; folder associated with the project
+     * Attempts to build a <U>relative</U> path whose root is the location of the Maven &quot;target&quot; folder
+     * associated with the project
      *
-     * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link Path} representing the result - same as target folder if no components
-     * @see #detectTargetFolder()
+     * @param  comps The path components - ignored if {@code null}/empty
+     * @return       The {@link Path} representing the result - same as target folder if no components
+     * @see          #detectTargetFolder()
      */
     protected Path getTargetRelativeFile(Collection<String> comps) {
         return CommonTestSupportUtils.resolve(detectTargetFolder(), comps);
     }
 
     /**
-     * Attempts to detect the location of the Maven &quot;target&quot; folder
-     * associated with the project that contains the actual class extending this
-     * base class
+     * Attempts to detect the location of the Maven &quot;target&quot; folder associated with the project that contains
+     * the actual class extending this base class
      *
-     * @return The {@link File} representing the location of the &quot;target&quot; folder
+     * @return                          The {@link File} representing the location of the &quot;target&quot; folder
      * @throws IllegalArgumentException If failed to detect the folder
      */
     protected Path detectTargetFolder() throws IllegalArgumentException {
@@ -185,10 +180,10 @@ public abstract class JUnitTestSupport extends Assert {
     /**
      * Creates a folder bearing the class's simple name under the project's target temporary folder
      *
-     * @return The created folder {@link Path}
+     * @return             The created folder {@link Path}
      * @throws IOException If failed to detect or create the folder's location
-     * @see #detectTargetFolder() detectTargetFolder
-     * @see #assertHierarchyTargetFolderExists(Path, LinkOption...) assertHierarchyTargetFolderExists
+     * @see                #detectTargetFolder() detectTargetFolder
+     * @see                #assertHierarchyTargetFolderExists(Path, LinkOption...) assertHierarchyTargetFolderExists
      */
     protected Path createTempClassFolder() throws IOException {
         Path tmpDir = detectTargetFolder();
@@ -275,7 +270,7 @@ public abstract class JUnitTestSupport extends Assert {
 
         List<Object[]> result = new ArrayList<>(params.size());
         for (Object p : params) {
-            result.add(new Object[]{p});
+            result.add(new Object[] { p });
         }
 
         return result;
@@ -357,7 +352,8 @@ public abstract class JUnitTestSupport extends Assert {
 
         Class<?> actual = obj.getClass();
         if (!expected.isAssignableFrom(actual)) {
-            fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName() + ")");
+            fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName()
+                 + ")");
         }
 
         return expected.cast(obj);
@@ -388,7 +384,8 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     public static <K, V> void assertMapEquals(
-            String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual, BiPredicate<? super V, ? super V> equator) {
+            String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual,
+            BiPredicate<? super V, ? super V> equator) {
         int numItems = GenericUtils.size(expected);
         assertEquals(message + "[size]", numItems, GenericUtils.size(actual));
 
@@ -551,9 +548,9 @@ public abstract class JUnitTestSupport extends Assert {
     /**
      * Waits the specified timeout for the file to exist and have the required length
      *
-     * @param file    The file {@link Path} to check
-     * @param length  Expected length
-     * @param timeout Timeout (msec.) to wait for satisfying the requirements
+     * @param  file      The file {@link Path} to check
+     * @param  length    Expected length
+     * @param  timeout   Timeout (msec.) to wait for satisfying the requirements
      * @throws Exception If failed to access the file
      */
     public static void assertFileLength(Path file, long length, Duration timeout) throws Exception {

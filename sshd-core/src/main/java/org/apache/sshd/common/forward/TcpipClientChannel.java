@@ -50,15 +50,13 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public class TcpipClientChannel extends AbstractClientChannel implements ForwardingTunnelEndpointsProvider {
     /**
-     * Type of channel being created. The type's {@link #getName()}
-     * method returns the SSH request type
+     * Type of channel being created. The type's {@link #getName()} method returns the SSH request type
      */
     public enum Type implements NamedResource {
         Direct("direct-tcpip"),
         Forwarded("forwarded-tcpip");
 
-        public static final Set<Type> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(Type.class));
+        public static final Set<Type> VALUES = Collections.unmodifiableSet(EnumSet.allOf(Type.class));
 
         private final String channelType;
 
@@ -136,7 +134,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
         // make sure the pending messages queue is 1st in line
         openFuture = new DefaultOpenFuture(src, futureLock)
-            .addListener(getPendingMessagesQueue());
+                .addListener(getPendingMessagesQueue());
         if (log.isDebugEnabled()) {
             log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);
         }
@@ -147,7 +145,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         Window wLocal = getLocalWindow();
         String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
-            type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
+                type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());
@@ -167,7 +165,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         }
 
         out = new ChannelOutputStream(
-            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
@@ -177,7 +175,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         if (err != null) {
             if (log.isDebugEnabled()) {
                 log.debug("preClose({}) Failed ({}) to close pending messages queue: {}",
-                    this, err.getClass().getSimpleName(), err.getMessage());
+                        this, err.getClass().getSimpleName(), err.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("preClose(" + this + ") pending messages queue close failure details", err);
@@ -190,14 +188,14 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .sequential(serverSession, super.getInnerCloseable())
-            .build();
+                .sequential(serverSession, super.getInnerCloseable())
+                .build();
     }
 
     @Override
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-            "Data length exceeds int boundaries: %d", len);
+                "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         Window wLocal = getLocalWindow();
@@ -208,7 +206,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(
-            getChannelType() + "Tcpip channel does not support extended data");
+                getChannelType() + "Tcpip channel does not support extended data");
     }
 
     @Override

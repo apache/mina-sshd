@@ -66,7 +66,8 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
-        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
+        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1,
+                new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
@@ -74,7 +75,8 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
-        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
+        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1,
+                new ECGenParameterSpec("P-384"));
     }
 
     @Test
@@ -82,12 +84,13 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
-        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
+        testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1,
+                new ECGenParameterSpec("P-521"));
     }
 
     private Path testSimpleGeneratorHostKeyProvider(
             String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Path path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
@@ -99,7 +102,7 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
     private static KeyPair invokeSimpleGeneratorHostKeyProvider(
             Path path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(algorithm);
         provider.setOverwriteAllowed(true);
@@ -116,7 +119,7 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
     private static KeyPair validateKeyPairProvider(
             KeyPairProvider provider, String keyType)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Iterable<String> types = provider.getKeyTypes(null);
         KeyPair kp = null;
         for (String type : types) {

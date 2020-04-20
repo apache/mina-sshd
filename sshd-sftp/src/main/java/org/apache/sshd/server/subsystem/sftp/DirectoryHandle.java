@@ -45,7 +45,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
         Path parent = dir.getParent();
         if (parent == null) {
-            sendDotDot = false;  // if no parent then no need to send ".."
+            sendDotDot = false; // if no parent then no need to send ".."
         }
         fileList = ds.iterator();
 

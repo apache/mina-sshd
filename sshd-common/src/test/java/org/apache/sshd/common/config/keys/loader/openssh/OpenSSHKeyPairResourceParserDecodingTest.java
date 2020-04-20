@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairResourceParserTestSupport {
@@ -69,7 +69,7 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
     @Override
     protected void testLoadKeyPairs(
             boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
-                throws Exception {
+            throws Exception {
         assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
 
         Class<? extends PublicKey> pubType = identity.getPublicKeyType();
@@ -92,8 +92,7 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
             }
 
             @SuppressWarnings("rawtypes")
-            PrivateKeyEntryDecoder decoder =
-                OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
+            PrivateKeyEntryDecoder decoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
             assertNotNull("No private key decoder", decoder);
 
             if (decoder.isPublicKeyRecoverySupported()) {

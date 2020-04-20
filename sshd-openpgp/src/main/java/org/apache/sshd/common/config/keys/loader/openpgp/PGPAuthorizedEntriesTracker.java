@@ -75,10 +75,10 @@ public class PGPAuthorizedEntriesTracker
 
     public PGPAuthorizedEntriesTracker(Collection<? extends Path> keys, FilePasswordProvider passwordProvider) {
         this.keyFiles = GenericUtils.isEmpty(keys)
-            ? new ArrayList<>()
-            : keys.stream()
-                .map(k -> new PGPPublicKeyFileWatcher(k))
-                .collect(Collectors.toCollection(() -> new ArrayList<>(keys.size())));
+                ? new ArrayList<>()
+                : keys.stream()
+                        .map(k -> new PGPPublicKeyFileWatcher(k))
+                        .collect(Collectors.toCollection(() -> new ArrayList<>(keys.size())));
     }
 
     @Override
@@ -104,7 +104,7 @@ public class PGPAuthorizedEntriesTracker
     @Override
     public List<PublicKey> loadMatchingKeyFingerprints(
             SessionContext session, Collection<String> fingerprints)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         int numEntries = GenericUtils.size(fingerprints);
         if (numEntries <= 0) {
             return Collections.emptyList();
@@ -125,19 +125,19 @@ public class PGPAuthorizedEntriesTracker
             Map<String, Subkey> fpMap = PGPUtils.mapSubKeysByFingerprint(container);
             int numSubKeys = GenericUtils.size(fpMap);
             Collection<Subkey> matches = (numSubKeys <= 0)
-                ? Collections.emptyList()
-                : fpMap.entrySet()
-                    .stream()
-                    .filter(e -> fingerprints.contains(e.getKey()))
-                    .map(Map.Entry::getValue)
-                    .collect(Collectors.toCollection(() -> new ArrayList<>(numSubKeys)));
+                    ? Collections.emptyList()
+                    : fpMap.entrySet()
+                            .stream()
+                            .filter(e -> fingerprints.contains(e.getKey()))
+                            .map(Map.Entry::getValue)
+                            .collect(Collectors.toCollection(() -> new ArrayList<>(numSubKeys)));
             int numMatches = GenericUtils.size(matches);
             if (debugEnabled) {
                 log.debug("loadMatchingKeyFingerprints({}) found {}/{} matches in {}",
-                    session, numMatches, numEntries, resourceKey);
+                        session, numMatches, numEntries, resourceKey);
             }
             if (numMatches <= 0) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
 
             for (Subkey sk : matches) {
@@ -145,20 +145,22 @@ public class PGPAuthorizedEntriesTracker
                 try {
                     pk = extractPublicKey(resourceKey, sk);
                     if (pk == null) {
-                        continue;   // debug breakpoint
+                        continue; // debug breakpoint
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
                     log.error("loadMatchingKeyFingerprints({}) failed ({}) to convert {} from {} to public key: {}",
-                        session, e.getClass().getSimpleName(), sk, resourceKey, e.getMessage());
+                            session, e.getClass().getSimpleName(), sk, resourceKey, e.getMessage());
                     if (debugEnabled) {
-                        log.debug("loadMatchingKeyFingerprints(" + session + ")[" + resourceKey + "][" + sk + "] conversion failure details", e);
+                        log.debug("loadMatchingKeyFingerprints(" + session + ")[" + resourceKey + "][" + sk
+                                  + "] conversion failure details",
+                                e);
                     }
                     throw e;
                 }
 
                 if (debugEnabled) {
                     log.debug("loadMatchingKeyFingerprints({}) loaded key={}, fingerprint={}, hash={} from {}",
-                        session, KeyUtils.getKeyType(pk), sk.getFingerprint(), KeyUtils.getFingerPrint(pk), resourceKey);
+                            session, KeyUtils.getKeyType(pk), sk.getFingerprint(), KeyUtils.getFingerPrint(pk), resourceKey);
                 }
                 keys.add(pk);
             }

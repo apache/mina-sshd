@@ -41,9 +41,9 @@ public class TimeoutIndicator {
     private final long expiredValue;
 
     /**
-     * @param status The expired timeout type (if any)
+     * @param status         The expired timeout type (if any)
      * @param thresholdValue The configured timeout value
-     * @param expiredValue The actual value that cause the timeout
+     * @param expiredValue   The actual value that cause the timeout
      */
     public TimeoutIndicator(TimeoutStatus status, long thresholdValue, long expiredValue) {
         this.status = status;
@@ -66,9 +66,9 @@ public class TimeoutIndicator {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[status=" + getStatus()
-            + ", threshold=" + getThresholdValue()
-            + ", expired=" + getExpiredValue()
-            + "]";
+               + "[status=" + getStatus()
+               + ", threshold=" + getThresholdValue()
+               + ", expired=" + getExpiredValue()
+               + "]";
     }
 }

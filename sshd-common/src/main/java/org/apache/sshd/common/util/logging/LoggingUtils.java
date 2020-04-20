@@ -49,15 +49,14 @@ public final class LoggingUtils {
     }
 
     /**
-     * Scans using reflection API for all fields that are {@code public static final}
-     * that start with the given common prefix (case <U>sensitive</U>) and are of type
-     * {@link Number}.
+     * Scans using reflection API for all fields that are {@code public static final} that start with the given common
+     * prefix (case <U>sensitive</U>) and are of type {@link Number}.
      *
-     * @param clazz The {@link Class} to query
-     * @param commonPrefix The expected common prefix
-     * @return A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer}
-     * value and mapping=the field's name
-     * @see #generateMnemonicMap(Class, Predicate)
+     * @param  clazz        The {@link Class} to query
+     * @param  commonPrefix The expected common prefix
+     * @return              A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer}
+     *                      value and mapping=the field's name
+     * @see                 #generateMnemonicMap(Class, Predicate)
      */
     public static NavigableMap<Integer, String> generateMnemonicMap(Class<?> clazz, final String commonPrefix) {
         return generateMnemonicMap(clazz, f -> {
@@ -67,16 +66,16 @@ public final class LoggingUtils {
     }
 
     /**
-     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
-     * that are also accepted by the predicate. Any field that is not such or fail to retrieve
-     * its value, or has a duplicate value is <U>silently</U> skipped.
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields that are also accepted by
+     * the predicate. Any field that is not such or fail to retrieve its value, or has a duplicate value is
+     * <U>silently</U> skipped.
      *
-     * @param clazz The {@link Class} to query
-     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
-     * (besides being a {@link Number} and {@code public static final}).
-     * @return A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer}
-     * value and mapping=the field's name
-     * @see #getMnemonicFields(Class, Predicate)
+     * @param  clazz    The {@link Class} to query
+     * @param  acceptor The {@link Predicate} used to decide whether to process the {@link Field} (besides being a
+     *                  {@link Number} and {@code public static final}).
+     * @return          A {@link NavigableMap} of all the matching fields, where key=the field's {@link Integer} value
+     *                  and mapping=the field's name
+     * @see             #getMnemonicFields(Class, Predicate)
      */
     public static NavigableMap<Integer, String> generateMnemonicMap(Class<?> clazz, Predicate<? super Field> acceptor) {
         Collection<Field> fields = getMnemonicFields(clazz, acceptor);
@@ -91,12 +90,12 @@ public final class LoggingUtils {
                 Number value = (Number) f.get(null);
                 String prev = result.put(NumberUtils.toInteger(value), name);
                 if (prev != null) {
-                    //noinspection UnnecessaryContinue
-                    continue;   // debug breakpoint
+                    // noinspection UnnecessaryContinue
+                    continue; // debug breakpoint
                 }
             } catch (Exception e) {
-                //noinspection UnnecessaryContinue
-                continue;   // debug breakpoint
+                // noinspection UnnecessaryContinue
+                continue; // debug breakpoint
             }
         }
 
@@ -104,15 +103,14 @@ public final class LoggingUtils {
     }
 
     /**
-     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
-     * that have a common prefix and whose value is used by several of the other
-     * matching fields
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields that have a common prefix
+     * and whose value is used by several of the other matching fields
      *
-     * @param clazz The {@link Class} to query
-     * @param commonPrefix The expected common prefix
-     * @return A {@link Map} of all the mnemonic fields names whose value is the same as other
-     * fields in this map. The key is the field's name and value is its associated opcode.
-     * @see #getAmbiguousMenmonics(Class, Predicate)
+     * @param  clazz        The {@link Class} to query
+     * @param  commonPrefix The expected common prefix
+     * @return              A {@link Map} of all the mnemonic fields names whose value is the same as other fields in
+     *                      this map. The key is the field's name and value is its associated opcode.
+     * @see                 #getAmbiguousMenmonics(Class, Predicate)
      */
     public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, String commonPrefix) {
         return getAmbiguousMenmonics(clazz, f -> {
@@ -122,16 +120,15 @@ public final class LoggingUtils {
     }
 
     /**
-     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
-     * that are also accepted by the predicate and whose value is used by several of the other
-     * matching fields
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields that are also accepted by
+     * the predicate and whose value is used by several of the other matching fields
      *
-     * @param clazz The {@link Class} to query
-     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
-     * (besides being a {@link Number} and {@code public static final}).
-     * @return A {@link Map} of all the mnemonic fields names whose value is the same as other
-     * fields in this map. The key is the field's name and value is its associated opcode.
-     * @see #getMnemonicFields(Class, Predicate)
+     * @param  clazz    The {@link Class} to query
+     * @param  acceptor The {@link Predicate} used to decide whether to process the {@link Field} (besides being a
+     *                  {@link Number} and {@code public static final}).
+     * @return          A {@link Map} of all the mnemonic fields names whose value is the same as other fields in this
+     *                  map. The key is the field's name and value is its associated opcode.
+     * @see             #getMnemonicFields(Class, Predicate)
      */
     public static Map<String, Integer> getAmbiguousMenmonics(Class<?> clazz, Predicate<? super Field> acceptor) {
         Collection<Field> fields = getMnemonicFields(clazz, acceptor);
@@ -156,12 +153,12 @@ public final class LoggingUtils {
                 int numOpcodes = nameList.size();
                 if (numOpcodes > 1) {
                     result.put(name, key);
-                    if (numOpcodes == 2) {  // add the 1st name as well
+                    if (numOpcodes == 2) { // add the 1st name as well
                         result.put(nameList.get(0), key);
                     }
                 }
             } catch (Exception e) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
         }
 
@@ -169,13 +166,13 @@ public final class LoggingUtils {
     }
 
     /**
-     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields
-     * that are also accepted by the predicate.
+     * Scans using reflection API for all <U>numeric {@code public static final}</U> fields that are also accepted by
+     * the predicate.
      *
-     * @param clazz The {@link Class} to query
-     * @param acceptor The {@link Predicate} used to decide whether to process the {@link Field}
-     * (besides being a {@link Number} and {@code public static final}).
-     * @return A {@link Collection} of all the fields that have satisfied all conditions
+     * @param  clazz    The {@link Class} to query
+     * @param  acceptor The {@link Predicate} used to decide whether to process the {@link Field} (besides being a
+     *                  {@link Number} and {@code public static final}).
+     * @return          A {@link Collection} of all the fields that have satisfied all conditions
      */
     public static Collection<Field> getMnemonicFields(Class<?> clazz, Predicate<? super Field> acceptor) {
         return ReflectionUtils.getMatchingFields(clazz, f -> {
@@ -196,33 +193,40 @@ public final class LoggingUtils {
     /**
      * Verifies if the given level is above the required threshold for logging.
      *
-     * @param level     The {@link Level} to evaluate
-     * @param threshold The threshold {@link Level}
-     * @return {@code true} if the evaluated level is above the required
-     * threshold.
-     * <P>
-     * <B>Note(s):</B>
-     * </P>
-     * <UL>
-     * <LI><P>
-     * If either argument is {@code null} then result is {@code false}.
-     * </P></LI>
+     * @param  level     The {@link Level} to evaluate
+     * @param  threshold The threshold {@link Level}
+     * @return           {@code true} if the evaluated level is above the required threshold.
+     *                   <P>
+     *                   <B>Note(s):</B>
+     *                   </P>
+     *                   <UL>
+     *                   <LI>
+     *                   <P>
+     *                   If either argument is {@code null} then result is {@code false}.
+     *                   </P>
+     *                   </LI>
      *
-     * <LI><P>
-     * If the evaluated level is {@link Level#OFF} then result is {@code false}
-     * regardless of the threshold.
-     * </P></LI>
+     *                   <LI>
+     *                   <P>
+     *                   If the evaluated level is {@link Level#OFF} then result is {@code false} regardless of the
+     *                   threshold.
+     *                   </P>
+     *                   </LI>
      *
-     * <LI><P>
-     * If the threshold is {@link Level#ALL} and the evaluated level is
-     * <U>not</U> {@link Level#OFF} the result is {@code true}.
-     * </P></LI>
+     *                   <LI>
+     *                   <P>
+     *                   If the threshold is {@link Level#ALL} and the evaluated level is <U>not</U> {@link Level#OFF}
+     *                   the result is {@code true}.
+     *                   </P>
+     *                   </LI>
      *
-     * <LI><P>
-     * Otherwise, the evaluated level {@link Level#intValue()} must be
-     * greater or equal to the threshold.
-     * </P></LI>
-     * </UL>
+     *                   <LI>
+     *                   <P>
+     *                   Otherwise, the evaluated level {@link Level#intValue()} must be greater or equal to the
+     *                   threshold.
+     *                   </P>
+     *                   </LI>
+     *                   </UL>
      */
     public static boolean isLoggable(Level level, Level threshold) {
         if ((level == null) || (threshold == null)) {
@@ -275,18 +279,21 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param logger The {@link Logger} instance - ignored if {@code null}
-     * @param level  The validate log {@link Level} - ignored if {@code null}
-     * @return <P>{@code true} if the level is enabled for the logger. The
-     * mapping of the level to the logger is as follows:</P>
-     * <UL>
-     * <LI>{@link Level#OFF} always returns {@code false}</LI>
-     * <LI>{@link Level#SEVERE} returns {@link Logger#isErrorEnabled()}</LI>
-     * <LI>{@link Level#WARNING} returns {@link Logger#isWarnEnabled()}</LI>
-     * <LI>{@link Level#INFO} and {@link Level#ALL} returns {@link Logger#isInfoEnabled()}</LI>
-     * <LI>{@link Level#CONFIG} and {@link Level#FINE} returns {@link Logger#isDebugEnabled()}</LI>
-     * <LI>All other levels return {@link Logger#isTraceEnabled()}</LI>
-     * </UL>
+     * @param  logger The {@link Logger} instance - ignored if {@code null}
+     * @param  level  The validate log {@link Level} - ignored if {@code null}
+     * @return
+     *                <P>
+     *                {@code true} if the level is enabled for the logger. The mapping of the level to the logger is as
+     *                follows:
+     *                </P>
+     *                <UL>
+     *                <LI>{@link Level#OFF} always returns {@code false}</LI>
+     *                <LI>{@link Level#SEVERE} returns {@link Logger#isErrorEnabled()}</LI>
+     *                <LI>{@link Level#WARNING} returns {@link Logger#isWarnEnabled()}</LI>
+     *                <LI>{@link Level#INFO} and {@link Level#ALL} returns {@link Logger#isInfoEnabled()}</LI>
+     *                <LI>{@link Level#CONFIG} and {@link Level#FINE} returns {@link Logger#isDebugEnabled()}</LI>
+     *                <LI>All other levels return {@link Logger#isTraceEnabled()}</LI>
+     *                </UL>
      */
     public static boolean isLoggable(Logger logger, Level level) {
         if ((logger == null) || (level == null) || Level.OFF.equals(level)) {
@@ -305,20 +312,20 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param level The log {@link Level} mapped as follows:</BR>
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  level  The log {@link Level} mapped as follows:</BR>
      *
-     * <UL>
-     *     <LI>{@link Level#OFF} - {@link #nologClosure(Logger)}</LI>
-     *     <LI>{@link Level#SEVERE} - {@link #errorClosure(Logger)}</LI>
-     *     <LI>{@link Level#WARNING} - {@link #warnClosure(Logger)}</LI>
-     *     <LI>{@link Level#INFO}/{@link Level#ALL} - {@link #infoClosure(Logger)}</LI>
-     *     <LI>{@link Level#CONFIG}/{@link Level#FINE} - {@link #debugClosure(Logger)}</LI>
-     *     <LI>All others - {@link #traceClosure(Logger)}</LI>
-     * </UL>
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if the specific level is enabled
+     *                <UL>
+     *                <LI>{@link Level#OFF} - {@link #nologClosure(Logger)}</LI>
+     *                <LI>{@link Level#SEVERE} - {@link #errorClosure(Logger)}</LI>
+     *                <LI>{@link Level#WARNING} - {@link #warnClosure(Logger)}</LI>
+     *                <LI>{@link Level#INFO}/{@link Level#ALL} - {@link #infoClosure(Logger)}</LI>
+     *                <LI>{@link Level#CONFIG}/{@link Level#FINE} - {@link #debugClosure(Logger)}</LI>
+     *                <LI>All others - {@link #traceClosure(Logger)}</LI>
+     *                </UL>
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if the specific level is enabled
      */
     public static <T> Consumer<T> loggingClosure(Logger logger, Level level) {
         return loggingClosure(logger, level, null);
@@ -343,31 +350,32 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs nothing when invoked
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs nothing when invoked
      */
     public static <T> Consumer<T> nologClosure(Logger logger) {
         Objects.requireNonNull(logger, "No logger provided");
-        return t -> { /* do nothing */ };
+        return t -> {
+            /* do nothing */ };
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isErrorEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isErrorEnabled()}
      */
     public static <T> Consumer<T> errorClosure(Logger logger) {
         return errorClosure(logger, null);
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isErrorEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isErrorEnabled()}
      */
     public static <T> Consumer<T> errorClosure(Logger logger, Throwable thrown) {
         Objects.requireNonNull(logger, "No logger provided");
@@ -392,21 +400,21 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isWarnEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isWarnEnabled()}
      */
     public static <T> Consumer<T> warnClosure(Logger logger) {
         return warnClosure(logger, null);
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
-     * value of its argument if {@link Logger#isWarnEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isWarnEnabled()}
      */
     public static <T> Consumer<T> warnClosure(Logger logger, Throwable thrown) {
         Objects.requireNonNull(logger, "No logger provided");
@@ -431,21 +439,21 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
-     * value of its argument if {@link Logger#isInfoEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isInfoEnabled()}
      */
     public static <T> Consumer<T> infoClosure(Logger logger) {
         return infoClosure(logger, null);
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isInfoEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isInfoEnabled()}
      */
     public static <T> Consumer<T> infoClosure(Logger logger, Throwable thrown) {
         Objects.requireNonNull(logger, "No logger provided");
@@ -470,21 +478,21 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isDebugEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isDebugEnabled()}
      */
     public static <T> Consumer<T> debugClosure(Logger logger) {
         return debugClosure(logger, null);
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isDebugEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isDebugEnabled()}
      */
     public static <T> Consumer<T> debugClosure(Logger logger, Throwable thrown) {
         Objects.requireNonNull(logger, "No logger provided");
@@ -509,21 +517,21 @@ public final class LoggingUtils {
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isTraceEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isTraceEnabled()}
      */
     public static <T> Consumer<T> traceClosure(Logger logger) {
         return traceClosure(logger, null);
     }
 
     /**
-     * @param <T> Generic message type consumer
-     * @param logger The {@link Logger} instance to use
-     * @param thrown A {@link Throwable} to attach to the message - ignored if {@code null}
-     * @return A consumer whose {@link Consumer#accept(Object)} method logs the
-     * {@link String#valueOf(Object)} value of its argument if {@link Logger#isTraceEnabled()}
+     * @param  <T>    Generic message type consumer
+     * @param  logger The {@link Logger} instance to use
+     * @param  thrown A {@link Throwable} to attach to the message - ignored if {@code null}
+     * @return        A consumer whose {@link Consumer#accept(Object)} method logs the {@link String#valueOf(Object)}
+     *                value of its argument if {@link Logger#isTraceEnabled()}
      */
     public static <T> Consumer<T> traceClosure(Logger logger, Throwable thrown) {
         Objects.requireNonNull(logger, "No logger provided");

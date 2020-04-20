@@ -115,8 +115,8 @@ public class SftpSubsystemFactory
     }
 
     /**
-     * @param p The {@link UnsupportedAttributePolicy} to use if failed to access
-     * some local file attributes - never {@code null}
+     * @param p The {@link UnsupportedAttributePolicy} to use if failed to access some local file attributes - never
+     *          {@code null}
      */
     public void setUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
         policy = Objects.requireNonNull(p, "No policy");
@@ -142,8 +142,8 @@ public class SftpSubsystemFactory
 
     @Override
     public Command createSubsystem(ChannelSession channel) throws IOException {
-        SftpSubsystem subsystem =
-            new SftpSubsystem(resolveExecutorService(),
+        SftpSubsystem subsystem = new SftpSubsystem(
+                resolveExecutorService(),
                 getUnsupportedAttributePolicy(), getFileSystemAccessor(),
                 getErrorStatusDataHandler());
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);

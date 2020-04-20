@@ -51,8 +51,8 @@ public class GitSshdSessionFactory
     }
 
     /**
-     * Used to provide an externally managed {@link SshClient} instance. In this case, the
-     * caller is responsible for start/stop-ing the client once no longer needed.
+     * Used to provide an externally managed {@link SshClient} instance. In this case, the caller is responsible for
+     * start/stop-ing the client once no longer needed.
      *
      * @param client The (never {@code null}) client instance
      */
@@ -61,10 +61,10 @@ public class GitSshdSessionFactory
     }
 
     /**
-     * Used to provide an externally managed {@link ClientSession} instance. In this case, the
-     * caller is responsible for connecting and disconnecting the session once no longer needed.
-     * <B>Note:</B> in this case, the connection and authentication phase are <U>skipped</U> - i.e.,
-     * any specific host/port/user/password(s) specified in the GIT URI are <U>not used</U>.
+     * Used to provide an externally managed {@link ClientSession} instance. In this case, the caller is responsible for
+     * connecting and disconnecting the session once no longer needed. <B>Note:</B> in this case, the connection and
+     * authentication phase are <U>skipped</U> - i.e., any specific host/port/user/password(s) specified in the GIT URI
+     * are <U>not used</U>.
      *
      * @param session The (never {@code null}) client session instance
      */
@@ -80,7 +80,7 @@ public class GitSshdSessionFactory
     @Override
     public RemoteSession getSession(
             URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
-                throws TransportException {
+            throws TransportException {
         try {
             return new GitSshdSession(uri, credentialsProvider, fs, tms) {
                 @Override
@@ -96,7 +96,7 @@ public class GitSshdSessionFactory
                 @Override
                 protected ClientSession createClientSession(
                         SshClient clientInstance, String host, String username, int port, String... passwords)
-                            throws IOException, InterruptedException {
+                        throws IOException, InterruptedException {
                     ClientSession thisSession = getClientSession();
                     if (thisSession != null) {
                         return thisSession;

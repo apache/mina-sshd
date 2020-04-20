@@ -54,8 +54,7 @@ public abstract class AbstractSftpFileAttributeView extends AbstractLoggingBean 
     }
 
     /**
-     * @return The underlying {@link SftpFileSystemProvider} used to
-     * provide the view functionality
+     * @return The underlying {@link SftpFileSystemProvider} used to provide the view functionality
      */
     public final SftpFileSystemProvider provider() {
         return provider;

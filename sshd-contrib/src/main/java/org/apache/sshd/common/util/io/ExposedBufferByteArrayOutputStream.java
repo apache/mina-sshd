@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 
 /**
  * Exposes direct access to the underlying buffer
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ExposedBufferByteArrayOutputStream extends ByteArrayOutputStream {

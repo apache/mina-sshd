@@ -34,8 +34,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * @param <PUB> Type of {@link PublicKey} being extracted
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey} being extracted
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> implements BufferPublicKeyParser<PUB> {
     private final Class<PUB> keyClass;
@@ -47,7 +47,8 @@ public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> imple
 
     protected AbstractBufferPublicKeyParser(Class<PUB> keyClass, Collection<String> supported) {
         this.keyClass = Objects.requireNonNull(keyClass, "No key class");
-        this.supported = ValidateUtils.checkNotNullAndNotEmpty(supported, "No supported types for %s", keyClass.getSimpleName());
+        this.supported
+                = ValidateUtils.checkNotNullAndNotEmpty(supported, "No supported types for %s", keyClass.getSimpleName());
     }
 
     public Collection<String> getSupportedKeyTypes() {
@@ -62,8 +63,8 @@ public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> imple
     public boolean isKeyTypeSupported(String keyType) {
         Collection<String> keys = getSupportedKeyTypes();
         return (GenericUtils.length(keyType) > 0)
-            && (GenericUtils.size(keys) > 0)
-            && keys.contains(keyType);
+                && (GenericUtils.size(keys) > 0)
+                && keys.contains(keyType);
     }
 
     protected <S extends KeySpec> PUB generatePublicKey(String algorithm, S keySpec) throws GeneralSecurityException {
@@ -71,7 +72,8 @@ public abstract class AbstractBufferPublicKeyParser<PUB extends PublicKey> imple
         PublicKey key = keyFactory.generatePublic(keySpec);
         Class<PUB> kc = getKeyClass();
         if (!kc.isInstance(key)) {
-            throw new InvalidKeySpecException("Mismatched generated key types: expected=" + kc.getSimpleName() + ", actual=" + key);
+            throw new InvalidKeySpecException(
+                    "Mismatched generated key types: expected=" + kc.getSimpleName() + ", actual=" + key);
         }
 
         return kc.cast(key);

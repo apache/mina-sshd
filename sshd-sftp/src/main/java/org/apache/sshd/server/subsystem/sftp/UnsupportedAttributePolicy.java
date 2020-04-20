@@ -31,6 +31,6 @@ public enum UnsupportedAttributePolicy {
     Warn,
     ThrowException;
 
-    public static final Set<UnsupportedAttributePolicy> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(UnsupportedAttributePolicy.class));
+    public static final Set<UnsupportedAttributePolicy> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(UnsupportedAttributePolicy.class));
 }

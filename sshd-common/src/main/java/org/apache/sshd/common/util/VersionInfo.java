@@ -81,7 +81,7 @@ public class VersionInfo implements Serializable, Comparable<VersionInfo> {
     @Override
     public int compareTo(VersionInfo o) {
         if (o == null) {
-            return -1;  // push nulls to end
+            return -1; // push nulls to end
         }
         if (o == this) {
             return 0;
@@ -107,14 +107,13 @@ public class VersionInfo implements Serializable, Comparable<VersionInfo> {
     }
 
     /**
-     * Parses a version string - assumed to contain at most 4 non-negative
-     * components separated by a '.'. If less than 4 components are found, then
-     * the rest are assumed to be zero. If more than 4 components found, then
-     * only the 1st ones are parsed.
+     * Parses a version string - assumed to contain at most 4 non-negative components separated by a '.'. If less than 4
+     * components are found, then the rest are assumed to be zero. If more than 4 components found, then only the 1st
+     * ones are parsed.
      *
-     * @param version The version string - ignored if {@code null}/empty
-     * @return The parsed {@link VersionInfo} - or {@code null} if empty input
-     * @throws NumberFormatException If failed to parse any of the components
+     * @param  version                  The version string - ignored if {@code null}/empty
+     * @return                          The parsed {@link VersionInfo} - or {@code null} if empty input
+     * @throws NumberFormatException    If failed to parse any of the components
      * @throws IllegalArgumentException If any of the parsed components is negative
      */
     public static VersionInfo parse(String version) throws NumberFormatException {

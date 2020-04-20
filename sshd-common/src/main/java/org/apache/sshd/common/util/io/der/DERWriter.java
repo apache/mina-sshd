@@ -34,8 +34,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * A bare-minimum DER encoder - just enough so we can encoder signatures
- * and keys data
+ * A bare-minimum DER encoder - just enough so we can encoder signatures and keys data
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -65,7 +64,8 @@ public class DERWriter extends FilterOutputStream {
                 baos.close();
 
                 if (!dataWritten.getAndSet(true)) { // detect repeated calls and write this only once
-                    encloser.writeObject(new ASN1Object(ASN1Class.UNIVERSAL, ASN1Type.SEQUENCE, false, baos.size(), baos.toByteArray()));
+                    encloser.writeObject(
+                            new ASN1Object(ASN1Class.UNIVERSAL, ASN1Type.SEQUENCE, false, baos.size(), baos.toByteArray()));
                 }
             }
         };
@@ -76,10 +76,10 @@ public class DERWriter extends FilterOutputStream {
     }
 
     /**
-     * The integer is always considered to be positive, so if the first byte is < 0,
-     * we pad with a zero to make it positive
+     * The integer is always considered to be positive, so if the first byte is < 0, we pad with a zero to make it
+     * positive
      *
-     * @param bytes {@link BigInteger} bytes
+     * @param  bytes       {@link BigInteger} bytes
      * @throws IOException If failed to write the bytes
      */
     public void writeBigInteger(byte... bytes) throws IOException {
@@ -87,12 +87,12 @@ public class DERWriter extends FilterOutputStream {
     }
 
     /**
-     * The integer is always considered to be positive, so if the first byte is < 0,
-     * we pad with a zero to make it positive
+     * The integer is always considered to be positive, so if the first byte is < 0, we pad with a zero to make it
+     * positive
      *
-     * @param bytes {@link BigInteger} bytes
-     * @param off Offset in bytes data
-     * @param len Number of bytes to write
+     * @param  bytes       {@link BigInteger} bytes
+     * @param  off         Offset in bytes data
+     * @param  len         Number of bytes to write
      * @throws IOException If failed to write the bytes
      */
     public void writeBigInteger(byte[] bytes, int off, int len) throws IOException {

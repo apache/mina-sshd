@@ -27,13 +27,13 @@ import org.apache.sshd.common.AttributeRepository;
  */
 public interface IoConnector extends IoService {
     /**
-     * @param targetAddress The target address to connect to
-     * @param context An optional &quot;context&quot; to be attached to the established
-     * session if successfully connected
-     * @param localAddress The local address to use - if {@code null} an
-     * automatic ephemeral port and bind address is used
-     * @return The {@link IoConnectFuture future} representing the connection request
+     * @param  targetAddress The target address to connect to
+     * @param  context       An optional &quot;context&quot; to be attached to the established session if successfully
+     *                       connected
+     * @param  localAddress  The local address to use - if {@code null} an automatic ephemeral port and bind address is
+     *                       used
+     * @return               The {@link IoConnectFuture future} representing the connection request
      */
     IoConnectFuture connect(
-        SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress);
+            SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress);
 }

@@ -34,14 +34,13 @@ public interface X11ForwardingFilter {
      * </p>
      *
      * <p>
-     * This server process will open a new listen socket locally and export
-     * the address in the environment so X11 clients can be tunneled to the
-     * user's X11 display server.
+     * This server process will open a new listen socket locally and export the address in the environment so X11
+     * clients can be tunneled to the user's X11 display server.
      * </p>
      *
-     * @param session The {@link Session} requesting permission to forward X11 connections.
-     * @param requestType The request type string that triggered this call
-     * @return true if the X11 forwarding is permitted, false if denied.
+     * @param  session     The {@link Session} requesting permission to forward X11 connections.
+     * @param  requestType The request type string that triggered this call
+     * @return             true if the X11 forwarding is permitted, false if denied.
      */
     boolean canForwardX11(Session session, String requestType);
 

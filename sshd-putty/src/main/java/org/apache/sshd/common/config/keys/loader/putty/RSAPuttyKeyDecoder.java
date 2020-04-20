@@ -53,8 +53,8 @@ public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<RSAPublicKey, RS
     @Override
     public Collection<KeyPair> loadKeyPairs(
             NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
-        pubReader.skip();   // skip version
+            throws IOException, GeneralSecurityException {
+        pubReader.skip(); // skip version
 
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
         BigInteger publicExp = pubReader.readInt();
@@ -68,7 +68,7 @@ public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<RSAPublicKey, RS
         BigInteger primeExponentP = privateExp.mod(primeP.subtract(BigInteger.ONE));
         BigInteger primeExponentQ = privateExp.mod(primeQ.subtract(BigInteger.ONE));
         RSAPrivateKeySpec prvSpec = new RSAPrivateCrtKeySpec(
-            modulus, publicExp, privateExp, primeP, primeQ, primeExponentP, primeExponentQ, crtCoef);
+                modulus, publicExp, privateExp, primeP, primeQ, primeExponentP, primeExponentQ, crtCoef);
         PrivateKey prvKey = kf.generatePrivate(prvSpec);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }

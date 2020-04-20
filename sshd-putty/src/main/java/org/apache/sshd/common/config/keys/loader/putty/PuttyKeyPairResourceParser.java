@@ -100,12 +100,11 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     String PRIVATE_LINES_HEADER = "Private-Lines";
     String PPK_FILE_SUFFIX = ".ppk";
 
-    List<String> KNOWN_HEADERS =
-        Collections.unmodifiableList(
+    List<String> KNOWN_HEADERS = Collections.unmodifiableList(
             Arrays.asList(
-                KEY_FILE_HEADER_PREFIX,
-                PUBLIC_LINES_HEADER,
-                PRIVATE_LINES_HEADER));
+                    KEY_FILE_HEADER_PREFIX,
+                    PUBLIC_LINES_HEADER,
+                    PRIVATE_LINES_HEADER));
 
     /**
      * Value (case insensitive) used to denote that private key is not encrypted
@@ -133,7 +132,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
 
     static byte[] decodePrivateKeyBytes(
             byte[] prvBytes, String algName, int numBits, String algMode, String password)
-                throws GeneralSecurityException {
+            throws GeneralSecurityException {
         Objects.requireNonNull(prvBytes, "No encrypted key bytes");
         ValidateUtils.checkNotNullAndNotEmpty(algName, "No encryption algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
         ValidateUtils.checkTrue(numBits > 0, "Invalid encryption key size: %d", numBits);
@@ -149,20 +148,22 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
         try {
             return decodePrivateKeyBytes(prvBytes, algName, algMode, numBits, initVector, keyValue);
         } finally {
-            Arrays.fill(initVector, (byte) 0);   // eliminate sensitive data a.s.a.p.
-            Arrays.fill(keyValue, (byte) 0);   // eliminate sensitive data a.s.a.p.
+            Arrays.fill(initVector, (byte) 0); // eliminate sensitive data a.s.a.p.
+            Arrays.fill(keyValue, (byte) 0); // eliminate sensitive data a.s.a.p.
         }
     }
 
     static byte[] decodePrivateKeyBytes(
             byte[] encBytes, String cipherName, String cipherMode, int numBits, byte[] initVector, byte[] keyValue)
-                throws GeneralSecurityException {
+            throws GeneralSecurityException {
         String xform = cipherName + "/" + cipherMode + "/NoPadding";
         int maxAllowedBits = Cipher.getMaxAllowedKeyLength(xform);
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
-            throw new InvalidKeySpecException("decodePrivateKeyBytes(" + xform + ")"
-                + " required key length (" + numBits + ") exceeds max. available: " + maxAllowedBits);
+            throw new InvalidKeySpecException(
+                    "decodePrivateKeyBytes(" + xform + ")"
+                                              + " required key length (" + numBits + ") exceeds max. available: "
+                                              + maxAllowedBits);
         }
 
         SecretKeySpec skeySpec = new SecretKeySpec(keyValue, cipherName);
@@ -174,14 +175,15 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     }
 
     /**
-     * Converts a pass-phrase into a key, by following the convention that PuTTY uses.
-     * Used to decrypt the private key when it's encrypted.
-     * @param passphrase the Password to be used as seed for the key - ignored
-     * if {@code null}/empty
-     * @return The encryption key bytes - {@code null/empty} if no pass-phrase
+     * Converts a pass-phrase into a key, by following the convention that PuTTY uses. Used to decrypt the private key
+     * when it's encrypted.
+     * 
+     * @param  passphrase               the Password to be used as seed for the key - ignored if {@code null}/empty
+     * @return                          The encryption key bytes - {@code null/empty} if no pass-phrase
      * @throws GeneralSecurityException If cannot retrieve SHA-1 digest
-     * @see <A HREF="http://security.stackexchange.com/questions/71341/how-does-putty-derive-the-encryption-key-in-its-ppk-format">
-     * How does Putty derive the encryption key in its .ppk format ?</A>
+     * @see                             <A HREF=
+     *                                  "http://security.stackexchange.com/questions/71341/how-does-putty-derive-the-encryption-key-in-its-ppk-format">
+     *                                  How does Putty derive the encryption key in its .ppk format ?</A>
      */
     static byte[] toEncryptionKey(String passphrase) throws GeneralSecurityException {
         if (GenericUtils.isEmpty(passphrase)) {
@@ -191,7 +193,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
         byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
         try {
             MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.sha1.getAlgorithm());
-            byte[] stateValue = {0, 0, 0, 0};
+            byte[] stateValue = { 0, 0, 0, 0 };
             byte[] keyValue = new byte[32];
             try {
                 for (int i = 0, remLen = keyValue.length; i < 2; i++) {
@@ -205,17 +207,17 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
                     try {
                         System.arraycopy(digest, 0, keyValue, i * 20, Math.min(20, remLen));
                     } finally {
-                        Arrays.fill(digest, (byte) 0);   // eliminate sensitive data a.s.a.p.
+                        Arrays.fill(digest, (byte) 0); // eliminate sensitive data a.s.a.p.
                     }
                     remLen -= 20;
                 }
             } finally {
-                Arrays.fill(stateValue, (byte) 0);   // eliminate sensitive data a.s.a.p.
+                Arrays.fill(stateValue, (byte) 0); // eliminate sensitive data a.s.a.p.
             }
 
             return keyValue;
         } finally {
-            Arrays.fill(passBytes, (byte) 0);   // eliminate sensitive data a.s.a.p.
+            Arrays.fill(passBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
         }
     }
 }

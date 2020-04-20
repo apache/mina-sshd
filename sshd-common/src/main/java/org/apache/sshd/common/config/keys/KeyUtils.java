@@ -115,25 +115,22 @@ public final class KeyUtils {
     public static final String EC_ALGORITHM = "EC";
 
     /**
-     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict
-     * permissions are enforced on key files
+     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict permissions are enforced on key files
      */
-    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
-        Collections.unmodifiableSet(
+    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION = Collections.unmodifiableSet(
             EnumSet.of(
-                PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
-                PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
+                    PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
+                    PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
 
     /**
-     * System property that can be used to control the default fingerprint factory used for keys.
-     * If not set the {@link #DEFAULT_FINGERPRINT_DIGEST_FACTORY} is used
+     * System property that can be used to control the default fingerprint factory used for keys. If not set the
+     * {@link #DEFAULT_FINGERPRINT_DIGEST_FACTORY} is used
      */
     public static final String KEY_FINGERPRINT_FACTORY_PROP = "org.apache.sshd.keyFingerprintFactory";
 
     /**
-     * The default {@link Factory} of {@link Digest}s initialized
-     * as the value of {@link #getDefaultFingerPrintFactory()} if not
-     * overridden by {@link #KEY_FINGERPRINT_FACTORY_PROP} or
+     * The default {@link Factory} of {@link Digest}s initialized as the value of
+     * {@link #getDefaultFingerPrintFactory()} if not overridden by {@link #KEY_FINGERPRINT_FACTORY_PROP} or
      * {@link #setDefaultFingerPrintFactory(DigestFactory)}
      */
     public static final DigestFactory DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.sha256;
@@ -146,19 +143,18 @@ public final class KeyUtils {
 
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
-    private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
+            = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP =
-            new HashMap<>();
+    private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP = new HashMap<>();
 
-    private static final Map<String, String> KEY_TYPE_ALIASES =
-        NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
-            .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
-            .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
-            .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
-            .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
-            .build();
+    private static final Map<String, String> KEY_TYPE_ALIASES
+            = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
+                    .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+                    .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
+                    .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
+                    .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
+                    .build();
 
     static {
         registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
@@ -180,47 +176,58 @@ public final class KeyUtils {
     }
 
     /**
-     * <P>Checks if a path has strict permissions</P>
+     * <P>
+     * Checks if a path has strict permissions
+     * </P>
      * <UL>
-     * <LI><P>
-     * The path may not have {@link PosixFilePermission#OTHERS_EXECUTE}
-     * permission
-     * </P></LI>
+     * <LI>
+     * <P>
+     * The path may not have {@link PosixFilePermission#OTHERS_EXECUTE} permission
+     * </P>
+     * </LI>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * (For {@code Unix}) The path may not have group or others permissions
-     * </P></LI>
+     * </P>
+     * </LI>
      *
-     * <LI><P>
-     * (For {@code Unix}) If the path is a file, then its folder may not have
-     * group or others permissions
-     * </P></LI>
+     * <LI>
+     * <P>
+     * (For {@code Unix}) If the path is a file, then its folder may not have group or others permissions
+     * </P>
+     * </LI>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * The path must be owned by current user.
-     * </P></LI>
+     * </P>
+     * </LI>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * (For {@code Unix}) The path may be owned by root.
-     * </P></LI>
+     * </P>
+     * </LI>
      *
-     * <LI><P>
-     * (For {@code Unix}) If the path is a file, then its folder must also
-     * have valid owner.
-     * </P></LI>
+     * <LI>
+     * <P>
+     * (For {@code Unix}) If the path is a file, then its folder must also have valid owner.
+     * </P>
+     * </LI>
      *
      * </UL>
      *
-     * @param path    The {@link Path} to be checked - ignored if {@code null}
-     *                or does not exist
-     * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated permission as {@link SimpleImmutableEntry} where key is a message and
-     * value is the offending object {@link PosixFilePermission} or {@link String} for owner - {@code null}
-     * if no violations detected
+     * @param  path        The {@link Path} to be checked - ignored if {@code null} or does not exist
+     * @param  options     The {@link LinkOption}s to use to query the file's permissions
+     * @return             The violated permission as {@link SimpleImmutableEntry} where key is a message and value is
+     *                     the offending object {@link PosixFilePermission} or {@link String} for owner - {@code null}
+     *                     if no violations detected
      * @throws IOException If failed to retrieve the permissions
-     * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
+     * @see                #STRICTLY_PROHIBITED_FILE_PERMISSION
      */
-    public static SimpleImmutableEntry<String, Object> validateStrictKeyFilePermissions(Path path, LinkOption... options) throws IOException {
+    public static SimpleImmutableEntry<String, Object> validateStrictKeyFilePermissions(Path path, LinkOption... options)
+            throws IOException {
         if ((path == null) || (!Files.exists(path, options))) {
             return null;
         }
@@ -243,7 +250,8 @@ public final class KeyUtils {
 
             if (Files.isRegularFile(path, options)) {
                 Path parent = path.getParent();
-                p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION);
+                p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options),
+                        STRICTLY_PROHIBITED_FILE_PERMISSION);
                 if (p != null) {
                     return new SimpleImmutableEntry<>(String.format("Parent permissions violation (%s)", p), p);
                 }
@@ -283,12 +291,12 @@ public final class KeyUtils {
     }
 
     /**
-     * @param keyType The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
-     * @param keySize The key size (in bits)
-     * @return A {@link KeyPair} of the specified type and size
+     * @param  keyType                  The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
+     * @param  keySize                  The key size (in bits)
+     * @return                          A {@link KeyPair} of the specified type and size
      * @throws GeneralSecurityException If failed to generate the key pair
-     * @see #getPublicKeyEntryDecoder(String)
-     * @see PublicKeyEntryDecoder#generateKeyPair(int)
+     * @see                             #getPublicKeyEntryDecoder(String)
+     * @see                             PublicKeyEntryDecoder#generateKeyPair(int)
      */
     public static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
         PublicKeyEntryDecoder<?, ?> decoder = getPublicKeyEntryDecoder(keyType);
@@ -300,12 +308,12 @@ public final class KeyUtils {
     }
 
     /**
-     * Performs a deep-clone of the original {@link KeyPair} - i.e., creates
-     * <U>new</U> public/private keys that are clones of the original one
+     * Performs a deep-clone of the original {@link KeyPair} - i.e., creates <U>new</U> public/private keys that are
+     * clones of the original one
      *
-     * @param keyType The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
-     * @param kp      The {@link KeyPair} to clone - ignored if {@code null}
-     * @return The cloned instance
+     * @param  keyType                  The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
+     * @param  kp                       The {@link KeyPair} to clone - ignored if {@code null}
+     * @return                          The cloned instance
      * @throws GeneralSecurityException If failed to clone the pair
      */
     public static KeyPair cloneKeyPair(String keyType, KeyPair kp) throws GeneralSecurityException {
@@ -318,10 +326,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param decoder The decoder to register
+     * @param  decoder                  The decoder to register
      * @throws IllegalArgumentException if no decoder or not key type or no supported names for the decoder
-     * @see PublicKeyEntryDecoder#getPublicKeyType()
-     * @see PublicKeyEntryDecoder#getSupportedKeyTypes()
+     * @see                             PublicKeyEntryDecoder#getPublicKeyType()
+     * @see                             PublicKeyEntryDecoder#getSupportedKeyTypes()
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
@@ -337,31 +345,33 @@ public final class KeyUtils {
     }
 
     /**
-     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supports}
+     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedKeyTypes()
+     * supports}
      *
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
-     * @see #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder)
+     * @see           #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder)
      */
     public static void registerPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
-        Collection<String> names =
-            ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key types");
+        Collection<String> names
+                = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key types");
         for (String n : names) {
             PublicKeyEntryDecoder<?, ?> prev = registerPublicKeyEntryDecoderForKeyType(n, decoder);
             if (prev != null) {
-                //noinspection UnnecessaryContinue
-                continue;   // debug breakpoint
+                // noinspection UnnecessaryContinue
+                continue; // debug breakpoint
             }
         }
     }
 
     /**
-     * @param keyType The key (never {@code null}/empty) key type
-     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
-     * @return The previously registered decoder for this key type - {@code null} if none
+     * @param  keyType The key (never {@code null}/empty) key type
+     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
+     * @return         The previously registered decoder for this key type - {@code null} if none
      */
-    public static PublicKeyEntryDecoder<?, ?> registerPublicKeyEntryDecoderForKeyType(String keyType, PublicKeyEntryDecoder<?, ?> decoder) {
+    public static PublicKeyEntryDecoder<?, ?> registerPublicKeyEntryDecoderForKeyType(
+            String keyType, PublicKeyEntryDecoder<?, ?> decoder) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         Objects.requireNonNull(decoder, "No decoder specified");
 
@@ -371,10 +381,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
-     * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     * out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
-     * @see #unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder)
+     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
+     * @return         The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
+     *                 out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
+     * @see            #unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder)
      */
     public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
@@ -392,16 +402,16 @@ public final class KeyUtils {
     /**
      * Unregisters the specified decoder for all the types it supports
      *
-     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
-     * @return The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     * out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
-     * @see #unregisterPublicKeyEntryDecoderForKeyType(String)
+     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
+     * @return         The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
+     *                 out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
+     * @see            #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
     public static NavigableSet<String> unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
-            decoder.getSupportedKeyTypes(), "No supported key types");
+                decoder.getSupportedKeyTypes(), "No supported key types");
         NavigableSet<String> removed = Collections.emptyNavigableSet();
         for (String n : names) {
             PublicKeyEntryDecoder<?, ?> prev = unregisterPublicKeyEntryDecoderForKeyType(n);
@@ -414,8 +424,8 @@ public final class KeyUtils {
             }
 
             if (!removed.add(n)) {
-                //noinspection UnnecessaryContinue
-                continue;   // debug breakpoint
+                // noinspection UnnecessaryContinue
+                continue; // debug breakpoint
             }
         }
 
@@ -425,8 +435,9 @@ public final class KeyUtils {
     /**
      * Unregister the decoder registered for the specified key type
      *
-     * @param keyType The key (never {@code null}/empty) key type
-     * @return The unregistered {@link PublicKeyEntryDecoder} - {@code null} if none registered for this key type
+     * @param  keyType The key (never {@code null}/empty) key type
+     * @return         The unregistered {@link PublicKeyEntryDecoder} - {@code null} if none registered for this key
+     *                 type
      */
     public static PublicKeyEntryDecoder<?, ?> unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
@@ -437,8 +448,9 @@ public final class KeyUtils {
     }
 
     /**
-     * @param keyType The {@code OpenSSH} key type string -  e.g., {@code ssh-rsa, ssh-dss} - ignored if {@code null}/empty
-     * @return The registered {@link PublicKeyEntryDecoder} or {code null} if not found
+     * @param  keyType The {@code OpenSSH} key type string - e.g., {@code ssh-rsa, ssh-dss} - ignored if
+     *                 {@code null}/empty
+     * @return         The registered {@link PublicKeyEntryDecoder} or {code null} if not found
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
@@ -451,11 +463,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param kp The {@link KeyPair} to examine - ignored if {@code null}
-     * @return The matching {@link PublicKeyEntryDecoder} provided <U>both</U>
-     * the public and private keys have the same decoder - {@code null} if no
-     * match found
-     * @see #getPublicKeyEntryDecoder(Key)
+     * @param  kp The {@link KeyPair} to examine - ignored if {@code null}
+     * @return    The matching {@link PublicKeyEntryDecoder} provided <U>both</U> the public and private keys have the
+     *            same decoder - {@code null} if no match found
+     * @see       #getPublicKeyEntryDecoder(Key)
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(KeyPair kp) {
         if (kp == null) {
@@ -467,14 +478,14 @@ public final class KeyUtils {
         if (d1 == d2) {
             return d1;
         } else {
-            return null;    // some kind of mixed keys...
+            return null; // some kind of mixed keys...
         }
     }
 
     /**
-     * @param key The {@link Key} (public or private) - ignored if {@code null}
-     * @return The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found
-     * @see #getPublicKeyEntryDecoder(Class)
+     * @param  key The {@link Key} (public or private) - ignored if {@code null}
+     * @return     The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found
+     * @see        #getPublicKeyEntryDecoder(Class)
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Key key) {
         if (key == null) {
@@ -485,9 +496,8 @@ public final class KeyUtils {
     }
 
     /**
-     * @param keyType The key {@link Class} - ignored if {@code null} or not a {@link Key}
-     *                compatible type
-     * @return The registered {@link PublicKeyEntryDecoder} or {code null} if no match found
+     * @param  keyType The key {@link Class} - ignored if {@code null} or not a {@link Key} compatible type
+     * @return         The registered {@link PublicKeyEntryDecoder} or {code null} if no match found
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Class<?> keyType) {
         if ((keyType == null) || (!Key.class.isAssignableFrom(keyType))) {
@@ -514,11 +524,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @return The default {@link DigestFactory}
-     * by the {@link #getFingerPrint(PublicKey)} and {@link #getFingerPrint(String)}
-     * methods
-     * @see #KEY_FINGERPRINT_FACTORY_PROP
-     * @see #setDefaultFingerPrintFactory(DigestFactory)
+     * @return The default {@link DigestFactory} by the {@link #getFingerPrint(PublicKey)} and
+     *         {@link #getFingerPrint(String)} methods
+     * @see    #KEY_FINGERPRINT_FACTORY_PROP
+     * @see    #setDefaultFingerPrintFactory(DigestFactory)
      */
     public static DigestFactory getDefaultFingerPrintFactory() {
         DigestFactory factory = null;
@@ -532,7 +541,8 @@ public final class KeyUtils {
             if (GenericUtils.isEmpty(propVal)) {
                 factory = DEFAULT_FINGERPRINT_DIGEST_FACTORY;
             } else {
-                factory = ValidateUtils.checkNotNull(BuiltinDigests.fromFactoryName(propVal), "Unknown digest factory: %s", propVal);
+                factory = ValidateUtils.checkNotNull(BuiltinDigests.fromFactoryName(propVal), "Unknown digest factory: %s",
+                        propVal);
             }
 
             ValidateUtils.checkTrue(factory.isSupported(), "Selected fingerprint digest not supported: %s", factory.getName());
@@ -543,8 +553,7 @@ public final class KeyUtils {
     }
 
     /**
-     * @param f The {@link DigestFactory} of {@link Digest}s to be used - may
-     *          not be {@code null}
+     * @param f The {@link DigestFactory} of {@link Digest}s to be used - may not be {@code null}
      */
     public static void setDefaultFingerPrintFactory(DigestFactory f) {
         synchronized (DEFAULT_DIGEST_HOLDER) {
@@ -553,56 +562,56 @@ public final class KeyUtils {
     }
 
     /**
-     * @param key the public key - ignored if {@code null}
-     * @return the fingerprint or {@code null} if no key.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see #getFingerPrint(Factory, PublicKey)
+     * @param  key the public key - ignored if {@code null}
+     * @return     the fingerprint or {@code null} if no key. <B>Note:</B> if exception encountered then returns the
+     *             exception's simple class name
+     * @see        #getFingerPrint(Factory, PublicKey)
      */
     public static String getFingerPrint(PublicKey key) {
         return getFingerPrint(getDefaultFingerPrintFactory(), key);
     }
 
     /**
-     * @param password The {@link String} to digest - ignored if {@code null}/empty,
-     *                 otherwise its UTF-8 representation is used as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see #getFingerPrint(String, Charset)
+     * @param  password The {@link String} to digest - ignored if {@code null}/empty, otherwise its UTF-8 representation
+     *                  is used as input for the fingerprint
+     * @return          The fingerprint - {@code null} if {@code null}/empty input. <B>Note:</B> if exception
+     *                  encountered then returns the exception's simple class name
+     * @see             #getFingerPrint(String, Charset)
      */
     public static String getFingerPrint(String password) {
         return getFingerPrint(password, StandardCharsets.UTF_8);
     }
 
     /**
-     * @param password The {@link String} to digest - ignored if {@code null}/empty
-     * @param charset  The {@link Charset} to use in order to convert the
-     *                 string to its byte representation to use as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see #getFingerPrint(Factory, String, Charset)
-     * @see #getDefaultFingerPrintFactory()
+     * @param  password The {@link String} to digest - ignored if {@code null}/empty
+     * @param  charset  The {@link Charset} to use in order to convert the string to its byte representation to use as
+     *                  input for the fingerprint
+     * @return          The fingerprint - {@code null} if {@code null}/empty input. <B>Note:</B> if exception
+     *                  encountered then returns the exception's simple class name
+     * @see             #getFingerPrint(Factory, String, Charset)
+     * @see             #getDefaultFingerPrintFactory()
      */
     public static String getFingerPrint(String password, Charset charset) {
         return getFingerPrint(getDefaultFingerPrintFactory(), password, charset);
     }
 
     /**
-     * @param f   The {@link Factory} to create the {@link Digest} to use
-     * @param key the public key - ignored if {@code null}
-     * @return the fingerprint or {@code null} if no key.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see #getFingerPrint(Digest, PublicKey)
+     * @param  f   The {@link Factory} to create the {@link Digest} to use
+     * @param  key the public key - ignored if {@code null}
+     * @return     the fingerprint or {@code null} if no key. <B>Note:</B> if exception encountered then returns the
+     *             exception's simple class name
+     * @see        #getFingerPrint(Digest, PublicKey)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, PublicKey key) {
         return (key == null) ? null : getFingerPrint(Objects.requireNonNull(f, "No digest factory").create(), key);
     }
 
     /**
-     * @param d   The {@link Digest} to use
-     * @param key the public key - ignored if {@code null}
-     * @return the fingerprint or {@code null} if no key.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see DigestUtils#getFingerPrint(Digest, byte[], int, int)
+     * @param  d   The {@link Digest} to use
+     * @param  key the public key - ignored if {@code null}
+     * @return     the fingerprint or {@code null} if no key. <B>Note:</B> if exception encountered then returns the
+     *             exception's simple class name
+     * @see        DigestUtils#getFingerPrint(Digest, byte[], int, int)
      */
     public static String getFingerPrint(Digest d, PublicKey key) {
         if (key == null) {
@@ -637,50 +646,50 @@ public final class KeyUtils {
     }
 
     /**
-     * @param f The {@link Factory} to create the {@link Digest} to use
-     * @param s The {@link String} to digest - ignored if {@code null}/empty,
-     * otherwise its UTF-8 representation is used as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see #getFingerPrint(Digest, String, Charset)
+     * @param  f The {@link Factory} to create the {@link Digest} to use
+     * @param  s The {@link String} to digest - ignored if {@code null}/empty, otherwise its UTF-8 representation is
+     *           used as input for the fingerprint
+     * @return   The fingerprint - {@code null} if {@code null}/empty input. <B>Note:</B> if exception encountered then
+     *           returns the exception's simple class name
+     * @see      #getFingerPrint(Digest, String, Charset)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, String s) {
         return getFingerPrint(f, s, StandardCharsets.UTF_8);
     }
 
     /**
-     * @param f       The {@link Factory} to create the {@link Digest} to use
-     * @param s       The {@link String} to digest - ignored if {@code null}/empty
-     * @param charset The {@link Charset} to use in order to convert the
-     * string to its byte representation to use as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     * @param  f       The {@link Factory} to create the {@link Digest} to use
+     * @param  s       The {@link String} to digest - ignored if {@code null}/empty
+     * @param  charset The {@link Charset} to use in order to convert the string to its byte representation to use as
+     *                 input for the fingerprint
+     * @return         The fingerprint - {@code null} if {@code null}/empty input <B>Note:</B> if exception encountered
+     *                 then returns the exception's simple class name
+     * @see            DigestUtils#getFingerPrint(Digest, String, Charset)
      */
     public static String getFingerPrint(Factory<? extends Digest> f, String s, Charset charset) {
         return getFingerPrint(f.create(), s, charset);
     }
 
     /**
-     * @param d The {@link Digest} to use
-     * @param s The {@link String} to digest - ignored if {@code null}/empty,
-     *          otherwise its UTF-8 representation is used as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     * @param  d The {@link Digest} to use
+     * @param  s The {@link String} to digest - ignored if {@code null}/empty, otherwise its UTF-8 representation is
+     *           used as input for the fingerprint
+     * @return   The fingerprint - {@code null} if {@code null}/empty input. <B>Note:</B> if exception encountered then
+     *           returns the exception's simple class name
+     * @see      DigestUtils#getFingerPrint(Digest, String, Charset)
      */
     public static String getFingerPrint(Digest d, String s) {
         return getFingerPrint(d, s, StandardCharsets.UTF_8);
     }
 
     /**
-     * @param d       The {@link Digest} to use to calculate the fingerprint
-     * @param s       The string to digest - ignored if {@code null}/empty
-     * @param charset The {@link Charset} to use in order to convert the
-     * string to its byte representation to use as input for the fingerprint
-     * @return The fingerprint - {@code null} if {@code null}/empty input.
-     * <B>Note:</B> if exception encountered then returns the exception's simple class name
-     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     * @param  d       The {@link Digest} to use to calculate the fingerprint
+     * @param  s       The string to digest - ignored if {@code null}/empty
+     * @param  charset The {@link Charset} to use in order to convert the string to its byte representation to use as
+     *                 input for the fingerprint
+     * @return         The fingerprint - {@code null} if {@code null}/empty input. <B>Note:</B> if exception encountered
+     *                 then returns the exception's simple class name
+     * @see            DigestUtils#getFingerPrint(Digest, String, Charset)
      */
     public static String getFingerPrint(Digest d, String s, Charset charset) {
         if (GenericUtils.isEmpty(s)) {
@@ -695,37 +704,38 @@ public final class KeyUtils {
     }
 
     /**
-     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
-     * with the default fingerprint.
-     * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     * {@code null} if no key.
-     * @see #getDefaultFingerPrintFactory()
-     * @see #checkFingerPrint(String, Factory, PublicKey)
+     * @param  expected The expected fingerprint if {@code null} or empty then returns a failure with the default
+     *                  fingerprint.
+     * @param  key      the {@link PublicKey} - if {@code null} then returns null.
+     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
+     *                  {@code null} if no key.
+     * @see             #getDefaultFingerPrintFactory()
+     * @see             #checkFingerPrint(String, Factory, PublicKey)
      */
     public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, PublicKey key) {
         return checkFingerPrint(expected, getDefaultFingerPrintFactory(), key);
     }
 
     /**
-     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
-     * with the default fingerprint.
-     * @param f The {@link Factory} to be used to generate the default {@link Digest} for the key
-     * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     * {@code null} if no key.
+     * @param  expected The expected fingerprint if {@code null} or empty then returns a failure with the default
+     *                  fingerprint.
+     * @param  f        The {@link Factory} to be used to generate the default {@link Digest} for the key
+     * @param  key      the {@link PublicKey} - if {@code null} then returns null.
+     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
+     *                  {@code null} if no key.
      */
-    public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, Factory<? extends Digest> f, PublicKey key) {
+    public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(
+            String expected, Factory<? extends Digest> f, PublicKey key) {
         return checkFingerPrint(expected, Objects.requireNonNull(f, "No digest factory").create(), key);
     }
 
     /**
-     * @param expected The expected fingerprint if {@code null} or empty then returns a failure
-     * with the default fingerprint.
-     * @param d The {@link Digest} to be used to generate the default fingerprint for the key
-     * @param key the {@link PublicKey} - if {@code null} then returns null.
-     * @return SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     * {@code null} if no key.
+     * @param  expected The expected fingerprint if {@code null} or empty then returns a failure with the default
+     *                  fingerprint.
+     * @param  d        The {@link Digest} to be used to generate the default fingerprint for the key
+     * @param  key      the {@link PublicKey} - if {@code null} then returns null.
+     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
+     *                  {@code null} if no key.
      */
     public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, Digest d, PublicKey key) {
         if (key == null) {
@@ -760,17 +770,16 @@ public final class KeyUtils {
 
         String fingerprint = getFingerPrint(expectedFactory, key);
         boolean matches = BuiltinDigests.md5.getName().equals(expectedFactory.getName())
-                        ? expected.equalsIgnoreCase(fingerprint)    // HEX is case insensitive
-                        : expected.equals(fingerprint);
+                ? expected.equalsIgnoreCase(fingerprint) // HEX is case insensitive
+                : expected.equals(fingerprint);
         return new SimpleImmutableEntry<>(matches, fingerprint);
     }
 
     /**
-     * @param kp a key pair - ignored if {@code null}. If the private
-     * key is non-{@code null} then it is used to determine the type,
-     * otherwise the public one is used.
-     * @return the key type or {@code null} if cannot determine it
-     * @see #getKeyType(Key)
+     * @param  kp a key pair - ignored if {@code null}. If the private key is non-{@code null} then it is used to
+     *            determine the type, otherwise the public one is used.
+     * @return    the key type or {@code null} if cannot determine it
+     * @see       #getKeyType(Key)
      */
     public static String getKeyType(KeyPair kp) {
         if (kp == null) {
@@ -785,8 +794,8 @@ public final class KeyUtils {
     }
 
     /**
-     * @param key a public or private key
-     * @return the key type or {@code null} if cannot determine it
+     * @param  key a public or private key
+     * @return     the key type or {@code null} if cannot determine it
      */
     public static String getKeyType(Key key) {
         if (key == null) {
@@ -800,7 +809,7 @@ public final class KeyUtils {
             ECParameterSpec ecSpec = ecKey.getParams();
             ECCurves curve = ECCurves.fromCurveParameters(ecSpec);
             if (curve == null) {
-                return null;    // debug breakpoint
+                return null; // debug breakpoint
             } else {
                 return curve.getKeyType();
             }
@@ -814,9 +823,9 @@ public final class KeyUtils {
     }
 
     /**
-     * @param keyType A key type name - ignored if {@code null}/empty
-     * @return A {@link List} of they canonical key name and all its aliases
-     * @see #getCanonicalKeyType(String)
+     * @param  keyType A key type name - ignored if {@code null}/empty
+     * @return         A {@link List} of they canonical key name and all its aliases
+     * @see            #getCanonicalKeyType(String)
      */
     public static List<String> getAllEquivalentKeyTypes(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
@@ -840,11 +849,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param keyType The available key-type - ignored if {@code null}/empty
-     * @return The canonical key type - same as input if no alias registered
-     * for the provided key type
-     * @see #RSA_SHA256_KEY_TYPE_ALIAS
-     * @see #RSA_SHA512_KEY_TYPE_ALIAS
+     * @param  keyType The available key-type - ignored if {@code null}/empty
+     * @return         The canonical key type - same as input if no alias registered for the provided key type
+     * @see            #RSA_SHA256_KEY_TYPE_ALIAS
+     * @see            #RSA_SHA512_KEY_TYPE_ALIAS
      */
     public static String getCanonicalKeyType(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
@@ -864,25 +872,23 @@ public final class KeyUtils {
     }
 
     /**
-     * @return A case insensitive {@link NavigableSet} of the currently registered
-     * key type &quot;aliases&quot;.
-     * @see #getCanonicalKeyType(String)
+     * @return A case insensitive {@link NavigableSet} of the currently registered key type &quot;aliases&quot;.
+     * @see    #getCanonicalKeyType(String)
      */
     public static NavigableSet<String> getRegisteredKeyTypeAliases() {
         synchronized (KEY_TYPE_ALIASES) {
             return KEY_TYPE_ALIASES.isEmpty()
-                 ? Collections.emptyNavigableSet()
-                 : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, KEY_TYPE_ALIASES.keySet());
+                    ? Collections.emptyNavigableSet()
+                    : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, KEY_TYPE_ALIASES.keySet());
         }
     }
 
     /**
      * Registers a collection of aliases to a canonical key type
      *
-     * @param keyType The (never {@code null}/empty) canonical name
-     * @param aliases The (never {@code null}/empty) aliases
-     * @return A {@link List} of the replaced aliases - empty
-     * if no previous aliases for the canonical name
+     * @param  keyType The (never {@code null}/empty) canonical name
+     * @param  aliases The (never {@code null}/empty) aliases
+     * @return         A {@link List} of the replaced aliases - empty if no previous aliases for the canonical name
      */
     public static List<String> registerCanonicalKeyTypes(String keyType, Collection<String> aliases) {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type value");
@@ -908,8 +914,8 @@ public final class KeyUtils {
     }
 
     /**
-     * @param alias The alias to unregister (ignored if {@code null}/empty)
-     * @return The associated canonical key type - {@code null} if alias not registered
+     * @param  alias The alias to unregister (ignored if {@code null}/empty)
+     * @return       The associated canonical key type - {@code null} if alias not registered
      */
     public static String unregisterCanonicalKeyTypeAlias(String alias) {
         if (GenericUtils.isEmpty(alias)) {
@@ -924,8 +930,8 @@ public final class KeyUtils {
     /**
      * Determines the key size in bits
      *
-     * @param key The {@link Key} to examine - ignored if {@code null}
-     * @return The key size - non-positive value if cannot determine it
+     * @param  key The {@link Key} to examine - ignored if {@code null}
+     * @return     The key size - non-positive value if cannot determine it
      */
     public static int getKeySize(Key key) {
         if (key == null) {
@@ -951,11 +957,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param key    The {@link PublicKey} to be checked - ignored if {@code null}
-     * @param keySet The keys to be searched - ignored if {@code null}/empty
-     * @return The matching {@link PublicKey} from the keys or {@code null} if
-     * no match found
-     * @see #compareKeys(PublicKey, PublicKey)
+     * @param  key    The {@link PublicKey} to be checked - ignored if {@code null}
+     * @param  keySet The keys to be searched - ignored if {@code null}/empty
+     * @return        The matching {@link PublicKey} from the keys or {@code null} if no match found
+     * @see           #compareKeys(PublicKey, PublicKey)
      */
     public static PublicKey findMatchingKey(PublicKey key, PublicKey... keySet) {
         if (key == null || GenericUtils.isEmpty(keySet)) {
@@ -966,11 +971,10 @@ public final class KeyUtils {
     }
 
     /**
-     * @param key    The {@link PublicKey} to be checked - ignored if {@code null}
-     * @param keySet The keys to be searched - ignored if {@code null}/empty
-     * @return The matching {@link PublicKey} from the keys or {@code null} if
-     * no match found
-     * @see #compareKeys(PublicKey, PublicKey)
+     * @param  key    The {@link PublicKey} to be checked - ignored if {@code null}
+     * @param  keySet The keys to be searched - ignored if {@code null}/empty
+     * @return        The matching {@link PublicKey} from the keys or {@code null} if no match found
+     * @see           #compareKeys(PublicKey, PublicKey)
      */
     public static PublicKey findMatchingKey(PublicKey key, Collection<? extends PublicKey> keySet) {
         if (key == null || GenericUtils.isEmpty(keySet)) {
@@ -988,10 +992,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if ((k1 == null) || (k2 == null)) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return compareKeys(k1.getPublic(), k2.getPublic())
-                && compareKeys(k1.getPrivate(), k2.getPrivate());
+                    && compareKeys(k1.getPrivate(), k2.getPrivate());
         }
     }
 
@@ -1005,12 +1009,12 @@ public final class KeyUtils {
         } else if ((k1 instanceof SkEcdsaPublicKey) && (k2 instanceof SkEcdsaPublicKey)) {
             return compareSkEcdsaKeys(SkEcdsaPublicKey.class.cast(k1), SkEcdsaPublicKey.class.cast(k2));
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
-                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+                && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
         } else {
-            return false;   // either key is null or not of same class
+            return false; // either key is null or not of same class
         }
     }
 
@@ -1034,10 +1038,10 @@ public final class KeyUtils {
         } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
             return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
-                    && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+                && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
         } else {
-            return false;   // either key is null or not of same class
+            return false; // either key is null or not of same class
         }
     }
 
@@ -1045,10 +1049,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getPublicExponent(), k2.getPublicExponent())
-                && Objects.equals(k1.getModulus(), k2.getModulus());
+                    && Objects.equals(k1.getModulus(), k2.getModulus());
         }
     }
 
@@ -1056,10 +1060,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getModulus(), k2.getModulus())
-                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
+                    && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
         }
     }
 
@@ -1076,11 +1080,13 @@ public final class KeyUtils {
         return recoverRSAPublicKey(rsaKey.getPrimeP(), rsaKey.getPrimeQ(), rsaKey.getPublicExponent());
     }
 
-    public static RSAPublicKey recoverRSAPublicKey(BigInteger p, BigInteger q, BigInteger publicExponent) throws GeneralSecurityException {
+    public static RSAPublicKey recoverRSAPublicKey(BigInteger p, BigInteger q, BigInteger publicExponent)
+            throws GeneralSecurityException {
         return recoverRSAPublicKey(p.multiply(q), publicExponent);
     }
 
-    public static RSAPublicKey recoverRSAPublicKey(BigInteger modulus, BigInteger publicExponent) throws GeneralSecurityException {
+    public static RSAPublicKey recoverRSAPublicKey(BigInteger modulus, BigInteger publicExponent)
+            throws GeneralSecurityException {
         KeyFactory kf = SecurityUtils.getKeyFactory(RSA_ALGORITHM);
         return (RSAPublicKey) kf.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
     }
@@ -1089,10 +1095,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getY(), k2.getY())
-                && compareDSAParams(k1.getParams(), k2.getParams());
+                    && compareDSAParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -1100,10 +1106,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getX(), k2.getX())
-                && compareDSAParams(k1.getParams(), k2.getParams());
+                    && compareDSAParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -1111,15 +1117,16 @@ public final class KeyUtils {
         if (Objects.equals(p1, p2)) {
             return true;
         } else if (p1 == null || p2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(p1.getG(), p2.getG())
-                && Objects.equals(p1.getP(), p2.getP())
-                && Objects.equals(p1.getQ(), p2.getQ());
+                    && Objects.equals(p1.getP(), p2.getP())
+                    && Objects.equals(p1.getQ(), p2.getQ());
         }
     }
 
-    // based on code from https://github.com/alexo/SAML-2.0/blob/master/java-opensaml/opensaml-security-api/src/main/java/org/opensaml/xml/security/SecurityHelper.java
+    // based on code from
+    // https://github.com/alexo/SAML-2.0/blob/master/java-opensaml/opensaml-security-api/src/main/java/org/opensaml/xml/security/SecurityHelper.java
     public static DSAPublicKey recoverDSAPublicKey(DSAPrivateKey privateKey) throws GeneralSecurityException {
         DSAParams keyParams = privateKey.getParams();
         BigInteger p = keyParams.getP();
@@ -1135,10 +1142,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getS(), k2.getS())
-                && compareECParams(k1.getParams(), k2.getParams());
+                    && compareECParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -1146,10 +1153,10 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getW(), k2.getW())
-                && compareECParams(k1.getParams(), k2.getParams());
+                    && compareECParams(k1.getParams(), k2.getParams());
         }
     }
 
@@ -1157,12 +1164,12 @@ public final class KeyUtils {
         if (Objects.equals(s1, s2)) {
             return true;
         } else if (s1 == null || s2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(s1.getOrder(), s2.getOrder())
-                && (s1.getCofactor() == s2.getCofactor())
-                && Objects.equals(s1.getGenerator(), s2.getGenerator())
-                && Objects.equals(s1.getCurve(), s2.getCurve());
+                    && (s1.getCofactor() == s2.getCofactor())
+                    && Objects.equals(s1.getGenerator(), s2.getGenerator())
+                    && Objects.equals(s1.getCurve(), s2.getCurve());
         }
     }
 
@@ -1170,7 +1177,7 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getAppName(), k2.getAppName())
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
@@ -1182,7 +1189,7 @@ public final class KeyUtils {
         if (Objects.equals(k1, k2)) {
             return true;
         } else if (k1 == null || k2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(k1.getAppName(), k2.getAppName())
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())

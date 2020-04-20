@@ -36,7 +36,7 @@ public class SftpDirectoryStream implements DirectoryStream<Path> {
     private final SftpPath p;
 
     /**
-     * @param path The remote {@link SftpPath}
+     * @param  path        The remote {@link SftpPath}
      * @throws IOException If failed to initialize the directory access handle
      */
     public SftpDirectoryStream(SftpPath path) throws IOException {

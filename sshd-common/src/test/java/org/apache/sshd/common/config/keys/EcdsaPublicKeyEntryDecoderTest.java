@@ -46,11 +46,11 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
-    public static final int TESTS_COUNT =
-        Integer.parseInt(System.getProperty(EcdsaPublicKeyEntryDecoderTest.class.getName(), "500"));
+    public static final int TESTS_COUNT
+            = Integer.parseInt(System.getProperty(EcdsaPublicKeyEntryDecoderTest.class.getName(), "500"));
 
     private final ECCurves curve;
 
@@ -63,7 +63,7 @@ public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
         return parameterize(ECCurves.VALUES);
     }
 
-    @Test   // see SSHD-934
+    @Test // see SSHD-934
     public void testEncodeDecodePublicKey() throws Exception {
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         int keySize = curve.getKeySize();
@@ -76,8 +76,8 @@ public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
             KeyPair keyPair = KeyUtils.generateKeyPair(keyType, keySize);
             PublicKey expected = keyPair.getPublic();
             @SuppressWarnings("unchecked")
-            PublicKeyEntryDecoder<PublicKey, ?> decoder =
-                (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(expected);
+            PublicKeyEntryDecoder<PublicKey, ?> decoder
+                    = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(expected);
             byte[] encodedPublicKey;
             try (ByteArrayOutputStream ostrm = new ByteArrayOutputStream()) {
                 decoder.encodePublicKey(ostrm, expected);
@@ -87,12 +87,12 @@ public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
             PublicKey actual;
             try {
                 actual = decoder.decodePublicKey(
-                    null, keyType, encodedPublicKey, 0, encodedPublicKey.length, Collections.emptyMap());
+                        null, keyType, encodedPublicKey, 0, encodedPublicKey.length, Collections.emptyMap());
             } catch (Exception e) {
                 String encData = PublicKeyEntry.toString(expected);
                 System.err.append("===> ").println(encData);
                 System.err.println("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to decode at attempt #" + index + ": " + e.getMessage());
+                                   + " to decode at attempt #" + index + ": " + e.getMessage());
                 e.printStackTrace(System.err);
                 if (OUTPUT_DEBUG_MESSAGES) {
                     continue;

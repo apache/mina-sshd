@@ -53,11 +53,11 @@ public class ClientConnectionService
         super(s);
 
         heartbeatRequest = getStringProperty(
-            ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
+                ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         heartbeatInterval = getLongProperty(
-            ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
+                ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
         heartbeatReplyMaxWait = getLongProperty(
-            ClientFactoryManager.HEARTBEAT_REPLY_WAIT, ClientFactoryManager.DEFAULT_HEARTBEAT_REPLY_WAIT);
+                ClientFactoryManager.HEARTBEAT_REPLY_WAIT, ClientFactoryManager.DEFAULT_HEARTBEAT_REPLY_WAIT);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class ClientConnectionService
         return getSession();
     }
 
-    @Override   // co-variant return
+    @Override // co-variant return
     public AbstractClientSession getSession() {
         return (AbstractClientSession) super.getSession();
     }
@@ -88,10 +88,10 @@ public class ClientConnectionService
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
             clientHeartbeat = service.scheduleAtFixedRate(
-                this::sendHeartBeat, heartbeatInterval, heartbeatInterval, TimeUnit.MILLISECONDS);
+                    this::sendHeartBeat, heartbeatInterval, heartbeatInterval, TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
                 log.debug("startHeartbeat({}) - started at interval={} with request={}",
-                    session, heartbeatInterval, heartbeatRequest);
+                        session, heartbeatInterval, heartbeatRequest);
             }
 
             return clientHeartbeat;
@@ -122,7 +122,7 @@ public class ClientConnectionService
         try {
             boolean withReply = heartbeatReplyMaxWait > 0L;
             Buffer buf = session.createBuffer(
-                SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
+                    SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
             buf.putString(heartbeatRequest);
             buf.putBoolean(withReply);
 
@@ -131,7 +131,7 @@ public class ClientConnectionService
                 if (reply != null) {
                     if (log.isTraceEnabled()) {
                         log.trace("sendHeartBeat({}) received reply size={} for request={}",
-                            session, reply.available(), heartbeatRequest);
+                                session, reply.available(), heartbeatRequest);
                     }
                 }
             } else {
@@ -143,7 +143,7 @@ public class ClientConnectionService
         } catch (IOException | RuntimeException | Error e) {
             session.exceptionCaught(e);
             log.warn("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
-                session, e.getClass().getSimpleName(), heartbeatCount, heartbeatRequest, e.getMessage());
+                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatRequest, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.warn("sendHeartBeat(" + session + ") exception details", e);
             }

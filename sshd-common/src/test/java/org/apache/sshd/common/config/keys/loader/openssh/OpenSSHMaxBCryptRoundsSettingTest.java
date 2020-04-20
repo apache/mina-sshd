@@ -45,7 +45,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourceParserTestSupport {
@@ -60,7 +60,7 @@ public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourcePar
 
     @Before
     public void setUp() {
-        BCryptKdfOptions.setMaxAllowedRounds(1);    // we know all our test cases use 16
+        BCryptKdfOptions.setMaxAllowedRounds(1); // we know all our test cases use 16
     }
 
     @After
@@ -75,8 +75,8 @@ public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourcePar
 
     @Override
     protected void testLoadKeyPairs(
-            boolean encrypted, String resourceKey, Collection<KeyPair> pairs,  PublicKey pubEntry)
-                throws Exception {
+            boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
+            throws Exception {
         fail("Unexpected success for " + resourceKey + " - decoded " + pairs.size() + " keys");
     }
 

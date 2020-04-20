@@ -56,7 +56,8 @@ public abstract class HostPatternsHolder {
     /**
      * The available pattern characters
      */
-    public static final String PATTERN_CHARS = new String(new char[]{WILDCARD_PATTERN, SINGLE_CHAR_PATTERN, NEGATION_CHAR_PATTERN});
+    public static final String PATTERN_CHARS
+            = new String(new char[] { WILDCARD_PATTERN, SINGLE_CHAR_PATTERN, NEGATION_CHAR_PATTERN });
 
     /** Port value separator if non-standard port pattern used */
     public static final char PORT_VALUE_DELIMITER = ':';
@@ -84,21 +85,21 @@ public abstract class HostPatternsHolder {
     /**
      * Checks if a given host name / address matches the entry's host pattern(s)
      *
-     * @param host The host name / address - ignored if {@code null}/empty
-     * @param port The connection port
-     * @return {@code true} if the name / address matches the pattern(s)
-     * @see #isHostMatch(String, Pattern)
+     * @param  host The host name / address - ignored if {@code null}/empty
+     * @param  port The connection port
+     * @return      {@code true} if the name / address matches the pattern(s)
+     * @see         #isHostMatch(String, Pattern)
      */
     public boolean isHostMatch(String host, int port) {
         return isHostMatch(host, port, getPatterns());
     }
 
     /**
-     * @param pattern The pattern to check - ignored if {@code null}/empty
-     * @return {@code true} if the pattern is not empty and contains no wildcard characters
-     * @see #WILDCARD_PATTERN
-     * @see #SINGLE_CHAR_PATTERN
-     * @see #SINGLE_CHAR_PATTERN
+     * @param  pattern The pattern to check - ignored if {@code null}/empty
+     * @return         {@code true} if the pattern is not empty and contains no wildcard characters
+     * @see            #WILDCARD_PATTERN
+     * @see            #SINGLE_CHAR_PATTERN
+     * @see            #SINGLE_CHAR_PATTERN
      */
     public static boolean isSpecificHostPattern(String pattern) {
         if (GenericUtils.isEmpty(pattern)) {
@@ -118,10 +119,10 @@ public abstract class HostPatternsHolder {
     /**
      * Locates all the matching entries for a give host name / address
      *
-     * @param host The host name / address - ignored if {@code null}/empty
-     * @param entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
-     * @return A {@link List} of all the matching entries
-     * @see #isHostMatch(String, int)
+     * @param  host    The host name / address - ignored if {@code null}/empty
+     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
+     * @return         A {@link List} of all the matching entries
+     * @see            #isHostMatch(String, int)
      */
     public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry... entries) {
         // TODO in Java-8 use Stream(s) + predicate
@@ -135,10 +136,10 @@ public abstract class HostPatternsHolder {
     /**
      * Locates all the matching entries for a give host name / address
      *
-     * @param host The host name / address - ignored if {@code null}/empty
-     * @param entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
-     * @return A {@link List} of all the matching entries
-     * @see #isHostMatch(String, int)
+     * @param  host    The host name / address - ignored if {@code null}/empty
+     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
+     * @return         A {@link List} of all the matching entries
+     * @see            #isHostMatch(String, int)
      */
     public static List<HostConfigEntry> findMatchingEntries(String host, Collection<? extends HostConfigEntry> entries) {
         // TODO in Java-8 use Stream(s) + predicate
@@ -149,11 +150,11 @@ public abstract class HostPatternsHolder {
         List<HostConfigEntry> matches = null;
         for (HostConfigEntry entry : entries) {
             if (!entry.isHostMatch(host, 0 /* any port */)) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
 
             if (matches == null) {
-                matches = new ArrayList<>(entries.size());  // in case ALL of them match
+                matches = new ArrayList<>(entries.size()); // in case ALL of them match
             }
 
             matches.add(entry);
@@ -188,8 +189,8 @@ public abstract class HostPatternsHolder {
             /*
              * According to https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5:
              *
-             *      If a negated entry is matched, then the Host entry is ignored,
-             *      regardless of whether any other patterns on the line match.
+             * If a negated entry is matched, then the Host entry is ignored, regardless of whether any other patterns
+             * on the line match.
              */
             if (negated) {
                 return false;
@@ -209,9 +210,9 @@ public abstract class HostPatternsHolder {
     /**
      * Checks if a given host name / address matches a host pattern
      *
-     * @param host The host name / address - ignored if {@code null}/empty
-     * @param pattern The host {@link Pattern} - ignored if {@code null}
-     * @return {@code true} if the name / address matches the pattern
+     * @param  host    The host name / address - ignored if {@code null}/empty
+     * @param  pattern The host {@link Pattern} - ignored if {@code null}
+     * @return         {@code true} if the name / address matches the pattern
      */
     public static boolean isHostMatch(String host, Pattern pattern) {
         if (GenericUtils.isEmpty(host) || (pattern == null)) {
@@ -240,17 +241,17 @@ public abstract class HostPatternsHolder {
     }
 
     /**
-     * Converts a host pattern string to a regular expression matcher.
-     * <B>Note:</B> pattern matching is <U>case insensitive</U>
+     * Converts a host pattern string to a regular expression matcher. <B>Note:</B> pattern matching is <U>case
+     * insensitive</U>
      *
-     * @param patternString The original pattern string - ignored if {@code null}/empty
-     * @return The regular expression matcher {@link Pattern} and the indication
-     * whether it is a negating pattern or not - {@code null} if no original string
-     * @see #NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM
-     * @see #NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM
-     * @see #WILDCARD_PATTERN
-     * @see #SINGLE_CHAR_PATTERN
-     * @see #NEGATION_CHAR_PATTERN
+     * @param  patternString The original pattern string - ignored if {@code null}/empty
+     * @return               The regular expression matcher {@link Pattern} and the indication whether it is a negating
+     *                       pattern or not - {@code null} if no original string
+     * @see                  #NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM
+     * @see                  #NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM
+     * @see                  #WILDCARD_PATTERN
+     * @see                  #SINGLE_CHAR_PATTERN
+     * @see                  #NEGATION_CHAR_PATTERN
      */
     public static HostPatternValue toPattern(CharSequence patternString) {
         String pattern = GenericUtils.replaceWhitespaceAndTrim(Objects.toString(patternString, null));
@@ -267,7 +268,7 @@ public abstract class HostPatternsHolder {
             ValidateUtils.checkTrue(pos > 0, "Missing non-standard port value delimiter in %s", pattern);
             ValidateUtils.checkTrue(pos < (patternLen - 1), "Missing non-standard port value number in %s", pattern);
             ValidateUtils.checkTrue(pattern.charAt(pos - 1) == HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM,
-                "Invalid non-standard port value host pattern enclosure delimiters in %s", pattern);
+                    "Invalid non-standard port value host pattern enclosure delimiters in %s", pattern);
 
             String csPort = pattern.substring(pos + 1, patternLen);
             port = Integer.parseInt(csPort);
@@ -282,8 +283,8 @@ public abstract class HostPatternsHolder {
             char ch = pattern.charAt(curPos);
             ValidateUtils.checkTrue(isValidPatternChar(ch), "Invalid host pattern char in %s", pattern);
 
-            switch(ch) {
-                case '.':   // need to escape it
+            switch (ch) {
+                case '.': // need to escape it
                     sb.append('\\').append(ch);
                     break;
                 case SINGLE_CHAR_PATTERN:
@@ -306,21 +307,20 @@ public abstract class HostPatternsHolder {
     }
 
     /**
-     * Checks if the given character is valid for a host pattern. Valid
-     * characters are:
+     * Checks if the given character is valid for a host pattern. Valid characters are:
      * <UL>
-     *      <LI>A-Z</LI>
-     *      <LI>a-z</LI>
-     *      <LI>0-9</LI>
-     *      <LI>Underscore (_)</LI>
-     *      <LI>Hyphen (-)</LI>
-     *      <LI>Dot (.)</LI>
-     *      <LI>The {@link #WILDCARD_PATTERN}</LI>
-     *      <LI>The {@link #SINGLE_CHAR_PATTERN}</LI>
+     * <LI>A-Z</LI>
+     * <LI>a-z</LI>
+     * <LI>0-9</LI>
+     * <LI>Underscore (_)</LI>
+     * <LI>Hyphen (-)</LI>
+     * <LI>Dot (.)</LI>
+     * <LI>The {@link #WILDCARD_PATTERN}</LI>
+     * <LI>The {@link #SINGLE_CHAR_PATTERN}</LI>
      * </UL>
      *
-     * @param ch The character to validate
-     * @return {@code true} if valid pattern character
+     * @param  ch The character to validate
+     * @return    {@code true} if valid pattern character
      */
     public static boolean isValidPatternChar(char ch) {
         if ((ch <= ' ') || (ch >= 0x7E)) {

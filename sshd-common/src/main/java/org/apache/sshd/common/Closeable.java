@@ -27,18 +27,17 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 
 /**
- * A {@code Closeable} is a resource that can be closed.
- * The close method is invoked to release resources that the object is
- * holding. The user can pre-register listeners to be notified
- * when resource close is completed (successfully or otherwise)
+ * A {@code Closeable} is a resource that can be closed. The close method is invoked to release resources that the
+ * object is holding. The user can pre-register listeners to be notified when resource close is completed (successfully
+ * or otherwise)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Closeable extends Channel {
 
     /**
-     * Timeout (milliseconds) for waiting on a {@link CloseFuture} to successfully
-     * complete its action.
+     * Timeout (milliseconds) for waiting on a {@link CloseFuture} to successfully complete its action.
+     * 
      * @see #DEFAULT_CLOSE_WAIT_TIMEOUT
      */
     String CLOSE_WAIT_TIMEOUT = "sshd-close-wait-time";
@@ -49,21 +48,18 @@ public interface Closeable extends Channel {
     long DEFAULT_CLOSE_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
-     * Close this resource asynchronously and return a future.
-     * Resources support two closing modes: a graceful mode
-     * which will cleanly close the resource and an immediate mode
-     * which will close the resources abruptly.
+     * Close this resource asynchronously and return a future. Resources support two closing modes: a graceful mode
+     * which will cleanly close the resource and an immediate mode which will close the resources abruptly.
      *
-     * @param immediately <code>true</code> if the resource should be shut down abruptly,
-     *                    <code>false</code> for a graceful close
-     * @return a {@link CloseFuture} representing the close request
+     * @param  immediately <code>true</code> if the resource should be shut down abruptly, <code>false</code> for a
+     *                     graceful close
+     * @return             a {@link CloseFuture} representing the close request
      */
     CloseFuture close(boolean immediately);
 
     /**
-     * Pre-register a listener to be informed when resource is closed. If
-     * resource is already closed, the listener will be invoked immediately
-     * and not registered for future notification
+     * Pre-register a listener to be informed when resource is closed. If resource is already closed, the listener will
+     * be invoked immediately and not registered for future notification
      *
      * @param listener The notification {@link SshFutureListener} - never {@code null}
      */
@@ -72,8 +68,8 @@ public interface Closeable extends Channel {
     /**
      * Remove a pre-registered close event listener
      *
-     * @param listener The register {@link SshFutureListener} - never {@code null}.
-     * Ignored if not registered or resource already closed
+     * @param listener The register {@link SshFutureListener} - never {@code null}. Ignored if not registered or
+     *                 resource already closed
      */
     void removeCloseFutureListener(SshFutureListener<CloseFuture> listener);
 
@@ -85,9 +81,8 @@ public interface Closeable extends Channel {
     boolean isClosed();
 
     /**
-     * Returns <code>true</code> if the {@link #close(boolean)} method
-     * has been called. Note that this method will return <code>true</code>
-     * even if this {@link #isClosed()} returns <code>true</code>.
+     * Returns <code>true</code> if the {@link #close(boolean)} method has been called. Note that this method will
+     * return <code>true</code> even if this {@link #isClosed()} returns <code>true</code>.
      *
      * @return <code>true</code> if closing
      */
@@ -105,8 +100,8 @@ public interface Closeable extends Channel {
 
     static long getMaxCloseWaitTime(PropertyResolver resolver) {
         return (resolver == null)
-             ? DEFAULT_CLOSE_WAIT_TIMEOUT
-             : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+                ? DEFAULT_CLOSE_WAIT_TIMEOUT
+                : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
     }
 
     static void close(Closeable closeable) throws IOException {
@@ -117,8 +112,8 @@ public interface Closeable extends Channel {
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
             CloseFuture future = closeable.close(true);
             long maxWait = (closeable instanceof PropertyResolver)
-                ? getMaxCloseWaitTime((PropertyResolver) closeable)
-                : DEFAULT_CLOSE_WAIT_TIMEOUT;
+                    ? getMaxCloseWaitTime((PropertyResolver) closeable)
+                    : DEFAULT_CLOSE_WAIT_TIMEOUT;
             boolean successful = future.await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

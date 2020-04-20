@@ -31,13 +31,13 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractDHClientKeyExchange
-            extends AbstractDHKeyExchange
-            implements ClientSessionHolder {
+        extends AbstractDHKeyExchange
+        implements ClientSessionHolder {
     protected PublicKey serverKey;
 
     protected AbstractDHClientKeyExchange(Session session) {
         super(ValidateUtils.checkInstanceOf(session, ClientSession.class,
-            "Using a client side KeyExchange on a server: %s", session));
+                "Using a client side KeyExchange on a server: %s", session));
     }
 
     @Override

@@ -17,10 +17,9 @@
 // CHECKSTYLE:OFF
 package org.apache.sshd.common.config.keys.loader.openssh.kdf;
 
-//This code comes from https://github.com/kruton/jbcrypt/blob/37a5a77/jbcrypt/src/main/java/org/mindrot/jbcrypt/BCrypt.java .
-//It's available on maven as artifact org.connectbot.jbcrypt:jbcrypt:1.0.0. pbkdf method added 2016 by Kenny Root.
-//Modifications for Apache MINA sshd: this comment, plus changed the package from org.mindrot.jbcrypt to avoid conflicts.
-
+// This code comes from https://github.com/kruton/jbcrypt/blob/37a5a77/jbcrypt/src/main/java/org/mindrot/jbcrypt/BCrypt.java .
+// It's available on maven as artifact org.connectbot.jbcrypt:jbcrypt:1.0.0. pbkdf method added 2016 by Kenny Root.
+// Modifications for Apache MINA sshd: this comment, plus changed the package from org.mindrot.jbcrypt to avoid conflicts.
 import java.io.UnsupportedEncodingException;
 import java.security.DigestException;
 import java.security.MessageDigest;

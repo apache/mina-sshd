@@ -53,7 +53,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(1024) && BuiltinDigests.sha1.isSupported();
         }
@@ -67,7 +67,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(2048) && BuiltinDigests.sha1.isSupported();
         }
@@ -81,7 +81,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha256, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(2048) && BuiltinDigests.sha256.isSupported();
         }
@@ -95,7 +95,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP15()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(3072) && BuiltinDigests.sha512.isSupported();
         }
@@ -109,7 +109,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP16()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(4096) && BuiltinDigests.sha512.isSupported();
         }
@@ -123,7 +123,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP17()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(6144) && BuiltinDigests.sha512.isSupported();
         }
@@ -137,7 +137,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new DHG(BuiltinDigests.sha512, new BigInteger(DHGroupData.getP18()), new BigInteger(DHGroupData.getG()));
         }
 
-        @Override   // see https://tools.ietf.org/html/rfc4253#page-23
+        @Override // see https://tools.ietf.org/html/rfc4253#page-23
         public boolean isSupported() {
             return SecurityUtils.isDHOakelyGroupSupported(8192) && BuiltinDigests.sha512.isSupported();
         }
@@ -159,7 +159,8 @@ public enum BuiltinDHFactories implements DHFactory {
         }
 
         @Override
-        public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
+        public boolean isSupported() { // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048
+                                       // (inclusive)"
             return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha1.isSupported();
         }
     },
@@ -175,7 +176,8 @@ public enum BuiltinDHFactories implements DHFactory {
         }
 
         @Override
-        public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
+        public boolean isSupported() { // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048
+                                       // (inclusive)"
             return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha256.isSupported();
         }
 
@@ -227,11 +229,9 @@ public enum BuiltinDHFactories implements DHFactory {
         }
     };
 
-    public static final Set<BuiltinDHFactories> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
+    public static final Set<BuiltinDHFactories> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
 
-    private static final Map<String, DHFactory> EXTENSIONS =
-        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, DHFactory> EXTENSIONS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
 
@@ -255,13 +255,12 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     /**
-     * Registered a {@link org.apache.sshd.common.NamedFactory} to be available besides the built-in
-     * ones when parsing configuration
+     * Registered a {@link org.apache.sshd.common.NamedFactory} to be available besides the built-in ones when parsing
+     * configuration
      *
-     * @param extension The factory to register
-     * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     * @param  extension                The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null}, or overrides a built-in one or overrides
+     *                                  another registered factory with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(DHFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
@@ -274,8 +273,8 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     /**
-     * @return A {@link NavigableSet} of the currently registered extensions, sorted
-     * according to the factory name (case <U>insensitive</U>)
+     * @return A {@link NavigableSet} of the currently registered extensions, sorted according to the factory name (case
+     *         <U>insensitive</U>)
      */
     public static NavigableSet<DHFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
@@ -286,8 +285,8 @@ public enum BuiltinDHFactories implements DHFactory {
     /**
      * Unregisters specified extension
      *
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The registered extension - {@code null} if not found
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The registered extension - {@code null} if not found
      */
     public static DHFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -300,9 +299,8 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     /**
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinDHFactories} (case <U>insensitive</U>)
-     * or {@code null} if no match found
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The matching {@link BuiltinDHFactories} (case <U>insensitive</U>) or {@code null} if no match found
      */
     public static BuiltinDHFactories fromFactoryName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
@@ -314,14 +312,11 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     /**
-     * @param dhList A comma-separated list of ciphers' names - ignored
-     *               if {@code null}/empty
-     * @return A {@link ParseResult} of all the {@link DHFactory}-ies whose
-     * name appears in the string and represent a built-in value. Any
-     * unknown name is <U>ignored</U>. The order of the returned result
-     * is the same as the original order - bar the unknown ones.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
-     * contain duplicates
+     * @param  dhList A comma-separated list of ciphers' names - ignored if {@code null}/empty
+     * @return        A {@link ParseResult} of all the {@link DHFactory}-ies whose name appears in the string and
+     *                represent a built-in value. Any unknown name is <U>ignored</U>. The order of the returned result
+     *                is the same as the original order - bar the unknown ones. <B>Note:</B> it is up to caller to
+     *                ensure that the list does not contain duplicates
      */
     public static ParseResult parseDHFactoriesList(String dhList) {
         return parseDHFactoriesList(GenericUtils.split(dhList, ','));
@@ -355,9 +350,8 @@ public enum BuiltinDHFactories implements DHFactory {
     }
 
     /**
-     * @param name The factory name
-     * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension
+     * @param  name The factory name
+     * @return      The factory or {@code null} if it is neither a built-in one or a registered extension
      */
     public static DHFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {

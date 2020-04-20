@@ -73,11 +73,11 @@ public abstract class CliSupport {
         return true;
     }
 
-    public static <S extends SessionContext,
-                M extends UserAuthInstance<S>, F extends UserAuthMethodFactory<S, M>,
-                I extends UserAuthFactoriesManager<S, M, F>>
-            void setupUserAuthFactories(
-                I manager, PropertyResolver options) {
+    public static <
+            S extends SessionContext,
+            M extends UserAuthInstance<S>, F extends UserAuthMethodFactory<S, M>,
+            I extends UserAuthFactoriesManager<S, M, F>> void setupUserAuthFactories(
+                    I manager, PropertyResolver options) {
         String methods = options.getString(ConfigFileReaderSupport.PREFERRED_AUTHS_CONFIG_PROP);
         if (GenericUtils.isNotEmpty(methods)) {
             manager.setUserAuthFactoriesNameList(methods);
@@ -86,13 +86,12 @@ public abstract class CliSupport {
     }
 
     /**
-     * Scans the arguments for the &quot;-io&quot; command line option and sets the I/O
-     * service accordingly. If no specific option specified then {@link #DEFAULT_IO_SERVICE_FACTORY}
-     * is used.
+     * Scans the arguments for the &quot;-io&quot; command line option and sets the I/O service accordingly. If no
+     * specific option specified then {@link #DEFAULT_IO_SERVICE_FACTORY} is used.
      *
-     * @param stderr Error stream for output of error messages
-     * @param args The arguments to scan
-     * @return The resolved I/O service factory - {@code null} if errors encountered
+     * @param  stderr Error stream for output of error messages
+     * @param  args   The arguments to scan
+     * @return        The resolved I/O service factory - {@code null} if errors encountered
      */
     public static BuiltinIoServiceFactoryFactories resolveIoServiceFactory(PrintStream stderr, String... args) {
         int numArgs = GenericUtils.length(args);
@@ -131,11 +130,10 @@ public abstract class CliSupport {
 
     public static BuiltinIoServiceFactoryFactories resolveBuiltinIoServiceFactory(
             PrintStream stderr, String argName, String provider) {
-        BuiltinIoServiceFactoryFactories factory =
-            BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
+        BuiltinIoServiceFactoryFactories factory = BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
         if (factory == null) {
             System.err.println(argName + " - unknown provider (" + provider + ")"
-                + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
+                               + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
         }
         return factory;
     }
@@ -178,24 +176,24 @@ public abstract class CliSupport {
             @Override
             public void connectionEstablished(
                     IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
-                        throws IOException {
+                    throws IOException {
                 out.append("Connection established via ").append(Objects.toString(connector))
-                    .append("- local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(System.lineSeparator());
+                        .append("- local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(System.lineSeparator());
             }
 
             @Override
             public void abortEstablishedConnection(
                     IoConnector connector, SocketAddress local, AttributeRepository context,
                     SocketAddress remote, Throwable reason)
-                        throws IOException {
+                    throws IOException {
                 out.append("Abort established connection ").append(Objects.toString(connector))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(' ').append(reason.getMessage())
-                    .append(System.lineSeparator());
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                        .append(' ').append(reason.getMessage())
+                        .append(System.lineSeparator());
                 printStackTrace(out, reason);
             }
 
@@ -203,26 +201,26 @@ public abstract class CliSupport {
             public void connectionAccepted(
                     IoAcceptor acceptor, SocketAddress local,
                     SocketAddress remote, SocketAddress service)
-                            throws IOException {
+                    throws IOException {
                 out.append("Connection accepted via ").append(Objects.toString(acceptor))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(", service=").append(Objects.toString(service))
-                    .append(System.lineSeparator());
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(", service=").append(Objects.toString(service))
+                        .append(System.lineSeparator());
             }
 
             @Override
             public void abortAcceptedConnection(
                     IoAcceptor acceptor, SocketAddress local, SocketAddress remote,
                     SocketAddress service, Throwable reason)
-                        throws IOException {
+                    throws IOException {
                 out.append("Abort accepted connection ").append(Objects.toString(acceptor))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(", service=").append(Objects.toString(service))
-                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(' ').append(reason.getMessage())
-                    .append(System.lineSeparator());
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(", service=").append(Objects.toString(service))
+                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                        .append(' ').append(reason.getMessage())
+                        .append(System.lineSeparator());
                 printStackTrace(out, reason);
             }
         };
@@ -236,8 +234,8 @@ public abstract class CliSupport {
                     Session session, String version, List<String> extraLines) {
                 try {
                     out.append(Objects.toString(session))
-                        .append(" peer identification=").append(version)
-                        .append(System.lineSeparator());
+                            .append(" peer identification=").append(version)
+                            .append(System.lineSeparator());
                     if (GenericUtils.isNotEmpty(extraLines)) {
                         for (String l : extraLines) {
                             out.append("    => ").append(l).append(System.lineSeparator());
@@ -249,7 +247,8 @@ public abstract class CliSupport {
             }
 
             @Override
-            public void sessionNegotiationEnd(Session session,
+            public void sessionNegotiationEnd(
+                    Session session,
                     Map<KexProposalOption, String> clientProposal,
                     Map<KexProposalOption, String> serverProposal,
                     Map<KexProposalOption, String> negotiatedOptions,
@@ -260,13 +259,13 @@ public abstract class CliSupport {
 
                 try {
                     out.append(Objects.toString(session))
-                        .append(" KEX negotiation results:")
-                        .append(System.lineSeparator());
+                            .append(" KEX negotiation results:")
+                            .append(System.lineSeparator());
                     for (KexProposalOption opt : KexProposalOption.VALUES) {
                         String value = negotiatedOptions.get(opt);
                         out.append("    ").append(opt.getDescription())
-                            .append(": ").append(value)
-                            .append(System.lineSeparator());
+                                .append(": ").append(value)
+                                .append(System.lineSeparator());
                     }
                 } catch (IOException e) {
                     // ignored
@@ -277,9 +276,9 @@ public abstract class CliSupport {
             public void sessionException(Session session, Throwable t) {
                 try {
                     out.append(Objects.toString(session))
-                        .append(' ').append(t.getClass().getSimpleName())
-                        .append(": ").append(t.getMessage())
-                        .append(System.lineSeparator());
+                            .append(' ').append(t.getClass().getSimpleName())
+                            .append(": ").append(t.getMessage())
+                            .append(System.lineSeparator());
                     printStackTrace(out, t);
                 } catch (IOException e) {
                     // ignored
@@ -290,8 +289,8 @@ public abstract class CliSupport {
             public void sessionClosed(Session session) {
                 try {
                     out.append(Objects.toString(session))
-                        .append(" closed")
-                        .append(System.lineSeparator());
+                            .append(" closed")
+                            .append(System.lineSeparator());
                 } catch (IOException e) {
                     // ignored
                 }
@@ -319,16 +318,16 @@ public abstract class CliSupport {
     }
 
     /**
-     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options.
-     * If found, then uses it as the result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
+     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options. If found, then uses it as the
+     * result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
      *
-     * @param resolver The {@code -o} options specified by the user
-     * @param args The command line arguments
-     * @return The resolved verbosity level
+     * @param  resolver The {@code -o} options specified by the user
+     * @param  args     The command line arguments
+     * @return          The resolved verbosity level
      */
     public static Level resolveLoggingVerbosity(PropertyResolver resolver, String... args) {
         String levelValue = PropertyResolverUtils.getString(
-            resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
+                resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
         if (GenericUtils.isEmpty(levelValue)) {
             return resolveLoggingVerbosity(args);
         }
@@ -336,7 +335,7 @@ public abstract class CliSupport {
         LogLevelValue level = LogLevelValue.fromName(levelValue);
         if (level == null) {
             throw new IllegalArgumentException(
-                "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+                    "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
         }
 
         return level.getLoggingLevel();

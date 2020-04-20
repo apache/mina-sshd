@@ -31,12 +31,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.io.IoAcceptor;
-import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoServiceEventListener;
-import org.apache.sshd.common.util.GenericUtils;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -49,6 +43,11 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * The Netty based IoAcceptor implementation.
@@ -65,46 +64,48 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
 
         channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
-            .channel(NioServerSocketChannel.class)
-            .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
-            .handler(new LoggingHandler(LogLevel.INFO)) // TODO make this configurable
-            .childHandler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                @SuppressWarnings("synthetic-access")
-                public void initChannel(SocketChannel ch) throws Exception {
-                    IoServiceEventListener listener = getIoServiceEventListener();
-                    SocketAddress local = ch.localAddress();
-                    SocketAddress remote = ch.remoteAddress();
-                    SocketAddress service = GenericUtils.head(boundAddresses.keySet());
-                    try {
-                        if (listener != null) {
-                            try {
-                                listener.connectionAccepted(NettyIoAcceptor.this, local, remote, service);
-                            } catch (Exception e) {
-                                ch.close();
-                                throw e;
-                            }
-                        }
-
-                        ChannelPipeline p = ch.pipeline();
-                        @SuppressWarnings("resource")
-                        NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler, service);
-                        p.addLast(nettyIoSession.adapter);
-                    } catch (Exception e) {
-                        if (listener != null) {
-                            try {
-                                listener.abortAcceptedConnection(NettyIoAcceptor.this, local, remote, service, e);
-                            } catch (Exception exc) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
+                .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 100) // TODO make this configurable
+                .handler(new LoggingHandler(LogLevel.INFO)) // TODO make this configurable
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    public void initChannel(SocketChannel ch) throws Exception {
+                        IoServiceEventListener listener = getIoServiceEventListener();
+                        SocketAddress local = ch.localAddress();
+                        SocketAddress remote = ch.remoteAddress();
+                        SocketAddress service = GenericUtils.head(boundAddresses.keySet());
+                        try {
+                            if (listener != null) {
+                                try {
+                                    listener.connectionAccepted(NettyIoAcceptor.this, local, remote, service);
+                                } catch (Exception e) {
+                                    ch.close();
+                                    throw e;
                                 }
                             }
-                        }
 
-                        throw e;
+                            ChannelPipeline p = ch.pipeline();
+                            @SuppressWarnings("resource")
+                            NettyIoSession nettyIoSession = new NettyIoSession(NettyIoAcceptor.this, handler, service);
+                            p.addLast(nettyIoSession.adapter);
+                        } catch (Exception e) {
+                            if (listener != null) {
+                                try {
+                                    listener.abortAcceptedConnection(NettyIoAcceptor.this, local, remote, service, e);
+                                } catch (Exception exc) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("initChannel(" + ch + ") listener=" + listener
+                                                  + " ignoring abort event exception",
+                                                exc);
+                                    }
+                                }
+                            }
+
+                            throw e;
+                        }
                     }
-                }
-            });
+                });
     }
 
     @Override
@@ -120,7 +121,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
                 bound.add(channel);
             }
 
-            bound.clear();  // disable auto close at finally clause
+            bound.clear(); // disable auto close at finally clause
         } finally {
             for (Channel channel : bound) {
                 closeChannel(channel);
@@ -155,7 +156,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
             if (prev != null) {
                 if (debugEnabled) {
                     log.debug("bindInternal({}) replaced entry of {} - previous={}",
-                        address, bound, prev.localAddress());
+                            address, bound, prev.localAddress());
                 }
             }
 
@@ -167,7 +168,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
             return returnValue;
         } catch (InterruptedException e) {
             log.error("bindInternal({}) interrupted ({}): {}",
-                address, e.getClass().getSimpleName(), e.getMessage());
+                    address, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("bindInternal(" + address + ") failure details", e);
             }

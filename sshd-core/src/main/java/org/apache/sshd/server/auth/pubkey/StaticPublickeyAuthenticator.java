@@ -51,13 +51,15 @@ public abstract class StaticPublickeyAuthenticator extends AbstractLoggingBean i
     protected void handleAcceptance(String username, PublicKey key, ServerSession session) {
         // accepting without really checking is dangerous, thus the warning
         log.warn("authenticate({}[{}][{}][{}]: accepted without checking",
-                 username, session, (key == null) /* don't care about the key */ ? "null" : key.getAlgorithm(), KeyUtils.getFingerPrint(key));
+                username, session, (key == null) /* don't care about the key */ ? "null" : key.getAlgorithm(),
+                KeyUtils.getFingerPrint(key));
     }
 
     protected void handleRejection(String username, PublicKey key, ServerSession session) {
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}[{}][{}][{}]: rejected",
-                      username, session, (key == null) /* don't care about the key */ ? "null" : key.getAlgorithm(), KeyUtils.getFingerPrint(key));
+                    username, session, (key == null) /* don't care about the key */ ? "null" : key.getAlgorithm(),
+                    KeyUtils.getFingerPrint(key));
         }
     }
 }

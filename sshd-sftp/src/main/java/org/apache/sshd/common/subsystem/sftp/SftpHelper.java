@@ -70,9 +70,9 @@ import org.apache.sshd.server.subsystem.sftp.UnixDateFormat;
  */
 public final class SftpHelper {
     /**
-     * Used to control whether to append the end-of-list indicator for
-     * SSH_FXP_NAME responses via {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)}
-     * call, as indicated by <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     * Used to control whether to append the end-of-list indicator for SSH_FXP_NAME responses via
+     * {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)} call, as indicated by
+     * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
      */
     public static final String APPEND_END_OF_LIST_INDICATOR = "sftp-append-eol-indicator";
 
@@ -125,60 +125,64 @@ public final class SftpHelper {
     }
 
     /**
-     * Retrieves the end-of-file indicator for {@code SSH_FXP_DATA} responses, provided
-     * the version is at least 6, and the buffer has enough available data
+     * Retrieves the end-of-file indicator for {@code SSH_FXP_DATA} responses, provided the version is at least 6, and
+     * the buffer has enough available data
      *
-     * @param buffer  The {@link Buffer} to retrieve the data from
-     * @param version The SFTP version being used
-     * @return The indicator value - {@code null} if none retrieved
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     * @param  buffer  The {@link Buffer} to retrieve the data from
+     * @param  version The SFTP version being used
+     * @return         The indicator value - {@code null} if none retrieved
+     * @see            <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section
+     *                 9.3</A>
      */
     public static Boolean getEndOfFileIndicatorValue(Buffer buffer, int version) {
-        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
+        return (version < SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
     }
 
     /**
-     * Retrieves the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided
-     * the version is at least 6, and the buffer has enough available data
+     * Retrieves the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided the version is at least 6, and
+     * the buffer has enough available data
      *
-     * @param buffer  The {@link Buffer} to retrieve the data from
-     * @param version The SFTP version being used
-     * @return The indicator value - {@code null} if none retrieved
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
-     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)
+     * @param  buffer  The {@link Buffer} to retrieve the data from
+     * @param  version The SFTP version being used
+     * @return         The indicator value - {@code null} if none retrieved
+     * @see            <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section
+     *                 9.4</A>
+     * @see            #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)
      */
     public static Boolean getEndOfListIndicatorValue(Buffer buffer, int version) {
-        return (version <  SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
+        return (version < SftpConstants.SFTP_V6) || (buffer.available() < 1) ? null : buffer.getBoolean();
     }
 
     /**
-     * Appends the end-of-list={@code TRUE} indicator for {@code SSH_FXP_NAME} responses, provided
-     * the version is at least 6 and the feature is enabled
+     * Appends the end-of-list={@code TRUE} indicator for {@code SSH_FXP_NAME} responses, provided the version is at
+     * least 6 and the feature is enabled
      *
-     * @param buffer   The {@link Buffer} to append the indicator
-     * @param version  The SFTP version being used
-     * @param resolver The {@link PropertyResolver} to query whether to enable the feature
-     * @return The actual indicator value used - {@code null} if none appended
-     * @see #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)
+     * @param  buffer   The {@link Buffer} to append the indicator
+     * @param  version  The SFTP version being used
+     * @param  resolver The {@link PropertyResolver} to query whether to enable the feature
+     * @return          The actual indicator value used - {@code null} if none appended
+     * @see             #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)
      */
     public static Boolean indicateEndOfNamesList(Buffer buffer, int version, PropertyResolver resolver) {
         return indicateEndOfNamesList(buffer, version, resolver, true);
     }
 
     /**
-     * Appends the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided the version
-     * is at least 6, the feature is enabled and the indicator value is not {@code null}
+     * Appends the end-of-list indicator for {@code SSH_FXP_NAME} responses, provided the version is at least 6, the
+     * feature is enabled and the indicator value is not {@code null}
      *
-     * @param buffer         The {@link Buffer} to append the indicator
-     * @param version        The SFTP version being used
-     * @param resolver       The {@link PropertyResolver} to query whether to enable the feature
-     * @param indicatorValue The indicator value - {@code null} means don't append the indicator
-     * @return The actual indicator value used - {@code null} if none appended
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
-     * @see #APPEND_END_OF_LIST_INDICATOR
-     * @see #DEFAULT_APPEND_END_OF_LIST_INDICATOR
+     * @param  buffer         The {@link Buffer} to append the indicator
+     * @param  version        The SFTP version being used
+     * @param  resolver       The {@link PropertyResolver} to query whether to enable the feature
+     * @param  indicatorValue The indicator value - {@code null} means don't append the indicator
+     * @return                The actual indicator value used - {@code null} if none appended
+     * @see                   <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 -
+     *                        section 9.4</A>
+     * @see                   #APPEND_END_OF_LIST_INDICATOR
+     * @see                   #DEFAULT_APPEND_END_OF_LIST_INDICATOR
      */
-    public static Boolean indicateEndOfNamesList(Buffer buffer, int version, PropertyResolver resolver, boolean indicatorValue) {
+    public static Boolean indicateEndOfNamesList(
+            Buffer buffer, int version, PropertyResolver resolver, boolean indicatorValue) {
         if (version < SftpConstants.SFTP_V6) {
             return null;
         }
@@ -194,13 +198,13 @@ public final class SftpHelper {
     /**
      * Writes a file / folder's attributes to a buffer
      *
-     * @param <B> Type of {@link Buffer} being updated
-     * @param buffer The target buffer instance
-     * @param version The output encoding version
-     * @param attributes The {@link Map} of attributes
-     * @return The updated buffer
-     * @see #writeAttrsV3(Buffer, int, Map)
-     * @see #writeAttrsV4(Buffer, int, Map)
+     * @param  <B>        Type of {@link Buffer} being updated
+     * @param  buffer     The target buffer instance
+     * @param  version    The output encoding version
+     * @param  attributes The {@link Map} of attributes
+     * @return            The updated buffer
+     * @see               #writeAttrsV3(Buffer, int, Map)
+     * @see               #writeAttrsV4(Buffer, int, Map)
      */
     public static <B extends Buffer> B writeAttrs(B buffer, int version, Map<String, ?> attributes) {
         if (version == SftpConstants.SFTP_V3) {
@@ -215,11 +219,11 @@ public final class SftpHelper {
     /**
      * Writes the retrieved file / directory attributes in V3 format
      *
-     * @param <B> Type of {@link Buffer} being updated
-     * @param buffer The target buffer instance
-     * @param version The actual version - must be {@link SftpConstants#SFTP_V3}
-     * @param attributes The {@link Map} of attributes
-     * @return The updated buffer
+     * @param  <B>        Type of {@link Buffer} being updated
+     * @param  buffer     The target buffer instance
+     * @param  version    The actual version - must be {@link SftpConstants#SFTP_V3}
+     * @param  attributes The {@link Map} of attributes
+     * @return            The updated buffer
      */
     public static <B extends Buffer> B writeAttrsV3(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version == SftpConstants.SFTP_V3, "Illegal version: %d", version);
@@ -234,10 +238,11 @@ public final class SftpHelper {
         FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
         Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
         int flags = ((isReg || isLnk) && (size != null) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
-                  | (attributes.containsKey("uid") && attributes.containsKey("gid") ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
-                  | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
-                  | (((lastModifiedTime != null) && (lastAccessTime != null)) ? SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME : 0)
-                  | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
+                    | (attributes.containsKey("uid") && attributes.containsKey("gid")
+                            ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
+                    | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
+                    | (((lastModifiedTime != null) && (lastAccessTime != null)) ? SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME : 0)
+                    | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
         buffer.putInt(flags);
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
             buffer.putLong(size.longValue());
@@ -263,11 +268,11 @@ public final class SftpHelper {
     /**
      * Writes the retrieved file / directory attributes in V4+ format
      *
-     * @param <B> Type of {@link Buffer} being updated
-     * @param buffer The target buffer instance
-     * @param version The actual version - must be at least {@link SftpConstants#SFTP_V4}
-     * @param attributes The {@link Map} of attributes
-     * @return The updated buffer
+     * @param  <B>        Type of {@link Buffer} being updated
+     * @param  buffer     The target buffer instance
+     * @param  version    The actual version - must be at least {@link SftpConstants#SFTP_V4}
+     * @param  attributes The {@link Map} of attributes
+     * @return            The updated buffer
      */
     public static <B extends Buffer> B writeAttrsV4(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version >= SftpConstants.SFTP_V4, "Illegal version: %d", version);
@@ -285,13 +290,14 @@ public final class SftpHelper {
         Collection<AclEntry> acl = (Collection<AclEntry>) attributes.get("acl");
         Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
         int flags = (((isReg || isLnk) && (size != null)) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
-                  | ((attributes.containsKey("owner") && attributes.containsKey("group")) ? SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP : 0)
-                  | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
-                  | ((lastModifiedTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME : 0)
-                  | ((creationTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_CREATETIME : 0)
-                  | ((lastAccessTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME : 0)
-                  | ((acl != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACL : 0)
-                  | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
+                    | ((attributes.containsKey("owner") && attributes.containsKey("group"))
+                            ? SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP : 0)
+                    | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
+                    | ((lastModifiedTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME : 0)
+                    | ((creationTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_CREATETIME : 0)
+                    | ((lastAccessTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME : 0)
+                    | ((acl != null) ? SftpConstants.SSH_FILEXFER_ATTR_ACL : 0)
+                    | ((extensions != null) ? SftpConstants.SSH_FILEXFER_ATTR_EXTENDED : 0);
         buffer.putInt(flags);
         buffer.putByte((byte) (isReg ? SftpConstants.SSH_FILEXFER_TYPE_REGULAR
                 : isDir ? SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY
@@ -331,9 +337,9 @@ public final class SftpHelper {
     }
 
     /**
-     * @param bool The {@link Boolean} value
-     * @return {@code true} it the argument is non-{@code null} and
-     * its {@link Boolean#booleanValue()} is {@code true}
+     * @param  bool The {@link Boolean} value
+     * @return      {@code true} it the argument is non-{@code null} and its {@link Boolean#booleanValue()} is
+     *              {@code true}
      */
     public static boolean getBool(Boolean bool) {
         return bool != null && bool;
@@ -342,13 +348,14 @@ public final class SftpHelper {
     /**
      * Converts a file / folder's attributes into a mask
      *
-     * @param isReg {@code true} if this is a normal file
-     * @param isDir {@code true} if this is a directory
-     * @param isLnk {@code true} if this is a symbolic link
-     * @param perms The file / folder's access {@link PosixFilePermission}s
-     * @return A mask encoding the file / folder's attributes
+     * @param  isReg {@code true} if this is a normal file
+     * @param  isDir {@code true} if this is a directory
+     * @param  isLnk {@code true} if this is a symbolic link
+     * @param  perms The file / folder's access {@link PosixFilePermission}s
+     * @return       A mask encoding the file / folder's attributes
      */
-    public static int attributesToPermissions(boolean isReg, boolean isDir, boolean isLnk, Collection<PosixFilePermission> perms) {
+    public static int attributesToPermissions(
+            boolean isReg, boolean isDir, boolean isLnk, Collection<PosixFilePermission> perms) {
         int pf = 0;
         if (perms != null) {
             for (PosixFilePermission p : perms) {
@@ -393,8 +400,8 @@ public final class SftpHelper {
     /**
      * Converts a POSIX permissions mask to a file type value
      *
-     * @param perms The POSIX permissions mask
-     * @return The file type - see {@code SSH_FILEXFER_TYPE_xxx} values
+     * @param  perms The POSIX permissions mask
+     * @return       The file type - see {@code SSH_FILEXFER_TYPE_xxx} values
      */
     public static int permissionsToFileType(int perms) {
         if ((SftpConstants.S_IFLNK & perms) == SftpConstants.S_IFLNK) {
@@ -418,9 +425,9 @@ public final class SftpHelper {
 
     /**
      * Converts a file type into a POSIX permission mask value
-
-     * @param type File type - see {@code SSH_FILEXFER_TYPE_xxx} values
-     * @return The matching POSIX permission mask value
+     * 
+     * @param  type File type - see {@code SSH_FILEXFER_TYPE_xxx} values
+     * @return      The matching POSIX permission mask value
      */
     public static int fileTypeToPermission(int type) {
         switch (type) {
@@ -446,8 +453,8 @@ public final class SftpHelper {
     /**
      * Translates a mask of permissions into its enumeration values equivalents
      *
-     * @param perms The permissions mask
-     * @return A {@link Set} of the equivalent {@link PosixFilePermission}s
+     * @param  perms The permissions mask
+     * @return       A {@link Set} of the equivalent {@link PosixFilePermission}s
      */
     public static Set<PosixFilePermission> permissionsToAttributes(int perms) {
         Set<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
@@ -484,8 +491,8 @@ public final class SftpHelper {
     /**
      * Returns the most adequate sub-status for the provided exception
      *
-     * @param t The thrown {@link Throwable}
-     * @return The matching sub-status
+     * @param  t The thrown {@link Throwable}
+     * @return   The matching sub-status
      */
     @SuppressWarnings("checkstyle:ReturnCount")
     public static int resolveSubstatus(Throwable t) {
@@ -549,7 +556,7 @@ public final class SftpHelper {
                 case SftpConstants.SSH_FILEXFER_TYPE_FIFO:
                     attrs.put("isOther", Boolean.TRUE);
                     break;
-                default:    // ignored
+                default: // ignored
             }
         }
 
@@ -565,7 +572,7 @@ public final class SftpHelper {
         } else {
             if ((version >= SftpConstants.SFTP_V6) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0)) {
                 @SuppressWarnings("unused")
-                long allocSize = buffer.getLong();    // TODO handle allocation size
+                long allocSize = buffer.getLong(); // TODO handle allocation size
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
@@ -658,7 +665,7 @@ public final class SftpHelper {
         return extended;
     }
 
-    public static  <B extends Buffer> B writeExtensions(B buffer, Map<?, ?> extensions) {
+    public static <B extends Buffer> B writeExtensions(B buffer, Map<?, ?> extensions) {
         int numExtensions = GenericUtils.size(extensions);
         buffer.putInt(numExtensions);
         if (numExtensions <= 0) {
@@ -684,12 +691,14 @@ public final class SftpHelper {
             return Collections.emptyNavigableMap();
         }
 
-        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
+        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in
+        // case
         NavigableMap<String, String> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<?, ?> ee : extensions.entrySet()) {
             Object key = Objects.requireNonNull(ee.getKey(), "No extension type");
             Object value = ValidateUtils.checkNotNull(ee.getValue(), "No value for extension=%s", key);
-            String prev = map.put(key.toString(), (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
+            String prev = map.put(key.toString(),
+                    (value instanceof byte[]) ? new String((byte[]) value, StandardCharsets.UTF_8) : value.toString());
             ValidateUtils.checkTrue(prev == null, "Multiple values for extension=%s", key);
         }
 
@@ -701,7 +710,8 @@ public final class SftpHelper {
             return Collections.emptyNavigableMap();
         }
 
-        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in case
+        // NOTE: even though extensions are probably case sensitive we do not allow duplicate name that differs only in
+        // case
         NavigableMap<String, byte[]> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         extensions.forEach((key, value) -> {
             ValidateUtils.checkNotNull(value, "No value for extension=%s", key);
@@ -730,15 +740,15 @@ public final class SftpHelper {
 
     public static List<AclEntry> decodeACLs(Buffer buffer, int version) {
         @SuppressWarnings("unused")
-        int aclFlags = 0;   // TODO handle ACL flags
+        int aclFlags = 0; // TODO handle ACL flags
         if (version >= SftpConstants.SFTP_V6) {
             aclFlags = buffer.getInt();
         }
 
         int count = buffer.getInt();
         /*
-         * NOTE: although the value is defined as UINT32 we do not expected a count greater
-         * than several hundreds + protect against malicious or corrupted packets
+         * NOTE: although the value is defined as UINT32 we do not expected a count greater than several hundreds +
+         * protect against malicious or corrupted packets
          */
         if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
             throw new IndexOutOfBoundsException("Illogical ACL entries count: " + count);
@@ -764,16 +774,16 @@ public final class SftpHelper {
     public static AclEntry buildAclEntry(int aclType, int aclFlag, int aclMask, String aclWho) {
         UserPrincipal who = new DefaultGroupPrincipal(aclWho);
         return AclEntry.newBuilder()
-            .setType(ValidateUtils.checkNotNull(decodeAclEntryType(aclType), "Unknown ACL type: %d", aclType))
-            .setFlags(decodeAclFlags(aclFlag))
-            .setPermissions(decodeAclMask(aclMask))
-            .setPrincipal(who)
-            .build();
+                .setType(ValidateUtils.checkNotNull(decodeAclEntryType(aclType), "Unknown ACL type: %d", aclType))
+                .setFlags(decodeAclFlags(aclFlag))
+                .setPermissions(decodeAclMask(aclMask))
+                .setPrincipal(who)
+                .build();
     }
 
     /**
-     * @param aclType The {@code ACE4_ACCESS_xxx_ACE_TYPE} value
-     * @return The matching {@link AclEntryType} or {@code null} if unknown value
+     * @param  aclType The {@code ACE4_ACCESS_xxx_ACE_TYPE} value
+     * @return         The matching {@link AclEntryType} or {@code null} if unknown value
      */
     public static AclEntryType decodeAclEntryType(int aclType) {
         switch (aclType) {
@@ -867,7 +877,7 @@ public final class SftpHelper {
 
     public static <B extends Buffer> B writeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         int lenPos = buffer.wpos();
-        buffer.putInt(0);   // length placeholder
+        buffer.putInt(0); // length placeholder
         buffer = encodeACLs(buffer, version, acl);
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
         return buffer;
@@ -876,7 +886,7 @@ public final class SftpHelper {
     public static <B extends Buffer> B encodeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         Objects.requireNonNull(acl, "No ACL");
         if (version >= SftpConstants.SFTP_V6) {
-            buffer.putInt(0);   // TODO handle ACL flags
+            buffer.putInt(0); // TODO handle ACL flags
         }
 
         int numEntries = GenericUtils.size(acl);
@@ -908,16 +918,15 @@ public final class SftpHelper {
     /**
      * Returns the equivalent SFTP value for the ACL type
      *
-     * @param type The {@link AclEntryType}
-     * @return The equivalent {@code ACE_SYSTEM_xxx_TYPE} or negative
-     * if {@code null} or unknown type
+     * @param  type The {@link AclEntryType}
+     * @return      The equivalent {@code ACE_SYSTEM_xxx_TYPE} or negative if {@code null} or unknown type
      */
     public static int encodeAclEntryType(AclEntryType type) {
         if (type == null) {
             return Integer.MIN_VALUE;
         }
 
-        switch(type) {
+        switch (type) {
             case ALARM:
                 return SftpConstants.ACE4_SYSTEM_ALARM_ACE_TYPE;
             case ALLOW:
@@ -1017,12 +1026,12 @@ public final class SftpHelper {
     /**
      * Encodes a {@link FileTime} value into a buffer
      *
-     * @param <B> Type of {@link Buffer} being updated
-     * @param buffer The target buffer instance
-     * @param version The encoding version
-     * @param flags The encoding flags
-     * @param time The value to encode
-     * @return The updated buffer
+     * @param  <B>     Type of {@link Buffer} being updated
+     * @param  buffer  The target buffer instance
+     * @param  version The encoding version
+     * @param  flags   The encoding flags
+     * @param  time    The value to encode
+     * @return         The updated buffer
      */
     public static <B extends Buffer> B writeTime(B buffer, int version, int flags, FileTime time) {
         // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
@@ -1044,10 +1053,10 @@ public final class SftpHelper {
     /**
      * Decodes a {@link FileTime} value from a buffer
      *
-     * @param buffer The source {@link Buffer}
-     * @param version The encoding version
-     * @param flags The encoding flags
-     * @return The decoded value
+     * @param  buffer  The source {@link Buffer}
+     * @param  version The encoding version
+     * @param  flags   The encoding flags
+     * @return         The decoded value
      */
     public static FileTime readTime(Buffer buffer, int version, int flags) {
         // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
@@ -1064,10 +1073,11 @@ public final class SftpHelper {
     /**
      * Creates an &quot;ls -l&quot; compatible long name string
      *
-     * @param shortName The short file name - can also be &quot;.&quot; or &quot;..&quot;
-     * @param attributes The file's attributes - e.g., size, owner, permissions, etc.
-     * @return A {@link String} representing the &quot;long&quot; file name as per
-     * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02">SFTP version 3 - section 7</A>
+     * @param  shortName  The short file name - can also be &quot;.&quot; or &quot;..&quot;
+     * @param  attributes The file's attributes - e.g., size, owner, permissions, etc.
+     * @return            A {@link String} representing the &quot;long&quot; file name as per
+     *                    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02">SFTP version 3 - section
+     *                    7</A>
      */
     public static String getLongName(String shortName, Map<String, ?> attributes) {
         String owner = Objects.toString(attributes.get("owner"), null);
@@ -1104,9 +1114,9 @@ public final class SftpHelper {
         String timeStamp = UnixDateFormat.getUnixDate((FileTime) attributes.get("lastModifiedTime"));
         StringBuilder sb = new StringBuilder(
                 GenericUtils.length(linkCount) + GenericUtils.length(username) + GenericUtils.length(group)
-              + GenericUtils.length(timeStamp) + GenericUtils.length(lengthString)
-              + GenericUtils.length(permsString) + GenericUtils.length(shortName)
-              + Integer.SIZE);
+                                             + GenericUtils.length(timeStamp) + GenericUtils.length(lengthString)
+                                             + GenericUtils.length(permsString) + GenericUtils.length(shortName)
+                                             + Integer.SIZE);
         sb.append(SftpHelper.getBool(isDirectory) ? 'd' : (SftpHelper.getBool(isLink) ? 'l' : '-')).append(permsString);
 
         sb.append(' ');

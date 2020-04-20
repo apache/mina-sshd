@@ -31,9 +31,9 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * A no-op implementation of {@link SftpEventListener} for those who wish to
- * implement only a small number of methods. By default, all non-overridden methods
- * simply log at TRACE level their invocation parameters
+ * A no-op implementation of {@link SftpEventListener} for those who wish to implement only a small number of methods.
+ * By default, all non-overridden methods simply log at TRACE level their invocation parameters
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBean implements SftpEventListener {
@@ -59,7 +59,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
-            log.trace("opening(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+            log.trace("opening(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
+                      + path);
         }
     }
 
@@ -67,7 +68,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     public void open(ServerSession session, String remoteHandle, Handle localHandle) {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
-            log.trace("open(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+            log.trace("open(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
+                      + path);
         }
     }
 
@@ -80,15 +82,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
         }
 
         if ((numEntries > 0) && log.isTraceEnabled()) {
-            entries.forEach((key, value) ->
-                log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + key + " - " + value));
+            entries.forEach(
+                    (key, value) -> log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + key + " - " + value));
         }
     }
 
     @Override
-    public void reading(ServerSession session, String remoteHandle, FileHandle localHandle,
-                     long offset, byte[] data, int dataOffset, int dataLen)
-                        throws IOException {
+    public void reading(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("reading(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
         }
@@ -96,32 +99,35 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
 
     @Override
     @SuppressWarnings("checkstyle:ParameterNumber")
-    public void read(ServerSession session, String remoteHandle, FileHandle localHandle,
-             long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
-                throws IOException {
+    public void read(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen, int readLen, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset
-                    + ", requested=" + dataLen + ", read=" + readLen
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ", requested=" + dataLen + ", read=" + readLen
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
     @Override
-    public void writing(ServerSession session, String remoteHandle, FileHandle localHandle,
-              long offset, byte[] data, int dataOffset, int dataLen)
-                  throws IOException {
+    public void writing(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("write(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
         }
     }
 
     @Override
-    public void written(ServerSession session, String remoteHandle, FileHandle localHandle,
-              long offset, byte[] data, int dataOffset, int dataLen, Throwable thrown)
-                  throws IOException {
+    public void written(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen, Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("written(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -130,18 +136,19 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("blocking(" + session + ")[" + localHandle.getFile() + "]"
-                   + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask));
+                      + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask));
         }
     }
 
     @Override
     public void blocked(
-            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown)
-                throws IOException {
+            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask,
+            Throwable thrown)
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("blocked(" + session + ")[" + localHandle.getFile() + "]"
-                    + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -156,11 +163,11 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     @Override
     public void unblocked(
             ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, Throwable thrown)
-                  throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("unblocked(" + session + ")[" + localHandle.getFile() + "]"
-                    + " offset=" + offset + ", length=" + length
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + " offset=" + offset + ", length=" + length
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -168,7 +175,8 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     public void closing(ServerSession session, String remoteHandle, Handle localHandle) {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
-            log.trace("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+            log.trace("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
+                      + path);
         }
     }
 
@@ -185,7 +193,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("created(" + session + ") " + (Files.isDirectory(path) ? "directory" : "file") + " " + path
-                   + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -202,7 +210,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("moved(" + session + ")[" + opts + "]" + srcPath + " => " + dstPath
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -219,7 +227,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("removed(" + session + ")[dir=" + isDirectory + "] " + path
-                  + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -236,7 +244,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("linked(" + session + ")[" + symLink + "]" + source + " => " + target
-                    + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 
@@ -253,7 +261,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
             throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("modifiedAttributes(" + session + ") " + path
-                  + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
         }
     }
 }

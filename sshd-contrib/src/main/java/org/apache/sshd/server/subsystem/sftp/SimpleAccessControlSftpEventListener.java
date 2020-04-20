@@ -32,25 +32,24 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Provides a simple access control by making a distinction between methods
- * that provide information - including reading data - and those that modify it
+ * Provides a simple access control by making a distinction between methods that provide information - including reading
+ * data - and those that modify it
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpEventListenerAdapter {
-    public static final SimpleAccessControlSftpEventListener READ_ONLY_ACCESSOR =
-        new SimpleAccessControlSftpEventListener() {
-            @Override
-            protected boolean isAccessAllowed(ServerSession session, String remoteHandle, Path localPath)
-                    throws IOException {
-                return true;
-            }
+    public static final SimpleAccessControlSftpEventListener READ_ONLY_ACCESSOR = new SimpleAccessControlSftpEventListener() {
+        @Override
+        protected boolean isAccessAllowed(ServerSession session, String remoteHandle, Path localPath)
+                throws IOException {
+            return true;
+        }
 
-            @Override
-            protected boolean isModificationAllowed(ServerSession session, String remoteHandle, Path localPath)
-                    throws IOException {
-                return false;
-            }
+        @Override
+        protected boolean isModificationAllowed(ServerSession session, String remoteHandle, Path localPath)
+                throws IOException {
+            return false;
+        }
     };
 
     protected SimpleAccessControlSftpEventListener() {
@@ -89,8 +88,10 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     @Override
-    public void reading(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
-            int dataOffset, int dataLen) throws IOException {
+    public void reading(
+            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
+            int dataOffset, int dataLen)
+            throws IOException {
         super.reading(session, remoteHandle, localHandle, offset, data, dataOffset, dataLen);
         if (!isAccessAllowed(session, remoteHandle, localHandle)) {
             throw new AccessDeniedException(remoteHandle);
@@ -98,28 +99,30 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     /**
-     * @param session The {@link ServerSession} throw which the request was made
-     * @param remoteHandle The remote handle value
-     * @param localHandle The local handle
-     * @return {@code true} if allowed to access the handle
-     * @throws IOException If failed to handle the call
+     * @param  session      The {@link ServerSession} throw which the request was made
+     * @param  remoteHandle The remote handle value
+     * @param  localHandle  The local handle
+     * @return              {@code true} if allowed to access the handle
+     * @throws IOException  If failed to handle the call
      */
     protected boolean isAccessAllowed(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
         return isAccessAllowed(session, remoteHandle, localHandle.getFile());
     }
 
     /**
-     * @param session The {@link ServerSession} throw which the request was made
-     * @param remoteHandle The remote handle value
-     * @param localPath The local {@link Path}
-     * @return {@code true} if allowed to access the path
-     * @throws IOException If failed to handle the call
+     * @param  session      The {@link ServerSession} throw which the request was made
+     * @param  remoteHandle The remote handle value
+     * @param  localPath    The local {@link Path}
+     * @return              {@code true} if allowed to access the path
+     * @throws IOException  If failed to handle the call
      */
     protected abstract boolean isAccessAllowed(ServerSession session, String remoteHandle, Path localPath) throws IOException;
 
     @Override
-    public void writing(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
-            int dataOffset, int dataLen) throws IOException {
+    public void writing(
+            ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data,
+            int dataOffset, int dataLen)
+            throws IOException {
         super.writing(session, remoteHandle, localHandle, offset, data, dataOffset, dataLen);
         if (!isModificationAllowed(session, remoteHandle, localHandle.getFile())) {
             throw new AccessDeniedException(remoteHandle);
@@ -127,7 +130,8 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     @Override
-    public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask) throws IOException {
+    public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask)
+            throws IOException {
         super.blocking(session, remoteHandle, localHandle, offset, length, mask);
         if (!isModificationAllowed(session, remoteHandle, localHandle.getFile())) {
             throw new AccessDeniedException(remoteHandle);
@@ -193,11 +197,12 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     /**
-     * @param session The {@link ServerSession} throw which the request was made
-     * @param remoteHandle The remote handle value
-     * @param localPath The local {@link Path}
-     * @return {@code true} if allowed to modify the path
-     * @throws IOException If failed to handle the call
+     * @param  session      The {@link ServerSession} throw which the request was made
+     * @param  remoteHandle The remote handle value
+     * @param  localPath    The local {@link Path}
+     * @return              {@code true} if allowed to modify the path
+     * @throws IOException  If failed to handle the call
      */
-    protected abstract boolean isModificationAllowed(ServerSession session, String remoteHandle, Path localPath) throws IOException;
+    protected abstract boolean isModificationAllowed(ServerSession session, String remoteHandle, Path localPath)
+            throws IOException;
 }

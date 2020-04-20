@@ -26,25 +26,24 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.NumberUtils;
 
 /**
- * Signature interface for SSH used to sign or verify packets. Usually wraps a
- * {@code javax.crypto.Signature} object. The reported algorithm name refers to
- * the signature type being applied.
+ * Signature interface for SSH used to sign or verify packets. Usually wraps a {@code javax.crypto.Signature} object.
+ * The reported algorithm name refers to the signature type being applied.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Signature extends AlgorithmNameProvider {
     /**
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param key The {@link PublicKey} to be used for verifying signatures
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  key       The {@link PublicKey} to be used for verifying signatures
      * @throws Exception If failed to initialize
      */
     void initVerifier(SessionContext session, PublicKey key) throws Exception;
 
     /**
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param key The {@link PrivateKey} to be used for signing
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  key       The {@link PrivateKey} to be used for signing
      * @throws Exception If failed to initialize
      */
     void initSigner(SessionContext session, PrivateKey key) throws Exception;
@@ -52,11 +51,11 @@ public interface Signature extends AlgorithmNameProvider {
     /**
      * Update the computed signature with the given data
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param hash The hash data buffer
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  hash      The hash data buffer
      * @throws Exception If failed to update
-     * @see #update(SessionContext, byte[], int, int)
+     * @see              #update(SessionContext, byte[], int, int)
      */
     default void update(SessionContext session, byte[] hash) throws Exception {
         update(session, hash, 0, NumberUtils.length(hash));
@@ -65,11 +64,11 @@ public interface Signature extends AlgorithmNameProvider {
     /**
      * Update the computed signature with the given data
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param hash The hash data buffer
-     * @param off  Offset of hash data in buffer
-     * @param len  Length of hash data
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  hash      The hash data buffer
+     * @param  off       Offset of hash data in buffer
+     * @param  len       Length of hash data
      * @throws Exception If failed to update
      */
     void update(SessionContext session, byte[] hash, int off, int len) throws Exception;
@@ -77,10 +76,10 @@ public interface Signature extends AlgorithmNameProvider {
     /**
      * Verify against the given signature
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @param sig The signed data
-     * @return {@code true} if signature is valid
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  sig       The signed data
+     * @return           {@code true} if signature is valid
      * @throws Exception If failed to extract signed data for validation
      */
     boolean verify(SessionContext session, byte[] sig) throws Exception;
@@ -88,9 +87,9 @@ public interface Signature extends AlgorithmNameProvider {
     /**
      * Compute the signature
      *
-     * @param session The {@link SessionContext} for calling this method - may
-     * be {@code null} if not called within a session context
-     * @return The signature value
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @return           The signature value
      * @throws Exception If failed to calculate the signature
      */
     byte[] sign(SessionContext session) throws Exception;

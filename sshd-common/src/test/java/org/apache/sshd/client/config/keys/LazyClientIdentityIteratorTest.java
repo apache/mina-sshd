@@ -55,13 +55,13 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         }
 
         Iterable<KeyPair> ids = ClientIdentityProvider.lazyKeysLoader(
-            providers, p -> {
-                try {
-                    return p.getClientIdentities(null);
-                } catch (Exception e) {
-                    throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
-                }
-            }, null);
+                providers, p -> {
+                    try {
+                        return p.getClientIdentities(null);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+                    }
+                }, null);
         Iterator<KeyPair> keys = ids.iterator();
 
         for (int index = 0, count = providers.size(); index < count; index++) {
@@ -102,8 +102,8 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
         @Override
         public String toString() {
             return getClass().getSimpleName()
-                + "[" + getKeyPair() + "]"
-                + ": loadCount=" + getLoadCount();
+                   + "[" + getKeyPair() + "]"
+                   + ": loadCount=" + getLoadCount();
         }
     }
 }

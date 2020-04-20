@@ -31,6 +31,7 @@ import org.junit.Ignore;
 
 /**
  * A &quot;scratch-pad&quot; class for testing signatures related code during development
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @Ignore("Used only for development")
@@ -41,7 +42,7 @@ public class SignaturesDevelopment extends JUnitTestSupport {
 
     public static void testSignatureFactory(
             SignatureFactory factory, KeyPair kp, byte[] data, boolean generateSignature, byte[] signature)
-                throws Exception {
+            throws Exception {
         Signature signer = factory.create();
         if (generateSignature) {
             signer.initSigner(null, kp.getPrivate());
@@ -61,7 +62,8 @@ public class SignaturesDevelopment extends JUnitTestSupport {
 
     //////////////////////////////////////////////////////////////////////////
 
-    // args[0]=signatureName, args[1]=publicKey, args[2]=privateKey, args[3]=sign/verify, args[4]=data, args[5]=signature(if verify required)
+    // args[0]=signatureName, args[1]=publicKey, args[2]=privateKey, args[3]=sign/verify, args[4]=data,
+    // args[5]=signature(if verify required)
     public static void main(String[] args) throws Exception {
         SignatureFactory factory = BuiltinSignatures.resolveFactory(args[0]);
         // TODO recover public/private keys according to factory name

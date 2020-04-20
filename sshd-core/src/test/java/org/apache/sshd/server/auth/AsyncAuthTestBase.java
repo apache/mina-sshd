@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import com.jcraft.jsch.JSchException;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
@@ -30,8 +31,6 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.After;
 import org.junit.Test;
-
-import com.jcraft.jsch.JSchException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -63,7 +62,8 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
         Path tmpDir = Files.createDirectories(getTempTargetFolder());
         Path keyFile = tmpDir.resolve("hostkey.ser");
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(keyFile));
-        server.setPasswordAuthenticator((username, password, session) -> authenticator.authenticate(username, password, session));
+        server.setPasswordAuthenticator(
+                (username, password, session) -> authenticator.authenticate(username, password, session));
         server.setShellFactory(new EchoShellFactory());
         server.start();
         port = server.getPort();

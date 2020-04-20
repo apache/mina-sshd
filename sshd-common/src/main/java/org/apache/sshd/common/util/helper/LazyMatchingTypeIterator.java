@@ -27,12 +27,11 @@ import java.util.Objects;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * An {@link Iterator} that selects only objects of a certain type from
- * the underlying available ones. The &quot;lazy&quot; denomination is due
- * to the fact that selection occurs only when {@link #hasNext()} is called
+ * An {@link Iterator} that selects only objects of a certain type from the underlying available ones. The
+ * &quot;lazy&quot; denomination is due to the fact that selection occurs only when {@link #hasNext()} is called
  *
- * @param <T> Type of iterated element
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of iterated element
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LazyMatchingTypeIterator<T> implements Iterator<T> {
     protected boolean finished;
@@ -78,7 +77,7 @@ public class LazyMatchingTypeIterator<T> implements Iterator<T> {
         }
 
         T v = nextValue;
-        nextValue = null;   // so it will be re-fetched when 'hasNext' is called
+        nextValue = null; // so it will be re-fetched when 'hasNext' is called
         return v;
     }
 
@@ -89,14 +88,13 @@ public class LazyMatchingTypeIterator<T> implements Iterator<T> {
     }
 
     /**
-     * @param <T> Type if iterated element
-     * @param values The source values - ignored if {@code null}
-     * @param type The (never @code null) type of values to select - any value
-     * whose type is assignable to this type will be selected by the iterator.
-     * @return An {@link Iterator} whose {@code next()} call selects only values
-     * matching the specific type. <b>Note:</b> the matching values are not
-     * pre-calculated (hence the &quot;lazy&quot; denomination) - i.e.,
-     * the match is performed only when {@link Iterator#hasNext()} is called.
+     * @param  <T>    Type if iterated element
+     * @param  values The source values - ignored if {@code null}
+     * @param  type   The (never @code null) type of values to select - any value whose type is assignable to this type
+     *                will be selected by the iterator.
+     * @return        An {@link Iterator} whose {@code next()} call selects only values matching the specific type.
+     *                <b>Note:</b> the matching values are not pre-calculated (hence the &quot;lazy&quot; denomination)
+     *                - i.e., the match is performed only when {@link Iterator#hasNext()} is called.
      */
     public static <T> Iterator<T> lazySelectMatchingTypes(Iterator<?> values, Class<T> type) {
         Objects.requireNonNull(type, "No type selector specified");

@@ -50,22 +50,22 @@ public class SelectorUtilsTest extends JUnitTestSupport {
     }
 
     private void testApplySlashifyRules(char slash) {
-        for (String expected : new String[]{
-            null, "", getCurrentTestName(),
-            getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName(),
-            Character.toString(slash)  + getClass().getSimpleName(),
-            Character.toString(slash)  + getClass().getSimpleName() + Character.toString(slash)  + getCurrentTestName()
+        for (String expected : new String[] {
+                null, "", getCurrentTestName(),
+                getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName(),
+                Character.toString(slash) + getClass().getSimpleName(),
+                Character.toString(slash) + getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName()
         }) {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
             assertSame("Mismatched results for '" + expected + "'", expected, actual);
         }
 
-        String[] comps = {getClass().getSimpleName(),  getCurrentTestName()};
+        String[] comps = { getClass().getSimpleName(), getCurrentTestName() };
         Random rnd = new Random(System.nanoTime());
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
         for (int index = 0; index < Long.SIZE; index++) {
             if (sb.length() > 0) {
-                sb.setLength(0);        // start from scratch
+                sb.setLength(0); // start from scratch
             }
 
             boolean prepend = rnd.nextBoolean();
@@ -117,14 +117,14 @@ public class SelectorUtilsTest extends JUnitTestSupport {
     @Test
     public void testTranslateToFileSystemPath() {
         String path = getClass().getPackage().getName().replace('.', File.separatorChar)
-                    + File.separator + getClass().getSimpleName()
-                    + File.separator + getCurrentTestName();
-        for (String expected : new String[] {null, "", path}) {
+                      + File.separator + getClass().getSimpleName()
+                      + File.separator + getCurrentTestName();
+        for (String expected : new String[] { null, "", path }) {
             String actual = SelectorUtils.translateToFileSystemPath(expected, File.separator, File.separator);
             assertSame("Mismatched instance for translated result", expected, actual);
         }
 
-        for (String fsSeparator : new String[] {String.valueOf('.'), "##"}) {
+        for (String fsSeparator : new String[] { String.valueOf('.'), "##" }) {
             String expected = path.replace(File.separator, fsSeparator);
             String actual = SelectorUtils.translateToFileSystemPath(path, File.separator, fsSeparator);
             assertEquals("Mismatched translation result for separator='" + fsSeparator + "'", expected, actual);
@@ -138,7 +138,7 @@ public class SelectorUtilsTest extends JUnitTestSupport {
     public void testAbsoluteWindowsPathTranslation() {
         Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
         String expected = detectTargetFolder().toString();
-        for (String prefix : new String[]{"", "/"}) {
+        for (String prefix : new String[] { "", "/" }) {
             String actual = SelectorUtils.translateToLocalPath(prefix + expected.replace('/', File.separatorChar));
             assertEquals("Mismatched result for prefix='" + prefix + "'", expected, actual);
         }

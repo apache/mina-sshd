@@ -25,14 +25,13 @@ import org.apache.sshd.common.session.SessionContext;
 /**
  * Represents an authentication-in-progress tracker for a specific session
  *
- * @param <S> The type of session being tracked by the instance
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <S> The type of session being tracked by the instance
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuthInstance<S extends SessionContext> extends NamedResource {
     /**
-     * @return The current session for which the authentication is being
-     * tracked. <B>Note:</B> may be {@code null} if the instance has not
-     * been initialized yet
+     * @return The current session for which the authentication is being tracked. <B>Note:</B> may be {@code null} if
+     *         the instance has not been initialized yet
      */
     S getSession();
 }

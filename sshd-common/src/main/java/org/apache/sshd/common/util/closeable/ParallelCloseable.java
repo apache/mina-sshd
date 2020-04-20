@@ -26,8 +26,8 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 
 /**
- * Waits for a group of {@link Closeable}s to complete in any order, then
- * signals the completion by setting the &quot;parent&quot; future as closed
+ * Waits for a group of {@link Closeable}s to complete in any order, then signals the completion by setting the
+ * &quot;parent&quot; future as closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -65,8 +65,8 @@ public class ParallelCloseable extends SimpleCloseable {
             c.close(immediately).addListener(listener);
         }
         /*
-         * Trigger the last "decrementAndGet" so that the future is marked as closed
-         * when last "operationComplete" is invoked (which could be this call...)
+         * Trigger the last "decrementAndGet" so that the future is marked as closed when last "operationComplete" is
+         * invoked (which could be this call...)
          */
         listener.operationComplete(null);
     }

@@ -27,7 +27,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 section 9.2</A>
+ * @see    <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09
+ *         section 9.2</A>
  */
 public class SpaceAvailableExtensionInfo implements Cloneable {
     // CHECKSTYLE:OFF
@@ -53,14 +54,14 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
         long usable = store.getUsableSpace();
         unusedBytesOnDevice = Math.max(unallocated, usable);
 
-        // the rest are intentionally  left zero indicating "UNKNOWN"
+        // the rest are intentionally left zero indicating "UNKNOWN"
     }
 
     @Override
     public int hashCode() {
         return NumberUtils.hashCode(bytesOnDevice, unusedBytesOnDevice,
-                    bytesAvailableToUser, unusedBytesAvailableToUser,
-                    bytesPerAllocationUnit);
+                bytesAvailableToUser, unusedBytesAvailableToUser,
+                bytesPerAllocationUnit);
     }
 
     @Override
@@ -95,10 +96,10 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
     @Override
     public String toString() {
         return "bytesOnDevice=" + bytesOnDevice
-                + ",unusedBytesOnDevice=" + unusedBytesOnDevice
-                + ",bytesAvailableToUser=" + bytesAvailableToUser
-                + ",unusedBytesAvailableToUser=" + unusedBytesAvailableToUser
-                + ",bytesPerAllocationUnit=" + bytesPerAllocationUnit;
+               + ",unusedBytesOnDevice=" + unusedBytesOnDevice
+               + ",bytesAvailableToUser=" + bytesAvailableToUser
+               + ",unusedBytesAvailableToUser=" + unusedBytesAvailableToUser
+               + ",bytesPerAllocationUnit=" + bytesPerAllocationUnit;
     }
 
     public static SpaceAvailableExtensionInfo decode(Buffer buffer) {

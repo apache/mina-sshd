@@ -46,42 +46,38 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH -  section 3.4</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 3.4</A>
  */
 public final class ParserUtils {
-    public static final Collection<ExtensionParser<?>> BUILT_IN_PARSERS =
-        Collections.unmodifiableList(
-            Arrays.<ExtensionParser<?>>asList(
-                VendorIdParser.INSTANCE,
-                NewlineParser.INSTANCE,
-                VersionsParser.INSTANCE,
-                SupportedParser.INSTANCE,
-                Supported2Parser.INSTANCE,
-                AclSupportedParser.INSTANCE,
-                // OpenSSH extensions
-                PosixRenameExtensionParser.INSTANCE,
-                StatVfsExtensionParser.INSTANCE,
-                FstatVfsExtensionParser.INSTANCE,
-                HardLinkExtensionParser.INSTANCE,
-                FsyncExtensionParser.INSTANCE,
-                LSetStatExtensionParser.INSTANCE
-            ));
+    public static final Collection<ExtensionParser<?>> BUILT_IN_PARSERS = Collections.unmodifiableList(
+            Arrays.<ExtensionParser<?>> asList(
+                    VendorIdParser.INSTANCE,
+                    NewlineParser.INSTANCE,
+                    VersionsParser.INSTANCE,
+                    SupportedParser.INSTANCE,
+                    Supported2Parser.INSTANCE,
+                    AclSupportedParser.INSTANCE,
+                    // OpenSSH extensions
+                    PosixRenameExtensionParser.INSTANCE,
+                    StatVfsExtensionParser.INSTANCE,
+                    FstatVfsExtensionParser.INSTANCE,
+                    HardLinkExtensionParser.INSTANCE,
+                    FsyncExtensionParser.INSTANCE,
+                    LSetStatExtensionParser.INSTANCE));
 
-    private static final NavigableMap<String, ExtensionParser<?>> PARSERS_MAP =
-        Collections.unmodifiableNavigableMap(
+    private static final NavigableMap<String, ExtensionParser<?>> PARSERS_MAP = Collections.unmodifiableNavigableMap(
             BUILT_IN_PARSERS.stream()
-                .collect(Collectors.toMap(
-                    NamedResource::getName, Function.identity(),
-                    GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER))));
+                    .collect(Collectors.toMap(
+                            NamedResource::getName, Function.identity(),
+                            GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER))));
 
     private ParserUtils() {
         throw new UnsupportedOperationException("No instance");
     }
 
     /**
-     * @param parser The {@link ExtensionParser} to register
-     * @return The replaced parser (by name) - {@code null} if no previous parser
-     * for this extension name
+     * @param  parser The {@link ExtensionParser} to register
+     * @return        The replaced parser (by name) - {@code null} if no previous parser for this extension name
      */
     public static ExtensionParser<?> registerParser(ExtensionParser<?> parser) {
         Objects.requireNonNull(parser, "No parser instance");
@@ -92,9 +88,8 @@ public final class ParserUtils {
     }
 
     /**
-     * @param name The extension name - ignored if {@code null}/empty
-     * @return The removed {@link ExtensionParser} - {@code null} if none registered
-     * for this extension name
+     * @param  name The extension name - ignored if {@code null}/empty
+     * @return      The removed {@link ExtensionParser} - {@code null} if none registered for this extension name
      */
     public static ExtensionParser<?> unregisterParser(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -107,9 +102,8 @@ public final class ParserUtils {
     }
 
     /**
-     * @param name The extension name - ignored if {@code null}/empty
-     * @return The registered {@link ExtensionParser} - {@code null} if none registered
-     * for this extension name
+     * @param  name The extension name - ignored if {@code null}/empty
+     * @return      The registered {@link ExtensionParser} - {@code null} if none registered for this extension name
      */
     public static ExtensionParser<?> getRegisteredParser(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -125,7 +119,7 @@ public final class ParserUtils {
         synchronized (PARSERS_MAP) {
             if (PARSERS_MAP.isEmpty()) {
                 return Collections.emptySet();
-            } else {    // return a copy in order to avoid concurrent modification issues
+            } else { // return a copy in order to avoid concurrent modification issues
                 return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, PARSERS_MAP.keySet());
             }
         }
@@ -163,13 +157,12 @@ public final class ParserUtils {
     }
 
     /**
-     * @param extensions The received extensions in encoded form
-     * @return A {@link Map} of all the successfully decoded extensions
-     * where key=extension name (same as in the original map), value=the
-     * decoded extension value. Extensions for which there is no registered
-     * parser are <U>ignored</U>
-     * @see #getRegisteredParser(String)
-     * @see ExtensionParser#parse(byte[])
+     * @param  extensions The received extensions in encoded form
+     * @return            A {@link Map} of all the successfully decoded extensions where key=extension name (same as in
+     *                    the original map), value=the decoded extension value. Extensions for which there is no
+     *                    registered parser are <U>ignored</U>
+     * @see               #getRegisteredParser(String)
+     * @see               ExtensionParser#parse(byte[])
      */
     public static Map<String, Object> parse(Map<String, byte[]> extensions) {
         if (GenericUtils.isEmpty(extensions)) {

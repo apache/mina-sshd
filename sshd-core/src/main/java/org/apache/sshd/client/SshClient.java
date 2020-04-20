@@ -91,15 +91,13 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * </P>
  *
  * <P>
- * The default configured client can be created using
- * the {@link #setUpDefaultClient()}. The next step is to
- * configure and then start the client using the {@link #start()} method.
+ * The default configured client can be created using the {@link #setUpDefaultClient()}. The next step is to configure
+ * and then start the client using the {@link #start()} method.
  * </P>
  *
  * <P>
- * Sessions can then be created using on of the
- * {@link #connect(String, String, int)} or {@link #connect(String, java.net.SocketAddress)}
- * methods.
+ * Sessions can then be created using on of the {@link #connect(String, String, int)} or
+ * {@link #connect(String, java.net.SocketAddress)} methods.
  * </P>
  *
  * <P>
@@ -110,7 +108,8 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * Following is an example of using the {@code SshClient}:
  * </P>
  *
- * <pre><code>
+ * <pre>
+ * <code>
  * try (SshClient client = SshClient.setUpDefaultClient()) {
  *      ...further configuration of the client...
  *      client.start();
@@ -134,17 +133,16 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *        client.stop();
  *    }
  * }
- * </code></pre>
+ * </code>
+ * </pre>
  *
- * <B>Note</B>: the idea is to have <U>one</U> {@code SshClient} instance
- * for the entire application and re-use it repeatedly  in order to create
- * as many sessions as necessary - possibly with different hosts, ports, users,
- * passwords, etc. - including <U>concurrently</U>. In other words, except for
- * exceptional cases, it is recommended to initialize one instance of {@code SshClient}
- * for the application and then use throughout - including for multi-threading.
- * As long as the {@code SshClient} is not re-configured it should be multi-thread safe
- * regardless of the target session being created.
-
+ * <B>Note</B>: the idea is to have <U>one</U> {@code SshClient} instance for the entire application and re-use it
+ * repeatedly in order to create as many sessions as necessary - possibly with different hosts, ports, users, passwords,
+ * etc. - including <U>concurrently</U>. In other words, except for exceptional cases, it is recommended to initialize
+ * one instance of {@code SshClient} for the application and then use throughout - including for multi-threading. As
+ * long as the {@code SshClient} is not re-configured it should be multi-thread safe regardless of the target session
+ * being created.
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
@@ -152,21 +150,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     /**
      * Default user authentication preferences if not set
+     * 
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
-    public static final List<UserAuthFactory> DEFAULT_USER_AUTH_FACTORIES =
-        Collections.unmodifiableList(
+    public static final List<UserAuthFactory> DEFAULT_USER_AUTH_FACTORIES = Collections.unmodifiableList(
             Arrays.asList(
-                UserAuthPublicKeyFactory.INSTANCE,
-                UserAuthKeyboardInteractiveFactory.INSTANCE,
-                UserAuthPasswordFactory.INSTANCE
-        ));
-    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-        Collections.unmodifiableList(
+                    UserAuthPublicKeyFactory.INSTANCE,
+                    UserAuthKeyboardInteractiveFactory.INSTANCE,
+                    UserAuthPasswordFactory.INSTANCE));
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES = Collections.unmodifiableList(
             Arrays.asList(
-                ClientUserAuthServiceFactory.INSTANCE,
-                ClientConnectionServiceFactory.INSTANCE
-        ));
+                    ClientUserAuthServiceFactory.INSTANCE,
+                    ClientConnectionServiceFactory.INSTANCE));
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
@@ -214,8 +209,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
-        this.serverKeyVerifier =
-            Objects.requireNonNull(serverKeyVerifier, "No server key verifier");
+        this.serverKeyVerifier = Objects.requireNonNull(serverKeyVerifier, "No server key verifier");
     }
 
     @Override
@@ -225,8 +219,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setHostConfigEntryResolver(HostConfigEntryResolver resolver) {
-        this.hostConfigEntryResolver =
-            Objects.requireNonNull(resolver, "No host configuration entry resolver");
+        this.hostConfigEntryResolver = Objects.requireNonNull(resolver, "No host configuration entry resolver");
     }
 
     @Override
@@ -236,8 +229,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setFilePasswordProvider(FilePasswordProvider provider) {
-        this.filePasswordProvider =
-            Objects.requireNonNull(provider, "No file password provider");
+        this.filePasswordProvider = Objects.requireNonNull(provider, "No file password provider");
     }
 
     @Override
@@ -247,8 +239,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setClientIdentityLoader(ClientIdentityLoader loader) {
-        this.clientIdentityLoader =
-            Objects.requireNonNull(loader, "No client identity loader");
+        this.clientIdentityLoader = Objects.requireNonNull(loader, "No client identity loader");
     }
 
     @Override
@@ -268,8 +259,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
-        this.userAuthFactories =
-            ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
+        this.userAuthFactories = ValidateUtils.checkNotNullAndNotEmpty(userAuthFactories, "No user auth factories");
     }
 
     @Override
@@ -304,7 +294,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         int index = AuthenticationIdentitiesProvider.findIdentityIndex(
-            identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
+                identities, AuthenticationIdentitiesProvider.PASSWORD_IDENTITY_COMPARATOR, password);
         if (index >= 0) {
             return (String) identities.remove(index);
         } else {
@@ -322,7 +312,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         if (log.isDebugEnabled()) {
             log.debug("addPublicKeyIdentity({}) {}",
-                this, KeyUtils.getFingerPrint(kp.getPublic()));
+                    this, KeyUtils.getFingerPrint(kp.getPublic()));
         }
     }
 
@@ -333,7 +323,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         int index = AuthenticationIdentitiesProvider.findIdentityIndex(
-            identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
+                identities, AuthenticationIdentitiesProvider.KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
         } else {
@@ -364,8 +354,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // if no client identities override use the default
         KeyIdentityProvider defaultIdentities = getKeyIdentityProvider();
         if (defaultIdentities == null) {
-            KeyIdentityProvider idsWatcher =
-                new DefaultClientIdentitiesWatcher(
+            KeyIdentityProvider idsWatcher = new DefaultClientIdentitiesWatcher(
                     this::getClientIdentityLoader, this::getFilePasswordProvider);
             setKeyIdentityProvider(idsWatcher);
         }
@@ -373,8 +362,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
-            List<ChannelFactory> forwarders =
-                ValidateUtils.checkNotNullAndNotEmpty(
+            List<ChannelFactory> forwarders = ValidateUtils.checkNotNullAndNotEmpty(
                     agentFactory.getChannelForwardingFactories(this),
                     "No agent channel forwarding factories for %s",
                     agentFactory);
@@ -383,8 +371,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 factories = forwarders;
             } else {
                 // create a copy in case un-modifiable original
-                List<ChannelFactory> factories2 =
-                    new ArrayList<>(factories.size() + forwarders.size());
+                List<ChannelFactory> factories2 = new ArrayList<>(factories.size() + forwarders.size());
                 factories2.addAll(factories);
                 factories2.addAll(forwarders);
                 factories = factories2;
@@ -407,8 +394,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     /**
-     * Starts the SSH client and can start creating sessions using it.
-     * Ignored if already {@link #isStarted() started}.
+     * Starts the SSH client and can start creating sessions using it. Ignored if already {@link #isStarted() started}.
      */
     public void start() {
         if (isClosed()) {
@@ -439,7 +425,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException(
-                    "Failed to receive closure confirmation within " + maxWait + " millis");
+                        "Failed to receive closure confirmation within " + maxWait + " millis");
             }
         } catch (IOException e) {
             log.warn(e.getClass().getSimpleName() + " while stopping client: " + e.getMessage());
@@ -461,29 +447,28 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected Closeable getInnerCloseable() {
         Object closeId = toString();
         return builder()
-            .run(closeId, () -> removeSessionTimeout(sessionFactory))
-            .sequential(connector, ioServiceFactory)
-            .run(closeId, () -> {
-                connector = null;
-                ioServiceFactory = null;
-                if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
-                    try {
-                        executor.shutdownNow();
-                    } finally {
-                        executor = null;
+                .run(closeId, () -> removeSessionTimeout(sessionFactory))
+                .sequential(connector, ioServiceFactory)
+                .run(closeId, () -> {
+                    connector = null;
+                    ioServiceFactory = null;
+                    if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                        try {
+                            executor.shutdownNow();
+                        } finally {
+                            executor = null;
+                        }
                     }
-                }
-            })
-            .build();
+                })
+                .build();
     }
 
     @Override
     public ConnectFuture connect(
             String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
-                throws IOException {
+            throws IOException {
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-        HostConfigEntry entry =
-            resolver.resolveEffectiveHost(host, port, localAddress, username, context);
+        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
         if (entry == null) {
             // generate a synthetic entry
             if (log.isDebugEnabled()) {
@@ -509,7 +494,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public ConnectFuture connect(
             String username, SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress)
-                throws IOException {
+            throws IOException {
         Objects.requireNonNull(targetAddress, "No target address");
         if (targetAddress instanceof InetSocketAddress) {
             InetSocketAddress inetAddress = (InetSocketAddress) targetAddress;
@@ -518,15 +503,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
 
             HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-            HostConfigEntry entry =
-                resolver.resolveEffectiveHost(host, port, localAddress, username, context);
+            HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
             if (entry == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
                 return doConnect(
-                    username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
+                        username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -537,17 +521,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}) not an InetSocketAddress: {}",
-                    username, targetAddress, targetAddress.getClass().getName());
+                        username, targetAddress, targetAddress.getClass().getName());
             }
             return doConnect(
-                username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
+                    username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
         }
     }
 
     @Override
     public ConnectFuture connect(
             HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
-                throws IOException {
+            throws IOException {
         Objects.requireNonNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
@@ -555,11 +539,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         Collection<String> hostIds = hostConfig.getIdentities();
         Collection<PathResource> idFiles = GenericUtils.isEmpty(hostIds)
-            ? Collections.emptyList()
-            : hostIds.stream()
-                .map(Paths::get)
-                .map(PathResource::new)
-                .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
+                ? Collections.emptyList()
+                : hostIds.stream()
+                        .map(Paths::get)
+                        .map(PathResource::new)
+                        .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
         KeyIdentityProvider keys = preloadClientIdentities(idFiles);
         return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
                 context, localAddress, keys, !hostConfig.isIdentitiesOnly());
@@ -567,31 +551,29 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected KeyIdentityProvider preloadClientIdentities(
             Collection<? extends NamedResource> locations)
-                throws IOException {
+            throws IOException {
         return GenericUtils.isEmpty(locations)
-             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-             : ClientIdentityLoader.asKeyIdentityProvider(
-                     Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
-                     locations, getFilePasswordProvider(),
-                     this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES));
+                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+                : ClientIdentityLoader.asKeyIdentityProvider(
+                        Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
+                        locations, getFilePasswordProvider(),
+                        this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES));
     }
 
     protected ConnectFuture doConnect(
             String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress,
             KeyIdentityProvider identities, boolean useDefaultIdentities)
-                throws IOException {
+            throws IOException {
         if (connector == null) {
             throw new IllegalStateException(
-                "SshClient not started. Please call start() method before connecting to a server");
+                    "SshClient not started. Please call start() method before connecting to a server");
         }
 
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
-        SshFutureListener<IoConnectFuture> listener =
-            createConnectCompletionListener(
+        SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
                 connectFuture, username, targetAddress, identities, useDefaultIdentities);
-        IoConnectFuture connectingFuture =
-            connector.connect(targetAddress, context, localAddress);
+        IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
         connectingFuture.addListener(listener);
         return connectFuture;
     }
@@ -612,18 +594,21 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 if (t != null) {
                     if (log.isDebugEnabled()) {
                         log.debug("operationComplete({}@{}) failed ({}): {}",
-                            username, address, t.getClass().getSimpleName(), t.getMessage());
+                                username, address, t.getClass().getSimpleName(), t.getMessage());
                     }
                     connectFuture.setException(t);
                 } else {
                     IoSession ioSession = future.getSession();
                     try {
-                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities, useDefaultIdentities);
+                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities,
+                                useDefaultIdentities);
                     } catch (RuntimeException e) {
                         log.warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
-                            username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
+                                username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
                         if (log.isDebugEnabled()) {
-                            log.debug("operationComplete(" + username + "@" + address + ") session=" + ioSession + " completion signal failure details", e);
+                            log.debug("operationComplete(" + username + "@" + address + ") session=" + ioSession
+                                      + " completion signal failure details",
+                                    e);
                         }
                         connectFuture.setException(e);
 
@@ -640,7 +625,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected void onConnectOperationComplete(
-            IoSession ioSession, ConnectFuture connectFuture,  String username,
+            IoSession ioSession, ConnectFuture connectFuture, String username,
             SocketAddress address, KeyIdentityProvider identities, boolean useDefaultIdentities) {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
@@ -650,9 +635,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             setupDefaultSessionIdentities(session, identities);
         } else {
             session.setKeyIdentityProvider(
-                (identities == null)
-                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-                : identities);
+                    (identities == null)
+                            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+                            : identities);
         }
 
         connectFuture.setSession(session);
@@ -671,8 +656,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         // Prefer the extra identities to come first since they were probably indicate by the host-config entry
-        KeyIdentityProvider kpEffective =
-            KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
+        KeyIdentityProvider kpEffective = KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
         if (!GenericUtils.isSameReference(kpSession, kpEffective)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);
@@ -690,19 +674,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         AuthenticationIdentitiesProvider idsClient = getRegisteredIdentities();
         boolean traceEnabled = log.isTraceEnabled();
-        for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities()); iter.hasNext();) {
+        for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities());
+             iter.hasNext();) {
             Object id = iter.next();
             if (id instanceof String) {
                 if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add password fingerprint={}",
-                        session, KeyUtils.getFingerPrint(id.toString()));
+                            session, KeyUtils.getFingerPrint(id.toString()));
                 }
                 session.addPasswordIdentity((String) id);
             } else if (id instanceof KeyPair) {
                 KeyPair kp = (KeyPair) id;
                 if (traceEnabled) {
                     log.trace("setupDefaultSessionIdentities({}) add identity type={}, fingerprint={}",
-                        session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                            session, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
                 }
                 session.addPublicKeyIdentity(kp);
             } else {
@@ -729,10 +714,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     /**
      * Setup a default client, starts it and then wraps it as a {@link SimpleClient}
      *
-     * @return The {@link SimpleClient} wrapper. <B>Note:</B> when the wrapper
-     * is closed the client is also stopped
-     * @see #setUpDefaultClient()
-     * @see #wrapAsSimpleClient(SshClient)
+     * @return The {@link SimpleClient} wrapper. <B>Note:</B> when the wrapper is closed the client is also stopped
+     * @see    #setUpDefaultClient()
+     * @see    #wrapAsSimpleClient(SshClient)
      */
     public static SimpleClient setUpDefaultSimpleClient() {
         SshClient client = setUpDefaultClient();
@@ -743,10 +727,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     /**
      * Wraps an {@link SshClient} instance as a {@link SimpleClient}
      *
-     * @param client The client instance - never {@code null}. <B>Note:</B>
-     * client must be started <U>before</U> the simple client wrapper is used.
-     * @return The {@link SimpleClient} wrapper. <B>Note:</B> when the
-     * wrapper is closed the client is also stopped
+     * @param  client The client instance - never {@code null}. <B>Note:</B> client must be started <U>before</U> the
+     *                simple client wrapper is used.
+     * @return        The {@link SimpleClient} wrapper. <B>Note:</B> when the wrapper is closed the client is also
+     *                stopped
      */
     public static SimpleClient wrapAsSimpleClient(SshClient client) {
         Objects.requireNonNull(client, "No client instance");
@@ -796,56 +780,53 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     /**
-     * @param <C>           The generic client class
-     * @param client        The {@link SshClient} to updated
-     * @param strict        If {@code true} then files that do not have the required
-     *                      access rights are excluded from consideration
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
-     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@code FilePasswordProvider#getPassword} is the path of the
-     *                      file whose key is to be loaded
-     * @param options       The {@link LinkOption}s to apply when checking
-     *                      for existence
-     * @return The updated <tt>client</tt> instance - provided a non-{@code null}
-     * {@link KeyPairProvider} was generated
+     * @param  <C>                      The generic client class
+     * @param  client                   The {@link SshClient} to updated
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          The updated <tt>client</tt> instance - provided a non-{@code null}
+     *                                  {@link KeyPairProvider} was generated
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #setKeyPairProvider(SshClient, Path, boolean, boolean, FilePasswordProvider, LinkOption...)
+     * @see                             #setKeyPairProvider(SshClient, Path, boolean, boolean, FilePasswordProvider,
+     *                                  LinkOption...)
      */
     public static <C extends SshClient> C setKeyPairProvider(
             C client, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
         return setKeyPairProvider(
-            client, PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
+                client, PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
     }
 
     /**
-     * @param <C>           The generic client class
-     * @param client        The {@link SshClient} to updated
-     * @param dir           The folder to scan for the built-in identities
-     * @param strict        If {@code true} then files that do not have the required
-     *                      access rights are excluded from consideration
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
-     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@code FilePasswordProvider#getPassword} is the path of the
-     *                      file whose key is to be loaded
-     * @param options       The {@link LinkOption}s to apply when checking
-     *                      for existence
-     * @return The updated <tt>client</tt> instance - provided a non-{@code null}
-     * {@link KeyIdentityProvider} was generated
+     * @param  <C>                      The generic client class
+     * @param  client                   The {@link SshClient} to updated
+     * @param  dir                      The folder to scan for the built-in identities
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          The updated <tt>client</tt> instance - provided a non-{@code null}
+     *                                  {@link KeyIdentityProvider} was generated
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see ClientIdentity#loadDefaultKeyPairProvider(Path, boolean, boolean, FilePasswordProvider, LinkOption...)
+     * @see                             ClientIdentity#loadDefaultKeyPairProvider(Path, boolean, boolean,
+     *                                  FilePasswordProvider, LinkOption...)
      */
     public static <C extends SshClient> C setKeyPairProvider(
             C client, Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
-                throws IOException, GeneralSecurityException {
-        KeyIdentityProvider kpp =
-            ClientIdentity.loadDefaultKeyPairProvider(dir, strict, supportedOnly, provider, options);
+            throws IOException, GeneralSecurityException {
+        KeyIdentityProvider kpp = ClientIdentity.loadDefaultKeyPairProvider(dir, strict, supportedOnly, provider, options);
         if (kpp != null) {
             client.setKeyIdentityProvider(kpp);
         }

@@ -41,15 +41,16 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, ClientIdentityLoaderHolder, FilePasswordProviderHolder {
+public class LazyClientKeyIdentityProvider
+        implements KeyIdentityProvider, ClientIdentityLoaderHolder, FilePasswordProviderHolder {
     private final ClientIdentityLoader clientIdentityLoader;
     private final Collection<? extends NamedResource> locations;
     private final FilePasswordProvider passwordProvider;
     private final boolean ignoreNonExisting;
 
     public LazyClientKeyIdentityProvider(
-            ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
-            FilePasswordProvider passwordProvider, boolean ignoreNonExisting) {
+                                         ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
+                                         FilePasswordProvider passwordProvider, boolean ignoreNonExisting) {
         this.clientIdentityLoader = Objects.requireNonNull(loader, "No client identity loader provided");
         this.locations = locations;
         this.passwordProvider = passwordProvider;
@@ -106,8 +107,10 @@ public class LazyClientKeyIdentityProvider implements KeyIdentityProvider, Clien
                     try {
                         ids = loadClientIdentities(session, l);
                     } catch (IOException | GeneralSecurityException e) {
-                        throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ")"
-                            + " to load key from " + l.getName() + ": " + e.getMessage(), e);
+                        throw new RuntimeException(
+                                "Failed (" + e.getClass().getSimpleName() + ")"
+                                                   + " to load key from " + l.getName() + ": " + e.getMessage(),
+                                e);
                     }
 
                     currentIdentities = (ids == null) ? null : ids.iterator();

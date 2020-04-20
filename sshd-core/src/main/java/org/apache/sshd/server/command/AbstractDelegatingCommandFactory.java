@@ -33,14 +33,14 @@ import org.apache.sshd.server.channel.ChannelSession;
 public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBean implements CommandFactory {
     private final String name;
     /*
-     * NOTE: we expose setters since there is no problem to change these settings between
-     * successive invocations of the 'createCommand' method
+     * NOTE: we expose setters since there is no problem to change these settings between successive invocations of the
+     * 'createCommand' method
      */
     private CommandFactory delegate;
 
     protected AbstractDelegatingCommandFactory(String name) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(
-            name, "No delegating command factory name provided");
+                name, "No delegating command factory name provided");
     }
 
     @Override
@@ -71,10 +71,9 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
     }
 
     /**
-     * @param command The command about to be executed
-     * @return {@code true} if this command is supported by the command
-     * factory, {@code false} if it will be passed on to the
-     * {@link #getDelegateCommandFactory() delegate} factory
+     * @param  command The command about to be executed
+     * @return         {@code true} if this command is supported by the command factory, {@code false} if it will be
+     *                 passed on to the {@link #getDelegateCommandFactory() delegate} factory
      */
     public abstract boolean isSupportedCommand(String command);
 

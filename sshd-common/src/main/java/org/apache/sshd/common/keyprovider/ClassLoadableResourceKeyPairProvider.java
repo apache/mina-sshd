@@ -29,10 +29,9 @@ import org.apache.sshd.common.util.io.resource.IoResource;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
- * This provider loads private keys from the specified resources that
- * are accessible via {@link ClassLoader#getResourceAsStream(String)}.
- * If no loader configured via {@link #setResourceLoader(ClassLoader)}, then
- * {@link ThreadUtils#resolveDefaultClassLoader(Class)} is used
+ * This provider loads private keys from the specified resources that are accessible via
+ * {@link ClassLoader#getResourceAsStream(String)}. If no loader configured via {@link #setResourceLoader(ClassLoader)},
+ * then {@link ThreadUtils#resolveDefaultClassLoader(Class)} is used
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

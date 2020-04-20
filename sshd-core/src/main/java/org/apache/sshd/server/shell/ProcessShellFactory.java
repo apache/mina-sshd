@@ -31,8 +31,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
- * A {@link Factory} of {@link Command} that will create a new process and bridge
- * the streams.
+ * A {@link Factory} of {@link Command} that will create a new process and bridge the streams.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -106,6 +105,6 @@ public class ProcessShellFactory extends AbstractLoggingBean implements ShellFac
         }
 
         return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C",
-            ValidateUtils.checkNotNullAndNotEmpty(rawCommand, "No command"));
+                ValidateUtils.checkNotNullAndNotEmpty(rawCommand, "No command"));
     }
 }

@@ -28,12 +28,6 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
-
 import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -42,6 +36,11 @@ import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -75,13 +74,13 @@ public final class EdDSASecurityProviderUtils {
             if (Objects.equals(k1, k2)) {
                 return true;
             } else if (k1 == null || k2 == null) {
-                return false;   // both null is covered by Objects#equals
+                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPublicKey ed1 = (EdDSAPublicKey) k1;
             EdDSAPublicKey ed2 = (EdDSAPublicKey) k2;
             return Arrays.equals(ed1.getAbyte(), ed2.getAbyte())
-                && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
+                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
         }
 
         return false;
@@ -135,13 +134,13 @@ public final class EdDSASecurityProviderUtils {
             if (Objects.equals(k1, k2)) {
                 return true;
             } else if (k1 == null || k2 == null) {
-                return false;   // both null is covered by Objects#equals
+                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPrivateKey ed1 = (EdDSAPrivateKey) k1;
             EdDSAPrivateKey ed2 = (EdDSAPrivateKey) k2;
             return Arrays.equals(ed1.getSeed(), ed2.getSeed())
-                && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
+                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
         }
 
         return false;
@@ -151,11 +150,11 @@ public final class EdDSASecurityProviderUtils {
         if (Objects.equals(s1, s2)) {
             return true;
         } else if (s1 == null || s2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(s1.getHashAlgorithm(), s2.getHashAlgorithm())
-                && Objects.equals(s1.getCurve(), s2.getCurve())
-                && Objects.equals(s1.getB(), s2.getB());
+                    && Objects.equals(s1.getCurve(), s2.getCurve())
+                    && Objects.equals(s1.getB(), s2.getB());
         }
     }
 

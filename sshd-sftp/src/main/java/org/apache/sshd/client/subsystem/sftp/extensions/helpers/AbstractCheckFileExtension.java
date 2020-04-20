@@ -40,7 +40,9 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
         super(name, client, raw, extras);
     }
 
-    protected SimpleImmutableEntry<String, Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
+    protected SimpleImmutableEntry<String, Collection<byte[]>> doGetHash(
+            Object target, Collection<String> algorithms, long offset, long length, int blockSize)
+            throws IOException {
         Buffer buffer = getCommandBuffer(target, Byte.MAX_VALUE);
         putTarget(buffer, target);
         buffer.putString(GenericUtils.join(algorithms, ','));
@@ -50,8 +52,10 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
 
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, block-size={}",
-                      getName(), (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
-                      offset, length, blockSize);
+                    getName(),
+                    (target instanceof CharSequence)
+                            ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
+                    offset, length, blockSize);
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
@@ -61,7 +65,8 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
 
         String targetType = buffer.getString();
         if (String.CASE_INSENSITIVE_ORDER.compare(targetType, SftpConstants.EXT_CHECK_FILE) != 0) {
-            throw new StreamCorruptedException("Mismatched reply type: expected=" + SftpConstants.EXT_CHECK_FILE + ", actual=" + targetType);
+            throw new StreamCorruptedException(
+                    "Mismatched reply type: expected=" + SftpConstants.EXT_CHECK_FILE + ", actual=" + targetType);
         }
 
         String algo = buffer.getString();

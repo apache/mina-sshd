@@ -28,31 +28,28 @@ import org.apache.sshd.common.util.EventNotifier;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Provides a common base class for channel request handlers that deal with
- * various &quot;<code>exit-XXX</code>&quot; requests. Once such a request
- * has been successfully processed, an {@link EventNotifier} can be invoked
- * indicating the processed event.
+ * Provides a common base class for channel request handlers that deal with various &quot;<code>exit-XXX</code>&quot;
+ * requests. Once such a request has been successfully processed, an {@link EventNotifier} can be invoked indicating the
+ * processed event.
  *
- * @param <V> Type of data being extracted from the request when processed
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <V> Type of data being extracted from the request when processed
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChannelRequestHandler implements NamedResource {
     protected final AtomicReference<V> holder;
     protected final EventNotifier<? super String> notifier;
 
     /**
-     * @param holder   An {@link AtomicReference} that will hold the extracted
-     *                 request data
-     * @param notifier An {@link EventNotifier} to be invoked when request is
-     *                 successfully processed and the holder has been updated
-     *                 with the processed request data
+     * @param holder   An {@link AtomicReference} that will hold the extracted request data
+     * @param notifier An {@link EventNotifier} to be invoked when request is successfully processed and the holder has
+     *                 been updated with the processed request data
      */
     protected AbstractChannelExitRequestHandler(AtomicReference<V> holder, EventNotifier<? super String> notifier) {
         this.holder = Objects.requireNonNull(holder, "No exit status holder");
         this.notifier = Objects.requireNonNull(notifier, "No event notifier");
     }
 
-    @Override   // see RFC4254 section 6.10
+    @Override // see RFC4254 section 6.10
     public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
         String name = getName();
         if (name.equals(request)) {
@@ -75,23 +72,22 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
     }
 
     /**
-     * Invoked by default from {@link #process(Channel, String, boolean, Buffer)} when
-     * a request matching the handler's name is received
+     * Invoked by default from {@link #process(Channel, String, boolean, Buffer)} when a request matching the handler's
+     * name is received
      *
-     * @param channel The {@link Channel} through which the request was received
-     * @param request The received request - <B>Note:</B> guaranteed to match the
-     *                handler's name if invoked from {@link #process(Channel, String, boolean, Buffer)}
-     * @param buffer  The received {@link Buffer} for extracting the data
-     * @return The extracted data - if {@code null} then request is ignored and
-     * {@code Unsupported} is returned
+     * @param  channel   The {@link Channel} through which the request was received
+     * @param  request   The received request - <B>Note:</B> guaranteed to match the handler's name if invoked from
+     *                   {@link #process(Channel, String, boolean, Buffer)}
+     * @param  buffer    The received {@link Buffer} for extracting the data
+     * @return           The extracted data - if {@code null} then request is ignored and {@code Unsupported} is
+     *                   returned
      * @throws Exception If failed to process the received request buffer
      */
     protected abstract V processRequestValue(Channel channel, String request, Buffer buffer) throws Exception;
 
     /**
-     * Notifies that some change has been made to the data in the holder. The
-     * reported event is obtained via the {@link #getEvent(Channel, String, Object)}
-     * call
+     * Notifies that some change has been made to the data in the holder. The reported event is obtained via the
+     * {@link #getEvent(Channel, String, Object)} call
      *
      * @param channel The {@link Channel} through which the request was received
      * @param request The processed request
@@ -106,11 +102,11 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
             }
         } catch (Exception e) {
             log.warn("notifyStateChanged({})[{}] Failed ({}) to notify event={}: {}",
-                     channel, request, e.getClass().getSimpleName(), event, e.getMessage());
+                    channel, request, e.getClass().getSimpleName(), event, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("notifyStateChanged(" + channel + ")[" + request + "]"
-                        + " event=" + event + " notification failure details",
-                         e);
+                          + " event=" + event + " notification failure details",
+                        e);
             }
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -121,10 +117,10 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
     }
 
     /**
-     * @param channel The {@link Channel} through which the request was received
-     * @param request The processed request
-     * @param value   The processed value
-     * @return The event name to be used - default: {@link #getName()} value
+     * @param  channel The {@link Channel} through which the request was received
+     * @param  request The processed request
+     * @param  value   The processed value
+     * @return         The event name to be used - default: {@link #getName()} value
      */
     protected String getEvent(Channel channel, String request, V value) {
         return getName();

@@ -27,8 +27,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Delegates the main interface methods to specific ones after having
- * decoded each message buffer
+ * Delegates the main interface methods to specific ones after having decoded each message buffer
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -63,10 +62,10 @@ public class ReservedSessionMessagesHandlerAdapter
 
     public void handleDebugMessage(
             Session session, boolean display, String msg, String lang, Buffer buffer)
-                throws Exception {
+            throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleDebugMessage({}) SSH_MSG_DEBUG (display={}) [lang={}] '{}'",
-                      session, display, lang, msg);
+                    session, display, lang, msg);
         }
     }
 

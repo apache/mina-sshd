@@ -22,7 +22,7 @@ package org.apache.sshd.common.compression;
  * ZLib delayed compression.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see Compression#isDelayed()
+ * @see    Compression#isDelayed()
  */
 public class CompressionDelayedZlib extends CompressionZlib {
     /**

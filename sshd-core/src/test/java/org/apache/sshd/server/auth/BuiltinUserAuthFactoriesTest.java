@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
@@ -86,7 +86,8 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
         }
 
         assertTrue("Unexpected GSS name constant", factories.add(UserAuthGSSFactory.NAME));
-        assertEquals("Mismatched factories names count: " + factories, factories.size(), BuiltinUserAuthFactories.VALUES.size());
+        assertEquals("Mismatched factories names count: " + factories, factories.size(),
+                BuiltinUserAuthFactories.VALUES.size());
     }
 
     @Test
@@ -104,7 +105,7 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
         for (int index = 1, count = name.length(); index <= count; index++) {
             UserAuthFactory actual = BuiltinUserAuthFactories.fromFactoryName(name);
             assertSame("Mismatched factory instance for name=" + name, expected, actual);
-            name = shuffleCase(name);   // prepare for next iteration
+            name = shuffleCase(name); // prepare for next iteration
         }
     }
 

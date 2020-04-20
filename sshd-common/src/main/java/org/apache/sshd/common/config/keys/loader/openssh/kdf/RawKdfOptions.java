@@ -75,13 +75,13 @@ public class RawKdfOptions implements OpenSSHKdfOptions {
     @Override
     public byte[] decodePrivateKeyBytes(
             SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         throw new NoSuchAlgorithmException("Unsupported KDF algorithm (" + getName() + ")");
     }
 
     @Override
     public int hashCode() {
-        return GenericUtils.hashCode(getName(), Boolean.FALSE) +  Arrays.hashCode(getOptions());
+        return GenericUtils.hashCode(getName(), Boolean.FALSE) + Arrays.hashCode(getOptions());
     }
 
     @Override
@@ -98,7 +98,7 @@ public class RawKdfOptions implements OpenSSHKdfOptions {
 
         RawKdfOptions other = (RawKdfOptions) obj;
         return (GenericUtils.safeCompare(getName(), other.getName(), false) == 0)
-            && Arrays.equals(getOptions(), other.getOptions());
+                && Arrays.equals(getOptions(), other.getOptions());
     }
 
     @Override

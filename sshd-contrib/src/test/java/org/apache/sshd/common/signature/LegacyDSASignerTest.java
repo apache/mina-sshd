@@ -52,7 +52,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class LegacyDSASignerTest extends JUnitTestSupport {
@@ -60,15 +60,14 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
     private final KeyPair kp;
 
     public LegacyDSASignerTest(int keySize)
-            throws IOException, GeneralSecurityException {
+                                            throws IOException, GeneralSecurityException {
         this.keySize = keySize;
 
         String resourceName = KeyPairProvider.SSH_DSS + "-" + keySize;
         URL url = getClass().getResource(resourceName);
         assertNotNull("Missing test key file " + resourceName, url);
 
-        Collection<KeyPair> keys =
-            DSSPEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
+        Collection<KeyPair> keys = DSSPEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
         ValidateUtils.checkNotNullAndNotEmpty(keys, "No keys loaded from %s", resourceName);
         kp = GenericUtils.head(keys);
 
@@ -90,7 +89,7 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
         signer.initSign(kp.getPrivate());
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName())
-            .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
         signer.update(data);
         byte[] signature = signer.sign();
 
@@ -107,12 +106,11 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
         signer.initSign(kp.getPrivate());
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName())
-            .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
         signer.update(data);
         byte[] signature = signer.sign();
 
-        java.security.Signature verifier =
-            SecurityUtils.getSignature(SignatureDSA.DEFAULT_ALGORITHM);
+        java.security.Signature verifier = SecurityUtils.getSignature(SignatureDSA.DEFAULT_ALGORITHM);
         verifier.initVerify(kp.getPublic());
         verifier.update(data);
         assertTrue(verifier.verify(signature));
@@ -122,12 +120,11 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
     public void testBuiltinSigner() throws GeneralSecurityException {
         Assume.assumeTrue("Skip SHA-1 with too large a key", keySize <= 1024);
 
-        java.security.Signature signer =
-            SecurityUtils.getSignature(SignatureDSA.DEFAULT_ALGORITHM);
+        java.security.Signature signer = SecurityUtils.getSignature(SignatureDSA.DEFAULT_ALGORITHM);
         signer.initSign(kp.getPrivate());
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName())
-            .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
         signer.update(data);
         byte[] signature = signer.sign();
 

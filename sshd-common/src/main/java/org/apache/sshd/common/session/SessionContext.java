@@ -40,43 +40,44 @@ import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
  */
 public interface SessionContext
         extends ConnectionEndpointsIndicator,
-                UsernameHolder,
-                SessionHeartbeatController,
-                AttributeStore,
-                Closeable {
+        UsernameHolder,
+        SessionHeartbeatController,
+        AttributeStore,
+        Closeable {
     /**
      * Default prefix expected for the client / server identification string
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
     String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
 
     /**
      * Backward compatible special prefix
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-5">RFC 4253 - section 5</A>
      */
     String FALLBACK_SSH_VERSION_PREFIX = "SSH-1.99-";
 
     /**
-     * Maximum number of characters for any single line sent as part
-     * of the initial handshake - according to
+     * Maximum number of characters for any single line sent as part of the initial handshake - according to
      * <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>:</BR>
      *
-     * <P><CODE>
+     * <P>
+     * <CODE>
      *      The maximum length of the string is 255 characters,
      *      including the Carriage Return and Line Feed.
-     * </CODE></P>
+     * </CODE>
+     * </P>
      */
     int MAX_VERSION_LINE_LENGTH = 256;
 
     /**
-     * @return A <U>clone</U> of the established session identifier - {@code null} if
-     * not yet established
+     * @return A <U>clone</U> of the established session identifier - {@code null} if not yet established
      */
     byte[] getSessionId();
 
     /**
-     * Quick indication if this is a server or client session (instead of
-     * having to ask {@code instanceof}).
+     * Quick indication if this is a server or client session (instead of having to ask {@code instanceof}).
      *
      * @return {@code true} if this is a server session
      */
@@ -90,9 +91,9 @@ public interface SessionContext
     String getClientVersion();
 
     /**
-     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options
-     * May be empty if KEX not yet completed or re-keying in progress
-     * @see #getKexState()
+     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options May be empty if KEX not yet
+     *         completed or re-keying in progress
+     * @see    #getKexState()
      */
     Map<KexProposalOption, String> getClientKexProposals();
 
@@ -104,9 +105,9 @@ public interface SessionContext
     String getServerVersion();
 
     /**
-     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options.
-     * May be empty if KEX not yet completed or re-keying in progress
-     * @see #getKexState()
+     * @return An <U>un-modifiable</U> map of the latest KEX client proposal options. May be empty if KEX not yet
+     *         completed or re-keying in progress
+     * @see    #getKexState()
      */
     Map<KexProposalOption, String> getServerKexProposals();
 
@@ -117,41 +118,33 @@ public interface SessionContext
     /**
      * Retrieve one of the negotiated values during the KEX stage
      *
-     * @param paramType The request {@link KexProposalOption} value
-     * - ignored if {@code null}
-     * @return The negotiated parameter value - {@code null} if invalid
-     * parameter or no negotiated value.
-     * @see #getKexState()
+     * @param  paramType The request {@link KexProposalOption} value - ignored if {@code null}
+     * @return           The negotiated parameter value - {@code null} if invalid parameter or no negotiated value.
+     * @see              #getKexState()
      */
     String getNegotiatedKexParameter(KexProposalOption paramType);
 
     /**
-     * Retrieves current cipher information - <B>Note:</B> may change if
-     * key re-exchange executed
+     * Retrieves current cipher information - <B>Note:</B> may change if key re-exchange executed
      *
-     * @param incoming If {@code true} then the cipher for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link CipherInformation} - or {@code null} if not negotiated yet.
+     * @param  incoming If {@code true} then the cipher for the incoming data, otherwise for the outgoing data
+     * @return          The {@link CipherInformation} - or {@code null} if not negotiated yet.
      */
     CipherInformation getCipherInformation(boolean incoming);
 
     /**
-     * Retrieves current compression information - <B>Note:</B> may change if
-     * key re-exchange executed
+     * Retrieves current compression information - <B>Note:</B> may change if key re-exchange executed
      *
-     * @param incoming If {@code true} then the compression for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link CompressionInformation} - or {@code null} if not negotiated yet.
+     * @param  incoming If {@code true} then the compression for the incoming data, otherwise for the outgoing data
+     * @return          The {@link CompressionInformation} - or {@code null} if not negotiated yet.
      */
     CompressionInformation getCompressionInformation(boolean incoming);
 
     /**
-     * Retrieves current MAC information - <B>Note:</B> may change if
-     * key re-exchange executed
+     * Retrieves current MAC information - <B>Note:</B> may change if key re-exchange executed
      *
-     * @param incoming If {@code true} then the MAC for the incoming data,
-     * otherwise for the outgoing data
-     * @return The {@link MacInformation} - or {@code null} if not negotiated yet.
+     * @param  incoming If {@code true} then the MAC for the incoming data, otherwise for the outgoing data
+     * @return          The {@link MacInformation} - or {@code null} if not negotiated yet.
      */
     MacInformation getMacInformation(boolean incoming);
 
@@ -161,21 +154,21 @@ public interface SessionContext
     boolean isAuthenticated();
 
     /**
-     * @param version The reported client/server version
-     * @return {@code true} if version not empty and starts with either
-     * {@value #DEFAULT_SSH_VERSION_PREFIX} or {@value #FALLBACK_SSH_VERSION_PREFIX}
+     * @param  version The reported client/server version
+     * @return         {@code true} if version not empty and starts with either {@value #DEFAULT_SSH_VERSION_PREFIX} or
+     *                 {@value #FALLBACK_SSH_VERSION_PREFIX}
      */
     static boolean isValidVersionPrefix(String version) {
         return GenericUtils.isNotEmpty(version)
-            && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
+                && (version.startsWith(DEFAULT_SSH_VERSION_PREFIX) || version.startsWith(FALLBACK_SSH_VERSION_PREFIX));
     }
 
     /**
-     * @param session The {@link SessionContext} to be examined
-     * @return {@code true} if the context is not {@code null} and the ciphers
-     * have been established to anything other than &quot;none&quot;.
-     * @see #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
-     * @see KexProposalOption#CIPHER_PROPOSALS CIPHER_PROPOSALS
+     * @param  session The {@link SessionContext} to be examined
+     * @return         {@code true} if the context is not {@code null} and the ciphers have been established to anything
+     *                 other than &quot;none&quot;.
+     * @see            #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
+     * @see            KexProposalOption#CIPHER_PROPOSALS CIPHER_PROPOSALS
      */
     static boolean isSecureSessionTransport(SessionContext session) {
         if (session == null) {
@@ -194,11 +187,11 @@ public interface SessionContext
     }
 
     /**
-     * @param session The {@link SessionContext} to be examined
-     * @return {@code true} if the context is not {@code null} and the MAC(s)
-     * used to verify packet integrity have been established.
-     * @see #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
-     * @see KexProposalOption#MAC_PROPOSALS MAC_PROPOSALS
+     * @param  session The {@link SessionContext} to be examined
+     * @return         {@code true} if the context is not {@code null} and the MAC(s) used to verify packet integrity
+     *                 have been established.
+     * @see            #getNegotiatedKexParameter(KexProposalOption) getNegotiatedKexParameter
+     * @see            KexProposalOption#MAC_PROPOSALS MAC_PROPOSALS
      */
     static boolean isDataIntegrityTransport(SessionContext session) {
         if (session == null) {

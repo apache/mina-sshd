@@ -77,7 +77,8 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         return createSftpClient(client -> client.sessionLogin(target, username, identity));
     }
 
-    protected SftpClient createSftpClient(IOFunction<? super SimpleClient, ? extends ClientSession> sessionProvider) throws IOException {
+    protected SftpClient createSftpClient(IOFunction<? super SimpleClient, ? extends ClientSession> sessionProvider)
+            throws IOException {
         SimpleClient client = getClient();
         ClientSession session = sessionProvider.apply(client);
         try {
@@ -103,7 +104,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                     client.close();
                 } catch (Exception t) {
                     log.warn("createSftpClient({}) failed ({}) to close client: {}",
-                        session, t.getClass().getSimpleName(), t.getMessage());
+                            session, t.getClass().getSimpleName(), t.getMessage());
 
                     if (log.isDebugEnabled()) {
                         log.warn("createSftpClient(" + session + ") client close failure details", t);
@@ -117,13 +118,13 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
 
         // This point is reached if error occurred
         log.warn("createSftpClient({}) failed ({}) to create session: {}",
-            session, err.getClass().getSimpleName(), err.getMessage());
+                session, err.getClass().getSimpleName(), err.getMessage());
 
         try {
             session.close();
         } catch (Exception e) {
             log.warn("createSftpClient({}) failed ({}) to close session: {}",
-                session, e.getClass().getSimpleName(), e.getMessage());
+                    session, e.getClass().getSimpleName(), e.getMessage());
 
             if (log.isDebugEnabled()) {
                 log.warn("createSftpClient(" + session + ") session close failure details", e);
@@ -140,7 +141,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
 
     protected SftpClient createSftpClient(ClientSession session, SftpClient client) throws IOException {
         ClassLoader loader = SftpClient.class.getClassLoader();
-        Class<?>[] interfaces = {SftpClient.class};
+        Class<?>[] interfaces = { SftpClient.class };
         return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
             Throwable err = null;
             Object result = null;
@@ -150,7 +151,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
             } catch (Throwable t) {
                 if (log.isDebugEnabled()) {
                     log.warn("invoke(SftpClient#{}) failed ({}) to execute: {}",
-                        name, t.getClass().getSimpleName(), t.getMessage());
+                            name, t.getClass().getSimpleName(), t.getMessage());
                 }
                 err = GenericUtils.accumulateException(err, t);
             }
@@ -162,7 +163,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                 } catch (Throwable t) {
                     if (log.isDebugEnabled()) {
                         log.warn("invoke(ClientSession#{}) failed ({}) to execute: {}",
-                            name, t.getClass().getSimpleName(), t.getMessage());
+                                name, t.getClass().getSimpleName(), t.getMessage());
                     }
                     err = GenericUtils.accumulateException(err, t);
                 }

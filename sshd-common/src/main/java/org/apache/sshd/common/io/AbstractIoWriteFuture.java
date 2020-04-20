@@ -39,9 +39,9 @@ public abstract class AbstractIoWriteFuture
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
             throw formatExceptionMessage(
-                SshException::new,
-                "Write failed signalled while wait %d msec.",
-                timeout);
+                    SshException::new,
+                    "Write failed signalled while wait %d msec.",
+                    timeout);
         }
 
         return this;

@@ -44,19 +44,19 @@ import org.c02e.jpgpj.Key;
 public interface PGPKeyLoader {
     default Key loadPGPKey(
             SessionContext session, URL url, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         return loadPGPKey(session, new URLResource(url), passwordProvider);
     }
 
     default Key loadPGPKey(
             SessionContext session, Path path, FilePasswordProvider passwordProvider, OpenOption... options)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         return loadPGPKey(session, new PathResource(path, options), passwordProvider);
     }
 
     default Key loadPGPKey(
             SessionContext session, IoResource<?> resourceKey, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         try (InputStream input = resourceKey.openInputStream()) {
             return loadPGPKey(session, resourceKey, passwordProvider, input);
         }
@@ -64,7 +64,7 @@ public interface PGPKeyLoader {
 
     default Key loadPGPKey(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream input)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         return loadPGPKey(input, (passwordProvider == null) ? null : passwordProvider.getPassword(session, resourceKey, 0));
     }
 

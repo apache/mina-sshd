@@ -30,17 +30,18 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Caches the result per session - compensates for {@code OpenSSH} behavior
- * where it sends 2 requests with the same key (see {@code SSHD-300}).
+ * Caches the result per session - compensates for {@code OpenSSH} behavior where it sends 2 requests with the same key
+ * (see {@code SSHD-300}).
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
     /**
-     * The {@link org.apache.sshd.common.AttributeRepository.AttributeKey AttributeKey}
-     * used to store the cached authentication results on the session instance
+     * The {@link org.apache.sshd.common.AttributeRepository.AttributeKey AttributeKey} used to store the cached
+     * authentication results on the session instance
      */
-    public static final AttributeRepository.AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE = new AttributeRepository.AttributeKey<>();
+    public static final AttributeRepository.AttributeKey<Map<PublicKey, Boolean>> CACHE_ATTRIBUTE
+            = new AttributeRepository.AttributeKey<>();
 
     protected final PublickeyAuthenticator authenticator;
 
@@ -57,8 +58,8 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
                 result = authenticator.authenticate(username, key, session);
             } catch (Error e) {
                 log.warn("authenticate({}@{}) failed ({}) to consult delegate for {} key={}: {}",
-                     username, session, e.getClass().getSimpleName(),
-                     KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage());
+                        username, session, e.getClass().getSimpleName(),
+                        KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("authenticate(" + username + "@" + session + ") delegate failure details", e);
                 }
@@ -67,13 +68,13 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
             }
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}@{}) cache result={} for {} key={}",
-                      username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                        username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
             map.put(key, result);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}@{}) use cached result={} for {} key={}",
-                      username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                        username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
         }
 

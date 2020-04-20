@@ -77,8 +77,8 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     /*
      * Start a server to forward to.
      *
-     * Reads PAYLOAD_TO_SERVER from client and then sends PAYLOAD_TO_CLIENT to
-     * client. This server emulates a web server, closely enough for thie test
+     * Reads PAYLOAD_TO_SERVER from client and then sends PAYLOAD_TO_CLIENT to client. This server emulates a web
+     * server, closely enough for thie test
      */
     @Before
     public void startTestServer() throws Exception {
@@ -178,9 +178,8 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     /*
      * Run PORT_FORWARD_CLIENT_COUNT simultaneous server threads.
      *
-     * Emulates a web browser making a number of simultaneous requests on
-     * different connections to the same server HTTP specifies no more than two,
-     * but most modern browsers do 6 or more.
+     * Emulates a web browser making a number of simultaneous requests on different connections to the same server HTTP
+     * specifies no more than two, but most modern browsers do 6 or more.
      */
     public void testConcurrentConnectionsToPortForward() throws Exception {
         final SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, 0);
@@ -230,8 +229,8 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     }
 
     /*
-     * Send PAYLOAD_TO_SERVER to the server, then read PAYLOAD_TO_CLIENT from
-     * server. Emulates a web browser making a request
+     * Send PAYLOAD_TO_SERVER to the server, then read PAYLOAD_TO_CLIENT from server. Emulates a web browser making a
+     * request
      */
     private long makeClientRequest(final int serverPort, final CyclicBarrier barrier, final long wait)
             throws Exception {

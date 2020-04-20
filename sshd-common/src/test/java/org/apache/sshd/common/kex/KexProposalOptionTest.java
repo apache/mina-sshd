@@ -45,7 +45,7 @@ public class KexProposalOptionTest extends JUnitTestSupport {
 
     @Test
     public void testFromUnmatchedName() {
-        for (String n : new String[]{null, "", getCurrentTestName()}) {
+        for (String n : new String[] { null, "", getCurrentTestName() }) {
             KexProposalOption o = KexProposalOption.fromName(n);
             assertNull("Unexpected value for name='" + n + "'", o);
         }
@@ -66,7 +66,7 @@ public class KexProposalOptionTest extends JUnitTestSupport {
 
     @Test
     public void testFromUnmatchedProposalIndex() {
-        for (int index : new int[]{-1, KexProposalOption.VALUES.size()}) {
+        for (int index : new int[] { -1, KexProposalOption.VALUES.size() }) {
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
             assertNull("Unexpected value for index=" + index, o);
         }
@@ -101,8 +101,7 @@ public class KexProposalOptionTest extends JUnitTestSupport {
     public void testAllConstantsCovered() throws Exception {
         Field[] fields = Constants.class.getFields();
 
-        Collection<KexProposalOption> options =
-            EnumSet.allOf(KexProposalOption.class);
+        Collection<KexProposalOption> options = EnumSet.allOf(KexProposalOption.class);
         for (Field f : fields) {
             int mods = f.getModifiers();
             if (!Modifier.isStatic(mods)) {

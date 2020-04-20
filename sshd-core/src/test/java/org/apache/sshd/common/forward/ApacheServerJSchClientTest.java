@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -35,9 +37,6 @@ import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests - Apache server, JSch client

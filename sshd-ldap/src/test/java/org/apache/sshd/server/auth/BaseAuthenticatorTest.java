@@ -77,10 +77,12 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     }
 
     // see http://users.directory.apache.narkive.com/GkyqAkot/how-to-import-ldif-file-programmatically
-    public static NavigableMap<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName) throws Exception {
+    public static NavigableMap<String, String> populateUsers(DirectoryService service, Class<?> anchor, String credentialName)
+            throws Exception {
         Logger log = LoggerFactory.getLogger(anchor);
         NavigableMap<String, String> usersMap = new TreeMap<>(Comparator.naturalOrder());
-        try (LdifReader reader = new LdifReader(Objects.requireNonNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
+        try (LdifReader reader
+                = new LdifReader(Objects.requireNonNull(anchor.getResourceAsStream("/auth-users.ldif"), "No users ldif"))) {
             for (LdifEntry entry : reader) {
                 if (log.isDebugEnabled()) {
                     log.debug("Process LDIF entry={}", entry);

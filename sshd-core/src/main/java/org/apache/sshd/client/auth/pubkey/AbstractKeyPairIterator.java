@@ -27,8 +27,8 @@ import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
 
 /**
- * @param <I> Type of {@link PublicKeyIdentity} being iterated
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <I> Type of {@link PublicKeyIdentity} being iterated
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyPairIterator<I extends PublicKeyIdentity>
         implements Iterator<I>, SessionHolder<ClientSession>, ClientSessionHolder {

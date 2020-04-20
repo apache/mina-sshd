@@ -38,7 +38,8 @@ public class DefaultForwarderFactory implements ForwardingFilterFactory, PortFor
 
         @Override
         public void removePortForwardingEventListener(PortForwardingEventListener listener) {
-            throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
+            throw new UnsupportedOperationException(
+                    "removePortForwardingEventListener(" + listener + ") N/A on default instance");
         }
 
         @Override

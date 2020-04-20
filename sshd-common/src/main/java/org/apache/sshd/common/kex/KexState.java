@@ -35,6 +35,5 @@ public enum KexState {
     KEYS,
     DONE;
 
-    public static final Set<KexState> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(KexState.class));
+    public static final Set<KexState> VALUES = Collections.unmodifiableSet(EnumSet.allOf(KexState.class));
 }

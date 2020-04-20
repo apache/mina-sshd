@@ -32,8 +32,8 @@ public abstract class AbstractSubsystemClient extends AbstractLoggingBean implem
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[name=" + getName()
-            + ", session=" + getSession()
-            + "]";
+               + "[name=" + getName()
+               + ", session=" + getSession()
+               + "]";
     }
 }

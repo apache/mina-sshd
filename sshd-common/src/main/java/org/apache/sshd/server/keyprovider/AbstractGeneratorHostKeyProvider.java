@@ -50,10 +50,9 @@ import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * Holds a <U>single</U> {@link KeyPair} which is generated the 1st time
- * {@link #loadKeys(SessionContext)} is called. If there is a file backing it up and the
- * file exists, the key is loaded from it. Otherwise a new key pair is
- * generated and saved (provided a path is configured and {@link #isOverwriteAllowed()}
+ * Holds a <U>single</U> {@link KeyPair} which is generated the 1st time {@link #loadKeys(SessionContext)} is called. If
+ * there is a file backing it up and the file exists, the key is loaded from it. Otherwise a new key pair is generated
+ * and saved (provided a path is configured and {@link #isOverwriteAllowed()}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -128,7 +127,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         }
     }
 
-    @Override   // co-variant return
+    @Override // co-variant return
     public synchronized List<KeyPair> loadKeys(SessionContext session) {
         Path keyPath = getPath();
         Iterable<KeyPair> ids;
@@ -142,7 +141,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                     }
                 } catch (Throwable t) {
                     log.warn("loadKeys({}) Failed ({}) to resolve: {}",
-                        keyPath, t.getClass().getSimpleName(), t.getMessage());
+                            keyPath, t.getClass().getSimpleName(), t.getMessage());
                     if (log.isDebugEnabled()) {
                         log.debug("loadKeys(" + keyPath + ") resolution failure details", t);
                     }
@@ -179,7 +178,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                 }
             } catch (Throwable e) {
                 log.warn("resolveKeyPair({}) Failed ({}) to load: {}",
-                    keyPath, e.getClass().getSimpleName(), e.getMessage());
+                        keyPath, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("resolveKeyPair(" + keyPath + ") load failure details", e);
                 }
@@ -197,11 +196,11 @@ public abstract class AbstractGeneratorHostKeyProvider
             if (log.isDebugEnabled()) {
                 PublicKey key = kp.getPublic();
                 log.debug("resolveKeyPair({}) generated {} key={}-{}",
-                      keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                        keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
         } catch (Throwable e) {
             log.warn("resolveKeyPair({})[{}] Failed ({}) to generate {} key-pair: {}",
-                 keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
+                    keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("resolveKeyPair(" + keyPath + ")[" + alg + "] key-pair generation failure details", e);
             }
@@ -214,7 +213,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                 writeKeyPair(kp, keyPath);
             } catch (Throwable e) {
                 log.warn("resolveKeyPair({})[{}] Failed ({}) to write {} key: {}",
-                         alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
+                        alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("resolveKeyPair(" + keyPath + ")[" + alg + "] write failure details", e);
                 }
@@ -249,7 +248,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         if (Objects.equals(alg, keyAlgorithm)) {
             if (log.isDebugEnabled()) {
                 log.debug("resolveKeyPair({}) loaded key={}-{}",
-                      keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                        keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
             return ids;
         }
@@ -257,7 +256,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         // Not same algorithm - start again
         if (log.isDebugEnabled()) {
             log.debug("resolveKeyPair({}) mismatched loaded key algorithm: expected={}, loaded={}",
-                  keyPath, alg, keyAlgorithm);
+                    keyPath, alg, keyAlgorithm);
         }
         Files.deleteIfExists(keyPath);
         return null;
@@ -284,20 +283,20 @@ public abstract class AbstractGeneratorHostKeyProvider
                 doWriteKeyPair(location, kp, os);
             } catch (Throwable e) {
                 log.warn("writeKeyPair({}) failed ({}) to write key {}: {}",
-                         keyPath, e.getClass().getSimpleName(), e.getMessage());
+                        keyPath, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("writeKeyPair(" + keyPath + ") write failure details", e);
                 }
             }
         } else {
             log.error("Overwriting key ({}) is disabled: using throwaway {}: {}",
-                  keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
+                    keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
         }
     }
 
     protected abstract void doWriteKeyPair(
             NamedResource resourceKey, KeyPair kp, OutputStream outputStream)
-                throws IOException, GeneralSecurityException;
+            throws IOException, GeneralSecurityException;
 
     protected KeyPair generateKeyPair(String algorithm) throws GeneralSecurityException {
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);

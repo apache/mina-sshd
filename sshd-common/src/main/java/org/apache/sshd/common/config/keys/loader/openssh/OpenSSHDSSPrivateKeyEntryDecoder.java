@@ -51,13 +51,14 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
     public static final OpenSSHDSSPrivateKeyEntryDecoder INSTANCE = new OpenSSHDSSPrivateKeyEntryDecoder();
 
     public OpenSSHDSSPrivateKeyEntryDecoder() {
-        super(DSAPublicKey.class, DSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
+        super(DSAPublicKey.class, DSAPrivateKey.class,
+              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
     }
 
     @Override
     public DSAPrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
@@ -66,7 +67,7 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
         BigInteger q = KeyEntryResolver.decodeBigInt(keyData);
         BigInteger g = KeyEntryResolver.decodeBigInt(keyData);
         BigInteger y = KeyEntryResolver.decodeBigInt(keyData);
-        Objects.requireNonNull(y, "No public key data");   // TODO run some validation on it
+        Objects.requireNonNull(y, "No public key data"); // TODO run some validation on it
         BigInteger x = KeyEntryResolver.decodeBigInt(keyData);
 
         try {

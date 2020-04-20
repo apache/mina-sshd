@@ -24,8 +24,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 
 /**
- * A random factory wrapper that uses a single random instance.
- * The underlying random instance has to be thread safe.
+ * A random factory wrapper that uses a single random instance. The underlying random instance has to be thread safe.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

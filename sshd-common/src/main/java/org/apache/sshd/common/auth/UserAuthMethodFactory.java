@@ -29,10 +29,9 @@ import org.apache.sshd.common.session.SessionContext;
 /**
  * Represents a user authentication method
  *
- * @param <S> The type of {@link SessionContext} being provided
- * to the instance creator
- * @param <M> The authentication method factory type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <S> The type of {@link SessionContext} being provided to the instance creator
+ * @param  <M> The authentication method factory type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuthMethodFactory<S extends SessionContext, M extends UserAuthInstance<S>> extends NamedResource {
     /**
@@ -56,43 +55,41 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
     String HOST_BASED = "hostbased";
 
     /**
-     * If set to {@code true} then {@link #isSecureAuthenticationTransport(SessionContext)}
-     * returns {@code true} even if transport is insecure.
+     * If set to {@code true} then {@link #isSecureAuthenticationTransport(SessionContext)} returns {@code true} even if
+     * transport is insecure.
      */
     String ALLOW_INSECURE_AUTH = "allow-insecure-auth";
 
     boolean DEFAULT_ALLOW_INSECURE_AUTH = false;
 
     /**
-     * If set to {@code true} then {@link #isDataIntegrityAuthenticationTransport(SessionContext)}
-     * returns {@code true} even if transport has no MAC(s) to verify message integrity
+     * If set to {@code true} then {@link #isDataIntegrityAuthenticationTransport(SessionContext)} returns {@code true}
+     * even if transport has no MAC(s) to verify message integrity
      */
     String ALLOW_NON_INTEGRITY_AUTH = "allow-non-integrity-auth";
 
     boolean DEFAULT_ALLOW_NON_INTEGRITY_AUTH = false;
 
     /**
-     * @param session The session for which authentication is required
-     * @return The authenticator instance
+     * @param  session     The session for which authentication is required
+     * @return             The authenticator instance
      * @throws IOException If failed to create the instance
      */
     M createUserAuth(S session) throws IOException;
 
     /**
-     * @param <S> The type of {@link SessionContext} being provided
-     * to the instance creator
-     * @param <M> The authentication method factory type
-     * @param session The session through which the request is being made
-     * @param factories The available factories
-     * @param name The requested factory name
-     * @return The created authenticator instance - {@code null} if no matching factory
+     * @param  <S>         The type of {@link SessionContext} being provided to the instance creator
+     * @param  <M>         The authentication method factory type
+     * @param  session     The session through which the request is being made
+     * @param  factories   The available factories
+     * @param  name        The requested factory name
+     * @return             The created authenticator instance - {@code null} if no matching factory
      * @throws IOException If failed to create the instance
      */
     static <S extends SessionContext, M extends UserAuthInstance<S>> M createUserAuth(
             S session, Collection<? extends UserAuthMethodFactory<S, M>> factories, String name)
-                throws IOException {
-        UserAuthMethodFactory<S, M> f =
-            NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+            throws IOException {
+        UserAuthMethodFactory<S, M> f = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
         if (f != null) {
             return f.createUserAuth(session);
         } else {
@@ -102,6 +99,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
 
     /**
      * According to <A HREF="https://tools.ietf.org/html/rfc4252#section-8">RFC 4252 - section 8</A>:
+     * 
      * <PRE>
      *      Both the server and the client should check whether the underlying
      *      transport layer provides confidentiality (i.e., if encryption is
@@ -110,11 +108,11 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      *      confidentiality or no MAC, password change SHOULD be disabled.
      * </PRE>
      *
-     * @param session The {@link SessionContext} being used for authentication
-     * @return {@code true} if the context is not {@code null} and the ciphers
-     * have been established to anything other than &quot;none&quot;.
-     * @see #ALLOW_INSECURE_AUTH
-     * @see SessionContext#isSecureSessionTransport(SessionContext)
+     * @param  session The {@link SessionContext} being used for authentication
+     * @return         {@code true} if the context is not {@code null} and the ciphers have been established to anything
+     *                 other than &quot;none&quot;.
+     * @see            #ALLOW_INSECURE_AUTH
+     * @see            SessionContext#isSecureSessionTransport(SessionContext)
      */
     static boolean isSecureAuthenticationTransport(SessionContext session) {
         if (session == null) {
@@ -122,7 +120,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
         }
 
         boolean allowInsecure = PropertyResolverUtils.getBooleanProperty(
-            session, ALLOW_INSECURE_AUTH, DEFAULT_ALLOW_INSECURE_AUTH);
+                session, ALLOW_INSECURE_AUTH, DEFAULT_ALLOW_INSECURE_AUTH);
         if (allowInsecure) {
             return true;
         }
@@ -131,11 +129,11 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
     }
 
     /**
-     * @param session The {@link SessionContext} being used for authentication
-     * @return {@code true} if the context is not {@code null} and the MAC(s)
-     * used to verify packet integrity have been established.
-     * @see #ALLOW_NON_INTEGRITY_AUTH
-     * @see SessionContext#isDataIntegrityTransport(SessionContext)
+     * @param  session The {@link SessionContext} being used for authentication
+     * @return         {@code true} if the context is not {@code null} and the MAC(s) used to verify packet integrity
+     *                 have been established.
+     * @see            #ALLOW_NON_INTEGRITY_AUTH
+     * @see            SessionContext#isDataIntegrityTransport(SessionContext)
      */
     static boolean isDataIntegrityAuthenticationTransport(SessionContext session) {
         if (session == null) {
@@ -143,7 +141,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
         }
 
         boolean allowNonValidated = PropertyResolverUtils.getBooleanProperty(
-            session, ALLOW_NON_INTEGRITY_AUTH, DEFAULT_ALLOW_NON_INTEGRITY_AUTH);
+                session, ALLOW_NON_INTEGRITY_AUTH, DEFAULT_ALLOW_NON_INTEGRITY_AUTH);
         if (allowNonValidated) {
             return true;
         }

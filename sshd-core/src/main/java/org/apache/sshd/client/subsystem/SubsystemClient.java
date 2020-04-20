@@ -32,10 +32,10 @@ import org.apache.sshd.common.session.SessionHolder;
  */
 public interface SubsystemClient
         extends SessionHolder<ClientSession>,
-                ClientSessionHolder,
-                NamedResource,
-                Channel,
-                ClientChannelHolder {
+        ClientSessionHolder,
+        NamedResource,
+        Channel,
+        ClientChannelHolder {
     @Override
     default ClientSession getSession() {
         return getClientSession();

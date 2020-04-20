@@ -61,7 +61,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
             for (int index = 0; index < name.length(); index++) {
                 BuiltinCiphers actual = BuiltinCiphers.fromString(name);
                 assertSame(name + " - mismatched enum values", expected, actual);
-                name = shuffleCase(name);   // prepare for next time
+                name = shuffleCase(name); // prepare for next time
             }
         }
     }
@@ -74,7 +74,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
             for (int index = 0; index < name.length(); index++) {
                 BuiltinCiphers actual = BuiltinCiphers.fromFactoryName(name);
                 assertSame(name + " - mismatched enum values", expected, actual);
-                name = shuffleCase(name);   // prepare for next time
+                name = shuffleCase(name); // prepare for next time
             }
         }
     }
@@ -119,7 +119,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
-    @Test   // make sure that if a cipher is reported as supported we can indeed use it
+    @Test // make sure that if a cipher is reported as supported we can indeed use it
     public void testSupportedCipher() throws Exception {
         Exception err = null;
         Random rnd = new Random(System.nanoTime());
@@ -128,7 +128,8 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 try {
                     testCipherEncryption(rnd, c.create());
                 } catch (Exception e) {
-                    System.err.println("Failed (" + e.getClass().getSimpleName() + ") to encrypt using " + c + ": " + e.getMessage());
+                    System.err.println(
+                            "Failed (" + e.getClass().getSimpleName() + ") to encrypt using " + c + ": " + e.getMessage());
                     err = e;
                 }
             } else {
@@ -141,7 +142,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         }
     }
 
-    @Test   // make sure that the reported support matches reality by trying to encrypt something
+    @Test // make sure that the reported support matches reality by trying to encrypt something
     public void testCipherSupportDetection() throws Exception {
         Random rnd = new Random(System.nanoTime());
         for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
@@ -173,7 +174,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         List<String> names = NamedResource.getNameList(factories);
         for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
             if (BuiltinCiphers.none.equals(c)) {
-                continue;   // not always included by default + it is a dummy cipher
+                continue; // not always included by default + it is a dummy cipher
             }
 
             // for now, all key sizes below 128 are supported in JVM(s)
@@ -202,7 +203,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     public void testParseCiphersList() {
         List<String> builtin = NamedResource.getNameList(BuiltinCiphers.VALUES);
         List<String> unknown = Arrays.asList(
-            getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+                getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Random rnd = new Random();
         for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);

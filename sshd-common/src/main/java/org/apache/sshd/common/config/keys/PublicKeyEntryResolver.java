@@ -65,15 +65,15 @@ public interface PublicKeyEntryResolver {
     };
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param keyType The {@code OpenSSH} reported key type
-     * @param keyData The {@code OpenSSH} encoded key data
-     * @param headers Any headers that may have been available when data was read
-     * @return The extracted {@link PublicKey} - ignored if {@code null}
-     * @throws IOException If failed to parse the key data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  keyType                  The {@code OpenSSH} reported key type
+     * @param  keyData                  The {@code OpenSSH} encoded key data
+     * @param  headers                  Any headers that may have been available when data was read
+     * @return                          The extracted {@link PublicKey} - ignored if {@code null}
+     * @throws IOException              If failed to parse the key data
      * @throws GeneralSecurityException If failed to generate the key
      */
     PublicKey resolve(SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
-        throws IOException, GeneralSecurityException;
+            throws IOException, GeneralSecurityException;
 }

@@ -157,7 +157,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         fail("Unexpected success: " + ident);
     }
 
-    @Test   // see SSHD-619
+    @Test // see SSHD-619
     public void testMsgIgnorePadding() throws Exception {
         final long frequency = Byte.SIZE;
         PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_SIZE, Short.SIZE);
@@ -166,9 +166,9 @@ public class AbstractSessionTest extends BaseTestSupport {
         session.refreshConfiguration();
 
         Buffer msg = session.createBuffer(SshConstants.SSH_MSG_DEBUG, Long.SIZE);
-        msg.putBoolean(true);   // display ?
-        msg.putString(getCurrentTestName());    // message
-        msg.putString("");  // language
+        msg.putBoolean(true); // display ?
+        msg.putString(getCurrentTestName()); // message
+        msg.putString(""); // language
 
         MyIoSession ioSession = (MyIoSession) session.getIoSession();
         Queue<Buffer> queue = ioSession.getOutgoingMessages();
@@ -180,10 +180,12 @@ public class AbstractSessionTest extends BaseTestSupport {
                 Buffer data = queue.remove();
                 if (data != msg) {
                     int cmd = data.getUByte();
-                    assertEquals("Mismatched buffer command at cycle " + cycle + "[" + index + "]", SshConstants.SSH_MSG_IGNORE, cmd);
+                    assertEquals("Mismatched buffer command at cycle " + cycle + "[" + index + "]", SshConstants.SSH_MSG_IGNORE,
+                            cmd);
 
                     int len = data.getInt();
-                    assertTrue("Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len, len >= Short.SIZE);
+                    assertTrue("Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len,
+                            len >= Short.SIZE);
                     numIgnores++;
                 }
             }
@@ -192,7 +194,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         assertEquals("Mismatched number of ignore messages", Byte.SIZE, numIgnores);
     }
 
-    @Test   // see SSHD-652
+    @Test // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         session.addCloseFutureListener(future -> {
@@ -203,7 +205,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         assertEquals("Close listener not called", 1, closeCount.get());
     }
 
-    @Test   // see SSHD-699
+    @Test // see SSHD-699
     public void testMalformedUnimplementedMessage() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
@@ -220,7 +222,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-699
+    @Test // see SSHD-699
     public void testMalformedIgnoreMessageBadLength() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
@@ -236,7 +238,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-699
+    @Test // see SSHD-699
     public void testMalformedIgnoreMessageCorruptedData() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
@@ -246,7 +248,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         });
 
         Buffer buffer = new ByteArrayBuffer(Long.SIZE + Byte.MAX_VALUE);
-        buffer.putInt(Byte.MAX_VALUE + 1);  // bad message length
+        buffer.putInt(Byte.MAX_VALUE + 1); // bad message length
         for (int index = 0; index < Byte.MAX_VALUE; index++) {
             buffer.putByte((byte) index);
             session.handleIgnore(buffer);
@@ -263,12 +265,12 @@ public class AbstractSessionTest extends BaseTestSupport {
         });
 
         Buffer buffer = new ByteArrayBuffer(Long.SIZE + Byte.MAX_VALUE);
-        session.handleDebug(buffer);    // no boolean field
+        session.handleDebug(buffer); // no boolean field
 
         buffer.putBoolean(true);
-        session.handleDebug(buffer);    // no message field
+        session.handleDebug(buffer); // no message field
 
-        buffer.putInt(Byte.MAX_VALUE + 1);  // bad message field length
+        buffer.putInt(Byte.MAX_VALUE + 1); // bad message field length
         for (int index = 0; index < Byte.MAX_VALUE; index++) {
             buffer.putByte((byte) index);
             session.handleDebug(buffer);
@@ -287,9 +289,9 @@ public class AbstractSessionTest extends BaseTestSupport {
         Buffer buffer = new ByteArrayBuffer(Long.SIZE);
         buffer.putBoolean(true);
         buffer.putString(getCurrentTestName());
-        session.handleDebug(buffer);    // no language tag
+        session.handleDebug(buffer); // no language tag
 
-        buffer.putInt(Byte.SIZE + 1);   // bad language tag length
+        buffer.putInt(Byte.SIZE + 1); // bad language tag length
         for (int index = 0; index < Byte.SIZE; index++) {
             buffer.putByte((byte) index);
             session.handleDebug(buffer);
@@ -415,13 +417,14 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         @Override
         public void shutdownOutputStream() {
-          // do nothing
+            // do nothing
         }
     }
 
     public static class MySession extends AbstractSession {
         public MySession() {
-            super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class), new MyIoSession());
+            super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class),
+                  new MyIoSession());
         }
 
         @Override
@@ -475,12 +478,12 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         @Override
         public long resetIdleTimeout() {
-            return 0L;  // ignored
+            return 0L; // ignored
         }
 
         @Override
         public long resetAuthTimeout() {
-            return 0L;  // ignored
+            return 0L; // ignored
         }
 
         @Override

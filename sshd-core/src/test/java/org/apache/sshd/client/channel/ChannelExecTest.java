@@ -85,7 +85,7 @@ public class ChannelExecTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-692
+    @Test // see SSHD-692
     public void testMultipleRemoteCommandExecutions() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {

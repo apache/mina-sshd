@@ -31,29 +31,28 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  */
 public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSession>, UsernameHolder {
     /**
-     * Try to authenticate the user. This methods should return a non {@code null}
-     * value indicating if the authentication succeeded. If the authentication is
-     * still ongoing, a {@code null} value should be returned.
+     * Try to authenticate the user. This methods should return a non {@code null} value indicating if the
+     * authentication succeeded. If the authentication is still ongoing, a {@code null} value should be returned.
      *
-     * @param session  the current {@link ServerSession} session
-     * @param username the user trying to log in
-     * @param service  the requested service name
-     * @param buffer   the request buffer containing parameters specific to this request
-     * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     * failed and {@code null} if not finished yet
+     * @param  session            the current {@link ServerSession} session
+     * @param  username           the user trying to log in
+     * @param  service            the requested service name
+     * @param  buffer             the request buffer containing parameters specific to this request
+     * @return                    <code>true</code> if the authentication succeeded, <code>false</code> if the
+     *                            authentication failed and {@code null} if not finished yet
      * @throws AsyncAuthException if the service is willing to perform an asynchronous authentication
-     * @throws Exception if the authentication fails
+     * @throws Exception          if the authentication fails
      */
     Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws AsyncAuthException, Exception;
 
     /**
      * Handle another step in the authentication process.
      *
-     * @param buffer the request buffer containing parameters specific to this request
-     * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     * failed and {@code null} if not finished yet
+     * @param  buffer             the request buffer containing parameters specific to this request
+     * @return                    <code>true</code> if the authentication succeeded, <code>false</code> if the
+     *                            authentication failed and {@code null} if not finished yet
      * @throws AsyncAuthException if the service is willing to perform an asynchronous authentication
-     * @throws Exception if the authentication fails
+     * @throws Exception          if the authentication fails
      */
     Boolean next(Buffer buffer) throws AsyncAuthException, Exception;
 

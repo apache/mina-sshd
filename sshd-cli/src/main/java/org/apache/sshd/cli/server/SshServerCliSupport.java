@@ -78,7 +78,7 @@ public abstract class SshServerCliSupport extends CliSupport {
 
     public static KeyPairProvider resolveServerKeys(
             PrintStream stderr, String hostKeyType, int hostKeySize, Collection<String> keyFiles)
-                throws Exception {
+            throws Exception {
         if (GenericUtils.isEmpty(keyFiles)) {
             AbstractGeneratorHostKeyProvider hostKeyProvider;
             Path hostKeyFile;
@@ -95,7 +95,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             }
 
             List<KeyPair> keys = ValidateUtils.checkNotNullAndNotEmpty(
-                hostKeyProvider.loadKeys(null), "Failed to load keys from %s", hostKeyFile);
+                    hostKeyProvider.loadKeys(null), "Failed to load keys from %s", hostKeyFile);
             KeyPair kp = keys.get(0);
             PublicKey pubKey = kp.getPublic();
             String keyAlgorithm = pubKey.getAlgorithm();
@@ -122,8 +122,8 @@ public abstract class SshServerCliSupport extends CliSupport {
                     ids = SecurityUtils.loadKeyPairIdentities(null, location, inputStream, null);
                 } catch (Exception e) {
                     stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
-                        .append(" to load host key file=").append(keyFilePath)
-                        .append(": ").println(e.getMessage());
+                            .append(" to load host key file=").append(keyFilePath)
+                            .append(": ").println(e.getMessage());
                     stderr.flush();
                     throw e;
                 }
@@ -136,14 +136,14 @@ public abstract class SshServerCliSupport extends CliSupport {
                 for (KeyPair kp : ids) {
                     if (kp == null) {
                         stderr.append("WARNING: empty key found in ").println(keyFilePath);
-                        continue;   // debug breakpoint
+                        continue; // debug breakpoint
                     }
                     pairs.add(kp);
                 }
             }
 
             return new MappedKeyPairProvider(
-                ValidateUtils.checkNotNullAndNotEmpty(pairs, "No key pairs loaded for provided key files"));
+                    ValidateUtils.checkNotNullAndNotEmpty(pairs, "No key pairs loaded for provided key files"));
         }
     }
 
@@ -165,7 +165,7 @@ public abstract class SshServerCliSupport extends CliSupport {
 
     public static List<SubsystemFactory> resolveServerSubsystems(
             ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
-                throws Exception {
+            throws Exception {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SubsystemFactory.class);
         String classList = System.getProperty(SubsystemFactory.class.getName());
         if (GenericUtils.isNotEmpty(classList)) {
@@ -176,12 +176,12 @@ public abstract class SshServerCliSupport extends CliSupport {
                     Class<?> clazz = cl.loadClass(fqcn);
                     SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
                     factory = registerSubsystemFactoryListeners(
-                        server, level, stdout, stderr, options, factory);
+                            server, level, stdout, stderr, options, factory);
                     subsystems.add(factory);
                 } catch (Exception e) {
                     stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
-                        .append(" to instantiate subsystem=").append(fqcn)
-                        .append(": ").println(e.getMessage());
+                            .append(" to instantiate subsystem=").append(fqcn)
+                            .append(": ").println(e.getMessage());
                     stderr.flush();
                     throw e;
                 }
@@ -190,17 +190,16 @@ public abstract class SshServerCliSupport extends CliSupport {
             return subsystems;
         }
 
-        String nameList =
-            (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
+        String nameList = (options == null) ? null : options.getString(ConfigFileReaderSupport.SUBSYSTEM_CONFIG_PROP);
         if (PropertyResolverUtils.isNoneValue(nameList)) {
             return Collections.emptyList();
         }
 
         boolean havePreferences = GenericUtils.isNotEmpty(nameList);
         Collection<String> preferredNames = (!havePreferences)
-            ? Collections.emptySet()
-            : Stream.of(GenericUtils.split(nameList, ','))
-                .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
+                ? Collections.emptySet()
+                : Stream.of(GenericUtils.split(nameList, ','))
+                        .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
         ServiceLoader<SubsystemFactory> loader = ServiceLoader.load(SubsystemFactory.class, cl);
         List<SubsystemFactory> subsystems = new ArrayList<>();
         for (SubsystemFactory factory : loader) {
@@ -210,7 +209,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             }
 
             factory = registerSubsystemFactoryListeners(
-                server, level, stdout, stderr, options, factory);
+                    server, level, stdout, stderr, options, factory);
             subsystems.add(factory);
         }
 
@@ -218,8 +217,9 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static <F extends SubsystemFactory> F registerSubsystemFactoryListeners(
-            ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options, F factory)
-                throws Exception {
+            ServerFactoryManager server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options,
+            F factory)
+            throws Exception {
         if (factory instanceof SftpSubsystemFactory) {
             if (isEnabledVerbosityLogging(level)) {
                 SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
@@ -249,8 +249,8 @@ public abstract class SshServerCliSupport extends CliSupport {
             return ShellFactory.class.cast(instance);
         } catch (Exception e) {
             stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
-                .append(" to instantiate shell factory=").append(factory)
-                .append(": ").println(e.getMessage());
+                    .append(" to instantiate shell factory=").append(factory)
+                    .append(": ").println(e.getMessage());
             stderr.flush();
             throw e;
         }

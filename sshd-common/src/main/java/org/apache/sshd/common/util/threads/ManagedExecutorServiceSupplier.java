@@ -26,9 +26,8 @@ import java.util.function.Supplier;
  */
 public interface ManagedExecutorServiceSupplier extends ExecutorServiceProvider {
     /**
-     * @param provider The {@link Supplier} of {@link CloseableExecutorService}-s to be used
-     * when asynchronous execution is required. If {@code null} then a single-threaded
-     * ad-hoc service is used.
+     * @param provider The {@link Supplier} of {@link CloseableExecutorService}-s to be used when asynchronous execution
+     *                 is required. If {@code null} then a single-threaded ad-hoc service is used.
      */
     void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider);
 }

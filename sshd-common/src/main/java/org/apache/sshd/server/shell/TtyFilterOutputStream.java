@@ -32,14 +32,13 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Handles the output stream while taking care of the {@link PtyMode} for CR / LF
- * and ECHO settings
+ * Handles the output stream while taking care of the {@link PtyMode} for CR / LF and ECHO settings
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterOutputStream extends FilterOutputStream {
-    public static final Set<PtyMode> OUTPUT_OPTIONS =
-        Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
+    public static final Set<PtyMode> OUTPUT_OPTIONS
+            = Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
 
     private final Set<PtyMode> ttyOptions;
     private final TtyFilterInputStream echo;
@@ -51,7 +50,7 @@ public class TtyFilterOutputStream extends FilterOutputStream {
     public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Collection<PtyMode> ttyOptions) {
         super(out);
         // we create a copy of the options so as to avoid concurrent modifications
-        this.ttyOptions = GenericUtils.of(ttyOptions);    // TODO validate non-conflicting options
+        this.ttyOptions = GenericUtils.of(ttyOptions); // TODO validate non-conflicting options
         this.echo = this.ttyOptions.contains(PtyMode.ECHO) ? Objects.requireNonNull(echo, "No echo stream") : echo;
     }
 
@@ -68,7 +67,7 @@ public class TtyFilterOutputStream extends FilterOutputStream {
 
     protected void handleCR() throws IOException {
         if (ttyOptions.contains(PtyMode.ICRNL)) {
-            writeRawOutput('\n');   // Map CR to NL on input
+            writeRawOutput('\n'); // Map CR to NL on input
         } else if (ttyOptions.contains(PtyMode.IGNCR)) {
             // Ignore CR on input
             return;
@@ -79,7 +78,7 @@ public class TtyFilterOutputStream extends FilterOutputStream {
 
     protected void handleLF() throws IOException {
         if (ttyOptions.contains(PtyMode.INLCR)) {
-            writeRawOutput('\r');   // Map NL into CR on input
+            writeRawOutput('\r'); // Map NL into CR on input
         } else {
             writeRawOutput('\n');
         }
@@ -108,7 +107,7 @@ public class TtyFilterOutputStream extends FilterOutputStream {
                     writeRawOutput(b, lastPos, curPos - lastPos);
                 }
 
-                lastPos = curPos + 1;   // prepare for next character
+                lastPos = curPos + 1; // prepare for next character
                 write(c);
             }
         }

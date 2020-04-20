@@ -28,38 +28,35 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public interface PacketWriter extends Channel {
     /**
-     * Encode and send the given buffer. <B>Note:</B> for session packets the buffer has to have
-     * 5 bytes free at the beginning to allow the encoding to take place. Also, the write position
-     * of the buffer has to be set to the position of the last byte to write.
+     * Encode and send the given buffer. <B>Note:</B> for session packets the buffer has to have 5 bytes free at the
+     * beginning to allow the encoding to take place. Also, the write position of the buffer has to be set to the
+     * position of the last byte to write.
      *
-     * @param buffer the buffer to encode and send. <B>NOTE:</B> the buffer must not be touched
-     * until the returned write future is completed.
-     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @param  buffer      the buffer to encode and send. <B>NOTE:</B> the buffer must not be touched until the returned
+     *                     write future is completed.
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer) throws IOException;
 
     /**
-     * @param len The packet payload size
-     * @param blockSize The cipher block size
-     * @param etmMode Whether using &quot;encrypt-then-MAC&quot; mode
-     * @return The required padding length
+     * @param  len       The packet payload size
+     * @param  blockSize The cipher block size
+     * @param  etmMode   Whether using &quot;encrypt-then-MAC&quot; mode
+     * @return           The required padding length
      */
     static int calculatePadLength(int len, int blockSize, boolean etmMode) {
         /*
          * Note: according to RFC-4253 section 6:
          *
-         *    The minimum size of a packet is 16 (or the cipher block size,
-         *     whichever is larger) bytes (plus 'mac').
+         * The minimum size of a packet is 16 (or the cipher block size, whichever is larger) bytes (plus 'mac').
          *
-         * Since all out ciphers, MAC(s), etc. have a block size > 8 then
-         * the minimum size of the packet will be at least 16 due to the
-         * padding at the very least - so even packets that contain an opcode
-         * with no arguments will be above this value. This avoids an un-necessary
-         * call to Math.max(len, 16) for each and every packet
+         * Since all out ciphers, MAC(s), etc. have a block size > 8 then the minimum size of the packet will be at
+         * least 16 due to the padding at the very least - so even packets that contain an opcode with no arguments will
+         * be above this value. This avoids an un-necessary call to Math.max(len, 16) for each and every packet
          */
 
-        len++;  // the pad length
+        len++; // the pad length
         if (!etmMode) {
             len += Integer.BYTES;
         }
@@ -67,14 +64,12 @@ public interface PacketWriter extends Channel {
         /*
          * Note: according to RFC-4253 section 6:
          *
-         *      Note that the length of the concatenation of 'packet_length',
-         *      'padding_length', 'payload', and 'random padding' MUST be a multiple
-         *      of the cipher block size or 8, whichever is larger.
+         * Note that the length of the concatenation of 'packet_length', 'padding_length', 'payload', and 'random
+         * padding' MUST be a multiple of the cipher block size or 8, whichever is larger.
          *
-         * However, we currently do not have ciphers with a block size of less than
-         * 8 so we do not take this into account in order to accelerate the calculation
-         * and avoiding an un-necessary call to Math.max(blockSize, 8) for each and every
-         * packet.
+         * However, we currently do not have ciphers with a block size of less than 8 so we do not take this into
+         * account in order to accelerate the calculation and avoiding an un-necessary call to Math.max(blockSize, 8)
+         * for each and every packet.
          */
         int pad = (-len) & (blockSize - 1);
         if (pad < blockSize) {

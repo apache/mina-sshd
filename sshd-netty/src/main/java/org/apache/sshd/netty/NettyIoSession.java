@@ -30,6 +30,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.nio.AbstractNioChannel;
+import io.netty.util.Attribute;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -41,17 +51,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.nio.AbstractNioChannel;
-import io.netty.util.Attribute;
-
 /**
  * The Netty based IoSession implementation.
  *
@@ -59,8 +58,7 @@ import io.netty.util.Attribute;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoSession extends AbstractCloseable implements IoSession {
-    public static final Method NIO_JAVA_CHANNEL_METHOD =
-        Stream.of(AbstractNioChannel.class.getDeclaredMethods())
+    public static final Method NIO_JAVA_CHANNEL_METHOD = Stream.of(AbstractNioChannel.class.getDeclaredMethods())
             .filter(m -> "javaChannel".equals(m.getName()) && (m.getParameterCount() == 0))
             .map(m -> {
                 m.setAccessible(true);
@@ -165,14 +163,14 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         return service;
     }
 
-    @Override   // see SSHD-902
+    @Override // see SSHD-902
     public void shutdownOutputStream() throws IOException {
         Channel ch = context.channel();
         boolean debugEnabled = log.isDebugEnabled();
         if (!(ch instanceof AbstractNioChannel)) {
             if (debugEnabled) {
                 log.debug("shudownOutputStream({}) channel is not AbstractNioChannel: {}",
-                    this, (ch == null) ? null : ch.getClass().getSimpleName());
+                        this, (ch == null) ? null : ch.getClass().getSimpleName());
             }
             return;
         }
@@ -190,14 +188,14 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         } catch (Exception t) {
             Throwable e = GenericUtils.peelException(t);
             log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
-                this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
             return;
         }
 
         if (!(channel instanceof SocketChannel)) {
             if (debugEnabled) {
                 log.debug("shudownOutputStream({}) not a SocketChannel: {}",
-                    this, (channel == null) ? null : channel.getClass().getSimpleName());
+                        this, (channel == null) ? null : channel.getClass().getSimpleName());
             }
             return;
         }
@@ -214,8 +212,8 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     protected CloseFuture doCloseGracefully() {
         context.writeAndFlush(Unpooled.EMPTY_BUFFER)
-            .addListener(ChannelFutureListener.CLOSE)
-            .addListener(fut -> closeFuture.setClosed());
+                .addListener(ChannelFutureListener.CLOSE)
+                .addListener(fut -> closeFuture.setClosed());
         return closeFuture;
     }
 
@@ -234,8 +232,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         remoteAddr = channel.remoteAddress();
         handler.sessionCreated(NettyIoSession.this);
 
-        Attribute<IoConnectFuture> connectFuture =
-            channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
+        Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
         IoConnectFuture future = connectFuture.get();
         if (future != null) {
             future.setSession(NettyIoSession.this);
@@ -264,9 +261,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[local=" + getLocalAddress()
-            + ", remote=" + getRemoteAddress()
-            + "]";
+               + "[local=" + getLocalAddress()
+               + ", remote=" + getRemoteAddress()
+               + "]";
     }
 
     protected static class DefaultIoWriteFuture extends AbstractIoWriteFuture {

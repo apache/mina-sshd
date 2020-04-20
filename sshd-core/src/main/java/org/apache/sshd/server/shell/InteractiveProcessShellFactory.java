@@ -34,7 +34,7 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
 
     public InteractiveProcessShellFactory() {
         super(OsUtils.resolveDefaultInteractiveShellCommand(),
-            OsUtils.resolveDefaultInteractiveCommandElements());
+              OsUtils.resolveDefaultInteractiveCommandElements());
     }
 
     @Override

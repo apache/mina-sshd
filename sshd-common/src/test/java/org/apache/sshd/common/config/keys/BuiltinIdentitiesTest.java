@@ -48,7 +48,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class BuiltinIdentitiesTest extends JUnitTestSupport {
@@ -63,7 +63,7 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
         return parameterize(BuiltinIdentities.VALUES);
     }
 
-    @BeforeClass    // Dirty hack around the parameterized run
+    @BeforeClass // Dirty hack around the parameterized run
     public static void testAllConstantsCovered() throws Exception {
         Field[] fields = BuiltinIdentities.Constants.class.getFields();
         for (Field f : fields) {
@@ -133,8 +133,8 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
             Collection<String> other = identity.getSupportedKeyTypes();
             if (!Collections.disjoint(current, other)) {
                 fail("Overlapping key type names found for"
-                    + " " + expected + " (" + current + ")"
-                    + " and " + identity + " (" + other + ")");
+                     + " " + expected + " (" + current + ")"
+                     + " and " + identity + " (" + other + ")");
             }
         }
     }

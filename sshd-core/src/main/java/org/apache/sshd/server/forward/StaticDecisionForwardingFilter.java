@@ -23,8 +23,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
- * A {@link ForwardingFilter} implementation that returns the same &quot;static&quot;
- * result for <U>all</U> the queries.
+ * A {@link ForwardingFilter} implementation that returns the same &quot;static&quot; result for <U>all</U> the queries.
  */
 public class StaticDecisionForwardingFilter extends AbstractLoggingBean implements ForwardingFilter {
     private final boolean acceptance;
@@ -61,11 +60,10 @@ public class StaticDecisionForwardingFilter extends AbstractLoggingBean implemen
     }
 
     /**
-     * @param request The SSH request that ultimately led to this filter being consulted
-     * @param session The requesting {@link Session}
-     * @param target  The request target - may be {@link SshdSocketAddress#LOCALHOST_ADDRESS}
-     *                if no real target
-     * @return The (static) {@link #isAccepted()} flag
+     * @param  request The SSH request that ultimately led to this filter being consulted
+     * @param  session The requesting {@link Session}
+     * @param  target  The request target - may be {@link SshdSocketAddress#LOCALHOST_ADDRESS} if no real target
+     * @return         The (static) {@link #isAccepted()} flag
      */
     protected boolean checkAcceptance(String request, Session session, SshdSocketAddress target) {
         boolean accepted = isAccepted();

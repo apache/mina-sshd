@@ -40,19 +40,19 @@ import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
 
 /**
- * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
+ * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the
+ * client side.
  */
 public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
     /**
-     * Property that can be set on the {@link Session} in order to control
-     * the authentication timeout (millis). If not specified then
-     * {@link #DEFAULT_AUTH_SOCKET_TIMEOUT} is used
+     * Property that can be set on the {@link Session} in order to control the authentication timeout (millis). If not
+     * specified then {@link #DEFAULT_AUTH_SOCKET_TIMEOUT} is used
      */
     public static final String AUTH_SOCKET_TIMEOUT = "ssh-agent-server-proxy-auth-socket-timeout";
     public static final int DEFAULT_AUTH_SOCKET_TIMEOUT = 10000000;
 
-    //used to wake the Local.listen() JNI call
-    private static final byte[] END_OF_STREAM_MESSAGE = new byte[]{"END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0]};
+    // used to wake the Local.listen() JNI call
+    private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0] };
 
     private final ConnectionService service;
     private final String authSocket;
@@ -102,15 +102,17 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                             }
 
                             Session session = AgentServerProxy.this.service.getSession();
-                            Socket.timeoutSet(clientSock, session.getIntProperty(AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
+                            Socket.timeoutSet(clientSock,
+                                    session.getIntProperty(AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
                             String channelType = session.getStringProperty(PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
                             AgentForwardedChannel channel = new AgentForwardedChannel(clientSock, channelType);
                             AgentServerProxy.this.service.registerChannel(channel);
-                            channel.open().verify(session.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+                            channel.open()
+                                    .verify(session.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
                         } catch (Exception e) {
                             if (debugEnabled) {
                                 log.debug("run(open={}) {} while authentication forwarding: {}",
-                                          isOpen(), e.getClass().getSimpleName(), e.getMessage());
+                                        isOpen(), e.getClass().getSimpleName(), e.getMessage());
                             }
                             if (traceEnabled) {
                                 log.trace("run(open=" + isOpen() + ") authentication forwarding failure details", e);
@@ -154,7 +156,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                 try {
                     signalEOS(AprLibrary.getInstance(), debugEnabled);
                 } catch (Exception e) {
-                    //log eventual exceptions in debug mode
+                    // log eventual exceptions in debug mode
                     if (debugEnabled) {
                         log.debug("Exception signalling EOS to the PIPE socket: " + authSocket, e);
                     }
@@ -172,7 +174,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                 removeSocketFile(authSocket, debugEnabled);
             }
         } catch (Exception e) {
-            //log eventual exceptions in debug mode
+            // log eventual exceptions in debug mode
             if (debugEnabled) {
                 log.debug("Exception deleting the PIPE socket: " + authSocket, e);
             }
@@ -242,8 +244,8 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     /**
      * transform an APR error number in a more fancy exception
      *
-     * @param code APR error code
-     * @return {@link IOException} with the exception details for the given APR error number
+     * @param  code APR error code
+     * @return      {@link IOException} with the exception details for the given APR error number
      */
     public static IOException toIOException(int code) {
         return new IOException(org.apache.tomcat.jni.Error.strerror(-code) + " (code: " + code + ")");

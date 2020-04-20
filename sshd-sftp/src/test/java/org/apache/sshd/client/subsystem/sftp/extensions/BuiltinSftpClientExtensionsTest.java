@@ -41,7 +41,7 @@ public class BuiltinSftpClientExtensionsTest extends BaseTestSupport {
 
     @Test
     public void testFromName() {
-        for (String name : new String[]{null, "", getCurrentTestName()}) {
+        for (String name : new String[] { null, "", getCurrentTestName() }) {
             assertNull("Unexpected result for name='" + name + "'", BuiltinSftpClientExtensions.fromName(name));
         }
 
@@ -57,7 +57,7 @@ public class BuiltinSftpClientExtensionsTest extends BaseTestSupport {
 
     @Test
     public void testFromType() {
-        for (Class<?> clazz : new Class<?>[]{null, getClass(), SftpClientExtension.class}) {
+        for (Class<?> clazz : new Class<?>[] { null, getClass(), SftpClientExtension.class }) {
             assertNull("Unexpected value for class=" + clazz, BuiltinSftpClientExtensions.fromType(clazz));
         }
 
@@ -70,7 +70,7 @@ public class BuiltinSftpClientExtensionsTest extends BaseTestSupport {
 
     @Test
     public void testFromInstance() {
-        for (Object instance : new Object[]{null, this}) {
+        for (Object instance : new Object[] { null, this }) {
             assertNull("Unexpected value for " + instance, BuiltinSftpClientExtensions.fromInstance(instance));
         }
 

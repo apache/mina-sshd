@@ -46,9 +46,9 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  */
 public class ChannelSession extends AbstractClientChannel {
     /**
-     * On some platforms, a call to {@ode System.in.read(new byte[65536], 0, 32768)}
-     * always throws an {@link IOException}. So we need to protect against that and chunk
-     * the call into smaller calls. This problem was found on Windows, JDK 1.6.0_03-b05.
+     * On some platforms, a call to {@ode System.in.read(new byte[65536], 0, 32768)} always throws an
+     * {@link IOException}. So we need to protect against that and chunk the call into smaller calls. This problem was
+     * found on Windows, JDK 1.6.0_03-b05.
      */
     public static final String INPUT_STREAM_PUMP_CHUNK_SIZE = "stdin-pump-chunk-size";
 
@@ -84,7 +84,7 @@ public class ChannelSession extends AbstractClientChannel {
             asyncErr = new ChannelAsyncInputStream(this);
         } else {
             invertedIn = new ChannelOutputStream(
-                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+                    this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
             Window wLocal = getLocalWindow();
             if (out == null) {
@@ -105,7 +105,7 @@ public class ChannelSession extends AbstractClientChannel {
                 CloseableExecutorService service = getExecutorService();
                 if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor(
-                        "ClientInputStreamPump[" + this + "]");
+                            "ClientInputStreamPump[" + this + "]");
                 } else {
                     pumperService = ThreadUtils.noClose(service);
                 }
@@ -142,9 +142,9 @@ public class ChannelSession extends AbstractClientChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .close(super.getInnerCloseable())
-            .run(toString(), this::closeImmediately0)
-            .build();
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
     }
 
     protected void closeImmediately0() {
@@ -158,7 +158,7 @@ public class ChannelSession extends AbstractClientChannel {
             } catch (Exception e) {
                 // we log it as WARN since it is relatively harmless
                 log.warn("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
-                      this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.warn("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);
                 }
@@ -176,10 +176,10 @@ public class ChannelSession extends AbstractClientChannel {
             Window wRemote = getRemoteWindow();
             long packetSize = wRemote.getPacketSize();
             ValidateUtils.checkTrue((packetSize > 0) && (packetSize < Integer.MAX_VALUE),
-                "Invalid remote packet size int boundary: %d", packetSize);
+                    "Invalid remote packet size int boundary: %d", packetSize);
             byte[] buffer = new byte[(int) packetSize];
             int maxChunkSize = PropertyResolverUtils.getIntProperty(
-                session, INPUT_STREAM_PUMP_CHUNK_SIZE, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
+                    session, INPUT_STREAM_PUMP_CHUNK_SIZE, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
             maxChunkSize = Math.max(maxChunkSize, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
 
             while (!closeFuture.isClosed()) {
@@ -205,7 +205,7 @@ public class ChannelSession extends AbstractClientChannel {
         } catch (Exception e) {
             if (!isClosing()) {
                 log.error("pumpInputStream({}) Caught {} : {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.error("pumpInputStream(" + this + ") caught exception details", e);
                 }
@@ -216,7 +216,7 @@ public class ChannelSession extends AbstractClientChannel {
 
     protected int securedRead(
             InputStream in, int maxChunkSize, byte[] buf, int off, int len)
-                throws IOException {
+            throws IOException {
         for (int n = 0;;) {
             int nread = in.read(buf, off + n, Math.min(maxChunkSize, len - n));
             if (nread <= 0) {

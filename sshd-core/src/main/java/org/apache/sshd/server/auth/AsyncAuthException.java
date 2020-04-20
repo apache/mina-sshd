@@ -76,7 +76,7 @@ public class AsyncAuthException extends RuntimeSshException {
             if (this.listener == null) {
                 this.listener = listener;
             } else if (this.listener instanceof Consumer<?>) {
-                this.listener = new Object[] {this.listener, listener };
+                this.listener = new Object[] { this.listener, listener };
             } else {
                 Object[] ol = (Object[]) this.listener;
                 int l = ol.length;

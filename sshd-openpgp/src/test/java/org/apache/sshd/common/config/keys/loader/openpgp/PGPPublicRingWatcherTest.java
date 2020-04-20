@@ -52,14 +52,14 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
             testPublicRingWatcher(path);
         } catch (Exception e) {
             outputDebugMessage("Failed (%s) to load keys from ring=%s: %s",
-                e.getClass().getSimpleName(), path, e.getMessage());
+                    e.getClass().getSimpleName(), path, e.getMessage());
         }
     }
 
     @Test
     public void testV1ResourcesKeyPath() throws Exception {
         Path dir = CommonTestSupportUtils.resolve(
-            detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "keyring");
+                detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "keyring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V1_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
         assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
@@ -68,7 +68,7 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
     @Test
     public void testV2ResourcesKeyPath() throws Exception {
         Path dir = CommonTestSupportUtils.resolve(
-            detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "kbx2ring");
+                detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "kbx2ring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V2_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
         assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
@@ -85,8 +85,8 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
                 String fp = ke.getKey();
                 PublicKey k = ke.getValue();
                 outputDebugMessage("%s: %s %s[%d] %s",
-                    getCurrentTestName(), fp, KeyUtils.getKeyType(k),
-                    KeyUtils.getKeySize(k), KeyUtils.getFingerPrint(k));
+                        getCurrentTestName(), fp, KeyUtils.getKeyType(k),
+                        KeyUtils.getKeySize(k), KeyUtils.getFingerPrint(k));
             }
         }
 

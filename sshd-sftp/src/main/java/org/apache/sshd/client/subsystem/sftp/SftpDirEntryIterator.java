@@ -33,10 +33,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Iterates over the available directory entries for a given path. <B>Note:</B>
- * if the iteration is carried out until no more entries are available, then
- * no need to close the iterator. Otherwise, it is recommended to close it so
- * as to release the internal handle.
+ * Iterates over the available directory entries for a given path. <B>Note:</B> if the iteration is carried out until no
+ * more entries are available, then no need to close the iterator. Otherwise, it is recommended to close it so as to
+ * release the internal handle.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -51,8 +50,8 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     private int index;
 
     /**
-     * @param client The {@link SftpClient} instance to use for the iteration
-     * @param path The remote directory path
+     * @param  client      The {@link SftpClient} instance to use for the iteration
+     * @param  path        The remote directory path
      * @throws IOException If failed to gain access to the remote directory path
      */
     public SftpDirEntryIterator(SftpClient client, String path) throws IOException {
@@ -60,7 +59,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     }
 
     /**
-     * @param client The {@link SftpClient} instance to use for the iteration
+     * @param client    The {@link SftpClient} instance to use for the iteration
      * @param dirHandle The directory {@link Handle} to use for listing the entries
      */
     public SftpDirEntryIterator(SftpClient client, Handle dirHandle) {
@@ -68,11 +67,10 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     }
 
     /**
-     * @param client The {@link SftpClient} instance to use for the iteration
-     * @param path A hint as to the remote directory path - used only for logging
-     * @param dirHandle The directory {@link Handle} to use for listing the entries
-     * @param closeOnFinished If {@code true} then close the directory handle when
-     * all entries have been exhausted
+     * @param client          The {@link SftpClient} instance to use for the iteration
+     * @param path            A hint as to the remote directory path - used only for logging
+     * @param dirHandle       The directory {@link Handle} to use for listing the entries
+     * @param closeOnFinished If {@code true} then close the directory handle when all entries have been exhausted
      */
     public SftpDirEntryIterator(SftpClient client, String path, Handle dirHandle, boolean closeOnFinished) {
         this.client = Objects.requireNonNull(client, "No SFTP client instance");
@@ -94,8 +92,8 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
     /**
      * The remotely accessed directory path
      *
-     * @return Remote directory hint - may be the handle's value if accessed directly
-     * via a {@link Handle} instead of via a path - used only for logging
+     * @return Remote directory hint - may be the handle's value if accessed directly via a {@link Handle} instead of
+     *         via a path - used only for logging
      */
     public final String getPath() {
         return dirPath;
@@ -179,8 +177,8 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
             } catch (IOException t) {
                 if (log.isDebugEnabled()) {
                     log.warn(t.getClass().getSimpleName() + " while close handle=" + handle
-                            + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
-                            + ": " + t.getMessage());
+                             + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
+                             + ": " + t.getMessage());
                 }
             }
             throw new RuntimeException(e);

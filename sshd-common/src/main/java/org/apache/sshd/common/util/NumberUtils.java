@@ -29,11 +29,9 @@ import java.util.List;
  */
 public final class NumberUtils {
     /**
-     * A {@link List} of all the {@link Class} types used to represent the
-     * primitive numerical values
+     * A {@link List} of all the {@link Class} types used to represent the primitive numerical values
      */
-    public static final List<Class<?>> NUMERIC_PRIMITIVE_CLASSES =
-        GenericUtils.unmodifiableList(
+    public static final List<Class<?>> NUMERIC_PRIMITIVE_CLASSES = GenericUtils.unmodifiableList(
             Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE);
 
     private NumberUtils() {
@@ -41,9 +39,9 @@ public final class NumberUtils {
     }
 
     /**
-     * @param value The original (non-negative) value
-     * @return The closest <U>positive</U> power of 2 that is greater or equal to the value.
-     * If none can be found then returns the original value
+     * @param  value The original (non-negative) value
+     * @return       The closest <U>positive</U> power of 2 that is greater or equal to the value. If none can be found
+     *               then returns the original value
      */
     public static int getNextPowerOf2(int value) {
         if (value < 0) {
@@ -101,9 +99,9 @@ public final class NumberUtils {
     }
 
     /**
-     * @param clazz The {@link Class} to examine - ignored if {@code null}
-     * @return If the class is a {@link Number} or one of the primitive numerical types
-     * @see #NUMERIC_PRIMITIVE_CLASSES
+     * @param  clazz The {@link Class} to examine - ignored if {@code null}
+     * @return       If the class is a {@link Number} or one of the primitive numerical types
+     * @see          #NUMERIC_PRIMITIVE_CLASSES
      */
     public static boolean isNumericClass(Class<?> clazz) {
         if (clazz == null) {
@@ -121,8 +119,8 @@ public final class NumberUtils {
     /**
      * Converts a {@link Number} into an {@link Integer} if not already such
      *
-     * @param n The {@link Number} - ignored if {@code null}
-     * @return The equivalent {@link Integer} value
+     * @param  n The {@link Number} - ignored if {@code null}
+     * @return   The equivalent {@link Integer} value
      */
     public static Integer toInteger(Number n) {
         if (n == null) {
@@ -274,8 +272,9 @@ public final class NumberUtils {
 
     /**
      * Checks if optional sign and all others are '0'-'9'
-     * @param cs The {@link CharSequence} to check
-     * @return {@code true} if valid integer number
+     * 
+     * @param  cs The {@link CharSequence} to check
+     * @return    {@code true} if valid integer number
      */
     public static boolean isIntegerNumber(CharSequence cs) {
         if (GenericUtils.isEmpty(cs)) {

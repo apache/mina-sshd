@@ -57,7 +57,7 @@ public class ScpCommandMain extends SshClientCliSupport {
     public static final String SCP_PORT_OPTION = "-P";
 
     public ScpCommandMain() {
-        super();    // in case someone wants to extend it
+        super(); // in case someone wants to extend it
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -152,8 +152,8 @@ public class ScpCommandMain extends SshClientCliSupport {
             return ScpClientCreator.class.cast(clazz.newInstance());
         } catch (Exception e) {
             stderr.append("WARNING: Failed (").append(e.getClass().getSimpleName()).append(')')
-                .append(" to instantiate ").append(className)
-                .append(": ").println(e.getMessage());
+                    .append(" to instantiate ").append(className)
+                    .append(": ").println(e.getMessage());
             stderr.flush();
             return null;
         }
@@ -180,11 +180,11 @@ public class ScpCommandMain extends SshClientCliSupport {
 
             ScpClientCreator creator = resolveScpClientCreator(stderr, args);
             ClientSession session = ((logStream == null) || (creator == null) || GenericUtils.isEmpty(args))
-                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args);
+                    ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args);
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity] [-io nio2|mina|netty]"
-                         + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-o creator=class name]"
-                         + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
+                               + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-o creator=class name]"
+                               + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");
@@ -217,7 +217,8 @@ public class ScpCommandMain extends SshClientCliSupport {
 
                         @Override
                         public void endFolderEvent(
-                                Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
+                                Session session, FileOperation op, Path file, Set<PosixFilePermission> perms,
+                                Throwable thrown) {
                             logEvent("endFolderEvent", session, op, file, -1L, perms, thrown);
                         }
 
@@ -229,7 +230,8 @@ public class ScpCommandMain extends SshClientCliSupport {
 
                         @Override
                         public void endFileEvent(
-                                Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
+                                Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms,
+                                Throwable thrown) {
                             logEvent("endFileEvent", session, op, file, length, perms, thrown);
                         }
 
@@ -238,16 +240,17 @@ public class ScpCommandMain extends SshClientCliSupport {
                                 Collection<PosixFilePermission> perms, Throwable thrown) {
                             PrintStream ps = (thrown == null) ? stdout : stderr;
                             ps.append("    ").append(name)
-                                .append('[').append(session.toString()).append(']')
-                                .append('[').append(op.name()).append(']')
-                                .append(' ').append(file.toString());
+                                    .append('[').append(session.toString()).append(']')
+                                    .append('[').append(op.name()).append(']')
+                                    .append(' ').append(file.toString());
                             if (length > 0L) {
                                 ps.append(' ').append("length=").append(Long.toString(length));
                             }
                             ps.append(' ').append(String.valueOf(perms));
 
                             if (thrown != null) {
-                                ps.append(" - ").append(thrown.getClass().getSimpleName()).append(": ").append(thrown.getMessage());
+                                ps.append(" - ").append(thrown.getClass().getSimpleName()).append(": ")
+                                        .append(thrown.getMessage());
                             }
                             ps.println();
                         }

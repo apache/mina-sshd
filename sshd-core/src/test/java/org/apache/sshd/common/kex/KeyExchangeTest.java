@@ -56,7 +56,8 @@ public class KeyExchangeTest extends BaseTestSupport {
             assertSame("Mismatched results for cmd=" + cmd, expected, actual);
 
             if (SshConstants.isAmbiguousOpcode(cmd)) {
-                assertEquals("Unexpected ambiguous command resolution for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
+                assertEquals("Unexpected ambiguous command resolution for " + cmd, cmd.toString(),
+                        SshConstants.getCommandMessageName(cmd));
             }
         });
     }

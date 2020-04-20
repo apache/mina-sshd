@@ -45,7 +45,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
@@ -134,7 +134,8 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
         if (WelcomeBannerPhase.NEVER.equals(phase)) {
             assertNull("Unexpected banner", banner);
         } else {
-            WelcomeBannerPhase value = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, banner, false, WelcomeBannerPhase.VALUES);
+            WelcomeBannerPhase value
+                    = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, banner, false, WelcomeBannerPhase.VALUES);
             assertSame("Mismatched banner value", phase, value);
         }
     }

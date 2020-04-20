@@ -26,32 +26,31 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 
 /**
- * The <code>ClientFactoryManager</code> enable the retrieval of additional
- * configuration needed specifically for the client side.
+ * The <code>ClientFactoryManager</code> enable the retrieval of additional configuration needed specifically for the
+ * client side.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientFactoryManager
         extends FactoryManager,
-                ClientProxyConnectorHolder,
-                FilePasswordProviderManager,
-                ClientIdentityLoaderManager,
-                ClientAuthenticationManager {
+        ClientProxyConnectorHolder,
+        FilePasswordProviderManager,
+        ClientIdentityLoaderManager,
+        ClientAuthenticationManager {
 
     /**
-     * Key used to retrieve the value of the client identification string.
-     * If set, then it is <U>appended</U> to the (standard) &quot;SSH-2.0-&quot;
-     * prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot;
-     * plus the current SSHD artifact name and version in uppercase - e.g.,
-     * &quot;SSH-2.0-APACHE-SSHD-1.0.0&quot;
+     * Key used to retrieve the value of the client identification string. If set, then it is <U>appended</U> to the
+     * (standard) &quot;SSH-2.0-&quot; prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot; plus
+     * the current SSHD artifact name and version in uppercase - e.g., &quot;SSH-2.0-APACHE-SSHD-1.0.0&quot;
      */
     String CLIENT_IDENTIFICATION = "client-identification";
 
     /**
-     * Whether to send the identification string immediately upon session connection
-     * being established or wait for the server's identification before sending our own.
+     * Whether to send the identification string immediately upon session connection being established or wait for the
+     * server's identification before sending our own.
      *
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol Version Exchange</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol Version
+     *      Exchange</A>
      */
     String SEND_IMMEDIATE_IDENTIFICATION = "send-immediate-identification";
 
@@ -61,9 +60,8 @@ public interface ClientFactoryManager
     boolean DEFAULT_SEND_IMMEDIATE_IDENTIFICATION = true;
 
     /**
-     * Whether to send {@code SSH_MSG_KEXINIT} immediately after sending
-     * the client identification string or wait until the severer's one
-     * has been received.
+     * Whether to send {@code SSH_MSG_KEXINIT} immediately after sending the client identification string or wait until
+     * the severer's one has been received.
      *
      * @see #SEND_IMMEDIATE_IDENTIFICATION
      */
@@ -92,9 +90,8 @@ public interface ClientFactoryManager
     String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
 
     /**
-     * Key used to indicate that the heartbeat request is also
-     * expecting a reply - time in <U>milliseconds</U> to wait for
-     * the reply. If non-positive then no reply is expected (nor requested).
+     * Key used to indicate that the heartbeat request is also expecting a reply - time in <U>milliseconds</U> to wait
+     * for the reply. If non-positive then no reply is expected (nor requested).
      */
     String HEARTBEAT_REPLY_WAIT = "heartbeat-reply-wait";
 
@@ -102,8 +99,8 @@ public interface ClientFactoryManager
     long DEFAULT_HEARTBEAT_REPLY_WAIT = 0L;
 
     /**
-     * Whether to ignore invalid identities files when pre-initializing
-     * the client session
+     * Whether to ignore invalid identities files when pre-initializing the client session
+     * 
      * @see ClientIdentityLoader#isValidLocation(org.apache.sshd.common.NamedResource)
      */
     String IGNORE_INVALID_IDENTITIES = "ignore-invalid-identities";
@@ -124,8 +121,8 @@ public interface ClientFactoryManager
     boolean DEFAULT_ABORT_ON_INVALID_CERTIFICATE = false;
 
     /**
-     * @return The {@link HostConfigEntryResolver} to use in order to resolve the
-     * effective session parameters - never {@code null}
+     * @return The {@link HostConfigEntryResolver} to use in order to resolve the effective session parameters - never
+     *         {@code null}
      */
     HostConfigEntryResolver getHostConfigEntryResolver();
 

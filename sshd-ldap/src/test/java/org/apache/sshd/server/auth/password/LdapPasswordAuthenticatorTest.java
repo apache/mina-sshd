@@ -41,10 +41,10 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @CreateDS(name = "myDS",
-        partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
+          partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
 @CreateLdapServer(allowAnonymousAccess = true,
-        transports = { @CreateTransport(protocol = "LDAP", address = "localhost")})
-@ApplyLdifFiles({"auth-users.ldif"})
+                  transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
+@ApplyLdifFiles({ "auth-users.ldif" })
 public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
     @ClassRule
@@ -56,7 +56,7 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
         super();
     }
 
-    @Test   // the user's password is compared with the LDAP stored one
+    @Test // the user's password is compared with the LDAP stored one
     public void testPasswordComparison() throws Exception {
         usersMap = populateUsers(serverRule.getLdapServer().getDirectoryService(),
                 LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);

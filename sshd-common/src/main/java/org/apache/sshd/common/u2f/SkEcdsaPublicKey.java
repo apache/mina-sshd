@@ -69,9 +69,9 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-                + "[appName=" + getAppName()
-                + ", noTouchRequired=" + isNoTouchRequired()
-                + ", delegatePublicKey=" + getDelegatePublicKey()
-                + "]";
+               + "[appName=" + getAppName()
+               + ", noTouchRequired=" + isNoTouchRequired()
+               + ", delegatePublicKey=" + getDelegatePublicKey()
+               + "]";
     }
 }

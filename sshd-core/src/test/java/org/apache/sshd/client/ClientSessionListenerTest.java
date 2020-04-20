@@ -104,11 +104,11 @@ public class ClientSessionListenerTest extends BaseTestSupport {
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
                 session.setKeyExchangeFactories(
-                    Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
+                        Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
                 session.setCipherFactories(
-                    Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
+                        Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.C2SENC)));
                 session.setMacFactories(
-                    Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
+                        Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.C2SMAC)));
             }
         };
         client.addSessionListener(listener);
@@ -164,8 +164,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession() throws IOException {
-        ClientSession session =
-            client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());

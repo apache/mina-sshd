@@ -29,12 +29,13 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * @param <S> Type of session being managed
- * @param <M> Type of {@code UserAuth} being used
- * @param <F> Type of user authentication mechanism factory
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <S> Type of session being managed
+ * @param  <M> Type of {@code UserAuth} being used
+ * @param  <F> Type of user authentication mechanism factory
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuthFactoriesManager<S extends SessionContext,
+public interface UserAuthFactoriesManager<
+        S extends SessionContext,
         M extends UserAuthInstance<S>, F extends UserAuthMethodFactory<S, M>> {
     /**
      * Retrieve the list of named factories for <code>UserAuth</code> objects.
@@ -59,9 +60,9 @@ public interface UserAuthFactoriesManager<S extends SessionContext,
 
     default void setUserAuthFactoriesNames(String... names) {
         setUserAuthFactoriesNames(
-            GenericUtils.isEmpty((Object[]) names)
-                ? Collections.emptyList()
-                : Arrays.asList(names));
+                GenericUtils.isEmpty((Object[]) names)
+                        ? Collections.emptyList()
+                        : Arrays.asList(names));
     }
 
     void setUserAuthFactoriesNames(Collection<String> names);

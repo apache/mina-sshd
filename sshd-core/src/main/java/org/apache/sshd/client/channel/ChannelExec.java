@@ -37,6 +37,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class ChannelExec extends PtyCapableChannelSession {
     /**
      * Configure whether reply for the &quot;exec&quot; request is required
+     * 
      * @see #DEFAULT_REQUEST_EXEC_REPLY
      */
     public static final String REQUEST_EXEC_REPLY = "channel-exec-want-reply";

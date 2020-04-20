@@ -29,8 +29,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionContextHolder;
 
 /**
- * Iterates over several {@link KeyIdentityProvider}-s exhausting their
- * keys one by one (lazily).
+ * Iterates over several {@link KeyIdentityProvider}-s exhausting their keys one by one (lazily).
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -77,8 +76,10 @@ public class MultiKeyIdentityIterator implements Iterator<KeyPair>, SessionConte
             try {
                 keys = (p == null) ? null : p.loadKeys(session);
             } catch (IOException | GeneralSecurityException e) {
-                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                    + " keys loading exception: " + e.getMessage(), e);
+                throw new RuntimeException(
+                        "Unexpected " + e.getClass().getSimpleName() + ")"
+                                           + " keys loading exception: " + e.getMessage(),
+                        e);
             }
             currentProvider = (keys == null) ? null : keys.iterator();
 

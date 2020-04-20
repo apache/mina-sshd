@@ -23,8 +23,8 @@ import java.util.function.Supplier;
 /**
  * Factory is a simple interface that is used to create other objects.
  *
- * @param <T> type of object this factory will create
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> type of object this factory will create
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface Factory<T> extends Supplier<T> {

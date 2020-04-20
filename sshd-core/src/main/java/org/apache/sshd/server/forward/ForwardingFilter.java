@@ -30,10 +30,10 @@ public interface ForwardingFilter extends AgentForwardingFilter, X11ForwardingFi
     /**
      * Wraps separate filtering policies into one - any {@code null} one is assumed to be disabled
      *
-     * @param agentFilter The {@link AgentForwardingFilter}
-     * @param x11Filter The {@link X11ForwardingFilter}
-     * @param tcpFilter The {@link TcpForwardingFilter}
-     * @return The combined implementation
+     * @param  agentFilter The {@link AgentForwardingFilter}
+     * @param  x11Filter   The {@link X11ForwardingFilter}
+     * @param  tcpFilter   The {@link TcpForwardingFilter}
+     * @return             The combined implementation
      */
     static ForwardingFilter asForwardingFilter(
             AgentForwardingFilter agentFilter, X11ForwardingFilter x11Filter, TcpForwardingFilter tcpFilter) {

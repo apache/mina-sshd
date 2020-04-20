@@ -50,9 +50,9 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private final Condition dataAvailable = lock.newCondition();
 
     /**
-     * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
-     * This is different from the {@link #isOpen()}, which indicates that the reader of this {@link InputStream}
-     * will not be reading data any more.
+     * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data. This is different
+     * from the {@link #isOpen()}, which indicates that the reader of this {@link InputStream} will not be reading data
+     * any more.
      */
     private final AtomicBoolean writerClosed = new AtomicBoolean(false);
 
@@ -139,7 +139,8 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                         dataAvailable.await();
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted at cycle #" + index + " while waiting for data to become available").initCause(e);
+                    throw (IOException) new InterruptedIOException(
+                            "Interrupted at cycle #" + index + " while waiting for data to become available").initCause(e);
                 }
             }
 

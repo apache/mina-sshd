@@ -29,8 +29,7 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Provides a default implementation for {@link KeyboardInteractiveAuthenticator}
- * where it prompts for the password.
+ * Provides a default implementation for {@link KeyboardInteractiveAuthenticator} where it prompts for the password.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -58,7 +57,7 @@ public class DefaultKeyboardInteractiveAuthenticator
     @Override
     public InteractiveChallenge generateChallenge(
             ServerSession session, String username, String lang, String subMethods)
-                throws Exception {
+            throws Exception {
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
             if (log.isDebugEnabled()) {
@@ -94,7 +93,7 @@ public class DefaultKeyboardInteractiveAuthenticator
             return auth.authenticate(username, responses.get(0), session);
         } catch (Error e) {
             log.warn("authenticate({})[{}] failed ({}) to consult password authenticator: {}",
-                session, username, e.getClass().getSimpleName(), e.getMessage());
+                    session, username, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + session + ")[" + username + "] authenticator failure details", e);
             }

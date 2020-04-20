@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * Implements the &quot;copy-data&quot; extension
  *
- * @see <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRFAT 00 - section 7</A>
+ * @see    <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRFAT 00 - section 7</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CopyDataExtensionImpl extends AbstractSftpClientExtension implements CopyDataExtension {
@@ -42,12 +42,13 @@ public class CopyDataExtensionImpl extends AbstractSftpClientExtension implement
     }
 
     @Override
-    public void copyData(Handle readHandle, long readOffset, long readLength, Handle writeHandle, long writeOffset) throws IOException {
+    public void copyData(Handle readHandle, long readOffset, long readLength, Handle writeHandle, long writeOffset)
+            throws IOException {
         byte[] srcId = readHandle.getIdentifier();
         byte[] dstId = writeHandle.getIdentifier();
         Buffer buffer = getCommandBuffer(Integer.BYTES + NumberUtils.length(srcId)
-                + Integer.BYTES + NumberUtils.length(dstId)
-                + (3 * (Long.SIZE + Integer.BYTES)));
+                                         + Integer.BYTES + NumberUtils.length(dstId)
+                                         + (3 * (Long.SIZE + Integer.BYTES)));
         buffer.putBytes(srcId);
         buffer.putLong(readOffset);
         buffer.putLong(readLength);

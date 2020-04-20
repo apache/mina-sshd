@@ -70,11 +70,9 @@ public enum BuiltinMacs implements MacFactory {
         }
     };
 
-    public static final Set<BuiltinMacs> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
+    public static final Set<BuiltinMacs> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
 
-    private static final Map<String, MacFactory> EXTENSIONS =
-        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, MacFactory> EXTENSIONS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
     private final String algorithm;
@@ -124,42 +122,40 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * Registered a {@link NamedFactory} to be available besides the built-in
-     * ones when parsing configuration
+     * Registered a {@link NamedFactory} to be available besides the built-in ones when parsing configuration
      *
-     * @param extension The factory to register
-     * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     * @param  extension                The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null}, or overrides a built-in one or overrides
+     *                                  another registered factory with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(MacFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(
-            fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
+                fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
         synchronized (EXTENSIONS) {
             ValidateUtils.checkTrue(
-                !EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
+                    !EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
             EXTENSIONS.put(name, extension);
         }
     }
 
     /**
-     * @return A {@link NavigableSet} of the currently registered extensions, sorted
-     * according to the factory name (case <U>insensitive</U>)
+     * @return A {@link NavigableSet} of the currently registered extensions, sorted according to the factory name (case
+     *         <U>insensitive</U>)
      */
     public static NavigableSet<MacFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
             return GenericUtils.asSortedSet(
-                NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
+                    NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }
     }
 
     /**
      * Unregisters specified extension
      *
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The registered extension - {@code null} if not found
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The registered extension - {@code null} if not found
      */
     public static MacFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -172,10 +168,9 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param s The {@link Enum}'s name - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs}
-     * whose {@link Enum#name()} matches (case <U>insensitive</U>) the provided
-     * argument - {@code null} if no match
+     * @param  s The {@link Enum}'s name - ignored if {@code null}/empty
+     * @return   The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose {@link Enum#name()} matches (case
+     *           <U>insensitive</U>) the provided argument - {@code null} if no match
      */
     public static BuiltinMacs fromString(String s) {
         if (GenericUtils.isEmpty(s)) {
@@ -192,10 +187,10 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the MAC - ignored if {@code null}
-     * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose factory name matches
-     * (case <U>insensitive</U>) the digest factory name
-     * @see #fromFactoryName(String)
+     * @param  factory The {@link org.apache.sshd.common.NamedFactory} for the MAC - ignored if {@code null}
+     * @return         The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose factory name matches (case
+     *                 <U>insensitive</U>) the digest factory name
+     * @see            #fromFactoryName(String)
      */
     public static BuiltinMacs fromFactory(NamedFactory<Mac> factory) {
         if (factory == null) {
@@ -206,19 +201,18 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinMacs} whose factory name matches
-     * (case <U>insensitive</U>) the provided name - {@code null} if no match
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The matching {@link BuiltinMacs} whose factory name matches (case <U>insensitive</U>) the provided
+     *              name - {@code null} if no match
      */
     public static BuiltinMacs fromFactoryName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**
-     * @param macs A comma-separated list of MACs' names - ignored if {@code null}/empty
-     * @return A {@link ParseResult} containing the successfully parsed
-     * factories and the unknown ones. <B>Note:</B> it is up to caller to
-     * ensure that the lists do not contain duplicates
+     * @param  macs A comma-separated list of MACs' names - ignored if {@code null}/empty
+     * @return      A {@link ParseResult} containing the successfully parsed factories and the unknown ones.
+     *              <B>Note:</B> it is up to caller to ensure that the lists do not contain duplicates
      */
     public static ParseResult parseMacsList(String macs) {
         return parseMacsList(GenericUtils.split(macs, ','));
@@ -226,8 +220,8 @@ public enum BuiltinMacs implements MacFactory {
 
     public static ParseResult parseMacsList(String... macs) {
         return parseMacsList(GenericUtils.isEmpty((Object[]) macs)
-            ? Collections.emptyList()
-            : Arrays.asList(macs));
+                ? Collections.emptyList()
+                : Arrays.asList(macs));
     }
 
     public static ParseResult parseMacsList(Collection<String> macs) {
@@ -254,9 +248,8 @@ public enum BuiltinMacs implements MacFactory {
     }
 
     /**
-     * @param name The factory name
-     * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension
+     * @param  name The factory name
+     * @return      The factory or {@code null} if it is neither a built-in one or a registered extension
      */
     public static MacFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -275,8 +268,7 @@ public enum BuiltinMacs implements MacFactory {
 
     public static final class ParseResult
             extends NamedFactoriesListParseResult<Mac, MacFactory> {
-        public static final ParseResult EMPTY =
-            new ParseResult(Collections.emptyList(), Collections.emptyList());
+        public static final ParseResult EMPTY = new ParseResult(Collections.emptyList(), Collections.emptyList());
 
         public ParseResult(List<MacFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);

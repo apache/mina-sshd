@@ -63,10 +63,9 @@ import org.junit.runners.MethodSorters;
 @Category({ NoIoTestCase.class })
 @SuppressWarnings("checkstyle:MethodCount")
 public class SecurityUtilsTest extends JUnitTestSupport {
-    public static final String BC_NAMED_USAGE_PROP =
-            SecurityProviderRegistrar.CONFIG_PROP_BASE
-          + "." + SecurityUtils.BOUNCY_CASTLE
-          + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
+    public static final String BC_NAMED_USAGE_PROP = SecurityProviderRegistrar.CONFIG_PROP_BASE
+                                                     + "." + SecurityUtils.BOUNCY_CASTLE
+                                                     + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
 
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (session, file, index) -> DEFAULT_PASSWORD;
@@ -93,8 +92,8 @@ public class SecurityUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testLoadEncryptedAESPrivateKey() {
-        for (BuiltinCiphers c : new BuiltinCiphers[]{
-            BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc
+        for (BuiltinCiphers c : new BuiltinCiphers[] {
+                BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc
         }) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported encryption scheme: " + c.getName());
@@ -151,7 +150,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
 
     private KeyPair testLoadPrivateKey(
             String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Path folder = getTestResourcesFolder();
         Path file = folder.resolve(name);
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
@@ -173,21 +172,21 @@ public class SecurityUtilsTest extends JUnitTestSupport {
 
     private static KeyPair testLoadPrivateKeyResource(
             String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(
-            NamedResource.ofName(name), new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
+                NamedResource.ofName(name), new ClassLoadableResourceKeyPairProvider(name), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKeyFile(
             Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return testLoadPrivateKey(new PathResource(file), new FileKeyPairProvider(file), pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKey(
             NamedResource resourceKey, AbstractResourceKeyPairProvider<?> provider,
             Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         provider.setPasswordFinder(TEST_PASSWORD_PROVIDER);
 
         Iterable<KeyPair> iterator = provider.loadKeys(null);
@@ -201,11 +200,13 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         KeyPair kp = pairs.get(0);
         PublicKey pub = kp.getPublic();
         assertNotNull("No public key extracted", pub);
-        assertTrue("Not an " + pubType.getSimpleName() + " public key for " + resourceKey, pubType.isAssignableFrom(pub.getClass()));
+        assertTrue("Not an " + pubType.getSimpleName() + " public key for " + resourceKey,
+                pubType.isAssignableFrom(pub.getClass()));
 
         PrivateKey prv = kp.getPrivate();
         assertNotNull("No private key extracted", prv);
-        assertTrue("Not an " + prvType.getSimpleName() + " private key for " + resourceKey, prvType.isAssignableFrom(prv.getClass()));
+        assertTrue("Not an " + prvType.getSimpleName() + " private key for " + resourceKey,
+                prvType.isAssignableFrom(prv.getClass()));
 
         return kp;
     }
@@ -213,8 +214,10 @@ public class SecurityUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetMaxDHGroupExchangeKeySizeByProperty() {
         try {
-            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE; expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE; expected += 1024) {
-                SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE;
+                 expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE;
+                 expected += 1024) {
+                SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
                 try {
                     System.setProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP, Integer.toString(expected));
                     assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
@@ -224,20 +227,22 @@ public class SecurityUtilsTest extends JUnitTestSupport {
                 }
             }
         } finally {
-            SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+            SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
         }
     }
 
     @Test
     public void testSetMaxDHGroupExchangeKeySizeProgrammatically() {
         try {
-            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE; expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE; expected += 1024) {
+            for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE;
+                 expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE;
+                 expected += 1024) {
                 SecurityUtils.setMaxDHGroupExchangeKeySize(expected);
                 assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
                 assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
             }
         } finally {
-            SecurityUtils.setMaxDHGroupExchangeKeySize(0);  // force detection
+            SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
         }
     }
 }
