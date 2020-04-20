@@ -39,13 +39,13 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
-    public static final String  DEFAULT_CIPHER_MODE = "CBC";
+    public static final String DEFAULT_CIPHER_MODE = "CBC";
 
-    private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS =
-        Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
-            .collect(Collectors.toMap(
-                AbstractPrivateKeyObfuscator::getCipherName, Function.identity(),
-                GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+    private static final Map<String, PrivateKeyObfuscator> OBFUSCATORS
+            = Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
+                    .collect(Collectors.toMap(
+                            AbstractPrivateKeyObfuscator::getCipherName, Function.identity(),
+                            GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
     private String cipherName;
     private String cipherType;
@@ -136,7 +136,7 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
 
     public static boolean unregisterPrivateKeyObfuscator(PrivateKeyObfuscator o) {
         Objects.requireNonNull(o, "No instance provided");
-        String  cipherName = o.getCipherName();
+        String cipherName = o.getCipherName();
         ValidateUtils.checkNotNullAndNotEmpty(cipherName, "No cipher name");
 
         synchronized (OBFUSCATORS) {
@@ -188,9 +188,9 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
     }
 
     /**
-     * @param algInfo The algorithm info - format: <I>{@code name-type-mode}</I>
-     * @return The updated context instance
-     * @see #parseAlgorithmInfo(PrivateKeyEncryptionContext, String)
+     * @param  algInfo The algorithm info - format: <I>{@code name-type-mode}</I>
+     * @return         The updated context instance
+     * @see            #parseAlgorithmInfo(PrivateKeyEncryptionContext, String)
      */
     public PrivateKeyEncryptionContext parseAlgorithmInfo(String algInfo) {
         return parseAlgorithmInfo(this, algInfo);
@@ -214,10 +214,10 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
     @Override
     public int hashCode() {
         return GenericUtils.hashCode(getCipherName(), Boolean.TRUE)
-             + GenericUtils.hashCode(getCipherType(), Boolean.TRUE)
-             + GenericUtils.hashCode(getCipherMode(), Boolean.TRUE)
-             + Objects.hashCode(getPassword())
-             + Arrays.hashCode(getInitVector());
+               + GenericUtils.hashCode(getCipherType(), Boolean.TRUE)
+               + GenericUtils.hashCode(getCipherMode(), Boolean.TRUE)
+               + Objects.hashCode(getPassword())
+               + Arrays.hashCode(getInitVector());
     }
 
     @Override
@@ -234,22 +234,22 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
 
         PrivateKeyEncryptionContext other = (PrivateKeyEncryptionContext) obj;
         return (GenericUtils.safeCompare(getCipherName(), other.getCipherName(), false) == 0)
-            && (GenericUtils.safeCompare(getCipherType(), other.getCipherType(), false) == 0)
-            && (GenericUtils.safeCompare(getCipherMode(), other.getCipherMode(), false) == 0)
-            && (GenericUtils.safeCompare(getPassword(), other.getPassword(), true) == 0)
-            && Arrays.equals(getInitVector(), other.getInitVector());
+                && (GenericUtils.safeCompare(getCipherType(), other.getCipherType(), false) == 0)
+                && (GenericUtils.safeCompare(getCipherMode(), other.getCipherMode(), false) == 0)
+                && (GenericUtils.safeCompare(getPassword(), other.getPassword(), true) == 0)
+                && Arrays.equals(getInitVector(), other.getInitVector());
     }
 
     @Override
     public String toString() {
-        return GenericUtils.join(new String[]{getCipherName(), getCipherType(), getCipherMode()}, '-');
+        return GenericUtils.join(new String[] { getCipherName(), getCipherType(), getCipherMode() }, '-');
     }
 
     /**
-     * @param <C> Generic context type
-     * @param context The {@link PrivateKeyEncryptionContext} to update
-     * @param algInfo The algorithm info - format: {@code <I>name</I>-<I>type</I>-<I>mode</I>}
-     * @return The updated context
+     * @param  <C>     Generic context type
+     * @param  context The {@link PrivateKeyEncryptionContext} to update
+     * @param  algInfo The algorithm info - format: {@code <I>name</I>-<I>type</I>-<I>mode</I>}
+     * @return         The updated context
      */
     public static final <C extends PrivateKeyEncryptionContext> C parseAlgorithmInfo(C context, String algInfo) {
         ValidateUtils.checkNotNullAndNotEmpty(algInfo, "No encryption algorithm data");
@@ -267,7 +267,8 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
         return initializeObfuscator(new PrivateKeyEncryptionContext(), o, password);
     }
 
-    public static final <C extends PrivateKeyEncryptionContext> C initializeObfuscator(C context, PrivateKeyObfuscator o, String password) {
+    public static final <
+            C extends PrivateKeyEncryptionContext> C initializeObfuscator(C context, PrivateKeyObfuscator o, String password) {
         context.setCipherName(o.getCipherName());
         context.setPrivateKeyObfuscator(o);
         context.setPassword(password);

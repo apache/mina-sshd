@@ -73,9 +73,14 @@ public class UserAuthPassword extends AbstractUserAuth {
         current = passwords.next();
         String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-            username.length() + service.length()
-            + GenericUtils.length(getName()) + current.length()
-            + Integer.SIZE /* a few extra encoding fields overhead */);
+                username.length() + service.length()
+                                                                                    + GenericUtils.length(getName())
+                                                                                    + current.length()
+                                                                                    + Integer.SIZE /*
+                                                                                                    * a few extra
+                                                                                                    * encoding fields
+                                                                                                    * overhead
+                                                                                                    */);
         sendPassword(buffer, session, current, current);
         return true;
     }
@@ -83,12 +88,12 @@ public class UserAuthPassword extends AbstractUserAuth {
     @Override
     protected boolean processAuthDataRequest(
             ClientSession session, String service, Buffer buffer)
-                throws Exception {
+            throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
             throw new IllegalStateException(
-                "processAuthDataRequest(" + session + ")[" + service + "]"
-                + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+                    "processAuthDataRequest(" + session + ")[" + service + "]"
+                                            + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
         boolean debugEnabled = log.isDebugEnabled();
@@ -116,9 +121,10 @@ public class UserAuthPassword extends AbstractUserAuth {
             password = interactive ? ui.getUpdatedPassword(session, prompt, lang) : null;
         } catch (Error e) {
             log.warn("processAuthDataRequest({})[{}] failed ({}) to consult interaction: {}",
-                 session, service, e.getClass().getSimpleName(), e.getMessage());
+                    session, service, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("processAuthDataRequest(" + session + ")[" + service + "] interaction consultation failure details", e);
+                log.debug("processAuthDataRequest(" + session + ")[" + service + "] interaction consultation failure details",
+                        e);
             }
 
             throw new RuntimeSshException(e);
@@ -128,7 +134,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             if (GenericUtils.isEmpty(password)) {
                 if (debugEnabled) {
                     log.debug("processAuthDataRequest({})[{}] No updated password for prompt={}, lang={}",
-                          session, service, prompt, lang);
+                            session, service, prompt, lang);
                 }
                 return false;
             } else {
@@ -139,42 +145,43 @@ public class UserAuthPassword extends AbstractUserAuth {
 
         if (debugEnabled) {
             log.debug("processAuthDataRequest({})[{}] no UI for password change request for prompt={}, lang={}",
-                  session, service, prompt, lang);
+                    session, service, prompt, lang);
         }
 
         return false;
     }
 
     /**
-     * Sends the password via a {@code SSH_MSG_USERAUTH_REQUEST} message.
-     * If old and new password are not the same then it requests a password
-     * modification from the server (which may be denied if the server does
-     * not support this feature).
+     * Sends the password via a {@code SSH_MSG_USERAUTH_REQUEST} message. If old and new password are not the same then
+     * it requests a password modification from the server (which may be denied if the server does not support this
+     * feature).
      *
-     * @param buffer The {@link Buffer} to re-use for sending the message
-     * @param session The target {@link ClientSession}
-     * @param oldPassword The previous password
-     * @param newPassword The new password
-     * @return An {@link IoWriteFuture} that can be used to wait and check
-     * on the success/failure of the request packet being sent
+     * @param  buffer      The {@link Buffer} to re-use for sending the message
+     * @param  session     The target {@link ClientSession}
+     * @param  oldPassword The previous password
+     * @param  newPassword The new password
+     * @return             An {@link IoWriteFuture} that can be used to wait and check on the success/failure of the
+     *                     request packet being sent
      * @throws IOException If failed to send the message.
      */
     protected IoWriteFuture sendPassword(
             Buffer buffer, ClientSession session, String oldPassword, String newPassword)
-                throws IOException {
+            throws IOException {
         String username = session.getUsername();
         String service = getService();
         String name = getName();
         boolean modified = !Objects.equals(oldPassword, newPassword);
         if (log.isDebugEnabled()) {
             log.debug("sendPassword({})[{}] send SSH_MSG_USERAUTH_REQUEST for {} - modified={}",
-                  session, service, name, modified);
+                    session, service, name, modified);
         }
 
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
                 GenericUtils.length(username) + GenericUtils.length(service)
-              + GenericUtils.length(name) + GenericUtils.length(oldPassword)
-              + (modified ? GenericUtils.length(newPassword) : 0) + Long.SIZE);
+                                                                             + GenericUtils.length(name)
+                                                                             + GenericUtils.length(oldPassword)
+                                                                             + (modified ? GenericUtils.length(newPassword) : 0)
+                                                                             + Long.SIZE);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

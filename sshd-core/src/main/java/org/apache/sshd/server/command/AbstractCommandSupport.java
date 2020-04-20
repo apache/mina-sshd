@@ -66,8 +66,8 @@ public abstract class AbstractCommandSupport
 
         if (executorService == null) {
             String poolName = GenericUtils.isEmpty(command)
-                ? getClass().getSimpleName()
-                : command.replace(' ', '_').replace('/', ':');
+                    ? getClass().getSimpleName()
+                    : command.replace(' ', '_').replace('/', ':');
             this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
         } else {
             this.executorService = executorService;
@@ -157,10 +157,11 @@ public abstract class AbstractCommandSupport
                 cmdRunner = Thread.currentThread();
                 this.run();
             });
-        } catch (RuntimeException e) {    // e.g., RejectedExecutionException
+        } catch (RuntimeException e) { // e.g., RejectedExecutionException
             log.error("start(" + channel + ")"
-                + " Failed (" + e.getClass().getSimpleName() + ")"
-                + " to start command=" + cmd + ": " + e.getMessage(), e);
+                      + " Failed (" + e.getClass().getSimpleName() + ")"
+                      + " to start command=" + cmd + ": " + e.getMessage(),
+                    e);
             throw new IOException(e);
         }
     }
@@ -186,7 +187,7 @@ public abstract class AbstractCommandSupport
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {
                 log.debug("destroy({})[{}] - shutdown executor service - runners count={}",
-                    channel, this, runners.size());
+                        channel, this, runners.size());
             }
         }
         this.executorService = null;
@@ -201,7 +202,7 @@ public abstract class AbstractCommandSupport
         if (cbCalled) {
             if (log.isTraceEnabled()) {
                 log.trace("onExit({})[{}] ignore exitValue={}, message={} - already called",
-                    session, this, exitValue, exitMessage);
+                        session, this, exitValue, exitMessage);
             }
             return;
         }
@@ -210,7 +211,7 @@ public abstract class AbstractCommandSupport
         try {
             if (log.isDebugEnabled()) {
                 log.debug("onExit({})[{}] exiting - value={}, message={}",
-                    session, this, exitValue, exitMessage);
+                        session, this, exitValue, exitMessage);
             }
             cb.onExit(exitValue, exitMessage);
         } finally {

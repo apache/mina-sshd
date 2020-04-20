@@ -29,13 +29,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderUtils;
-
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 /**
  * TODO Add javadoc
@@ -52,7 +51,7 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
     @Override
     public Collection<KeyPair> loadKeyPairs(
             NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isEDDSACurveSupported()) {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " provider not supported for " + resourceKey);
         }
@@ -62,9 +61,9 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
             throw new InvalidKeySpecException("Not an " + SecurityUtils.EDDSA + " key: " + keyType);
         }
 
-        byte[] seed = pubReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
+        byte[] seed = pubReader.read(Short.MAX_VALUE); // reasonable max. allowed size
         PublicKey pubKey = EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
-        seed = prvReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
+        seed = prvReader.read(Short.MAX_VALUE); // reasonable max. allowed size
         PrivateKey prvKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(seed);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }

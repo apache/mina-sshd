@@ -43,38 +43,34 @@ public enum KexProposalOption {
     C2SLANG(Constants.PROPOSAL_LANG_CTOS, "languages (client to server)"),
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
 
-    public static final Set<KexProposalOption> CIPHER_PROPOSALS =
-        Collections.unmodifiableSet(EnumSet.of(C2SENC, S2CENC));
+    public static final Set<KexProposalOption> CIPHER_PROPOSALS = Collections.unmodifiableSet(EnumSet.of(C2SENC, S2CENC));
 
-    public static final Set<KexProposalOption> MAC_PROPOSALS =
-        Collections.unmodifiableSet(EnumSet.of(C2SMAC, S2CMAC));
+    public static final Set<KexProposalOption> MAC_PROPOSALS = Collections.unmodifiableSet(EnumSet.of(C2SMAC, S2CMAC));
 
-    public static final Set<KexProposalOption> COMPRESSION_PROPOSALS =
-        Collections.unmodifiableSet(EnumSet.of(C2SCOMP, S2CCOMP));
+    public static final Set<KexProposalOption> COMPRESSION_PROPOSALS
+            = Collections.unmodifiableSet(EnumSet.of(C2SCOMP, S2CCOMP));
 
-    public static final Set<KexProposalOption> LANGUAGE_PROPOSALS =
-        Collections.unmodifiableSet(EnumSet.of(C2SLANG, S2CLANG));
+    public static final Set<KexProposalOption> LANGUAGE_PROPOSALS = Collections.unmodifiableSet(EnumSet.of(C2SLANG, S2CLANG));
 
-    public static final Set<KexProposalOption> FIRST_KEX_PACKET_GUESS_MATCHES =
-        Collections.unmodifiableSet(EnumSet.of(ALGORITHMS, SERVERKEYS));
+    public static final Set<KexProposalOption> FIRST_KEX_PACKET_GUESS_MATCHES
+            = Collections.unmodifiableSet(EnumSet.of(ALGORITHMS, SERVERKEYS));
 
     /**
      * Compares values according to {@link KexProposalOption#getProposalIndex()}
      */
-    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX =
-        Comparator.comparingInt(KexProposalOption::getProposalIndex);
+    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX
+            = Comparator.comparingInt(KexProposalOption::getProposalIndex);
 
     /**
      * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex()}
      *
      * @see #BY_PROPOSAL_INDEX
      */
-    public static final List<KexProposalOption> VALUES =
-        Collections.unmodifiableList(
+    public static final List<KexProposalOption> VALUES = Collections.unmodifiableList(
             EnumSet.allOf(KexProposalOption.class)
-                .stream()
-                .sorted(BY_PROPOSAL_INDEX)
-                .collect(Collectors.toList()));
+                    .stream()
+                    .sorted(BY_PROPOSAL_INDEX)
+                    .collect(Collectors.toList()));
 
     public static final int PROPOSAL_MAX = VALUES.size();
 
@@ -96,16 +92,16 @@ public enum KexProposalOption {
 
     /**
      * @return User-friendly name for the KEX negotiation item
-     * @see <A HREF="http://tools.ietf.org/html/rfc4253#section-7.1">RFC-4253 - section 7.1</A>
+     * @see    <A HREF="http://tools.ietf.org/html/rfc4253#section-7.1">RFC-4253 - section 7.1</A>
      */
     public final String getDescription() {
         return description;
     }
 
     /**
-     * @param n The option name - ignored if {@code null}/empty
-     * @return The matching {@link KexProposalOption#name()} - case <U>insensitive</U>
-     * or {@code null} if no match found
+     * @param  n The option name - ignored if {@code null}/empty
+     * @return   The matching {@link KexProposalOption#name()} - case <U>insensitive</U> or {@code null} if no match
+     *           found
      */
     public static KexProposalOption fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

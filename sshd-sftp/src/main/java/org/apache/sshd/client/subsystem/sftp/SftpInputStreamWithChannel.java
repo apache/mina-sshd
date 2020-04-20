@@ -41,7 +41,8 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel {
     private CloseableHandle handle;
     private long offset;
 
-    public SftpInputStreamWithChannel(SftpClient client, int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
+    public SftpInputStreamWithChannel(SftpClient client, int bufferSize, String path,
+                                      Collection<OpenMode> mode) throws IOException {
         this.client = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         bb = new byte[1];

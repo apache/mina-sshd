@@ -25,8 +25,7 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Interface providing access to the environment map and allowing the registration
- * of listeners for certain signals.
+ * Interface providing access to the environment map and allowing the registration of listeners for certain signals.
  *
  * @see org.apache.sshd.server.Signal
  */
@@ -37,22 +36,19 @@ public interface Environment {
     String ENV_USER = "USER";
 
     /**
-     * Key for the lines environment variable. Specifies the number of
-     * lines visible on the client side. {@link #ENV_LINES} and
-     * {@link #ENV_COLUMNS} make up the console screen size.
+     * Key for the lines environment variable. Specifies the number of lines visible on the client side.
+     * {@link #ENV_LINES} and {@link #ENV_COLUMNS} make up the console screen size.
      */
     String ENV_LINES = "LINES";
 
     /**
-     * Key for the columns environment variable. Specifies the number of
-     * columns visible on the client side. {@link #ENV_LINES} and
-     * {@link #ENV_COLUMNS} make up the console screen size.
+     * Key for the columns environment variable. Specifies the number of columns visible on the client side.
+     * {@link #ENV_LINES} and {@link #ENV_COLUMNS} make up the console screen size.
      */
     String ENV_COLUMNS = "COLUMNS";
 
     /**
-     * Key for the term environment variable. Describes the terminal or
-     * terminal emulation which is in use.
+     * Key for the term environment variable. Describes the terminal or terminal emulation which is in use.
      */
     String ENV_TERM = "TERM";
 
@@ -74,7 +70,7 @@ public interface Environment {
      * Add a qualified listener for the specific signals
      *
      * @param listener the {@link SignalListener} to register
-     * @param signals The (never {@code null}/empty) {@link Signal}s the listener is interested in
+     * @param signals  The (never {@code null}/empty) {@link Signal}s the listener is interested in
      */
     default void addSignalListener(SignalListener listener, Signal... signals) {
         addSignalListener(listener, GenericUtils.of(signals));

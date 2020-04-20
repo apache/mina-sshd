@@ -58,7 +58,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
 
     public void setUserHomeDir(String userName, Path userHomeDir) {
         homeDirs.put(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"),
-                     Objects.requireNonNull(userHomeDir, "No home dir"));
+                Objects.requireNonNull(userHomeDir, "No home dir"));
     }
 
     public Path getUserHomeDir(String userName) {
@@ -76,7 +76,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         return new RootedFileSystemProvider().newFileSystem(dir, Collections.emptyMap());
     }
 
-    protected Path computeRootDir(Session session) throws IOException  {
+    protected Path computeRootDir(Session session) throws IOException {
         String username = session.getUsername();
         Path homeDir = getUserHomeDir(username);
         if (homeDir == null) {

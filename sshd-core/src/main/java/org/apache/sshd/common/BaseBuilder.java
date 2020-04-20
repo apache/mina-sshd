@@ -52,9 +52,9 @@ import org.apache.sshd.server.forward.RejectAllForwardingFilter;
 /**
  * Base class for dedicated client/server instance builders
  *
- * @param <T> Type of {@link AbstractFactoryManager} being built
- * @param <S> Type of builder
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of {@link AbstractFactoryManager} being built
+ * @param  <S> Type of builder
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
     public static final FileSystemFactory DEFAULT_FILE_SYSTEM_FACTORY = NativeFileSystemFactory.INSTANCE;
@@ -64,71 +64,64 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     public static final ForwardingFilterFactory DEFAULT_FORWARDER_FACTORY = DefaultForwarderFactory.INSTANCE;
 
     /**
-     * The default {@link BuiltinCiphers} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</A>
+     * The default {@link BuiltinCiphers} setup in order of preference as specified by
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</A>
      */
-    public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
-        Collections.unmodifiableList(
+    public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinCiphers.aes128ctr,
-                BuiltinCiphers.aes192ctr,
-                BuiltinCiphers.aes256ctr,
-                BuiltinCiphers.arcfour256,
-                BuiltinCiphers.arcfour128,
-                BuiltinCiphers.aes128cbc,
-                BuiltinCiphers.tripledescbc,
-                BuiltinCiphers.blowfishcbc,
-                // TODO add support for cast128-cbc cipher
-                BuiltinCiphers.aes192cbc,
-                BuiltinCiphers.aes256cbc
-                // TODO add support for arcfour cipher
+                    BuiltinCiphers.aes128ctr,
+                    BuiltinCiphers.aes192ctr,
+                    BuiltinCiphers.aes256ctr,
+                    BuiltinCiphers.arcfour256,
+                    BuiltinCiphers.arcfour128,
+                    BuiltinCiphers.aes128cbc,
+                    BuiltinCiphers.tripledescbc,
+                    BuiltinCiphers.blowfishcbc,
+                    // TODO add support for cast128-cbc cipher
+                    BuiltinCiphers.aes192cbc,
+                    BuiltinCiphers.aes256cbc
+            // TODO add support for arcfour cipher
             ));
 
     /**
-     * The default {@link BuiltinDHFactories} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A>
+     * The default {@link BuiltinDHFactories} setup in order of preference as specified by
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5"> ssh_config(5)</A>
      */
-    public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE =
-        Collections.unmodifiableList(
+    public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinDHFactories.ecdhp521,
-                BuiltinDHFactories.ecdhp384,
-                BuiltinDHFactories.ecdhp256,
+                    BuiltinDHFactories.ecdhp521,
+                    BuiltinDHFactories.ecdhp384,
+                    BuiltinDHFactories.ecdhp256,
 
-                BuiltinDHFactories.dhgex256,
-                BuiltinDHFactories.dhgex,
+                    BuiltinDHFactories.dhgex256,
+                    BuiltinDHFactories.dhgex,
 
-                BuiltinDHFactories.dhg18_512,
-                BuiltinDHFactories.dhg17_512,
-                BuiltinDHFactories.dhg16_512,
-                BuiltinDHFactories.dhg15_512,
-                BuiltinDHFactories.dhg14_256,
-                BuiltinDHFactories.dhg14,
-                BuiltinDHFactories.dhg1
-            ));
+                    BuiltinDHFactories.dhg18_512,
+                    BuiltinDHFactories.dhg17_512,
+                    BuiltinDHFactories.dhg16_512,
+                    BuiltinDHFactories.dhg15_512,
+                    BuiltinDHFactories.dhg14_256,
+                    BuiltinDHFactories.dhg14,
+                    BuiltinDHFactories.dhg1));
 
     /**
-     * The default {@link BuiltinMacs} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A>
+     * The default {@link BuiltinMacs} setup in order of preference as specified by
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5"> ssh_config(5)</A>
      */
-    public static final List<BuiltinMacs> DEFAULT_MAC_PREFERENCE =
-        Collections.unmodifiableList(
+    public static final List<BuiltinMacs> DEFAULT_MAC_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinMacs.hmacsha256etm,
-                BuiltinMacs.hmacsha512etm,
-                BuiltinMacs.hmacsha1etm,
-                BuiltinMacs.hmacsha256,
-                BuiltinMacs.hmacsha512,
-                BuiltinMacs.hmacsha1,
-                BuiltinMacs.hmacmd5,
-                BuiltinMacs.hmacsha196,
-                BuiltinMacs.hmacmd596
-            ));
+                    BuiltinMacs.hmacsha256etm,
+                    BuiltinMacs.hmacsha512etm,
+                    BuiltinMacs.hmacsha1etm,
+                    BuiltinMacs.hmacsha256,
+                    BuiltinMacs.hmacsha512,
+                    BuiltinMacs.hmacsha1,
+                    BuiltinMacs.hmacmd5,
+                    BuiltinMacs.hmacsha196,
+                    BuiltinMacs.hmacmd596));
 
-    public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER =
-            DefaultUnknownChannelReferenceHandler.INSTANCE;
+    public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER
+            = DefaultUnknownChannelReferenceHandler.INSTANCE;
 
     protected Factory<T> factory;
     protected List<KeyExchangeFactory> keyExchangeFactories;
@@ -285,34 +278,30 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     }
 
     /**
-     * @param ignoreUnsupported If {@code true} then all the default
-     * ciphers are included, regardless of whether they are currently
-     * supported by the JCE. Otherwise, only the supported ones out of the
-     * list are included
-     * @return A {@link List} of the default {@link NamedFactory}
-     * instances of the {@link Cipher}s according to the preference
-     * order defined by {@link #DEFAULT_CIPHERS_PREFERENCE}.
-     * <B>Note:</B> the list may be filtered to exclude unsupported JCE
-     * ciphers according to the <tt>ignoreUnsupported</tt> parameter
-     * @see BuiltinCiphers#isSupported()
+     * @param  ignoreUnsupported If {@code true} then all the default ciphers are included, regardless of whether they
+     *                           are currently supported by the JCE. Otherwise, only the supported ones out of the list
+     *                           are included
+     * @return                   A {@link List} of the default {@link NamedFactory} instances of the {@link Cipher}s
+     *                           according to the preference order defined by {@link #DEFAULT_CIPHERS_PREFERENCE}.
+     *                           <B>Note:</B> the list may be filtered to exclude unsupported JCE ciphers according to
+     *                           the <tt>ignoreUnsupported</tt> parameter
+     * @see                      BuiltinCiphers#isSupported()
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    @SuppressWarnings({ "unchecked", "rawtypes" }) // safe due to the hierarchy
     public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
         return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
     }
 
     /**
-     * @param ignoreUnsupported If {@code true} all the available built-in
-     * {@link Mac} factories are added, otherwise only those that are supported
-     * by the current JDK setup
-     * @return A {@link List} of the default {@link NamedFactory}
-     * instances of the {@link Mac}s according to the preference
-     * order defined by {@link #DEFAULT_MAC_PREFERENCE}.
-     * <B>Note:</B> the list may be filtered to exclude unsupported JCE
-     * MACs according to the <tt>ignoreUnsupported</tt> parameter
-     * @see BuiltinMacs#isSupported()
+     * @param  ignoreUnsupported If {@code true} all the available built-in {@link Mac} factories are added, otherwise
+     *                           only those that are supported by the current JDK setup
+     * @return                   A {@link List} of the default {@link NamedFactory} instances of the {@link Mac}s
+     *                           according to the preference order defined by {@link #DEFAULT_MAC_PREFERENCE}.
+     *                           <B>Note:</B> the list may be filtered to exclude unsupported JCE MACs according to the
+     *                           <tt>ignoreUnsupported</tt> parameter
+     * @see                      BuiltinMacs#isSupported()
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    @SuppressWarnings({ "unchecked", "rawtypes" }) // safe due to the hierarchy
     public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
         return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
     }

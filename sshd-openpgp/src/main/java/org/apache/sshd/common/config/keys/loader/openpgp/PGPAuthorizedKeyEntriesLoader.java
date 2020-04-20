@@ -47,7 +47,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
     @Override
     default PublicKey resolve(
             SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)) {
             return null;
         }
@@ -61,15 +61,18 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
         try {
             keys = loadMatchingKeyFingerprints(session, Collections.singletonList(fingerprint));
         } catch (PGPException e) {
-            throw new InvalidKeyException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to load key type=" + keyType + " with fingerprint=" + fingerprint
-                    + ": " + e.getMessage(), e);
+            throw new InvalidKeyException(
+                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                          + " to load key type=" + keyType + " with fingerprint=" + fingerprint
+                                          + ": " + e.getMessage(),
+                    e);
         }
 
         int numKeys = GenericUtils.size(keys);
         if (numKeys > 1) {
-            throw new StreamCorruptedException("Multiple matches (" + numKeys + ")"
-                + " for " + keyType + " fingerprint=" + fingerprint);
+            throw new StreamCorruptedException(
+                    "Multiple matches (" + numKeys + ")"
+                                               + " for " + keyType + " fingerprint=" + fingerprint);
         }
 
         return GenericUtils.head(keys);
@@ -77,7 +80,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
 
     default List<PublicKey> resolveAuthorizedEntries(
             SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         Map<String, ? extends Collection<PublicKeyEntry>> typesMap = KeyTypeIndicator.groupByKeyType(entries);
         if (GenericUtils.isEmpty(typesMap)) {
             return Collections.emptyList();
@@ -88,8 +91,8 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
             String keyType = te.getKey();
             Collection<PublicKeyEntry> keyEntries = te.getValue();
             Collection<PublicKey> subKeys = PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES.contains(keyType)
-                ? loadMatchingAuthorizedEntries(session, keyEntries)
-                : PublicKeyEntry.resolvePublicKeyEntries(session, keyEntries, fallbackResolver);
+                    ? loadMatchingAuthorizedEntries(session, keyEntries)
+                    : PublicKeyEntry.resolvePublicKeyEntries(session, keyEntries, fallbackResolver);
             if (GenericUtils.isEmpty(subKeys)) {
                 continue;
             }
@@ -102,7 +105,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
 
     default List<PublicKey> loadMatchingAuthorizedEntries(
             SessionContext session, Collection<? extends PublicKeyEntry> entries)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         int numEntries = GenericUtils.size(entries);
         if (numEntries <= 0) {
             return Collections.emptyList();
@@ -122,8 +125,8 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
             }
 
             if (!fingerprints.add(fp)) {
-                //noinspection UnnecessaryContinue
-                continue;   // debug breakpoint
+                // noinspection UnnecessaryContinue
+                continue; // debug breakpoint
             }
         }
 
@@ -131,6 +134,6 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
     }
 
     List<PublicKey> loadMatchingKeyFingerprints(
-        SessionContext session, Collection<String> fingerprints)
+            SessionContext session, Collection<String> fingerprints)
             throws IOException, GeneralSecurityException, PGPException;
 }

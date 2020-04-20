@@ -39,10 +39,10 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session on the default port and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param username Username
-     * @param password Password
-     * @return Created {@link ClientSession}
+     * @param  host        The target host name or address
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(String host, String username, String password) throws IOException {
@@ -52,24 +52,25 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param port The target port
-     * @param username Username
-     * @param password Password
-     * @return Created {@link ClientSession}
+     * @param  host        The target host name or address
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(String host, int port, String username, String password) throws IOException {
-        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, password);
+        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username,
+                password);
     }
 
     /**
      * Creates a session on the default port and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link ClientSession}
+     * @param  host        The target host name or address
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(String host, String username, KeyPair identity) throws IOException {
@@ -79,24 +80,25 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param host The target host name or address
-     * @param port The target port
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link ClientSession}
+     * @param  host        The target host name or address
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(String host, int port, String username, KeyPair identity) throws IOException {
-        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username, identity);
+        return sessionLogin(InetAddress.getByName(ValidateUtils.checkNotNullAndNotEmpty(host, "No host")), port, username,
+                identity);
     }
 
     /**
      * Creates a session on the default port and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param username Username
-     * @param password Password
-     * @return Created {@link ClientSession}
+     * @param  host        The target host {@link InetAddress}
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, String username, String password) throws IOException {
@@ -106,11 +108,11 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param port The target port
-     * @param username Username
-     * @param password Password
-     * @return Created {@link ClientSession}
+     * @param  host        The target host {@link InetAddress}
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, int port, String username, String password) throws IOException {
@@ -120,10 +122,10 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session on the default port and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link ClientSession}
+     * @param  host        The target host {@link InetAddress}
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, String username, KeyPair identity) throws IOException {
@@ -133,11 +135,11 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param host The target host {@link InetAddress}
-     * @param port The target port
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link ClientSession}
+     * @param  host        The target host {@link InetAddress}
+     * @param  port        The target port
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     default ClientSession sessionLogin(InetAddress host, int port, String username, KeyPair identity) throws IOException {
@@ -147,10 +149,10 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param target The target {@link SocketAddress}
-     * @param username Username
-     * @param password Password
-     * @return Created {@link ClientSession}
+     * @param  target      The target {@link SocketAddress}
+     * @param  username    Username
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     ClientSession sessionLogin(SocketAddress target, String username, String password) throws IOException;
@@ -158,10 +160,10 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
     /**
      * Creates a session and logs in using the provided credentials
      *
-     * @param target The target {@link SocketAddress}
-     * @param username Username
-     * @param identity The {@link KeyPair} identity
-     * @return Created {@link ClientSession}
+     * @param  target      The target {@link SocketAddress}
+     * @param  username    Username
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
      * @throws IOException If failed to login or authenticate
      */
     ClientSession sessionLogin(SocketAddress target, String username, KeyPair identity) throws IOException;

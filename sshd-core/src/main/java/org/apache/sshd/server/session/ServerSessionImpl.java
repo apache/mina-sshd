@@ -34,7 +34,7 @@ public class ServerSessionImpl extends AbstractServerSession {
 
         String headerConfig = this.getString(ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES);
         String[] headers = GenericUtils.split(
-            headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+                headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
         sendServerIdentification(headers);
     }
 }

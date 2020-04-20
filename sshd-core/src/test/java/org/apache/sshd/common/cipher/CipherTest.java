@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
@@ -51,15 +52,13 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.jcraft.jsch.JSch;
-
 /**
  * Test Cipher algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CipherTest extends BaseTestSupport {
     private static final Integer NUM_LOADTEST_ROUNDS = 100000;
@@ -67,26 +66,23 @@ public class CipherTest extends BaseTestSupport {
     /*
      * NOTE !!! order is important since we build from it the C2S/S2C ciphers proposal
      */
-    private static final List<Object[]> PARAMETERS =
-        Collections.unmodifiableList(
+    private static final List<Object[]> PARAMETERS = Collections.unmodifiableList(
             Arrays.asList(
-                new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.aes128ctr, com.jcraft.jsch.jce.AES128CTR.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.aes192ctr, com.jcraft.jsch.jce.AES192CTR.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.aes256ctr, com.jcraft.jsch.jce.AES256CTR.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS},
-                new Object[]{BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS}
-            ));
+                    new Object[] { BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.aes128ctr, com.jcraft.jsch.jce.AES128CTR.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.aes192ctr, com.jcraft.jsch.jce.AES192CTR.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.aes256ctr, com.jcraft.jsch.jce.AES256CTR.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.arcfour128, com.jcraft.jsch.jce.ARCFOUR128.class, NUM_LOADTEST_ROUNDS },
+                    new Object[] { BuiltinCiphers.arcfour256, com.jcraft.jsch.jce.ARCFOUR256.class, NUM_LOADTEST_ROUNDS }));
 
-    private static final List<NamedResource> TEST_CIPHERS =
-        Collections.unmodifiableList(
+    private static final List<NamedResource> TEST_CIPHERS = Collections.unmodifiableList(
             Stream.concat(PARAMETERS.stream()
-                .map(params -> (NamedResource) params[0]), Stream.of(BuiltinCiphers.none))
-                .collect(Collectors.toList()));
+                    .map(params -> (NamedResource) params[0]), Stream.of(BuiltinCiphers.none))
+                    .collect(Collectors.toList()));
 
     private static final String CRYPT_NAMES = NamedResource.getNames(TEST_CIPHERS);
     private static SshServer sshd;
@@ -98,9 +94,9 @@ public class CipherTest extends BaseTestSupport {
     private final int loadTestRounds;
 
     public CipherTest(
-            BuiltinCiphers builtInCipher,
-            Class<? extends com.jcraft.jsch.Cipher> jschCipher,
-            int loadTestRounds) {
+                      BuiltinCiphers builtInCipher,
+                      Class<? extends com.jcraft.jsch.Cipher> jschCipher,
+                      int loadTestRounds) {
         this.builtInCipher = builtInCipher;
         this.jschCipher = jschCipher;
         this.loadTestRounds = loadTestRounds;
@@ -133,7 +129,7 @@ public class CipherTest extends BaseTestSupport {
     @Test
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(),
-            builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
+                builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
         sshd.setCipherFactories(Collections.singletonList(builtInCipher));
         runJschTest(port);
     }
@@ -179,7 +175,7 @@ public class CipherTest extends BaseTestSupport {
 
     private static void loadTest(
             NamedFactory<Cipher> factory, Random random, int numRounds)
-                throws Exception {
+            throws Exception {
         Cipher cipher = factory.create();
         byte[] key = new byte[cipher.getKdfSize()];
         byte[] iv = new byte[cipher.getIVSize()];
@@ -195,9 +191,9 @@ public class CipherTest extends BaseTestSupport {
         }
         long t1 = System.currentTimeMillis();
         System.err.append(CipherTest.class.getSimpleName())
-            .append(" - ").append(factory.getName())
-            .append('[').append(Integer.toString(numRounds)).append(']')
-            .append(": ").append(Long.toString(t1 - t0)).println(" ms");
+                .append(" - ").append(factory.getName())
+                .append('[').append(Integer.toString(numRounds)).append(']')
+                .append(": ").append(Long.toString(t1 - t0)).println(" ms");
     }
 
     static boolean checkCipher(String cipher) {
@@ -210,8 +206,8 @@ public class CipherTest extends BaseTestSupport {
             return true;
         } catch (Exception e) {
             System.err.println("checkCipher(" + cipher + ")"
-                + " " + e.getClass().getSimpleName()
-                + ": " + e.getMessage());
+                               + " " + e.getClass().getSimpleName()
+                               + ": " + e.getMessage());
             return false;
         }
     }

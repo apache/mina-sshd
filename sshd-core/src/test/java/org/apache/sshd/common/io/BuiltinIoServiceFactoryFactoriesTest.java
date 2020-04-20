@@ -37,7 +37,7 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testFromFactoryName() {
-        for (String name : new String[]{null, "", getCurrentTestName()}) {
+        for (String name : new String[] { null, "", getCurrentTestName() }) {
             assertNull("Unexpected success for name='" + name + "'", BuiltinIoServiceFactoryFactories.fromFactoryName(name));
         }
 

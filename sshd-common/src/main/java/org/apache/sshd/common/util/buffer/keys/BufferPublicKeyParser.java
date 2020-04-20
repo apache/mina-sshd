@@ -31,8 +31,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * Parses a raw {@link PublicKey} from a {@link Buffer}
  *
- * @param <PUB> Type of {@link PublicKey} being extracted
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey} being extracted
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface BufferPublicKeyParser<PUB extends PublicKey> {
 
@@ -64,20 +64,21 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
                     SkED25519BufferPublicKeyParser.INSTANCE));
 
     /**
-     * @param keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
-     * @return {@code true} if this key type is supported by the parser
+     * @param  keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
+     * @return         {@code true} if this key type is supported by the parser
      */
     boolean isKeyTypeSupported(String keyType);
 
     /**
-     * @param keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
-     * @param buffer The {@link Buffer} containing the encoded raw public key
-     * @return The decoded {@link PublicKey}
+     * @param  keyType                  The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
+     * @param  buffer                   The {@link Buffer} containing the encoded raw public key
+     * @return                          The decoded {@link PublicKey}
      * @throws GeneralSecurityException If failed to generate the key
      */
     PUB getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException;
 
-    static BufferPublicKeyParser<PublicKey> aggregate(Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
+    static BufferPublicKeyParser<PublicKey> aggregate(
+            Collection<? extends BufferPublicKeyParser<? extends PublicKey>> parsers) {
         if (GenericUtils.isEmpty(parsers)) {
             return EMPTY;
         }

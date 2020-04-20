@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
@@ -49,22 +52,16 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.jcraft.jsch.JSch;
-
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.ConnectionInfo;
-
 /**
  * Test MAC algorithms with other known implementations.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class MacCompatibilityTest extends BaseTestSupport {
-    private static final Collection<String> GANYMEDE_MACS =
-        Collections.unmodifiableSet(
+    private static final Collection<String> GANYMEDE_MACS = Collections.unmodifiableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
 
     private static SshServer sshd;
@@ -108,11 +105,11 @@ public class MacCompatibilityTest extends BaseTestSupport {
                 if ("sha2".equals(algorithm)) {
                     className = "HMACSHA" + remainder.toUpperCase();
                 } else {
-                    className = "HMAC" + algorithm.toUpperCase()  + remainder.toUpperCase();
+                    className = "HMAC" + algorithm.toUpperCase() + remainder.toUpperCase();
                 }
             }
 
-            ret.add(new Object[]{f, "com.jcraft.jsch.jce." + className});
+            ret.add(new Object[] { f, "com.jcraft.jsch.jce." + className });
         }
 
         return ret;
@@ -184,10 +181,10 @@ public class MacCompatibilityTest extends BaseTestSupport {
         ch.ethz.ssh2.log.Logger.enabled = true;
         Connection conn = new Connection(TEST_LOCALHOST, port);
         try {
-            conn.setClient2ServerMACs(new String[]{macName});
+            conn.setClient2ServerMACs(new String[] { macName });
 
             ConnectionInfo info = conn.connect(null,
-                (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
+                    (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
             outputDebugMessage("Connected: kex=%s, key-type=%s, c2senc=%s, s2cenc=%s, c2mac=%s, s2cmac=%s",
                     info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
                     info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,

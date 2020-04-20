@@ -213,11 +213,11 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     @Override
     public String toString() {
         return getKeyType()
-            + "[id=" + getId()
-            + ", serial=" + getSerial()
-            + ", type=" + getType()
-            + ", validAfter=" + getValidAfterDate()
-            + ", validBefore=" + getValidBeforeDate()
-            + "]";
+               + "[id=" + getId()
+               + ", serial=" + getSerial()
+               + ", type=" + getType()
+               + ", validAfter=" + getValidAfterDate()
+               + ", validBefore=" + getValidBeforeDate()
+               + "]";
     }
 }

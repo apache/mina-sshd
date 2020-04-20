@@ -88,7 +88,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
         };
 
         String chType = PropertyResolverUtils.getString(
-            getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
+                getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
         rtn.setChannelType(chType);
         return rtn;
     }
@@ -110,7 +110,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     protected Buffer waitForMessageBuffer() throws IOException {
         Session session = getSession();
         long idleTimeout = PropertyResolverUtils.getLongProperty(
-            session, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
+                session, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
         if (idleTimeout <= 0L) {
             idleTimeout = DEFAULT_MESSAGE_POLL_FREQUENCY;
         }
@@ -134,7 +134,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             } catch (InterruptedException e) {
                 throw (IOException) new InterruptedIOException(
                         "Interrupted while waiting for messages at iteration #" + count)
-                    .initCause(e);
+                                .initCause(e);
             }
         }
     }
@@ -142,15 +142,15 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     @Override
     protected void doOpen() throws IOException {
         ValidateUtils.checkTrue(
-            !Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
+                !Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
         invertedIn = new ChannelOutputStream(
-            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-            "Data length exceeds int boundaries: %d", len);
+                "Data length exceeds int boundaries: %d", len);
 
         Buffer message = null;
         synchronized (receiveBuffer) {

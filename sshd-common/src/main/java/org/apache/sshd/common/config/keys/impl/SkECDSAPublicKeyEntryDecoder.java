@@ -56,7 +56,7 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
     @Override
     public SkEcdsaPublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KEY_TYPE.equals(keyType)) {
             throw new InvalidKeySpecException("Invalid keyType: " + keyType);
         }
@@ -73,7 +73,9 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
             return null;
         }
 
-        return new SkEcdsaPublicKey(key.getAppName(), key.isNoTouchRequired(), ECDSAPublicKeyEntryDecoder.INSTANCE.clonePublicKey(key.getDelegatePublicKey()));
+        return new SkEcdsaPublicKey(
+                key.getAppName(), key.isNoTouchRequired(),
+                ECDSAPublicKeyEntryDecoder.INSTANCE.clonePublicKey(key.getDelegatePublicKey()));
     }
 
     @Override

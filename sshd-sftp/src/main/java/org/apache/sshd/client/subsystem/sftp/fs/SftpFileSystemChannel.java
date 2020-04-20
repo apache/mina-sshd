@@ -34,7 +34,8 @@ public class SftpFileSystemChannel extends SftpRemotePathChannel {
         this(Objects.requireNonNull(p, "No target path").toString(), p.getFileSystem(), modes);
     }
 
-    public SftpFileSystemChannel(String remotePath, SftpFileSystem fs, Collection<SftpClient.OpenMode> modes) throws IOException {
+    public SftpFileSystemChannel(String remotePath, SftpFileSystem fs,
+                                 Collection<SftpClient.OpenMode> modes) throws IOException {
         super(remotePath, Objects.requireNonNull(fs, "No SFTP file system").getClient(), true, modes);
     }
 }

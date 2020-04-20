@@ -46,10 +46,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     /*
      * As per RFC-4256:
      *
-     *      The language tag is deprecated and SHOULD be the empty string. It
-     *      may be removed in a future revision of this specification. Instead,
-     *      the server SHOULD select the language to be used based on the tags
-     *      communicated during key exchange
+     * The language tag is deprecated and SHOULD be the empty string. It may be removed in a future revision of this
+     * specification. Instead, the server SHOULD select the language to be used based on the tags communicated during
+     * key exchange
      */
     public static final String DEFAULT_INTERACTIVE_LANGUAGE_TAG = "";
 
@@ -58,19 +57,14 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     /*
      * As per RFC-4256:
      *
-     *      The submethods field is included so the user can give a hint of which
-     *      actual methods he wants to use. It is a comma-separated list of
-     *      authentication submethods (software or hardware) that the user
-     *      prefers. If the client has knowledge of the submethods preferred by
-     *      the user, presumably through a configuration setting, it MAY use the
-     *      submethods field to pass this information to the server. Otherwise,
-     *      it MUST send the empty string.
+     * The submethods field is included so the user can give a hint of which actual methods he wants to use. It is a
+     * comma-separated list of authentication submethods (software or hardware) that the user prefers. If the client has
+     * knowledge of the submethods preferred by the user, presumably through a configuration setting, it MAY use the
+     * submethods field to pass this information to the server. Otherwise, it MUST send the empty string.
      *
-     *      The actual names of the submethods is something the user and the
-     *      server need to agree upon.
+     * The actual names of the submethods is something the user and the server need to agree upon.
      *
-     *      Server interpretation of the submethods field is implementation-
-     *      dependent.
+     * Server interpretation of the submethods field is implementation- dependent.
      */
     public static final String DEFAULT_INTERACTIVE_SUBMETHODS = "";
 
@@ -89,7 +83,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         super.init(session, service);
         passwords = ClientSession.passwordIteratorOf(session);
         maxTrials = session.getIntProperty(
-            ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
+                ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
@@ -100,7 +94,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (requestPending.get()) {
             if (debugEnabled) {
                 log.debug("sendAuthDataRequest({})[{}] no reply for previous request for {}",
-                      session, service, name);
+                        session, service, name);
             }
             return false;
         }
@@ -114,13 +108,17 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String subMethods = getExchangeSubMethods(session);
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST for {}: lang={}, methods={}",
-                  session, service, name, lang, subMethods);
+                    session, service, name, lang, subMethods);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
                 username.length() + service.length() + name.length()
-              + GenericUtils.length(lang) + GenericUtils.length(subMethods)
-              + Long.SIZE /* a bit extra for the lengths */);
+                                                                                    + GenericUtils.length(lang)
+                                                                                    + GenericUtils.length(subMethods)
+                                                                                    + Long.SIZE /*
+                                                                                                 * a bit extra for the
+                                                                                                 * lengths
+                                                                                                 */);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);
@@ -135,8 +133,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST) {
-            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
-                    + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+            throw new IllegalStateException(
+                    "processAuthDataRequest(" + session + ")[" + service + "]"
+                                            + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
         requestPending.set(false);
@@ -154,8 +153,9 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("processAuthDataRequest({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={}, instruction={}, language={}, num-prompts={}",
-                  session, service, name, instruction, lang, num);
+            log.debug(
+                    "processAuthDataRequest({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={}, instruction={}, language={}, num-prompts={}",
+                    session, service, name, instruction, lang, num);
         }
 
         // SSHD-866
@@ -174,7 +174,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
             if (traceEnabled) {
                 log.trace("processAuthDataRequest({})[{}]({}) {}/{}: echo={}, prompt={}",
-                    session, service, name, i + 1, num, echo[i], prompt[i]);
+                        session, service, name, i + 1, num, echo[i], prompt[i]);
             }
         }
 
@@ -189,20 +189,19 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         /*
          * According to RFC4256:
          *
-         *      If the num-responses field does not match the num-prompts
-         *      field in the request message, the server MUST send a failure
-         *      message.
+         * If the num-responses field does not match the num-prompts field in the request message, the server MUST send
+         * a failure message.
          *
          * However it is the server's (!) responsibility to fail, so we only warn...
          */
         if (num != rep.length) {
             log.warn("processAuthDataRequest({})[{}] Mismatched prompts ({}) vs. responses count ({})",
-                session, service, num, rep.length);
+                    session, service, num, rep.length);
         }
 
         int numResponses = rep.length;
         buffer = session.createBuffer(
-            SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
+                SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
         buffer.putInt(numResponses);
         for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
@@ -236,26 +235,24 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             ClientSession session, String service, int cmd, int nbTrials, int maxAllowed) {
         if (log.isDebugEnabled()) {
             log.debug("verifyTrialsCount({})[{}] cmd={} - {} out of {}",
-                  session, service, getAuthCommandName(cmd), nbTrials, maxAllowed);
+                    session, service, getAuthCommandName(cmd), nbTrials, maxAllowed);
         }
 
         return nbTrials <= maxAllowed;
     }
 
     /**
-     * @param name        The interaction name - may be empty
-     * @param instruction The instruction - may be empty
-     * @param lang        The language tag - may be empty
-     * @param prompt      The prompts - may be empty
-     * @param echo        Whether to echo the response for the prompt or not - same
-     *                    length as the prompts
-     * @return The response for each prompt - if {@code null} then the assumption
-     * is that some internal error occurred and no response is sent. <B>Note:</B>
-     * according to <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
-     * the number of responses should be <U>exactly</U> the same as the number
-     * of prompts. However, since it is the <U>server's</U> responsibility to
-     * enforce this we do not validate the response (other than logging it as
-     * a warning...)
+     * @param  name        The interaction name - may be empty
+     * @param  instruction The instruction - may be empty
+     * @param  lang        The language tag - may be empty
+     * @param  prompt      The prompts - may be empty
+     * @param  echo        Whether to echo the response for the prompt or not - same length as the prompts
+     * @return             The response for each prompt - if {@code null} then the assumption is that some internal
+     *                     error occurred and no response is sent. <B>Note:</B> according to
+     *                     <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A> the number of responses should be
+     *                     <U>exactly</U> the same as the number of prompts. However, since it is the <U>server's</U>
+     *                     responsibility to enforce this we do not validate the response (other than logging it as a
+     *                     warning...)
      */
     protected String[] getUserResponses(
             String name, String instruction, String lang, String[] prompt, boolean[] echo) {
@@ -265,9 +262,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         /*
          * According to RFC 4256 - section 3.4
          *
-         *      In the case that the server sends a `0' num-prompts field in the
-         *      request message, the client MUST send a response message with a `0'
-         *      num-responses field to complete the exchange.
+         * In the case that the server sends a `0' num-prompts field in the request message, the client MUST send a
+         * response message with a `0' num-responses field to complete the exchange.
          */
         if (num == 0) {
             if (debugEnabled) {
@@ -284,7 +280,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 if (debugEnabled) {
                     log.debug("getUserResponses({}) use password candidate for interaction={}", session, name);
                 }
-                return new String[]{candidate};
+                return new String[] { candidate };
             }
         }
 
@@ -295,7 +291,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         } catch (Error e) {
             log.warn("getUserResponses({}) failed ({}) to consult interaction: {}",
-                 session, e.getClass().getSimpleName(), e.getMessage());
+                    session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("getUserResponses(" + session + ") interaction consultation failure details", e);
             }
@@ -311,19 +307,19 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     }
 
     /**
-     * Checks if we have a candidate password and <U>exactly one</U> prompt is requested
-     * with no echo, and the prompt matches a configurable pattern.
+     * Checks if we have a candidate password and <U>exactly one</U> prompt is requested with no echo, and the prompt
+     * matches a configurable pattern.
      *
-     * @param session The {@link ClientSession} through which the request is received
-     * @param password The current password candidate to use
-     * @param name The service name
-     * @param instruction The request instruction
-     * @param lang The reported language tag
-     * @param prompt The requested prompts
-     * @param echo The matching prompts echo flags
-     * @return Whether to use the password candidate as reply to the prompts
-     * @see UserInteraction#INTERACTIVE_PASSWORD_PROMPT INTERACTIVE_PASSWORD_PROMPT
-     * @see UserInteraction#CHECK_INTERACTIVE_PASSWORD_DELIM CHECK_INTERACTIVE_PASSWORD_DELIM
+     * @param  session     The {@link ClientSession} through which the request is received
+     * @param  password    The current password candidate to use
+     * @param  name        The service name
+     * @param  instruction The request instruction
+     * @param  lang        The reported language tag
+     * @param  prompt      The requested prompts
+     * @param  echo        The matching prompts echo flags
+     * @return             Whether to use the password candidate as reply to the prompts
+     * @see                UserInteraction#INTERACTIVE_PASSWORD_PROMPT INTERACTIVE_PASSWORD_PROMPT
+     * @see                UserInteraction#CHECK_INTERACTIVE_PASSWORD_DELIM CHECK_INTERACTIVE_PASSWORD_DELIM
      */
     protected boolean useCurrentPassword(
             ClientSession session, String password, String name,
@@ -339,16 +335,16 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         value = value.toLowerCase();
 
         String promptList = PropertyResolverUtils.getStringProperty(
-            session, UserInteraction.INTERACTIVE_PASSWORD_PROMPT,
-            UserInteraction.DEFAULT_INTERACTIVE_PASSWORD_PROMPT);
+                session, UserInteraction.INTERACTIVE_PASSWORD_PROMPT,
+                UserInteraction.DEFAULT_INTERACTIVE_PASSWORD_PROMPT);
         int passPos = UserInteraction.findPromptComponentLastPosition(value, promptList);
-        if (passPos < 0) {  // no password keyword in prompt
+        if (passPos < 0) { // no password keyword in prompt
             return false;
         }
 
         String delimList = PropertyResolverUtils.getStringProperty(
-            session, UserInteraction.CHECK_INTERACTIVE_PASSWORD_DELIM,
-            UserInteraction.DEFAULT_CHECK_INTERACTIVE_PASSWORD_DELIM);
+                session, UserInteraction.CHECK_INTERACTIVE_PASSWORD_DELIM,
+                UserInteraction.DEFAULT_CHECK_INTERACTIVE_PASSWORD_DELIM);
         if (PropertyResolverUtils.isNoneValue(delimList)) {
             return true;
         }
@@ -362,7 +358,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     }
 
     public static String getAuthCommandName(int cmd) {
-        switch(cmd) {
+        switch (cmd) {
             case SshConstants.SSH_MSG_USERAUTH_REQUEST:
                 return "SSH_MSG_USERAUTH_REQUEST";
             case SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST:

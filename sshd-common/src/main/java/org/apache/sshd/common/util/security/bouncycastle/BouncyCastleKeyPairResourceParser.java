@@ -57,19 +57,17 @@ import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourceParser {
-    public static final List<String> BEGINNERS =
-        Collections.unmodifiableList(
+    public static final List<String> BEGINNERS = Collections.unmodifiableList(
             Arrays.asList(
-                "BEGIN RSA PRIVATE KEY",
-                "BEGIN DSA PRIVATE KEY",
-                "BEGIN EC PRIVATE KEY"));
+                    "BEGIN RSA PRIVATE KEY",
+                    "BEGIN DSA PRIVATE KEY",
+                    "BEGIN EC PRIVATE KEY"));
 
-    public static final List<String> ENDERS =
-        Collections.unmodifiableList(
+    public static final List<String> ENDERS = Collections.unmodifiableList(
             Arrays.asList(
-                "END RSA PRIVATE KEY",
-                "END DSA PRIVATE KEY",
-                "END EC PRIVATE KEY"));
+                    "END RSA PRIVATE KEY",
+                    "END DSA PRIVATE KEY",
+                    "END EC PRIVATE KEY"));
 
     public static final BouncyCastleKeyPairResourceParser INSTANCE = new BouncyCastleKeyPairResourceParser();
 
@@ -83,7 +81,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         StringBuilder writer = new StringBuilder(beginMarker.length() + endMarker.length() + lines.size() * 80);
         writer.append(beginMarker).append(IoUtils.EOL);
         lines.forEach(l -> writer.append(l).append(IoUtils.EOL));
@@ -102,19 +100,18 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         KeyPair kp = loadKeyPair(session, resourceKey, stream, passwordProvider);
         return (kp == null) ? Collections.emptyList() : Collections.singletonList(kp);
     }
 
     public static KeyPair loadKeyPair(
             SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             Object o = r.readObject();
 
-            SecurityProviderRegistrar registrar =
-                SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
+            SecurityProviderRegistrar registrar = SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
             if (registrar == null) {
                 throw new NoSuchProviderException(SecurityUtils.BOUNCY_CASTLE + " registrar not available");
             }
@@ -143,8 +140,8 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                         PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(password.toCharArray());
                         decoded = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
                     } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                        ResourceDecodeResult result =
-                            provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
+                        ResourceDecodeResult result
+                                = provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
                         if (result == null) {
                             result = ResourceDecodeResult.TERMINATE;
                         }
@@ -156,7 +153,8 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                             case IGNORE:
                                 return null;
                             default:
-                                throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                                throw new ProtocolException(
+                                        "Unsupported decode attempt result (" + result + ") for " + resourceKey);
                         }
                     }
 

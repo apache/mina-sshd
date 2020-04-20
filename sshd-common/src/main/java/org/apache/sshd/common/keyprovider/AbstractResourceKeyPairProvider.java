@@ -43,15 +43,14 @@ import org.apache.sshd.common.util.io.resource.ResourceStreamProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * @param <R> Type of resource from which the {@link KeyPair} is generated
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <R> Type of resource from which the {@link KeyPair} is generated
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPairProvider {
     private FilePasswordProvider passwordFinder;
     /*
-     * NOTE: the map is case insensitive even for Linux, as it is (very) bad
-     * practice to have 2 key files that differ from one another only in their
-     * case...
+     * NOTE: the map is case insensitive even for Linux, as it is (very) bad practice to have 2 key files that differ
+     * from one another only in their case...
      */
     private final Map<String, Iterable<KeyPair>> cacheMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
@@ -68,11 +67,9 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
     }
 
     /**
-     * Checks which of the new resources we already loaded and can keep the
-     * associated key pair
+     * Checks which of the new resources we already loaded and can keep the associated key pair
      *
-     * @param resources The collection of new resources - can be {@code null}/empty
-     * in which case the cache is cleared
+     * @param resources The collection of new resources - can be {@code null}/empty in which case the cache is cleared
      */
     protected void resetCacheMap(Collection<?> resources) {
         // if have any cached pairs then see what we can keep from previous load
@@ -98,7 +95,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 }
 
                 if (!toDelete.add(resourceKey)) {
-                    continue;   // debug breakpoint
+                    continue; // debug breakpoint
                 }
             }
 
@@ -126,10 +123,10 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected Iterable<KeyPair> doLoadKeys(SessionContext session, R resource)
             throws IOException, GeneralSecurityException {
-        IoResource<?> ioResource =
-            ValidateUtils.checkNotNull(getIoResource(session, resource), "No I/O resource available for %s", resource);
-        String resourceKey =
-            ValidateUtils.checkNotNullAndNotEmpty(ioResource.getName(), "No resource string value for %s", resource);
+        IoResource<?> ioResource
+                = ValidateUtils.checkNotNull(getIoResource(session, resource), "No I/O resource available for %s", resource);
+        String resourceKey
+                = ValidateUtils.checkNotNullAndNotEmpty(ioResource.getName(), "No resource string value for %s", resource);
         Iterable<KeyPair> ids;
         synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file
@@ -170,7 +167,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected Iterable<KeyPair> doLoadKeys(
             SessionContext session, NamedResource resourceKey, R resource, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (InputStream inputStream = openKeyPairResource(session, resourceKey, resource)) {
             return doLoadKeys(session, resourceKey, inputStream, provider);
         }
@@ -178,7 +175,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected InputStream openKeyPairResource(
             SessionContext session, NamedResource resourceKey, R resource)
-                throws IOException {
+            throws IOException {
         if (resourceKey instanceof ResourceStreamProvider) {
             return ((ResourceStreamProvider) resourceKey).openInputStream();
         }
@@ -188,7 +185,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected Iterable<KeyPair> doLoadKeys(
             SessionContext session, NamedResource resourceKey, InputStream inputStream, FilePasswordProvider provider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return SecurityUtils.loadKeyPairIdentities(session, resourceKey, inputStream, provider);
     }
 
@@ -242,7 +239,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                     nextKeyPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
                 } catch (Throwable e) {
                     log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                           + " to load key resource=" + r + ": " + e.getMessage());
+                             + " to load key resource=" + r + ": " + e.getMessage());
                     if (debugEnabled) {
                         log.debug("Key resource=" + r + " load failure details", e);
                     }

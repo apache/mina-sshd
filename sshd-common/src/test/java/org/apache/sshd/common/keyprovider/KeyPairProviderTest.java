@@ -53,7 +53,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
         assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys(null)));
         assertTrue("Non empty key type", GenericUtils.isEmpty(provider.getKeyTypes(null)));
 
-        for (String keyType : new String[]{null, "", getCurrentTestName()}) {
+        for (String keyType : new String[] { null, "", getCurrentTestName() }) {
             assertNull("Unexpected key-pair loaded for type='" + keyType + "'", provider.loadKey(null, keyType));
         }
     }
@@ -62,12 +62,12 @@ public class KeyPairProviderTest extends JUnitTestSupport {
     public void testMapToKeyPairProvider() throws IOException, GeneralSecurityException {
         PublicKey pubKey = Mockito.mock(PublicKey.class);
         PrivateKey prvKey = Mockito.mock(PrivateKey.class);
-        String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
+        String[] testKeys = { getCurrentTestName(), getClass().getSimpleName() };
         Map<String, KeyPair> pairsMap = GenericUtils.toSortedMap(
-            Arrays.asList(testKeys),
-            Function.identity(),
-            k -> new KeyPair(pubKey, prvKey),
-            String.CASE_INSENSITIVE_ORDER);
+                Arrays.asList(testKeys),
+                Function.identity(),
+                k -> new KeyPair(pubKey, prvKey),
+                String.CASE_INSENSITIVE_ORDER);
 
         KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.apply(pairsMap);
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes(null));

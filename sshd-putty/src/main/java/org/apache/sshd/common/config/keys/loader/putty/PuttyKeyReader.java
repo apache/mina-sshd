@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Helper class for {@code Putty} key files decoders
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PuttyKeyReader implements Closeable {
@@ -52,19 +53,20 @@ public class PuttyKeyReader implements Closeable {
     }
 
     public String readString(Charset cs) throws IOException {
-        byte[] data = read(Short.MAX_VALUE);    // reasonable value for any expected string
+        byte[] data = read(Short.MAX_VALUE); // reasonable value for any expected string
         return new String(data, cs);
     }
 
     public BigInteger readInt() throws IOException {
-        byte[] bytes = read(Short.MAX_VALUE);   // reasonable value for any expected BigInteger
+        byte[] bytes = read(Short.MAX_VALUE); // reasonable value for any expected BigInteger
         return new BigInteger(bytes);
     }
 
     public byte[] read(int maxAllowed) throws IOException {
         int len = di.readInt();
         if (len > maxAllowed) {
-            throw new StreamCorruptedException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+            throw new StreamCorruptedException(
+                    "Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
         }
         if (len < 0) {
             throw new StreamCorruptedException("Negative block length requested: " + len);

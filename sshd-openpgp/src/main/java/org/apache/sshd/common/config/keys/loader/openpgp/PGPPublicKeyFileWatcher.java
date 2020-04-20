@@ -54,10 +54,10 @@ public class PGPPublicKeyFileWatcher extends ModifiableFileWatcher {
 
     public Key loadPublicKey(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         Key key = keyHolder.get();
         if ((key == null) || checkReloadRequired()) {
-            keyHolder.set(null);    // mark as stale
+            keyHolder.set(null); // mark as stale
             if (!exists()) {
                 return null;
             }
@@ -67,7 +67,7 @@ public class PGPPublicKeyFileWatcher extends ModifiableFileWatcher {
             if (key != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("loadPublicKey({})[{}] loaded from {}: {}",
-                        session, resourceKey, path, key);
+                            session, resourceKey, path, key);
                 }
                 keyHolder.set(key);
                 updateReloadAttributes();
@@ -79,7 +79,7 @@ public class PGPPublicKeyFileWatcher extends ModifiableFileWatcher {
 
     protected Key reloadPublicKey(
             SessionContext session, IoResource<?> resourceKey, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         String password = (passwordProvider == null) ? null : passwordProvider.getPassword(session, resourceKey, 0);
         Key key;
         try (InputStream input = resourceKey.openInputStream()) {

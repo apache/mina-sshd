@@ -50,7 +50,7 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
         } catch (IOException | RuntimeException e) {
             if (log.isDebugEnabled()) {
                 log.debug("createSftpClient({}) failed ({}) to negotiate version: {}",
-                          session, e.getClass().getSimpleName(), e.getMessage());
+                        session, e.getClass().getSimpleName(), e.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("createSftpClient(" + session + ") version negotiation failure details", e);
@@ -63,14 +63,15 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
         return client;
     }
 
-    protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException {
+    protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector)
+            throws IOException {
         return new DefaultSftpClient(session);
     }
 
     @Override
     public SftpFileSystem createSftpFileSystem(
             ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
-                throws IOException {
+            throws IOException {
         ClientFactoryManager manager = session.getFactoryManager();
         SftpFileSystemProvider provider = new SftpFileSystemProvider((SshClient) manager, selector);
         SftpFileSystem fs = provider.newFileSystem(session);

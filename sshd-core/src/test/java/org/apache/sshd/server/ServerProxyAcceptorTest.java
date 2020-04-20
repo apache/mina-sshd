@@ -78,8 +78,8 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
     public void testClientAddressOverride() throws Exception {
         final SshdSocketAddress expectedClientAddress = new SshdSocketAddress("7.3.6.5", 7365);
         String proxyMetadata = getCurrentTestName()
-                + " " + expectedClientAddress.getHostName()
-                + " " + expectedClientAddress.getPort();
+                               + " " + expectedClientAddress.getHostName()
+                               + " " + expectedClientAddress.getPort();
         final byte[] metaDataBytes = (proxyMetadata + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
         sshd.setServerProxyAcceptor(new ServerProxyAcceptor() {
             private final AtomicInteger invocationCount = new AtomicInteger(0);
@@ -87,21 +87,23 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
             @Override
             public boolean acceptServerProxyMetadata(ServerSession session, Buffer buffer) throws Exception {
                 if (buffer.available() < metaDataBytes.length) {
-                    return false;   // wait for more data
+                    return false; // wait for more data
                 }
 
                 byte[] rawData = new byte[metaDataBytes.length];
                 buffer.getRawBytes(rawData);
-                outputDebugMessage("acceptServerProxyMetadata(%s) proxy data: %s", session, new String(rawData, StandardCharsets.UTF_8));
+                outputDebugMessage("acceptServerProxyMetadata(%s) proxy data: %s", session,
+                        new String(rawData, StandardCharsets.UTF_8));
                 assertArrayEquals("Mismatched meta data", metaDataBytes, rawData);
 
                 int count = invocationCount.incrementAndGet();
                 if (count == 1) {
                     ((AbstractServerSession) session).setClientAddress(expectedClientAddress);
                 } else {
-                    assertSame("Mismatched client address for invocation #" + count, expectedClientAddress, session.getClientAddress());
+                    assertSame("Mismatched client address for invocation #" + count, expectedClientAddress,
+                            session.getClientAddress());
                 }
-                return true;    // proxy completed
+                return true; // proxy completed
             }
         });
 
@@ -134,10 +136,12 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
+        try (ClientSession session
+                = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
-            assertTrue("Failed to receive session signal on time", sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.SECONDS));
+            assertTrue("Failed to receive session signal on time",
+                    sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.SECONDS));
         } finally {
             client.stop();
         }

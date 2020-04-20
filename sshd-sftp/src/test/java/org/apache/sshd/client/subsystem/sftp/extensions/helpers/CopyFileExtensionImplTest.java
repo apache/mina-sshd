@@ -56,7 +56,7 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
     public void testCopyFileExtension() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);

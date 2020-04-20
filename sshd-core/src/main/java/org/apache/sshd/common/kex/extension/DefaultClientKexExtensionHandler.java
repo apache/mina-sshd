@@ -45,11 +45,13 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Detects if the server sends a <A HREF="https://tools.ietf.org/html/rfc8308#section-3.1">&quot;server-sig-algs&quot;</A>
- * and updates the client session by adding the <A HREF="https://tools.ietf.org/html/rfc8332">&quot;rsa-sha2-256/512&quot;</A>
- * signature factories (if not already added).
+ * Detects if the server sends a
+ * <A HREF="https://tools.ietf.org/html/rfc8308#section-3.1">&quot;server-sig-algs&quot;</A> and updates the client
+ * session by adding the <A HREF="https://tools.ietf.org/html/rfc8332">&quot;rsa-sha2-256/512&quot;</A> signature
+ * factories (if not already added).
  *
  * <B>Note:</B> experimental - used for development purposes and as an example
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implements KexExtensionHandler {
@@ -63,11 +65,10 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      */
     public static final AttributeKey<Map<KexProposalOption, String>> SERVER_PROPOSAL_KEY = new AttributeKey<>();
 
-    public static final NavigableSet<String> DEFAULT_EXTRA_SIGNATURES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> DEFAULT_EXTRA_SIGNATURES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
-                KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS));
+                    KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
+                    KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS));
 
     public static final DefaultClientKexExtensionHandler INSTANCE = new DefaultClientKexExtensionHandler();
 
@@ -93,7 +94,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
         if (GenericUtils.isNotEmpty(clientProposal)) {
             if (debugEnabled) {
                 log.debug("isKexExtensionsAvailable({})[{}] already sent proposal={} (server={})",
-                    session, phase, clientProposal, serverProposal);
+                        session, phase, clientProposal, serverProposal);
             }
             return false;
         }
@@ -102,12 +103,10 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
          * According to https://tools.ietf.org/html/rfc8308#section-3.1:
          *
          *
-         *      Note that implementations are known to exist that apply
-         *      authentication penalties if the client attempts to use an
-         *      unexpected public key algorithm.
+         * Note that implementations are known to exist that apply authentication penalties if the client attempts to
+         * use an unexpected public key algorithm.
          *
-         * Therefore we want to be sure the server declared its support
-         * for extensions before we declare ours.
+         * Therefore we want to be sure the server declared its support for extensions before we declare ours.
          */
         if (GenericUtils.isEmpty(serverProposal)) {
             if (debugEnabled) {
@@ -118,13 +117,13 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
 
         String algos = serverProposal.get(KexProposalOption.ALGORITHMS);
         String extDeclared = Stream.of(GenericUtils.split(algos, ','))
-            .filter(s -> KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(s))
-            .findFirst()
-            .orElse(null);
+                .filter(s -> KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(s))
+                .findFirst()
+                .orElse(null);
         if (GenericUtils.isEmpty(extDeclared)) {
             if (debugEnabled) {
                 log.debug("isKexExtensionsAvailable({})[{}] server proposal does not include extension indicator: {}",
-                    session, phase, algos);
+                        session, phase, algos);
             }
             return false;
         }
@@ -135,7 +134,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     @Override
     public void handleKexInitProposal(
             Session session, boolean initiator, Map<KexProposalOption, String> proposal)
-                throws IOException {
+            throws IOException {
         if (session.isServerSession()) {
             return; // just in case
         }
@@ -150,26 +149,25 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     @Override
     public boolean handleKexExtensionRequest(
             Session session, int index, int count, String name, byte[] data)
-                throws IOException {
+            throws IOException {
         if (!ServerSignatureAlgorithms.NAME.equalsIgnoreCase(name)) {
-            return true;    // process next extension (if available)
+            return true; // process next extension (if available)
         }
 
         Collection<String> sigAlgos = ServerSignatureAlgorithms.INSTANCE.parseExtension(data);
         updateAvailableSignatureFactories(session, sigAlgos);
-        return false;   // don't care about any more extensions (for now)
+        return false; // don't care about any more extensions (for now)
     }
 
     public List<NamedFactory<Signature>> updateAvailableSignatureFactories(
             Session session, Collection<String> extraAlgos)
-                throws IOException {
+            throws IOException {
         List<NamedFactory<Signature>> available = session.getSignatureFactories();
-        List<NamedFactory<Signature>> updated =
-            resolveUpdatedSignatureFactories(session, available, extraAlgos);
+        List<NamedFactory<Signature>> updated = resolveUpdatedSignatureFactories(session, available, extraAlgos);
         if (!GenericUtils.isSameReference(available, updated)) {
             if (log.isDebugEnabled()) {
                 log.debug("updateAvailableSignatureFactories({}) available={}, updated={}",
-                    session, available, updated);
+                        session, available, updated);
             }
             session.setSignatureFactories(updated);
         }
@@ -178,25 +176,24 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     }
 
     /**
-     * Checks if the extra signature algorithms are already included in the available ones,
-     * and adds the extra ones (if supported).
+     * Checks if the extra signature algorithms are already included in the available ones, and adds the extra ones (if
+     * supported).
      *
-     * @param session The {@link Session} for which the resolution occurs
-     * @param available The available signature factories
-     * @param extraAlgos The extra requested signatures - ignored if {@code null}/empty
-     * @return The resolved signature factories - same as input if nothing added
+     * @param  session     The {@link Session} for which the resolution occurs
+     * @param  available   The available signature factories
+     * @param  extraAlgos  The extra requested signatures - ignored if {@code null}/empty
+     * @return             The resolved signature factories - same as input if nothing added
      * @throws IOException If failed to resolve the factories
      */
     public List<NamedFactory<Signature>> resolveUpdatedSignatureFactories(
             Session session, List<NamedFactory<Signature>> available, Collection<String> extraAlgos)
-                throws IOException {
+            throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
-        List<NamedFactory<Signature>> toAdd =
-            resolveRequestedSignatureFactories(session, extraAlgos);
+        List<NamedFactory<Signature>> toAdd = resolveRequestedSignatureFactories(session, extraAlgos);
         if (GenericUtils.isEmpty(toAdd)) {
             if (debugEnabled) {
                 log.debug("resolveUpdatedSignatureFactories({}) Nothing to add to {} out of {}",
-                    session, NamedResource.getNames(available), extraAlgos);
+                        session, NamedResource.getNames(available), extraAlgos);
             }
             return available;
         }
@@ -205,9 +202,9 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             NamedFactory<Signature> f = toAdd.get(index);
             String name = f.getName();
             NamedFactory<Signature> a = available.stream()
-                .filter(s -> Objects.equals(name, s.getName()))
-                .findFirst()
-                .orElse(null);
+                    .filter(s -> Objects.equals(name, s.getName()))
+                    .findFirst()
+                    .orElse(null);
             if (a == null) {
                 continue;
             }
@@ -217,7 +214,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             }
 
             toAdd.remove(index);
-            index--;    // compensate for loop auto-increment
+            index--; // compensate for loop auto-increment
         }
 
         return updateAvailableSignatureFactories(session, available, toAdd);
@@ -225,18 +222,17 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
 
     public List<NamedFactory<Signature>> updateAvailableSignatureFactories(
             Session session, List<NamedFactory<Signature>> available, Collection<? extends NamedFactory<Signature>> toAdd)
-                throws IOException {
+            throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(toAdd)) {
             if (debugEnabled) {
                 log.debug("updateAvailableSignatureFactories({}) nothing to add to {}",
-                    session, NamedResource.getNames(available));
+                        session, NamedResource.getNames(available));
             }
             return available;
         }
 
-        List<NamedFactory<Signature>> updated =
-            new ArrayList<>(available.size() + toAdd.size());
+        List<NamedFactory<Signature>> updated = new ArrayList<>(available.size() + toAdd.size());
         updated.addAll(available);
 
         for (NamedFactory<Signature> f : toAdd) {
@@ -256,13 +252,13 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
 
     public int resolvePreferredSignaturePosition(
             Session session, List<? extends NamedFactory<Signature>> factories, NamedFactory<Signature> factory)
-                throws IOException {
+            throws IOException {
         return SignatureFactory.resolvePreferredSignaturePosition(factories, factory);
     }
 
     public List<NamedFactory<Signature>> resolveRequestedSignatureFactories(
             Session session, Collection<String> extraAlgos)
-                throws IOException {
+            throws IOException {
         if (GenericUtils.isEmpty(extraAlgos)) {
             return Collections.emptyList();
         }

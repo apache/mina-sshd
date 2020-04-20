@@ -53,40 +53,40 @@ public class LazyMatchingTypeIteratorTest extends JUnitTestSupport {
     @Test
     public void testLazySelectMatchingTypes() {
         Collection<String> strings = Arrays.asList(
-            getCurrentTestName(),
-            getClass().getSimpleName(),
-            getClass().getPackage().getName());
+                getCurrentTestName(),
+                getClass().getSimpleName(),
+                getClass().getPackage().getName());
         Collection<Temporal> times = Arrays.asList(
-            LocalDateTime.now(),
-            LocalTime.now(),
-            LocalDate.now());
+                LocalDateTime.now(),
+                LocalTime.now(),
+                LocalDate.now());
         List<Object> values = Stream.concat(strings.stream(), times.stream()).collect(Collectors.toList());
         AtomicInteger matchCount = new AtomicInteger(0);
         for (int index = 1, count = values.size(); index <= count; index++) {
             Collections.shuffle(values);
             Class<?> type = ((index & 0x01) == 0) ? String.class : Temporal.class;
             Iterator<?> lazy = LazyMatchingTypeIterator.lazySelectMatchingTypes(
-                new Iterator<Object>() {
-                    private final Iterator<?> iter = values.iterator();
+                    new Iterator<Object>() {
+                        private final Iterator<?> iter = values.iterator();
 
-                    {
-                        matchCount.set(0);
-                    }
-
-                    @Override
-                    public boolean hasNext() {
-                        return iter.hasNext();
-                    }
-
-                    @Override
-                    public Object next() {
-                        Object v = iter.next();
-                        if (type.isInstance(v)) {
-                            matchCount.incrementAndGet();
+                        {
+                            matchCount.set(0);
                         }
-                        return v;
-                    }
-                }, type);
+
+                        @Override
+                        public boolean hasNext() {
+                            return iter.hasNext();
+                        }
+
+                        @Override
+                        public Object next() {
+                            Object v = iter.next();
+                            if (type.isInstance(v)) {
+                                matchCount.incrementAndGet();
+                            }
+                            return v;
+                        }
+                    }, type);
             Set<?> expected = (type == String.class) ? new HashSet<>(strings) : new HashSet<>(times);
             for (int c = 1; lazy.hasNext(); c++) {
                 Object o = lazy.next();

@@ -29,17 +29,15 @@ import java.util.function.Function;
  */
 public interface AttributeStore extends AttributeRepository {
     /**
-     * If the specified key is not already associated with a value (or is mapped
-     * to {@code null}), attempts to compute its value using the given mapping
-     * function and enters it into this map unless {@code null}.
+     * If the specified key is not already associated with a value (or is mapped to {@code null}), attempts to compute
+     * its value using the given mapping function and enters it into this map unless {@code null}.
      *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @param resolver The (never {@code null}) mapping function to use if value
-     * not already mapped. If returns {@code null} then value is not mapped to
-     * the provided key.
-     * @return The resolved value - {@code null} if value not mapped and resolver
-     * did not return a non-{@code null} value for it
+     * @param  <T>      The generic attribute type
+     * @param  key      The key of the attribute; must not be {@code null}.
+     * @param  resolver The (never {@code null}) mapping function to use if value not already mapped. If returns
+     *                  {@code null} then value is not mapped to the provided key.
+     * @return          The resolved value - {@code null} if value not mapped and resolver did not return a
+     *                  non-{@code null} value for it
      */
     default <T> T computeAttributeIfAbsent(
             AttributeKey<T> key, Function<? super AttributeKey<T>, ? extends T> resolver) {
@@ -62,19 +60,19 @@ public interface AttributeStore extends AttributeRepository {
     /**
      * Sets a user-defined attribute.
      *
-     * @param <T>   The generic attribute type
-     * @param key   The key of the attribute; must not be {@code null}.
-     * @param value The value of the attribute; must not be {@code null}.
-     * @return The old value of the attribute; {@code null} if it is new.
+     * @param  <T>   The generic attribute type
+     * @param  key   The key of the attribute; must not be {@code null}.
+     * @param  value The value of the attribute; must not be {@code null}.
+     * @return       The old value of the attribute; {@code null} if it is new.
      */
     <T> T setAttribute(AttributeKey<T> key, T value);
 
     /**
      * Removes the user-defined attribute
      *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return The removed value; {@code null} if no previous value
+     * @param  <T> The generic attribute type
+     * @param  key The key of the attribute; must not be {@code null}.
+     * @return     The removed value; {@code null} if no previous value
      */
     <T> T removeAttribute(AttributeKey<T> key);
 
@@ -83,4 +81,3 @@ public interface AttributeStore extends AttributeRepository {
      */
     void clearAttributes();
 }
-

@@ -40,8 +40,7 @@ public enum BuiltinDigests implements DigestFactory {
     sha384(Constants.SHA384, "SHA-384", 48),
     sha512(Constants.SHA512, "SHA-512", 64);
 
-    public static final Set<BuiltinDigests> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinDigests.class));
+    public static final Set<BuiltinDigests> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinDigests.class));
 
     private final String algorithm;
     private final int blockSize;
@@ -53,9 +52,8 @@ public enum BuiltinDigests implements DigestFactory {
         this.algorithm = algorithm;
         this.blockSize = blockSize;
         /*
-         * This can be done once since in order to change the support the JVM
-         * needs to be stopped, some unlimited-strength files need be installed
-         * and then the JVM re-started. Therefore, the answer is not going to
+         * This can be done once since in order to change the support the JVM needs to be stopped, some
+         * unlimited-strength files need be installed and then the JVM re-started. Therefore, the answer is not going to
          * change while the JVM is running
          */
         this.supported = DigestUtils.checkSupported(algorithm);
@@ -92,9 +90,9 @@ public enum BuiltinDigests implements DigestFactory {
     }
 
     /**
-     * @param s The {@link Enum}'s name - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose {@link Enum#name()} matches
-     * (case <U>insensitive</U>) the provided argument - {@code null} if no match
+     * @param  s The {@link Enum}'s name - ignored if {@code null}/empty
+     * @return   The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose {@link Enum#name()} matches
+     *           (case <U>insensitive</U>) the provided argument - {@code null} if no match
      */
     public static BuiltinDigests fromString(String s) {
         if (GenericUtils.isEmpty(s)) {
@@ -111,10 +109,10 @@ public enum BuiltinDigests implements DigestFactory {
     }
 
     /**
-     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the cipher - ignored if {@code null}
-     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose factory name matches
-     * (case <U>insensitive</U>) the digest factory name
-     * @see #fromFactoryName(String)
+     * @param  factory The {@link org.apache.sshd.common.NamedFactory} for the cipher - ignored if {@code null}
+     * @return         The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose factory name matches
+     *                 (case <U>insensitive</U>) the digest factory name
+     * @see            #fromFactoryName(String)
      */
     public static BuiltinDigests fromFactory(NamedFactory<? extends Digest> factory) {
         if (factory == null) {
@@ -125,27 +123,27 @@ public enum BuiltinDigests implements DigestFactory {
     }
 
     /**
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose factory name matches
-     * (case <U>insensitive</U>) the provided name - {@code null} if no match
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose factory name matches (case
+     *              <U>insensitive</U>) the provided name - {@code null} if no match
      */
     public static BuiltinDigests fromFactoryName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**
-     * @param d The {@link Digest} instance - ignored if {@code null}
-     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches
-     * (case <U>insensitive</U>) the digets's algorithm - {@code null} if no match
+     * @param  d The {@link Digest} instance - ignored if {@code null}
+     * @return   The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches (case
+     *           <U>insensitive</U>) the digets's algorithm - {@code null} if no match
      */
     public static BuiltinDigests fromDigest(Digest d) {
         return fromAlgorithm((d == null) ? null : d.getAlgorithm());
     }
 
     /**
-     * @param algo The algorithm to find - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches
-     * (case <U>insensitive</U>) the provided name - {@code null} if no match
+     * @param  algo The algorithm to find - ignored if {@code null}/empty
+     * @return      The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose algorithm matches (case
+     *              <U>insensitive</U>) the provided name - {@code null} if no match
      */
     public static BuiltinDigests fromAlgorithm(String algo) {
         return DigestUtils.findFactoryByAlgorithm(algo, String.CASE_INSENSITIVE_ORDER, VALUES);

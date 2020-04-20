@@ -108,7 +108,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             protected KnownHostEntry updateKnownHostsFile(
                     ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
                     Path file, Collection<HostEntryPair> knownHosts)
-                            throws Exception {
+                    throws Exception {
                 updateCount.incrementAndGet();
                 fail("updateKnownHostsFile(" + clientSession + ")[" + remoteAddress + "] unexpected invocation: " + file);
                 return super.updateKnownHostsFile(clientSession, remoteAddress, serverKey, file, knownHosts);
@@ -142,7 +142,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             protected KnownHostEntry updateKnownHostsFile(
                     ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
                     Path file, Collection<HostEntryPair> knownHosts)
-                            throws Exception {
+                    throws Exception {
                 updateCount.incrementAndGet();
                 return super.updateKnownHostsFile(clientSession, remoteAddress, serverKey, file, knownHosts);
             }
@@ -192,7 +192,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         KnownHostsServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {
             @Override
-            protected NamedFactory<Mac> getHostValueDigester(ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
+            protected NamedFactory<Mac> getHostValueDigester(
+                    ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
                 return KnownHostHashValue.DEFAULT_DIGEST;
             }
         };
@@ -233,16 +234,18 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         final AtomicInteger acceptCount = new AtomicInteger(0);
-        ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
-            @Override
-            public boolean acceptModifiedServerKey(
-                    ClientSession clientSession, SocketAddress remoteAddress,
-                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
-                acceptCount.incrementAndGet();
-                assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
-                return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
-            }
-        };
+        ServerKeyVerifier verifier
+                = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
+                    @Override
+                    public boolean acceptModifiedServerKey(
+                            ClientSession clientSession, SocketAddress remoteAddress,
+                            KnownHostEntry entry, PublicKey expected, PublicKey actual)
+                            throws Exception {
+                        acceptCount.incrementAndGet();
+                        assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
+                        return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
+                    }
+                };
 
         int validationCount = 0;
         // Cannot use forEach because the validation count variable is not effectively final
@@ -265,7 +268,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             @Override
             public boolean acceptModifiedServerKey(
                     ClientSession clientSession, SocketAddress remoteAddress,
-                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
+                    KnownHostEntry entry, PublicKey expected, PublicKey actual)
+                    throws Exception {
                 assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
                 return true;
             }

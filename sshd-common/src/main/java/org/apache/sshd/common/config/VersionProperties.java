@@ -41,8 +41,7 @@ public final class VersionProperties {
     public static final String REPORTED_VERSION = "sshd-version";
 
     private static final class LazyVersionPropertiesHolder {
-        private static final NavigableMap<String, String> PROPERTIES =
-            Collections.unmodifiableNavigableMap(
+        private static final NavigableMap<String, String> PROPERTIES = Collections.unmodifiableNavigableMap(
                 loadVersionProperties(LazyVersionPropertiesHolder.class));
 
         private LazyVersionPropertiesHolder() {
@@ -68,7 +67,7 @@ public final class VersionProperties {
                 } catch (Exception e) {
                     Logger log = LoggerFactory.getLogger(anchor);
                     log.warn("Failed ({}) to load version properties from {}: {}",
-                        e.getClass().getSimpleName(), cl, e.getMessage());
+                            e.getClass().getSimpleName(), cl, e.getMessage());
                     if (log.isDebugEnabled()) {
                         log.debug("Version property failure details for loader=" + cl, e);
                     }
@@ -80,7 +79,7 @@ public final class VersionProperties {
                     String propValue = props.getProperty(key);
                     String value = GenericUtils.trimToEmpty(propValue);
                     if (GenericUtils.isEmpty(value)) {
-                        continue;   // we have no need for empty values
+                        continue; // we have no need for empty values
                     }
 
                     String prev = result.put(key, value);

@@ -24,8 +24,7 @@ import java.security.PublicKey;
 import org.apache.sshd.client.session.ClientSession;
 
 /**
- * The <code>ServerKeyVerifier</code> is used on the client side
- * to authenticate the key provided by the server.
+ * The <code>ServerKeyVerifier</code> is used on the client side to authenticate the key provided by the server.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -34,10 +33,10 @@ public interface ServerKeyVerifier {
     /**
      * Verify that the server key provided is really the one of the host.
      *
-     * @param clientSession    the current {@link ClientSession}
-     * @param remoteAddress    the host's {@link SocketAddress}
-     * @param serverKey        the presented server {@link PublicKey}
-     * @return <code>true</code> if the key is accepted for the host
+     * @param  clientSession the current {@link ClientSession}
+     * @param  remoteAddress the host's {@link SocketAddress}
+     * @param  serverKey     the presented server {@link PublicKey}
+     * @return               <code>true</code> if the key is accepted for the host
      */
     boolean verifyServerKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey);
 }

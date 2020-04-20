@@ -27,18 +27,19 @@ import java.util.StringTokenizer;
 
 /**
  * <p>
- * This is a utility class used by selectors and DirectoryScanner. The
- * functionality more properly belongs just to selectors, but unfortunately
- * DirectoryScanner exposed these as protected methods. Thus we have to
- * support any subclasses of DirectoryScanner that may access these methods.
+ * This is a utility class used by selectors and DirectoryScanner. The functionality more properly belongs just to
+ * selectors, but unfortunately DirectoryScanner exposed these as protected methods. Thus we have to support any
+ * subclasses of DirectoryScanner that may access these methods.
  * </p>
- * <p>This is a Singleton.</p>
+ * <p>
+ * This is a Singleton.
+ * </p>
  *
- * @author Arnout J. Kuiper <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
- * @author Magesh Umasankar
- * @author <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
+ * @author  Arnout J. Kuiper <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
+ * @author  Magesh Umasankar
+ * @author  <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
  * @version $Id$
- * @since 1.5
+ * @since   1.5
  */
 public final class SelectorUtils {
 
@@ -58,40 +59,38 @@ public final class SelectorUtils {
     }
 
     /**
-     * <p>Tests whether or not a given path matches the start of a given
-     * pattern up to the first "**".</p>
+     * <p>
+     * Tests whether or not a given path matches the start of a given pattern up to the first "**".
+     * </p>
      *
-     * <p>This is not a general purpose test and should only be used if you
-     * can live with false positives. For example, <code>pattern=**\a</code>
-     * and <code>str=b</code> will yield <code>true</code>.</p>
+     * <p>
+     * This is not a general purpose test and should only be used if you can live with false positives. For example,
+     * <code>pattern=**\a</code> and <code>str=b</code> will yield <code>true</code>.
+     * </p>
      *
-     * @param pattern The pattern to match against. Must not be
-     *                {@code null}.
-     * @param str     The path to match, as a String. Must not be
-     *                {@code null}.
-     * @return whether or not a given path matches the start of a given
-     * pattern up to the first "**".
+     * @param  pattern The pattern to match against. Must not be {@code null}.
+     * @param  str     The path to match, as a String. Must not be {@code null}.
+     * @return         whether or not a given path matches the start of a given pattern up to the first "**".
      */
     public static boolean matchPatternStart(String pattern, String str) {
         return matchPatternStart(pattern, str, true);
     }
 
     /**
-     * <p>Tests whether or not a given path matches the start of a given
-     * pattern up to the first "**".</p>
+     * <p>
+     * Tests whether or not a given path matches the start of a given pattern up to the first "**".
+     * </p>
      *
-     * <p>This is not a general purpose test and should only be used if you
-     * can live with false positives. For example, <code>pattern=**\a</code>
-     * and <code>str=b</code> will yield <code>true</code>.</p>
+     * <p>
+     * This is not a general purpose test and should only be used if you can live with false positives. For example,
+     * <code>pattern=**\a</code> and <code>str=b</code> will yield <code>true</code>.
+     * </p>
      *
-     * @param pattern         The pattern to match against. Must not be
-     *                        {@code null}.
-     * @param str             The path to match, as a String. Must not be
-     *                        {@code null}.
-     * @param isCaseSensitive Whether or not matching should be performed
-     *                        case sensitively.
-     * @return whether or not a given path matches the start of a given
-     * pattern up to the first &quot;**&quot;.
+     * @param  pattern         The pattern to match against. Must not be {@code null}.
+     * @param  str             The path to match, as a String. Must not be {@code null}.
+     * @param  isCaseSensitive Whether or not matching should be performed case sensitively.
+     * @return                 whether or not a given path matches the start of a given pattern up to the first
+     *                         &quot;**&quot;.
      */
     public static boolean matchPatternStart(String pattern, String str, boolean isCaseSensitive) {
         if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
@@ -104,8 +103,7 @@ public final class SelectorUtils {
             if ((pattern.length() > (ANT_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
                     && pattern.startsWith(ANT_HANDLER_PREFIX)
                     && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
-                pattern =
-                        pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
+                pattern = pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             }
 
             String altStr = str.replace('\\', '/');
@@ -160,12 +158,9 @@ public final class SelectorUtils {
     /**
      * Tests whether or not a given path matches a given pattern.
      *
-     * @param pattern The pattern to match against. Must not be
-     *                {@code null}.
-     * @param str     The path to match, as a String. Must not be
-     *                {@code null}.
-     * @return <code>true</code> if the pattern matches against the string,
-     * or <code>false</code> otherwise.
+     * @param  pattern The pattern to match against. Must not be {@code null}.
+     * @param  str     The path to match, as a String. Must not be {@code null}.
+     * @return         <code>true</code> if the pattern matches against the string, or <code>false</code> otherwise.
      */
     public static boolean matchPath(String pattern, String str) {
         return matchPath(pattern, str, true);
@@ -174,14 +169,11 @@ public final class SelectorUtils {
     /**
      * Tests whether or not a given path matches a given pattern.
      *
-     * @param pattern         The pattern to match against. Must not be
-     *                        {@code null}.
-     * @param str             The path to match, as a String. Must not be
-     *                        {@code null}.
-     * @param isCaseSensitive Whether or not matching should be performed
-     *                        case sensitively.
-     * @return <code>true</code> if the pattern matches against the string,
-     * or <code>false</code> otherwise.
+     * @param  pattern         The pattern to match against. Must not be {@code null}.
+     * @param  str             The path to match, as a String. Must not be {@code null}.
+     * @param  isCaseSensitive Whether or not matching should be performed case sensitively.
+     * @return                 <code>true</code> if the pattern matches against the string, or <code>false</code>
+     *                         otherwise.
      */
     public static boolean matchPath(String pattern, String str, boolean isCaseSensitive) {
         if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
@@ -296,8 +288,7 @@ public final class SelectorUtils {
             int patLength = patIdxTmp - patIdxStart - 1;
             int strLength = strIdxEnd - strIdxStart + 1;
             int foundIdx = -1;
-            strLoop:
-            for (int i = 0; i <= strLength - patLength; i++) {
+            strLoop: for (int i = 0; i <= strLength - patLength; i++) {
                 for (int j = 0; j < patLength; j++) {
                     String subPat = patDirs.get(patIdxStart + j + 1);
                     String subStr = strDirs.get(strIdxStart + i + j);
@@ -332,36 +323,28 @@ public final class SelectorUtils {
     }
 
     /**
-     * Tests whether or not a string matches against a pattern.
-     * The pattern may contain two special characters:<br>
+     * Tests whether or not a string matches against a pattern. The pattern may contain two special characters:<br>
      * '*' means zero or more characters<br>
      * '?' means one and only one character
      *
-     * @param pattern The pattern to match against.
-     *                Must not be {@code null}.
-     * @param str     The string which must be matched against the pattern.
-     *                Must not be {@code null}.
-     * @return <code>true</code> if the string matches against the pattern,
-     * or <code>false</code> otherwise.
+     * @param  pattern The pattern to match against. Must not be {@code null}.
+     * @param  str     The string which must be matched against the pattern. Must not be {@code null}.
+     * @return         <code>true</code> if the string matches against the pattern, or <code>false</code> otherwise.
      */
     public static boolean match(String pattern, String str) {
         return match(pattern, str, true);
     }
 
     /**
-     * Tests whether or not a string matches against a pattern.
-     * The pattern may contain two special characters:<br>
+     * Tests whether or not a string matches against a pattern. The pattern may contain two special characters:<br>
      * '*' means zero or more characters<br>
      * '?' means one and only one character
      *
-     * @param pattern         The pattern to match against.
-     *                        Must not be {@code null}.
-     * @param str             The string which must be matched against the pattern.
-     *                        Must not be {@code null}.
-     * @param isCaseSensitive Whether or not matching should be performed
-     *                        case sensitively.
-     * @return <code>true</code> if the string matches against the pattern,
-     * or <code>false</code> otherwise.
+     * @param  pattern         The pattern to match against. Must not be {@code null}.
+     * @param  str             The string which must be matched against the pattern. Must not be {@code null}.
+     * @param  isCaseSensitive Whether or not matching should be performed case sensitively.
+     * @return                 <code>true</code> if the string matches against the pattern, or <code>false</code>
+     *                         otherwise.
      */
     @SuppressWarnings("PMD.AssignmentInOperand")
     public static boolean match(String pattern, String str, boolean isCaseSensitive) {
@@ -494,10 +477,11 @@ public final class SelectorUtils {
 
     /**
      * Tests whether two characters are equal.
-     * @param c1 1st character
-     * @param c2 2nd character
-     * @param isCaseSensitive Whether to compare case sensitive
-     * @return {@code true} if equal characters
+     * 
+     * @param  c1              1st character
+     * @param  c2              2nd character
+     * @param  isCaseSensitive Whether to compare case sensitive
+     * @return                 {@code true} if equal characters
      */
     public static boolean equals(char c1, char c2, boolean isCaseSensitive) {
         if (c1 == c2) {
@@ -514,11 +498,10 @@ public final class SelectorUtils {
     }
 
     /**
-     * Breaks a path up into a Vector of path elements, tokenizing on
-     * <code>File.separator</code>.
+     * Breaks a path up into a Vector of path elements, tokenizing on <code>File.separator</code>.
      *
-     * @param path Path to tokenize. Must not be {@code null}.
-     * @return a List of path elements from the tokenized path
+     * @param  path Path to tokenize. Must not be {@code null}.
+     * @return      a List of path elements from the tokenized path
      */
     public static List<String> tokenizePath(String path) {
         return tokenizePath(path, File.separator);
@@ -533,34 +516,34 @@ public final class SelectorUtils {
         return ret;
     }
 
-    /**   /**
-     * Converts a path to one matching the target file system by applying the
-     * &quot;slashification&quot; rules, converting it to a local path and
-     * then translating its separator to the target file system one (if different
-     * than local one)
-     * @param path          The input path
-     * @param pathSeparator The separator used to build the input path
-     * @param fs            The target {@link FileSystem} - may not be {@code null}
-     * @return The transformed path
-     * @see #translateToLocalFileSystemPath(String, char, String)
+    /**
+     * /** Converts a path to one matching the target file system by applying the &quot;slashification&quot; rules,
+     * converting it to a local path and then translating its separator to the target file system one (if different than
+     * local one)
+     * 
+     * @param  path          The input path
+     * @param  pathSeparator The separator used to build the input path
+     * @param  fs            The target {@link FileSystem} - may not be {@code null}
+     * @return               The transformed path
+     * @see                  #translateToLocalFileSystemPath(String, char, String)
      */
     public static String translateToLocalFileSystemPath(String path, char pathSeparator, FileSystem fs) {
         return translateToLocalFileSystemPath(path, pathSeparator,
-            Objects.requireNonNull(fs, "No target file system").getSeparator());
+                Objects.requireNonNull(fs, "No target file system").getSeparator());
     }
 
     /**
-     * Converts a path to one matching the target file system by applying the
-     * &quot;slashification&quot; rules, converting it to a local path and
-     * then translating its separator to the target file system one (if different
-     * than local one)
-     * @param path          The input path
-     * @param pathSeparator The separator used to build the input path
-     * @param fsSeparator   The target file system separator
-     * @return The transformed path
-     * @see #applySlashifyRules(String, char)
-     * @see #translateToLocalPath(String)
-     * @see #translateToFileSystemPath(String, String, String)
+     * Converts a path to one matching the target file system by applying the &quot;slashification&quot; rules,
+     * converting it to a local path and then translating its separator to the target file system one (if different than
+     * local one)
+     * 
+     * @param  path          The input path
+     * @param  pathSeparator The separator used to build the input path
+     * @param  fsSeparator   The target file system separator
+     * @return               The transformed path
+     * @see                  #applySlashifyRules(String, char)
+     * @see                  #translateToLocalPath(String)
+     * @see                  #translateToFileSystemPath(String, String, String)
      */
     public static String translateToLocalFileSystemPath(String path, char pathSeparator, String fsSeparator) {
         // In case double slashes and other patterns are used
@@ -572,12 +555,14 @@ public final class SelectorUtils {
 
     /**
      * Applies the &quot;slashification&quot; rules as specified in
-     * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266">Single Unix Specification version 3, section 3.266</A>
-     * and <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11">section 4.11 - Pathname resolution</A>
-     * @param path The original path - ignored if {@code null}/empty or does
-     * not contain any slashes
-     * @param sepChar The &quot;slash&quot; character
-     * @return The effective path - may be same as input if no changes required
+     * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266">Single Unix
+     * Specification version 3, section 3.266</A> and
+     * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11">section 4.11 -
+     * Pathname resolution</A>
+     * 
+     * @param  path    The original path - ignored if {@code null}/empty or does not contain any slashes
+     * @param  sepChar The &quot;slash&quot; character
+     * @return         The effective path - may be same as input if no changes required
      */
     public static String applySlashifyRules(String path, char sepChar) {
         if (GenericUtils.isEmpty(path)) {
@@ -586,19 +571,18 @@ public final class SelectorUtils {
 
         int curPos = path.indexOf(sepChar);
         if (curPos < 0) {
-            return path;    // no slashes to handle
+            return path; // no slashes to handle
         }
 
         int lastPos = 0;
         StringBuilder sb = null;
         while (curPos < path.length()) {
-            curPos++;   // skip the 1st '/'
+            curPos++; // skip the 1st '/'
 
             /*
              * As per Single Unix Specification version 3, section 3.266:
              *
-             *      Multiple successive slashes are considered to be the
-             *      same as one slash
+             * Multiple successive slashes are considered to be the same as one slash
              */
             int nextPos = curPos;
             while ((nextPos < path.length()) && (path.charAt(nextPos) == sepChar)) {
@@ -606,8 +590,8 @@ public final class SelectorUtils {
             }
 
             /*
-             * At this stage, nextPos is the first non-slash character after a
-             * possibly 'seqLen' sequence of consecutive slashes.
+             * At this stage, nextPos is the first non-slash character after a possibly 'seqLen' sequence of consecutive
+             * slashes.
              */
             int seqLen = nextPos - curPos;
             if (seqLen > 0) {
@@ -624,12 +608,12 @@ public final class SelectorUtils {
             }
 
             if (nextPos >= path.length()) {
-                break;  // no more data
+                break; // no more data
             }
 
             curPos = path.indexOf(sepChar, nextPos);
             if (curPos < nextPos) {
-                break;  // no more slashes
+                break; // no more slashes
             }
         }
 
@@ -644,13 +628,11 @@ public final class SelectorUtils {
         }
 
         /*
-         * At this point we know for sure that 'path' contains only SINGLE
-         * slashes. According to section 4.11 - Pathname resolution
+         * At this point we know for sure that 'path' contains only SINGLE slashes. According to section 4.11 - Pathname
+         * resolution
          *
-         *      A pathname that contains at least one non-slash character
-         *      and that ends with one or more trailing slashes shall be
-         *      resolved as if a single dot character ( '.' ) were appended
-         *      to the pathname.
+         * A pathname that contains at least one non-slash character and that ends with one or more trailing slashes
+         * shall be resolved as if a single dot character ( '.' ) were appended to the pathname.
          */
         if ((path.length() > 1) && (path.charAt(path.length() - 1) == sepChar)) {
             return path + ".";
@@ -660,12 +642,11 @@ public final class SelectorUtils {
     }
 
     /**
-     * Converts a possibly '/' separated path to a local path. <B>Note:</B>
-     * takes special care of Windows drive paths - e.g., {@code C:}
-     * by converting them to &quot;C:\&quot;
+     * Converts a possibly '/' separated path to a local path. <B>Note:</B> takes special care of Windows drive paths -
+     * e.g., {@code C:} by converting them to &quot;C:\&quot;
      *
-     * @param path The original path - ignored if {@code null}/empty
-     * @return The local path
+     * @param  path The original path - ignored if {@code null}/empty
+     * @return      The local path
      */
     public static String translateToLocalPath(String path) {
         if (GenericUtils.isEmpty(path) || (File.separatorChar == '/')) {
@@ -679,17 +660,16 @@ public final class SelectorUtils {
             localPath = localPath.substring(1);
         }
         if (!isWindowsDriveSpecified(localPath)) {
-            return localPath;   // assume a relative path
+            return localPath; // assume a relative path
         }
 
         /*
-         * Here we know that we have at least a "C:" string - make sure it
-         * is followed by the local file separator. Note: if all we have is
-         * just the drive, we will create a "C:\" path since this is the
-         * preferred Windows way to refer to root drives in the file system
+         * Here we know that we have at least a "C:" string - make sure it is followed by the local file separator.
+         * Note: if all we have is just the drive, we will create a "C:\" path since this is the preferred Windows way
+         * to refer to root drives in the file system
          */
         if (localPath.length() == 2) {
-            return localPath + File.separator;  // all we have is "C:"
+            return localPath + File.separator; // all we have is "C:"
         } else if (localPath.charAt(2) != File.separatorChar) {
             // be nice and add the missing file separator - C:foo => C:\foo
             return localPath.substring(0, 2) + File.separator + localPath.substring(2);
@@ -712,33 +692,32 @@ public final class SelectorUtils {
     }
 
     /**
-     * Converts a path containing a specific separator to one using the
-     * specified file-system one
-     * @param path          The input path - ignored if {@code null}/empty
-     * @param pathSeparator The separator used to build the input path - may not
-     *                      be {@code null}/empty
-     * @param fs            The target {@link FileSystem} - may not be {@code null}
-     * @return The path where the separator used to build it is replaced by
-     * the file-system one (if different)
-     * @see FileSystem#getSeparator()
-     * @see #translateToFileSystemPath(String, String, String)
+     * Converts a path containing a specific separator to one using the specified file-system one
+     * 
+     * @param  path          The input path - ignored if {@code null}/empty
+     * @param  pathSeparator The separator used to build the input path - may not be {@code null}/empty
+     * @param  fs            The target {@link FileSystem} - may not be {@code null}
+     * @return               The path where the separator used to build it is replaced by the file-system one (if
+     *                       different)
+     * @see                  FileSystem#getSeparator()
+     * @see                  #translateToFileSystemPath(String, String, String)
      */
     public static String translateToFileSystemPath(String path, String pathSeparator, FileSystem fs) {
-        return translateToFileSystemPath(path, pathSeparator, Objects.requireNonNull(fs, "No target file system").getSeparator());
+        return translateToFileSystemPath(path, pathSeparator,
+                Objects.requireNonNull(fs, "No target file system").getSeparator());
     }
 
     /**
-     * Converts a path containing a specific separator to one using the
-     * specified file-system one
-     * @param path          The input path - ignored if {@code null}/empty
-     * @param pathSeparator The separator used to build the input path - may not
-     *                      be {@code null}/empty
-     * @param fsSeparator   The target file system separator - may not be {@code null}/empty
-     * @return The path where the separator used to build it is replaced by
-     * the file-system one (if different)
-     * @throws IllegalArgumentException if path or file-system separator are {@code null}/empty
-     * or if the separators are different and the path contains the target
-     * file-system separator as it would create an ambiguity
+     * Converts a path containing a specific separator to one using the specified file-system one
+     * 
+     * @param  path                     The input path - ignored if {@code null}/empty
+     * @param  pathSeparator            The separator used to build the input path - may not be {@code null}/empty
+     * @param  fsSeparator              The target file system separator - may not be {@code null}/empty
+     * @return                          The path where the separator used to build it is replaced by the file-system one
+     *                                  (if different)
+     * @throws IllegalArgumentException if path or file-system separator are {@code null}/empty or if the separators are
+     *                                  different and the path contains the target file-system separator as it would
+     *                                  create an ambiguity
      */
     public static String translateToFileSystemPath(String path, String pathSeparator, String fsSeparator) {
         ValidateUtils.checkNotNullAndNotEmpty(pathSeparator, "Missing path separator");
@@ -750,7 +729,8 @@ public final class SelectorUtils {
 
         // make sure path does not contain the target separator
         if (path.contains(fsSeparator)) {
-            ValidateUtils.throwIllegalArgumentException("File system replacement may yield ambiguous result for %s with separator=%s", path, fsSeparator);
+            ValidateUtils.throwIllegalArgumentException(
+                    "File system replacement may yield ambiguous result for %s with separator=%s", path, fsSeparator);
         }
 
         // check most likely case
@@ -762,12 +742,11 @@ public final class SelectorUtils {
     }
 
     /**
-     * "Flattens" a string by removing all whitespace (space, tab, line-feed,
-     * carriage return, and form-feed). This uses StringTokenizer and the
-     * default set of tokens as documented in the single argument constructor.
+     * "Flattens" a string by removing all whitespace (space, tab, line-feed, carriage return, and form-feed). This uses
+     * StringTokenizer and the default set of tokens as documented in the single argument constructor.
      *
-     * @param input a String to remove all whitespace.
-     * @return a String that has had all whitespace removed.
+     * @param  input a String to remove all whitespace.
+     * @return       a String that has had all whitespace removed.
      */
     public static String removeWhitespace(String input) {
         StringBuilder result = new StringBuilder();

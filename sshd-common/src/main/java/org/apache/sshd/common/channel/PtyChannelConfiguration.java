@@ -100,12 +100,12 @@ public class PtyChannelConfiguration implements PtyChannelConfigurationMutator {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[type=" + getPtyType()
-            + ", lines=" + getPtyLines()
-            + ", columns=" + getPtyColumns()
-            + ", height=" + getPtyHeight()
-            + ", width=" + getPtyWidth()
-            + ", modes=" + getPtyModes()
-            + "]";
+               + "[type=" + getPtyType()
+               + ", lines=" + getPtyLines()
+               + ", columns=" + getPtyColumns()
+               + ", height=" + getPtyHeight()
+               + ", width=" + getPtyWidth()
+               + ", modes=" + getPtyModes()
+               + "]";
     }
 }

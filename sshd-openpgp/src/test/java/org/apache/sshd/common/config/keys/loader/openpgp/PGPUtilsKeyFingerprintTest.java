@@ -68,7 +68,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
@@ -83,7 +83,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
 
         try {
             key = new Key(stream);
-            key.setNoPassphrase(true);  // we are scanning public keys which are never encrypted
+            key.setNoPassphrase(true); // we are scanning public keys which are never encrypted
         } finally {
             stream.close();
         }
@@ -92,13 +92,13 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
     @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(Arrays.asList(
-            "EC-256-gpg2-public.asc",
-            "EC-348-v1p0-public.asc",
-            "EC-521-gpg2-public.asc",
-            "RSA-2048-v1p0-public.asc",
-            "RSA-2048-v1p6p1-public.asc",
-            "RSA-4096-vp2p0p8-public.asc",
-            "DSA-2048-gpg4win-3.1.3.asc"));
+                "EC-256-gpg2-public.asc",
+                "EC-348-v1p0-public.asc",
+                "EC-521-gpg2-public.asc",
+                "RSA-2048-v1p0-public.asc",
+                "RSA-2048-v1p6p1-public.asc",
+                "RSA-4096-vp2p0p8-public.asc",
+                "DSA-2048-gpg4win-3.1.3.asc"));
     }
 
     @BeforeClass
@@ -151,9 +151,9 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
                 }
 
                 out.append(keyType)
-                    .append(' ').append(fingerprint)
-                    .append(' ').append(resourceName)
-                    .append(System.lineSeparator());
+                        .append(' ').append(fingerprint)
+                        .append(' ').append(resourceName)
+                        .append(System.lineSeparator());
 
                 assertTrue("Non-unique fingerprint: " + fingerprint, written.add(fingerprint));
             }
@@ -162,8 +162,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         Assume.assumeFalse(resourceName + " - no fingerprints written", written.isEmpty());
 
         PGPPublicKeyEntryDataResolver.registerDefaultKeyEntryDataResolvers();
-        Collection<? extends PublicKeyEntry> authKeys =
-            AuthorizedKeyEntry.readAuthorizedKeys(file, IoUtils.EMPTY_OPEN_OPTIONS);
+        Collection<? extends PublicKeyEntry> authKeys = AuthorizedKeyEntry.readAuthorizedKeys(file, IoUtils.EMPTY_OPEN_OPTIONS);
         assertEquals("Mismatched key entries count", written.size(), authKeys.size());
 
         for (PublicKeyEntry entry : authKeys) {
@@ -211,8 +210,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         PGPAuthorizedEntriesTracker tracker = new PGPAuthorizedEntriesTracker(file);
         SessionContext session = Mockito.mock(SessionContext.class);
         for (PublicKeyEntry pke : available) {
-            Collection<PublicKey> keys =
-                tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
+            Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
             assertEquals("Mismatched recovered keys count for " + pke, 1, GenericUtils.size(keys));
 
             PublicKey expected = pke.resolvePublicKey(session, Collections.emptyMap(), tracker);

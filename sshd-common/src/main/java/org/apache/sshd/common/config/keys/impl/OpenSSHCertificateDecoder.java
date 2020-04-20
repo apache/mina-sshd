@@ -48,16 +48,15 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
 
     public OpenSSHCertificateDecoder() {
         super(OpenSshCertificate.class, OpenSshCertificate.class,
-                Collections.unmodifiableList(Arrays.asList(
-                        KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
-                        KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS,
-                        KeyPairProvider.SSH_RSA_CERT,
-                        KeyPairProvider.SSH_DSS_CERT,
-                        KeyPairProvider.SSH_ED25519_CERT,
-                        KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
-                        KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
-                        KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT
-                )));
+              Collections.unmodifiableList(Arrays.asList(
+                      KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
+                      KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS,
+                      KeyPairProvider.SSH_RSA_CERT,
+                      KeyPairProvider.SSH_DSS_CERT,
+                      KeyPairProvider.SSH_ED25519_CERT,
+                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
+                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
+                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT)));
     }
 
     @Override

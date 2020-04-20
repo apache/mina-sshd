@@ -55,16 +55,18 @@ public class KexExtensionHandlerTest extends JUnitTestSupport {
     @Test
     public void testEncodeDecodeExtensionMessage() throws IOException {
         List<Map.Entry<String, ?>> expected = Arrays.asList(
-            new SimpleImmutableEntry<>(DelayCompression.NAME,
-                new DelayedCompressionAlgorithms()
-                    .withClient2Server(
-                        Arrays.asList(getClass().getSimpleName(), getCurrentTestName()))
-                    .withServer2Client(
-                        Arrays.asList(getClass().getPackage().getName(), getCurrentTestName()))),
-            new SimpleImmutableEntry<>(ServerSignatureAlgorithms.NAME,
-                Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName())),
-            new SimpleImmutableEntry<>(NoFlowControl.NAME, getCurrentTestName()),
-            new SimpleImmutableEntry<>(Elevation.NAME, getCurrentTestName()));
+                new SimpleImmutableEntry<>(
+                        DelayCompression.NAME,
+                        new DelayedCompressionAlgorithms()
+                                .withClient2Server(
+                                        Arrays.asList(getClass().getSimpleName(), getCurrentTestName()))
+                                .withServer2Client(
+                                        Arrays.asList(getClass().getPackage().getName(), getCurrentTestName()))),
+                new SimpleImmutableEntry<>(
+                        ServerSignatureAlgorithms.NAME,
+                        Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName())),
+                new SimpleImmutableEntry<>(NoFlowControl.NAME, getCurrentTestName()),
+                new SimpleImmutableEntry<>(Elevation.NAME, getCurrentTestName()));
         Buffer buffer = new ByteArrayBuffer();
         KexExtensions.putExtensions(expected, buffer);
 

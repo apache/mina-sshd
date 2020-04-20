@@ -60,8 +60,7 @@ public class SftpFileSystem
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
     public static final int DEFAULT_POOL_SIZE = 8;
 
-    public static final NavigableSet<String> UNIVERSAL_SUPPORTED_VIEWS =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> UNIVERSAL_SUPPORTED_VIEWS = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "basic", "posix", "owner"));
 
     private final String id;
@@ -78,15 +77,15 @@ public class SftpFileSystem
     private final List<FileStore> stores;
 
     public SftpFileSystem(
-            SftpFileSystemProvider provider, String id, ClientSession session,
-            SftpClientFactory factory, SftpVersionSelector selector)
-                throws IOException {
+                          SftpFileSystemProvider provider, String id, ClientSession session,
+                          SftpClientFactory factory, SftpVersionSelector selector)
+                                                                                   throws IOException {
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");
         this.factory = factory != null ? factory : SftpClientFactory.instance();
         this.selector = selector;
-        this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
+        this.stores = Collections.unmodifiableList(Collections.<FileStore> singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(session.getIntProperty(POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {
             version = client.getVersion();
@@ -120,7 +119,7 @@ public class SftpFileSystem
         return (SftpFileSystemProvider) super.provider();
     }
 
-    @Override   // NOTE: co-variant return
+    @Override // NOTE: co-variant return
     public List<FileStore> getFileStores() {
         return this.stores;
     }
@@ -131,7 +130,8 @@ public class SftpFileSystem
 
     public void setReadBufferSize(int size) {
         if (size < SftpClient.MIN_READ_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient read buffer size: " + size + ", min.=" + SftpClient.MIN_READ_BUFFER_SIZE);
+            throw new IllegalArgumentException(
+                    "Insufficient read buffer size: " + size + ", min.=" + SftpClient.MIN_READ_BUFFER_SIZE);
         }
 
         readBufferSize = size;
@@ -143,7 +143,8 @@ public class SftpFileSystem
 
     public void setWriteBufferSize(int size) {
         if (size < SftpClient.MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient write buffer size: " + size + ", min.=" + SftpClient.MIN_WRITE_BUFFER_SIZE);
+            throw new IllegalArgumentException(
+                    "Insufficient write buffer size: " + size + ", min.=" + SftpClient.MIN_WRITE_BUFFER_SIZE);
         }
 
         writeBufferSize = size;
@@ -328,7 +329,8 @@ public class SftpFileSystem
         @Override
         public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException {
             if (!isOpen()) {
-                throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
+                throw new IOException(
+                        "read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
             }
             return delegate.read(handle, fileOffset, dst, dstOffset, len);
         }
@@ -336,7 +338,8 @@ public class SftpFileSystem
         @Override
         public void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException {
             if (!isOpen()) {
-                throw new IOException("write(" + handle + "/" + fileOffset + ")[" + srcOffset + "/" + len + "] client is closed");
+                throw new IOException(
+                        "write(" + handle + "/" + fileOffset + ")[" + srcOffset + "/" + len + "] client is closed");
             }
             delegate.write(handle, fileOffset, src, srcOffset, len);
         }
@@ -502,7 +505,8 @@ public class SftpFileSystem
         @Override
         public void link(String linkPath, String targetPath, boolean symbolic) throws IOException {
             if (!isOpen()) {
-                throw new IOException("link(" + linkPath + " => " + targetPath + "] symbolic=" + symbolic + ": client is closed");
+                throw new IOException(
+                        "link(" + linkPath + " => " + targetPath + "] symbolic=" + symbolic + ": client is closed");
             }
             delegate.link(linkPath, targetPath, symbolic);
         }
@@ -510,7 +514,9 @@ public class SftpFileSystem
         @Override
         public void lock(Handle handle, long offset, long length, int mask) throws IOException {
             if (!isOpen()) {
-                throw new IOException("lock(" + handle + ")[offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask) + "] client is closed");
+                throw new IOException(
+                        "lock(" + handle + ")[offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
+                                      + "] client is closed");
             }
             delegate.lock(handle, offset, length, mask);
         }
@@ -532,7 +538,9 @@ public class SftpFileSystem
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).send(cmd, buffer);
             } else {
-                throw new StreamCorruptedException("send(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") delegate is not a " + RawSftpClient.class.getSimpleName());
+                throw new StreamCorruptedException(
+                        "send(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") delegate is not a "
+                                                   + RawSftpClient.class.getSimpleName());
             }
         }
 
@@ -545,7 +553,8 @@ public class SftpFileSystem
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).receive(id);
             } else {
-                throw new StreamCorruptedException("receive(id=" + id + ") delegate is not a " + RawSftpClient.class.getSimpleName());
+                throw new StreamCorruptedException(
+                        "receive(id=" + id + ") delegate is not a " + RawSftpClient.class.getSimpleName());
             }
         }
     }

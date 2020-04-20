@@ -85,13 +85,14 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                                             channel.close();
                                         } catch (IOException e) {
                                             log.warn("Failed ({}) to close channel after write complete: {}",
-                                                     e.getClass().getSimpleName(), e.getMessage());
+                                                    e.getClass().getSimpleName(), e.getMessage());
                                         }
                                     }
 
                                     @Override
                                     public void failed(Throwable exc, AsynchronousSocketChannel channel) {
-                                        log.error("Failed ({}) to write message to client: {}", exc.getClass().getSimpleName(), exc.getMessage());
+                                        log.error("Failed ({}) to write message to client: {}", exc.getClass().getSimpleName(),
+                                                exc.getMessage());
                                     }
                                 });
                     }
@@ -99,7 +100,8 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                     @Override
                     @SuppressWarnings("synthetic-access")
                     public void failed(Throwable exc, AsynchronousServerSocketChannel serverSock) {
-                        log.error("Failed ({}) to accept incoming connection: {}", exc.getClass().getSimpleName(), exc.getMessage());
+                        log.error("Failed ({}) to accept incoming connection: {}", exc.getClass().getSimpleName(),
+                                exc.getMessage());
                     }
                 });
     }
@@ -200,8 +202,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     /*
-     * Connect to test server via port forward and read real quick with one big
-     * buffer.
+     * Connect to test server via port forward and read real quick with one big buffer.
      *
      * PROVIDED AS TEST THAT HAS ALWAYS PASSED
      */
@@ -211,8 +212,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     /*
-     * Connect to test server via port forward and read real quick with one big
-     * buffer.
+     * Connect to test server via port forward and read real quick with one big buffer.
      *
      * THIS IS THE TEST OF SSHD-85
      */
@@ -232,8 +232,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     /*
-     * Connect to test server via port forward and read with 2 buffers and a
-     * pause in between.
+     * Connect to test server via port forward and read with 2 buffers and a pause in between.
      *
      * THIS IS THE TEST OF SSHD-85
      */

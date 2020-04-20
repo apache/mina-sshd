@@ -19,8 +19,8 @@
 package org.apache.sshd.common.session.helpers;
 
 /**
- * Special exception returned by {@link AbstractSession#getSession(org.apache.sshd.common.io.IoSession, boolean)}
- * to indicate that there is no currently attached SSH session
+ * Special exception returned by {@link AbstractSession#getSession(org.apache.sshd.common.io.IoSession, boolean)} to
+ * indicate that there is no currently attached SSH session
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

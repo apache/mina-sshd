@@ -53,10 +53,9 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
     public static final String NAME = "bcrypt";
 
     /**
-     * Various discussions on the net seem to indicate that 64 is the value
-     * at which many computers seem to slow down noticeably, so we are rather
-     * generous here. The default value (unless overridden by the {@code -a}
-     * parameter to the {@code ssh-keygen} command) is usually 16.
+     * Various discussions on the net seem to indicate that 64 is the value at which many computers seem to slow down
+     * noticeably, so we are rather generous here. The default value (unless overridden by the {@code -a} parameter to
+     * the {@code ssh-keygen} command) is usually 16.
      */
     public static final int DEFAULT_MAX_ROUNDS = 0xFF;
     private static final AtomicInteger MAX_ROUNDS_HOLDER = new AtomicInteger(DEFAULT_MAX_ROUNDS);
@@ -87,8 +86,9 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
         byte[] saltValue = getSalt();
         int actualSaltLength = NumberUtils.length(saltValue);
         if (actualSaltLength != expectedSaltLength) {
-            throw new StreamCorruptedException("Mismatched salt data length:"
-                + " expected=" + expectedSaltLength + ", actual=" + actualSaltLength);
+            throw new StreamCorruptedException(
+                    "Mismatched salt data length:"
+                                               + " expected=" + expectedSaltLength + ", actual=" + actualSaltLength);
         }
     }
 
@@ -105,7 +105,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
     @Override
     public byte[] decodePrivateKeyBytes(
             SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (NumberUtils.isEmpty(privateDataBytes)) {
             return privateDataBytes;
         }
@@ -117,8 +117,9 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
 
         int blockSize = cipherSpec.getCipherBlockSize();
         if ((privateDataBytes.length % blockSize) != 0) {
-            throw new StreamCorruptedException("Encrypted data size (" + privateDataBytes.length + ")"
-                + " is not aligned to  " + cipherName + " block size (" + blockSize + ")");
+            throw new StreamCorruptedException(
+                    "Encrypted data size (" + privateDataBytes.length + ")"
+                                               + " is not aligned to  " + cipherName + " block size (" + blockSize + ")");
         }
 
         byte[] pwd = password.getBytes(StandardCharsets.UTF_8);
@@ -193,7 +194,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
         int maxAllowed = getMaxAllowedRounds();
         if ((numRounds <= 0) || (numRounds > maxAllowed)) {
             throw new BCryptBadRoundsException(
-                numRounds, "Bad rounds value (" + numRounds + ") - max. allowed " + maxAllowed);
+                    numRounds, "Bad rounds value (" + numRounds + ") - max. allowed " + maxAllowed);
         }
 
         this.numRounds = numRounds;
@@ -201,7 +202,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
 
     @Override
     public int hashCode() {
-        return 31 * getNumRounds() +  Arrays.hashCode(getSalt());
+        return 31 * getNumRounds() + Arrays.hashCode(getSalt());
     }
 
     @Override
@@ -218,7 +219,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
 
         BCryptKdfOptions other = (BCryptKdfOptions) obj;
         return (getNumRounds() == other.getNumRounds())
-            && Arrays.equals(getSalt(), other.getSalt());
+                && Arrays.equals(getSalt(), other.getSalt());
     }
 
     @Override

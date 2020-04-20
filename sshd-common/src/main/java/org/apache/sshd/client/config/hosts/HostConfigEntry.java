@@ -60,11 +60,12 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 
 /**
- * Represents an entry in the client's configuration file as defined by
- * the <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A>
- * configuration file format
+ * Represents an entry in the client's configuration file as defined by the
+ * <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A> configuration file format
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/">OpenSSH Config File Examples</A>
+ * @see    <A HREF="https://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/">OpenSSH Config File
+ *         Examples</A>
  */
 public class HostConfigEntry extends HostPatternsHolder implements MutableUserHolder {
     /**
@@ -86,12 +87,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * A case <U>insensitive</U> {@link NavigableSet} of the properties that receive special handling
      */
-    public static final NavigableSet<String> EXPLICIT_PROPERTIES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> EXPLICIT_PROPERTIES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
-                USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP
-            ));
+                    HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
+                    USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP));
 
     public static final String MULTI_VALUE_SEPARATORS = " ,";
 
@@ -106,8 +105,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final char REMOTE_PORT_MACRO = 'p';
 
     private static final class LazyDefaultConfigFileHolder {
-        private static final Path CONFIG_FILE =
-            PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
+        private static final Path CONFIG_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
 
         private LazyDefaultConfigFileHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -179,10 +177,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Resolves the effective port to use
      *
-     * @param originalPort The original requested port
-     * @return If the host entry port is positive, then it is used, otherwise
-     * the original requested port
-     * @see #resolvePort(int, int)
+     * @param  originalPort The original requested port
+     * @return              If the host entry port is positive, then it is used, otherwise the original requested port
+     * @see                 #resolvePort(int, int)
      */
     public int resolvePort(int originalPort) {
         return resolvePort(originalPort, getPort());
@@ -204,10 +201,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Resolves the effective username
      *
-     * @param originalUser The original requested username
-     * @return If the configured host entry username is not {@code null}/empty
-     * then it is used, otherwise the original one.
-     * @see #resolveUsername(String)
+     * @param  originalUser The original requested username
+     * @return              If the configured host entry username is not {@code null}/empty then it is used, otherwise
+     *                      the original one.
+     * @see                 #resolveUsername(String)
      */
     public String resolveUsername(String originalUser) {
         return resolveUsername(originalUser, getUsername());
@@ -221,8 +218,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param path A {@link Path} to a file that contains an identity key
-     * - never {@code null}
+     * @param path A {@link Path} to a file that contains an identity key - never {@code null}
      */
     public void addIdentity(Path path) {
         addIdentity(Objects.requireNonNull(path, "No path").toAbsolutePath().normalize().toString());
@@ -257,28 +253,27 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @return A {@link Map} of extra properties that have been read - may be
-     * {@code null}/empty, or even contain some values that have been parsed
-     * and set as members of the entry (e.g., host, port, etc.). <B>Note:</B>
-     * multi-valued keys use a comma-separated list of values
+     * @return A {@link Map} of extra properties that have been read - may be {@code null}/empty, or even contain some
+     *         values that have been parsed and set as members of the entry (e.g., host, port, etc.). <B>Note:</B>
+     *         multi-valued keys use a comma-separated list of values
      */
     public Map<String, String> getProperties() {
         return properties;
     }
 
     /**
-     * @param name Property name - never {@code null}/empty
-     * @return Property value or {@code null}  if no such property
-     * @see #getProperty(String, String)
+     * @param  name Property name - never {@code null}/empty
+     * @return      Property value or {@code null} if no such property
+     * @see         #getProperty(String, String)
      */
     public String getProperty(String name) {
         return getProperty(name, null);
     }
 
     /**
-     * @param name Property name - never {@code null}/empty
-     * @param defaultValue Default value to return if no such property
-     * @return The property value or the default one if no such property
+     * @param  name         Property name - never {@code null}/empty
+     * @param  defaultValue Default value to return if no such property
+     * @return              The property value or the default one if no such property
      */
     public String getProperty(String name, String defaultValue) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -296,12 +291,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * Updates the values that are <U>not</U> already configured with those
-     * from the global entry
+     * Updates the values that are <U>not</U> already configured with those from the global entry
      *
-     * @param globalEntry The global entry - ignored if {@code null} or
-     * same reference as this entry
-     * @return {@code true} if anything updated
+     * @param  globalEntry The global entry - ignored if {@code null} or same reference as this entry
+     * @return             {@code true} if anything updated
      */
     public boolean processGlobalValues(HostConfigEntry globalEntry) {
         if ((globalEntry == null) || (this == globalEntry)) {
@@ -310,8 +303,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
         boolean modified = false;
         /*
-         * NOTE !!! DO NOT TRY TO CHANGE THE ORDER OF THE OR-ing AS IT
-         * WOULD CAUSE INVALID CODE EXECUTION
+         * NOTE !!! DO NOT TRY TO CHANGE THE ORDER OF THE OR-ing AS IT WOULD CAUSE INVALID CODE EXECUTION
          */
         modified = updateGlobalPort(globalEntry.getPort()) || modified;
         modified = updateGlobalHostName(globalEntry.getHostName()) || modified;
@@ -328,8 +320,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Sets all the properties for which no current value exists in the entry
      *
-     * @param props The global properties - ignored if {@code null}/empty
-     * @return A {@link Map} of the <U>updated</U> properties
+     * @param  props The global properties - ignored if {@code null}/empty
+     * @return       A {@link Map} of the <U>updated</U> properties
      */
     public Map<String, String> updateGlobalProperties(Map<String, String> props) {
         if (GenericUtils.isEmpty(props)) {
@@ -363,9 +355,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param ids Global identities - ignored if {@code null}/empty or already
-     * have configured identities
-     * @return {@code true} if updated identities
+     * @param  ids Global identities - ignored if {@code null}/empty or already have configured identities
+     * @return     {@code true} if updated identities
      */
     public boolean updateGlobalIdentities(Collection<String> ids) {
         if (GenericUtils.isEmpty(ids) || (GenericUtils.size(getIdentities()) > 0)) {
@@ -380,9 +371,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param user The global user name - ignored if {@code null}/empty or
-     * already have a configured user
-     * @return {@code true} if updated the username
+     * @param  user The global user name - ignored if {@code null}/empty or already have a configured user
+     * @return      {@code true} if updated the username
      */
     public boolean updateGlobalUserName(String user) {
         if (GenericUtils.isEmpty(user) || (GenericUtils.length(getUsername()) > 0)) {
@@ -394,9 +384,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param name The global host name - ignored if {@code null}/empty or
-     * already have a configured target host
-     * @return {@code true} if updated the target host
+     * @param  name The global host name - ignored if {@code null}/empty or already have a configured target host
+     * @return      {@code true} if updated the target host
      */
     public boolean updateGlobalHostName(String name) {
         if (GenericUtils.isEmpty(name) || (GenericUtils.length(getHostName()) > 0)) {
@@ -408,9 +397,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param portValue The global port value - ignored if not positive
-     * or already have a configured port
-     * @return {@code true} if updated the port value
+     * @param  portValue The global port value - ignored if not positive or already have a configured port
+     * @return           {@code true} if updated the port value
      */
     public boolean updateGlobalPort(int portValue) {
         if ((portValue <= 0) || (getPort() > 0)) {
@@ -422,9 +410,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param identitiesOnly Whether to use only the identities in this entry.
-     * Ignored if already set
-     * @return {@code true} if updated the option value
+     * @param  identitiesOnly Whether to use only the identities in this entry. Ignored if already set
+     * @return                {@code true} if updated the option value
      */
     public boolean updateGlobalIdentityOnly(boolean identitiesOnly) {
         if (exclusiveIdentites != null) {
@@ -436,17 +423,17 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param name Property name - never {@code null}/empty
-     * @param valsList The available values for the property
-     * @param ignoreAlreadyInitialized If {@code false} and one of the &quot;known&quot;
-     * properties is encountered then throws an exception
-     * @throws IllegalArgumentException If an existing value is overwritten and
-     * <tt>ignoreAlreadyInitialized</tt> is {@code false} (except for {@link #IDENTITY_FILE_CONFIG_PROP}
-     * which is <U>cumulative</U>
-     * @see #HOST_NAME_CONFIG_PROP
-     * @see #PORT_CONFIG_PROP
-     * @see #USER_CONFIG_PROP
-     * @see #IDENTITY_FILE_CONFIG_PROP
+     * @param  name                     Property name - never {@code null}/empty
+     * @param  valsList                 The available values for the property
+     * @param  ignoreAlreadyInitialized If {@code false} and one of the &quot;known&quot; properties is encountered then
+     *                                  throws an exception
+     * @throws IllegalArgumentException If an existing value is overwritten and <tt>ignoreAlreadyInitialized</tt> is
+     *                                  {@code false} (except for {@link #IDENTITY_FILE_CONFIG_PROP} which is
+     *                                  <U>cumulative</U>
+     * @see                             #HOST_NAME_CONFIG_PROP
+     * @see                             #PORT_CONFIG_PROP
+     * @see                             #USER_CONFIG_PROP
+     * @see                             #IDENTITY_FILE_CONFIG_PROP
      */
     public void processProperty(String name, Collection<String> valsList, boolean ignoreAlreadyInitialized) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -457,7 +444,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target hosts N/A: %s", joinedValue);
 
             String curValue = getHostName();
-            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s", key, curValue);
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
+                    key, curValue);
             setHostName(joinedValue);
         } else if (PORT_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target ports N/A: %s", joinedValue);
@@ -472,7 +460,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target users N/A: %s", joinedValue);
 
             String curValue = getUsername();
-            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s", key, curValue);
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
+                    key, curValue);
             setUsername(joinedValue);
         } else if (IDENTITY_FILE_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) > 0, "No identity files specified");
@@ -481,18 +470,18 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             }
         } else if (EXCLUSIVE_IDENTITIES_CONFIG_PROP.equalsIgnoreCase(key)) {
             setIdentitiesOnly(
-                ConfigFileReaderSupport.parseBooleanValue(
-                    ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
+                    ConfigFileReaderSupport.parseBooleanValue(
+                            ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
         }
     }
 
     /**
-     * Appends a value using a <U>comma</U> to an existing one. If no previous
-     * value then same as calling {@link #setProperty(String, String)}.
+     * Appends a value using a <U>comma</U> to an existing one. If no previous value then same as calling
+     * {@link #setProperty(String, String)}.
      *
-     * @param name Property name - never {@code null}/empty
-     * @param value The value to be appended - ignored if {@code null}/empty
-     * @return The value <U>before</U> appending - {@code null} if no previous value
+     * @param  name  Property name - never {@code null}/empty
+     * @param  value The value to be appended - ignored if {@code null}/empty
+     * @return       The value <U>before</U> appending - {@code null} if no previous value
      */
     public String appendPropertyValue(String name, String value) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -511,10 +500,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Sets / Replaces the property value
      *
-     * @param name Property name - never {@code null}/empty
-     * @param value Property value - if {@code null}/empty then
-     * {@link #removeProperty(String)} is called
-     * @return The previous property value - {@code null} if no such name
+     * @param  name  Property name - never {@code null}/empty
+     * @param  value Property value - if {@code null}/empty then {@link #removeProperty(String)} is called
+     * @return       The previous property value - {@code null} if no such name
      */
     public String setProperty(String name, String value) {
         if (GenericUtils.isEmpty(value)) {
@@ -530,8 +518,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param name Property name - never {@code null}/empty
-     * @return The removed property value - {@code null} if no such property name
+     * @param  name Property name - never {@code null}/empty
+     * @return      The removed property value - {@code null} if no such property name
      */
     public String removeProperty(String name) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -544,22 +532,23 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param properties The properties to set - if {@code null} then an empty
-     * map is effectively set. <B>Note:</B> it is highly recommended to use a
-     * <U>case insensitive</U> key mapper.
+     * @param properties The properties to set - if {@code null} then an empty map is effectively set. <B>Note:</B> it
+     *                   is highly recommended to use a <U>case insensitive</U> key mapper.
      */
     public void setProperties(Map<String, String> properties) {
         this.properties = (properties == null) ? Collections.emptyMap() : properties;
     }
 
     public <A extends Appendable> A append(A sb) throws IOException {
-        sb.append(HOST_CONFIG_PROP).append(' ').append(ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host pattern")).append(IoUtils.EOL);
+        sb.append(HOST_CONFIG_PROP).append(' ').append(ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host pattern"))
+                .append(IoUtils.EOL);
         appendNonEmptyProperty(sb, HOST_NAME_CONFIG_PROP, getHostName());
         appendNonEmptyPort(sb, PORT_CONFIG_PROP, getPort());
         appendNonEmptyProperty(sb, USER_CONFIG_PROP, getUsername());
         appendNonEmptyValues(sb, IDENTITY_FILE_CONFIG_PROP, getIdentities());
         if (exclusiveIdentites != null) {
-            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP, ConfigFileReaderSupport.yesNoValueOf(exclusiveIdentites));
+            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP,
+                    ConfigFileReaderSupport.yesNoValueOf(exclusiveIdentites));
         }
         appendNonEmptyProperties(sb, getProperties());
         return sb;
@@ -571,13 +560,13 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param <A> The {@link Appendable} type
-     * @param sb The target appender
-     * @param name The property name - never {@code null}/empty
-     * @param port The port value - ignored if non-positive
-     * @return The target appender after having appended (or not) the value
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The target appender
+     * @param  name        The property name - never {@code null}/empty
+     * @param  port        The port value - ignored if non-positive
+     * @return             The target appender after having appended (or not) the value
      * @throws IOException If failed to append the requested data
-     * @see #appendNonEmptyProperty(Appendable, String, Object)
+     * @see                #appendNonEmptyProperty(Appendable, String, Object)
      */
     public static <A extends Appendable> A appendNonEmptyPort(A sb, String name, int port) throws IOException {
         return appendNonEmptyProperty(sb, name, (port > 0) ? Integer.toString(port) : null);
@@ -586,12 +575,12 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Appends the extra properties - while skipping the {@link #EXPLICIT_PROPERTIES} ones
      *
-     * @param <A> The {@link Appendable} type
-     * @param sb The target appender
-     * @param props The {@link Map} of properties - ignored if {@code null}/empty
-     * @return The target appender after having appended (or not) the value
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The target appender
+     * @param  props       The {@link Map} of properties - ignored if {@code null}/empty
+     * @return             The target appender after having appended (or not) the value
      * @throws IOException If failed to append the requested data
-     * @see #appendNonEmptyProperty(Appendable, String, Object)
+     * @see                #appendNonEmptyProperty(Appendable, String, Object)
      */
     public static <A extends Appendable> A appendNonEmptyProperties(A sb, Map<String, ?> props) throws IOException {
         if (GenericUtils.isEmpty(props)) {
@@ -612,16 +601,15 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param <A> The {@link Appendable} type
-     * @param sb The target appender
-     * @param name The property name - never {@code null}/empty
-     * @param value The property value - ignored if {@code null}. <B>Note:</B>
-     * if the string representation of the value contains any commas, they are
-     * assumed to indicate a multi-valued property which is broken down to
-     * <U>individual</U> lines - one per value.
-     * @return The target appender after having appended (or not) the value
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The target appender
+     * @param  name        The property name - never {@code null}/empty
+     * @param  value       The property value - ignored if {@code null}. <B>Note:</B> if the string representation of
+     *                     the value contains any commas, they are assumed to indicate a multi-valued property which is
+     *                     broken down to <U>individual</U> lines - one per value.
+     * @return             The target appender after having appended (or not) the value
      * @throws IOException If failed to append the requested data
-     * @see #appendNonEmptyValues(Appendable, String, Object...)
+     * @see                #appendNonEmptyValues(Appendable, String, Object...)
      */
     public static <A extends Appendable> A appendNonEmptyProperty(A sb, String name, Object value) throws IOException {
         String s = Objects.toString(value, null);
@@ -630,24 +618,24 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param <A> The {@link Appendable} type
-     * @param sb The target appender
-     * @param name The property name - never {@code null}/empty
-     * @param values The values to be added - one per line - ignored if {@code null}/empty
-     * @return The target appender after having appended (or not) the value
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The target appender
+     * @param  name        The property name - never {@code null}/empty
+     * @param  values      The values to be added - one per line - ignored if {@code null}/empty
+     * @return             The target appender after having appended (or not) the value
      * @throws IOException If failed to append the requested data
-     * @see #appendNonEmptyValues(Appendable, String, Collection)
+     * @see                #appendNonEmptyValues(Appendable, String, Collection)
      */
     public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Object... values) throws IOException {
         return appendNonEmptyValues(sb, name, GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
-     * @param <A> The {@link Appendable} type
-     * @param sb The target appender
-     * @param name The property name - never {@code null}/empty
-     * @param values The values to be added - one per line - ignored if {@code null}/empty
-     * @return The target appender after having appended (or not) the value
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The target appender
+     * @param  name        The property name - never {@code null}/empty
+     * @param  values      The values to be added - one per line - ignored if {@code null}/empty
+     * @return             The target appender after having appended (or not) the value
      * @throws IOException If failed to append the requested data
      */
     public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Collection<?> values) throws IOException {
@@ -664,8 +652,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param entries The entries - ignored if {@code null}/empty
-     * @return A {@link HostConfigEntryResolver} wrapper using the entries
+     * @param  entries The entries - ignored if {@code null}/empty
+     * @return         A {@link HostConfigEntryResolver} wrapper using the entries
      */
     public static HostConfigEntryResolver toHostConfigEntryResolver(Collection<? extends HostConfigEntry> entries) {
         if (GenericUtils.isEmpty(entries)) {
@@ -680,7 +668,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
                 HostConfigEntry match = (numMatches == 1) ? matches.get(0) : findBestMatch(matches);
                 if (match == null) {
-                    ValidateUtils.throwIllegalArgumentException("No best match found for %s@%s:%d out of %d matches", username1, host1, port1, numMatches);
+                    ValidateUtils.throwIllegalArgumentException("No best match found for %s@%s:%d out of %d matches", username1,
+                            host1, port1, numMatches);
                 }
 
                 return normalizeEntry(match, host1, port1, username1);
@@ -689,21 +678,21 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param entry The original entry - ignored if {@code null}
-     * @param host The original host name / address
-     * @param port The original port
-     * @param username The original user name
-     * @return A <U>cloned</U> entry whose values are resolved - including
-     * expanding macros in the identities files
+     * @param  entry       The original entry - ignored if {@code null}
+     * @param  host        The original host name / address
+     * @param  port        The original port
+     * @param  username    The original user name
+     * @return             A <U>cloned</U> entry whose values are resolved - including expanding macros in the
+     *                     identities files
      * @throws IOException If failed to normalize the entry
-     * @see #resolveHostName(String)
-     * @see #resolvePort(int)
-     * @see #resolveUsername(String)
-     * @see #resolveIdentityFilePath(String, String, int, String)
+     * @see                #resolveHostName(String)
+     * @see                #resolvePort(int)
+     * @see                #resolveUsername(String)
+     * @see                #resolveIdentityFilePath(String, String, int, String)
      */
     public static HostConfigEntry normalizeEntry(
             HostConfigEntry entry, String host, int port, String username)
-                throws IOException {
+            throws IOException {
         if (entry == null) {
             return null;
         }
@@ -717,9 +706,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         Map<String, String> props = entry.getProperties();
         if (GenericUtils.size(props) > 0) {
             normal.setProperties(
-                NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
-                    .putAll(props)
-                    .build());
+                    NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
+                            .putAll(props)
+                            .build());
         }
 
         Collection<String> ids = entry.getIdentities();
@@ -727,7 +716,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             return normal;
         }
 
-        normal.setIdentities(Collections.emptyList());  // start fresh
+        normal.setIdentities(Collections.emptyList()); // start fresh
         for (String id : ids) {
             String path = resolveIdentityFilePath(id, host, port, username);
             normal.addIdentity(path);
@@ -739,10 +728,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Resolves the effective target host
      *
-     * @param originalName The original requested host
-     * @param entryName The configured host
-     * @return If the configured host entry is not {@code null}/empty
-     * then it is used, otherwise the original one.
+     * @param  originalName The original requested host
+     * @param  entryName    The configured host
+     * @return              If the configured host entry is not {@code null}/empty then it is used, otherwise the
+     *                      original one.
      */
     public static String resolveHostName(String originalName, String entryName) {
         if (GenericUtils.isEmpty(entryName)) {
@@ -755,10 +744,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Resolves the effective username
      *
-     * @param originalUser The original requested username
-     * @param entryUser The configured host entry username
-     * @return If the configured host entry username is not {@code null}/empty
-     * then it is used, otherwise the original one.
+     * @param  originalUser The original requested username
+     * @param  entryUser    The configured host entry username
+     * @return              If the configured host entry username is not {@code null}/empty then it is used, otherwise
+     *                      the original one.
      */
     public static String resolveUsername(String originalUser, String entryUser) {
         if (GenericUtils.isEmpty(entryUser)) {
@@ -771,10 +760,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Resolves the effective port to use
      *
-     * @param originalPort The original requested port
-     * @param entryPort The configured host entry port
-     * @return If the host entry port is positive, then it is used, otherwise
-     * the original requested port
+     * @param  originalPort The original requested port
+     * @param  entryPort    The configured host entry port
+     * @return              If the host entry port is positive, then it is used, otherwise the original requested port
      */
     public static int resolvePort(int originalPort, int entryPort) {
         if (entryPort <= 0) {
@@ -797,7 +785,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     public static List<HostConfigEntry> readHostConfigEntries(InputStream inStream, boolean okToClose) throws IOException {
-        try (Reader reader = new InputStreamReader(NoCloseInputStream.resolveInputStream(inStream, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader reader
+                = new InputStreamReader(NoCloseInputStream.resolveInputStream(inStream, okToClose), StandardCharsets.UTF_8)) {
             return readHostConfigEntries(reader, true);
         }
     }
@@ -811,8 +800,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Reads configuration entries
      *
-     * @param rdr The {@link BufferedReader} to use
-     * @return The {@link List} of read {@link HostConfigEntry}-ies
+     * @param  rdr         The {@link BufferedReader} to use
+     * @return             The {@link List} of read {@link HostConfigEntry}-ies
      * @throws IOException If failed to parse the read configuration
      */
     public static List<HostConfigEntry> readHostConfigEntries(BufferedReader rdr) throws IOException {
@@ -838,8 +827,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             }
 
             /*
-             * Some options use '=', others use ' ' - try both
-             * NOTE: we do not validate the format for each option separately
+             * Some options use '=', others use ' ' - try both NOTE: we do not validate the format for each option
+             * separately
              */
             pos = line.indexOf(' ');
             if (pos < 0) {
@@ -862,7 +851,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                 // If the all-hosts pattern is used, make sure no global section already active
                 for (String name : valsList) {
                     if (ALL_HOSTS_PATTERN.equalsIgnoreCase(name) && (globalEntry != null)) {
-                        throw new StreamCorruptedException("Overriding the global section with a specific one at line " + lineNumber + ": " + line);
+                        throw new StreamCorruptedException(
+                                "Overriding the global section with a specific one at line " + lineNumber + ": " + line);
                     }
                 }
 
@@ -884,9 +874,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             try {
                 curEntry.processProperty(key, valsList, false);
             } catch (RuntimeException e) {
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                                                 + " to process line #" + lineNumber + " (" + line + ")"
-                                                 + ": " + e.getMessage());
+                throw new StreamCorruptedException(
+                        "Failed (" + e.getClass().getSimpleName() + ")"
+                                                   + " to process line #" + lineNumber + " (" + line + ")"
+                                                   + ": " + e.getMessage());
             }
         }
 
@@ -905,9 +896,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Finds the best match out of the given ones.
      *
-     * @param matches The available matches - ignored if {@code null}/empty
-     * @return The best match or {@code null} if no matches or no best match found
-     * @see #findBestMatch(Iterator)
+     * @param  matches The available matches - ignored if {@code null}/empty
+     * @return         The best match or {@code null} if no matches or no best match found
+     * @see            #findBestMatch(Iterator)
      */
     public static HostConfigEntry findBestMatch(Collection<? extends HostConfigEntry> matches) {
         if (GenericUtils.isEmpty(matches)) {
@@ -920,9 +911,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Finds the best match out of the given ones.
      *
-     * @param matches The available matches - ignored if {@code null}/empty
-     * @return The best match or {@code null} if no matches or no best match found
-     * @see #findBestMatch(Iterator)
+     * @param  matches The available matches - ignored if {@code null}/empty
+     * @return         The best match or {@code null} if no matches or no best match found
+     * @see            #findBestMatch(Iterator)
      */
     public static HostConfigEntry findBestMatch(Iterable<? extends HostConfigEntry> matches) {
         if (matches == null) {
@@ -933,14 +924,13 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * Finds the best match out of the given ones. The best match is defined as one whose
-     * pattern is as <U>specific</U> as possible (if more than one match is available).
-     * I.e., a non-global match is preferred over global one, and a match with no wildcards
-     * is preferred over one with such a pattern.
+     * Finds the best match out of the given ones. The best match is defined as one whose pattern is as <U>specific</U>
+     * as possible (if more than one match is available). I.e., a non-global match is preferred over global one, and a
+     * match with no wildcards is preferred over one with such a pattern.
      *
-     * @param matches The available matches - ignored if {@code null}/empty
-     * @return The best match or {@code null} if no matches or no best match found
-     * @see #isSpecificHostPattern(String)
+     * @param  matches The available matches - ignored if {@code null}/empty
+     * @return         The best match or {@code null} if no matches or no best match found
+     * @see            #isSpecificHostPattern(String)
      */
     public static HostConfigEntry findBestMatch(Iterator<? extends HostConfigEntry> matches) {
         if ((matches == null) || (!matches.hasNext())) {
@@ -1003,7 +993,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public static void writeHostConfigEntries(
             Path path, Collection<? extends HostConfigEntry> entries, OpenOption... options)
-                throws IOException {
+            throws IOException {
         try (OutputStream outputStream = Files.newOutputStream(path, options)) {
             writeHostConfigEntries(outputStream, true, entries);
         }
@@ -1011,17 +1001,19 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public static void writeHostConfigEntries(
             OutputStream outputStream, boolean okToClose, Collection<? extends HostConfigEntry> entries)
-                throws IOException {
+            throws IOException {
         if (GenericUtils.isEmpty(entries)) {
             return;
         }
 
-        try (Writer w = new OutputStreamWriter(NoCloseOutputStream.resolveOutputStream(outputStream, okToClose), StandardCharsets.UTF_8)) {
+        try (Writer w = new OutputStreamWriter(
+                NoCloseOutputStream.resolveOutputStream(outputStream, okToClose), StandardCharsets.UTF_8)) {
             appendHostConfigEntries(w, entries);
         }
     }
 
-    public static <A extends Appendable> A appendHostConfigEntries(A sb, Collection<? extends HostConfigEntry> entries) throws IOException {
+    public static <A extends Appendable> A appendHostConfigEntries(A sb, Collection<? extends HostConfigEntry> entries)
+            throws IOException {
         if (GenericUtils.isEmpty(entries)) {
             return sb;
         }
@@ -1036,8 +1028,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Checks if this is a multi-value - allow space and comma
      *
-     * @param value The value - ignored if {@code null}/empty (after trimming)
-     * @return A {@link List} of the encountered values
+     * @param  value The value - ignored if {@code null}/empty (after trimming)
+     * @return       A {@link List} of the encountered values
      */
     public static List<String> parseConfigValue(String value) {
         String s = GenericUtils.replaceWhitespaceAndTrim(value);
@@ -1062,14 +1054,16 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         return Collections.singletonList(s);
     }
 
-    // The file name may use the tilde syntax to refer to a user’s home directory or one of the following escape characters:
-    // '%d' (local user's home directory), '%u' (local user name), '%l' (local host name), '%h' (remote host name) or '%r' (remote user name).
+    // The file name may use the tilde syntax to refer to a user’s home directory or one of the following escape
+    // characters:
+    // '%d' (local user's home directory), '%u' (local user name), '%l' (local host name), '%h' (remote host name) or
+    // '%r' (remote user name).
     public static String resolveIdentityFilePath(String id, String host, int port, String username) throws IOException {
         if (GenericUtils.isEmpty(id)) {
             return id;
         }
 
-        String path = id.replace('/', File.separatorChar);  // make sure all separators are local
+        String path = id.replace('/', File.separatorChar); // make sure all separators are local
         String[] elements = GenericUtils.split(path, File.separatorChar);
         StringBuilder sb = new StringBuilder(path.length() + Long.SIZE);
         for (int index = 0; index < elements.length; index++) {
@@ -1087,7 +1081,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                     curPos++;
                     ValidateUtils.checkTrue(curPos < elem.length(), "Missing macro modifier in %s", id);
                     ch = elem.charAt(curPos);
-                    switch(ch) {
+                    switch (ch) {
                         case PATH_MACRO_CHAR:
                             sb.append(ch);
                             break;
@@ -1096,7 +1090,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             appendUserHome(sb);
                             break;
                         case LOCAL_USER_MACRO:
-                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(), "No local user name value"));
+                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(),
+                                    "No local user name value"));
                             break;
                         case LOCAL_HOST_MACRO: {
                             InetAddress address = Objects.requireNonNull(InetAddress.getLocalHost(), "No local address");

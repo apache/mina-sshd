@@ -31,9 +31,8 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
- * Implementation of an unknown command that can be returned by <code>CommandFactory</code>
- * when the command is not known, as it is supposed to always
- * return a valid <code>Command</code> object.
+ * Implementation of an unknown command that can be returned by <code>CommandFactory</code> when the command is not
+ * known, as it is supposed to always return a valid <code>Command</code> object.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

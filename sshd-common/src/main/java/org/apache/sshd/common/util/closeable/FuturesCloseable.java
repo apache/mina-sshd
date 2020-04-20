@@ -27,8 +27,8 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 
 /**
- * @param <T> Type of future
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of future
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
 

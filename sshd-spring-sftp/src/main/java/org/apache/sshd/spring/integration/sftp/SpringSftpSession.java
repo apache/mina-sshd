@@ -63,8 +63,7 @@ public class SpringSftpSession extends AbstractLoggingBean implements Session<Di
     public String getHostPort() {
         SftpClient client = getClientInstance();
         @SuppressWarnings("resource")
-        org.apache.sshd.common.session.Session session =
-            (client == null) ? null : client.getSession();
+        org.apache.sshd.common.session.Session session = (client == null) ? null : client.getSession();
         @SuppressWarnings("resource")
         IoSession ioSession = (session == null) ? null : session.getIoSession();
         SocketAddress peerAddress = (ioSession == null) ? null : ioSession.getRemoteAddress();

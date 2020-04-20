@@ -127,16 +127,16 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystem() throws Exception {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                MapBuilder.<String, Object>builder()
-                    .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
-                    .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
-                    .build())) {
+                MapBuilder.<String, Object> builder()
+                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                        .build())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
     }
 
-    @Test   // see SSHD-578
+    @Test // see SSHD-578
     public void testFileSystemURIParameters() throws Exception {
         Map<String, Object> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         params.put("test-class-name", getClass().getSimpleName());
@@ -145,7 +145,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         int expectedVersion = (SftpSubsystemEnvironment.LOWER_SFTP_IMPL + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL) / 2;
         params.put(SftpFileSystemProvider.VERSION_PARAM, expectedVersion);
-        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params), Collections.<String, Object>emptyMap())) {
+        try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params),
+                Collections.<String, Object> emptyMap())) {
             try (SftpClient sftpClient = fs.getClient()) {
                 assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
 
@@ -166,14 +167,14 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public void testAttributes() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                MapBuilder.<String, Object>builder()
-                    .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, SftpClient.MIN_READ_BUFFER_SIZE)
-                    .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, SftpClient.MIN_WRITE_BUFFER_SIZE)
-                    .build())) {
+                MapBuilder.<String, Object> builder()
+                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, SftpClient.MIN_READ_BUFFER_SIZE)
+                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, SftpClient.MIN_WRITE_BUFFER_SIZE)
+                        .build())) {
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
@@ -196,8 +197,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 Files.setAttribute(file, "posix:group", group);
             } catch (UserPrincipalNotFoundException e) {
                 // Also, according to the Javadoc:
-                //      "Where an implementation does not support any notion of
-                //       group then this method always throws UserPrincipalNotFoundException."
+                // "Where an implementation does not support any notion of
+                // group then this method always throws UserPrincipalNotFoundException."
                 // Therefore we are lenient with this exception for Windows
                 if (OsUtils.isWin32()) {
                     System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -221,21 +222,23 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-697
+    @Test // see SSHD-697
     public void testFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
         Files.deleteIfExists(lclFile);
-        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
+        byte[] expected
+                = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
             Path parentPath = targetPath.getParent();
             String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
             Path file = fs.getPath(remFilePath);
 
             FileSystemProvider provider = fs.provider();
-            try (FileChannel fc = provider.newFileChannel(file, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+            try (FileChannel fc = provider.newFileChannel(file,
+                    EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
                 int writeLen = fc.write(ByteBuffer.wrap(expected));
                 assertEquals("Mismatched written length", expected.length, writeLen);
 
@@ -348,7 +351,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                     assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
                     Collection<String> views = fs.supportedFileAttributeViews();
                     assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
-                               views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
+                            views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
                     int expectedVersion = selected.get();
                     assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
                     testFileSystem(fs, expectedVersion);
@@ -362,7 +365,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystemProviderServiceEntry() throws IOException {
         Path configFile = CommonTestSupportUtils.resolve(detectSourcesFolder(),
-            MAIN_SUBFOLDER, "filtered-resources", "META-INF", "services", FileSystemProvider.class.getName());
+                MAIN_SUBFOLDER, "filtered-resources", "META-INF", "services", FileSystemProvider.class.getName());
         assertTrue("Missing " + configFile, Files.exists(configFile));
 
         boolean found = false;
@@ -402,10 +405,12 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 }
             } catch (IOException | RuntimeException e) {
                 // TODO on Windows one might get share problems for *.sys files
-                // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another process"
+                // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another
+                // process"
                 // for now, Windows is less of a target so we are lenient with it
                 if (OsUtils.isWin32()) {
-                    System.err.println(e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
+                    System.err.println(
+                            e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
                 } else {
                     throw e;
                 }
@@ -414,7 +419,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         Path current = fs.getPath(".").toRealPath().normalize();
@@ -434,7 +439,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         if (version >= SftpConstants.SFTP_V4) {
             outputDebugMessage("getFileAttributeView(%s)", file1);
-            AclFileAttributeView aclView = Files.getFileAttributeView(file1, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+            AclFileAttributeView aclView
+                    = Files.getFileAttributeView(file1, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
             assertNotNull("No ACL view for " + file1, aclView);
 
             Map<String, ?> attrs = Files.readAttributes(file1, "acl:*", LinkOption.NOFOLLOW_LINKS);

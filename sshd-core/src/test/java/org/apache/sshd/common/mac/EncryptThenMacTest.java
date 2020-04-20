@@ -47,7 +47,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class EncryptThenMacTest extends BaseTestSupport {
     private static SshServer sshd;
@@ -105,7 +105,7 @@ public class EncryptThenMacTest extends BaseTestSupport {
                 continue;
             }
 
-            ret.add(new Object[]{f});
+            ret.add(new Object[] { f });
         }
 
         return ret;
@@ -120,7 +120,7 @@ public class EncryptThenMacTest extends BaseTestSupport {
     @Test
     public void testClientConnection() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT).getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 

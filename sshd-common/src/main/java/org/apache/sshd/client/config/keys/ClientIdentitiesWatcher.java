@@ -43,12 +43,12 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     private final Collection<ClientIdentityProvider> providers;
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            ClientIdentityLoader loader, FilePasswordProvider provider) {
+                                   ClientIdentityLoader loader, FilePasswordProvider provider) {
         this(paths, loader, provider, true);
     }
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+                                   ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(paths,
              ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
              FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
@@ -56,12 +56,12 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
     }
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
+                                   ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(paths, loader, provider, true);
     }
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
-            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+                                   ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
         this(buildProviders(paths, loader, provider, strict));
     }
 
@@ -90,7 +90,7 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
             return kp;
         } catch (Throwable e) {
             log.warn("loadKeys({}) failed ({}) to load key: {}",
-                p, e.getClass().getSimpleName(), e.getMessage());
+                    p, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("loadKeys(" + p + ") key load failure details", e);
             }

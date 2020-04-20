@@ -27,23 +27,25 @@ import org.junit.runners.parameterized.TestWithParameters;
 /**
  * Avoids re-creating a test class instance for each parameterized test method. Usage:
  *
- * <pre><code>
- * @FixMethodOrder(MethodSorters.NAME_ASCENDING)
- * @RunWith(Parameterized.class)
- * @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+ * <pre>
+ * <code>
+ * &#64;FixMethodOrder(MethodSorters.NAME_ASCENDING)
+ * &#64;RunWith(Parameterized.class)
+ * &#64;UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
  * public class MyParameterizedTest {
  *      public MyParameterizedTest(...params...) {
  *          ....
  *      }
  *
- *      @Parameters(...)
+ *      &#64;Parameters(...)
  *      public static List<Object[]> parameters() {
  *          ...
  *      }
  * }
- * </code></pre>
+ * </code>
+ * </pre>
  *
- * @see JUnit4ClassRunnerWithParameters
+ * @see    JUnit4ClassRunnerWithParameters
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JUnit4ClassRunnerWithParametersFactory implements ParametersRunnerFactory {

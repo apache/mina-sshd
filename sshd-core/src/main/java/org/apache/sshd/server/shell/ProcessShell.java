@@ -55,8 +55,8 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     private TtyFilterInputStream err;
 
     /**
-     * @param command    The command components which when joined (with space separator)
-     *                   create the full command to be executed by the shell
+     * @param command The command components which when joined (with space separator) create the full command to be
+     *                executed by the shell
      */
     public ProcessShell(String... command) {
         this(GenericUtils.isEmpty(command) ? Collections.emptyList() : Arrays.asList(command));
@@ -65,7 +65,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     public ProcessShell(Collection<String> command) {
         // we copy the original list so as not to change it
         this.command = new ArrayList<>(
-            ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
+                ValidateUtils.checkNotNullAndNotEmpty(command, "No process shell command(s)"));
         this.cmdValue = GenericUtils.join(command, ' ');
     }
 
@@ -106,7 +106,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
                 procEnv.putAll(varsMap);
             } catch (Exception e) {
                 log.warn("start({}) - Failed ({}) to set environment for command={}: {}",
-                     channel, e.getClass().getSimpleName(), cmdValue, e.getMessage());
+                        channel, e.getClass().getSimpleName(), cmdValue, e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.debug("start(" + channel + ")[" + cmdValue + "] failure details", e);
                 }
@@ -115,7 +115,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
 
         if (log.isDebugEnabled()) {
             log.debug("start({}): command='{}', env={}",
-                channel, builder.command(), builder.environment());
+                    channel, builder.command(), builder.environment());
         }
 
         process = builder.start();
@@ -183,12 +183,11 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
             process.destroy();
         }
 
-        IOException e =
-            IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
+        IOException e = IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
         if (e != null) {
             if (debugEnabled) {
                 log.debug("destroy({}) {} while destroy streams of '{}': {}",
-                    channel, e.getClass().getSimpleName(), this, e.getMessage());
+                        channel, e.getClass().getSimpleName(), this, e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -196,7 +195,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable t : suppressed) {
                         log.trace("destroy({}) Suppressed {} while destroy streams of '{}': {}",
-                            channel, t.getClass().getSimpleName(), this, t.getMessage());
+                                channel, t.getClass().getSimpleName(), this, t.getMessage());
                     }
                 }
             }

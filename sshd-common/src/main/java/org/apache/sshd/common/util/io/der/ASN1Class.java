@@ -34,10 +34,9 @@ public enum ASN1Class {
     CONTEXT((byte) 0x02),
     PRIVATE((byte) 0x03);
 
-    public static final List<ASN1Class>  VALUES =
-        Collections.unmodifiableList(Arrays.asList(values()));
+    public static final List<ASN1Class> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
 
-    private final byte  byteValue;
+    private final byte byteValue;
 
     ASN1Class(byte classValue) {
         byteValue = classValue;
@@ -62,7 +61,10 @@ public enum ASN1Class {
     }
 
     /**
-     * <P>The first byte in DER encoding is made of following fields</P>
+     * <P>
+     * The first byte in DER encoding is made of following fields
+     * </P>
+     * 
      * <pre>
      *-------------------------------------------------
      *|Bit 8|Bit 7|Bit 6|Bit 5|Bit 4|Bit 3|Bit 2|Bit 1|
@@ -70,17 +72,18 @@ public enum ASN1Class {
      *|  Class    | CF  |        Type                 |
      *-------------------------------------------------
      * </pre>
-     * @param value The original DER encoded byte
-     * @return The {@link ASN1Class} value - {@code null} if no match found
-     * @see #fromTypeValue(int)
+     * 
+     * @param  value The original DER encoded byte
+     * @return       The {@link ASN1Class} value - {@code null} if no match found
+     * @see          #fromTypeValue(int)
      */
     public static ASN1Class fromDERValue(int value) {
         return fromTypeValue((value >> 6) & 0x03);
     }
 
     /**
-     * @param value The &quot;pure&quot; value - unshifted and with no extras
-     * @return The {@link ASN1Class} value - {@code null} if no match found
+     * @param  value The &quot;pure&quot; value - unshifted and with no extras
+     * @return       The {@link ASN1Class} value - {@code null} if no match found
      */
     public static ASN1Class fromTypeValue(int value) {
         // all 4 values are defined

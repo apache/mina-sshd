@@ -74,7 +74,7 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
             return true;
         } catch (Exception e) {
             log.warn("authenticate({}) failed ({}) to authenticate user={}: {}",
-                session, e.getClass().getSimpleName(), username, e.getMessage());
+                    session, e.getClass().getSimpleName(), username, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + session + ")[" + username + "] failure details", e);
             }

@@ -20,10 +20,11 @@
 package org.apache.sshd.server.auth.password;
 
 /**
- * A special exception that can be thrown by the {@link PasswordAuthenticator}
- * to indicate that the password requires changing or is not string enough
+ * A special exception that can be thrown by the {@link PasswordAuthenticator} to indicate that the password requires
+ * changing or is not string enough
  *
- * @see <A HREF="https://tools.ietf.org/html/rfc4252#section-8">RFC-4252 section 8 - SSH_MSG_USERAUTH_PASSWD_CHANGEREQ</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc4252#section-8">RFC-4252 section 8 -
+ *         SSH_MSG_USERAUTH_PASSWD_CHANGEREQ</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PasswordChangeRequiredException extends RuntimeException {

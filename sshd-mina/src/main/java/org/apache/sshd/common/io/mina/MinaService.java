@@ -43,7 +43,8 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class MinaService extends AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
+public abstract class MinaService extends AbstractCloseable
+        implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
     protected final FactoryManager manager;
     protected final org.apache.sshd.common.io.IoHandler handler;
     protected final IoProcessor<NioSession> ioProcessor;
@@ -51,7 +52,8 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
 
     private IoServiceEventListener eventListener;
 
-    protected MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+    protected MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler,
+                          IoProcessor<NioSession> ioProcessor) {
         this.manager = Objects.requireNonNull(manager, "No factory manager provided");
         this.handler = Objects.requireNonNull(handler, "No IoHandler provided");
         this.ioProcessor = Objects.requireNonNull(ioProcessor, "No IoProcessor provided");
@@ -127,7 +129,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
             handler.sessionCreated(ioSession);
         } catch (Exception e) {
             log.warn("sessionCreated({}) failed {} to handle creation event: {}",
-                session, e.getClass().getSimpleName(), e.getMessage());
+                    session, e.getClass().getSimpleName(), e.getMessage());
             ioSession.close(true);
             throw e;
         }
@@ -153,8 +155,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     }
 
     protected org.apache.sshd.common.io.IoSession getSession(IoSession session) {
-        return (org.apache.sshd.common.io.IoSession)
-            session.getAttribute(org.apache.sshd.common.io.IoSession.class);
+        return (org.apache.sshd.common.io.IoSession) session.getAttribute(org.apache.sshd.common.io.IoSession.class);
     }
 
     protected void configure(SocketSessionConfig config) {
@@ -212,7 +213,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
             SocketSessionConfig config, String propName, Object propValue, RuntimeIoException t) {
         Throwable e = GenericUtils.resolveExceptionCause(t);
         log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
-            propName, propValue, e.getClass().getSimpleName(), e.getMessage());
+                propName, propValue, e.getClass().getSimpleName(), e.getMessage());
     }
 
     protected Integer getInteger(String property) {

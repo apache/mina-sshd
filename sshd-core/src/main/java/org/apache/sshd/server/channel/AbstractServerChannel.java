@@ -50,8 +50,8 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     protected AbstractServerChannel(String discriminator,
-            Collection<? extends RequestHandler<Channel>> handlers,
-            CloseableExecutorService executor) {
+                                    Collection<? extends RequestHandler<Channel>> handlers,
+                                    CloseableExecutorService executor) {
         super(discriminator, false, handlers, executor);
     }
 
@@ -60,8 +60,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         setRecipient(recipient);
 
         Session s = getSession();
-        FactoryManager manager =
-            Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
         Window wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
         configureWindow();
@@ -71,9 +70,9 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     @Override
     public void handleOpenSuccess(
             int recipient, long rwSize, long packetSize, Buffer buffer)
-                throws IOException {
+            throws IOException {
         throw new UnsupportedOperationException(
-            "handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+                "handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
@@ -104,7 +103,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             if (log.isDebugEnabled()) {
                 log.debug("sendExitStatus({}) exit-status={} - already sent", this, v);
             }
-            notifyStateChanged("exit-status");   // just in case
+            notifyStateChanged("exit-status"); // just in case
             return;
         }
 
@@ -114,7 +113,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(
-            SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
+                SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("exit-status");
         // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10

@@ -49,10 +49,10 @@ import org.mockito.Mockito;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @CreateDS(name = "myDS",
-        partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
+          partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
 @CreateLdapServer(allowAnonymousAccess = true,
-        transports = { @CreateTransport(protocol = "LDAP", address = "localhost")})
-@ApplyLdifFiles({"auth-users.ldif"})
+                  transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
+@ApplyLdifFiles({ "auth-users.ldif" })
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
     @ClassRule
@@ -69,7 +69,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
     @Test
     public void testPublicKeyComparison() throws Exception {
         Map<String, String> credentials = populateUsers(serverRule.getLdapServer().getDirectoryService(),
-                        LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
+                LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
         assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
 
         // Cannot use forEach because of the potential GeneraSecurityException being thrown
@@ -77,7 +77,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
             String username = ce.getKey();
             AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
             PublicKey key = Objects.requireNonNull(entry, "No key extracted")
-                .resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
+                    .resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
             KEYS_MAP.put(username, key);
         }
 
@@ -92,7 +92,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
         KEYS_MAP.forEach((username, key) -> {
             outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",
-                               username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                    username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             assertTrue("Failed to authenticate user=" + username, auth.authenticate(username, key, session));
         });
     }

@@ -49,8 +49,10 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={}",
-                      opcode, (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
-                      offset, length, BufferUtils.toHex(':', quickHash));
+                    opcode,
+                    (target instanceof CharSequence)
+                            ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
+                    offset, length, BufferUtils.toHex(':', quickHash));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
@@ -66,8 +68,8 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         byte[] hashValue = buffer.getBytes();
         if (debugEnabled) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={} - result={}",
-                      opcode, target, offset, length,
-                      BufferUtils.toHex(':', quickHash), BufferUtils.toHex(':', hashValue));
+                    opcode, target, offset, length,
+                    BufferUtils.toHex(':', quickHash), BufferUtils.toHex(':', hashValue));
         }
 
         return hashValue;

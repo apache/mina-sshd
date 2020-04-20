@@ -57,13 +57,13 @@ public abstract class StaticServerKeyVerifier extends AbstractLoggingBean implem
     protected void handleAcceptance(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         // accepting without really checking is dangerous, thus the warning
         log.warn("Server at {} presented unverified {} key: {}",
-                 remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
+                remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
     }
 
     protected void handleRejection(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         if (log.isDebugEnabled()) {
             log.debug("Reject server {} unverified {} key: {}",
-                      remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
+                    remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
         }
     }
 }

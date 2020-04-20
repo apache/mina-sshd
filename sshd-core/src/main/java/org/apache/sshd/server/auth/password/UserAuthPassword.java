@@ -56,32 +56,32 @@ public class UserAuthPassword extends AbstractUserAuth {
         String password = buffer.getString();
         if (newPassword) {
             return handleClientPasswordChangeRequest(
-                buffer, session, username, password, buffer.getString());
+                    buffer, session, username, password, buffer.getString());
         } else {
             return checkPassword(buffer, session, username, password);
         }
     }
 
     /**
-     * Invokes the configured {@link PasswordAuthenticator} and returns the result.
-     * If {@link PasswordChangeRequiredException} thrown by the authenticator then
+     * Invokes the configured {@link PasswordAuthenticator} and returns the result. If
+     * {@link PasswordChangeRequiredException} thrown by the authenticator then
      * {@link #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)}
      * is invoked
      *
-     * @param buffer   The received {@link Buffer} to be re-used if need to send
-     *                 a password change request
-     * @param session  The {@link ServerSession} through which the request was received
-     * @param username The username
-     * @param password The password
-     * @return The authentication result - if {@code null} then exception was handled
-     * internally and authentication is still in progress
-     * @throws Exception If internal error during authentication (exception for
-     * {@link PasswordChangeRequiredException} which is handled internally)
-     * @see #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)
+     * @param  buffer    The received {@link Buffer} to be re-used if need to send a password change request
+     * @param  session   The {@link ServerSession} through which the request was received
+     * @param  username  The username
+     * @param  password  The password
+     * @return           The authentication result - if {@code null} then exception was handled internally and
+     *                   authentication is still in progress
+     * @throws Exception If internal error during authentication (exception for {@link PasswordChangeRequiredException}
+     *                   which is handled internally)
+     * @see              #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String,
+     *                   PasswordChangeRequiredException)
      */
     protected Boolean checkPassword(
             Buffer buffer, ServerSession session, String username, String password)
-                throws Exception {
+            throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         PasswordAuthenticator auth = session.getPasswordAuthenticator();
         if (auth == null) {
@@ -97,7 +97,7 @@ public class UserAuthPassword extends AbstractUserAuth {
                 authed = auth.authenticate(username, password, session);
             } catch (Error e) {
                 log.warn("checkPassword({}) failed ({}) to consult authenticator: {}",
-                     session, e.getClass().getSimpleName(), e.getMessage());
+                        session, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("checkPassword(" + session + ") authenticator failure details", e);
                 }
@@ -119,21 +119,21 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
     /**
-     * Invoked when the client sends a {@code SSH_MSG_USERAUTH_REQUEST} indicating
-     * a password change. Throws {@link UnsupportedOperationException} by default
+     * Invoked when the client sends a {@code SSH_MSG_USERAUTH_REQUEST} indicating a password change. Throws
+     * {@link UnsupportedOperationException} by default
      *
-     * @param buffer The {@link Buffer} to re-use in order to respond
-     * @param session The associated {@link ServerSession}
-     * @param username The username
-     * @param oldPassword The old password
-     * @param newPassword The new password
-     * @return Password change and authentication result - {@code null} means
-     * authentication incomplete - i.e., handler has sent some extra query.
-     * @throws Exception If failed to handle the request.
+     * @param  buffer      The {@link Buffer} to re-use in order to respond
+     * @param  session     The associated {@link ServerSession}
+     * @param  username    The username
+     * @param  oldPassword The old password
+     * @param  newPassword The new password
+     * @return             Password change and authentication result - {@code null} means authentication incomplete -
+     *                     i.e., handler has sent some extra query.
+     * @throws Exception   If failed to handle the request.
      */
     protected Boolean handleClientPasswordChangeRequest(
             Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
-                throws Exception {
+            throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         if (!UserAuthMethodFactory.isDataIntegrityAuthenticationTransport(session)) {
             if (debugEnabled) {
@@ -154,27 +154,26 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
     /**
-     * Invoked by {@link #checkPassword(Buffer, ServerSession, String, String)}
-     * when a {@link PasswordChangeRequiredException} was thrown by the authenticator.
-     * By default it re-throws the original exception.
+     * Invoked by {@link #checkPassword(Buffer, ServerSession, String, String)} when a
+     * {@link PasswordChangeRequiredException} was thrown by the authenticator. By default it re-throws the original
+     * exception.
      *
-     * @param buffer   The received {@link Buffer} to be re-used if need to send
-     *                 a password change request
-     * @param session  The {@link ServerSession} through which the request was received
-     * @param username The username
-     * @param password The (rejected) password
-     * @param e        The original thrown exception
-     * @return {@code null} by default to indicate incomplete authentication
+     * @param  buffer    The received {@link Buffer} to be re-used if need to send a password change request
+     * @param  session   The {@link ServerSession} through which the request was received
+     * @param  username  The username
+     * @param  password  The (rejected) password
+     * @param  e         The original thrown exception
+     * @return           {@code null} by default to indicate incomplete authentication
      * @throws Exception If failed to dispatch the message
      */
     protected Boolean handleServerPasswordChangeRequest(
             Buffer buffer, ServerSession session, String username, String password, PasswordChangeRequiredException e)
-                throws Exception {
+            throws Exception {
         String prompt = e.getPrompt();
         String lang = e.getLanguage();
         if (log.isDebugEnabled()) {
             log.debug("handlePasswordChangeRequest({}) password change required - prompt={}, lang={}",
-                  session, prompt, lang);
+                    session, prompt, lang);
         }
 
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,
@@ -182,6 +181,6 @@ public class UserAuthPassword extends AbstractUserAuth {
         buffer.putString(prompt);
         buffer.putString(lang);
         session.writePacket(buffer);
-        return null;    // authentication incomplete
+        return null; // authentication incomplete
     }
 }

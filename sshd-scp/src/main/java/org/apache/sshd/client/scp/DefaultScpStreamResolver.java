@@ -43,8 +43,8 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     private final String cmd;
 
     public DefaultScpStreamResolver(
-            String name, Path mockPath, Collection<PosixFilePermission> perms,
-            ScpTimestamp time, long size, InputStream local, String cmd) {
+                                    String name, Path mockPath, Collection<PosixFilePermission> perms,
+                                    ScpTimestamp time, long size, InputStream local, String cmd) {
         this.name = name;
         this.mockPath = mockPath;
         this.perms = perms;
@@ -82,7 +82,7 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     @Override
     public InputStream resolveSourceStream(
             Session session, long length, Set<PosixFilePermission> permissions, OpenOption... options)
-                throws IOException {
+            throws IOException {
         return local;
     }
 

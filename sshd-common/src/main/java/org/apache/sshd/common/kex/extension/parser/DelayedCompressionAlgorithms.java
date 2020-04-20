@@ -25,7 +25,7 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
  */
 public class DelayedCompressionAlgorithms {
     private List<String> client2server;
@@ -65,7 +65,7 @@ public class DelayedCompressionAlgorithms {
     public int hashCode() {
         // Order might differ
         return 31 * GenericUtils.size(getClient2Server())
-             + 37 * GenericUtils.size(getServer2Client());
+               + 37 * GenericUtils.size(getServer2Client());
     }
 
     @Override
@@ -82,14 +82,14 @@ public class DelayedCompressionAlgorithms {
 
         DelayedCompressionAlgorithms other = (DelayedCompressionAlgorithms) obj;
         return (GenericUtils.findFirstDifferentValueIndex(getClient2Server(), other.getClient2Server()) < 0)
-            && (GenericUtils.findFirstDifferentValueIndex(getServer2Client(), other.getServer2Client()) < 0);
+                && (GenericUtils.findFirstDifferentValueIndex(getServer2Client(), other.getServer2Client()) < 0);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[client2server=" + getClient2Server()
-            + ", server2client=" + getServer2Client()
-            + "]";
+               + "[client2server=" + getClient2Server()
+               + ", server2client=" + getServer2Client()
+               + "]";
     }
 }

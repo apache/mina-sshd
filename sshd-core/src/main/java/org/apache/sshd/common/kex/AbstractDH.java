@@ -43,16 +43,15 @@ public abstract class AbstractDH {
     }
 
     /**
-     * Lazy-called by {@link #getE()} if the public key data has not
-     * been generated yet.
+     * Lazy-called by {@link #getE()} if the public key data has not been generated yet.
      *
-     * @return The calculated public key data
+     * @return           The calculated public key data
      * @throws Exception If failed to generate the relevant data
      */
     protected abstract byte[] calculateE() throws Exception;
 
     /**
-     * @return The local public key data
+     * @return           The local public key data
      * @throws Exception If failed to calculate it
      */
     public byte[] getE() throws Exception {
@@ -69,16 +68,15 @@ public abstract class AbstractDH {
     }
 
     /**
-     * Lazy-called by {@link #getK()} if the shared secret data has
-     * not been calculated yet
+     * Lazy-called by {@link #getK()} if the shared secret data has not been calculated yet
      *
-     * @return The shared secret data
+     * @return           The shared secret data
      * @throws Exception If failed to calculate it
      */
     protected abstract byte[] calculateK() throws Exception;
 
     /**
-     * @return The shared secret key
+     * @return           The shared secret key
      * @throws Exception If failed to calculate it
      */
     public byte[] getK() throws Exception {
@@ -90,10 +88,9 @@ public abstract class AbstractDH {
     }
 
     /**
-     * Called after either public or private parts have been calculated
-     * in order to check if the key-agreement mediator is still required.
-     * By default, if both public and private parts have been calculated
-     * then key-agreement mediator is null-ified to enable GC for it.
+     * Called after either public or private parts have been calculated in order to check if the key-agreement mediator
+     * is still required. By default, if both public and private parts have been calculated then key-agreement mediator
+     * is null-ified to enable GC for it.
      *
      * @see #getE()
      * @see #getK()
@@ -104,7 +101,7 @@ public abstract class AbstractDH {
         }
 
         if (myKeyAgree != null) {
-            myKeyAgree = null;  // allow GC for key agreement object
+            myKeyAgree = null; // allow GC for key agreement object
         }
     }
 
@@ -113,21 +110,20 @@ public abstract class AbstractDH {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[publicDataAvailable=" + isPublicDataAvailable()
-            + ", sharedSecretAvailable=" + isSharedSecretAvailable()
-            + "]";
+               + "[publicDataAvailable=" + isPublicDataAvailable()
+               + ", sharedSecretAvailable=" + isSharedSecretAvailable()
+               + "]";
     }
 
     /**
-     * The shared secret returned by {@link javax.crypto.KeyAgreement#generateSecret()}
-     * is a byte array, which can (by chance, roughly 1 out of 256 times) begin
-     * with zero byte (some JCE providers might strip this, though). In SSH,
+     * The shared secret returned by {@link javax.crypto.KeyAgreement#generateSecret()} is a byte array, which can (by
+     * chance, roughly 1 out of 256 times) begin with zero byte (some JCE providers might strip this, though). In SSH,
      * the shared secret is an integer, so we need to strip the leading zero(es).
      *
-     * @param x The original array
-     * @return An (possibly) sub-array guaranteed to start with a non-zero byte
+     * @param  x                        The original array
+     * @return                          An (possibly) sub-array guaranteed to start with a non-zero byte
      * @throws IllegalArgumentException If all zeroes array
-     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
+     * @see                             <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
      */
     public static byte[] stripLeadingZeroes(byte[] x) {
         int length = NumberUtils.length(x);
@@ -136,7 +132,7 @@ public abstract class AbstractDH {
                 continue;
             }
 
-            if (i == 0) {   // 1st byte is non-zero so nothing to do
+            if (i == 0) { // 1st byte is non-zero so nothing to do
                 return x;
             }
 

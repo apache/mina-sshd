@@ -39,10 +39,9 @@ public interface CipherInformation extends AlgorithmNameProvider, KeySizeIndicat
     int getIVSize();
 
     /**
-     * @return Size of block data used by the cipher (in bytes). For stream
-     * ciphers this value is (currently) used to indicate some average work
-     * buffer size to be used for the automatic re-keying mechanism described
-     * in <a href="https://tools.ietf.org/html/rfc4253#section-9">RFC 4253 - Section 9</a>
+     * @return Size of block data used by the cipher (in bytes). For stream ciphers this value is (currently) used to
+     *         indicate some average work buffer size to be used for the automatic re-keying mechanism described in
+     *         <a href="https://tools.ietf.org/html/rfc4253#section-9">RFC 4253 - Section 9</a>
      */
     int getCipherBlockSize();
 

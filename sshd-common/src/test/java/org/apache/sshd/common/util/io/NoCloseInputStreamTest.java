@@ -45,7 +45,8 @@ public class NoCloseInputStreamTest extends JUnitTestSupport {
 
     @Test
     public void testCanKeepReadingAfterClose() throws IOException {
-        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "@" + new Date()).getBytes(StandardCharsets.UTF_8);
+        byte[] expected
+                = (getClass().getName() + "#" + getCurrentTestName() + "@" + new Date()).getBytes(StandardCharsets.UTF_8);
         Path dir = createTempClassFolder();
         Path file = Files.write(dir.resolve(getCurrentTestName() + ".txt"), expected);
         try (InputStream fileStream = Files.newInputStream(file);

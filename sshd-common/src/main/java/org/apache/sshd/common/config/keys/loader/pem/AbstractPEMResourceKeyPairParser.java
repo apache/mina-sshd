@@ -60,7 +60,7 @@ public abstract class AbstractPEMResourceKeyPairParser
     private final String algId;
 
     protected AbstractPEMResourceKeyPairParser(
-            String algo, String algId, List<String> beginners, List<String> enders) {
+                                               String algo, String algId, List<String> beginners, List<String> enders) {
         super(beginners, enders);
         this.algo = ValidateUtils.checkNotNullAndNotEmpty(algo, "No encryption algorithm provided");
         this.algId = ValidateUtils.checkNotNullAndNotEmpty(algId, "No algorithm identifier provided");
@@ -82,7 +82,7 @@ public abstract class AbstractPEMResourceKeyPairParser
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(lines)) {
             return Collections.emptyList();
         }
@@ -109,8 +109,8 @@ public abstract class AbstractPEMResourceKeyPairParser
             String hdrValue = line.substring(headerPos + 1).trim();
             if (!hdrsAvailable) {
                 Map<String, String> accHeaders = GenericUtils.isEmpty(headers)
-                    ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
-                    : headers;
+                        ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
+                        : headers;
                 accHeaders.put(hdrName, hdrValue);
             }
 
@@ -129,7 +129,7 @@ public abstract class AbstractPEMResourceKeyPairParser
                 int infoPos = hdrValue.indexOf(',');
                 if (infoPos < 0) {
                     throw new StreamCorruptedException(
-                        resourceKey + ": Missing encryption data values separator in line '" + line + "'");
+                            resourceKey + ": Missing encryption data values separator in line '" + line + "'");
                 }
 
                 algInfo = hdrValue.substring(0, infoPos).trim();
@@ -167,15 +167,16 @@ public abstract class AbstractPEMResourceKeyPairParser
                         encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
                         decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
                         try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais, headers);
+                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais,
+                                    headers);
                         }
                     } finally {
                         Arrays.fill(encryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
                         Arrays.fill(decodedData, (byte) 0); // get rid of sensitive data a.s.a.p.
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                    ResourceDecodeResult result =
-                        passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
+                    ResourceDecodeResult result
+                            = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
                     password = null; // get rid of sensitive data a.s.a.p.
                     if (result == null) {
                         result = ResourceDecodeResult.TERMINATE;
@@ -189,7 +190,8 @@ public abstract class AbstractPEMResourceKeyPairParser
                         case IGNORE:
                             return Collections.emptyList();
                         default:
-                            throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                            throw new ProtocolException(
+                                    "Unsupported decode attempt result (" + result + ") for " + resourceKey);
                     }
                 }
 
@@ -204,15 +206,16 @@ public abstract class AbstractPEMResourceKeyPairParser
 
     protected byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException, IOException {
+            throws GeneralSecurityException, IOException {
         String cipherName = encContext.getCipherName();
         PrivateKeyObfuscator o = encContext.resolvePrivateKeyObfuscator();
         if (o == null) {
-            throw new NoSuchAlgorithmException("decryptPrivateKeyData(" + encContext + ")[encrypt=" + encryptIt + "] unknown cipher: " + cipherName);
+            throw new NoSuchAlgorithmException(
+                    "decryptPrivateKeyData(" + encContext + ")[encrypt=" + encryptIt + "] unknown cipher: " + cipherName);
         }
 
         if (encryptIt) {
-            byte[]  initVector = encContext.getInitVector();
+            byte[] initVector = encContext.getInitVector();
             if (GenericUtils.isEmpty(initVector)) {
                 initVector = o.generateInitializationVector(encContext);
                 encContext.setInitVector(initVector);

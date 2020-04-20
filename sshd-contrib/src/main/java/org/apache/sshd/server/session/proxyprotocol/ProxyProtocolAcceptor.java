@@ -35,7 +35,7 @@ import org.apache.sshd.server.session.ServerSession;
  * A working prototype to support PROXY protocol as described in
  * <A HREF="http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">HAProxy Documentation</A>.
  *
- * @see <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres contribution</A>
+ * @see    <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres contribution</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ProxyProtocolAcceptor extends AbstractLoggingBean implements ServerProxyAcceptor {
@@ -43,7 +43,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
     public static final int MAX_PROXY_HEADER_LENGTH = Byte.MAX_VALUE;
     public static final String PROX_PROTOCOL_PREFIX = "PROXY";
 
-    private static final byte[] PROXY_HEADER = new byte[] {0x50, 0x52, 0x4F, 0x58, 0x59, 0x20};
+    private static final byte[] PROXY_HEADER = new byte[] { 0x50, 0x52, 0x4F, 0x58, 0x59, 0x20 };
 
     public ProxyProtocolAcceptor() {
         super();
@@ -55,7 +55,8 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
         int dataLen = buffer.available();
         if (dataLen < PROXY_HEADER.length) {
             if (log.isDebugEnabled()) {
-                log.debug("acceptServerProxyMetadata(session={}) incomplete data - {}/{}", session, dataLen, PROXY_HEADER.length);
+                log.debug("acceptServerProxyMetadata(session={}) incomplete data - {}/{}", session, dataLen,
+                        PROXY_HEADER.length);
             }
             return false;
         }
@@ -67,7 +68,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
         if (!Arrays.equals(PROXY_HEADER, proxyHeader)) {
             if (log.isDebugEnabled()) {
                 log.debug("acceptServerProxyMetadata(session={}) mismatched protocol header: expected={}, actual={}",
-                          session, BufferUtils.toHex(':', PROXY_HEADER), BufferUtils.toHex(':', proxyHeader));
+                        session, BufferUtils.toHex(':', PROXY_HEADER), BufferUtils.toHex(':', proxyHeader));
             }
             return true;
         }
@@ -94,7 +95,8 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
         return false;
     }
 
-    protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer) throws Exception {
+    protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer)
+            throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("parseProxyHeader(session={}) parsing header='{}'", session, proxyHeader);
@@ -108,7 +110,8 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
         }
 
         String proxyProtocolPrefix = proxyFields[0];
-        ValidateUtils.checkTrue(PROX_PROTOCOL_PREFIX.equalsIgnoreCase(proxyProtocolPrefix), "Mismatched protocol prefix: %s", proxyProtocolPrefix);
+        ValidateUtils.checkTrue(PROX_PROTOCOL_PREFIX.equalsIgnoreCase(proxyProtocolPrefix), "Mismatched protocol prefix: %s",
+                proxyProtocolPrefix);
 
         String protocolVersion = proxyFields[1];
         if ("TCP4".equalsIgnoreCase(protocolVersion) || "TCP6".equalsIgnoreCase(protocolVersion)) {
@@ -118,7 +121,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
             String layer3DstPort = proxyFields[5];
             if (debugEnabled) {
                 log.debug("parseProxyHeader(session={}) using {}:{} -> {}:{} proxy",
-                          session, layer3SrcAddress, layer3SrcPort, layer3DstAddress, layer3DstPort);
+                        session, layer3SrcAddress, layer3SrcPort, layer3DstAddress, layer3DstPort);
             }
 
             if (session instanceof AbstractServerSession) {

@@ -55,8 +55,7 @@ public class ChannelAgentForwardingFactory implements ChannelFactory {
 
     @Override
     public Channel createChannel(Session session) throws IOException {
-        CloseableExecutorService executorService =
-            executorServiceFactory != null ? executorServiceFactory.create() : null;
+        CloseableExecutorService executorService = executorServiceFactory != null ? executorServiceFactory.create() : null;
         ChannelAgentForwarding channel = new ChannelAgentForwarding(executorService);
         return channel;
     }

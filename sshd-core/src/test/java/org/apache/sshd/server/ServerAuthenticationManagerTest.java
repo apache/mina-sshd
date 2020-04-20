@@ -92,7 +92,8 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
 
             @Override
             public void setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator interactiveAuthenticator) {
-                throw new UnsupportedOperationException("setKeyboardInteractiveAuthenticator(" + interactiveAuthenticator + ")");
+                throw new UnsupportedOperationException(
+                        "setKeyboardInteractiveAuthenticator(" + interactiveAuthenticator + ")");
             }
 
             @Override
@@ -143,7 +144,7 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
 
         List<UserAuthFactory> factories = factoriesHolder.get();
         assertEquals("Mismatched factories count",
-            BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+                BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
         for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
             assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
         }

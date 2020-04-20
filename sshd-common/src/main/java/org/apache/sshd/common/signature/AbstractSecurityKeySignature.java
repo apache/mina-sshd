@@ -101,7 +101,7 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         Signature delegate = getDelegateSignature();
         delegate.initVerifier(session, publicKey.getDelegatePublicKey());
         delegate.update(session, appNameDigest);
-        delegate.update(session, new byte[]{flags});
+        delegate.update(session, new byte[] { flags });
         delegate.update(session, counterData.getCompactData());
         delegate.update(session, challengeDigest);
         return delegate.verify(session, encoded.getCompactData());

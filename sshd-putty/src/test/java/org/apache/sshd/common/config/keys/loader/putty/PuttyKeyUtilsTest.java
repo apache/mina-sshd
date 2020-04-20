@@ -57,7 +57,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class PuttyKeyUtilsTest extends JUnitTestSupport {
@@ -72,11 +72,11 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         this.keyType = keyType;
         this.parser = PuttyKeyUtils.BY_KEY_TYPE.get(keyType);
         this.regularFile = getClass().getSimpleName()
-                + "-" + keyType + "-" + KeyPair.class.getSimpleName()
-                + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
+                           + "-" + keyType + "-" + KeyPair.class.getSimpleName()
+                           + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
         this.encryptedFile = PASSWORD.replace(' ', '-') + "-AES-256-CBC"
-                + "-" + keyType + "-" + KeyPair.class.getSimpleName()
-                + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
+                             + "-" + keyType + "-" + KeyPair.class.getSimpleName()
+                             + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
     }
 
     @Parameters(name = "{0}")
@@ -86,7 +86,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testCanDecodePuttyKeyFile() throws IOException, GeneralSecurityException {
-        for (String resource : new String[]{regularFile, encryptedFile}) {
+        for (String resource : new String[] { regularFile, encryptedFile }) {
             URL url = getClass().getResource(resource);
             if (GenericUtils.isSameReference(regularFile, resource)) {
                 assertNotNull("Missing test resource: " + resource, url);
@@ -107,7 +107,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
                 }
 
                 assertFalse(other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability",
-                    other.canExtractKeyPairs(resourceKey, lines));
+                        other.canExtractKeyPairs(resourceKey, lines));
             }
         }
     }
@@ -150,7 +150,8 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
             AtomicInteger retriesCount = new AtomicInteger(0);
             FilePasswordProvider provider = new FilePasswordProvider() {
                 @Override
-                public String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex) throws IOException {
+                public String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex)
+                        throws IOException {
                     assertSame("Mismatched session context", mockSession, session);
 
                     switch (result) {
@@ -176,7 +177,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
                 @Override
                 public ResourceDecodeResult handleDecodeAttemptResult(
                         SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
-                            throws IOException, GeneralSecurityException {
+                        throws IOException, GeneralSecurityException {
                     assertSame("Mismatched session context", mockSession, session);
                     if (err == null) {
                         return null;
@@ -229,8 +230,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
         assertEquals(prefix + ": mismatched private key type", keyType, KeyUtils.getKeyType(prvKey));
 
         @SuppressWarnings("rawtypes")
-        PrivateKeyEntryDecoder decoder =
-            OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
+        PrivateKeyEntryDecoder decoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
         assertNotNull("No private key decoder", decoder);
 
         if (decoder.isPublicKeyRecoverySupported()) {

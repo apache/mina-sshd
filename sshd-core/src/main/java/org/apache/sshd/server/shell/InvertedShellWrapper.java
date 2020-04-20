@@ -39,11 +39,9 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * A shell implementation that wraps an instance of {@link InvertedShell}
- * as a {@link Command}. This is useful when using external
- * processes.
- * When starting the shell, this wrapper will also create a thread used
- * to pump the streams and also to check if the shell is alive.
+ * A shell implementation that wraps an instance of {@link InvertedShell} as a {@link Command}. This is useful when
+ * using external processes. When starting the shell, this wrapper will also create a thread used to pump the streams
+ * and also to check if the shell is alive.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -55,8 +53,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     public static final int DEFAULT_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
     /**
-     * Value used to control the &quot;busy-wait&quot; sleep time (millis) on
-     * the pumping loop if nothing was pumped - must be <U>positive</U>
+     * Value used to control the &quot;busy-wait&quot; sleep time (millis) on the pumping loop if nothing was pumped -
+     * must be <U>positive</U>
+     * 
      * @see #DEFAULT_PUMP_SLEEP_TIME
      */
     public static final String PUMP_SLEEP_TIME = "inverted-shell-wrapper-pump-sleep";
@@ -80,11 +79,11 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     private long pumpSleepTime = DEFAULT_PUMP_SLEEP_TIME;
 
     /**
-     * Auto-allocates an {@link Executor} in order to create the streams pump thread
-     * and uses the {@link #DEFAULT_BUFFER_SIZE}
+     * Auto-allocates an {@link Executor} in order to create the streams pump thread and uses the
+     * {@link #DEFAULT_BUFFER_SIZE}
      *
      * @param shell The {@link InvertedShell}
-     * @see #InvertedShellWrapper(InvertedShell, int)
+     * @see         #InvertedShellWrapper(InvertedShell, int)
      */
     public InvertedShellWrapper(InvertedShell shell) {
         this(shell, DEFAULT_BUFFER_SIZE);
@@ -95,7 +94,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
      *
      * @param shell      The {@link InvertedShell}
      * @param bufferSize Buffer size to use - must be above min. size ({@link Byte#SIZE})
-     * @see #InvertedShellWrapper(InvertedShell, Executor, boolean, int)
+     * @see              #InvertedShellWrapper(InvertedShell, Executor, boolean, int)
      */
     public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
         this(shell, null, true, bufferSize);
@@ -103,15 +102,16 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     /**
      * @param shell            The {@link InvertedShell}
-     * @param executor         The {@link Executor} to use in order to create the streams pump thread.
-     *                         If {@code null} one is auto-allocated and shutdown when wrapper is {@code destroy()}-ed.
+     * @param executor         The {@link Executor} to use in order to create the streams pump thread. If {@code null}
+     *                         one is auto-allocated and shutdown when wrapper is {@code destroy()}-ed.
      * @param shutdownExecutor If {@code true} the executor is shut down when shell wrapper is {@code destroy()}-ed.
      *                         Ignored if executor service auto-allocated
      * @param bufferSize       Buffer size to use - must be above min. size ({@link Byte#SIZE})
      */
     public InvertedShellWrapper(InvertedShell shell, Executor executor, boolean shutdownExecutor, int bufferSize) {
         this.shell = Objects.requireNonNull(shell, "No shell");
-        this.executor = (executor == null) ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
+        this.executor = (executor == null)
+                ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
         ValidateUtils.checkTrue(bufferSize > Byte.SIZE, "Copy buffer size too small: %d", bufferSize);
         this.bufferSize = bufferSize;
         this.shutdownExecutor = (executor == null) || shutdownExecutor;
@@ -147,7 +147,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     @Override
     public synchronized void start(ChannelSession channel, Environment env) throws IOException {
         // TODO propagate the Environment itself and support signal sending.
-        shell.start(channel,  env);
+        shell.start(channel, env);
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
@@ -162,7 +162,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             shell.destroy(channel);
         } catch (Throwable e) {
             log.warn("destroy({}) failed ({}) to destroy shell: {}",
-                 this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("destroy(" + this + ") shell destruction failure details", e);
             }
@@ -174,7 +174,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 ((ExecutorService) executor).shutdown();
             } catch (Exception e) {
                 log.warn("destroy({}) failed ({}) to shut down executor: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("destroy(" + this + ") executor shutdown failure details", e);
                 }
@@ -208,8 +208,8 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 }
 
                 /*
-                 * Make sure we exhausted all data - the shell might be dead
-                 * but some data may still be in transit via pumping
+                 * Make sure we exhausted all data - the shell might be dead but some data may still be in transit via
+                 * pumping
                  */
                 if ((!shell.isAlive()) && (in.available() <= 0) && (shellOut.available() <= 0) && (shellErr.available() <= 0)) {
                     callback.onExit(shell.exitValue());
@@ -227,7 +227,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 shell.destroy(shell.getChannelSession());
             } catch (Throwable err) {
                 log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("pumpStreams(" + this + ") shell destruction failure details", err);
                 }
@@ -235,7 +235,9 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
             int exitValue = shell.exitValue();
             if (debugEnabled) {
-                log.debug(e.getClass().getSimpleName() + " while pumping the streams (exit=" + exitValue + "): " + e.getMessage(), e);
+                log.debug(
+                        e.getClass().getSimpleName() + " while pumping the streams (exit=" + exitValue + "): " + e.getMessage(),
+                        e);
             }
             callback.onExit(exitValue, e.getClass().getSimpleName());
         }

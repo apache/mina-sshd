@@ -69,9 +69,9 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
     @Override
     public String toString() {
         return getClass().getSimpleName()
-                + "[appName=" + getAppName()
-                + ", noTouchRequired=" + isNoTouchRequired()
-                + ", delegatePublicKey=" + getDelegatePublicKey()
-                + "]";
+               + "[appName=" + getAppName()
+               + ", noTouchRequired=" + isNoTouchRequired()
+               + ", delegatePublicKey=" + getDelegatePublicKey()
+               + "]";
     }
 }

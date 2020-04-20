@@ -21,8 +21,8 @@ package org.apache.sshd.server;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Interface that can be implemented by a command to be able to access the
- * server session in which this command will be used.
+ * Interface that can be implemented by a command to be able to access the server session in which this command will be
+ * used.
  */
 @FunctionalInterface
 public interface SessionAware {

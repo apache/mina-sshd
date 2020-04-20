@@ -31,30 +31,24 @@ import org.apache.sshd.server.command.Command;
  */
 public interface SubsystemFactory extends NamedResource {
     /**
-     * @param channel The {@link ChannelSession} through which the command
-     * has been received
-     * @return a non {@code null} {@link Command} instance representing
-     * the subsystem to be run
+     * @param  channel     The {@link ChannelSession} through which the command has been received
+     * @return             a non {@code null} {@link Command} instance representing the subsystem to be run
      * @throws IOException if failed to create the instance
      */
     Command createSubsystem(ChannelSession channel) throws IOException;
 
     /**
-     * @param channel The {@link ChannelSession} through which the command
-     * has been received
-     * @param factories The available {@link SubsystemFactory}-ies - ignored
-     * if {@code null}/empty
-     * @param name Requested subsystem name
-     * @return The created {@link Command} instance representing
-     * the subsystem to be run - {@code null} if no match found
-     * @throws IOException If found a matching factory but failed to create
-     * the command instance
+     * @param  channel     The {@link ChannelSession} through which the command has been received
+     * @param  factories   The available {@link SubsystemFactory}-ies - ignored if {@code null}/empty
+     * @param  name        Requested subsystem name
+     * @return             The created {@link Command} instance representing the subsystem to be run - {@code null} if
+     *                     no match found
+     * @throws IOException If found a matching factory but failed to create the command instance
      */
     static Command createSubsystem(
             ChannelSession channel, Collection<? extends SubsystemFactory> factories, String name)
-                throws IOException {
-        SubsystemFactory factory =
-            NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+            throws IOException {
+        SubsystemFactory factory = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
         if (factory != null) {
             return factory.createSubsystem(channel);
         } else {

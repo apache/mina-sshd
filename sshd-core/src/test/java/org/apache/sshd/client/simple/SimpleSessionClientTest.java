@@ -77,7 +77,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         try (ClientSession session = simple.sessionLogin(
                 TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
             assertEquals("Mismatched session username",
-                getCurrentTestName(), session.getUsername());
+                    getCurrentTestName(), session.getUsername());
             assertTrue("User identity not queried", identityQueried.get());
         }
     }
@@ -114,7 +114,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         PasswordAuthenticator delegate = Objects.requireNonNull(
-            sshd.getPasswordAuthenticator(), "No password authenticator");
+                sshd.getPasswordAuthenticator(), "No password authenticator");
         sshd.setPasswordAuthenticator((username, password, session) -> {
             try {
                 Thread.sleep(AUTH_TIMEOUT.toMillis() + 150L);

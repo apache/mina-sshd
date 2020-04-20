@@ -28,9 +28,9 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * A no-op implementation of {@link ScpTransferEventListener} for those who wish to
- * implement only a small number of methods. By default, all non-overridden methods
- * simply log at TRACE level their invocation parameters
+ * A no-op implementation of {@link ScpTransferEventListener} for those who wish to implement only a small number of
+ * methods. By default, all non-overridden methods simply log at TRACE level their invocation parameters
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpTransferEventListenerAdapter
@@ -43,7 +43,7 @@ public abstract class AbstractScpTransferEventListenerAdapter
     @Override
     public void startFileEvent(
             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
-                throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("startFileEvent({})[{}] - length={}, permissions={}, file={}", session, op, length, perms, file);
         }
@@ -52,18 +52,18 @@ public abstract class AbstractScpTransferEventListenerAdapter
     @Override
     public void endFileEvent(
             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
-                throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("endFileEvent({})[{}] - length={}, permissions={}, file={} - {}",
-                session, op, length, perms, file,
-                (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
+                    session, op, length, perms, file,
+                    (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
         }
     }
 
     @Override
     public void startFolderEvent(
             Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
-                throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("startFolderEvent({})[{}] - permissions={}, file={}", session, op, perms, file);
         }
@@ -72,11 +72,11 @@ public abstract class AbstractScpTransferEventListenerAdapter
     @Override
     public void endFolderEvent(
             Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
-                throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("endFolderEvent({})[{}] - permissions={}, file={} - {}",
-                session, op, perms, file,
-                (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
+                    session, op, perms, file,
+                    (thrown == null) ? "OK" : thrown.getClass().getSimpleName() + ": " + thrown.getMessage());
         }
     }
 }

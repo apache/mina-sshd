@@ -44,8 +44,10 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * <P>Represents a {@link PublicKey} whose data is formatted according to
- * the <A HREF="http://en.wikibooks.org/wiki/OpenSSH">OpenSSH</A> format:</P>
+ * <P>
+ * Represents a {@link PublicKey} whose data is formatted according to the
+ * <A HREF="http://en.wikibooks.org/wiki/OpenSSH">OpenSSH</A> format:
+ * </P>
  *
  * <PRE>
  * &lt;key-type&gt; &lt;base64-encoded-public-key-data&gt;
@@ -66,7 +68,8 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
 
     private static final long serialVersionUID = -585506072687602760L;
 
-    private static final NavigableMap<String, PublicKeyEntryDataResolver> KEY_DATA_RESOLVERS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final NavigableMap<String, PublicKeyEntryDataResolver> KEY_DATA_RESOLVERS
+            = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private String keyType;
     private byte[] keyData;
@@ -107,8 +110,8 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * If a {@link PublicKeyEntryDataResolver} has been set, then uses it - otherwise
-     * uses the {@link PublicKeyEntryDataResolver#DEFAULT default one}.
+     * If a {@link PublicKeyEntryDataResolver} has been set, then uses it - otherwise uses the
+     * {@link PublicKeyEntryDataResolver#DEFAULT default one}.
      *
      * @return The resolved instance
      */
@@ -118,21 +121,21 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param headers Any headers that may have been available when data was read
-     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
-     * none of the built-in ones can be used. If {@code null} and no built-in
-     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
-     * @return The resolved {@link PublicKey} - or {@code null} if could not be
-     * resolved. <B>Note:</B> may be called only after key type and data bytes
-     * have been set or exception(s) may be thrown
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  headers                  Any headers that may have been available when data was read
+     * @param  fallbackResolver         The {@link PublicKeyEntryResolver} to consult if none of the built-in ones can
+     *                                  be used. If {@code null} and no built-in resolver can be used then an
+     *                                  {@link InvalidKeySpecException} is thrown.
+     * @return                          The resolved {@link PublicKey} - or {@code null} if could not be resolved.
+     *                                  <B>Note:</B> may be called only after key type and data bytes have been set or
+     *                                  exception(s) may be thrown
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
     public PublicKey resolvePublicKey(
             SessionContext session, Map<String, String> headers, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         String kt = getKeyType();
         PublicKeyEntryResolver decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
         if (decoder == null) {
@@ -146,20 +149,20 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param sb The {@link Appendable} instance to encode the data into
-     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
-     * none of the built-in ones can be used. If {@code null} and no built-in
-     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
-     * @return The {@link PublicKey} or {@code null} if could not resolve it
+     * @param  session                  The {@link SessionContext} for invoking this command - may be {@code null} if
+     *                                  not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  sb                       The {@link Appendable} instance to encode the data into
+     * @param  fallbackResolver         The {@link PublicKeyEntryResolver} to consult if none of the built-in ones can
+     *                                  be used. If {@code null} and no built-in resolver can be used then an
+     *                                  {@link InvalidKeySpecException} is thrown.
+     * @return                          The {@link PublicKey} or {@code null} if could not resolve it
      * @throws IOException              If failed to decode/encode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
+     * @see                             #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
      */
     public PublicKey appendPublicKey(
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         PublicKey key = resolvePublicKey(session, Collections.emptyMap(), fallbackResolver);
         if (key != null) {
             appendPublicKeyEntry(sb, key, resolvePublicKeyEntryDataResolver());
@@ -173,15 +176,14 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /*
-     * In case some derived class wants to define some "extended" equality
-     * without having to repeat this code
+     * In case some derived class wants to define some "extended" equality without having to repeat this code
      */
     protected boolean isEquivalent(PublicKeyEntry e) {
         if (this == e) {
             return true;
         }
         return Objects.equals(getKeyType(), e.getKeyType())
-            && Arrays.equals(getKeyData(), e.getKeyData());
+                && Arrays.equals(getKeyData(), e.getKeyData());
     }
 
     @Override
@@ -206,21 +208,20 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param entries The entries to convert - ignored if {@code null}/empty
-     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
-     * none of the built-in ones can be used. If {@code null} and no built-in
-     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
-     * @return The {@link List} of all {@link PublicKey}-s that have been resolved
-     * @throws IOException If failed to decode the key data
-     * @throws GeneralSecurityException If failed to generate the {@link PublicKey}
-     * from the decoded data
-     * @see #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
+     * @param  session                  The {@link SessionContext} for invoking this command - may be {@code null} if
+     *                                  not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  entries                  The entries to convert - ignored if {@code null}/empty
+     * @param  fallbackResolver         The {@link PublicKeyEntryResolver} to consult if none of the built-in ones can
+     *                                  be used. If {@code null} and no built-in resolver can be used then an
+     *                                  {@link InvalidKeySpecException} is thrown.
+     * @return                          The {@link List} of all {@link PublicKey}-s that have been resolved
+     * @throws IOException              If failed to decode the key data
+     * @throws GeneralSecurityException If failed to generate the {@link PublicKey} from the decoded data
+     * @see                             #resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
      */
     public static List<PublicKey> resolvePublicKeyEntries(
             SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         int numEntries = GenericUtils.size(entries);
         if (numEntries <= 0) {
             return Collections.emptyList();
@@ -229,8 +230,8 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
         List<PublicKey> keys = new ArrayList<>(numEntries);
         for (PublicKeyEntry e : entries) {
             Map<String, String> headers = (e instanceof AuthorizedKeyEntry)
-                ? ((AuthorizedKeyEntry) e).getLoginOptions()
-                : Collections.emptyMap();
+                    ? ((AuthorizedKeyEntry) e).getLoginOptions()
+                    : Collections.emptyMap();
             PublicKey k = e.resolvePublicKey(session, headers, fallbackResolver);
             if (k != null) {
                 keys.add(k);
@@ -244,8 +245,8 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      * Registers a specialized decoder for the public key entry data bytes instead of the
      * {@link PublicKeyEntryDataResolver#DEFAULT default} one.
      *
-     * @param keyType The key-type value (case <U>insensitive</U>) that will trigger the
-     * usage of this decoder - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
+     * @param keyType  The key-type value (case <U>insensitive</U>) that will trigger the usage of this decoder - e.g.,
+     *                 &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
      * @param resolver The decoder to use
      */
     public static void registerKeyDataEntryResolver(String keyType, PublicKeyEntryDataResolver resolver) {
@@ -258,10 +259,10 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param keyType The key-type value (case <U>insensitive</U>) that may have been
-     * previously {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered}
-     * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
-     * @return The registered resolver instance - {@code null} if none was registered
+     * @param  keyType The key-type value (case <U>insensitive</U>) that may have been previously
+     *                 {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered} - e.g.,
+     *                 &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
+     * @return         The registered resolver instance - {@code null} if none was registered
      */
     public static PublicKeyEntryDataResolver getKeyDataEntryResolver(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
@@ -272,10 +273,10 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param keyType The key-type value (case <U>insensitive</U>) that may have been
-     * previously {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered}
-     * - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
-     * @return The un-registered resolver instance - {@code null} if none was registered
+     * @param  keyType The key-type value (case <U>insensitive</U>) that may have been previously
+     *                 {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered} - e.g.,
+     *                 &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
+     * @return         The un-registered resolver instance - {@code null} if none was registered
      */
     public static PublicKeyEntryDataResolver unregisterKeyDataEntryResolver(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
@@ -286,11 +287,11 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param keyType keyType The key-type value (case <U>insensitive</U>) whose data is to
-     * be resolved - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
-     * @return If a specific resolver has been previously
-     * {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered} then uses it,
-     * otherwise the {@link PublicKeyEntryDataResolver#DEFAULT default} one.
+     * @param  keyType keyType The key-type value (case <U>insensitive</U>) whose data is to be resolved - e.g.,
+     *                 &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.
+     * @return         If a specific resolver has been previously
+     *                 {@link #registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver) registered} then uses
+     *                 it, otherwise the {@link PublicKeyEntryDataResolver#DEFAULT default} one.
      */
     public static PublicKeyEntryDataResolver resolveKeyDataEntryResolver(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
@@ -304,10 +305,9 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @return A snapshot of the currently registered specialized {@link PublicKeyEntryDataResolver}-s,
-     * where key=the key-type value (case <U>insensitive</U>) - e.g., &quot;ssh-rsa&quot;,
-     * &quot;pgp-sign-dss&quot;, etc., value=the associated {@link PublicKeyEntryDataResolver}
-     * for the key type
+     * @return A snapshot of the currently registered specialized {@link PublicKeyEntryDataResolver}-s, where key=the
+     *         key-type value (case <U>insensitive</U>) - e.g., &quot;ssh-rsa&quot;, &quot;pgp-sign-dss&quot;, etc.,
+     *         value=the associated {@link PublicKeyEntryDataResolver} for the key type
      */
     public static NavigableMap<String, PublicKeyEntryDataResolver> getRegisteredKeyDataEntryResolvers() {
         NavigableMap<String, PublicKeyEntryDataResolver> decoders;
@@ -324,29 +324,29 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param encData Assumed to contain at least {@code key-type base64-data}
-     * (anything beyond the BASE64 data is ignored) - ignored if {@code null}/empty
-     * @return A {@link PublicKeyEntry} or {@code null} if no data
+     * @param  encData                  Assumed to contain at least {@code key-type base64-data} (anything beyond the
+     *                                  BASE64 data is ignored) - ignored if {@code null}/empty
+     * @return                          A {@link PublicKeyEntry} or {@code null} if no data
      * @throws IllegalArgumentException if bad format found
-     * @see #parsePublicKeyEntry(String, PublicKeyEntryDataResolver)
+     * @see                             #parsePublicKeyEntry(String, PublicKeyEntryDataResolver)
      */
     public static PublicKeyEntry parsePublicKeyEntry(String encData) throws IllegalArgumentException {
         return parsePublicKeyEntry(encData, (PublicKeyEntryDataResolver) null);
     }
 
     /**
-     * @param encData Assumed to contain at least {@code key-type base64-data}
-     * (anything beyond the BASE64 data is ignored) - ignored if {@code null}/empty
-     * @param decoder The {@link PublicKeyEntryDataResolver} to use in order to decode
-     * the key data string into its bytes - if {@code null} then one is
-     * automatically {@link #resolveKeyDataEntryResolver(String) resolved}
-     * @return A {@link PublicKeyEntry} or {@code null} if no data
+     * @param  encData                  Assumed to contain at least {@code key-type base64-data} (anything beyond the
+     *                                  BASE64 data is ignored) - ignored if {@code null}/empty
+     * @param  decoder                  The {@link PublicKeyEntryDataResolver} to use in order to decode the key data
+     *                                  string into its bytes - if {@code null} then one is automatically
+     *                                  {@link #resolveKeyDataEntryResolver(String) resolved}
+     * @return                          A {@link PublicKeyEntry} or {@code null} if no data
      * @throws IllegalArgumentException if bad format found
-     * @see #parsePublicKeyEntry(PublicKeyEntry, String, PublicKeyEntryDataResolver)
+     * @see                             #parsePublicKeyEntry(PublicKeyEntry, String, PublicKeyEntryDataResolver)
      */
     public static PublicKeyEntry parsePublicKeyEntry(
             String encData, PublicKeyEntryDataResolver decoder)
-                throws IllegalArgumentException {
+            throws IllegalArgumentException {
         String data = GenericUtils.replaceWhitespaceAndTrim(encData);
         if (GenericUtils.isEmpty(data)) {
             return null;
@@ -356,13 +356,14 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param <E> The generic entry type
-     * @param entry The {@link PublicKeyEntry} whose contents are to be updated - ignored if {@code null}
-     * @param encData Assumed to contain at least {@code key-type base64-data} (anything
-     * beyond the BASE64 data is ignored) - ignored if {@code null}/empty
-     * @return The updated entry instance
+     * @param  <E>                      The generic entry type
+     * @param  entry                    The {@link PublicKeyEntry} whose contents are to be updated - ignored if
+     *                                  {@code null}
+     * @param  encData                  Assumed to contain at least {@code key-type base64-data} (anything beyond the
+     *                                  BASE64 data is ignored) - ignored if {@code null}/empty
+     * @return                          The updated entry instance
      * @throws IllegalArgumentException if bad format found
-     * @see #parsePublicKeyEntry(PublicKeyEntry, String, PublicKeyEntryDataResolver)
+     * @see                             #parsePublicKeyEntry(PublicKeyEntry, String, PublicKeyEntryDataResolver)
      */
     public static <E extends PublicKeyEntry> E parsePublicKeyEntry(E entry, String encData)
             throws IllegalArgumentException {
@@ -370,19 +371,20 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param <E> The generic entry type
-     * @param entry The {@link PublicKeyEntry} whose contents are to be updated - ignored if {@code null}
-     * @param encData Assumed to contain at least {@code key-type base64-data} (anything
-     * beyond the BASE64 data is ignored) - ignored if {@code null}/empty
-     * @param decoder The {@link PublicKeyEntryDataResolver} to use in order to decode
-     * the key data string into its bytes - if {@code null} then one is
-     * automatically {@link #resolveKeyDataEntryResolver(String) resolved}
-     * @return The updated entry instance
+     * @param  <E>                      The generic entry type
+     * @param  entry                    The {@link PublicKeyEntry} whose contents are to be updated - ignored if
+     *                                  {@code null}
+     * @param  encData                  Assumed to contain at least {@code key-type base64-data} (anything beyond the
+     *                                  BASE64 data is ignored) - ignored if {@code null}/empty
+     * @param  decoder                  The {@link PublicKeyEntryDataResolver} to use in order to decode the key data
+     *                                  string into its bytes - if {@code null} then one is automatically
+     *                                  {@link #resolveKeyDataEntryResolver(String) resolved}
+     * @return                          The updated entry instance
      * @throws IllegalArgumentException if bad format found
      */
     public static <E extends PublicKeyEntry> E parsePublicKeyEntry(
             E entry, String encData, PublicKeyEntryDataResolver decoder)
-                throws IllegalArgumentException {
+            throws IllegalArgumentException {
         String data = GenericUtils.replaceWhitespaceAndTrim(encData);
         if (GenericUtils.isEmpty(data) || (entry == null)) {
             return entry;
@@ -394,7 +396,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
         }
 
         int endPos = data.indexOf(' ', startPos + 1);
-        if (endPos <= startPos) {   // OK if no continuation beyond the encoded key data
+        if (endPos <= startPos) { // OK if no continuation beyond the encoded key data
             endPos = data.length();
         }
 
@@ -415,27 +417,27 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @param key The {@link PublicKey}
-     * @return The {@code OpenSSH} encoded data
+     * @param  key                      The {@link PublicKey}
+     * @return                          The {@code OpenSSH} encoded data
      * @throws IllegalArgumentException If failed to encode
-     * @see #toString(PublicKey, PublicKeyEntryDataResolver)
+     * @see                             #toString(PublicKey, PublicKeyEntryDataResolver)
      */
     public static String toString(PublicKey key) throws IllegalArgumentException {
         return toString(key, null);
     }
 
     /**
-     * @param key The {@link PublicKey}
-     * @param encoder The {@link PublicKeyEntryDataResolver} to use in order to encode
-     * the key data bytes into a string representation - if {@code null} then one is
-     * automatically {@link #resolveKeyDataEntryResolver(String) resolved}
-     * @return The {@code OpenSSH} encoded data
+     * @param  key                      The {@link PublicKey}
+     * @param  encoder                  The {@link PublicKeyEntryDataResolver} to use in order to encode the key data
+     *                                  bytes into a string representation - if {@code null} then one is automatically
+     *                                  {@link #resolveKeyDataEntryResolver(String) resolved}
+     * @return                          The {@code OpenSSH} encoded data
      * @throws IllegalArgumentException If failed to encode
-     * @see #appendPublicKeyEntry(Appendable, PublicKey, PublicKeyEntryDataResolver)
+     * @see                             #appendPublicKeyEntry(Appendable, PublicKey, PublicKeyEntryDataResolver)
      */
     public static String toString(
             PublicKey key, PublicKeyEntryDataResolver encoder)
-                throws IllegalArgumentException {
+            throws IllegalArgumentException {
         try {
             return appendPublicKeyEntry(new StringBuilder(Byte.MAX_VALUE), key, encoder).toString();
         } catch (IOException e) {
@@ -446,37 +448,37 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     /**
      * Encodes a public key data the same way as the {@link #parsePublicKeyEntry(String)} expects it
      *
-     * @param <A> The generic appendable class
-     * @param sb  The {@link Appendable} instance to encode the data into
-     * @param key The {@link PublicKey} - ignored if {@code null}
-     * @return The updated appendable instance
+     * @param  <A>         The generic appendable class
+     * @param  sb          The {@link Appendable} instance to encode the data into
+     * @param  key         The {@link PublicKey} - ignored if {@code null}
+     * @return             The updated appendable instance
      * @throws IOException If failed to append the data
-     * @see #appendPublicKeyEntry(Appendable, PublicKey, PublicKeyEntryDataResolver)
+     * @see                #appendPublicKeyEntry(Appendable, PublicKey, PublicKeyEntryDataResolver)
      */
     public static <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
         return appendPublicKeyEntry(sb, key, null);
     }
 
     /**
-     * @param <A> The generic appendable class
-     * @param sb  The {@link Appendable} instance to encode the data into
-     * @param key The {@link PublicKey} - ignored if {@code null}
-     * @param encoder The {@link PublicKeyEntryDataResolver} to use in order to encode
-     * the key data bytes into a string representation - if {@code null} then one is
-     * automatically {@link #resolveKeyDataEntryResolver(String) resolved}
-     * @return The updated appendable instance
+     * @param  <A>         The generic appendable class
+     * @param  sb          The {@link Appendable} instance to encode the data into
+     * @param  key         The {@link PublicKey} - ignored if {@code null}
+     * @param  encoder     The {@link PublicKeyEntryDataResolver} to use in order to encode the key data bytes into a
+     *                     string representation - if {@code null} then one is automatically
+     *                     {@link #resolveKeyDataEntryResolver(String) resolved}
+     * @return             The updated appendable instance
      * @throws IOException If failed to append the data
      */
     public static <A extends Appendable> A appendPublicKeyEntry(
             A sb, PublicKey key, PublicKeyEntryDataResolver encoder)
-                throws IOException {
+            throws IOException {
         if (key == null) {
             return sb;
         }
 
         @SuppressWarnings("unchecked")
-        PublicKeyEntryDecoder<PublicKey, ?> decoder =
-            (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
+        PublicKeyEntryDecoder<PublicKey, ?> decoder
+                = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
         if (decoder == null) {
             throw new StreamCorruptedException("Cannot retrieve decoder for key=" + key.getAlgorithm());
         }
@@ -496,8 +498,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     private static final class LazyDefaultKeysFolderHolder {
-        private static final Path PATH =
-            IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
+        private static final Path PATH = IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
 
         private LazyDefaultKeysFolderHolder() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -505,8 +506,8 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     /**
-     * @return The default OpenSSH folder used to hold key files - e.g.,
-     * {@code known_hosts}, {@code authorized_keys}, etc.
+     * @return The default OpenSSH folder used to hold key files - e.g., {@code known_hosts}, {@code authorized_keys},
+     *         etc.
      */
     @SuppressWarnings("synthetic-access")
     public static Path getDefaultKeysFolderPath() {

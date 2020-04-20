@@ -31,9 +31,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * @param <PUB> Generic public key type
- * @param <PRV> Generic private key type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Generic public key type
+ * @param  <PRV> Generic private key type
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey>
         extends AbstractLoggingBean
@@ -43,12 +43,12 @@ public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV 
     private final NavigableSet<String> types;
 
     protected AbstractIdentityResourceLoader(
-            Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
+                                             Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
         this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
         this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
         this.types = Collections.unmodifiableNavigableSet(
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
+                GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                        ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
     }
 
     @Override

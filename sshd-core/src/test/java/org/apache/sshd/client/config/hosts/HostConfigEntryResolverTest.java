@@ -112,13 +112,13 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     public void testNegatedHostEntriesResolution() throws Exception {
         HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
         HostConfigEntry negativeEntry = new HostConfigEntry(
-            Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
-            positiveEntry.getHostName(),
-            getMovedPortNumber(positiveEntry.getPort()),
-            getClass().getPackage().getName());
+                Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
+                positiveEntry.getHostName(),
+                getMovedPortNumber(positiveEntry.getPort()),
+                getClass().getPackage().getName());
         client.setHostConfigEntryResolver(
-            HostConfigEntry.toHostConfigEntryResolver(
-                Arrays.asList(negativeEntry, positiveEntry)));
+                HostConfigEntry.toHostConfigEntryResolver(
+                        Arrays.asList(negativeEntry, positiveEntry)));
         client.start();
 
         try (ClientSession session = client.connect(
@@ -157,7 +157,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return Collections.singletonList(identity);
                 }
@@ -185,8 +185,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testUseIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        KeyIdentityProvider clientIdProvider =
-            CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
+        KeyIdentityProvider clientIdProvider
+                = CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
         KeyPair specificIdentity = CommonTestSupportUtils.getFirstKeyPair(sshd);
         KeyPair defaultIdentity = CommonTestSupportUtils.getFirstKeyPair(clientIdProvider);
         ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity),
@@ -224,7 +224,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     specificIdentityLoadCount.incrementAndGet();
                     return Collections.singletonList(specificIdentity);

@@ -52,8 +52,8 @@ public class FileHandle extends Handle {
     private final Collection<FileAttribute<?>> fileAttributes;
 
     public FileHandle(
-            SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs)
-                throws IOException {
+                      SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs)
+                                                                                                                           throws IOException {
         super(subsystem, file, handle);
 
         this.access = access;
@@ -62,18 +62,18 @@ public class FileHandle extends Handle {
         signalHandleOpening();
 
         FileAttribute<?>[] fileAttrs = GenericUtils.isEmpty(fileAttributes)
-            ? IoUtils.EMPTY_FILE_ATTRIBUTES
-            : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
+                ? IoUtils.EMPTY_FILE_ATTRIBUTES
+                : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
         try {
             channel = accessor.openFile(
-                session, subsystem, this, file, handle, openOptions, fileAttrs);
+                    session, subsystem, this, file, handle, openOptions, fileAttrs);
         } catch (UnsupportedOperationException e) {
             channel = accessor.openFile(
-                session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
+                    session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
             subsystem.doSetAttributes(file, attrs, false);
         }
         this.fileChannel = channel;
@@ -152,10 +152,11 @@ public class FileHandle extends Handle {
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         ServerSession session = subsystem.getServerSession();
         FileLock lock = accessor.tryLock(
-            session, subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
+                session, subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
         if (lock == null) {
-            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
-                "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
+            throw new SftpException(
+                    SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+                    "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
         }
 
         synchronized (locks) {
@@ -176,7 +177,8 @@ public class FileHandle extends Handle {
             }
         }
         if (lock == null) {
-            throw new SftpException(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
+            throw new SftpException(
+                    SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
                     "No matching lock found on range [" + offset + "-" + (offset + length));
         }
 
@@ -264,7 +266,7 @@ public class FileHandle extends Handle {
             case SftpConstants.SSH_FXF_TRUNCATE_EXISTING:
                 options.add(StandardOpenOption.TRUNCATE_EXISTING);
                 break;
-            default:    // ignored
+            default: // ignored
         }
         if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
             options.add(StandardOpenOption.APPEND);

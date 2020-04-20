@@ -62,11 +62,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get stuck.
- * Especially if the server receives window adjust message while it tries to transfer all the data.
+ * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get
+ * stuck. Especially if the server receives window adjust message while it tries to transfer all the data.
  * </p>
- * {@link AsyncInPendingWrapper} in this test serves as a handler for
- * {@link WritePendingException}, which can occur when sending too many messages one after another.
+ * {@link AsyncInPendingWrapper} in this test serves as a handler for {@link WritePendingException}, which can occur
+ * when sending too many messages one after another.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WindowAdjustTest extends BaseTestSupport {
@@ -86,9 +86,9 @@ public class WindowAdjustTest extends BaseTestSupport {
         sshServer = setupTestServer();
 
         byte[] msg = Files.readAllBytes(
-            Paths.get(getClass().getResource("/big-msg.txt").toURI()));
+                Paths.get(getClass().getResource("/big-msg.txt").toURI()));
         sshServer.setShellFactory(
-            channel -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
+                channel -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
 
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.start();
@@ -118,8 +118,8 @@ public class WindowAdjustTest extends BaseTestSupport {
                     channel.setErr(new NoCloseOutputStream(System.err));
                     channel.open().verify(OPEN_TIMEOUT);
 
-                    Collection<ClientChannelEvent> result =
-                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(2L));
+                    Collection<ClientChannelEvent> result
+                            = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(2L));
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
                 }
             } finally {
@@ -228,8 +228,8 @@ public class WindowAdjustTest extends BaseTestSupport {
         public void start(ChannelSession channel, Environment env) throws IOException {
             log.info("Starting");
 
-            ExecutorService service =
-                ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
+            ExecutorService service
+                    = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName() + "-" + POOL_COUNT.incrementAndGet());
             executorHolder.set(service);
 
             futureHolder.set(service.submit((Runnable) () -> {
@@ -246,7 +246,7 @@ public class WindowAdjustTest extends BaseTestSupport {
                 log.info("Sending EOF signal");
 
                 try {
-                    pendingWrapper.write(new ByteArrayBuffer(new byte[]{eofSignal}));
+                    pendingWrapper.write(new ByteArrayBuffer(new byte[] { eofSignal }));
                 } catch (IOException e) {
                     log.error("Failed ({}) to send EOF message after {} messages: {}",
                             e.getClass().getSimpleName(), sendCount, e.getMessage());
@@ -275,7 +275,8 @@ public class WindowAdjustTest extends BaseTestSupport {
     }
 
     /**
-     * Wrapper for asyncIn stream that catches Pending exception and queues the pending messages for later retry (send after previous messages were fully transfered)
+     * Wrapper for asyncIn stream that catches Pending exception and queues the pending messages for later retry (send
+     * after previous messages were fully transfered)
      */
     private static class AsyncInPendingWrapper extends AbstractLoggingBean {
         private IoOutputStream asyncIn;

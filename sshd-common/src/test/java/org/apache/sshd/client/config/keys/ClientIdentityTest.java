@@ -73,8 +73,8 @@ public class ClientIdentityTest extends JUnitTestSupport {
 
         Map<String, KeyPair> ids = ClientIdentity.loadDefaultIdentities(
                 resFolder,
-                false,   // don't be strict
-                null,    // none of the files is password protected
+                false, // don't be strict
+                null, // none of the files is password protected
                 options);
         assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), GenericUtils.size(ids));
 

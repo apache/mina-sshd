@@ -37,7 +37,7 @@ public abstract class AbstractDHServerKeyExchange
         implements ServerSessionHolder {
     protected AbstractDHServerKeyExchange(Session s) {
         super(ValidateUtils.checkInstanceOf(s, ServerSession.class,
-            "Using a client side KeyExchange on a server: %s", s));
+                "Using a client side KeyExchange on a server: %s", s));
     }
 
     @Override
@@ -49,7 +49,7 @@ public abstract class AbstractDHServerKeyExchange
     public PublicKey getServerKey() {
         ServerSession session = getServerSession();
         KeyPair kpHost = Objects.requireNonNull(
-            session.getHostKey(), "No server key pair available");
+                session.getHostKey(), "No server key pair available");
         return kpHost.getPublic();
     }
 }

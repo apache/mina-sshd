@@ -84,7 +84,7 @@ public class NetworkConnector extends AbstractLoggingBean {
     @Override
     public String toString() {
         return getProtocol() + "://" + getHost() + ":" + getPort()
-             + ";connect=" + getConnectTimeout()
-             + ";read=" + getReadTimeout();
+               + ";connect=" + getConnectTimeout()
+               + ";read=" + getReadTimeout();
     }
 }

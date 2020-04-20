@@ -120,13 +120,13 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         for (AuthorizedKeyEntry entry : entries) {
             try {
                 ValidateUtils.checkNotNull(
-                    entry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING),
-                    "No public key resolved from %s",
-                    entry);
+                        entry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING),
+                        "No public key resolved from %s",
+                        entry);
             } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName()).append(')')
-                    .append(" to resolve key of entry=").append(entry.toString())
-                    .append(": ").println(e.getMessage());
+                        .append(" to resolve key of entry=").append(entry.toString())
+                        .append(": ").println(e.getMessage());
                 err = e;
             }
         }
@@ -140,14 +140,12 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
 
     private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries)
             throws IOException, GeneralSecurityException {
-        Collection<PublicKey> keySet =
-            PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
-        PublickeyAuthenticator auth =
-            PublickeyAuthenticator.fromAuthorizedEntries(
+        Collection<PublicKey> keySet = PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
+        PublickeyAuthenticator auth = PublickeyAuthenticator.fromAuthorizedEntries(
                 getCurrentTestName(), null, entries, PublicKeyEntryResolver.FAILING);
         for (PublicKey key : keySet) {
             assertTrue("Failed to authenticate with key=" + key.getAlgorithm(),
-                auth.authenticate(getCurrentTestName(), key, null));
+                    auth.authenticate(getCurrentTestName(), key, null));
         }
 
         return auth;

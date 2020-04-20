@@ -60,8 +60,8 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
         public AclCapabilities(int capabilities) {
             // Protect against malicious or malformed packets
             ValidateUtils.checkTrue(
-                (capabilities >= 0) && (capabilities < SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT),
-                "Illogical ACL capabilities count: %d", capabilities);
+                    (capabilities >= 0) && (capabilities < SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT),
+                    "Illogical ACL capabilities count: %d", capabilities);
             this.capabilities = capabilities;
         }
 
@@ -109,12 +109,11 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
 
         private static final class LazyAclCapabilityNameHolder {
             private static final String ACL_CAP_NAME_PREFIX = "SSH_ACL_CAP_";
-            private static final NavigableMap<Integer, String> ACL_VALUES_MAP =
-                LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
-            private static final NavigableMap<String, Integer> ACL_NAMES_MAP =
-                Collections.unmodifiableNavigableMap(
+            private static final NavigableMap<Integer, String> ACL_VALUES_MAP
+                    = LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
+            private static final NavigableMap<String, Integer> ACL_NAMES_MAP = Collections.unmodifiableNavigableMap(
                     GenericUtils.flipMap(
-                        ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
+                            ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
 
             private LazyAclCapabilityNameHolder() {
                 throw new UnsupportedOperationException("No instance allowed");
@@ -127,9 +126,9 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
         }
 
         /**
-         * @param name The ACL capability name - may be without the &quot;SSH_ACL_CAP_xxx&quot; prefix.
-         * Ignored if {@code null}/empty
-         * @return The matching {@link Integer} value - or {@code null} if no match found
+         * @param  name The ACL capability name - may be without the &quot;SSH_ACL_CAP_xxx&quot; prefix. Ignored if
+         *              {@code null}/empty
+         * @return      The matching {@link Integer} value - or {@code null} if no match found
          */
         public static Integer getAclCapabilityValue(String name) {
             if (GenericUtils.isEmpty(name)) {

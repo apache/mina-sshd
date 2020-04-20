@@ -22,8 +22,8 @@ package org.apache.sshd.common.channel;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * @param <T> Request type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Request type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractRequestHandler<T> extends AbstractLoggingBean implements RequestHandler<T> {
     protected AbstractRequestHandler() {

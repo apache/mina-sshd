@@ -38,10 +38,9 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Monitors the {@code ~/.ssh/authorized_keys} file of the user currently running
- * the server, re-loading it if necessary. It also (optionally) enforces the same
- * permissions regime as {@code OpenSSH} does for the file permissions. By default
- * also compares the current username with the authenticated one.
+ * Monitors the {@code ~/.ssh/authorized_keys} file of the user currently running the server, re-loading it if
+ * necessary. It also (optionally) enforces the same permissions regime as {@code OpenSSH} does for the file
+ * permissions. By default also compares the current username with the authenticated one.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -56,9 +55,8 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     private final String user;
 
     /**
-     * @param strict If {@code true} then makes sure that the containing folder
-     *               has 0700 access and the file 0600. <B>Note:</B> for <I>Windows</I> it
-     *               does not check these permissions
+     * @param strict If {@code true} then makes sure that the containing folder has 0700 access and the file 0600.
+     *               <B>Note:</B> for <I>Windows</I> it does not check these permissions
      */
     public DefaultAuthorizedKeysAuthenticator(boolean strict) {
         this(OsUtils.getCurrentUser(), strict);
@@ -100,7 +98,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     @Override
     protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
             Path path, String username, ServerSession session)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
                 log.debug("reloadAuthorizedKeys({})[{}] check permissions of {}", username, session, path);
@@ -109,7 +107,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
             Map.Entry<String, ?> violation = KeyUtils.validateStrictKeyFilePermissions(path);
             if (violation != null) {
                 log.warn("reloadAuthorizedKeys({})[{}] invalid file={} permissions: {}",
-                         username, session, path, violation.getKey());
+                        username, session, path, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }
@@ -119,13 +117,14 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     /**
-     * @param path     The {@link Path} to be validated
-     * @param perms    The current {@link PosixFilePermission}s
-     * @param excluded The permissions <U>not</U> allowed to exist
-     * @return The original path
+     * @param  path        The {@link Path} to be validated
+     * @param  perms       The current {@link PosixFilePermission}s
+     * @param  excluded    The permissions <U>not</U> allowed to exist
+     * @return             The original path
      * @throws IOException If an excluded permission appears in the current ones
      */
-    protected Path validateFilePath(Path path, Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded) throws IOException {
+    protected Path validateFilePath(Path path, Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded)
+            throws IOException {
         PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, excluded);
         if (p != null) {
             String filePath = path.toString();

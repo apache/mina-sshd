@@ -51,12 +51,10 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough
     public static final String BEGIN_MARKER = "BEGIN PRIVATE KEY";
-    public static final List<String> BEGINNERS =
-        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END PRIVATE KEY";
-    public static final List<String> ENDERS =
-        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     public static final String PKCS8_FORMAT = "PKCS#8";
 
@@ -72,7 +70,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
         List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(encBytes);
@@ -90,9 +88,8 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     }
 
     public static PrivateKey decodePEMPrivateKeyPKCS8(String oid, byte[] keyBytes)
-                throws GeneralSecurityException {
-        KeyPairPEMResourceParser parser =
-            PEMResourceParserUtils.getPEMResourceParserByOid(
+            throws GeneralSecurityException {
+        KeyPairPEMResourceParser parser = PEMResourceParserUtils.getPEMResourceParserByOid(
                 ValidateUtils.checkNotNullAndNotEmpty(oid, "No PKCS8 algorithm OID"));
         if (parser == null) {
             throw new NoSuchAlgorithmException("decodePEMPrivateKeyPKCS8(" + oid + ") unknown algorithm identifier");
@@ -112,7 +109,9 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     /**
      * According to the standard:
-     * <PRE><CODE>
+     * 
+     * <PRE>
+     * <CODE>
      * PrivateKeyInfo ::= SEQUENCE {
      *          version Version,
      *          privateKeyAlgorithm PrivateKeyAlgorithmIdentifier,
@@ -128,11 +127,13 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      *      algorithm       OBJECT IDENTIFIER,
      *      parameters      ANY DEFINED BY algorithm OPTIONAL
      * }
-     * </CODE></PRE>
-     * @param parser The {@link DERParser} to use
-     * @return The PKCS8 algorithm OID
+     * </CODE>
+     * </PRE>
+     * 
+     * @param  parser      The {@link DERParser} to use
+     * @return             The PKCS8 algorithm OID
      * @throws IOException If malformed data
-     * @see #getPKCS8AlgorithmIdentifier(ASN1Object)
+     * @see                #getPKCS8AlgorithmIdentifier(ASN1Object)
      */
     public static List<Integer> getPKCS8AlgorithmIdentifier(DERParser parser) throws IOException {
         return getPKCS8AlgorithmIdentifier(parser.readObject());

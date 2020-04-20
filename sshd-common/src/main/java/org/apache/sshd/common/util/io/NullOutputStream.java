@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A {code /dev/null} output stream
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NullOutputStream extends OutputStream implements Channel {
@@ -65,7 +66,7 @@ public class NullOutputStream extends OutputStream implements Channel {
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
-            //noinspection UnnecessaryReturnStatement
+            // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

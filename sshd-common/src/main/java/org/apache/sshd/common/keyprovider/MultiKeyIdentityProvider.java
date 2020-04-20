@@ -26,8 +26,8 @@ import java.util.Iterator;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
- * Aggregates several {@link KeyIdentityProvider}-s into a single logical
- * one that (lazily) exposes the keys from each aggregated provider
+ * Aggregates several {@link KeyIdentityProvider}-s into a single logical one that (lazily) exposes the keys from each
+ * aggregated provider
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

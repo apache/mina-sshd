@@ -85,7 +85,8 @@ public class ClientDeadlockTest extends BaseTestSupport {
 
         ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
         try (ClientSession session = future.verify(CONNECT_TIMEOUT).getSession()) {
-            Collection<ClientSessionEvent> events = session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
+            Collection<ClientSessionEvent> events
+                    = session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
             assertTrue("Close event not signalled: " + events, events.contains(ClientSession.ClientSessionEvent.CLOSED));
             assertFalse("Session not marked as closed", session.isOpen());
         } catch (SshException e) {

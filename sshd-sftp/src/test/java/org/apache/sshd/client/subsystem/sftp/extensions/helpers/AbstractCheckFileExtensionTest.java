@@ -63,25 +63,21 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSupport {
-    private static final Collection<Integer> DATA_SIZES =
-        Collections.unmodifiableList(
+    private static final Collection<Integer> DATA_SIZES = Collections.unmodifiableList(
             Arrays.asList(
-                (int) Byte.MAX_VALUE,
-                SftpConstants.MIN_CHKFILE_BLOCKSIZE,
-                IoUtils.DEFAULT_COPY_SIZE,
-                Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE
-            ));
-    private static final Collection<Integer> BLOCK_SIZES =
-        Collections.unmodifiableList(
+                    (int) Byte.MAX_VALUE,
+                    SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                    IoUtils.DEFAULT_COPY_SIZE,
+                    Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE));
+    private static final Collection<Integer> BLOCK_SIZES = Collections.unmodifiableList(
             Arrays.asList(
-                0,
-                SftpConstants.MIN_CHKFILE_BLOCKSIZE,
-                1024,
-                IoUtils.DEFAULT_COPY_SIZE
-            ));
+                    0,
+                    SftpConstants.MIN_CHKFILE_BLOCKSIZE,
+                    1024,
+                    IoUtils.DEFAULT_COPY_SIZE));
     private static final Collection<Object[]> PARAMETERS;
 
     static {
@@ -95,13 +91,12 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             String algorithm = factory.getName();
             for (Number dataSize : DATA_SIZES) {
                 for (Number blockSize : BLOCK_SIZES) {
-                    list.add(new Object[]{algorithm, dataSize, blockSize});
+                    list.add(new Object[] { algorithm, dataSize, blockSize });
                 }
             }
         }
         PARAMETERS = list;
     }
-
 
     private final String algorithm;
     private final int dataSize;
@@ -137,10 +132,10 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
 
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
-                + "-" + expectedAlgorithm
-                + "-" + inputDataSize + "/" + hashBlockSize
-                + IoUtils.EOL)
-                .getBytes(StandardCharsets.UTF_8);
+                       + "-" + expectedAlgorithm
+                       + "-" + inputDataSize + "/" + hashBlockSize
+                       + IoUtils.EOL)
+                               .getBytes(StandardCharsets.UTF_8);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(inputDataSize + seed.length)) {
             while (baos.size() < inputDataSize) {
@@ -156,10 +151,14 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
     }
 
     @SuppressWarnings("checkstyle:nestedtrydepth")
-    private void testCheckFileExtension(NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash) throws Exception {
+    private void testCheckFileExtension(
+            NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash)
+            throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
-        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
+        Path lclSftp
+                = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp)
+                .resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
         List<String> algorithms = new ArrayList<>(BuiltinDigests.VALUES.size());
@@ -186,7 +185,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 try {
                     Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
                     fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getKey());
-                } catch (IOException e) {    // expected - not allowed to hash a folder
+                } catch (IOException e) { // expected - not allowed to hash a folder
                     assertTrue("Not an SftpException", e instanceof SftpException);
                 }
 
@@ -195,15 +194,17 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                     try {
                         Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
                         fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
-                    } catch (IOException e) {    // expected - not allowed to hash a folder
+                    } catch (IOException e) { // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException", e instanceof SftpException);
                     }
                 }
 
                 String hashAlgo = algorithms.get(0);
-                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), hashAlgo, expectedHash);
+                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
+                        expectedHash);
                 try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), hashAlgo, expectedHash);
+                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
+                            expectedHash);
                 }
             }
         }
@@ -223,8 +224,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             byte[] actualHash = GenericUtils.head(values);
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
-                    + ": expected=" + BufferUtils.toHex(':', expectedHash)
-                    + ", actual=" + BufferUtils.toHex(':', expectedHash));
+                     + ": expected=" + BufferUtils.toHex(':', expectedHash)
+                     + ", actual=" + BufferUtils.toHex(':', expectedHash));
             }
         }
     }

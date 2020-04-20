@@ -97,11 +97,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         super(false, factoryManager, ioSession);
 
         sendImmediateClientIdentification = this.getBooleanProperty(
-            ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
-            ClientFactoryManager.DEFAULT_SEND_IMMEDIATE_IDENTIFICATION);
+                ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
+                ClientFactoryManager.DEFAULT_SEND_IMMEDIATE_IDENTIFICATION);
         sendImmediateKexInit = this.getBooleanProperty(
-            ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
-            ClientFactoryManager.DEFAULT_SEND_KEXINIT);
+                ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
+                ClientFactoryManager.DEFAULT_SEND_KEXINIT);
 
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
         connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
@@ -287,7 +287,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             }
         } catch (Throwable t) {
             log.warn("initializeProxyConnector({}) failed ({}) to send proxy metadata: {}",
-                this, t.getClass().getSimpleName(), t.getMessage());
+                    this, t.getClass().getSimpleName(), t.getMessage());
             if (debugEnabled) {
                 log.debug("initializeProxyConnector(" + this + ") proxy metadata send failure details", t);
             }
@@ -462,8 +462,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         if (!SessionContext.isValidVersionPrefix(serverVersion)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
-                "Unsupported protocol version: " + serverVersion);
+            throw new SshException(
+                    SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+                    "Unsupported protocol version: " + serverVersion);
         }
 
         signalExtraServerVersionInfo(serverVersion, ident);
@@ -495,10 +496,11 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             }
         } catch (Error e) {
             log.warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}",
-                this, version, e.getClass().getSimpleName(), e.getMessage());
+                    this, version, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("signalExtraServerVersionInfo(" + this + ")[" + version
-                        + "] interaction consultation failure details", e);
+                          + "] interaction consultation failure details",
+                        e);
             }
 
             throw new RuntimeSshException(e);
@@ -520,8 +522,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected byte[] receiveKexInit(Buffer buffer) throws Exception {
         byte[] seed = super.receiveKexInit(buffer);
         /*
-         * Check if the session has delayed its KEX-INIT until the server's one was
-         * received in order to support KEX extension negotiation (RFC 8308).
+         * Check if the session has delayed its KEX-INIT until the server's one was received in order to support KEX
+         * extension negotiation (RFC 8308).
          */
         if (kexState.compareAndSet(KexState.UNKNOWN, KexState.RUN)) {
             if (log.isDebugEnabled()) {
@@ -542,8 +544,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     protected void checkKeys() throws IOException {
-        ServerKeyVerifier serverKeyVerifier =
-            Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
+        ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
         IoSession networkSession = getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = kex.getServerKey();
@@ -554,7 +555,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, ((OpenSshCertificate) serverKey).getCaPubKey());
             if (log.isDebugEnabled()) {
                 log.debug("checkCA({}) key={}-{}, verified={}",
-                    this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+                        this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
             }
 
             if (!verified) {
@@ -567,7 +568,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
             if (log.isDebugEnabled()) {
                 log.debug("checkKeys({}) key={}-{}, verified={}",
-                    this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
+                        this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), verified);
             }
         }
 

@@ -29,9 +29,9 @@ import org.apache.sshd.server.ExitCallback;
  * </p>
  *
  * <p>
- * This command have direct streams, meaning those streams will be provided by the ssh server
- * for the shell to use directly. This interface is suitable for implementing commands in java,
- * rather than using external processes. For wrapping such processes or using inverted streams,
+ * This command have direct streams, meaning those streams will be provided by the ssh server for the shell to use
+ * directly. This interface is suitable for implementing commands in java, rather than using external processes. For
+ * wrapping such processes or using inverted streams,
  * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */
@@ -40,7 +40,7 @@ public interface Command extends CommandLifecycle {
     /**
      * Set the input stream that can be used by the shell to read input.
      *
-     * @param in The {@link InputStream}  used by the shell to read input.
+     * @param in The {@link InputStream} used by the shell to read input.
      */
     void setInputStream(InputStream in);
 

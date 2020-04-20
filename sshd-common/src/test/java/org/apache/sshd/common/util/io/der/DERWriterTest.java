@@ -46,8 +46,8 @@ public class DERWriterTest extends JUnitTestSupport {
             try (DERWriter w = new DERWriter(baos)) {
                 w.writeBigInteger(BigInteger.valueOf(-1));
                 w.writeBigInteger(BigInteger.valueOf(129));
-                w.writeBigInteger(new byte[] {0, 0}, 0, 2);
-                w.writeBigInteger(new byte[] {0, 1}, 0, 2);
+                w.writeBigInteger(new byte[] { 0, 0 }, 0, 2);
+                w.writeBigInteger(new byte[] { 0, 1 }, 0, 2);
             }
         } finally {
             baos.close();

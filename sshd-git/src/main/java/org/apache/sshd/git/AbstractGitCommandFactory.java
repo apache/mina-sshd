@@ -43,15 +43,15 @@ public abstract class AbstractGitCommandFactory
     private Supplier<? extends CloseableExecutorService> executorsProvider;
 
     /**
-     * @param name Command factory logical name
-     * @param cmdPrefix The command prefix used to detect and intercept GIT commands handled by this
-     * factory (never {@code null}/empty)
+     * @param name      Command factory logical name
+     * @param cmdPrefix The command prefix used to detect and intercept GIT commands handled by this factory (never
+     *                  {@code null}/empty)
      */
     protected AbstractGitCommandFactory(String name, String cmdPrefix) {
         super(name);
 
         this.cmdPrefix = ValidateUtils.checkNotNullAndNotEmpty(
-            cmdPrefix, "No command prefix provided");
+                cmdPrefix, "No command prefix provided");
     }
 
     public String getCommandPrefix() {
@@ -64,9 +64,9 @@ public abstract class AbstractGitCommandFactory
     }
 
     /**
-     * @param provider A {@link Supplier} of {@link CloseableExecutorService} to be used when
-     * starting a Git command execution. If {@code null} then a single-threaded ad-hoc service is used.
-     * @return Self instance
+     * @param  provider A {@link Supplier} of {@link CloseableExecutorService} to be used when starting a Git command
+     *                  execution. If {@code null} then a single-threaded ad-hoc service is used.
+     * @return          Self instance
      */
     public AbstractGitCommandFactory withExecutorServiceProvider(
             Supplier<? extends CloseableExecutorService> provider) {

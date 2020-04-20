@@ -31,16 +31,14 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
- * A bare minimum DER parser - just enough to be able to decode
- * signatures and private keys
+ * A bare minimum DER parser - just enough to be able to decode signatures and private keys
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DERParser extends FilterInputStream {
     /**
-     * Maximum size of data allowed by {@link #readLength()} - it is a bit
-     * arbitrary since one can encode 32-bit length data, but it is good
-     * enough for the keys
+     * Maximum size of data allowed by {@link #readLength()} - it is a bit arbitrary since one can encode 32-bit length
+     * data, but it is good enough for the keys
      */
     public static final int MAX_DER_VALUE_LENGTH = 2 * Short.MAX_VALUE;
 
@@ -59,25 +57,25 @@ public class DERParser extends FilterInputStream {
     }
 
     /**
-     * Decode the length of the field. Can only support length
-     * encoding up to 4 octets. In BER/DER encoding, length can
+     * Decode the length of the field. Can only support length encoding up to 4 octets. In BER/DER encoding, length can
      * be encoded in 2 forms:
      * <ul>
-     * <li><p>
-     * Short form - One octet. Bit 8 has value "0" and bits 7-1
-     * give the length.
-     * </p></li>
+     * <li>
+     * <p>
+     * Short form - One octet. Bit 8 has value "0" and bits 7-1 give the length.
+     * </p>
+     * </li>
      *
-     * <li><p>
-     * Long form - Two to 127 octets (only 4 is supported here).
-     * Bit 8 of first octet has value "1" and bits 7-1 give the
-     * number of additional length octets. Second and following
-     * octets give the length, base 256, most significant digit
-     * first.
-     * </p></li>
+     * <li>
+     * <p>
+     * Long form - Two to 127 octets (only 4 is supported here). Bit 8 of first octet has value "1" and bits 7-1 give
+     * the number of additional length octets. Second and following octets give the length, base 256, most significant
+     * digit first.
+     * </p>
+     * </li>
      * </ul>
      *
-     * @return The length as integer
+     * @return             The length as integer
      * @throws IOException If invalid format found
      */
     public int readLength() throws IOException {
@@ -105,12 +103,13 @@ public class DERParser extends FilterInputStream {
         }
 
         long len = BufferUtils.getUInt(lenBytes);
-        if (len < 0x7FL) {   // according to standard: "the shortest possible length encoding must be used"
+        if (len < 0x7FL) { // according to standard: "the shortest possible length encoding must be used"
             throw new StreamCorruptedException("Invalid DER: length not in shortest form: " + len);
         }
 
         if (len > MAX_DER_VALUE_LENGTH) {
-            throw new StreamCorruptedException("Invalid DER: data length too big: " + len + " (max=" + MAX_DER_VALUE_LENGTH + ")");
+            throw new StreamCorruptedException(
+                    "Invalid DER: data length too big: " + len + " (max=" + MAX_DER_VALUE_LENGTH + ")");
         }
 
         // we know the cast is safe since it is less than MAX_DER_VALUE_LENGTH which is ~64K
@@ -127,7 +126,8 @@ public class DERParser extends FilterInputStream {
         byte[] value = new byte[length];
         int n = read(value);
         if (n < length) {
-            throw new StreamCorruptedException("Invalid DER: stream too short, missing value: read " + n + " out of required " + length);
+            throw new StreamCorruptedException(
+                    "Invalid DER: stream too short, missing value: read " + n + " out of required " + length);
         }
 
         return new ASN1Object((byte) tag, length, value);
@@ -143,7 +143,8 @@ public class DERParser extends FilterInputStream {
         byte[] value = new byte[len];
         int n = read(value);
         if (n < len) {
-            throw new StreamCorruptedException("Invalid DER: stream too short, missing value: read " + n + " out of required " + len);
+            throw new StreamCorruptedException(
+                    "Invalid DER: stream too short, missing value: read " + n + " out of required " + len);
         }
 
         return new BigInteger(value);

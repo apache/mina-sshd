@@ -56,7 +56,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         map.put(FactoryManager.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
         map.put(FactoryManager.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
         map.put(FactoryManager.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
-        map.put(FactoryManager.SOCKET_REUSEADDR, new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
+        map.put(FactoryManager.SOCKET_REUSEADDR,
+                new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
         map.put(FactoryManager.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
         map.put(FactoryManager.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
         CONFIGURABLE_OPTIONS = Collections.unmodifiableMap(map);
@@ -115,7 +116,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             }
         } catch (IOException e) {
             log.warn("dispose({}) {} while stopping service: {}",
-                this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
 
             if (log.isDebugEnabled()) {
                 log.warn("dispose(" + this + ") Stop exception details", e);
@@ -126,8 +127,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .parallel(toString(), sessions.values())
-            .build();
+                .parallel(toString(), sessions.values())
+                .build();
     }
 
     @Override
@@ -168,7 +169,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     protected <T> boolean setOption(
             NetworkChannel socket, String property, SocketOption<T> option, T defaultValue)
-                throws IOException {
+            throws IOException {
         PropertyResolver manager = getFactoryManager();
         String valStr = manager.getString(property);
         T val = defaultValue;
@@ -203,9 +204,9 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             return true;
         } catch (IOException | RuntimeException e) {
             log.warn("Unable (" + e.getClass().getSimpleName() + ")"
-                   + " to set socket option " + option
-                   + " using property " + property + "=" + val
-                   + ": " + e.getMessage());
+                     + " to set socket option " + option
+                     + " using property " + property + "=" + val
+                     + ": " + e.getMessage());
             return false;
         }
     }

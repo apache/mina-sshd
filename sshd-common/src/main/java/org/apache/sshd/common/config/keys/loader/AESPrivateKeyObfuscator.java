@@ -50,7 +50,7 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @Override
     public byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException, IOException {
+            throws GeneralSecurityException, IOException {
         int keyLength = resolveKeyLength(encContext);
         byte[] keyValue = deriveEncryptionKey(encContext, keyLength / Byte.SIZE);
         return applyPrivateKeyCipher(bytes, encContext, keyLength, keyValue, encryptIt);
@@ -68,17 +68,19 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
                 }
             }
 
-            throw new InvalidKeySpecException("Unknown " + getCipherName() + " key length: " + cipherType + " - supported: " + sizes);
+            throw new InvalidKeySpecException(
+                    "Unknown " + getCipherName() + " key length: " + cipherType + " - supported: " + sizes);
         } catch (NumberFormatException e) {
-            throw new InvalidKeySpecException("Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(), e);
+            throw new InvalidKeySpecException(
+                    "Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(), e);
         }
     }
 
     /**
-     * @return A {@link List} of {@link Integer}s holding the available key
-     * lengths values (in bits) for the JVM. <B>Note:</B> AES 256 requires
-     * special JCE policy extension installation (e.g., for Java 7 see
-     * <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html">this link</A>)
+     * @return A {@link List} of {@link Integer}s holding the available key lengths values (in bits) for the JVM.
+     *         <B>Note:</B> AES 256 requires special JCE policy extension installation (e.g., for Java 7 see
+     *         <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html">this
+     *         link</A>)
      */
     @SuppressWarnings("synthetic-access")
     public static List<Integer> getAvailableKeyLengths() {
@@ -86,8 +88,7 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     private static final class LazyKeyLengthsHolder {
-        private static final List<Integer> KEY_LENGTHS =
-            Collections.unmodifiableList(detectSupportedKeySizes());
+        private static final List<Integer> KEY_LENGTHS = Collections.unmodifiableList(detectSupportedKeySizes());
 
         private LazyKeyLengthsHolder() {
             throw new UnsupportedOperationException("No instance allowed");

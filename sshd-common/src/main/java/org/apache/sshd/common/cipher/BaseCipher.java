@@ -41,8 +41,8 @@ public class BaseCipher implements Cipher {
     private String s;
 
     public BaseCipher(
-            int ivsize, int kdfSize, String algorithm,
-            int keySize, String transformation, int blkSize) {
+                      int ivsize, int kdfSize, String algorithm,
+                      int keySize, String transformation, int blkSize) {
         this.ivsize = ivsize;
         this.kdfSize = kdfSize;
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
@@ -95,11 +95,11 @@ public class BaseCipher implements Cipher {
     protected javax.crypto.Cipher createCipherInstance(Mode mode, byte[] key, byte[] iv) throws Exception {
         javax.crypto.Cipher instance = SecurityUtils.getCipher(getTransformation());
         instance.init(
-            Mode.Encrypt.equals(mode)
-                ? javax.crypto.Cipher.ENCRYPT_MODE
-                : javax.crypto.Cipher.DECRYPT_MODE,
-            new SecretKeySpec(key, getAlgorithm()),
-            new IvParameterSpec(iv));
+                Mode.Encrypt.equals(mode)
+                        ? javax.crypto.Cipher.ENCRYPT_MODE
+                        : javax.crypto.Cipher.DECRYPT_MODE,
+                new SecretKeySpec(key, getAlgorithm()),
+                new IvParameterSpec(iv));
         return instance;
     }
 

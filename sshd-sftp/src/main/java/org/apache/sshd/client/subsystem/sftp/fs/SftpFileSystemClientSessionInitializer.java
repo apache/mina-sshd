@@ -42,17 +42,17 @@ public interface SftpFileSystemClientSessionInitializer {
     };
 
     /**
-     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method
-     * in order to obtain an initial (non-authenticated) {@link ClientSession}.
+     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to obtain an
+     * initial (non-authenticated) {@link ClientSession}.
      *
-     * @param provider The {@link SftpFileSystemProvider} instance requesting the session
-     * @param context The initialization {@link SftpFileSystemInitializationContext}
-     * @return The created {@link ClientSession}
+     * @param  provider    The {@link SftpFileSystemProvider} instance requesting the session
+     * @param  context     The initialization {@link SftpFileSystemInitializationContext}
+     * @return             The created {@link ClientSession}
      * @throws IOException If failed to connect
      */
     default ClientSession createClientSession(
             SftpFileSystemProvider provider, SftpFileSystemInitializationContext context)
-                throws IOException {
+            throws IOException {
         UsernameHolder user = context.getCredentials();
         ClientSessionCreator client = provider.getClientInstance();
         return client.connect(user.getUsername(), context.getHost(), context.getPort())
@@ -61,18 +61,18 @@ public interface SftpFileSystemClientSessionInitializer {
     }
 
     /**
-     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method
-     * in order to authenticate the session obtained from
+     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to authenticate
+     * the session obtained from
      * {@link #createClientSession(SftpFileSystemProvider, SftpFileSystemInitializationContext)}
      *
-     * @param provider The {@link SftpFileSystemProvider} instance requesting the session
-     * @param context The initialization {@link SftpFileSystemInitializationContext}
-     * @param session The created {@link ClientSession}
+     * @param  provider    The {@link SftpFileSystemProvider} instance requesting the session
+     * @param  context     The initialization {@link SftpFileSystemInitializationContext}
+     * @param  session     The created {@link ClientSession}
      * @throws IOException If failed to authenticate
      */
     default void authenticateClientSession(
             SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
-                throws IOException {
+            throws IOException {
         PasswordHolder passwordHolder = context.getCredentials();
         String password = passwordHolder.getPassword();
         // If no password provided perhaps the client is set-up to use registered public keys
@@ -83,19 +83,20 @@ public interface SftpFileSystemClientSessionInitializer {
     }
 
     /**
-     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method
-     * in order to create the {@link SftpFileSystem} once session has been authenticated.
+     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to create the
+     * {@link SftpFileSystem} once session has been authenticated.
      *
-     * @param provider The {@link SftpFileSystemProvider} instance requesting the session
-     * @param context The initialization {@link SftpFileSystemInitializationContext}
-     * @param session The authenticated {@link ClientSession}
-     * @param selector The <U>resolved</U> {@link SftpVersionSelector} to use
-     * @return The created {@link SftpFileSystem}
+     * @param  provider    The {@link SftpFileSystemProvider} instance requesting the session
+     * @param  context     The initialization {@link SftpFileSystemInitializationContext}
+     * @param  session     The authenticated {@link ClientSession}
+     * @param  selector    The <U>resolved</U> {@link SftpVersionSelector} to use
+     * @return             The created {@link SftpFileSystem}
      * @throws IOException If failed to create the file-system
      */
     default SftpFileSystem createSftpFileSystem(
-            SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session, SftpVersionSelector selector)
-                throws IOException {
+            SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session,
+            SftpVersionSelector selector)
+            throws IOException {
         return new SftpFileSystem(provider, context.getId(), session, provider.getSftpClientFactory(), selector);
     }
 }

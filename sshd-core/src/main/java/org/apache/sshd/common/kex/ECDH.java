@@ -113,8 +113,8 @@ public class ECDH extends AbstractDH {
     @Override
     public String toString() {
         return super.toString()
-            + "[curve=" + curve
-            + ", f=" + f
-            + "]";
+               + "[curve=" + curve
+               + ", f=" + f
+               + "]";
     }
 }

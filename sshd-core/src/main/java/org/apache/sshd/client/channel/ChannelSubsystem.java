@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class ChannelSubsystem extends ChannelSession {
     /**
      * Configure whether reply for the &quot;subsystem&quoot; request is required
+     * 
      * @see #DEFAULT_REQUEST_SUBSYSTEM_REPLY
      */
     public static final String REQUEST_SUBSYSTEM_REPLY = "channel-subsystem-want-reply";
@@ -77,9 +78,9 @@ public class ChannelSubsystem extends ChannelSession {
 
         Session session = getSession();
         boolean wantReply = this.getBooleanProperty(
-            REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+                REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
-            Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
+                Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString(Channel.CHANNEL_SUBSYSTEM);
         buffer.putBoolean(wantReply);

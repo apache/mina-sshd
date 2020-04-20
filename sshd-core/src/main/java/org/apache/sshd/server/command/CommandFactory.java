@@ -27,29 +27,26 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 
 /**
- * Commands are executed on the server side when an &quot;exec&quot; channel is
- * requested by the SSH client.
+ * Commands are executed on the server side when an &quot;exec&quot; channel is requested by the SSH client.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface CommandFactory {
     /**
-     * Create a command with the given name.
-     * If the command is not known, a dummy command should be returned to allow
+     * Create a command with the given name. If the command is not known, a dummy command should be returned to allow
      * the display output to be sent back to the client.
      *
-     * @param channel The {@link ChannelSession} through which the command
-     * has been received
-     * @param command The command that will be run
-     * @return a non {@code null} {@link Command} instance
+     * @param  channel     The {@link ChannelSession} through which the command has been received
+     * @param  command     The command that will be run
+     * @return             a non {@code null} {@link Command} instance
      * @throws IOException if failed to create the instance
      */
     Command createCommand(ChannelSession channel, String command) throws IOException;
 
     /**
-     * @param command The raw command - ignored if {@code null}/empty
-     * @return The parsed command elements while stripping quoted arguments
+     * @param  command The raw command - ignored if {@code null}/empty
+     * @return         The parsed command elements while stripping quoted arguments
      */
     static List<String> split(String command) {
         int len = GenericUtils.length(command);
@@ -75,7 +72,7 @@ public interface CommandFactory {
                 // find matching delimiter
                 int nextPos = command.indexOf(ch, curPos + 1);
                 if (nextPos <= curPos) {
-                    continue;   // if not found assume unquoted
+                    continue; // if not found assume unquoted
                 }
 
                 String elem = command.substring(curPos + 1, nextPos);
@@ -100,7 +97,7 @@ public interface CommandFactory {
             }
 
             lastPos = curPos;
-            curPos--;   // compensate for loop auto-increment
+            curPos--; // compensate for loop auto-increment
         }
 
         // any trailing element ?

@@ -62,8 +62,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        SftpSubsystemFactory.Builder builder =
-                new SftpSubsystemFactory.Builder();
+        SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         builder.addSftpEventListener(SimpleAccessControlSftpEventListener.READ_ONLY_ACCESSOR);
         sshd.setSubsystemFactories(
                 Collections.singletonList(builder.build()));
@@ -88,7 +87,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     public void testReadOnlyFileAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.deleteIfExists(testFile);
@@ -97,7 +97,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
 
@@ -110,7 +111,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         assertArrayEquals("Mismatched read file contents", data, actual);
                     }
 
-                    try (CloseableHandle handle = sftp.open(file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
+                    try (CloseableHandle handle
+                            = sftp.open(file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
                         sftp.write(handle, 0L, data);
                         fail("Unexpected file write success");
                     } catch (SftpException e) {
@@ -125,7 +127,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected attributes modification success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected setAttributes SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
+                        assertEquals("Unexpected setAttributes SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED,
+                                status);
                     }
                 }
             } finally {
@@ -139,7 +142,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
-            targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.deleteIfExists(testFile);

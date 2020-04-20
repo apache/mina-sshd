@@ -26,19 +26,18 @@ import org.apache.sshd.common.AttributeRepository;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A>
+ * @see    <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A>
  */
 @FunctionalInterface
 public interface HostConfigEntryResolver {
     /**
-     * An &quot;empty&quot; implementation that does not resolve any entry - i.e.,
-     * uses the original entry as-is
+     * An &quot;empty&quot; implementation that does not resolve any entry - i.e., uses the original entry as-is
      */
     HostConfigEntryResolver EMPTY = new HostConfigEntryResolver() {
         @Override
         public HostConfigEntry resolveEffectiveHost(
                 String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
-                    throws IOException {
+                throws IOException {
             return null;
         }
 
@@ -49,23 +48,21 @@ public interface HostConfigEntryResolver {
     };
 
     /**
-     * Invoked when creating a new client session in order to allow for overriding
-     * of the original parameters
+     * Invoked when creating a new client session in order to allow for overriding of the original parameters
      *
-     * @param host The requested host - never {@code null}/empty
-     * @param port The requested port
-     * @param localAddress Optional binding endpoint for the local peer
-     * @param username The requested username
-     * @param context An optional &quot;context&quot; provided during the connection
-     * request (to be attached to the established session if successfully connected)
-     * @return A {@link HostConfigEntry} for the actual target - {@code null} if use
-     * original parameters. <B>Note:</B> if any identity files are attached to the
-     * configuration then they must point to <U>existing</U> locations. This means
-     * that any macros such as <code>~, %d, %h</code>, etc. must be resolved <U>prior</U>
-     * to returning the value
-     * @throws IOException If failed to resolve the configuration
+     * @param  host         The requested host - never {@code null}/empty
+     * @param  port         The requested port
+     * @param  localAddress Optional binding endpoint for the local peer
+     * @param  username     The requested username
+     * @param  context      An optional &quot;context&quot; provided during the connection request (to be attached to
+     *                      the established session if successfully connected)
+     * @return              A {@link HostConfigEntry} for the actual target - {@code null} if use original parameters.
+     *                      <B>Note:</B> if any identity files are attached to the configuration then they must point to
+     *                      <U>existing</U> locations. This means that any macros such as <code>~, %d, %h</code>, etc.
+     *                      must be resolved <U>prior</U> to returning the value
+     * @throws IOException  If failed to resolve the configuration
      */
     HostConfigEntry resolveEffectiveHost(
-        String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
+            String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
             throws IOException;
 }

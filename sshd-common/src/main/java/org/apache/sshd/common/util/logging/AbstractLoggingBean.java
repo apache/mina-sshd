@@ -26,9 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Serves as a common base class for the vast majority of classes that require
- * some kind of logging. Facilitates quick and easy replacement of the actual used
- * logger from one framework to another
+ * Serves as a common base class for the vast majority of classes that require some kind of logging. Facilitates quick
+ * and easy replacement of the actual used logger from one framework to another
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -44,11 +43,10 @@ public abstract class AbstractLoggingBean {
     }
 
     /**
-     * Create a logger for instances of the same class for which we might
-     * want to have a &quot;discriminator&quot; for them
+     * Create a logger for instances of the same class for which we might want to have a &quot;discriminator&quot; for
+     * them
      *
-     * @param discriminator The discriminator value - ignored if {@code null}
-     * or empty
+     * @param discriminator The discriminator value - ignored if {@code null} or empty
      */
     protected AbstractLoggingBean(String discriminator) {
         String name = getClass().getName();

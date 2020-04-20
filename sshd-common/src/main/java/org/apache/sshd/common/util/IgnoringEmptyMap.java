@@ -28,9 +28,9 @@ import java.util.Set;
 /**
  * A dummy map that ignores all {@code put/remove} calls
  *
- * @param <K> Key type
- * @param <V> Value type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <K> Key type
+ * @param  <V> Value type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class IgnoringEmptyMap<K, V> implements Map<K, V> {
     @SuppressWarnings("rawtypes")

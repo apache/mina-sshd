@@ -31,11 +31,12 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * <P>
- * Helps implement a {@link PasswordIdentityProvider} by delegating calls
- * to {@link UserInteraction#getUpdatedPassword(ClientSession, String, String)}.
- * The way to use it would be as follows:
+ * Helps implement a {@link PasswordIdentityProvider} by delegating calls to
+ * {@link UserInteraction#getUpdatedPassword(ClientSession, String, String)}. The way to use it would be as follows:
  * </P>
- * <pre><code>
+ * 
+ * <pre>
+ * <code>
  * try (ClientSession session = client.connect(login, host, port).await().getSession()) {
  *     session.setUserInteraction(...);     // this can also be set at the client level
  *     PasswordIdentityProvider passwordIdentityProvider =
@@ -53,11 +54,12 @@ import org.apache.sshd.common.util.GenericUtils;
  *     session.setPasswordIdentityProvider(passwordIdentityProvider);
  *     session.auth.verify(...timeout...);
  * }
- * </code></pre>
+ * </code>
+ * </pre>
  *
- * <B>Note:</B> {@link UserInteraction#isInteractionAllowed(ClientSession)} is consulted
- * prior to invoking {@code getUpdatedPassword} - if returns {@code false} then password
- * retrieval method is not invoked, and it is assumed that no more passwords are available
+ * <B>Note:</B> {@link UserInteraction#isInteractionAllowed(ClientSession)} is consulted prior to invoking
+ * {@code getUpdatedPassword} - if returns {@code false} then password retrieval method is not invoked, and it is
+ * assumed that no more passwords are available
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -72,7 +74,7 @@ public class InteractivePasswordIdentityProvider
     private AtomicReference<String> nextPassword = new AtomicReference<>();
 
     public InteractivePasswordIdentityProvider(
-            ClientSession clientSession, UserInteraction userInteraction, String prompt) {
+                                               ClientSession clientSession, UserInteraction userInteraction, String prompt) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session provided");
         this.userInteraction = Objects.requireNonNull(userInteraction, "No user interaction instance configured");
         this.prompt = prompt;
@@ -121,7 +123,7 @@ public class InteractivePasswordIdentityProvider
             throw new NoSuchElementException("All passwords exhausted");
         }
 
-        nextPassword.set(null);     // force read of next password when 'hasNext' invoked
+        nextPassword.set(null); // force read of next password when 'hasNext' invoked
         return password;
     }
 
@@ -139,7 +141,8 @@ public class InteractivePasswordIdentityProvider
         return providerOf(clientSession, (clientSession == null) ? null : clientSession.getUserInteraction(), prompt);
     }
 
-    public static PasswordIdentityProvider providerOf(ClientSession clientSession, UserInteraction userInteraction, String prompt) {
+    public static PasswordIdentityProvider providerOf(
+            ClientSession clientSession, UserInteraction userInteraction, String prompt) {
         Objects.requireNonNull(clientSession, "No client session provided");
         Objects.requireNonNull(userInteraction, "No user interaction instance configured");
         Iterable<String> passwords = () -> new InteractivePasswordIdentityProvider(clientSession, userInteraction, prompt);

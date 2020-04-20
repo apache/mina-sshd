@@ -77,7 +77,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-570
+    @Test // see SSHD-570
     public void testExceptionWhilePumpStreams() throws Exception {
         BogusInvertedShell bogusShell = newShell("out", "err");
         bogusShell.setAlive(false);
@@ -304,10 +304,8 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
     private static BogusInvertedShell newShell(String contentOut, String contentErr) {
         ByteArrayOutputStream in = new ByteArrayOutputStream(20);
-        ByteArrayInputStream out =
-            new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
-        ByteArrayInputStream err =
-            new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream out = new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
         return new BogusInvertedShell(in, out, err);
     }
 }

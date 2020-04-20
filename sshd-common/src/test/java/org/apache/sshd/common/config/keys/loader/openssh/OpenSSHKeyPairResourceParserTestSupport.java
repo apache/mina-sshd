@@ -88,7 +88,7 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
 
         AuthorizedKeyEntry entry = entries.get(0);
         PublicKey pubEntry = entry.resolvePublicKey(
-            null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
+                null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
         assertNotNull("Cannot retrieve public key", pubEntry);
 
         testLoadKeyPairs(encrypted, resourceKey, pairs, pubEntry);
@@ -100,7 +100,7 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
     }
 
     protected abstract void testLoadKeyPairs(
-        boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
+            boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
             throws Exception;
 
     @Override

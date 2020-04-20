@@ -79,7 +79,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     public T getPath(String first, String... more) {
         StringBuilder sb = new StringBuilder();
         if (!GenericUtils.isEmpty(first)) {
-            appendDedupSep(sb, first.replace('\\', '/'));   // in case we are running on Windows
+            appendDedupSep(sb, first.replace('\\', '/')); // in case we are running on Windows
         }
 
         if (GenericUtils.length(more) > 0) {
@@ -125,7 +125,8 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
         int colonIndex = Objects.requireNonNull(syntaxAndPattern, "No argument").indexOf(':');
         if ((colonIndex <= 0) || (colonIndex == syntaxAndPattern.length() - 1)) {
-            throw new IllegalArgumentException("syntaxAndPattern must have form \"syntax:pattern\" but was \"" + syntaxAndPattern + "\"");
+            throw new IllegalArgumentException(
+                    "syntaxAndPattern must have form \"syntax:pattern\" but was \"" + syntaxAndPattern + "\"");
         }
 
         String syntax = syntaxAndPattern.substring(0, colonIndex);

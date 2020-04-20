@@ -145,8 +145,8 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
-     * preClose is guaranteed to be called before doCloseGracefully or doCloseImmediately.
-     * When preClose() is called, isClosing() == true
+     * preClose is guaranteed to be called before doCloseGracefully or doCloseImmediately. When preClose() is called,
+     * isClosing() == true
      */
     protected void preClose() {
         // nothing
@@ -157,11 +157,14 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
-     * <P>doCloseImmediately is called once and only once
-     * with state == Immediate</P>
+     * <P>
+     * doCloseImmediately is called once and only once with state == Immediate
+     * </P>
      *
-     * <P>Overriding methods should always call the base implementation.
-     * It may be called concurrently while preClose() or doCloseGracefully is executing</P>
+     * <P>
+     * Overriding methods should always call the base implementation. It may be called concurrently while preClose() or
+     * doCloseGracefully is executing
+     * </P>
      */
     protected void doCloseImmediately() {
         closeFuture.setClosed();

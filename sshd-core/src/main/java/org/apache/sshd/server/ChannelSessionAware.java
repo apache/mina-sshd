@@ -22,8 +22,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
- * {@link Command} can implement this optional interface
- * to receive a reference to {@link ChannelSession}.
+ * {@link Command} can implement this optional interface to receive a reference to {@link ChannelSession}.
  */
 @FunctionalInterface
 public interface ChannelSessionAware {

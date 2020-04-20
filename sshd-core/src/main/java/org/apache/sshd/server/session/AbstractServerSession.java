@@ -98,7 +98,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public ServerProxyAcceptor getServerProxyAcceptor() {
         return resolveEffectiveProvider(
-            ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
+                ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
     }
 
     @Override
@@ -119,7 +119,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public PasswordAuthenticator getPasswordAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(
-            PasswordAuthenticator.class, passwordAuthenticator, manager.getPasswordAuthenticator());
+                PasswordAuthenticator.class, passwordAuthenticator, manager.getPasswordAuthenticator());
     }
 
     @Override
@@ -131,7 +131,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public PublickeyAuthenticator getPublickeyAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(
-            PublickeyAuthenticator.class, publickeyAuthenticator, manager.getPublickeyAuthenticator());
+                PublickeyAuthenticator.class, publickeyAuthenticator, manager.getPublickeyAuthenticator());
     }
 
     @Override
@@ -143,7 +143,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(
-            KeyboardInteractiveAuthenticator.class, interactiveAuthenticator, manager.getKeyboardInteractiveAuthenticator());
+                KeyboardInteractiveAuthenticator.class, interactiveAuthenticator,
+                manager.getKeyboardInteractiveAuthenticator());
     }
 
     @Override
@@ -155,7 +156,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public GSSAuthenticator getGSSAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(
-            GSSAuthenticator.class, gssAuthenticator, manager.getGSSAuthenticator());
+                GSSAuthenticator.class, gssAuthenticator, manager.getGSSAuthenticator());
     }
 
     @Override
@@ -167,7 +168,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public HostBasedAuthenticator getHostBasedAuthenticator() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(
-            HostBasedAuthenticator.class, hostBasedAuthenticator, manager.getHostBasedAuthenticator());
+                HostBasedAuthenticator.class, hostBasedAuthenticator, manager.getHostBasedAuthenticator());
     }
 
     @Override
@@ -190,14 +191,14 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public KeyPairProvider getKeyPairProvider() {
         KexFactoryManager parent = getDelegate();
         return resolveEffectiveProvider(KeyPairProvider.class, keyPairProvider,
-            (parent == null) ? null : ((ServerAuthenticationManager) parent).getKeyPairProvider());
+                (parent == null) ? null : ((ServerAuthenticationManager) parent).getKeyPairProvider());
     }
 
     @Override
     public HostKeyCertificateProvider getHostKeyCertificateProvider() {
         ServerFactoryManager manager = getFactoryManager();
         return resolveEffectiveProvider(HostKeyCertificateProvider.class,
-            hostKeyCertificateProvider, manager.getHostKeyCertificateProvider());
+                hostKeyCertificateProvider, manager.getHostKeyCertificateProvider());
     }
 
     @Override
@@ -213,12 +214,12 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     /**
      * Sends the server identification + any extra header lines
      *
-     * @param headerLines Extra header lines to be prepended to the actual
-     * identification string - ignored if {@code null}/empty
-     * @return An {@link IoWriteFuture} that can be used to be notified of
-     * identification data being written successfully or failing
+     * @param  headerLines Extra header lines to be prepended to the actual identification string - ignored if
+     *                     {@code null}/empty
+     * @return             An {@link IoWriteFuture} that can be used to be notified of identification data being written
+     *                     successfully or failing
      * @throws IOException If failed to send identification
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
     protected IoWriteFuture sendServerIdentification(String... headerLines) throws IOException {
         serverVersion = resolveIdentificationString(ServerFactoryManager.SERVER_IDENTIFICATION);
@@ -257,21 +258,21 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public void startService(String name, Buffer buffer) throws Exception {
         FactoryManager factoryManager = getFactoryManager();
         currentService = ServiceFactory.create(
-            factoryManager.getServiceFactories(),
-            ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified"),
-            this);
+                factoryManager.getServiceFactories(),
+                ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified"),
+                this);
         /*
          * According to RFC4253:
          *
-         *      If the server rejects the service request, it SHOULD send an
-         *      appropriate SSH_MSG_DISCONNECT message and MUST disconnect.
+         * If the server rejects the service request, it SHOULD send an appropriate SSH_MSG_DISCONNECT message and MUST
+         * disconnect.
          */
         if (currentService == null) {
             try {
                 SessionDisconnectHandler handler = getSessionDisconnectHandler();
                 if ((handler != null)
                         && handler.handleUnsupportedServiceDisconnectReason(
-                            this, SshConstants.SSH_MSG_SERVICE_REQUEST, name, buffer)) {
+                                this, SshConstants.SSH_MSG_SERVICE_REQUEST, name, buffer)) {
                     if (log.isDebugEnabled()) {
                         log.debug("startService({}) ignore unknown service={} by handler", this, name);
                     }
@@ -279,7 +280,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 }
             } catch (IOException | RuntimeException e) {
                 log.warn("startService({})[{}] failed ({}) to invoke disconnect handler: {}",
-                    this, name, e.getClass().getSimpleName(), e.getMessage());
+                        this, name, e.getClass().getSimpleName(), e.getMessage());
                 if (log.isDebugEnabled()) {
                     log.warn("startService(" + this + ")[" + name + "] disconnect handler invocation exception details", e);
                 }
@@ -292,22 +293,22 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public IoWriteFuture signalAuthenticationSuccess(
             String username, String authService, Buffer buffer)
-                throws Exception {
+            throws Exception {
         KexState curState = kexState.get();
         if (!KexState.DONE.equals(curState)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+            throw new SshException(
+                    SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                     "Authentication success signalled though KEX state=" + curState);
         }
 
         /*
          * According to https://tools.ietf.org/html/rfc8308#section-2.4
          *
-         *      If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or
-         *      both of the following opportunities:
+         * If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or both of the following opportunities:
          *
-         *      ...
+         * ...
          *
-         *      + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
+         * + Immediately preceding the server's SSH_MSG_USERAUTH_SUCCESS
          */
         KexExtensionHandler extHandler = getKexExtensionHandler();
         if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.AUTHOK)) {
@@ -342,7 +343,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             SessionDisconnectHandler handler = getSessionDisconnectHandler();
             if ((handler != null)
                     && handler.handleUnsupportedServiceDisconnectReason(
-                        this, SshConstants.SSH_MSG_SERVICE_ACCEPT, serviceName, buffer)) {
+                            this, SshConstants.SSH_MSG_SERVICE_ACCEPT, serviceName, buffer)) {
                 if (log.isDebugEnabled()) {
                     log.debug("handleServiceAccept({}) ignore unknown service={} by handler", this, serviceName);
                 }
@@ -350,7 +351,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             }
         } catch (IOException | RuntimeException e) {
             log.warn("handleServiceAccept({}) failed ({}) to invoke disconnect handler of unknown service={}: {}",
-                this, e.getClass().getSimpleName(), serviceName, e.getMessage());
+                    this, e.getClass().getSimpleName(), serviceName, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.warn("handleServiceAccept(" + this + ")[" + serviceName + "] handler invocation exception details", e);
             }
@@ -358,7 +359,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         // TODO: can services be initiated by the server-side ?
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-            "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
+                "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
     }
 
     @Override
@@ -379,7 +380,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
          * Make sure we can provide key(s) for the available signatures
          */
         ValidateUtils.checkTrue(proposedManager == getFactoryManager(),
-            "Mismatched signatures proposed factory manager");
+                "Mismatched signatures proposed factory manager");
 
         KeyPairProvider kpp = getKeyPairProvider();
         boolean debugEnabled = log.isDebugEnabled();
@@ -390,23 +391,23 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
                 HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
                 if (hostKeyCertificateProvider != null) {
-                    Iterable<OpenSshCertificate> certificates =
-                        hostKeyCertificateProvider.loadCertificates(this);
+                    Iterable<OpenSshCertificate> certificates = hostKeyCertificateProvider.loadCertificates(this);
                     for (OpenSshCertificate certificate : certificates) {
                         // Add the certificate alg only if the corresponding keyPair type is available
                         String rawKeyType = certificate.getRawKeyType();
                         if (provided.contains(rawKeyType)) {
                             provided.add(certificate.getKeyType());
                         } else {
-                            log.info("resolveAvailableSignaturesProposal({}) No private key of type={} available in provided certificate",
-                                this, rawKeyType);
+                            log.info(
+                                    "resolveAvailableSignaturesProposal({}) No private key of type={} available in provided certificate",
+                                    this, rawKeyType);
                         }
                     }
                 }
             }
         } catch (Error e) {
             log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
-                 this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.warn("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
             }
@@ -414,14 +415,12 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             throw new RuntimeSshException(e);
         }
 
-        Collection<String> available =
-            NamedResource.getNameList(getSignatureFactories());
+        Collection<String> available = NamedResource.getNameList(getSignatureFactories());
         if ((provided == null) || GenericUtils.isEmpty(available)) {
             return resolveEmptySignaturesProposal(available, provided);
         }
 
-        Collection<String> supported =
-            SignatureFactory.resolveSignatureFactoryNamesProposal(provided, available);
+        Collection<String> supported = SignatureFactory.resolveSignatureFactoryNamesProposal(provided, available);
         if (GenericUtils.isEmpty(supported)) {
             return resolveEmptySignaturesProposal(available, provided);
         } else {
@@ -430,19 +429,18 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     /**
-     * Called by {@link #resolveAvailableSignaturesProposal(FactoryManager)}
-     * if none of the provided keys is supported - last chance for the derived
-     * implementation to do something
+     * Called by {@link #resolveAvailableSignaturesProposal(FactoryManager)} if none of the provided keys is supported -
+     * last chance for the derived implementation to do something
      *
-     * @param supported The supported key types - may be {@code null}/empty
-     * @param provided  The available signature types - may be {@code null}/empty
-     * @return The resolved proposal - {@code null} by default
+     * @param  supported The supported key types - may be {@code null}/empty
+     * @param  provided  The available signature types - may be {@code null}/empty
+     * @return           The resolved proposal - {@code null} by default
      */
     protected String resolveEmptySignaturesProposal(
             Iterable<String> supported, Iterable<String> provided) {
         if (log.isDebugEnabled()) {
             log.debug("resolveEmptySignaturesProposal({})[{}] none of the keys appears in supported list: {}",
-                  this, provided, supported);
+                    this, provided, supported);
         }
         return null;
     }
@@ -454,15 +452,14 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         boolean debugEnabled = log.isDebugEnabled();
         if (acceptor != null) {
             try {
-                boolean completed =
-                    acceptor.acceptServerProxyMetadata(this, buffer);
+                boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
                 if (!completed) {
-                    buffer.rpos(rpos);  // restore original buffer position
-                    return false;   // more data required
+                    buffer.rpos(rpos); // restore original buffer position
+                    return false; // more data required
                 }
             } catch (Throwable t) {
                 log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
-                     this, t.getClass().getSimpleName(), t.getMessage());
+                        this, t.getClass().getSimpleName(), t.getMessage());
                 if (debugEnabled) {
                     log.warn("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
                 }
@@ -479,8 +476,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         int numLines = GenericUtils.size(ident);
         clientVersion = (numLines <= 0) ? null : ident.remove(numLines - 1);
         if (GenericUtils.isEmpty(clientVersion)) {
-            buffer.rpos(rpos);  // restore original buffer position
-            return false;   // more data required
+            buffer.rpos(rpos); // restore original buffer position
+            return false; // more data required
         }
 
         if (debugEnabled) {
@@ -490,24 +487,25 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         IOException err;
         if (SessionContext.isValidVersionPrefix(clientVersion)) {
             /*
-             * NOTE: because of the way that "doReadIdentification" works we are
-             * assured that there are no extra lines beyond the version one, but
-             * we check this nevertheless
+             * NOTE: because of the way that "doReadIdentification" works we are assured that there are no extra lines
+             * beyond the version one, but we check this nevertheless
              */
             err = (numLines > 1)
-                ? new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion)
-                : null;
+                    ? new SshException(
+                            SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion)
+                    : null;
         } else {
-            err = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
-                "Unsupported protocol version: " + clientVersion);
+            err = new SshException(
+                    SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+                    "Unsupported protocol version: " + clientVersion);
         }
 
         if (err != null) {
             IoSession networkSession = getIoSession();
             networkSession.writePacket(
                     new ByteArrayBuffer((err.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)))
-                 .addListener(future -> close(true));
+                    .addListener(future -> close(true));
             throw err;
         }
 
@@ -529,19 +527,17 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public KeyPair getHostKey() {
         String proposedKey = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         String keyType = KeyUtils.getCanonicalKeyType(proposedKey);
-        KeyPairProvider provider =
-            Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
+        KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();
             if (hostKeyCertificateProvider != null) {
-                OpenSshCertificate publicKey =
-                    hostKeyCertificateProvider.loadCertificate(this, keyType);
+                OpenSshCertificate publicKey = hostKeyCertificateProvider.loadCertificate(this, keyType);
                 if (publicKey != null) {
                     String rawKeyType = publicKey.getRawKeyType();
 
                     if (log.isDebugEnabled()) {
                         log.debug("getHostKey({}) using certified key {}/{} with ID={}",
-                            this, keyType, rawKeyType, publicKey.getId());
+                                this, keyType, rawKeyType, publicKey.getId());
                     }
 
                     KeyPair keyPair = provider.loadKey(this, rawKeyType);
@@ -553,7 +549,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return provider.loadKey(this, keyType);
         } catch (IOException | GeneralSecurityException | Error e) {
             log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
-                 this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());
+                    this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.warn("getHostKey(" + this + ") " + proposedKey + "[" + keyType + "] key load failure details", e);
             }
@@ -603,7 +599,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     protected ConnectionService getConnectionService() {
         return (this.currentService instanceof ConnectionService)
-             ? (ConnectionService) this.currentService
-             : null;
+                ? (ConnectionService) this.currentService
+                : null;
     }
 }

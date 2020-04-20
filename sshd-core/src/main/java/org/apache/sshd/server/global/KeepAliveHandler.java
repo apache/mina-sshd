@@ -39,7 +39,7 @@ public class KeepAliveHandler extends AbstractConnectionServiceRequestHandler {
     @Override
     public Result process(
             ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
-                throws Exception {
+            throws Exception {
         if (!request.startsWith("keepalive@")) {
             return super.process(connectionService, request, wantReply, buffer);
         }

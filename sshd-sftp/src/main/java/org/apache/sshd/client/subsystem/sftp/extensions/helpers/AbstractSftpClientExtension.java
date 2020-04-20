@@ -106,9 +106,10 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param buffer The {@link Buffer}
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
-     * @return The updated buffer
+     * @param  buffer                        The {@link Buffer}
+     * @param  target                        A target path {@link String} or {@link Handle} or {@code byte[]} to be
+     *                                       encoded in the buffer
+     * @return                               The updated buffer
      * @throws UnsupportedOperationException If target is not one of the above supported types
      */
     public Buffer putTarget(Buffer buffer, Object target) {
@@ -126,19 +127,19 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
-     * @return A {@link Buffer} with the extension name set
-     * @see #getCommandBuffer(Object, int)
+     * @param  target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
+     * @return        A {@link Buffer} with the extension name set
+     * @see           #getCommandBuffer(Object, int)
      */
     protected Buffer getCommandBuffer(Object target) {
         return getCommandBuffer(target, 0);
     }
 
     /**
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
-     * @param extraSize Extra size - beyond the path/handle to be allocated
-     * @return A {@link Buffer} with the extension name set
-     * @see #getCommandBuffer(int)
+     * @param  target    A target path {@link String} or {@link Handle} or {@code byte[]} to be encoded in the buffer
+     * @param  extraSize Extra size - beyond the path/handle to be allocated
+     * @return           A {@link Buffer} with the extension name set
+     * @see              #getCommandBuffer(int)
      */
     protected Buffer getCommandBuffer(Object target, int extraSize) {
         if (target instanceof CharSequence) {
@@ -153,8 +154,8 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param extraSize Extra size - besides the extension name
-     * @return A {@link Buffer} with the extension name set
+     * @param  extraSize Extra size - besides the extension name
+     * @return           A {@link Buffer} with the extension name set
      */
     protected Buffer getCommandBuffer(int extraSize) {
         String opcode = getName();
@@ -164,12 +165,12 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param buffer The {@link Buffer} to check
-     * @return The {@link Buffer} if this is an {@link SftpConstants#SSH_FXP_EXTENDED_REPLY},
-     * or {@code null} if this is a {@link SftpConstants#SSH_FXP_STATUS} carrying
-     * an {@link SftpConstants#SSH_FX_OK} result
-     * @throws IOException If a non-{@link SftpConstants#SSH_FX_OK} result or
-     * not a {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
+     * @param  buffer      The {@link Buffer} to check
+     * @return             The {@link Buffer} if this is an {@link SftpConstants#SSH_FXP_EXTENDED_REPLY}, or
+     *                     {@code null} if this is a {@link SftpConstants#SSH_FXP_STATUS} carrying an
+     *                     {@link SftpConstants#SSH_FX_OK} result
+     * @throws IOException If a non-{@link SftpConstants#SSH_FX_OK} result or not a
+     *                     {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
      */
     protected Buffer checkExtendedReplyBuffer(Buffer buffer) throws IOException {
         int length = buffer.getInt();
@@ -183,7 +184,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             String lang = buffer.getString();
             if (log.isDebugEnabled()) {
                 log.debug("checkExtendedReplyBuffer({})[id={}] - status: {} [{}] {}",
-                          getName(), id, substatus, lang, msg);
+                        getName(), id, substatus, lang, msg);
             }
 
             if (substatus != SftpConstants.SSH_FX_OK) {
@@ -200,12 +201,13 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     protected void validateIncomingResponse(
             int cmd, int id, int type, int length, Buffer buffer)
-                throws IOException {
+            throws IOException {
         int remaining = buffer.available();
         if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
-            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
-                + " in response to " + SftpConstants.getCommandMessageName(cmd)
-                + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
+            throw new SshException(
+                    "Bad length (" + length + ") for remaining data (" + remaining + ")"
+                                   + " in response to " + SftpConstants.getCommandMessageName(cmd)
+                                   + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
         }
     }
 

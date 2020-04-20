@@ -26,9 +26,8 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Task that iterates over all currently open {@link Session}s and checks each of them for timeouts. If
- * the {@link AbstractSession} has timed out (either authentication or idle timeout), the session
- * will be disconnected.
+ * Task that iterates over all currently open {@link Session}s and checks each of them for timeouts. If the
+ * {@link AbstractSession} has timed out (either authentication or idle timeout), the session will be disconnected.
  *
  * @see SessionHelper#checkForTimeouts()
  */
@@ -60,7 +59,7 @@ public class SessionTimeoutListener
     public void sessionException(Session session, Throwable t) {
         if (log.isDebugEnabled()) {
             log.debug("sessionException({}) {}: {}",
-                session, t.getClass().getSimpleName(), t.getMessage());
+                    session, t.getClass().getSimpleName(), t.getMessage());
         }
         if (log.isTraceEnabled()) {
             log.trace("sessionException(" + session + ") details", t);
@@ -90,7 +89,8 @@ public class SessionTimeoutListener
                 session.checkForTimeouts();
             } catch (Exception e) {
                 log.warn(e.getClass().getSimpleName() + " while checking"
-                    + " session=" + session + " timeouts: " + e.getMessage(), e);
+                         + " session=" + session + " timeouts: " + e.getMessage(),
+                        e);
                 if (debugEnabled) {
                     log.warn("Session " + session + " timeouts check exception details", e);
                 }

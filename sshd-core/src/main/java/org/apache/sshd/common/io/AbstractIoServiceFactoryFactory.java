@@ -33,8 +33,8 @@ public abstract class AbstractIoServiceFactoryFactory
     private Factory<CloseableExecutorService> executorServiceFactory;
 
     /**
-     * @param factory      The {@link CloseableExecutorService} factory to use for spawning threads.
-     *                     If {@code null} then an internal service will be allocated.
+     * @param factory The {@link CloseableExecutorService} factory to use for spawning threads. If {@code null} then an
+     *                internal service will be allocated.
      */
     protected AbstractIoServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         executorServiceFactory = factory;

@@ -58,12 +58,10 @@ public class PGPKeyPairResourceParser
         PGPPublicKeyExtractor,
         PGPPrivateKeyExtractor {
     public static final String BEGIN_MARKER = "BEGIN PGP PRIVATE KEY BLOCK";
-    public static final List<String> BEGINNERS =
-        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END PGP PRIVATE KEY BLOCK";
-    public static final List<String> ENDERS =
-        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     public static final PGPKeyPairResourceParser INSTANCE = new PGPKeyPairResourceParser();
 
@@ -77,13 +75,13 @@ public class PGPKeyPairResourceParser
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             List<String> lines, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         // We need to re-construct the original data - including start/end markers
         String eol = System.lineSeparator();
         int numLines = GenericUtils.size(lines);
         StringBuilder sb = new StringBuilder(
                 beginMarker.length() + endMarker.length() + 4 + numLines * 80)
-            .append(beginMarker);
+                        .append(beginMarker);
         if (numLines > 0) {
             for (String l : lines) {
                 sb.append(eol).append(l);
@@ -96,7 +94,7 @@ public class PGPKeyPairResourceParser
         try {
             return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataBytes, headers);
         } finally {
-            Arrays.fill(dataBytes, (byte) 0);   // clean up sensitive data a.s.a.p.
+            Arrays.fill(dataBytes, (byte) 0); // clean up sensitive data a.s.a.p.
         }
     }
 
@@ -106,11 +104,11 @@ public class PGPKeyPairResourceParser
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         for (int retryCount = 0;; retryCount++) {
             String password = (passwordProvider == null)
-                ? null
-                : passwordProvider.getPassword(session, resourceKey, retryCount);
+                    ? null
+                    : passwordProvider.getPassword(session, resourceKey, retryCount);
             Collection<KeyPair> keys;
             try {
                 if (retryCount > 0) {
@@ -122,8 +120,8 @@ public class PGPKeyPairResourceParser
                 key = null; // get rid of sensitive data a.s.a.p.
             } catch (IOException | GeneralSecurityException | PGPException | RuntimeException e) {
                 ResourceDecodeResult result = (passwordProvider != null)
-                    ? passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, e)
-                    : ResourceDecodeResult.TERMINATE;
+                        ? passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, e)
+                        : ResourceDecodeResult.TERMINATE;
                 password = null; // get rid of sensitive data a.s.a.p.
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
@@ -133,8 +131,8 @@ public class PGPKeyPairResourceParser
                     case TERMINATE:
                         if (e instanceof PGPException) {
                             throw new StreamCorruptedException(
-                                "Failed (" + e.getClass().getSimpleName() + ")"
-                                + " to decode " + resourceKey + ": " + e.getMessage());
+                                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                                               + " to decode " + resourceKey + ": " + e.getMessage());
                         } else if (e instanceof IOException) {
                             throw (IOException) e;
                         } else if (e instanceof GeneralSecurityException) {
@@ -180,7 +178,7 @@ public class PGPKeyPairResourceParser
                 }
             } catch (IOException | GeneralSecurityException | RuntimeException | Error e) {
                 log.error("extractKeyPairs({}) failed ({}) to extract public key of {}: {}",
-                    resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
+                        resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
                 throw e;
             }
 
@@ -195,21 +193,21 @@ public class PGPKeyPairResourceParser
                 }
             } catch (IOException | GeneralSecurityException | RuntimeException | Error e) {
                 log.error("extractKeyPairs({}) failed ({}) to extract private key of {}: {}",
-                    resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
+                        resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
                 throw e;
             } catch (PGPException e) {
                 log.error("extractKeyPairs({}) failed ({}) to parse private key of {}: {}",
-                    resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
+                        resourceKey, e.getClass().getSimpleName(), sk, e.getMessage());
                 throw new StreamCorruptedException("Failed to parse " + resourceKey + " sub-key=" + sk + ": " + e.getMessage());
             }
 
             KeyPair kp = new KeyPair(pubKey, prvKey);
             KeyPair prev = kpList.isEmpty()
-                ? null
-                : kpList.stream()
-                    .filter(e -> KeyUtils.compareKeyPairs(e, kp))
-                    .findFirst()
-                    .orElse(null);
+                    ? null
+                    : kpList.stream()
+                            .filter(e -> KeyUtils.compareKeyPairs(e, kp))
+                            .findFirst()
+                            .orElse(null);
             if (prev != null) {
                 if (debugEnabled) {
                     log.debug("extractKeyPairs({}) skip duplicate sub-key={}", resourceKey, sk);
@@ -225,7 +223,7 @@ public class PGPKeyPairResourceParser
 
     @Override
     public <K extends PublicKey> K generatePublicKey(String algorithm, Class<K> keyType, KeySpec keySpec)
-                throws GeneralSecurityException {
+            throws GeneralSecurityException {
         KeyFactory factory = getKeyFactory(algorithm);
         PublicKey pubKey = factory.generatePublic(keySpec);
         return keyType.cast(pubKey);

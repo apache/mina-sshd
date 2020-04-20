@@ -50,7 +50,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class TtyFilterOutputStreamTest extends JUnitTestSupport {
@@ -74,17 +74,17 @@ public class TtyFilterOutputStreamTest extends JUnitTestSupport {
         AtomicInteger crCount = new AtomicInteger(0);
         AtomicInteger lfCount = new AtomicInteger(0);
         try (OutputStream output = new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-                    if (b == '\r') {
-                        crCount.incrementAndGet();
-                    } else if (b == '\n') {
-                        lfCount.incrementAndGet();
-                    }
+            @Override
+            public void write(int b) throws IOException {
+                if (b == '\r') {
+                    crCount.incrementAndGet();
+                } else if (b == '\n') {
+                    lfCount.incrementAndGet();
                 }
-            };
+            }
+        };
              TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
-                    output, null, PtyMode.ECHO.equals(mode) ? Collections.emptySet() : EnumSet.of(mode));
+                     output, null, PtyMode.ECHO.equals(mode) ? Collections.emptySet() : EnumSet.of(mode));
              Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
 
             for (String l : lines) {
@@ -96,8 +96,8 @@ public class TtyFilterOutputStreamTest extends JUnitTestSupport {
     }
 
     private static void assertCRLFCounts(PtyMode mode, int numLines, int crCount, int lfCount) {
-        switch(mode) {
-            case ECHO:  // no modifications
+        switch (mode) {
+            case ECHO: // no modifications
                 assertEquals("Mismatched CR coumt", numLines, crCount);
                 assertEquals("Mismatched LF coumt", numLines, lfCount);
                 break;

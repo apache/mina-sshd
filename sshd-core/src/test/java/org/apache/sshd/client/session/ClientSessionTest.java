@@ -103,8 +103,8 @@ public class ClientSessionTest extends BaseTestSupport {
         });
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT)
-                    .getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
@@ -135,8 +135,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
         String actualErrorMessage = null;
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT)
-                    .getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
@@ -185,8 +185,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
         String actualErrorMessage = null;
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT)
-                    .getSession()) {
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
@@ -209,10 +209,10 @@ public class ClientSessionTest extends BaseTestSupport {
         assertEquals("Mismatched captured error code", Integer.toString(expectedErrorCode), actualErrorMessage);
     }
 
-    @Test   // see SSHD-859
+    @Test // see SSHD-859
     public void testConnectionContextPropagation() throws Exception {
         AttributeRepository expected = AttributeRepository.ofKeyValuePair(
-            new AttributeKey<String>(), getCurrentTestName());
+                new AttributeKey<String>(), getCurrentTestName());
         AtomicInteger creationCount = new AtomicInteger(0);
         SessionListener listener = new SessionListener() {
             @Override
@@ -227,8 +227,8 @@ public class ClientSessionTest extends BaseTestSupport {
             client.addSessionListener(listener);
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port, expected)
-                        .verify(CONNECT_TIMEOUT)
-                        .getSession()) {
+                    .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Session listener invocation count mismatch", 1, creationCount.getAndSet(0));

@@ -50,8 +50,8 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpClient extends AbstractLoggingBean implements ScpClient {
-    public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS =
-        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
+    public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS
+            = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
 
     protected AbstractScpClient() {
         super();
@@ -133,7 +133,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             } catch (UnsupportedOperationException e) {
                 if (log.isDebugEnabled()) {
                     log.debug("download({}) {} => {} - failed ({}) to close file system={}: {}",
-                          session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
+                            session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
                 }
             }
         }
@@ -143,9 +143,9 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
-        Collection<String> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
-        runUpload(remote, options, paths, (helper, local1, sendOptions) ->
-            helper.send(local1,
+        Collection<String> paths
+                = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        runUpload(remote, options, paths, (helper, local1, sendOptions) -> helper.send(local1,
                 sendOptions.contains(Option.Recursive),
                 sendOptions.contains(Option.PreserveAttributes),
                 ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
@@ -153,30 +153,29 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
-        Collection<Path> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
-        runUpload(remote, options, paths, (helper, local1, sendOptions) ->
-            helper.sendPaths(local1,
+        Collection<Path> paths
+                = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        runUpload(remote, options, paths, (helper, local1, sendOptions) -> helper.sendPaths(local1,
                 sendOptions.contains(Option.Recursive),
                 sendOptions.contains(Option.PreserveAttributes),
                 ScpHelper.DEFAULT_SEND_BUFFER_SIZE));
     }
 
     protected abstract <T> void runUpload(
-        String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
+            String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
             throws IOException;
 
     /**
-     * Invoked by the various <code>upload/download</code> methods after having successfully
-     * completed the remote copy command and (optionally) having received an exit status
-     * from the remote server. If no exit status received within {@link FactoryManager#CHANNEL_CLOSE_TIMEOUT}
-     * the no further action is taken. Otherwise, the exit status is examined to ensure it
-     * is either OK or WARNING - if not, an {@link ScpException} is thrown
+     * Invoked by the various <code>upload/download</code> methods after having successfully completed the remote copy
+     * command and (optionally) having received an exit status from the remote server. If no exit status received within
+     * {@link FactoryManager#CHANNEL_CLOSE_TIMEOUT} the no further action is taken. Otherwise, the exit status is
+     * examined to ensure it is either OK or WARNING - if not, an {@link ScpException} is thrown
      *
-     * @param cmd The attempted remote copy command
-     * @param channel The {@link ClientChannel} through which the command was sent - <B>Note:</B>
-     * then channel may be in the process of being closed
+     * @param  cmd         The attempted remote copy command
+     * @param  channel     The {@link ClientChannel} through which the command was sent - <B>Note:</B> then channel may
+     *                     be in the process of being closed
      * @throws IOException If failed the command
-     * @see #handleCommandExitStatus(String, Integer)
+     * @see                #handleCommandExitStatus(String, Integer)
      */
     protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
         // give a chance for the exit status to be received
@@ -191,30 +190,28 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         long waitEnd = System.nanoTime();
         if (log.isDebugEnabled()) {
             log.debug("handleCommandExitStatus({}) cmd='{}', waited={} nanos, events={}",
-                      getClientSession(), cmd, waitEnd - waitStart, events);
+                    getClientSession(), cmd, waitEnd - waitStart, events);
         }
 
         /*
-         * There are sometimes race conditions in the order in which channels are closed and exit-status
-         * sent by the remote peer (if at all), thus there is no guarantee that we will have an exit
-         * status here
+         * There are sometimes race conditions in the order in which channels are closed and exit-status sent by the
+         * remote peer (if at all), thus there is no guarantee that we will have an exit status here
          */
         handleCommandExitStatus(cmd, channel.getExitStatus());
     }
 
     /**
-     * Invoked by the various <code>upload/download</code> methods after having successfully
-     * completed the remote copy command and (optionally) having received an exit status
-     * from the remote server
+     * Invoked by the various <code>upload/download</code> methods after having successfully completed the remote copy
+     * command and (optionally) having received an exit status from the remote server
      *
-     * @param cmd The attempted remote copy command
-     * @param exitStatus The exit status - if {@code null} then no status was reported
+     * @param  cmd         The attempted remote copy command
+     * @param  exitStatus  The exit status - if {@code null} then no status was reported
      * @throws IOException If failed the command
      */
     protected void handleCommandExitStatus(String cmd, Integer exitStatus) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("handleCommandExitStatus({}) cmd='{}', exit-status={}",
-                getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
+                    getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
         }
 
         if (exitStatus == null) {
@@ -223,13 +220,15 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
         int statusCode = exitStatus;
         switch (statusCode) {
-            case ScpHelper.OK:  // do nothing
+            case ScpHelper.OK: // do nothing
                 break;
             case ScpHelper.WARNING:
-                log.warn("handleCommandExitStatus({}) cmd='{}' may have terminated with some problems", getClientSession(), cmd);
+                log.warn("handleCommandExitStatus({}) cmd='{}' may have terminated with some problems", getClientSession(),
+                        cmd);
                 break;
             default:
-                throw new ScpException("Failed to run command='" + cmd + "': " + ScpHelper.getExitStatusName(exitStatus), exitStatus);
+                throw new ScpException(
+                        "Failed to run command='" + cmd + "': " + ScpHelper.getExitStatusName(exitStatus), exitStatus);
         }
     }
 
@@ -254,8 +253,8 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             long nanosWait = endTime - startTime;
             if (log.isTraceEnabled()) {
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                        + " completed after " + nanosWait
-                        + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout));
+                          + " completed after " + nanosWait
+                          + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout));
             }
 
             return channel;
@@ -264,10 +263,10 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             long nanosWait = endTime - startTime;
             if (log.isTraceEnabled()) {
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                        + " failed (" + e.getClass().getSimpleName() + ")"
-                        + " to complete after " + nanosWait
-                        + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout)
-                        + ": " + e.getMessage());
+                          + " failed (" + e.getClass().getSimpleName() + ")"
+                          + " to complete after " + nanosWait
+                          + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout)
+                          + ": " + e.getMessage());
             }
 
             channel.close(false);

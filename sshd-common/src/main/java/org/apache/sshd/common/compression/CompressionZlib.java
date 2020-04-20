@@ -65,8 +65,8 @@ public class CompressionZlib extends BaseCompression {
         compresser.setInput(buffer.array(), buffer.rpos(), buffer.available());
         buffer.wpos(buffer.rpos());
         for (int len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH);
-                len > 0;
-                len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) {
+             len > 0;
+             len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) {
             buffer.putRawBytes(tmpbuf, 0, len);
         }
     }

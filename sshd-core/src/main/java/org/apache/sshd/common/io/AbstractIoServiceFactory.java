@@ -32,8 +32,8 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoServiceFactory
-                extends AbstractCloseable
-                implements IoServiceFactory, FactoryManagerHolder, ExecutorServiceCarrier {
+        extends AbstractCloseable
+        implements IoServiceFactory, FactoryManagerHolder, ExecutorServiceCarrier {
 
     private IoServiceEventListener eventListener;
     private final FactoryManager manager;

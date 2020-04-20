@@ -39,6 +39,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Holds KEX negotiation stage configuration
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensionHandlerManager {
@@ -79,8 +80,8 @@ public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensi
     default void setCipherFactoriesNames(Collection<String> names) {
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<NamedFactory<Cipher>> factories =
-                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported cipher factories: %s", names);
+        List<NamedFactory<Cipher>> factories = (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(),
+                "No supported cipher factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
         setCipherFactories(factories);
@@ -114,8 +115,8 @@ public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensi
     default void setCompressionFactoriesNames(Collection<String> names) {
         BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<NamedFactory<Compression>> factories =
-                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported compression factories: %s", names);
+        List<NamedFactory<Compression>> factories = (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(),
+                "No supported compression factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported compression factories found: %s", unsupported);
         setCompressionFactories(factories);
@@ -149,8 +150,8 @@ public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensi
     default void setMacFactoriesNames(Collection<String> names) {
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(names);
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        List<NamedFactory<Mac>> factories =
-                (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No supported MAC factories: %s", names);
+        List<NamedFactory<Mac>> factories = (List) ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(),
+                "No supported MAC factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(GenericUtils.isEmpty(unsupported), "Unsupported MAC factories found: %s", unsupported);
         setMacFactories(factories);

@@ -64,14 +64,14 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     @Override
     public OutputStream resolveTargetStream(
             Session session, String name, long length, Set<PosixFilePermission> perms, OpenOption... options)
-                throws IOException {
+            throws IOException {
         if (file != null) {
             throw new StreamCorruptedException("resolveTargetStream(" + name + ")[" + perms + "] already resolved: " + file);
         }
 
         LinkOption[] linkOptions = IoUtils.getLinkOptions(true);
         if (status && Files.isDirectory(path, linkOptions)) {
-            String localName = name.replace('/', File.separatorChar);   // in case we are running on Windows
+            String localName = name.replace('/', File.separatorChar); // in case we are running on Windows
             file = path.resolve(localName);
         } else if (status && Files.isRegularFile(path, linkOptions)) {
             file = path;
@@ -80,7 +80,8 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
 
             Boolean parentStatus = IoUtils.checkFileExists(parent, linkOptions);
             if (parentStatus == null) {
-                throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
+                throw new AccessDeniedException(
+                        "Receive file parent (" + parent + ") existence status cannot be determined for " + path);
             }
 
             if (parentStatus && Files.isDirectory(parent, linkOptions)) {
@@ -117,7 +118,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     @Override
     public void closeTargetStream(
             Session session, String name, long length, Set<PosixFilePermission> perms, OutputStream stream)
-                throws IOException {
+            throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("closeTargetStream(" + name + "): " + file);
         }
@@ -137,9 +138,10 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     @Override
     public void postProcessReceivedData(
             String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
-                throws IOException {
+            throws IOException {
         if (file == null) {
-            throw new StreamCorruptedException("postProcessReceivedData(" + name + ")[" + perms + "] No currently resolved data");
+            throw new StreamCorruptedException(
+                    "postProcessReceivedData(" + name + ")[" + perms + "] No currently resolved data");
         }
 
         if (preserve) {
@@ -149,7 +151,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
 
     protected void updateFileProperties(
             String name, Path path, Set<PosixFilePermission> perms, ScpTimestamp time)
-                throws IOException {
+            throws IOException {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("updateFileProperties(" + name + ")[" + path + "] permissions: " + perms);
@@ -161,7 +163,8 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
             FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
             if (traceEnabled) {
-                log.trace("updateFileProperties(" + name + ")[" + path + "] last-modified=" + lastModified + ", last-access=" + lastAccess);
+                log.trace("updateFileProperties(" + name + ")[" + path + "] last-modified=" + lastModified + ", last-access="
+                          + lastAccess);
             }
 
             view.setTimes(lastModified, lastAccess, null);

@@ -45,18 +45,17 @@ public interface SessionHeartbeatController extends PropertyResolver {
 
         public static HeartbeatType fromName(String name) {
             return GenericUtils.isEmpty(name)
-                 ? null
-                 : VALUES.stream()
-                     .filter(v -> name.equalsIgnoreCase(v.name()))
-                     .findAny()
-                     .orElse(null);
+                    ? null
+                    : VALUES.stream()
+                            .filter(v -> name.equalsIgnoreCase(v.name()))
+                            .findAny()
+                            .orElse(null);
         }
     }
 
     /**
-     * Property used to register the {@link HeartbeatType} - if non-existent
-     * or {@code NONE} then disabled. Same if some unknown string value is
-     * set as the property value.
+     * Property used to register the {@link HeartbeatType} - if non-existent or {@code NONE} then disabled. Same if some
+     * unknown string value is set as the property value.
      */
     String SESSION_HEARTBEAT_TYPE = "session-connection-heartbeat-type";
 
@@ -76,8 +75,7 @@ public interface SessionHeartbeatController extends PropertyResolver {
     }
 
     /**
-     * Disables the session heartbeat feature - <B>Note:</B> if heartbeat already
-     * in progress then it may be ignored.
+     * Disables the session heartbeat feature - <B>Note:</B> if heartbeat already in progress then it may be ignored.
      */
     default void disableSessionHeartbeat() {
         setSessionHeartbeat(HeartbeatType.NONE, TimeUnit.MILLISECONDS, 0L);
@@ -93,7 +91,7 @@ public interface SessionHeartbeatController extends PropertyResolver {
     /**
      * Set the session heartbeat
      *
-     * @param type The type of {@link HeartbeatType heartbeat} to use
+     * @param type     The type of {@link HeartbeatType heartbeat} to use
      * @param interval The (never {@code null}) heartbeat interval - its milliseconds value is used
      */
     default void setSessionHeartbeat(HeartbeatType type, Duration interval) {

@@ -35,8 +35,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Provider for key pairs. This provider is used on the server side to provide
- * the host key, or on the client side to provide the user key.
+ * Provider for key pairs. This provider is used on the server side to provide the host key, or on the client side to
+ * provide the user key.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -85,39 +85,37 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     /**
      * A {@link KeyPairProvider} that has no keys
      */
-    KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
-        new KeyPairProvider() {
-            @Override
-            public KeyPair loadKey(SessionContext session, String type) {
-                return null;
-            }
+    KeyPairProvider EMPTY_KEYPAIR_PROVIDER = new KeyPairProvider() {
+        @Override
+        public KeyPair loadKey(SessionContext session, String type) {
+            return null;
+        }
 
-            @Override
-            public Iterable<String> getKeyTypes(SessionContext session) {
-                return Collections.emptySet();
-            }
+        @Override
+        public Iterable<String> getKeyTypes(SessionContext session) {
+            return Collections.emptySet();
+        }
 
-            @Override
-            public Iterable<KeyPair> loadKeys(SessionContext session) {
-                return Collections.emptyList();
-            }
+        @Override
+        public Iterable<KeyPair> loadKeys(SessionContext session) {
+            return Collections.emptyList();
+        }
 
-            @Override
-            public String toString() {
-                return "EMPTY_KEYPAIR_PROVIDER";
-            }
-        };
+        @Override
+        public String toString() {
+            return "EMPTY_KEYPAIR_PROVIDER";
+        }
+    };
 
     /**
-     * Load a key of the specified type which can be &quot;ssh-rsa&quot;, &quot;ssh-dss&quot;,
-     * or &quot;ecdsa-sha2-nistp{256,384,521}&quot;. If there is no key of this type, return
-     * {@code null}
+     * Load a key of the specified type which can be &quot;ssh-rsa&quot;, &quot;ssh-dss&quot;, or
+     * &quot;ecdsa-sha2-nistp{256,384,521}&quot;. If there is no key of this type, return {@code null}
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @param type the type of key to load
-     * @return a valid key pair or {@code null} if this type of key is not available
-     * @throws IOException If failed to read/parse the keys data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @param  type                     the type of key to load
+     * @return                          a valid key pair or {@code null} if this type of key is not available
+     * @throws IOException              If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
      */
     default KeyPair loadKey(SessionContext session, String type)
@@ -130,10 +128,10 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @return The available {@link Iterable} key types - never {@code null}
-     * @throws IOException If failed to read/parse the keys data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @return                          The available {@link Iterable} key types - never {@code null}
+     * @throws IOException              If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
      */
     default Iterable<String> getKeyTypes(SessionContext session)
@@ -147,10 +145,9 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     /**
      * Wrap the provided {@link KeyPair}s into a {@link KeyPairProvider}
      *
-     * @param pairs The available pairs - ignored if {@code null}/empty (i.e.,
-     * returns {@link #EMPTY_KEYPAIR_PROVIDER})
-     * @return The provider wrapper
-     * @see #wrap(Iterable)
+     * @param  pairs The available pairs - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_KEYPAIR_PROVIDER})
+     * @return       The provider wrapper
+     * @see          #wrap(Iterable)
      */
     static KeyPairProvider wrap(KeyPair... pairs) {
         return GenericUtils.isEmpty(pairs) ? EMPTY_KEYPAIR_PROVIDER : wrap(Arrays.asList(pairs));
@@ -159,9 +156,9 @@ public interface KeyPairProvider extends KeyIdentityProvider {
     /**
      * Wrap the provided {@link KeyPair}s into a {@link KeyPairProvider}
      *
-     * @param pairs The available pairs {@link Iterable} - ignored if {@code null} (i.e.,
-     * returns {@link #EMPTY_KEYPAIR_PROVIDER})
-     * @return The provider wrapper
+     * @param  pairs The available pairs {@link Iterable} - ignored if {@code null} (i.e., returns
+     *               {@link #EMPTY_KEYPAIR_PROVIDER})
+     * @return       The provider wrapper
      */
     static KeyPairProvider wrap(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYPAIR_PROVIDER : new KeyPairProvider() {
@@ -189,11 +186,11 @@ public interface KeyPairProvider extends KeyIdentityProvider {
                 for (KeyPair kp : pairs) {
                     String t = KeyUtils.getKeyType(kp);
                     if (GenericUtils.isEmpty(t)) {
-                        continue;   // avoid unknown key types
+                        continue; // avoid unknown key types
                     }
 
                     if (!types.add(t)) {
-                        continue;   // debug breakpoint
+                        continue; // debug breakpoint
                     }
                 }
 

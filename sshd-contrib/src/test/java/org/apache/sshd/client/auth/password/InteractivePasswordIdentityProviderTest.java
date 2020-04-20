@@ -49,28 +49,30 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
 
     @Test
     public void testPasswordEnumerations() {
-        List<String> expected = Arrays.asList(getClass().getSimpleName(), getClass().getPackage().getName(), getCurrentTestName());
+        List<String> expected
+                = Arrays.asList(getClass().getSimpleName(), getClass().getPackage().getName(), getCurrentTestName());
         ClientSession session = Mockito.mock(ClientSession.class);
         AtomicInteger passwordIndex = new AtomicInteger(0);
         String prompt = getCurrentTestName();
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
         Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.TRUE);
-        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
-            .thenAnswer(new Answer<String>() {
-                @Override
-                public String answer(InvocationOnMock invocation) throws Throwable {
-                    Object[] args = invocation.getArguments();
-                    assertSame("Mismatched session instance at index=" + passwordIndex, session, args[0]);
-                    assertSame("Mismatched prompt instance at index=" + passwordIndex, prompt, args[1]);
+        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(),
+                ArgumentMatchers.anyString()))
+                .thenAnswer(new Answer<String>() {
+                    @Override
+                    public String answer(InvocationOnMock invocation) throws Throwable {
+                        Object[] args = invocation.getArguments();
+                        assertSame("Mismatched session instance at index=" + passwordIndex, session, args[0]);
+                        assertSame("Mismatched prompt instance at index=" + passwordIndex, prompt, args[1]);
 
-                    int index = passwordIndex.getAndIncrement();
-                    if (index < expected.size()) {
-                        return expected.get(index);
+                        int index = passwordIndex.getAndIncrement();
+                        if (index < expected.size()) {
+                            return expected.get(index);
+                        }
+                        assertEquals("Mismatched last call index", expected.size(), index);
+                        return null;
                     }
-                    assertEquals("Mismatched last call index", expected.size(), index);
-                    return null;
-                }
-            });
+                });
         Mockito.when(session.getUserInteraction()).thenReturn(userInteraction);
 
         PasswordIdentityProvider provider = InteractivePasswordIdentityProvider.providerOf(session, prompt);
@@ -91,9 +93,11 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
         ClientSession session = Mockito.mock(ClientSession.class);
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
         Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.FALSE);
-        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))
-            .thenThrow(new UnsupportedOperationException("Unexpected call"));
-        PasswordIdentityProvider provider = InteractivePasswordIdentityProvider.providerOf(session, userInteraction, getCurrentTestName());
+        Mockito.when(userInteraction.getUpdatedPassword(ArgumentMatchers.any(ClientSession.class), ArgumentMatchers.anyString(),
+                ArgumentMatchers.anyString()))
+                .thenThrow(new UnsupportedOperationException("Unexpected call"));
+        PasswordIdentityProvider provider
+                = InteractivePasswordIdentityProvider.providerOf(session, userInteraction, getCurrentTestName());
         Iterable<String> passwords = provider.loadPasswords();
         for (String p : passwords) {
             fail("Unexpected password: " + p);

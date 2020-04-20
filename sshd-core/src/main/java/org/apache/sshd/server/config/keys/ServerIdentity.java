@@ -44,7 +44,7 @@ import org.apache.sshd.server.SshServer;
  * Loads server identity key files - e.g., {@code /etc/ssh/ssh_host_rsa_key}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see org.apache.sshd.common.util.security.SecurityUtils#getKeyPairResourceParser()
+ * @see    org.apache.sshd.common.util.security.SecurityUtils#getKeyPairResourceParser()
  */
 public final class ServerIdentity {
 
@@ -57,8 +57,7 @@ public final class ServerIdentity {
     public static final String HOST_KEY_CONFIG_PROP = "HostKey";
     public static final String HOST_CERT_CONFIG_PROP = "HostCertificate";
 
-    public static final Function<String, String> ID_GENERATOR =
-            ServerIdentity::getIdentityFileName;
+    public static final Function<String, String> ID_GENERATOR = ServerIdentity::getIdentityFileName;
 
     private ServerIdentity() {
         throw new UnsupportedOperationException("No instance");
@@ -67,16 +66,15 @@ public final class ServerIdentity {
     /**
      * Sets the server's {@link KeyPairProvider} with the loaded identities - if any
      *
-     * @param <S>           The generic server type
-     * @param server        The {@link SshServer} to configure
-     * @param props         The {@link Properties} holding the server's configuration - ignored
-     *                      if {@code null}/empty
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @return The updated server
+     * @param  <S>                      The generic server type
+     * @param  server                   The {@link SshServer} to configure
+     * @param  props                    The {@link Properties} holding the server's configuration - ignored if
+     *                                  {@code null}/empty
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @return                          The updated server
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadKeyPairProvider(Properties, boolean, LinkOption...)
+     * @see                             #loadKeyPairProvider(Properties, boolean, LinkOption...)
      */
     public static <S extends SshServer> S setKeyPairProvider(S server, Properties props, boolean supportedOnly)
             throws IOException, GeneralSecurityException {
@@ -89,17 +87,16 @@ public final class ServerIdentity {
     }
 
     /**
-     * @param props         The {@link Properties} holding the server's configuration - ignored
-     *                      if {@code null}/empty
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @param options       The {@link LinkOption}s to use when checking files existence
-     * @return A {@link KeyPair} for the identities - {@code null} if no identities
-     * available (e.g., after filtering unsupported ones)
+     * @param  props                    The {@link Properties} holding the server's configuration - ignored if
+     *                                  {@code null}/empty
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @param  options                  The {@link LinkOption}s to use when checking files existence
+     * @return                          A {@link KeyPair} for the identities - {@code null} if no identities available
+     *                                  (e.g., after filtering unsupported ones)
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadIdentities(Properties, LinkOption...)
-     * @see IdentityUtils#createKeyPairProvider(Map, boolean)
+     * @see                             #loadIdentities(Properties, LinkOption...)
+     * @see                             IdentityUtils#createKeyPairProvider(Map, boolean)
      */
     public static KeyPairProvider loadKeyPairProvider(Properties props, boolean supportedOnly, LinkOption... options)
             throws IOException, GeneralSecurityException {
@@ -108,56 +105,55 @@ public final class ServerIdentity {
     }
 
     /**
-     * @param props   The {@link Properties} holding the server's configuration - ignored
-     *                if {@code null}/empty
-     * @param options The {@link LinkOption}s to use when checking files existence
-     * @return A {@link Map} of the identities where key=identity type (case
-     * <U>insensitive</U>), value=the {@link KeyPair} of the identity
+     * @param  props                    The {@link Properties} holding the server's configuration - ignored if
+     *                                  {@code null}/empty
+     * @param  options                  The {@link LinkOption}s to use when checking files existence
+     * @return                          A {@link Map} of the identities where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #findIdentities(Properties, LinkOption...)
+     * @see                             #findIdentities(Properties, LinkOption...)
      */
     public static Map<String, KeyPair> loadIdentities(Properties props, LinkOption... options)
             throws IOException, GeneralSecurityException {
         Map<String, Path> ids = findIdentities(props, options);
         return IdentityUtils.loadIdentities(
-            null /* server keys are not loaded in a session context */, ids,
-            null /* server key files are never encrypted */, IoUtils.EMPTY_OPEN_OPTIONS);
+                null /* server keys are not loaded in a session context */, ids,
+                null /* server key files are never encrypted */, IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
     /**
-     * @param props   The {@link Properties} holding the server's configuration - ignored
-     *                if {@code null}/empty
-     * @param options The {@link LinkOption}s to use when checking files existence
-     * @return A {@link Map} of the found identities where key=the identity type
-     * (case <U>insensitive</U>) and value=the {@link Path} of the file holding
-     * the specific type key
+     * @param  props       The {@link Properties} holding the server's configuration - ignored if {@code null}/empty
+     * @param  options     The {@link LinkOption}s to use when checking files existence
+     * @return             A {@link Map} of the found identities where key=the identity type (case <U>insensitive</U>)
+     *                     and value=the {@link Path} of the file holding the specific type key
      * @throws IOException If failed to access the file system
-     * @see #getIdentityType(String)
-     * @see #HOST_KEY_CONFIG_PROP
-     * @see org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path, java.nio.file.OpenOption...)
+     * @see                #getIdentityType(String)
+     * @see                #HOST_KEY_CONFIG_PROP
+     * @see                org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path,
+     *                     java.nio.file.OpenOption...)
      */
     public static Map<String, Path> findIdentities(Properties props, LinkOption... options) throws IOException {
         return getLocations(HOST_KEY_CONFIG_PROP, props, options);
     }
 
     /**
-     * @param props   The {@link Properties} holding the server's configuration - ignored
-     *                if {@code null}/empty
-     * @param options The {@link LinkOption}s to use when checking files existence
-     * @return A {@link Map} of the found certificates where key=the identity type
-     * (case <U>insensitive</U>) and value=the {@link Path} of the file holding
-     * the specific type key
+     * @param  props       The {@link Properties} holding the server's configuration - ignored if {@code null}/empty
+     * @param  options     The {@link LinkOption}s to use when checking files existence
+     * @return             A {@link Map} of the found certificates where key=the identity type (case <U>insensitive</U>)
+     *                     and value=the {@link Path} of the file holding the specific type key
      * @throws IOException If failed to access the file system
-     * @see #getIdentityType(String)
-     * @see #HOST_CERT_CONFIG_PROP
-     * @see org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path, java.nio.file.OpenOption...)
+     * @see                #getIdentityType(String)
+     * @see                #HOST_CERT_CONFIG_PROP
+     * @see                org.apache.sshd.common.config.ConfigFileReaderSupport#readConfigFile(Path,
+     *                     java.nio.file.OpenOption...)
      */
     public static Map<String, Path> findCertificates(Properties props, LinkOption... options) throws IOException {
         return getLocations(HOST_CERT_CONFIG_PROP, props, options);
     }
 
-    private static Map<String, Path> getLocations(String configPropKey, Properties props, LinkOption... options) throws IOException {
+    private static Map<String, Path> getLocations(String configPropKey, Properties props, LinkOption... options)
+            throws IOException {
         if (GenericUtils.isEmpty(props)) {
             return Collections.emptyMap();
         }
@@ -178,7 +174,7 @@ public final class ServerIdentity {
 
             String type = getIdentityType(path.getFileName().toString());
             if (GenericUtils.isEmpty(type)) {
-                type = p;   // just in case the file name does not adhere to the standard naming convention
+                type = p; // just in case the file name does not adhere to the standard naming convention
             }
             Path prev = ids.put(type, path);
             ValidateUtils.checkTrue(prev == null, "Multiple mappings for type=%s", type);
@@ -188,9 +184,9 @@ public final class ServerIdentity {
     }
 
     /**
-     * @param name The file name - ignored if {@code null}/empty
-     * @return The identity type - {@code null} if cannot determine it - e.g.,
-     * does not start/end with the {@link #ID_FILE_PREFIX}/{@link #ID_FILE_SUFFIX}
+     * @param  name The file name - ignored if {@code null}/empty
+     * @return      The identity type - {@code null} if cannot determine it - e.g., does not start/end with the
+     *              {@link #ID_FILE_PREFIX}/{@link #ID_FILE_SUFFIX}
      */
     public static String getIdentityType(String name) {
         if (GenericUtils.isEmpty(name)
@@ -208,13 +204,11 @@ public final class ServerIdentity {
     }
 
     /**
-     * @param type The identity type - e.g., {@code rsa} - ignored
-     *             if {@code null}/empty
-     * @return The matching file name for the identity - {@code null}
-     * if no name
-     * @see #ID_FILE_PREFIX
-     * @see #ID_FILE_SUFFIX
-     * @see IdentityUtils#getIdentityFileName(String, String, String)
+     * @param  type The identity type - e.g., {@code rsa} - ignored if {@code null}/empty
+     * @return      The matching file name for the identity - {@code null} if no name
+     * @see         #ID_FILE_PREFIX
+     * @see         #ID_FILE_SUFFIX
+     * @see         IdentityUtils#getIdentityFileName(String, String, String)
      */
     public static String getIdentityFileName(String type) {
         return IdentityUtils.getIdentityFileName(ID_FILE_PREFIX, type, ID_FILE_SUFFIX);

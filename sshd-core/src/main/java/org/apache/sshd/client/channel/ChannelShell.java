@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class ChannelShell extends PtyCapableChannelSession {
     /**
      * Configure whether reply for the &quot;shell&quot; request is required
+     * 
      * @see #DEFAULT_REQUEST_SHELL_REPLY
      */
     public static final String REQUEST_SHELL_REPLY = "channel-shell-want-reply";

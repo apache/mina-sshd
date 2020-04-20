@@ -33,11 +33,9 @@ public final class UnixDateFormat {
     /**
      * A {@link List} of <U>short</U> months names where Jan=0, Feb=1, etc.
      */
-    public static final List<String> MONTHS =
-        Collections.unmodifiableList(
+    public static final List<String> MONTHS = Collections.unmodifiableList(
             Arrays.asList(
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-            ));
+                    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"));
 
     /**
      * Six months duration in msec.
@@ -51,9 +49,9 @@ public final class UnixDateFormat {
     /**
      * Get unix style date string.
      *
-     * @param time The {@link FileTime} to format - ignored if {@code null}
-     * @return The formatted date string
-     * @see #getUnixDate(long)
+     * @param  time The {@link FileTime} to format - ignored if {@code null}
+     * @return      The formatted date string
+     * @see         #getUnixDate(long)
      */
     public static String getUnixDate(FileTime time) {
         return getUnixDate((time != null) ? time.toMillis() : -1L);

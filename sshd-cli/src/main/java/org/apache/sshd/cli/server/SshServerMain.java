@@ -55,7 +55,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  */
 public class SshServerMain extends SshServerCliSupport {
     public SshServerMain() {
-        super();    // in case someone wants to extend it
+        super(); // in case someone wants to extend it
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -161,16 +161,17 @@ public class SshServerMain extends SshServerCliSupport {
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         Level level = resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
-            ? null
-            : setupIoServiceFactory(
-                SshServer.setUpDefaultServer(), resolver,
-                level, System.out, System.err, args);
+                ? null
+                : setupIoServiceFactory(
+                        SshServer.setUpDefaultServer(), resolver,
+                        level, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
 
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
+            System.err.println(
+                    "usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
             System.exit(-1);
         }
 
@@ -178,12 +179,11 @@ public class SshServerMain extends SshServerCliSupport {
         props.putAll(options);
 
         SshServerConfigFileReader.setupServerHeartbeat(sshd, resolver);
-        KeyPairProvider hostKeyProvider =
-            resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
+        KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         if (GenericUtils.isNotEmpty(certFiles)) {
             HostKeyCertificateProvider certProvider = new FileHostKeyCertificateProvider(
-                certFiles.stream().map(Paths::get).collect(Collectors.toList()));
+                    certFiles.stream().map(Paths::get).collect(Collectors.toList()));
             sshd.setHostKeyCertificateProvider(certProvider);
         }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
@@ -206,11 +206,10 @@ public class SshServerMain extends SshServerCliSupport {
         setupUserAuthFactories(sshd, resolver);
         setupServerForwarding(sshd, level, System.out, System.err, resolver);
         sshd.setCommandFactory(new ScpCommandFactory.Builder()
-            .withDelegate(ProcessShellCommandFactory.INSTANCE)
-            .build());
+                .withDelegate(ProcessShellCommandFactory.INSTANCE)
+                .build());
 
-        List<SubsystemFactory> subsystems =
-            resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
+        List<SubsystemFactory> subsystems = resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
             sshd.setSubsystemFactories(subsystems);

@@ -26,9 +26,8 @@ public interface KeyExchangeFuture extends SshFuture<KeyExchangeFuture>, Verifia
     /**
      * Returns the cause of the exchange failure.
      *
-     * @return {@code null} if the exchange operation is not finished yet,
-     * or if the connection attempt is successful (use {@link #isDone()} to
-     * distinguish between the two).
+     * @return {@code null} if the exchange operation is not finished yet, or if the connection attempt is successful
+     *         (use {@link #isDone()} to distinguish between the two).
      */
     Throwable getException();
 }

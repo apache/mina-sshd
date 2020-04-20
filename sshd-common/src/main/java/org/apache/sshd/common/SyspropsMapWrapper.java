@@ -32,10 +32,9 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
- * A wrapper that exposes a read-only {@link Map} access to the system
- * properties. Any attempt to modify it will throw {@link UnsupportedOperationException}.
- * The mapper uses the {@link #SYSPROPS_MAPPED_PREFIX} to filter and access'
- * only these properties, ignoring all others
+ * A wrapper that exposes a read-only {@link Map} access to the system properties. Any attempt to modify it will throw
+ * {@link UnsupportedOperationException}. The mapper uses the {@link #SYSPROPS_MAPPED_PREFIX} to filter and access' only
+ * these properties, ignoring all others
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -46,11 +45,9 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     public static final String SYSPROPS_MAPPED_PREFIX = "org.apache.sshd.config";
 
     /**
-     * Exposes the &quot;raw&quot; system properties as a {@link PropertyResolver}
-     * without any further filtering
+     * Exposes the &quot;raw&quot; system properties as a {@link PropertyResolver} without any further filtering
      */
-    public static final PropertyResolver RAW_PROPS_RESOLVER =
-        PropertyResolverUtils.toPropertyResolver(System.getProperties());
+    public static final PropertyResolver RAW_PROPS_RESOLVER = PropertyResolverUtils.toPropertyResolver(System.getProperties());
 
     /**
      * The one and only wrapper instance
@@ -143,12 +140,12 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     @Override
     public Set<String> keySet() {
         return System.getProperties()
-            .stringPropertyNames()
-            .stream()
-            // filter out any non-SSHD properties
-            .filter(SyspropsMapWrapper::isMappedSyspropKey)
-            .map(SyspropsMapWrapper::getUnmappedSyspropKey)
-            .collect(Collectors.toSet());
+                .stringPropertyNames()
+                .stream()
+                // filter out any non-SSHD properties
+                .filter(SyspropsMapWrapper::isMappedSyspropKey)
+                .map(SyspropsMapWrapper::getUnmappedSyspropKey)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -176,11 +173,11 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
         Properties props = System.getProperties();
         // return a copy in order to avoid concurrent modifications
         return props
-            .stringPropertyNames()
-            .stream()
-            .filter(SyspropsMapWrapper::isMappedSyspropKey)
-            .map(props::get)
-            .collect(Collectors.toList());
+                .stringPropertyNames()
+                .stream()
+                .filter(SyspropsMapWrapper::isMappedSyspropKey)
+                .map(props::get)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -189,20 +186,20 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     }
 
     /**
-     * @param key Key to be tested
-     * @return {@code true} if key starts with {@link #SYSPROPS_MAPPED_PREFIX}
-     * and continues with a dot followed by some characters
+     * @param  key Key to be tested
+     * @return     {@code true} if key starts with {@link #SYSPROPS_MAPPED_PREFIX} and continues with a dot followed by
+     *             some characters
      */
     public static boolean isMappedSyspropKey(String key) {
         return (GenericUtils.length(key) > (SYSPROPS_MAPPED_PREFIX.length() + 1))
-            && key.startsWith(SYSPROPS_MAPPED_PREFIX)
-            && (key.charAt(SYSPROPS_MAPPED_PREFIX.length()) == '.');
+                && key.startsWith(SYSPROPS_MAPPED_PREFIX)
+                && (key.charAt(SYSPROPS_MAPPED_PREFIX.length()) == '.');
     }
 
     /**
-     * @param key Key to be transformed
-     * @return The &quot;pure&quot; key name if a mapped one, same as input otherwise
-     * @see #isMappedSyspropKey(String)
+     * @param  key Key to be transformed
+     * @return     The &quot;pure&quot; key name if a mapped one, same as input otherwise
+     * @see        #isMappedSyspropKey(String)
      */
     public static String getUnmappedSyspropKey(Object key) {
         String s = Objects.toString(key);
@@ -210,9 +207,9 @@ public final class SyspropsMapWrapper implements Map<String, Object> {
     }
 
     /**
-     * @param key The original key
-     * @return A key prefixed by {@link #SYSPROPS_MAPPED_PREFIX}
-     * @see #isMappedSyspropKey(String)
+     * @param  key The original key
+     * @return     A key prefixed by {@link #SYSPROPS_MAPPED_PREFIX}
+     * @see        #isMappedSyspropKey(String)
      */
     public static String getMappedSyspropKey(Object key) {
         return SYSPROPS_MAPPED_PREFIX + "." + key;

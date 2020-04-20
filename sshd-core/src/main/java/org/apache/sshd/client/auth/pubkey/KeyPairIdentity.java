@@ -42,8 +42,8 @@ public class KeyPairIdentity implements PublicKeyIdentity {
 
     public KeyPairIdentity(SignatureFactoriesManager primary, SignatureFactoriesManager secondary, KeyPair pair) {
         this.signatureFactories = ValidateUtils.checkNotNullAndNotEmpty(
-            SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
-            "No available signature factories");
+                SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
+                "No available signature factories");
         this.pair = Objects.requireNonNull(pair, "No key pair");
     }
 
@@ -68,8 +68,8 @@ public class KeyPairIdentity implements PublicKeyIdentity {
     public String toString() {
         PublicKey pubKey = getPublicKey();
         return getClass().getSimpleName()
-             + " type=" + KeyUtils.getKeyType(pubKey)
-             + ", factories=" + NamedResource.getNames(signatureFactories)
-             + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
+               + " type=" + KeyUtils.getKeyType(pubKey)
+               + ", factories=" + NamedResource.getNames(signatureFactories)
+               + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
     }
 }

@@ -143,7 +143,8 @@ public class AgentTest extends BaseTestSupport {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
 
-                    try (ClientSession session1 = client1.connect(username, TEST_LOCALHOST, port1).verify(CONNECT_TIMEOUT).getSession()) {
+                    try (ClientSession session1
+                            = client1.connect(username, TEST_LOCALHOST, port1).verify(CONNECT_TIMEOUT).getSession()) {
                         session1.auth().verify(AUTH_TIMEOUT);
 
                         try (ChannelShell channel1 = session1.createShellChannel();
@@ -168,7 +169,8 @@ public class AgentTest extends BaseTestSupport {
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();
 
-                                    try (ClientSession session2 = client2.connect(username, TEST_LOCALHOST, port2).verify(CONNECT_TIMEOUT).getSession()) {
+                                    try (ClientSession session2 = client2.connect(username, TEST_LOCALHOST, port2)
+                                            .verify(CONNECT_TIMEOUT).getSession()) {
                                         session2.auth().verify(AUTH_TIMEOUT);
 
                                         try (ChannelShell channel2 = session2.createShellChannel()) {

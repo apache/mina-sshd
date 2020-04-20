@@ -53,7 +53,7 @@ public class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostK
 
     public static void writePEMKeyPair(
             KeyPair kp, Path targetPath, OpenOption... options)
-                throws IOException {
+            throws IOException {
         try (OutputStream os = Files.newOutputStream(targetPath, options)) {
             writePEMKeyPair(kp, os);
         }

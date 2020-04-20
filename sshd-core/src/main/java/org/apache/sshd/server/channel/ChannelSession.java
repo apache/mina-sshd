@@ -82,12 +82,11 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractServerChannel {
-    public static final List<ChannelRequestHandler> DEFAULT_HANDLERS =
-        Collections.singletonList(PuttyRequestHandler.INSTANCE);
+    public static final List<ChannelRequestHandler> DEFAULT_HANDLERS = Collections.singletonList(PuttyRequestHandler.INSTANCE);
 
     /**
-     * Maximum amount of extended (a.k.a. STDERR) data allowed to be accumulated
-     * until a {@link ChannelDataReceiver} for the data is registered
+     * Maximum amount of extended (a.k.a. STDERR) data allowed to be accumulated until a {@link ChannelDataReceiver} for
+     * the data is registered
      */
     public static final String MAX_EXTDATA_BUFSIZE = "channel-session-max-extdata-bufsize";
 
@@ -136,10 +135,10 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .sequential(new CommandCloseable(), super.getInnerCloseable())
-            .parallel(asyncOut, asyncErr)
-            .run(toString(), this::closeImmediately0)
-            .build();
+                .sequential(new CommandCloseable(), super.getInnerCloseable())
+                .parallel(asyncOut, asyncErr)
+                .run(toString(), this::closeImmediately0)
+                .build();
     }
 
     public class CommandCloseable extends IoBaseCloseable {
@@ -177,7 +176,7 @@ public class ChannelSession extends AbstractServerChannel {
                 if (e != null) {
                     if (debugEnabled) {
                         log.debug("close({})[immediately={}] failed ({}) to close receiver(s): {}",
-                              this, immediately, e.getClass().getSimpleName(), e.getMessage());
+                                this, immediately, e.getClass().getSimpleName(), e.getMessage());
                     }
                 }
 
@@ -190,17 +189,16 @@ public class ChannelSession extends AbstractServerChannel {
 
                 ChannelSession channel = ChannelSession.this;
                 long timeout = PropertyResolverUtils.getLongProperty(channel,
-                    ServerFactoryManager.COMMAND_EXIT_TIMEOUT,
-                    ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
+                        ServerFactoryManager.COMMAND_EXIT_TIMEOUT,
+                        ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
                 if (debugEnabled) {
                     log.debug("Wait {} ms for shell to exit cleanly on {}", timeout, channel);
                 }
 
                 Session s = channel.getSession();
-                FactoryManager manager =
-                    Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
-                ScheduledExecutorService scheduler =
-                    Objects.requireNonNull(manager.getScheduledExecutorService(), "No scheduling service");
+                FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
+                ScheduledExecutorService scheduler
+                        = Objects.requireNonNull(manager.getScheduledExecutorService(), "No scheduling service");
                 scheduler.schedule(task, timeout, TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(future -> task.cancel());
             }
@@ -215,7 +213,7 @@ public class ChannelSession extends AbstractServerChannel {
                 commandInstance.destroy(this);
             } catch (Throwable e) {
                 log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
-                     this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
                 }
@@ -224,12 +222,11 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
 
-        IOException e =
-            IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
+        IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
         if (e != null) {
             if (debugEnabled) {
                 log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
-                      this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -237,8 +234,8 @@ public class ChannelSession extends AbstractServerChannel {
                 if (GenericUtils.length(suppressed) > 0) {
                     for (Throwable t : suppressed) {
                         log.trace("Suppressed " + t.getClass().getSimpleName() + ")"
-                            + " while close immediately resource(s) of " + this
-                            + ": " + t.getMessage());
+                                  + " while close immediately resource(s) of " + this
+                                  + ": " + t.getMessage());
                     }
                 }
             }
@@ -253,7 +250,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (e != null) {
             if (log.isDebugEnabled()) {
                 log.debug("handleEof({}) failed ({}) to close receiver(s): {}",
-                      this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -269,7 +266,7 @@ public class ChannelSession extends AbstractServerChannel {
             return;
         }
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-            "Data length exceeds int boundaries: %d", len);
+                "Data length exceeds int boundaries: %d", len);
 
         int reqLen = (int) len;
         if (receiver != null) {
@@ -280,7 +277,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         } else {
             ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE),
-                "Temporary data length exceeds int boundaries: %d", len);
+                    "Temporary data length exceeds int boundaries: %d", len);
             if (receiverBuffer == null) {
                 receiverBuffer = new ByteArrayBuffer(reqLen + Long.SIZE, false);
             }
@@ -291,7 +288,7 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE),
-            "Extended data length exceeds int boundaries: %d", len);
+                "Extended data length exceeds int boundaries: %d", len);
 
         if (extendedDataWriter != null) {
             extendedDataWriter.data(this, data, off, (int) len);
@@ -319,7 +316,7 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected RequestHandler.Result handleInternalRequest(
             String requestType, boolean wantReply, Buffer buffer)
-                throws IOException {
+            throws IOException {
         switch (requestType) {
             case "env":
                 return handleEnv(buffer, wantReply);
@@ -342,7 +339,7 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                              this, wantReply, requestType, this.type);
+                                this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
@@ -357,7 +354,7 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                              this, wantReply, requestType, this.type);
+                                this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
@@ -372,11 +369,11 @@ public class ChannelSession extends AbstractServerChannel {
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("handleInternalRequest({})[want-reply={}] type already set for request={}: {}",
-                              this, wantReply, requestType, this.type);
+                                this, wantReply, requestType, this.type);
                     }
                     return RequestHandler.Result.ReplyFailure;
                 }
-            case "auth-agent-req":  // see https://tools.ietf.org/html/draft-ietf-secsh-agent-02
+            case "auth-agent-req": // see https://tools.ietf.org/html/draft-ietf-secsh-agent-02
             case "auth-agent-req@openssh.com":
                 return handleAgentForwarding(requestType, buffer, wantReply);
             case "x11-req":
@@ -389,7 +386,7 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected IoWriteFuture sendResponse(
             Buffer buffer, String req, Result result, boolean wantReply)
-                throws IOException {
+            throws IOException {
         IoWriteFuture future = super.sendResponse(buffer, req, result, wantReply);
         if (!RequestHandler.Result.ReplySuccess.equals(result)) {
             return future;
@@ -417,9 +414,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         /*
-         * TODO - consider if (Channel.CHANNEL_SHELL.equals(req)
-         *       || Channel.CHANNEL_EXEC.equals(req)
-         *       || Channel.CHANNEL_SUBSYSTEM.equals(req)) {
+         * TODO - consider if (Channel.CHANNEL_SHELL.equals(req) || Channel.CHANNEL_EXEC.equals(req) ||
+         * Channel.CHANNEL_SUBSYSTEM.equals(req)) {
          */
         if (log.isDebugEnabled()) {
             log.debug("sendResponse({}) request={} activate command", this, req);
@@ -453,7 +449,7 @@ public class ChannelSession extends AbstractServerChannel {
             /*
              * According to https://tools.ietf.org/html/rfc4254#section-8:
              *
-             *      Opcodes 160 to 255 are not yet defined, and cause parsing to stop
+             * Opcodes 160 to 255 are not yet defined, and cause parsing to stop
              */
             if ((opcode >= 160) && (opcode <= 255)) {
                 log.warn("handlePtyReq({}) unknown reserved pty opcode value: {}", this, opcode);
@@ -461,9 +457,9 @@ public class ChannelSession extends AbstractServerChannel {
             }
 
             int val = ((modes[i++] << 24) & 0xff000000)
-                    | ((modes[i++] << 16) & 0x00ff0000)
-                    | ((modes[i++] << 8) & 0x0000ff00)
-                    | ((modes[i++]) & 0x000000ff);
+                      | ((modes[i++] << 16) & 0x00ff0000)
+                      | ((modes[i++] << 8) & 0x0000ff00)
+                      | ((modes[i++]) & 0x000000ff);
             PtyMode mode = PtyMode.fromInt(opcode);
             if (mode == null) {
                 log.warn("handlePtyReq({}) unsupported pty opcode value: {}={}", this, opcode, val);
@@ -474,7 +470,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (log.isDebugEnabled()) {
             log.debug("handlePtyReq({}): term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
-                  this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
+                    this, term, tColumns, tRows, tWidth, tHeight, ptyModes);
         }
 
         addEnvVariable(Environment.ENV_TERM, term);
@@ -490,7 +486,7 @@ public class ChannelSession extends AbstractServerChannel {
         int tHeight = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("handleWindowChange({}): ({} - {}), ({}, {})",
-                this, tColumns, tRows, tWidth, tHeight);
+                    this, tColumns, tRows, tWidth, tHeight);
         }
 
         StandardEnvironment e = getEnvironment();
@@ -531,7 +527,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleShell(
             String request, Buffer buffer, boolean wantReply)
-                throws IOException {
+            throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             if (log.isDebugEnabled()) {
@@ -540,10 +536,8 @@ public class ChannelSession extends AbstractServerChannel {
             return RequestHandler.Result.ReplyFailure;
         }
 
-        ServerSession shellSession =
-            Objects.requireNonNull(getServerSession(), "No server session");
-        ServerFactoryManager manager =
-            Objects.requireNonNull(shellSession.getFactoryManager(), "No server factory manager");
+        ServerSession shellSession = Objects.requireNonNull(getServerSession(), "No server session");
+        ServerFactoryManager manager = Objects.requireNonNull(shellSession.getFactoryManager(), "No server factory manager");
         ShellFactory factory = manager.getShellFactory();
         if (factory == null) {
             if (log.isDebugEnabled()) {
@@ -556,7 +550,7 @@ public class ChannelSession extends AbstractServerChannel {
             commandInstance = factory.createShell(this);
         } catch (RuntimeException | IOException | Error e) {
             log.warn("handleShell({}) Failed ({}) to create shell: {}",
-                 this, e.getClass().getSimpleName(), e.getMessage());
+                    this, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("handleShell(" + this + ") shell creation failure details", e);
             }
@@ -575,17 +569,15 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleExec(
             String request, Buffer buffer, boolean wantReply)
-                throws IOException {
+            throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return RequestHandler.Result.ReplyFailure;
         }
 
         String commandLine = buffer.getString();
-        ServerSession cmdSession =
-            Objects.requireNonNull(getServerSession(), "No server session");
-        ServerFactoryManager manager =
-            Objects.requireNonNull(cmdSession.getFactoryManager(), "No server factory manager");
+        ServerSession cmdSession = Objects.requireNonNull(getServerSession(), "No server session");
+        ServerFactoryManager manager = Objects.requireNonNull(cmdSession.getFactoryManager(), "No server factory manager");
         CommandFactory factory = manager.getCommandFactory();
         if (factory == null) {
             log.warn("handleExec({}) No command factory for command: {}", this, commandLine);
@@ -601,7 +593,7 @@ public class ChannelSession extends AbstractServerChannel {
             commandInstance = factory.createCommand(this, commandLine);
         } catch (RuntimeException | IOException | Error e) {
             log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
-                 this, e.getClass().getSimpleName(), commandLine, e.getMessage());
+                    this, e.getClass().getSimpleName(), commandLine, e.getMessage());
             if (debugEnabled) {
                 log.debug("handleExec(" + this + ") command=" + commandLine + " creation failure details", e);
             }
@@ -619,26 +611,25 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleSubsystem(
             String request, Buffer buffer, boolean wantReply)
-                throws IOException {
+            throws IOException {
         String subsystem = buffer.getString();
         if (log.isDebugEnabled()) {
             log.debug("handleSubsystem({})[want-reply={}] subsystem={}", this, wantReply, subsystem);
         }
 
-        ServerFactoryManager manager =
-            Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
-        Collection<SubsystemFactory> factories =
-            Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
+        ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
+        Collection<SubsystemFactory> factories
+                = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
             return RequestHandler.Result.ReplyFailure;
         }
 
         try {
-            commandInstance = SubsystemFactory.createSubsystem(this,  factories, subsystem);
+            commandInstance = SubsystemFactory.createSubsystem(this, factories, subsystem);
         } catch (IOException | RuntimeException | Error e) {
             log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
-                  this, e.getClass().getSimpleName(), subsystem, e.getMessage());
+                    this, e.getClass().getSimpleName(), subsystem, e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("handleSubsystem(" + this + ") subsystem=" + subsystem + " creation failure details", e);
             }
@@ -675,12 +666,11 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     /**
-     * For {@link Command} to install {@link ChannelDataReceiver}.
-     * When you do this, {@link Command#setInputStream(java.io.InputStream)} or
+     * For {@link Command} to install {@link ChannelDataReceiver}. When you do this,
+     * {@link Command#setInputStream(java.io.InputStream)} or
      * {@link org.apache.sshd.server.command.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
-     * will no longer be invoked. If you call this method from {@code Command#start(ChannelSession, Environment)},
-     * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
-     * not read any data.
+     * will no longer be invoked. If you call this method from {@code Command#start(ChannelSession, Environment)}, the
+     * input stream you received in {@link Command#setInputStream(java.io.InputStream)} will not read any data.
      *
      * @param receiver The {@link ChannelDataReceiver} instance
      */
@@ -689,13 +679,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     /**
-     * A special {@link ChannelDataReceiver} that can be used to receive
-     * data sent as &quot;extended&quot; - usually STDERR. <B>Note:</B> by
-     * default any such data sent to the channel session causes an exception,
-     * but specific implementations may choose to register such a receiver
-     * (e.g., for custom usage of the STDERR stream). A good place in the
-     * code to register such a writer would be in commands that also
-     * implement {@code ChannelSessionAware}.
+     * A special {@link ChannelDataReceiver} that can be used to receive data sent as &quot;extended&quot; - usually
+     * STDERR. <B>Note:</B> by default any such data sent to the channel session causes an exception, but specific
+     * implementations may choose to register such a receiver (e.g., for custom usage of the STDERR stream). A good
+     * place in the code to register such a writer would be in commands that also implement {@code ChannelSessionAware}.
      *
      * @param extendedDataWriter The {@link ChannelDataReceiver}.
      */
@@ -704,16 +691,15 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     /**
-     * Called by {@link #prepareChannelCommand(String, Command)} in order to set
-     * up the command's streams, session, file-system, exit callback, etc..
+     * Called by {@link #prepareChannelCommand(String, Command)} in order to set up the command's streams, session,
+     * file-system, exit callback, etc..
      *
-     * @param requestType The request that caused the command to be created
-     * @param command The created {@link Command} - may be {@code null}
-     * @return The updated command instance - if {@code null} then the request that
-     * initially caused the creation of the command is failed and the original command
-     * (if any) destroyed (eventually). <B>Note:</B> if a different command instance
-     * than the input one is returned, then it is up to the implementor to take care
-     * of the wrapping or destruction of the original command instance.
+     * @param  requestType The request that caused the command to be created
+     * @param  command     The created {@link Command} - may be {@code null}
+     * @return             The updated command instance - if {@code null} then the request that initially caused the
+     *                     creation of the command is failed and the original command (if any) destroyed (eventually).
+     *                     <B>Note:</B> if a different command instance than the input one is returned, then it is up to
+     *                     the implementor to take care of the wrapping or destruction of the original command instance.
      * @throws IOException If failed to prepare the command
      */
     protected Command prepareCommand(String requestType, Command command) throws IOException {
@@ -745,9 +731,9 @@ public class ChannelSession extends AbstractServerChannel {
         } else {
             Window wRemote = getRemoteWindow();
             out = new ChannelOutputStream(
-                this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
+                    this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
             err = new ChannelOutputStream(
-                this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
+                    this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA, false);
             if (log.isTraceEnabled()) {
                 // Wrap in logging filters
                 out = new LoggingFilterOutputStream(out, "OUT(" + this + ")", log, this);
@@ -780,7 +766,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (extendedDataBuffer != null) {
             if (extendedDataWriter == null) {
                 throw new UnsupportedOperationException(
-                    "No extended data writer available though " + extendedDataBuffer.available() + " bytes accumulated");
+                        "No extended data writer available though " + extendedDataBuffer.available() + " bytes accumulated");
             }
 
             Buffer buffer = extendedDataBuffer;
@@ -793,11 +779,11 @@ public class ChannelSession extends AbstractServerChannel {
                 closeShell(exitValue);
                 if (log.isDebugEnabled()) {
                     log.debug("onExit({}) code={} message='{}' shell closed",
-                        ChannelSession.this, exitValue, exitMessage);
+                            ChannelSession.this, exitValue, exitMessage);
                 }
             } catch (IOException e) {
                 log.warn("onExit({}) code={} message='{}' {} closing shell: {}",
-                     ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
+                        ChannelSession.this, exitValue, exitMessage, e.getClass().getSimpleName(), e.getMessage());
             }
         });
 
@@ -811,13 +797,12 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleAgentForwarding(
             String requestType, Buffer buffer, boolean wantReply)
-                throws IOException {
+            throws IOException {
         ServerSession session = getServerSession();
         PropertyResolverUtils.updateProperty(
-            session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
+                session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
 
-        FactoryManager manager =
-            Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         AgentForwardingFilter filter = manager.getAgentForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
         boolean debugEnabled = log.isDebugEnabled();
@@ -825,13 +810,13 @@ public class ChannelSession extends AbstractServerChannel {
             if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
                 if (debugEnabled) {
                     log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null)
-                        + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
+                              + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
             log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
-                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
+                    this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (debugEnabled) {
                 log.debug("handleAgentForwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
@@ -853,28 +838,28 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleX11Forwarding(
             String requestType, Buffer buffer, boolean wantReply)
-                throws IOException {
+            throws IOException {
         ServerSession session = getServerSession();
         boolean singleConnection = buffer.getBoolean();
         String authProtocol = buffer.getString();
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
-        FactoryManager manager =
-            Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         X11ForwardingFilter filter = manager.getX11ForwardingFilter();
         boolean debugEnabled = log.isDebugEnabled();
         try {
             if ((filter == null) || (!filter.canForwardX11(session, requestType))) {
                 if (debugEnabled) {
-                    log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered request={}",
-                          this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
+                    log.debug(
+                            "handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={}, filter={}: filtered request={}",
+                            this, singleConnection, authProtocol, authCookie, screenId, filter, requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
             log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
-                 this, e.getClass().getSimpleName(), requestType, e.getMessage());
+                    this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (debugEnabled) {
                 log.debug("handleX11Forwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
             }
@@ -885,16 +870,15 @@ public class ChannelSession extends AbstractServerChannel {
         if (x11Forward == null) {
             if (debugEnabled) {
                 log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - no forwarder'",
-                      this, singleConnection, authProtocol, authCookie, screenId);
+                        this, singleConnection, authProtocol, authCookie, screenId);
             }
             return RequestHandler.Result.ReplyFailure;
         }
 
-        String display =
-            x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
+        String display = x11Forward.createDisplay(singleConnection, authProtocol, authCookie, screenId);
         if (debugEnabled) {
             log.debug("handleX11Forwarding({}) single={}, protocol={}, cookie={}, screen={} - display='{}'",
-                  this, singleConnection, authProtocol, authCookie, screenId, display);
+                    this, singleConnection, authProtocol, authCookie, screenId, display);
         }
         if (GenericUtils.isEmpty(display)) {
             return RequestHandler.Result.ReplyFailure;

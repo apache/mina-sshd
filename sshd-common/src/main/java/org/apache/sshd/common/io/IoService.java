@@ -27,15 +27,13 @@ import org.apache.sshd.common.Closeable;
  */
 public interface IoService extends Closeable, IoServiceEventListenerManager {
     /**
-     * Socket reuse address.
-     * See {@link java.net.StandardSocketOptions#SO_REUSEADDR}
+     * Socket reuse address. See {@link java.net.StandardSocketOptions#SO_REUSEADDR}
      */
     boolean DEFAULT_REUSE_ADDRESS = true;
 
     /**
-     * Returns the map of all sessions which are currently managed by this
-     * service. The key of map is the {@link IoSession#getId() ID} of the
-     * session.
+     * Returns the map of all sessions which are currently managed by this service. The key of map is the
+     * {@link IoSession#getId() ID} of the session.
      *
      * @return the sessions. An empty collection if there's no session.
      */

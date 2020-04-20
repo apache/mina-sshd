@@ -49,63 +49,57 @@ public interface ScpTransferEventListener extends SshdEventListener {
     };
 
     /**
-     * @param session The client/server {@link Session} through which the transfer is being executed
-     * @param op     The {@link FileOperation}
-     * @param file   The <U>local</U> referenced file {@link Path}
-     * @param length Size (in bytes) of transferred data
-     * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
-     *               once transfer is complete
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  op          The {@link FileOperation}
+     * @param  file        The <U>local</U> referenced file {@link Path}
+     * @param  length      Size (in bytes) of transferred data
+     * @param  perms       A {@link Set} of {@link PosixFilePermission}s to be applied once transfer is complete
      * @throws IOException If failed to handle the event
      */
     default void startFileEvent(
-        Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
+            Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
             throws IOException {
         // ignored
     }
 
     /**
-     * @param session The client/server {@link Session} through which the transfer is being executed
-     * @param op     The {@link FileOperation}
-     * @param file   The <U>local</U> referenced file {@link Path}
-     * @param length Size (in bytes) of transferred data
-     * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
-     *               once transfer is complete
-     * @param thrown The result of the operation attempt - if {@code null} then
-     *               reception was successful
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  op          The {@link FileOperation}
+     * @param  file        The <U>local</U> referenced file {@link Path}
+     * @param  length      Size (in bytes) of transferred data
+     * @param  perms       A {@link Set} of {@link PosixFilePermission}s to be applied once transfer is complete
+     * @param  thrown      The result of the operation attempt - if {@code null} then reception was successful
      * @throws IOException If failed to handle the event
      */
     default void endFileEvent(
-        Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
-            throws IOException {
-                // ignored
-    }
-
-    /**
-     * @param session The client/server {@link Session} through which the transfer is being executed
-     * @param op    The {@link FileOperation}
-     * @param file  The <U>local</U> referenced folder {@link Path}
-     * @param perms A {@link Set} of {@link PosixFilePermission}s to be applied
-     *              once transfer is complete
-     * @throws IOException If failed to handle the event
-     */
-    default void startFolderEvent(
-        Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
+            Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
         // ignored
     }
 
     /**
-     * @param session The client/server {@link Session} through which the transfer is being executed
-     * @param op     The {@link FileOperation}
-     * @param file   The <U>local</U> referenced file {@link Path}
-     * @param perms  A {@link Set} of {@link PosixFilePermission}s to be applied
-     *               once transfer is complete
-     * @param thrown The result of the operation attempt - if {@code null} then
-     *               reception was successful
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  op          The {@link FileOperation}
+     * @param  file        The <U>local</U> referenced folder {@link Path}
+     * @param  perms       A {@link Set} of {@link PosixFilePermission}s to be applied once transfer is complete
+     * @throws IOException If failed to handle the event
+     */
+    default void startFolderEvent(
+            Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
+            throws IOException {
+        // ignored
+    }
+
+    /**
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  op          The {@link FileOperation}
+     * @param  file        The <U>local</U> referenced file {@link Path}
+     * @param  perms       A {@link Set} of {@link PosixFilePermission}s to be applied once transfer is complete
+     * @param  thrown      The result of the operation attempt - if {@code null} then reception was successful
      * @throws IOException If failed to handle the event
      */
     default void endFolderEvent(
-        Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
+            Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
         // ignored
     }

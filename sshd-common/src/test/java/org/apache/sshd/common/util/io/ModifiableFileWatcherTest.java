@@ -49,37 +49,43 @@ public class ModifiableFileWatcherTest extends JUnitTestSupport {
         super();
     }
 
-    @Test   // see SSHD-606
+    @Test // see SSHD-606
     public void testValidateStrictConfigFilePermissions() throws IOException {
         Assume.assumeTrue("Test does not always work on Windows", !OsUtils.isWin32());
 
         Path file = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         outputDebugMessage("%s deletion result=%s", file, Files.deleteIfExists(file));
-        assertNull("Unexpected violation for non-existent file: " + file, ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+        assertNull("Unexpected violation for non-existent file: " + file,
+                ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
 
         assertHierarchyTargetFolderExists(file.getParent());
         try (OutputStream output = Files.newOutputStream(file)) {
-            output.write((getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(System.currentTimeMillis())).getBytes(StandardCharsets.UTF_8));
+            output.write((getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(System.currentTimeMillis()))
+                    .getBytes(StandardCharsets.UTF_8));
         }
 
         Collection<PosixFilePermission> perms = IoUtils.getPermissions(file);
         if (GenericUtils.isEmpty(perms)) {
-            assertNull("Unexpected violation for no permissions file: " + file, ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+            assertNull("Unexpected violation for no permissions file: " + file,
+                    ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
         } else if (OsUtils.isUNIX()) {
             Map.Entry<String, Object> violation = null;
             for (PosixFilePermission p : ModifiableFileWatcher.STRICTLY_PROHIBITED_FILE_PERMISSION) {
                 if (perms.contains(p)) {
                     violation = ModifiableFileWatcher.validateStrictConfigFilePermissions(file);
-                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms, violation);
+                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms,
+                            violation);
                     break;
                 }
             }
 
-            if (violation == null) {    // we do not expected a failure if no permissions have been violated
-                assertNull("Unexpected UNIX violation for file " + file + " permissions=" + perms, ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+            if (violation == null) { // we do not expected a failure if no permissions have been violated
+                assertNull("Unexpected UNIX violation for file " + file + " permissions=" + perms,
+                        ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
             }
         } else {
-            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms, ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms,
+                    ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
         }
     }
 }

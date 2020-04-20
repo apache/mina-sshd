@@ -63,7 +63,8 @@ public class GitPgmCommandTest extends BaseTestSupport {
                 try (SshClient client = setupTestClient()) {
                     client.start();
 
-                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port).verify(CONNECT_TIMEOUT).getSession()) {
+                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port)
+                            .verify(CONNECT_TIMEOUT).getSession()) {
                         session.addPasswordIdentity(getCurrentTestName());
                         session.auth().verify(AUTH_TIMEOUT);
 
@@ -92,8 +93,8 @@ public class GitPgmCommandTest extends BaseTestSupport {
             channel.setErr(System.err);
             channel.open().verify(OPEN_TIMEOUT);
 
-            Collection<ClientChannelEvent> result =
-                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
+            Collection<ClientChannelEvent> result
+                    = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
             assertTrue("Command '" + command + "'not completed on time: " + result, result.contains(ClientChannelEvent.CLOSED));
 
             Integer status = channel.getExitStatus();

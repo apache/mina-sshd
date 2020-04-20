@@ -44,93 +44,90 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Represents an SSH session. <B>Note:</B> the associated username for the session
- * may be {@code null}/empty if the session is not yet authenticated
+ * Represents an SSH session. <B>Note:</B> the associated username for the session may be {@code null}/empty if the
+ * session is not yet authenticated
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Session
         extends SessionContext,
-                MutableUserHolder,
-                KexFactoryManager,
-                SessionListenerManager,
-                ReservedSessionMessagesManager,
-                SessionDisconnectHandlerManager,
-                ChannelListenerManager,
-                ChannelStreamPacketWriterResolverManager,
-                PortForwardingEventListenerManager,
-                UnknownChannelReferenceHandlerManager,
-                FactoryManagerHolder,
-                PortForwardingInformationProvider,
-                PacketWriter {
+        MutableUserHolder,
+        KexFactoryManager,
+        SessionListenerManager,
+        ReservedSessionMessagesManager,
+        SessionDisconnectHandlerManager,
+        ChannelListenerManager,
+        ChannelStreamPacketWriterResolverManager,
+        PortForwardingEventListenerManager,
+        UnknownChannelReferenceHandlerManager,
+        FactoryManagerHolder,
+        PortForwardingInformationProvider,
+        PacketWriter {
 
     /**
-     * Create a new buffer for the specified SSH packet and reserve the needed space
-     * (5 bytes) for the packet header.
+     * Create a new buffer for the specified SSH packet and reserve the needed space (5 bytes) for the packet header.
      *
-     * @param cmd the SSH command
-     * @return a new buffer (of unknown size) ready for write
-     * @see #createBuffer(byte, int)
+     * @param  cmd the SSH command
+     * @return     a new buffer (of unknown size) ready for write
+     * @see        #createBuffer(byte, int)
      */
     default Buffer createBuffer(byte cmd) {
         return createBuffer(cmd, 0);
     }
 
     /**
-     * Create a new buffer for the specified SSH packet and reserve the needed space
-     * (5 bytes) for the packet header.
+     * Create a new buffer for the specified SSH packet and reserve the needed space (5 bytes) for the packet header.
      *
-     * @param cmd           The SSH command to initialize the buffer with
-     * @param estimatedSize Estimated number of bytes the buffer will hold, 0 if unknown.
-     * @return a new buffer ready for write
-     * @see #prepareBuffer(byte, Buffer)
+     * @param  cmd           The SSH command to initialize the buffer with
+     * @param  estimatedSize Estimated number of bytes the buffer will hold, 0 if unknown.
+     * @return               a new buffer ready for write
+     * @see                  #prepareBuffer(byte, Buffer)
      */
     Buffer createBuffer(byte cmd, int estimatedSize);
 
     /**
-     * Prepare a new &quot;clean&quot; buffer while reserving the needed space
-     * (5 bytes) for the packet header.
-     * @param cmd    The SSH command to initialize the buffer with
-     * @param buffer The {@link Buffer} instance to initialize
-     * @return The initialized buffer
+     * Prepare a new &quot;clean&quot; buffer while reserving the needed space (5 bytes) for the packet header.
+     * 
+     * @param  cmd    The SSH command to initialize the buffer with
+     * @param  buffer The {@link Buffer} instance to initialize
+     * @return        The initialized buffer
      */
     Buffer prepareBuffer(byte cmd, Buffer buffer);
 
     /**
      * Sends an {@code SSH_MSG_DEBUG} to the peer session
      *
-     * @param display {@code true} if OK to display the message at the peer as-is
-     * @param msg The message object whose {@code toString()} value to be used - if
-     * {@code null} then the &quot;null&quot; string is sent
-     * @param lang The language - {@code null}/empty if some pre-agreed default is used
-     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @param  display     {@code true} if OK to display the message at the peer as-is
+     * @param  msg         The message object whose {@code toString()} value to be used - if {@code null} then the
+     *                     &quot;null&quot; string is sent
+     * @param  lang        The language - {@code null}/empty if some pre-agreed default is used
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.3">RFC 4253 - section 11.3</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-11.3">RFC 4253 - section 11.3</A>
      */
     IoWriteFuture sendDebugMessage(boolean display, Object msg, String lang) throws IOException;
 
     /**
      * Sends an {@code SSH_MSG_IGNORE} to the peer session
      *
-     * @param data The message data
-     * @return An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @param  data        The message data
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
-     * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
      */
     IoWriteFuture sendIgnoreMessage(byte... data) throws IOException;
 
     /**
-     * Encode and send the given buffer with the specified timeout.
-     * If the buffer could not be written before the timeout elapses, the returned
-     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * Encode and send the given buffer with the specified timeout. If the buffer could not be written before the
+     * timeout elapses, the returned {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
      * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
      *
-     * @param buffer  the buffer to encode and spend
-     * @param timeout the (never {@code null}) timeout value - its
-     * {@link Duration#toMillis() milliseconds} value will be used
-     * @return a future that can be used to check when the packet has actually been sent
+     * @param  buffer      the buffer to encode and spend
+     * @param  timeout     the (never {@code null}) timeout value - its {@link Duration#toMillis() milliseconds} value
+     *                     will be used
+     * @return             a future that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
-     * @see #writePacket(Buffer, long)
+     * @see                #writePacket(Buffer, long)
      */
     default IoWriteFuture writePacket(Buffer buffer, Duration timeout) throws IOException {
         Objects.requireNonNull(timeout, "No timeout was specified");
@@ -138,63 +135,61 @@ public interface Session
     }
 
     /**
-     * Encode and send the given buffer with the specified timeout.
-     * If the buffer could not be written before the timeout elapses, the returned
-     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * Encode and send the given buffer with the specified timeout. If the buffer could not be written before the
+     * timeout elapses, the returned {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
      * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
      *
-     * @param buffer the buffer to encode and spend
-     * @param maxWaitMillis the timeout in milliseconds
-     * @return a future that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @param  buffer        the buffer to encode and spend
+     * @param  maxWaitMillis the timeout in milliseconds
+     * @return               a future that can be used to check when the packet has actually been sent
+     * @throws IOException   if an error occurred when encoding sending the packet
      */
     default IoWriteFuture writePacket(Buffer buffer, long maxWaitMillis) throws IOException {
         return writePacket(buffer, maxWaitMillis, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Encode and send the given buffer with the specified timeout.
-     * If the buffer could not be written before the timeout elapses, the returned
-     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * Encode and send the given buffer with the specified timeout. If the buffer could not be written before the
+     * timeout elapses, the returned {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
      * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
      *
-     * @param buffer  the buffer to encode and spend
-     * @param timeout the timeout
-     * @param unit    the time unit of the timeout parameter
-     * @return a future that can be used to check when the packet has actually been sent
+     * @param  buffer      the buffer to encode and spend
+     * @param  timeout     the timeout
+     * @param  unit        the time unit of the timeout parameter
+     * @return             a future that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
     /**
-     * Send a global request and wait for the response. This must only be used when sending
-     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response. This must only be used when sending a
+     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
      *
-     * @param request the request name - used mainly for logging and debugging
-     * @param buffer the buffer containing the global request
-     * @param timeout The number of time units to wait - must be <U>positive</U>
-     * @param unit The {@link TimeUnit} to wait for the response
-     * @return the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  timeout                         The number of time units to wait - must be <U>positive</U>
+     * @param  unit                            The {@link TimeUnit} to wait for the response
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     default Buffer request(
             String request, Buffer buffer, long timeout, TimeUnit unit)
-                throws IOException {
+            throws IOException {
         ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
         return request(request, buffer, TimeUnit.MILLISECONDS.convert(timeout, unit));
     }
 
     /**
      *
-     * Send a global request and wait for the response. This must only be used when sending
-     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response. This must only be used when sending a
+     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
      *
-     * @param request the request name - used mainly for logging and debugging
-     * @param buffer the buffer containing the global request
-     * @param timeout The (never {@code null}) timeout to wait - its milliseconds value is used
-     * @return the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  timeout                         The (never {@code null}) timeout to wait - its milliseconds value is used
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     default Buffer request(String request, Buffer buffer, Duration timeout) throws IOException {
@@ -203,23 +198,21 @@ public interface Session
     }
 
     /**
-     * Send a global request and wait for the response. This must only be used when sending
-     * a {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response. This must only be used when sending a
+     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
      *
-     * @param request the request name - used mainly for logging and debugging
-     * @param buffer the buffer containing the global request
-     * @param maxWaitMillis Max. time to wait for response (millis) - must be <U>positive</U>
-     * @return the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  maxWaitMillis                   Max. time to wait for response (millis) - must be <U>positive</U>
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException;
 
     /**
-     * Handle any exceptions that occurred on this session.
-     * The session will be closed and a disconnect packet will be
-     * sent before if the given exception is an
-     * {@link org.apache.sshd.common.SshException} with a positive error code
+     * Handle any exceptions that occurred on this session. The session will be closed and a disconnect packet will be
+     * sent before if the given exception is an {@link org.apache.sshd.common.SshException} with a positive error code
      *
      * @param t the exception to process
      */
@@ -228,19 +221,18 @@ public interface Session
     /**
      * Initiate a new key exchange.
      *
-     * @return A {@link KeyExchangeFuture} for awaiting the completion of the exchange
+     * @return             A {@link KeyExchangeFuture} for awaiting the completion of the exchange
      * @throws IOException If failed to request keys re-negotiation
      */
     KeyExchangeFuture reExchangeKeys() throws IOException;
 
     /**
-     * Get the service of the specified type.
-     * If the service is not of the specified class,
-     * an IllegalStateException will be thrown.
+     * Get the service of the specified type. If the service is not of the specified class, an IllegalStateException
+     * will be thrown.
      *
-     * @param <T>   The generic {@link Service} type
-     * @param clazz The service class
-     * @return The service instance
+     * @param  <T>                   The generic {@link Service} type
+     * @param  clazz                 The service class
+     * @return                       The service instance
      * @throws IllegalStateException If failed to find a matching service
      */
     <T extends Service> T getService(Class<T> clazz);
@@ -283,7 +275,7 @@ public interface Session
      * Re-start idle timeout timer
      *
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
-     * @see #getIdleTimeoutStart()
+     * @see    #getIdleTimeoutStart()
      */
     long resetIdleTimeout();
 
@@ -301,7 +293,7 @@ public interface Session
      * Re-start the authentication timeout timer
      *
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
-     * @see #getAuthTimeoutStart()
+     * @see    #getAuthTimeoutStart()
      */
     long resetAuthTimeout();
 
@@ -310,19 +302,18 @@ public interface Session
     KeyExchange getKex();
 
     /**
-     * Send a disconnect packet with the given reason and message.
-     * Once the packet has been sent, the session will be closed
-     * asynchronously.
+     * Send a disconnect packet with the given reason and message. Once the packet has been sent, the session will be
+     * closed asynchronously.
      *
-     * @param reason the reason code for this disconnect
-     * @param msg    the text message
+     * @param  reason      the reason code for this disconnect
+     * @param  msg         the text message
      * @throws IOException if an error occurred sending the packet
      */
     void disconnect(int reason, String msg) throws IOException;
 
     /**
-     * @param name Service name
-     * @param buffer Extra information provided when the service start request was received
+     * @param  name      Service name
+     * @param  buffer    Extra information provided when the service start request was received
      * @throws Exception If failed to start it
      */
     void startService(String name, Buffer buffer) throws Exception;
@@ -335,12 +326,12 @@ public interface Session
     /**
      * Attempts to use the session's attribute, if not found then tries the factory manager
      *
-     * @param <T> The generic attribute type
-     * @param session The {@link Session} - ignored if {@code null}
-     * @param key The attribute key - never {@code null}
-     * @return Associated value - {@code null} if not found
-     * @see Session#getFactoryManager()
-     * @see FactoryManager#resolveAttribute(FactoryManager, AttributeRepository.AttributeKey)
+     * @param  <T>     The generic attribute type
+     * @param  session The {@link Session} - ignored if {@code null}
+     * @param  key     The attribute key - never {@code null}
+     * @return         Associated value - {@code null} if not found
+     * @see            Session#getFactoryManager()
+     * @see            FactoryManager#resolveAttribute(FactoryManager, AttributeRepository.AttributeKey)
      */
     static <T> T resolveAttribute(Session session, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");

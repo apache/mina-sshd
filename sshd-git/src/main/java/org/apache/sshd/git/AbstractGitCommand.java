@@ -46,7 +46,8 @@ public abstract class AbstractGitCommand
     protected FileSystem fileSystem;
 
     protected AbstractGitCommand(
-            GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+                                 GitLocationResolver rootDirResolver, String command,
+                                 CloseableExecutorService executorService) {
         super(command, executorService);
         this.rootDirResolver = Objects.requireNonNull(rootDirResolver, "No GIT root directory resolver provided");
     }
@@ -78,15 +79,14 @@ public abstract class AbstractGitCommand
     }
 
     /**
-     * Parses delimited string and returns an array containing the tokens. This
-     * parser obeys quotes, so the delimiter character will be ignored if it is
-     * inside of a quote. This method assumes that the quote character is not
+     * Parses delimited string and returns an array containing the tokens. This parser obeys quotes, so the delimiter
+     * character will be ignored if it is inside of a quote. This method assumes that the quote character is not
      * included in the set of delimiter characters.
      *
-     * @param value the delimited string to parse.
-     * @param delim the characters delimiting the tokens.
-     * @param trim {@code true} if the strings are trimmed before being added to the list
-     * @return a list of string or an empty list if there are none.
+     * @param  value the delimited string to parse.
+     * @param  delim the characters delimiting the tokens.
+     * @param  trim  {@code true} if the strings are trimmed before being added to the list
+     * @return       a list of string or an empty list if there are none.
      */
     public static List<String> parseDelimitedString(String value, String delim, boolean trim) {
         if (value == null) {

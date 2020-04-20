@@ -41,39 +41,37 @@ public final class PropertyResolverUtils {
     /**
      * Case <U>insensitive</U> {@link NavigableSet} of values considered {@code true} by {@link #parseBoolean(String)}
      */
-    public static final NavigableSet<String> TRUE_VALUES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> TRUE_VALUES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(
-                String.CASE_INSENSITIVE_ORDER, "true", "t", "yes", "y", "on"));
+                    String.CASE_INSENSITIVE_ORDER, "true", "t", "yes", "y", "on"));
 
     /**
      * Case <U>insensitive</U> {@link NavigableSet} of values considered {@code false} by {@link #parseBoolean(String)}
      */
-    public static final NavigableSet<String> FALSE_VALUES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> FALSE_VALUES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(
-                String.CASE_INSENSITIVE_ORDER, "false", "f", "no", "n", "off"));
+                    String.CASE_INSENSITIVE_ORDER, "false", "f", "no", "n", "off"));
 
     private PropertyResolverUtils() {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
     /**
-     * @param v Value to examine
-     * @return {@code true} if equals to {@value #NONE_VALUE} - case <U>insensitive</U>
+     * @param  v Value to examine
+     * @return   {@code true} if equals to {@value #NONE_VALUE} - case <U>insensitive</U>
      */
     public static boolean isNoneValue(String v) {
         return NONE_VALUE.equalsIgnoreCase(v);
     }
 
     /**
-     * @param resolver     The {@link PropertyResolver} instance - ignored if {@code null}
-     * @param name         The property name
-     * @param defaultValue The default value to return if the specified property
-     *                     does not exist in the properties map
-     * @return The resolved property
+     * @param  resolver              The {@link PropertyResolver} instance - ignored if {@code null}
+     * @param  name                  The property name
+     * @param  defaultValue          The default value to return if the specified property does not exist in the
+     *                               properties map
+     * @return                       The resolved property
      * @throws NumberFormatException if malformed value
-     * @see #toLong(Object, long)
+     * @see                          #toLong(Object, long)
      */
     public static long getLongProperty(PropertyResolver resolver, String name, long defaultValue) {
         return toLong(resolvePropertyValue(resolver, name), defaultValue);
@@ -86,41 +84,35 @@ public final class PropertyResolverUtils {
     /**
      * Converts a generic object value to a {@code long} if possible:
      * <UL>
-     *      <LI>
-     *      If value is {@code null} the default is returned
-     *      </LI>
+     * <LI>If value is {@code null} the default is returned</LI>
      *
-     *      <LI>
-     *      If value is a {@link Number} then its {@link Number#longValue()} is returned
-     *      </LI>
+     * <LI>If value is a {@link Number} then its {@link Number#longValue()} is returned</LI>
      *
-     *      <LI>
-     *      Otherwise, the value's {@code toString()} is parsed as a {@code long}
-     *      </LI>
+     * <LI>Otherwise, the value's {@code toString()} is parsed as a {@code long}</LI>
      * </UL>
      *
-     * @param value         The resolved value - may be {@code null}
-     * @param defaultValue  The default to use if {@code null} resolved value
-     * @return The resolved value
+     * @param  value                 The resolved value - may be {@code null}
+     * @param  defaultValue          The default to use if {@code null} resolved value
+     * @return                       The resolved value
      * @throws NumberFormatException if malformed value
-     * @see Long#parseLong(String)
+     * @see                          Long#parseLong(String)
      */
     public static long toLong(Object value, long defaultValue) {
         if (value == null) {
             return defaultValue;
         } else if (value instanceof Number) {
             return ((Number) value).longValue();
-        } else {    // we parse the string in case it is not a valid long value
+        } else { // we parse the string in case it is not a valid long value
             return Long.parseLong(value.toString());
         }
     }
 
     /**
-     * @param resolver The {@link PropertyResolver} instance - ignored if {@code null}
-     * @param name     The property name
-     * @return The {@link Long} value or {@code null} if property not found
+     * @param  resolver              The {@link PropertyResolver} instance - ignored if {@code null}
+     * @param  name                  The property name
+     * @return                       The {@link Long} value or {@code null} if property not found
      * @throws NumberFormatException if malformed value
-     * @see #toLong(Object)
+     * @see                          #toLong(Object)
      */
     public static Long getLong(PropertyResolver resolver, String name) {
         return toLong(resolvePropertyValue(resolver, name));
@@ -133,29 +125,20 @@ public final class PropertyResolverUtils {
     /**
      * Converts a generic object into a {@link Long}:
      * <UL>
-     *      <LI>
-     *      If the value is {@code null} then returns {@code null}.
-     *      </LI>
+     * <LI>If the value is {@code null} then returns {@code null}.</LI>
      *
-     *      <LI>
-     *      If the value is already a {@link Long} then it is returned as such.
-     *      </LI>
-
-     *      <LI>
-     *      If value is a {@link Number} then its {@link Number#longValue()} is
-     *      wrapped as a {@link Long}
-     *      </LI>
+     * <LI>If the value is already a {@link Long} then it is returned as such.</LI>
+     * 
+     * <LI>If value is a {@link Number} then its {@link Number#longValue()} is wrapped as a {@link Long}</LI>
      *
-     *      <LI>
-     *      Otherwise, the value's {@code toString()} is parsed as a {@link Long}
-     *      </LI>
+     * <LI>Otherwise, the value's {@code toString()} is parsed as a {@link Long}</LI>
      * </UL>
      *
-     * @param value The resolved value - may be {@code null}
-     * @return The {@link Long} value or {@code null} if property not found
+     * @param  value                 The resolved value - may be {@code null}
+     * @return                       The {@link Long} value or {@code null} if property not found
      * @throws NumberFormatException if malformed value
-     * @see Long#valueOf(long)
-     * @see Long#valueOf(String)
+     * @see                          Long#valueOf(long)
+     * @see                          Long#valueOf(String)
      */
     public static Long toLong(Object value) {
         if (value == null) {
@@ -164,7 +147,7 @@ public final class PropertyResolverUtils {
             return (Long) value;
         } else if (value instanceof Number) {
             return ((Number) value).longValue();
-        } else {    // we parse the string in case it is not a valid long value
+        } else { // we parse the string in case it is not a valid long value
             return Long.valueOf(value.toString());
         }
     }
@@ -172,32 +155,30 @@ public final class PropertyResolverUtils {
     /**
      * Converts an enumerated configuration value:
      * <UL>
-     *      <P><LI>
-     *      If value is {@code null} then return {@code null}
-     *      </LI></P>
+     * <P>
+     * <LI>If value is {@code null} then return {@code null}</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      If value already of the expected type then simply
-     *      cast and return it.
-     *      </LI></P>
+     * <P>
+     * <LI>If value already of the expected type then simply cast and return it.</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      If value is a {@link CharSequence} then convert it
-     *      to a string and look for a matching enumerated value
-     *      name - case <U>insensitive</U>.
-     *      </LI></P>>
+     * <P>
+     * <LI>If value is a {@link CharSequence} then convert it to a string and look for a matching enumerated value name
+     * - case <U>insensitive</U>.</LI>
+     * </P>
+     * >
      * </UL>
      *
-     * @param <E> Type of enumerated value
-     * @param enumType The enumerated class type
-     * @param value The configured value - ignored if {@code null}
-     * @param failIfNoMatch Whether to fail if no matching name found
-     * @param available The available values to compare the name
-     * @return The matching enumerated value - {@code null} if no match found
-     * @throws IllegalArgumentException If value is neither {@code null},
-     * nor the enumerated type nor a {@link CharSequence}
-     * @throws NoSuchElementException If no matching string name found and
-     * <tt>failIfNoMatch</tt> is {@code true}
+     * @param  <E>                      Type of enumerated value
+     * @param  enumType                 The enumerated class type
+     * @param  value                    The configured value - ignored if {@code null}
+     * @param  failIfNoMatch            Whether to fail if no matching name found
+     * @param  available                The available values to compare the name
+     * @return                          The matching enumerated value - {@code null} if no match found
+     * @throws IllegalArgumentException If value is neither {@code null}, nor the enumerated type nor a
+     *                                  {@link CharSequence}
+     * @throws NoSuchElementException   If no matching string name found and <tt>failIfNoMatch</tt> is {@code true}
      */
     public static <E extends Enum<E>> E toEnum(
             Class<E> enumType, Object value, boolean failIfNoMatch, Collection<E> available) {
@@ -222,7 +203,7 @@ public final class PropertyResolverUtils {
             return null;
         } else {
             throw new IllegalArgumentException(
-                "Bad value type for enum conversion: " + value.getClass().getSimpleName());
+                    "Bad value type for enum conversion: " + value.getClass().getSimpleName());
         }
     }
 
@@ -247,7 +228,7 @@ public final class PropertyResolverUtils {
             return defaultValue;
         } else if (value instanceof Number) {
             return ((Number) value).intValue();
-        } else {    // we parse the string in case this is NOT an integer
+        } else { // we parse the string in case this is NOT an integer
             return Integer.parseInt(value.toString());
         }
     }
@@ -267,7 +248,7 @@ public final class PropertyResolverUtils {
             return (Integer) value;
         } else if (value instanceof Number) {
             return ((Number) value).intValue();
-        } else {    // we parse the string in case this is NOT a valid integer string
+        } else { // we parse the string in case this is NOT a valid integer string
             return Integer.valueOf(value.toString());
         }
     }
@@ -289,11 +270,11 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * @param value The value to convert
-     * @param defaultValue The default value to return if value is {@code null} or
-     * and empty string, then returns the default value.
-     * @return The resolved value
-     * @see #toBoolean(Object)
+     * @param  value        The value to convert
+     * @param  defaultValue The default value to return if value is {@code null} or and empty string, then returns the
+     *                      default value.
+     * @return              The resolved value
+     * @see                 #toBoolean(Object)
      */
     public static boolean toBoolean(Object value, boolean defaultValue) {
         Boolean bool = toBoolean(value);
@@ -315,28 +296,32 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * <P>Attempts to convert the object into a {@link Boolean} value as follows:</P></BR>
+     * <P>
+     * Attempts to convert the object into a {@link Boolean} value as follows:
+     * </P>
+     * </BR>
      * <UL>
-     *      <P><LI>
-     *      If {@code null} or an empty string then return {@code null}.
-     *      </LI></P>
+     * <P>
+     * <LI>If {@code null} or an empty string then return {@code null}.</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      If already a {@link Boolean} then return as-is
-     *      </LI></P>
+     * <P>
+     * <LI>If already a {@link Boolean} then return as-is</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      If a {@link CharSequence} then invoke {@link #parseBoolean(String)}
-     *      </LI></P>
+     * <P>
+     * <LI>If a {@link CharSequence} then invoke {@link #parseBoolean(String)}</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      Otherwise, throws an {@link UnsupportedOperationException}
-     *      </LI></P>
+     * <P>
+     * <LI>Otherwise, throws an {@link UnsupportedOperationException}</LI>
+     * </P>
      * </UL>
-     * @param value The value to be converted
-     * @return The result - {@code null} if {@code null} or an empty string
+     * 
+     * @param  value                         The value to be converted
+     * @return                               The result - {@code null} if {@code null} or an empty string
      * @throws UnsupportedOperationException If value cannot be converted to a boolean - e.g., a number.
-     * @see #parseBoolean(String)
+     * @see                                  #parseBoolean(String)
      */
     public static Boolean toBoolean(Object value) {
         if (value == null) {
@@ -347,18 +332,18 @@ public final class PropertyResolverUtils {
             return parseBoolean(value.toString());
         } else {
             throw new UnsupportedOperationException(
-                "Cannot convert " + value.getClass().getSimpleName() + "[" + value + "] to boolean");
+                    "Cannot convert " + value.getClass().getSimpleName() + "[" + value + "] to boolean");
         }
     }
 
     /**
-     * Converts a string to a {@link Boolean} value by looking for it in either the {@link #TRUE_VALUES}
-     * or {@link #FALSE_VALUES}
+     * Converts a string to a {@link Boolean} value by looking for it in either the {@link #TRUE_VALUES} or
+     * {@link #FALSE_VALUES}
      *
-     * @param value The value to parse
-     * @return The result - {@code null} if value is {@code null}/empty
-     * @throws IllegalArgumentException If non-empty string that does not match (case <U>insensitive</U>)
-     * either of the known values for boolean.
+     * @param  value                    The value to parse
+     * @return                          The result - {@code null} if value is {@code null}/empty
+     * @throws IllegalArgumentException If non-empty string that does not match (case <U>insensitive</U>) either of the
+     *                                  known values for boolean.
      */
     public static Boolean parseBoolean(String value) {
         if (GenericUtils.isEmpty(value)) {
@@ -381,10 +366,10 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * @param resolver     The {@link PropertyResolver} to use - ignored if {@code null}
-     * @param name         The property name
-     * @param defaultValue The default value to return if property not set or empty
-     * @return The set value (if not {@code null}/empty) or default one
+     * @param  resolver     The {@link PropertyResolver} to use - ignored if {@code null}
+     * @param  name         The property name
+     * @param  defaultValue The default value to return if property not set or empty
+     * @return              The set value (if not {@code null}/empty) or default one
      */
     public static String getStringProperty(
             PropertyResolver resolver, String name, String defaultValue) {
@@ -452,11 +437,10 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * @param resolver The {@link PropertyResolver} instance
-     * @param name     The property name
-     * @param value    The new value - if {@code null} or an empty {@link CharSequence}
-     *                 the property is <U>removed</U>
-     * @return The previous value - {@code null} if none
+     * @param  resolver The {@link PropertyResolver} instance
+     * @param  name     The property name
+     * @param  value    The new value - if {@code null} or an empty {@link CharSequence} the property is <U>removed</U>
+     * @return          The previous value - {@code null} if none
      */
     public static Object updateProperty(PropertyResolver resolver, String name, Object value) {
         return updateProperty(resolver.getProperties(), name, value);
@@ -472,14 +456,13 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * Unwinds the resolvers hierarchy until found one with a non-{@code null} value
-     * for the requested property or reached top. If still no value found and the key
-     * starts with &quot;org.apache.sshd&quot; then the system properties are also
-     * consulted
+     * Unwinds the resolvers hierarchy until found one with a non-{@code null} value for the requested property or
+     * reached top. If still no value found and the key starts with &quot;org.apache.sshd&quot; then the system
+     * properties are also consulted
      *
-     * @param resolver The {@link PropertyResolver} to start from - ignored if {@code null}
-     * @param name     The requested property name
-     * @return The found value or {@code null}
+     * @param  resolver The {@link PropertyResolver} to start from - ignored if {@code null}
+     * @param  name     The requested property name
+     * @return          The found value or {@code null}
      */
     public static Object resolvePropertyValue(PropertyResolver resolver, String name) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -495,12 +478,12 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * Unwinds the resolvers hierarchy until found one with a non-{@code null} value
-     * for the requested property or reached top.
+     * Unwinds the resolvers hierarchy until found one with a non-{@code null} value for the requested property or
+     * reached top.
      *
-     * @param resolver The {@link PropertyResolver} to start from - ignored if {@code null}
-     * @param name     The requested property name
-     * @return The found properties {@link Map} or {@code null}
+     * @param  resolver The {@link PropertyResolver} to start from - ignored if {@code null}
+     * @param  name     The requested property name
+     * @return          The found properties {@link Map} or {@code null}
      */
     public static Map<String, Object> resolvePropertiesSource(PropertyResolver resolver, String name) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
@@ -534,12 +517,10 @@ public final class PropertyResolverUtils {
     }
 
     /**
-     * Wraps a {@link Map} into a {@link PropertyResolver} so it can be used
-     * with these utilities
+     * Wraps a {@link Map} into a {@link PropertyResolver} so it can be used with these utilities
      *
-     * @param props The properties map - may be {@code null}/empty if no properties
-     * are updated
-     * @return The resolver wrapper
+     * @param  props The properties map - may be {@code null}/empty if no properties are updated
+     * @return       The resolver wrapper
      */
     public static PropertyResolver toPropertyResolver(Map<String, ?> props) {
         return toPropertyResolver(props, null);

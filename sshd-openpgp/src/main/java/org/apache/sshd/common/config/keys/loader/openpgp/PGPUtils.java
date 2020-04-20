@@ -54,14 +54,14 @@ public final class PGPUtils {
     /** Alias for {@link EncryptionAlgorithm#Unencrypted Unencrypted} */
     public static final String NO_CIPHER_PLACEHOLDER = PropertyResolverUtils.NONE_VALUE;
 
-    public static final Set<EncryptionAlgorithm> CIPHERS =
-        Collections.unmodifiableSet(EnumSet.allOf(EncryptionAlgorithm.class));
+    public static final Set<EncryptionAlgorithm> CIPHERS
+            = Collections.unmodifiableSet(EnumSet.allOf(EncryptionAlgorithm.class));
 
     /** Alias for {@link CompressionAlgorithm#Uncompressed Uncompressed} */
     public static final String NO_COMPRESSION_PLACEHOLDER = PropertyResolverUtils.NONE_VALUE;
 
-    public static final Set<CompressionAlgorithm> COMPRESSIONS =
-        Collections.unmodifiableSet(EnumSet.allOf(CompressionAlgorithm.class));
+    public static final Set<CompressionAlgorithm> COMPRESSIONS
+            = Collections.unmodifiableSet(EnumSet.allOf(CompressionAlgorithm.class));
 
     private PGPUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -77,9 +77,9 @@ public final class PGPUtils {
         }
 
         return CIPHERS.stream()
-            .filter(c -> name.equalsIgnoreCase(c.name()))
-            .findFirst()
-            .orElse(null);
+                .filter(c -> name.equalsIgnoreCase(c.name()))
+                .findFirst()
+                .orElse(null);
     }
 
     public static CompressionAlgorithm fromCompressionName(String name) {
@@ -91,32 +91,33 @@ public final class PGPUtils {
             return CompressionAlgorithm.Uncompressed;
         } else {
             return COMPRESSIONS.stream()
-                .filter(c -> name.equalsIgnoreCase(c.name()))
-                .findFirst()
-                .orElse(null);
+                    .filter(c -> name.equalsIgnoreCase(c.name()))
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     /**
-     * @param key The {@link Key} whose sub-keys to map - ignored if {@code null} or no sub-keys available
-     * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
-     * value, value=the matching {@link Subkey}
-     * @throws NullPointerException If key with {@code null} fingerprint encountered
+     * @param  key                      The {@link Key} whose sub-keys to map - ignored if {@code null} or no sub-keys
+     *                                  available
+     * @return                          A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
+     *                                  value, value=the matching {@link Subkey}
+     * @throws NullPointerException     If key with {@code null} fingerprint encountered
      * @throws IllegalArgumentException If key with empty fingerprint encountered
-     * @throws IllegalStateException If more than one key with same fingerprint found
-     * @see #mapSubKeysByFingerprint(Collection)
+     * @throws IllegalStateException    If more than one key with same fingerprint found
+     * @see                             #mapSubKeysByFingerprint(Collection)
      */
     public static NavigableMap<String, Subkey> mapSubKeysByFingerprint(Key key) {
         return mapSubKeysByFingerprint((key == null) ? Collections.emptyList() : key.getSubkeys());
     }
 
     /**
-     * @param subKeys The {@link Subkey}-s to map - ignored if {@code null}/empty
-     * @return A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
-     * value, value=the matching {@link Subkey}
-     * @throws NullPointerException If key with {@code null} fingerprint encountered
+     * @param  subKeys                  The {@link Subkey}-s to map - ignored if {@code null}/empty
+     * @return                          A {@link NavigableMap} where key=the (case <U>insensitive</U>) fingerprint
+     *                                  value, value=the matching {@link Subkey}
+     * @throws NullPointerException     If key with {@code null} fingerprint encountered
      * @throws IllegalArgumentException If key with empty fingerprint encountered
-     * @throws IllegalStateException If more than one key with same fingerprint found
+     * @throws IllegalStateException    If more than one key with same fingerprint found
      */
     public static NavigableMap<String, Subkey> mapSubKeysByFingerprint(Collection<? extends Subkey> subKeys) {
         if (GenericUtils.isEmpty(subKeys)) {
@@ -134,19 +135,19 @@ public final class PGPUtils {
     }
 
     /**
-     * @param key The {@link Key} whose sub-keys to scan - ignored if {@code null} or has no sub-keys
-     * @param fingerprint The fingerprint to match (case <U>insensitive</U>) - ignored if {@code null}/empty
-     * @return The first matching {@link Subkey} - {@code null} if no match found
-     * @see #findSubkeyByFingerprint(Collection, String)
+     * @param  key         The {@link Key} whose sub-keys to scan - ignored if {@code null} or has no sub-keys
+     * @param  fingerprint The fingerprint to match (case <U>insensitive</U>) - ignored if {@code null}/empty
+     * @return             The first matching {@link Subkey} - {@code null} if no match found
+     * @see                #findSubkeyByFingerprint(Collection, String)
      */
     public static Subkey findSubkeyByFingerprint(Key key, String fingerprint) {
         return findSubkeyByFingerprint((key == null) ? Collections.emptyList() : key.getSubkeys(), fingerprint);
     }
 
     /**
-     * @param subKeys The {@link Subkey}-s to scan - ignored if {@code null}/empty
-     * @param fingerprint The fingerprint to match (case <U>insensitive</U>) - ignored if {@code null}/empty
-     * @return The first matching sub-key - {@code null} if no match found
+     * @param  subKeys     The {@link Subkey}-s to scan - ignored if {@code null}/empty
+     * @param  fingerprint The fingerprint to match (case <U>insensitive</U>) - ignored if {@code null}/empty
+     * @return             The first matching sub-key - {@code null} if no match found
      */
     public static Subkey findSubkeyByFingerprint(Collection<? extends Subkey> subKeys, String fingerprint) {
         if (GenericUtils.isEmpty(subKeys) || GenericUtils.isEmpty(fingerprint)) {
@@ -154,14 +155,13 @@ public final class PGPUtils {
         }
 
         return subKeys.stream()
-            .filter(k -> fingerprint.equalsIgnoreCase(k.getFingerprint()))
-            .findFirst()
-            .orElse(null);
+                .filter(k -> fingerprint.equalsIgnoreCase(k.getFingerprint()))
+                .findFirst()
+                .orElse(null);
     }
 
     private static final class LazyDefaultPgpKeysFolderHolder {
-        private static final Path PATH =
-            IdentityUtils.getUserHomeFolder()
+        private static final Path PATH = IdentityUtils.getUserHomeFolder()
                 .resolve(OsUtils.isUNIX() ? STD_LINUX_PGP_FOLDER_NAME : STD_WINDOWS_PGP_FOLDER_NAME);
 
         private LazyDefaultPgpKeysFolderHolder() {
@@ -170,8 +170,7 @@ public final class PGPUtils {
     }
 
     /**
-     * @return The default <A HREF="https://www.gnupg.org/">Gnu Privacy Guard</A> folder used
-     * to hold key files.
+     * @return The default <A HREF="https://www.gnupg.org/">Gnu Privacy Guard</A> folder used to hold key files.
      */
     @SuppressWarnings("synthetic-access")
     public static Path getDefaultPgpFolderPath() {

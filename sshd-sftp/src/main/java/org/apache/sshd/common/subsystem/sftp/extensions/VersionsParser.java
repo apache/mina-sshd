@@ -38,7 +38,8 @@ import org.apache.sshd.common.util.NumberUtils;
 public class VersionsParser extends AbstractParser<Versions> {
     /**
      * The &quot;versions&quot; extension data as per
-     * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 Section 4.6</A>
+     * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09
+     * Section 4.6</A>
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
@@ -73,21 +74,21 @@ public class VersionsParser extends AbstractParser<Versions> {
             Set<Integer> available = GenericUtils.asSortedSet(currentlyAvailable);
             for (String v : reported) {
                 /*
-                 * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-11#section-5.5
-                 * versions may contain not only numbers
+                 * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-11#section-5.5 versions may
+                 * contain not only numbers
                  */
                 if (!NumberUtils.isIntegerNumber(v)) {
                     continue;
                 }
 
                 if (!available.add(Integer.valueOf(v))) {
-                    continue;   // debug breakpoint
+                    continue; // debug breakpoint
                 }
             }
 
             return (available.size() == 1)
-                 ? currentlyAvailable
-                 : new ArrayList<>(available);
+                    ? currentlyAvailable
+                    : new ArrayList<>(available);
         }
 
         @Override

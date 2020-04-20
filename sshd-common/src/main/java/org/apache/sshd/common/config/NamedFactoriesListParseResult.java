@@ -28,9 +28,9 @@ import org.apache.sshd.common.util.GenericUtils;
 /**
  * Holds the result of parsing a list of {@link NamedFactory}ies
  *
- * @param <T> Result type
- * @param <F> Factory type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Result type
+ * @param  <F> Factory type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class NamedFactoriesListParseResult<T, F extends NamedResource>
         extends FactoriesListParseResult<T, F> {
@@ -42,6 +42,6 @@ public abstract class NamedFactoriesListParseResult<T, F extends NamedResource>
     @Override
     public String toString() {
         return "parsed=" + NamedResource.getNames(getParsedFactories())
-                + ";unknown=" + GenericUtils.join(getUnsupportedFactories(), ',');
+               + ";unknown=" + GenericUtils.join(getUnsupportedFactories(), ',');
     }
 }

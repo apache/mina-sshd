@@ -35,8 +35,8 @@ public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param factory The {@link CloseableExecutorService} factory to use for spawning threads.
-     * If {@code null} then an internal service is allocated.
+     * @param factory The {@link CloseableExecutorService} factory to use for spawning threads. If {@code null} then an
+     *                internal service is allocated.
      */
     public MinaServiceFactoryFactory(Factory<CloseableExecutorService> factory) {
         super(factory);

@@ -76,7 +76,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.nameDecodingCharset = PropertyResolverUtils.getCharset(
-            clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
+                clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
@@ -98,7 +98,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
 
         long initializationTimeout = clientSession.getLongProperty(
-            SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+                SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
             synchronized (messages) {
@@ -168,10 +168,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     /**
      * Receive binary data
-     * @param buf   The buffer for the incoming data
-     * @param start Offset in buffer to place the data
-     * @param len   Available space in buffer for the data
-     * @return Actual size of received data
+     * 
+     * @param  buf         The buffer for the incoming data
+     * @param  start       Offset in buffer to place the data
+     * @param  len         Available space in buffer for the data
+     * @return             Actual size of received data
      * @throws IOException If failed to receive incoming data
      */
     protected int data(byte[] buf, int start, int len) throws IOException {
@@ -204,10 +205,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
     /**
      * Read SFTP packets from buffer
      *
-     * @param incoming The received {@link Buffer}
-     * @return {@code true} if data from incoming buffer was processed
+     * @param  incoming    The received {@link Buffer}
+     * @return             {@code true} if data from incoming buffer was processed
      * @throws IOException if failed to process the buffer
-     * @see #process(Buffer)
+     * @see                #process(Buffer)
      */
     protected boolean receive(Buffer incoming) throws IOException {
         int rpos = incoming.rpos();
@@ -239,7 +240,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     /**
      * Process an SFTP packet
      *
-     * @param incoming The received {@link Buffer}
+     * @param  incoming    The received {@link Buffer}
      * @throws IOException if failed to process the buffer
      */
     protected void process(Buffer incoming) throws IOException {
@@ -255,7 +256,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         if (log.isTraceEnabled()) {
             log.trace("process({}) id={}, type={}, len={}",
-                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+                    getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
         synchronized (messages) {
@@ -270,7 +271,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int len = buffer.available();
         if (log.isTraceEnabled()) {
             log.trace("send({}) cmd={}, len={}, id={}",
-                  getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
+                    getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
         }
 
         OutputStream dos = channel.getInvertedIn();
@@ -286,7 +287,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     public Buffer receive(int id) throws IOException {
         Session session = getClientSession();
         long idleTimeout = PropertyResolverUtils.getLongProperty(
-            session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+                session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
         if (idleTimeout <= 0L) {
             idleTimeout = FactoryManager.DEFAULT_IDLE_TIMEOUT;
         }
@@ -307,7 +308,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 try {
                     messages.wait(idleTimeout);
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
+                    throw (IOException) new InterruptedIOException(
+                            "Interrupted while waiting for messages at iteration #" + count).initCause(e);
                 }
             }
 
@@ -355,13 +357,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
         Integer reqId;
         synchronized (messages) {
             /*
-             * We need to use a timeout since if the remote server does not support
-             * SFTP, we will not know it immediately. This is due to the fact that the
-             * request for the subsystem does not contain a reply as to its success or
-             * failure. Thus, the SFTP channel is created by the client, but there is
-             * no one on the other side to reply - thus the need for the timeout
+             * We need to use a timeout since if the remote server does not support SFTP, we will not know it
+             * immediately. This is due to the fact that the request for the subsystem does not contain a reply as to
+             * its success or failure. Thus, the SFTP channel is created by the client, but there is no one on the other
+             * side to reply - thus the need for the timeout
              */
-            for (long remainingTimeout = initializationTimeout; (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
+            for (long remainingTimeout = initializationTimeout;
+                 (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
                 try {
                     long sleepStart = System.nanoTime();
                     messages.wait(remainingTimeout);
@@ -374,7 +376,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
                         remainingTimeout -= sleepMillis;
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
+                    throw (IOException) new InterruptedIOException(
+                            "Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
                 }
             }
 
@@ -383,7 +386,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
 
             if (messages.isEmpty()) {
-                throw new SocketTimeoutException("No incoming initialization response received within " + initializationTimeout + " msec.");
+                throw new SocketTimeoutException(
+                        "No incoming initialization response received within " + initializationTimeout + " msec.");
             }
 
             Collection<Integer> ids = messages.keySet();
@@ -398,7 +402,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
             log.trace("init({}) id={} type={} len={}",
-                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+                    getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
         if (type == SftpConstants.SSH_FXP_VERSION) {
@@ -425,13 +429,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
             String lang = buffer.getString();
             if (traceEnabled) {
                 log.trace("init({})[id={}] - status: {} [{}] {}",
-                      getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                        getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
             }
 
             throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
         } else {
             IOException err = handleUnexpectedPacket(
-                SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
+                    SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
             if (err != null) {
                 throw err;
             }
@@ -440,8 +444,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     /**
-     * @param selector The {@link SftpVersionSelector} to use - ignored if {@code null}
-     * @return The selected version (may be same as current)
+     * @param  selector    The {@link SftpVersionSelector} to use - ignored if {@code null}
+     * @return             The selected version (may be same as current)
      * @throws IOException If failed to negotiate
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
@@ -461,11 +465,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if ((GenericUtils.size(extensions) > 0)
                 && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed)
-                ? null
-                : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
+                    ? null
+                    : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             availableVersions = (vers == null)
-                ? Collections.singletonList(current)
-                : vers.resolveAvailableVersions(current);
+                    ? Collections.singletonList(current)
+                    : vers.resolveAvailableVersions(current);
         } else {
             availableVersions = Collections.singletonList(current);
         }
@@ -474,7 +478,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int selected = selector.selectVersion(session, current, availableVersions);
         if (debugEnabled) {
             log.debug("negotiateVersion({}) current={} {} -> {}",
-                clientChannel, current, availableVersions, selected);
+                    clientChannel, current, availableVersions, selected);
         }
 
         if (selected == current) {
@@ -483,13 +487,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         if (!availableVersions.contains(selected)) {
             throw new StreamCorruptedException(
-                "Selected version (" + selected + ") not part of available: " + availableVersions);
+                    "Selected version (" + selected + ") not part of available: " + availableVersions);
         }
 
         String verVal = String.valueOf(selected);
         Buffer buffer = new ByteArrayBuffer(
-                Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
-                + Integer.BYTES + verVal.length() + Byte.SIZE, false);
+                Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length() // extension name
+                                            + Integer.BYTES + verVal.length() + Byte.SIZE,
+                false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkCommandStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);

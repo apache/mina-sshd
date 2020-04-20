@@ -66,7 +66,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     @Override
     public synchronized String createDisplay(
             boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen)
-                throws IOException {
+            throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (isClosed()) {
             throw new IllegalStateException("X11ForwardSupport is closed");
@@ -79,7 +79,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         if (OsUtils.isWin32()) {
             if (debugEnabled) {
                 log.debug("createDisplay(auth={}, cookie={}, screen={}) Windows O/S N/A",
-                      authenticationProtocol, authenticationCookie, screen);
+                        authenticationProtocol, authenticationCookie, screen);
             }
             return null;
         }
@@ -107,8 +107,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             } catch (BindException bindErr) {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) failed ({}) to bind to address={}: {}",
-                          authenticationProtocol, authenticationCookie, screen,
-                          bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
+                            authenticationProtocol, authenticationCookie, screen,
+                            bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
                 }
 
                 addr = null;
@@ -117,20 +117,20 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
         if (addr == null) {
             log.warn("createDisplay(auth={}, cookie={}, screen={})"
-                   + " failed to allocate internet-domain X11 display socket in range {}-{}",
-                     authenticationProtocol, authenticationCookie, screen,
-                     minDisplayNumber, maxDisplayNumber);
+                     + " failed to allocate internet-domain X11 display socket in range {}-{}",
+                    authenticationProtocol, authenticationCookie, screen,
+                    minDisplayNumber, maxDisplayNumber);
             Collection<SocketAddress> boundAddresses = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(boundAddresses)) {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - no more bound addresses",
-                          authenticationProtocol, authenticationCookie, screen);
+                            authenticationProtocol, authenticationCookie, screen);
                 }
                 close();
             } else {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - remaining bound addresses: {}",
-                          authenticationProtocol, authenticationCookie, screen, boundAddresses);
+                            authenticationProtocol, authenticationCookie, screen, boundAddresses);
                 }
             }
 
@@ -149,8 +149,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             }
 
             if (result == 0) {
-                processBuilder =
-                    new ProcessBuilder(
+                processBuilder = new ProcessBuilder(
                         XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie);
                 p = processBuilder.start();
                 result = p.waitFor();
@@ -167,7 +166,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             return bindHost + ":" + displayNumber + "." + screen;
         } catch (Throwable e) {
             log.warn("createDisplay({}) failed ({}) run xauth: {}",
-                 authDisplay, e.getClass().getSimpleName(), e.getMessage());
+                    authDisplay, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.warn("createDisplay(" + authDisplay + ") xauth failure details", e);
             }
@@ -194,7 +193,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         if (channel != null) {
             if (log.isDebugEnabled()) {
                 log.debug("sessionClosed({}) close channel={} - cause={}",
-                    session, channel, (cause == null) ? null : cause.getClass().getSimpleName());
+                        session, channel, (cause == null) ? null : cause.getClass().getSimpleName());
             }
             // If exception signaled then close channel immediately
             channel.close(cause != null);
@@ -219,7 +218,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         session.setAttribute(X11ForwardingExceptionMarker.class, cause);
         log.error("exceptionCaught({}) {}: {}",
-            session, cause.getClass().getSimpleName(), cause.getMessage());
+                session, cause.getClass().getSimpleName(), cause.getMessage());
 
         if (log.isDebugEnabled()) {
             log.error("exceptionCaught(" + session + ") caught exception details", cause);

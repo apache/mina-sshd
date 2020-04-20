@@ -23,16 +23,15 @@ import java.io.IOException;
 import org.apache.sshd.common.Closeable;
 
 /**
- * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
+ * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the
+ * client side.
  */
 public interface AgentForwardSupport extends Closeable {
     /**
-     * Initializes the agent forwarding if not already done so - i.e.,
-     * can be called more than once - only first successful call counts,
-     * the rest will return the identifier of the previously initialized
-     * agent.
+     * Initializes the agent forwarding if not already done so - i.e., can be called more than once - only first
+     * successful call counts, the rest will return the identifier of the previously initialized agent.
      *
-     * @return The agent ID
+     * @return             The agent ID
      * @throws IOException If failed to initialize
      */
     String initialize() throws IOException;

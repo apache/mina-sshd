@@ -37,13 +37,17 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * <P>Serves as the base channel session for executing remote commands - including
- * a full shell. <B>Note:</B> all the configuration changes via the various
- * {@code setXXX} methods must be made <U>before</U> the channel is actually
- * open. If they are invoked afterwards then they have no effect (silently
- * ignored).</P>
- * <P>A typical code snippet would be:</P>
- * <pre><code>
+ * <P>
+ * Serves as the base channel session for executing remote commands - including a full shell. <B>Note:</B> all the
+ * configuration changes via the various {@code setXXX} methods must be made <U>before</U> the channel is actually open.
+ * If they are invoked afterwards then they have no effect (silently ignored).
+ * </P>
+ * <P>
+ * A typical code snippet would be:
+ * </P>
+ * 
+ * <pre>
+ * <code>
  * try (client = SshClient.setUpDefaultClient()) {
  *      client.start();
  *
@@ -72,7 +76,8 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *          client.stop();
  *      }
  * }
- * </code></pre>
+ * </code>
+ * </pre>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -83,10 +88,10 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
     private final PtyChannelConfiguration config;
 
     public PtyCapableChannelSession(
-            boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+                                    boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         this.usePty = usePty;
         this.config = PtyChannelConfigurationMutator.copyConfiguration(
-            configHolder, new PtyChannelConfiguration());
+                configHolder, new PtyChannelConfiguration());
         this.config.setPtyType(resolvePtyType(this.config));
         if (GenericUtils.isNotEmpty(env)) {
             for (Map.Entry<String, ?> ee : env.entrySet()) {
@@ -115,7 +120,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {
                 log.debug("setupSensibleDefaultPty({}) Failed ({}) to setup: {}",
-                    this, t.getClass().getSimpleName(), t.getMessage());
+                        this, t.getClass().getSimpleName(), t.getMessage());
             }
             if (log.isTraceEnabled()) {
                 log.trace("setupSensibleDefaultPty(" + this + ") failure details", t);
@@ -200,11 +205,10 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
     }
 
     /**
-     * @param key The (never {@code null}) key (Note: may be empty...)
-     * @param value The value to set - if {@code null} then the pre-existing
-     * value for the key (if any) is <U>removed</U>.
-     * @return The replaced/removed previous value - {@code null} if no previous
-     * value set for the key.
+     * @param  key   The (never {@code null}) key (Note: may be empty...)
+     * @param  value The value to set - if {@code null} then the pre-existing value for the key (if any) is
+     *               <U>removed</U>.
+     * @return       The replaced/removed previous value - {@code null} if no previous value set for the key.
      */
     public Object setEnv(String key, Object value) {
         ValidateUtils.checkNotNull(key, "No key provided");
@@ -222,7 +226,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
     public void sendWindowChange(int columns, int lines, int height, int width) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendWindowChange({}) cols={}, lines={}, height={}, width={}",
-                      this, columns, lines, height, width);
+                    this, columns, lines, height, width);
         }
 
         setPtyColumns(columns);
@@ -234,7 +238,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString("window-change");
-        buffer.putBoolean(false);   // want-reply
+        buffer.putBoolean(false); // want-reply
         buffer.putInt(getPtyColumns());
         buffer.putInt(getPtyLines());
         buffer.putInt(getPtyHeight());
@@ -251,12 +255,12 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             }
 
             String channelType = session.getStringProperty(
-                SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
+                    SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
             Buffer buffer = session.createBuffer(
-                SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
+                    SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());
             buffer.putString(channelType);
-            buffer.putBoolean(false);   // want-reply
+            buffer.putBoolean(false); // want-reply
             writePacket(buffer);
         }
 
@@ -266,10 +270,10 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             }
 
             Buffer buffer = session.createBuffer(
-                SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
+                    SshConstants.SSH_MSG_CHANNEL_REQUEST, Byte.MAX_VALUE);
             buffer.putInt(getRecipient());
             buffer.putString("pty-req");
-            buffer.putBoolean(false);   // want-reply
+            buffer.putBoolean(false); // want-reply
             buffer.putString(getPtyType());
             buffer.putInt(getPtyColumns());
             buffer.putInt(getPtyLines());
@@ -301,10 +305,10 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
                 Object value = entry.getValue();
                 String str = Objects.toString(value);
                 Buffer buffer = session.createBuffer(
-                    SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + GenericUtils.length(str) + Integer.SIZE);
+                        SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + GenericUtils.length(str) + Integer.SIZE);
                 buffer.putInt(getRecipient());
                 buffer.putString("env");
-                buffer.putBoolean(false);   // want-reply
+                buffer.putBoolean(false); // want-reply
                 buffer.putString(key);
                 buffer.putString(str);
                 writePacket(buffer);

@@ -78,8 +78,7 @@ public final class CommonTestSupportUtils {
     public static final String FILE_URL_PREFIX = FILE_URL_SCHEME + ":";
 
     /**
-     * Separator used in URL(s) that reference a resource inside a JAR
-     * to denote the sub-path inside the JAR
+     * Separator used in URL(s) that reference a resource inside a JAR to denote the sub-path inside the JAR
      */
     public static final char RESOURCE_SUBPATH_SEPARATOR = '!';
 
@@ -103,11 +102,11 @@ public final class CommonTestSupportUtils {
      */
     public static final String CLASS_FILE_SUFFIX = ".class";
 
-    public static final List<String> TARGET_FOLDER_NAMES =    // NOTE: order is important
-        Collections.unmodifiableList(
-            Arrays.asList(
-                "target" /* Maven */,
-                "build" /* Gradle */));
+    public static final List<String> TARGET_FOLDER_NAMES = // NOTE: order is important
+            Collections.unmodifiableList(
+                    Arrays.asList(
+                            "target" /* Maven */,
+                            "build" /* Gradle */));
 
     public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.RSA_ALGORITHM;
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
@@ -120,12 +119,11 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param clazz A {@link Class} object
-     * @return A {@link URI} to the location of the class bytes container
-     * - e.g., the root folder, the containing JAR, etc.. Returns
-     * {@code null} if location could not be resolved
+     * @param  clazz              A {@link Class} object
+     * @return                    A {@link URI} to the location of the class bytes container - e.g., the root folder,
+     *                            the containing JAR, etc.. Returns {@code null} if location could not be resolved
      * @throws URISyntaxException if location is not a valid URI
-     * @see #getClassContainerLocationURL(Class)
+     * @see                       #getClassContainerLocationURL(Class)
      */
     public static URI getClassContainerLocationURI(Class<?> clazz) throws URISyntaxException {
         URL url = getClassContainerLocationURL(clazz);
@@ -133,10 +131,9 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param clazz A {@link Class} object
-     * @return A {@link URL} to the location of the class bytes container
-     * - e.g., the root folder, the containing JAR, etc.. Returns
-     * {@code null} if location could not be resolved
+     * @param  clazz A {@link Class} object
+     * @return       A {@link URL} to the location of the class bytes container - e.g., the root folder, the containing
+     *               JAR, etc.. Returns {@code null} if location could not be resolved
      */
     public static URL getClassContainerLocationURL(Class<?> clazz) {
         ProtectionDomain pd = clazz.getProtectionDomain();
@@ -156,9 +153,10 @@ public final class CommonTestSupportUtils {
             try {
                 url = new URL(srcForm);
             } catch (MalformedURLException e) {
-                throw new IllegalArgumentException("getClassContainerLocationURL(" + clazz.getName() + ")"
-                        + " Failed to create URL=" + srcForm + " from " + url.toExternalForm()
-                        + ": " + e.getMessage());
+                throw new IllegalArgumentException(
+                        "getClassContainerLocationURL(" + clazz.getName() + ")"
+                                                   + " Failed to create URL=" + srcForm + " from " + url.toExternalForm()
+                                                   + ": " + e.getMessage());
             }
         }
 
@@ -166,30 +164,26 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param uri The {@link URI} value - ignored if {@code null}
-     * @return The URI(s) source path where {@link #JAR_URL_PREFIX} and
-     * any sub-resource are stripped
-     * @see #getURLSource(String)
+     * @param  uri The {@link URI} value - ignored if {@code null}
+     * @return     The URI(s) source path where {@link #JAR_URL_PREFIX} and any sub-resource are stripped
+     * @see        #getURLSource(String)
      */
     public static String getURLSource(URI uri) {
         return getURLSource((uri == null) ? null : uri.toString());
     }
 
     /**
-     * @param url The {@link URL} value - ignored if {@code null}
-     * @return The URL(s) source path where {@link #JAR_URL_PREFIX} and
-     * any sub-resource are stripped
-     * @see #getURLSource(String)
+     * @param  url The {@link URL} value - ignored if {@code null}
+     * @return     The URL(s) source path where {@link #JAR_URL_PREFIX} and any sub-resource are stripped
+     * @see        #getURLSource(String)
      */
     public static String getURLSource(URL url) {
         return getURLSource((url == null) ? null : url.toExternalForm());
     }
 
     /**
-     * @param externalForm The {@link URL#toExternalForm()} string - ignored if
-     *                     {@code null}/empty
-     * @return The URL(s) source path where {@link #JAR_URL_PREFIX} and
-     * any sub-resource are stripped
+     * @param  externalForm The {@link URL#toExternalForm()} string - ignored if {@code null}/empty
+     * @return              The URL(s) source path where {@link #JAR_URL_PREFIX} and any sub-resource are stripped
      */
     public static String getURLSource(String externalForm) {
         String url = externalForm;
@@ -211,19 +205,17 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param url A {@link URL} - ignored if {@code null}
-     * @return The path after stripping any trailing '/' provided the path
-     * is not '/' itself
-     * @see #adjustURLPathValue(String)
+     * @param  url A {@link URL} - ignored if {@code null}
+     * @return     The path after stripping any trailing '/' provided the path is not '/' itself
+     * @see        #adjustURLPathValue(String)
      */
     public static String adjustURLPathValue(URL url) {
         return adjustURLPathValue((url == null) ? null : url.getPath());
     }
 
     /**
-     * @param path A URL path value - ignored if {@code null}/empty
-     * @return The path after stripping any trailing '/' provided the path
-     * is not '/' itself
+     * @param  path A URL path value - ignored if {@code null}/empty
+     * @return      The path after stripping any trailing '/' provided the path is not '/' itself
      */
     public static String adjustURLPathValue(final String path) {
         final int pathLen = (path == null) ? 0 : path.length();
@@ -248,9 +240,9 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param clazz The request {@link Class}
-     * @return A {@link URL} to the location of the <code>.class</code> file
-     * - {@code null} if location could not be resolved
+     * @param  clazz The request {@link Class}
+     * @return       A {@link URL} to the location of the <code>.class</code> file - {@code null} if location could not
+     *               be resolved
      */
     public static URL getClassBytesURL(Class<?> clazz) {
         String className = clazz.getName();
@@ -273,8 +265,8 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param name The fully qualified class name - ignored if {@code null}/empty
-     * @return The relative path of the class file byte-code resource
+     * @param  name The fully qualified class name - ignored if {@code null}/empty
+     * @return      The relative path of the class file byte-code resource
      */
     public static String getClassBytesResourceName(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -304,24 +296,23 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param anchor An anchor {@link Class} whose container we want to use
-     * as the starting point for the &quot;target&quot; folder lookup up the
-     * hierarchy
-     * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
-     * @see #detectTargetFolder(Path)
+     * @param  anchor An anchor {@link Class} whose container we want to use as the starting point for the
+     *                &quot;target&quot; folder lookup up the hierarchy
+     * @return        The &quot;target&quot; <U>folder</U> - {@code null} if not found
+     * @see           #detectTargetFolder(Path)
      */
     public static Path detectTargetFolder(Class<?> anchor) {
         return detectTargetFolder(getClassContainerLocationPath(anchor));
     }
 
     /**
-     * @param clazz A {@link Class} object
-     * @return A {@link Path} of the location of the class bytes container
-     * - e.g., the root folder, the containing JAR, etc.. Returns
-     * {@code null} if location could not be resolved
+     * @param  clazz                    A {@link Class} object
+     * @return                          A {@link Path} of the location of the class bytes container - e.g., the root
+     *                                  folder, the containing JAR, etc.. Returns {@code null} if location could not be
+     *                                  resolved
      * @throws IllegalArgumentException If location is not a valid {@link Path} location
-     * @see #getClassContainerLocationURI(Class)
-     * @see #toPathSource(URI)
+     * @see                             #getClassContainerLocationURI(Class)
+     * @see                             #toPathSource(URI)
      */
     public static Path getClassContainerLocationPath(Class<?> clazz)
             throws IllegalArgumentException {
@@ -334,14 +325,13 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * Converts a {@link URL} that may refer to an internal resource to
-     * a {@link Path} representing is &quot;source&quot; container (e.g.,
-     * if it is a resource in a JAR, then the result is the JAR's path)
+     * Converts a {@link URL} that may refer to an internal resource to a {@link Path} representing is
+     * &quot;source&quot; container (e.g., if it is a resource in a JAR, then the result is the JAR's path)
      *
-     * @param url The {@link URL} - ignored if {@code null}
-     * @return The matching {@link Path}
+     * @param  url                   The {@link URL} - ignored if {@code null}
+     * @return                       The matching {@link Path}
      * @throws MalformedURLException If source URL does not refer to a file location
-     * @see #toPathSource(URI)
+     * @see                          #toPathSource(URI)
      */
     public static Path toPathSource(URL url) throws MalformedURLException {
         if (url == null) {
@@ -351,21 +341,21 @@ public final class CommonTestSupportUtils {
         try {
             return toPathSource(url.toURI());
         } catch (URISyntaxException e) {
-            throw new MalformedURLException("toFileSource(" + url.toExternalForm() + ")"
-                    + " cannot (" + e.getClass().getSimpleName() + ")"
-                    + " convert to URI: " + e.getMessage());
+            throw new MalformedURLException(
+                    "toFileSource(" + url.toExternalForm() + ")"
+                                            + " cannot (" + e.getClass().getSimpleName() + ")"
+                                            + " convert to URI: " + e.getMessage());
         }
     }
 
     /**
-     * Converts a {@link URI} that may refer to an internal resource to
-     * a {@link Path} representing is &quot;source&quot; container (e.g.,
-     * if it is a resource in a JAR, then the result is the JAR's path)
+     * Converts a {@link URI} that may refer to an internal resource to a {@link Path} representing is
+     * &quot;source&quot; container (e.g., if it is a resource in a JAR, then the result is the JAR's path)
      *
-     * @param uri The {@link URI} - ignored if {@code null}
-     * @return The matching {@link Path}
+     * @param  uri                   The {@link URI} - ignored if {@code null}
+     * @return                       The matching {@link Path}
      * @throws MalformedURLException If source URI does not refer to a file location
-     * @see #getURLSource(URI)
+     * @see                          #getURLSource(URI)
      */
     public static Path toPathSource(URI uri) throws MalformedURLException {
         String src = getURLSource(uri);
@@ -380,17 +370,17 @@ public final class CommonTestSupportUtils {
         try {
             return Paths.get(new URI(src));
         } catch (URISyntaxException e) {
-            throw new MalformedURLException("toFileSource(" + src + ")"
-                    + " cannot (" + e.getClass().getSimpleName() + ")"
-                    + " convert to URI: " + e.getMessage());
+            throw new MalformedURLException(
+                    "toFileSource(" + src + ")"
+                                            + " cannot (" + e.getClass().getSimpleName() + ")"
+                                            + " convert to URI: " + e.getMessage());
         }
     }
 
     /**
-     * @param anchorFile An anchor {@link Path} we want to use
-     * as the starting point for the &quot;target&quot; or &quot;build&quot; folder
-     * lookup up the hierarchy
-     * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
+     * @param  anchorFile An anchor {@link Path} we want to use as the starting point for the &quot;target&quot; or
+     *                    &quot;build&quot; folder lookup up the hierarchy
+     * @return            The &quot;target&quot; <U>folder</U> - {@code null} if not found
      */
     public static Path detectTargetFolder(Path anchorFile) {
         for (Path file = anchorFile; file != null; file = file.getParent()) {
@@ -428,7 +418,8 @@ public final class CommonTestSupportUtils {
             return provider;
         }
 
-        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(anchor), "Failed to detect target folder");
+        Path targetFolder
+                = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(anchor), "Failed to detect target folder");
         Path file = targetFolder.resolve("hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         provider = createTestHostKeyProvider(file);
 
@@ -457,8 +448,10 @@ public final class CommonTestSupportUtils {
         try {
             pairs = Objects.requireNonNull(provider.loadKeys(null), "No loaded keys");
         } catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                + " keys loading exception: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Unexpected " + e.getClass().getSimpleName() + ")"
+                                       + " keys loading exception: " + e.getMessage(),
+                    e);
         }
 
         Iterator<? extends KeyPair> iter = Objects.requireNonNull(pairs.iterator(), "No keys iterator");
@@ -476,13 +469,12 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * Removes the specified file - if it is a directory, then its children
-     * are deleted recursively and then the directory itself.
+     * Removes the specified file - if it is a directory, then its children are deleted recursively and then the
+     * directory itself.
      *
-     * @param path    The file {@link Path} to be deleted - ignored if {@code null}
-     *                or does not exist anymore
-     * @param options The {@link LinkOption}s to use
-     * @return The <tt>path</tt> argument
+     * @param  path        The file {@link Path} to be deleted - ignored if {@code null} or does not exist anymore
+     * @param  options     The {@link LinkOption}s to use
+     * @return             The <tt>path</tt> argument
      * @throws IOException If failed to access/remove some file(s)
      */
     public static Path deleteRecursive(Path path, LinkOption... options) throws IOException {
@@ -548,8 +540,10 @@ public final class CommonTestSupportUtils {
         try {
             keys = Objects.requireNonNull(provider.loadKeys(null), "No keys loaded");
         } catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                + " keys loading exception: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Unexpected " + e.getClass().getSimpleName() + ")"
+                                       + " keys loading exception: " + e.getMessage(),
+                    e);
         }
 
         if (keys instanceof Collection<?>) {
@@ -565,9 +559,9 @@ public final class CommonTestSupportUtils {
     }
 
     /**
-     * @param path The {@link Path} to write the data to
-     * @param data The data to write (as UTF-8)
-     * @return The UTF-8 data bytes
+     * @param  path        The {@link Path} to write the data to
+     * @param  data        The data to write (as UTF-8)
+     * @return             The UTF-8 data bytes
      * @throws IOException If failed to write
      */
     public static byte[] writeFile(Path path, String data) throws IOException {

@@ -42,8 +42,8 @@ import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.io.resource.URLResource;
 
 /**
- * @param <PUB> The generic {@link PublicKey} type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> The generic {@link PublicKey} type
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PublicKeyRawDataReader<PUB extends PublicKey> {
     default PUB readPublicKey(SessionContext session, Path path, OpenOption... options)
@@ -53,7 +53,7 @@ public interface PublicKeyRawDataReader<PUB extends PublicKey> {
 
     default PUB readPublicKey(
             SessionContext session, Path path, Charset cs, OpenOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return readPublicKey(session, new PathResource(path, options), cs);
     }
 
@@ -74,7 +74,7 @@ public interface PublicKeyRawDataReader<PUB extends PublicKey> {
 
     default PUB readPublicKey(
             SessionContext session, IoResource<?> resource, Charset cs)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (InputStream stream = Objects.requireNonNull(resource, "No resource data").openInputStream()) {
             return readPublicKey(session, resource, stream, cs);
         }
@@ -82,13 +82,13 @@ public interface PublicKeyRawDataReader<PUB extends PublicKey> {
 
     default PUB readPublicKey(
             SessionContext session, NamedResource resourceKey, InputStream stream)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return readPublicKey(session, resourceKey, stream, StandardCharsets.UTF_8);
     }
 
     default PUB readPublicKey(
             SessionContext session, NamedResource resourceKey, InputStream stream, Charset cs)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (Reader reader = new InputStreamReader(
                 Objects.requireNonNull(stream, "No stream instance"), Objects.requireNonNull(cs, "No charset"))) {
             return readPublicKey(session, resourceKey, reader);
@@ -97,25 +97,24 @@ public interface PublicKeyRawDataReader<PUB extends PublicKey> {
 
     default PUB readPublicKey(
             SessionContext session, NamedResource resourceKey, Reader rdr)
-                throws IOException, GeneralSecurityException {
-        try (BufferedReader br = new BufferedReader(Objects.requireNonNull(rdr, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
+            throws IOException, GeneralSecurityException {
+        try (BufferedReader br
+                = new BufferedReader(Objects.requireNonNull(rdr, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
             return readPublicKey(session, resourceKey, br);
         }
     }
 
     default PUB readPublicKey(
             SessionContext session, NamedResource resourceKey, BufferedReader rdr)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         List<String> lines = IoUtils.readAllLines(rdr);
         try {
             return readPublicKey(session, resourceKey, lines);
         } finally {
-            lines.clear();   // clean up sensitive data a.s.a.p.
+            lines.clear(); // clean up sensitive data a.s.a.p.
         }
     }
 
     PUB readPublicKey(SessionContext session, NamedResource resourceKey, List<String> lines)
-        throws IOException, GeneralSecurityException;
+            throws IOException, GeneralSecurityException;
 }
-
-

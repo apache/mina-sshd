@@ -65,24 +65,23 @@ public enum Signal {
     /**
      * An un-modifiable {@link Set} of all the available {@link Signal}s
      */
-    public static final Set<Signal> SIGNALS =
-        Collections.unmodifiableSet(EnumSet.allOf(Signal.class));
+    public static final Set<Signal> SIGNALS = Collections.unmodifiableSet(EnumSet.allOf(Signal.class));
 
     /**
      * An un-modifiable <U>case-insensitive</U> {@link NavigableMap} of the names of all available {@link Signal}s
+     * 
      * @see #SIGNALS
      */
-    public static final NavigableMap<String, Signal> NAME_LOOKUP_TABLE =
-        Collections.unmodifiableNavigableMap(
+    public static final NavigableMap<String, Signal> NAME_LOOKUP_TABLE = Collections.unmodifiableNavigableMap(
             GenericUtils.toSortedMap(SIGNALS, Signal::name, Function.identity(), String.CASE_INSENSITIVE_ORDER));
 
     /**
      * An un-modifiable {@link NavigableMap} of the numeric values of all available {@link Signal}s
+     * 
      * @see #SIGNALS
      * @see #getNumeric()
      */
-    public static final NavigableMap<Integer, Signal> NUMERIC_LOOKUP_TABLE =
-        Collections.unmodifiableNavigableMap(
+    public static final NavigableMap<Integer, Signal> NUMERIC_LOOKUP_TABLE = Collections.unmodifiableNavigableMap(
             GenericUtils.toSortedMap(SIGNALS, Signal::getNumeric, Function.identity(), Comparator.naturalOrder()));
 
     private final int numeric;
@@ -101,8 +100,8 @@ public enum Signal {
     /**
      * Retrieves a signal value given its name
      *
-     * @param name The signal's name (case <U>insensitive</U>) - ignored if {@code null}/empty
-     * @return The matching {@link Signal} or {@code null} if no match found
+     * @param  name The signal's name (case <U>insensitive</U>) - ignored if {@code null}/empty
+     * @return      The matching {@link Signal} or {@code null} if no match found
      */
     public static Signal get(String name) {
         return GenericUtils.isEmpty(name) ? null : NAME_LOOKUP_TABLE.get(name);
@@ -111,9 +110,9 @@ public enum Signal {
     /**
      * Retrieves a signal value given its numeric value
      *
-     * @param num The signal's numeric value
-     * @return The matching {@link Signal} or {@code null} if no match found
-     * @see #getNumeric()
+     * @param  num The signal's numeric value
+     * @return     The matching {@link Signal} or {@code null} if no match found
+     * @see        #getNumeric()
      */
     public static Signal get(int num) {
         return NUMERIC_LOOKUP_TABLE.get(num);

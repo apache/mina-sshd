@@ -68,7 +68,8 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
-        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1,
+                new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
@@ -76,7 +77,8 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
-        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1,
+                new ECGenParameterSpec("P-384"));
     }
 
     @Test
@@ -84,12 +86,13 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
         Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
-        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
+        testPEMGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1,
+                new ECGenParameterSpec("P-521"));
     }
 
     private Path testPEMGeneratorHostKeyProvider(
             String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Path path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
@@ -99,7 +102,8 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
         PublicKey pubRead = kpRead.getPublic();
         if (pubWrite instanceof ECPublicKey) {
             // The algorithm is reported as ECDSA instead of EC
-            assertECPublicKeyEquals("Mismatched EC public key", ECPublicKey.class.cast(pubWrite), ECPublicKey.class.cast(pubRead));
+            assertECPublicKeyEquals("Mismatched EC public key", ECPublicKey.class.cast(pubWrite),
+                    ECPublicKey.class.cast(pubRead));
         } else {
             assertKeyEquals("Mismatched public keys", pubWrite, pubRead);
         }
@@ -108,8 +112,9 @@ public class PEMGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
     private static KeyPair invokePEMGeneratorHostKeyProvider(
             Path path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
-                throws IOException, GeneralSecurityException {
-        AbstractGeneratorHostKeyProvider provider = SecurityUtils.createGeneratorHostKeyProvider(path.toAbsolutePath().normalize());
+            throws IOException, GeneralSecurityException {
+        AbstractGeneratorHostKeyProvider provider
+                = SecurityUtils.createGeneratorHostKeyProvider(path.toAbsolutePath().normalize());
         provider.setAlgorithm(algorithm);
         provider.setOverwriteAllowed(true);
         if (keySize > 0) {

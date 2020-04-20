@@ -41,7 +41,8 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
     protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<>(null);
 
-    public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+    public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler,
+                         IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
     }
 
@@ -80,8 +81,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         IoServiceEventListener listener = getIoServiceEventListener();
         SocketAddress local = session.getLocalAddress();
         SocketAddress remote = session.getRemoteAddress();
-        AttributeRepository context =
-            (AttributeRepository) session.getAttribute(AttributeRepository.class);
+        AttributeRepository context = (AttributeRepository) session.getAttribute(AttributeRepository.class);
         try {
             if (listener != null) {
                 try {
@@ -99,9 +99,10 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
                     listener.abortEstablishedConnection(this, local, context, remote, e);
                 } catch (Exception exc) {
                     log.warn("sessionCreated({}) ignoring abort connection failure={}: {}",
-                        session, exc.getClass().getSimpleName(), exc.getMessage());
+                            session, exc.getClass().getSimpleName(), exc.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.warn("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception", exc);
+                        log.warn("sessionCreated(" + session + ") listener=" + listener + " ignoring abort event exception",
+                                exc);
                     }
                 }
             }
@@ -152,12 +153,12 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         IoConnectFuture future = new Future(null);
         IoConnector connector = getConnector();
         ConnectFuture connectFuture = connector.connect(
-            address, localAddress,
-            (s, f) -> {
-                if (context != null) {
-                    s.setAttribute(AttributeRepository.class, context);
-                }
-            });
+                address, localAddress,
+                (s, f) -> {
+                    if (context != null) {
+                        s.setAttribute(AttributeRepository.class, context);
+                    }
+                });
         connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {

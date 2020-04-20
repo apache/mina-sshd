@@ -53,10 +53,10 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
     @Override
     public HostConfigEntry resolveEffectiveHost(
             String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
-                throws IOException {
+            throws IOException {
         try {
-            HostConfigEntryResolver delegate =
-                Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
+            HostConfigEntryResolver delegate
+                    = Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
             HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, localAddress, username, context);
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) => {}", username, host, port, entry);
@@ -66,7 +66,7 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
         } catch (Throwable e) {
             if (log.isDebugEnabled()) {
                 log.debug("resolveEffectiveHost({}@{}:{}) failed ({}) to resolve: {}",
-                    username, host, port, e.getClass().getSimpleName(), e.getMessage());
+                        username, host, port, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -82,12 +82,11 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
     protected HostConfigEntryResolver resolveEffectiveResolver(String host, int port, String username) throws IOException {
         if (checkReloadRequired()) {
-            delegateHolder.set(HostConfigEntryResolver.EMPTY);  // start fresh
+            delegateHolder.set(HostConfigEntryResolver.EMPTY); // start fresh
 
             Path path = getPath();
             if (exists()) {
-                Collection<HostConfigEntry> entries =
-                    reloadHostConfigEntries(path, host, port, username);
+                Collection<HostConfigEntry> entries = reloadHostConfigEntries(path, host, port, username);
                 if (GenericUtils.size(entries) > 0) {
                     delegateHolder.set(HostConfigEntry.toHostConfigEntryResolver(entries));
                 }
@@ -101,9 +100,10 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
     protected List<HostConfigEntry> reloadHostConfigEntries(
             Path path, String host, int port, String username)
-                throws IOException {
+            throws IOException {
         List<HostConfigEntry> entries = HostConfigEntry.readHostConfigEntries(path);
-        log.info("resolveEffectiveResolver({}@{}:{}) loaded {} entries from {}", username, host, port, GenericUtils.size(entries), path);
+        log.info("resolveEffectiveResolver({}@{}:{}) loaded {} entries from {}", username, host, port,
+                GenericUtils.size(entries), path);
         updateReloadAttributes();
         return entries;
     }

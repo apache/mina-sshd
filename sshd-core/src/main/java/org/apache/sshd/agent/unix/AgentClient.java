@@ -124,7 +124,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
             boolean debugEnabled = log.isDebugEnabled();
             if (isOpen()) {
                 log.warn("run({}) {} while still open: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
+                        this, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
                     log.debug("run(" + this + ") open client exception", e);
                 }
@@ -139,7 +139,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
             } catch (IOException e) {
                 if (log.isDebugEnabled()) {
                     log.debug("run({}) {} while closing: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
+                            this, e.getClass().getSimpleName(), e.getMessage());
                 }
             }
         }
@@ -211,7 +211,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
     protected Buffer waitForMessageBuffer() throws IOException {
         FactoryManager mgr = getFactoryManager();
         long idleTimeout = PropertyResolverUtils.getLongProperty(
-            mgr, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
+                mgr, MESSAGE_POLL_FREQUENCY, DEFAULT_MESSAGE_POLL_FREQUENCY);
         if (idleTimeout <= 0L) {
             idleTimeout = DEFAULT_MESSAGE_POLL_FREQUENCY;
         }
@@ -233,7 +233,8 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
             try {
                 messages.wait(idleTimeout);
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
+                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count)
+                        .initCause(e);
             }
         }
     }
@@ -241,7 +242,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
     /**
      * transform an APR error number in a more fancy exception
      *
-     * @param code APR error code
+     * @param  code                APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     protected void throwException(int code) throws IOException {

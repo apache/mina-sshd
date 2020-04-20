@@ -42,13 +42,13 @@ import org.eclipse.jgit.util.FS;
 public class GitPackCommand extends AbstractGitCommand {
     /**
      * @param rootDirResolver Resolver for GIT root directory
-     * @param command Command to execute
-     * @param executorService An {@link CloseableExecutorService} to be used
-     * when {@code start(ChannelSession, Environment)}-ing execution. If {@code null}
-     * an ad-hoc single-threaded service is created and used.
+     * @param command         Command to execute
+     * @param executorService An {@link CloseableExecutorService} to be used when
+     *                        {@code start(ChannelSession, Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
      */
     public GitPackCommand(
-            GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+                          GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
         super(rootDirResolver, command, executorService);
     }
 

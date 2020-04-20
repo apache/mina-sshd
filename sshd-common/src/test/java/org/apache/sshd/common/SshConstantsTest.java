@@ -41,7 +41,9 @@ public class SshConstantsTest extends JUnitTestSupport {
 
     @Test
     public void testGetDisconnectReason() {
-        for (int reason = SshConstants.SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT; reason <= SshConstants.SSH2_DISCONNECT_ILLEGAL_USER_NAME; reason++) {
+        for (int reason = SshConstants.SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT;
+             reason <= SshConstants.SSH2_DISCONNECT_ILLEGAL_USER_NAME;
+             reason++) {
             String name = SshConstants.getDisconnectReasonName(reason);
             assertTrue("Mismatched name for reason=" + reason + ": " + name, name.startsWith("SSH2_DISCONNECT_"));
         }
@@ -49,7 +51,9 @@ public class SshConstantsTest extends JUnitTestSupport {
 
     @Test
     public void testGetOpenErrorName() {
-        for (int code = SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED; code <= SshConstants.SSH_OPEN_RESOURCE_SHORTAGE; code++) {
+        for (int code = SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED;
+             code <= SshConstants.SSH_OPEN_RESOURCE_SHORTAGE;
+             code++) {
             String name = SshConstants.getOpenErrorCodeName(code);
             assertTrue("Mismatched name for code=" + code + ": " + name, name.startsWith("SSH_OPEN_"));
         }
@@ -57,12 +61,13 @@ public class SshConstantsTest extends JUnitTestSupport {
 
     @Test
     public void testAmbiguousOpcodes() throws Exception {
-        int[] knownAmbiguities = {30, 31, 60};
+        int[] knownAmbiguities = { 30, 31, 60 };
         Collection<Integer> opcodes = SshConstants.getAmbiguousOpcodes();
         assertTrue("Not enough ambiguities found", GenericUtils.size(opcodes) >= knownAmbiguities.length);
 
         for (int cmd : knownAmbiguities) {
-            assertEquals("Mismatched mnemonic for known ambiguity=" + cmd, Integer.toString(cmd), SshConstants.getCommandMessageName(cmd));
+            assertEquals("Mismatched mnemonic for known ambiguity=" + cmd, Integer.toString(cmd),
+                    SshConstants.getCommandMessageName(cmd));
             assertTrue("Known ambiguity not reported as such: " + cmd, SshConstants.isAmbiguousOpcode(cmd));
             assertTrue("Known ambiguity=" + cmd + " not listed: " + opcodes, opcodes.contains(cmd));
         }

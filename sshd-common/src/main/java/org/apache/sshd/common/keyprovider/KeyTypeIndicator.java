@@ -39,16 +39,17 @@ public interface KeyTypeIndicator {
     String getKeyType();
 
     /**
-     * @param <I> The {@link KeyTypeIndicator}
-     * @param indicators The indicators to group
-     * @return A {@link NavigableMap} where key=the case <U>insensitive</U> {@link #getKeyType() key type},
-     * value = the {@link List} of all indicators having the same key type
+     * @param  <I>        The {@link KeyTypeIndicator}
+     * @param  indicators The indicators to group
+     * @return            A {@link NavigableMap} where key=the case <U>insensitive</U> {@link #getKeyType() key type},
+     *                    value = the {@link List} of all indicators having the same key type
      */
     static <I extends KeyTypeIndicator> NavigableMap<String, List<I>> groupByKeyType(Collection<? extends I> indicators) {
         return GenericUtils.isEmpty(indicators)
-             ? Collections.emptyNavigableMap()
-             : indicators.stream()
-                 .collect(Collectors.groupingBy(
-                     KeyTypeIndicator::getKeyType, () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER), Collectors.toList()));
+                ? Collections.emptyNavigableMap()
+                : indicators.stream()
+                        .collect(Collectors.groupingBy(
+                                KeyTypeIndicator::getKeyType, () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER),
+                                Collectors.toList()));
     }
 }

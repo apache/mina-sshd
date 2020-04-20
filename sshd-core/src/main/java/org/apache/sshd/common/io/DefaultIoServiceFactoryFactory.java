@@ -65,7 +65,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             if (factory == null) {
                 factory = BuiltinIoServiceFactoryFactories.NIO2.create();
                 log.info("No detected/configured " + IoServiceFactoryFactory.class.getSimpleName()
-                    + " using " + factory.getClass().getSimpleName());
+                         + " using " + factory.getClass().getSimpleName());
             } else {
                 log.info("Using {}", factory.getClass().getSimpleName());
             }
@@ -132,10 +132,12 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             for (T s : services) {
                 LOGGER.error("===> {}", s.getClass().getName());
             }
-            throw new IllegalStateException("Multiple (" + numDetected + ")"
-                + " registered " + IoServiceFactoryFactory.class.getSimpleName() + " instances detected."
-                + " Please use -D" + propName + "=...factory class.. to select one"
-                + " or remove the extra providers from the classpath");
+            throw new IllegalStateException(
+                    "Multiple (" + numDetected + ")"
+                                            + " registered " + IoServiceFactoryFactory.class.getSimpleName()
+                                            + " instances detected."
+                                            + " Please use -D" + propName + "=...factory class.. to select one"
+                                            + " or remove the extra providers from the classpath");
         }
 
         return services.removeFirst();

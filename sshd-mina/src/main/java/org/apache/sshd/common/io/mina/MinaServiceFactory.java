@@ -41,7 +41,8 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
 
     public MinaServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
         super(factoryManager, ThreadUtils.newCachedThreadPoolIf(service, factoryManager.toString() + "-mina"));
-        ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
+        ioProcessor
+                = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 
     @Override

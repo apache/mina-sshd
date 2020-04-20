@@ -42,16 +42,16 @@ public class ForwardingFilterTest extends BaseTestSupport {
 
     @Test
     public void testFromStringForwardingFilterType() {
-        for (String name : new String[]{null, "", getCurrentTestName()}) {
+        for (String name : new String[] { null, "", getCurrentTestName() }) {
             assertNull("Unexpected value for name='" + name + "'", ForwardingFilter.Type.fromString(name));
         }
 
         for (ForwardingFilter.Type expected : ForwardingFilter.Type.VALUES) {
-            for (String name : new String[]{expected.name(), expected.getName()}) {
+            for (String name : new String[] { expected.name(), expected.getName() }) {
                 for (int index = 0; index < name.length(); index++) {
                     ForwardingFilter.Type actual = ForwardingFilter.Type.fromString(name);
                     assertSame("Mismatched instance for name=" + name, expected, actual);
-                    name = shuffleCase(name);   // prepare for next iteration
+                    name = shuffleCase(name); // prepare for next iteration
                 }
             }
         }
@@ -76,7 +76,8 @@ public class ForwardingFilterTest extends BaseTestSupport {
         assertEquals("Mismatched 'canListen' result", expected, filter.canListen(SshdSocketAddress.LOCALHOST_ADDRESS, session));
 
         for (ForwardingFilter.Type t : ForwardingFilter.Type.VALUES) {
-            assertEquals("Mismatched 'canConnect(" + t + ")' result", expected, filter.canConnect(t, SshdSocketAddress.LOCALHOST_ADDRESS, session));
+            assertEquals("Mismatched 'canConnect(" + t + ")' result", expected,
+                    filter.canConnect(t, SshdSocketAddress.LOCALHOST_ADDRESS, session));
         }
     }
 }

@@ -54,12 +54,10 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     public static final String BEGIN_MARKER = "BEGIN EC PRIVATE KEY";
-    public static final List<String> BEGINNERS =
-        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END EC PRIVATE KEY";
-    public static final List<String> ENDERS =
-        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.5">RFC-3279 section 2.3.5</A>
@@ -78,7 +76,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(stream, false);
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
@@ -92,29 +90,45 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     }
 
     /**
-     * <P>ASN.1 syntax according to rfc5915 is:</P></BR>
-     * <PRE><CODE>
+     * <P>
+     * ASN.1 syntax according to rfc5915 is:
+     * </P>
+     * </BR>
+     * 
+     * <PRE>
+     * <CODE>
      * ECPrivateKey ::= SEQUENCE {
      *      version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
      *      privateKey     OCTET STRING,
      *      parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
      *      publicKey  [1] BIT STRING OPTIONAL
      * }
-     * </CODE></PRE>
-     * <P><I>ECParameters</I> syntax according to RFC5480:</P></BR>
-     * <PRE><CODE>
+     * </CODE>
+     * </PRE>
+     * <P>
+     * <I>ECParameters</I> syntax according to RFC5480:
+     * </P>
+     * </BR>
+     * 
+     * <PRE>
+     * <CODE>
      * ECParameters ::= CHOICE {
      *      namedCurve         OBJECT IDENTIFIER
      *      -- implicitCurve   NULL
      *      -- specifiedCurve  SpecifiedECDomain
      * }
-     * </CODE></PRE>
-     * @param inputStream The {@link InputStream} containing the DER encoded data
-     * @param okToClose {@code true} if OK to close the DER stream once parsing complete
-     * @return The decoded {@link SimpleImmutableEntry} of {@link ECPublicKeySpec} and {@link ECPrivateKeySpec}
+     * </CODE>
+     * </PRE>
+     * 
+     * @param  inputStream The {@link InputStream} containing the DER encoded data
+     * @param  okToClose   {@code true} if OK to close the DER stream once parsing complete
+     * @return             The decoded {@link SimpleImmutableEntry} of {@link ECPublicKeySpec} and
+     *                     {@link ECPrivateKeySpec}
      * @throws IOException If failed to to decode the DER stream
      */
-    public static SimpleImmutableEntry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(InputStream inputStream, boolean okToClose) throws IOException {
+    public static SimpleImmutableEntry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(
+            InputStream inputStream, boolean okToClose)
+            throws IOException {
         ASN1Object sequence;
         try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(inputStream, okToClose))) {
             sequence = parser.readObject();
@@ -188,14 +202,20 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     }
 
     /**
-     * <P>ASN.1 syntax according to rfc5915 is:</P></BR>
-     * <pre><code>
+     * <P>
+     * ASN.1 syntax according to rfc5915 is:
+     * </P>
+     * </BR>
+     * 
+     * <pre>
+     * <code>
      *      publicKey  [1] BIT STRING OPTIONAL
-     * </code></pre>
-     * @param curve The {@link ECCurves} curve
-     * @param parser The {@link DERParser} assumed to be positioned at the
-     * start of the data
-     * @return The encoded {@link ECPoint}
+     * </code>
+     * </pre>
+     * 
+     * @param  curve       The {@link ECCurves} curve
+     * @param  parser      The {@link DERParser} assumed to be positioned at the start of the data
+     * @return             The encoded {@link ECPoint}
      * @throws IOException If failed to create the point
      */
     public static final ECPoint decodeECPublicKeyValue(ECCurves curve, DERParser parser) throws IOException {

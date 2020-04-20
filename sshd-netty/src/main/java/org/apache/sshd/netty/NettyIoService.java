@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.netty.channel.group.ChannelGroup;
+import io.netty.util.AttributeKey;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -32,19 +34,16 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
-import io.netty.channel.group.ChannelGroup;
-import io.netty.util.AttributeKey;
-
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class NettyIoService extends AbstractCloseable implements IoService {
 
-    public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY =
-        AttributeKey.valueOf(IoConnectFuture.class.getName());
-    public static final AttributeKey<AttributeRepository> CONTEXT_KEY =
-        AttributeKey.valueOf(AttributeRepository.class.getName());
+    public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY
+            = AttributeKey.valueOf(IoConnectFuture.class.getName());
+    public static final AttributeKey<AttributeRepository> CONTEXT_KEY
+            = AttributeKey.valueOf(AttributeRepository.class.getName());
 
     protected final AtomicLong sessionSeq = new AtomicLong();
     protected final Map<Long, IoSession> sessions = new ConcurrentHashMap<>();

@@ -56,67 +56,59 @@ import org.apache.sshd.server.kex.DHGServer;
  */
 public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
     @SuppressWarnings("checkstyle:Indentation")
-    public static final Function<DHFactory, KeyExchangeFactory> DH2KEX =
-        factory ->
-            factory == null
-                ? null
-                : factory.isGroupExchange()
+    public static final Function<DHFactory, KeyExchangeFactory> DH2KEX = factory -> factory == null
+            ? null
+            : factory.isGroupExchange()
                     ? DHGEXServer.newFactory(factory)
-                    : DHGServer.newFactory(factory);
+            : DHGServer.newFactory(factory);
 
-    public static final List<ChannelFactory> DEFAULT_CHANNEL_FACTORIES =
-        Collections.unmodifiableList(
+    public static final List<ChannelFactory> DEFAULT_CHANNEL_FACTORIES = Collections.unmodifiableList(
             Arrays.asList(
-                ChannelSessionFactory.INSTANCE,
-                DirectTcpipFactory.INSTANCE
-            ));
+                    ChannelSessionFactory.INSTANCE,
+                    DirectTcpipFactory.INSTANCE));
 
-    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
-        Collections.unmodifiableList(
-            Arrays.<RequestHandler<ConnectionService>>asList(
-                KeepAliveHandler.INSTANCE,
-                NoMoreSessionsHandler.INSTANCE,
-                TcpipForwardHandler.INSTANCE,
-                CancelTcpipForwardHandler.INSTANCE,
-                OpenSshHostKeysHandler.INSTANCE
-            ));
+    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS = Collections.unmodifiableList(
+            Arrays.<RequestHandler<ConnectionService>> asList(
+                    KeepAliveHandler.INSTANCE,
+                    NoMoreSessionsHandler.INSTANCE,
+                    TcpipForwardHandler.INSTANCE,
+                    CancelTcpipForwardHandler.INSTANCE,
+                    OpenSshHostKeysHandler.INSTANCE));
 
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
-    public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
-    public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES =
-        Collections.unmodifiableList(
-            Arrays.<CompressionFactory>asList(
-                BuiltinCompressions.none,
-                BuiltinCompressions.zlib,
-                BuiltinCompressions.delayedZlib));
+    public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR
+            = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
+    public static final List<CompressionFactory> DEFAULT_COMPRESSION_FACTORIES = Collections.unmodifiableList(
+            Arrays.<CompressionFactory> asList(
+                    BuiltinCompressions.none,
+                    BuiltinCompressions.zlib,
+                    BuiltinCompressions.delayedZlib));
 
     /**
      * Preferred {@link BuiltinSignatures} according to
      * <A HREF="http://man7.org/linux/man-pages/man5/sshd_config.5.html">sshd_config(5) - HostKeyAlgorithms</A>
      * {@code HostKeyAlgorithms} recommendation
      */
-    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
-        Collections.unmodifiableList(
+    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
-                BuiltinSignatures.nistp256_cert,
-                BuiltinSignatures.nistp384_cert,
-                BuiltinSignatures.nistp521_cert,
-                BuiltinSignatures.ed25519_cert,
-                BuiltinSignatures.rsaSHA512_cert,
-                BuiltinSignatures.rsaSHA256_cert,
-                BuiltinSignatures.rsa_cert,
-                BuiltinSignatures.dsa_cert,
-                BuiltinSignatures.nistp256,
-                BuiltinSignatures.nistp384,
-                BuiltinSignatures.nistp521,
-                BuiltinSignatures.sk_ecdsa_sha2_nistp256,
-                BuiltinSignatures.ed25519,
-                BuiltinSignatures.sk_ssh_ed25519,
-                BuiltinSignatures.rsaSHA512,
-                BuiltinSignatures.rsaSHA256,
-                BuiltinSignatures.rsa,
-                BuiltinSignatures.dsa
-            ));
+                    BuiltinSignatures.nistp256_cert,
+                    BuiltinSignatures.nistp384_cert,
+                    BuiltinSignatures.nistp521_cert,
+                    BuiltinSignatures.ed25519_cert,
+                    BuiltinSignatures.rsaSHA512_cert,
+                    BuiltinSignatures.rsaSHA256_cert,
+                    BuiltinSignatures.rsa_cert,
+                    BuiltinSignatures.dsa_cert,
+                    BuiltinSignatures.nistp256,
+                    BuiltinSignatures.nistp384,
+                    BuiltinSignatures.nistp521,
+                    BuiltinSignatures.sk_ecdsa_sha2_nistp256,
+                    BuiltinSignatures.ed25519,
+                    BuiltinSignatures.sk_ssh_ed25519,
+                    BuiltinSignatures.rsaSHA512,
+                    BuiltinSignatures.rsaSHA256,
+                    BuiltinSignatures.rsa,
+                    BuiltinSignatures.dsa));
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -182,27 +174,25 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         return server;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    @SuppressWarnings({ "unchecked", "rawtypes" }) // safe due to the hierarchy
     public static List<NamedFactory<Signature>> setUpDefaultSignatureFactories(boolean ignoreUnsupported) {
         return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })  // safe due to the hierarchy
+    @SuppressWarnings({ "unchecked", "rawtypes" }) // safe due to the hierarchy
     public static List<NamedFactory<Compression>> setUpDefaultCompressionFactories(boolean ignoreUnsupported) {
         return (List) NamedFactory.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_COMPRESSION_FACTORIES);
     }
 
     /**
-     * @param ignoreUnsupported If {@code true} then all the default
-     * key exchanges are included, regardless of whether they are currently
-     * supported by the JCE. Otherwise, only the supported ones out of the
-     * list are included
-     * @return A {@link List} of the default {@link NamedFactory}
-     * instances of the {@link KeyExchange}s according to the preference
-     * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
-     * <B>Note:</B> the list may be filtered to exclude unsupported JCE
-     * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
-     * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
+     * @param  ignoreUnsupported If {@code true} then all the default key exchanges are included, regardless of whether
+     *                           they are currently supported by the JCE. Otherwise, only the supported ones out of the
+     *                           list are included
+     * @return                   A {@link List} of the default {@link NamedFactory} instances of the
+     *                           {@link KeyExchange}s according to the preference order defined by
+     *                           {@link #DEFAULT_KEX_PREFERENCE}. <B>Note:</B> the list may be filtered to exclude
+     *                           unsupported JCE key exchanges according to the <tt>ignoreUnsupported</tt> parameter
+     * @see                      org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
     public static List<KeyExchangeFactory> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
         return NamedFactory.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);

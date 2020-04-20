@@ -41,7 +41,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CommandFactorySplitterTest extends JUnitTestSupport {
     private final String command;
@@ -63,23 +63,23 @@ public class CommandFactorySplitterTest extends JUnitTestSupport {
                 addTestCase("", Collections.emptyList());
                 addTestCase("ls", Collections.singletonList("ls"));
                 addTestCase("ls -l -a --sort /tmp",
-                    Arrays.asList("ls", "-l", "-a", "--sort", "/tmp"));
+                        Arrays.asList("ls", "-l", "-a", "--sort", "/tmp"));
                 addTestCase("ssh   -o      StrictHostKeyChecking=no  user@1.2.3.4",
-                    Arrays.asList("ssh", "-o", "StrictHostKeyChecking=no", "user@1.2.3.4"));
+                        Arrays.asList("ssh", "-o", "StrictHostKeyChecking=no", "user@1.2.3.4"));
                 addTestCase("rm -rvf '/tmp/Single Quoted/with spaces'",
-                    Arrays.asList("rm", "-rvf", "/tmp/Single Quoted/with spaces"));
+                        Arrays.asList("rm", "-rvf", "/tmp/Single Quoted/with spaces"));
                 addTestCase("ls -la \"/tmp/Double Quoted with spaces\"",
-                    Arrays.asList("ls", "-la", "/tmp/Double Quoted with spaces"));
+                        Arrays.asList("ls", "-la", "/tmp/Double Quoted with spaces"));
                 addTestCase("doWith'Quote\"in'middle something",
-                    Arrays.asList("doWith'Quote\"in'middle", "something"));
+                        Arrays.asList("doWith'Quote\"in'middle", "something"));
                 addTestCase("'Single quoted' first",
-                    Arrays.asList("Single quoted", "first"));
+                        Arrays.asList("Single quoted", "first"));
                 addTestCase("\"Double quoted\" first",
-                    Arrays.asList("Double quoted", "first"));
+                        Arrays.asList("Double quoted", "first"));
             }
 
             private void addTestCase(String cmd, List<String> elems) {
-                add(new Object[]{cmd, elems});
+                add(new Object[] { cmd, elems });
             }
         };
     }

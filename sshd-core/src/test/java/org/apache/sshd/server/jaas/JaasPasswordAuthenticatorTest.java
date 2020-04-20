@@ -59,10 +59,11 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         Configuration config = new Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(DummyLoginModule.class.getName(),
-                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                            new HashMap<>())
+                return new AppConfigurationEntry[] {
+                        new AppConfigurationEntry(
+                                DummyLoginModule.class.getName(),
+                                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                                new HashMap<>())
                 };
             }
 

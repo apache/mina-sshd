@@ -34,15 +34,14 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<OpenSshCertificate> {
-    public static final List<String> KEY_TYPES =
-        Collections.unmodifiableList(
+    public static final List<String> KEY_TYPES = Collections.unmodifiableList(
             Arrays.asList(
-                KeyPairProvider.SSH_RSA_CERT,
-                KeyPairProvider.SSH_DSS_CERT,
-                KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
-                KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
-                KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
-                KeyPairProvider.SSH_ED25519_CERT));
+                    KeyPairProvider.SSH_RSA_CERT,
+                    KeyPairProvider.SSH_DSS_CERT,
+                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
+                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
+                    KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT,
+                    KeyPairProvider.SSH_ED25519_CERT));
 
     public static final OpenSSHCertPublicKeyParser INSTANCE = new OpenSSHCertPublicKeyParser();
 
@@ -86,8 +85,10 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
         certificate.setSignature(buffer.getBytes());
 
         if (buffer.rpos() != buffer.wpos()) {
-            throw new InvalidKeyException("KeyExchange signature verification failed, got more data than expected: "
-                + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: " + certificate.getId());
+            throw new InvalidKeyException(
+                    "KeyExchange signature verification failed, got more data than expected: "
+                                          + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: "
+                                          + certificate.getId());
         }
 
         return certificate;

@@ -66,53 +66,51 @@ public interface KeyPairResourceLoader {
     /**
      * Loads private key data - <B>Note:</B> any non-ASCII characters are assumed to be UTF-8 encoded
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param path The private key file {@link Path}
-     * @param passwordProvider The {@link FilePasswordProvider} to use
-     * in case the data is encrypted - may be {@code null} if no encrypted
-     * data is expected
-     * @param options The {@link OpenOption}-s to use to access the file data
-     * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
-     * <B>Note:</B> the resource loader may decide to skip unknown lines if
-     * more than one key pair type is encoded in it
-     * @throws IOException If failed to process the lines
-     * @throws GeneralSecurityException If failed to generate the keys from the
-     * parsed data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  path                     The private key file {@link Path}
+     * @param  passwordProvider         The {@link FilePasswordProvider} to use in case the data is encrypted - may be
+     *                                  {@code null} if no encrypted data is expected
+     * @param  options                  The {@link OpenOption}-s to use to access the file data
+     * @return                          The extracted {@link KeyPair}s - may be {@code null}/empty if none. <B>Note:</B>
+     *                                  the resource loader may decide to skip unknown lines if more than one key pair
+     *                                  type is encoded in it
+     * @throws IOException              If failed to process the lines
+     * @throws GeneralSecurityException If failed to generate the keys from the parsed data
      */
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, Path path, FilePasswordProvider passwordProvider, OpenOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, path, passwordProvider, StandardCharsets.UTF_8, options);
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, Path path, FilePasswordProvider passwordProvider, Charset cs, OpenOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, new PathResource(path, options), passwordProvider, cs);
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, URL url, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, url, passwordProvider, StandardCharsets.UTF_8);
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, URL url, FilePasswordProvider passwordProvider, Charset cs)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, new URLResource(url), passwordProvider, cs);
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, IoResource<?> resource, FilePasswordProvider passwordProvider)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, resource, passwordProvider, StandardCharsets.UTF_8);
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, IoResource<?> resource, FilePasswordProvider passwordProvider, Charset cs)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (InputStream stream = Objects.requireNonNull(resource, "No resource data").openInputStream()) {
             return loadKeyPairs(session, resource, passwordProvider, stream, cs);
         }
@@ -120,7 +118,7 @@ public interface KeyPairResourceLoader {
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, String data)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         try (Reader reader = new StringReader((data == null) ? "" : data)) {
             return loadKeyPairs(session, resourceKey, passwordProvider, reader);
         }
@@ -128,13 +126,14 @@ public interface KeyPairResourceLoader {
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream stream)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadKeyPairs(session, resourceKey, passwordProvider, stream, StandardCharsets.UTF_8);
     }
 
     default Collection<KeyPair> loadKeyPairs(
-            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream stream, Charset cs)
-                throws IOException, GeneralSecurityException {
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, InputStream stream,
+            Charset cs)
+            throws IOException, GeneralSecurityException {
         try (Reader reader = new InputStreamReader(
                 Objects.requireNonNull(stream, "No stream instance"), Objects.requireNonNull(cs, "No charset"))) {
             return loadKeyPairs(session, resourceKey, passwordProvider, reader);
@@ -143,41 +142,40 @@ public interface KeyPairResourceLoader {
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, Reader r)
-                throws IOException, GeneralSecurityException {
-        try (BufferedReader br = new BufferedReader(Objects.requireNonNull(r, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
+            throws IOException, GeneralSecurityException {
+        try (BufferedReader br
+                = new BufferedReader(Objects.requireNonNull(r, "No reader instance"), IoUtils.DEFAULT_COPY_SIZE)) {
             return loadKeyPairs(session, resourceKey, passwordProvider, br);
         }
     }
 
     default Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, BufferedReader r)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         List<String> lines = IoUtils.readAllLines(r);
         try {
             return loadKeyPairs(session, resourceKey, passwordProvider, lines);
         } finally {
-            lines.clear();   // clean up sensitive data a.s.a.p.
+            lines.clear(); // clean up sensitive data a.s.a.p.
         }
     }
 
     /**
      * Loads key pairs from the given resource text lines
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param resourceKey A hint as to the origin of the text lines
-     * @param passwordProvider The {@link FilePasswordProvider} to use
-     * in case the data is encrypted - may be {@code null} if no encrypted
-     * data is expected
-     * @param lines The {@link List} of lines as read from the resource
-     * @return The extracted {@link KeyPair}s - may be {@code null}/empty if none.
-     * <B>Note:</B> the resource loader may decide to skip unknown lines if
-     * more than one key pair type is encoded in it
-     * @throws IOException If failed to process the lines
-     * @throws GeneralSecurityException If failed to generate the keys from the
-     * parsed data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  resourceKey              A hint as to the origin of the text lines
+     * @param  passwordProvider         The {@link FilePasswordProvider} to use in case the data is encrypted - may be
+     *                                  {@code null} if no encrypted data is expected
+     * @param  lines                    The {@link List} of lines as read from the resource
+     * @return                          The extracted {@link KeyPair}s - may be {@code null}/empty if none. <B>Note:</B>
+     *                                  the resource loader may decide to skip unknown lines if more than one key pair
+     *                                  type is encoded in it
+     * @throws IOException              If failed to process the lines
+     * @throws GeneralSecurityException If failed to generate the keys from the parsed data
      */
     Collection<KeyPair> loadKeyPairs(
-        SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
+            SessionContext session, NamedResource resourceKey, FilePasswordProvider passwordProvider, List<String> lines)
             throws IOException, GeneralSecurityException;
 }

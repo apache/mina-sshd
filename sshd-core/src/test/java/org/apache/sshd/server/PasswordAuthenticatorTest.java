@@ -57,7 +57,7 @@ public class PasswordAuthenticatorTest extends BaseTestSupport {
 
     private void testStaticPasswordAuthenticator(StaticPasswordAuthenticator authenticator) throws Exception {
         Method method = PasswordAuthenticator.class.getMethod("authenticate", String.class, String.class, ServerSession.class);
-        Object[] args = {getCurrentTestName(), getClass().getName(), null /* ServerSession */};
+        Object[] args = { getCurrentTestName(), getClass().getName(), null /* ServerSession */ };
         Object[] invArgs = new Object[args.length];
         Random rnd = new Random(System.nanoTime());
         boolean expected = authenticator.isAccepted();

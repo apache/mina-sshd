@@ -39,7 +39,7 @@ public abstract class PortForwardingTracker
     private final SshdSocketAddress boundAddress;
 
     protected PortForwardingTracker(
-            ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
+                                    ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
         this.session = Objects.requireNonNull(session, "No client session provided");
         this.localAddress = Objects.requireNonNull(localAddress, "No local address specified");
         this.boundAddress = Objects.requireNonNull(boundAddress, "No bound address specified");
@@ -71,10 +71,10 @@ public abstract class PortForwardingTracker
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[session=" + getClientSession()
-            + ", localAddress=" + getLocalAddress()
-            + ", boundAddress=" + getBoundAddress()
-            + ", open=" + isOpen()
-            + "]";
+               + "[session=" + getClientSession()
+               + ", localAddress=" + getLocalAddress()
+               + ", boundAddress=" + getBoundAddress()
+               + ", open=" + isOpen()
+               + "]";
     }
 }

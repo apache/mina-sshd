@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class MapEntryUtils {
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private static final Comparator<Map.Entry<Comparable, ?>> BY_KEY_COMPARATOR = (o1, o2) -> {
         Comparable k1 = o1.getKey();
         Comparable k2 = o2.getKey();
@@ -46,10 +46,9 @@ public final class MapEntryUtils {
     }
 
     /**
-     * @param <K> The {@link Comparable} key type
-     * @param <V> The associated entry value
-     * @return A {@link Comparator} for {@link java.util.Map.Entry}-ies that
-     * compares the key values
+     * @param  <K> The {@link Comparable} key type
+     * @param  <V> The associated entry value
+     * @return     A {@link Comparator} for {@link java.util.Map.Entry}-ies that compares the key values
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static <K extends Comparable<K>, V> Comparator<Map.Entry<K, V>> byKeyEntryComparator() {

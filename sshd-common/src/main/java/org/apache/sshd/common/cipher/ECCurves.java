@@ -58,70 +58,94 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResource, OptionalFeature {
-    nistp256(Constants.NISTP256, new int[]{1, 2, 840, 10045, 3, 1, 7},
-            new ECParameterSpec(
-                    new EllipticCurve(
-                            new ECFieldFp(new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16)),
-                            new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16),
-                            new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16)),
-                    new ECPoint(
-                            new BigInteger("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296", 16),
-                            new BigInteger("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5", 16)),
-                    new BigInteger("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16),
-                    1),
-            32,
-            BuiltinDigests.sha256),
-    nistp384(Constants.NISTP384, new int[]{1, 3, 132, 0, 34},
-            new ECParameterSpec(
-                    new EllipticCurve(
-                            new ECFieldFp(new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF", 16)),
-                            new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC", 16),
-                            new BigInteger("B3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF", 16)),
-                    new ECPoint(
-                            new BigInteger("AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7", 16),
-                            new BigInteger("3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F", 16)),
-                    new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973", 16),
-                    1),
-            48,
-            BuiltinDigests.sha384),
-    nistp521(Constants.NISTP521, new int[]{1, 3, 132, 0, 35},
-            new ECParameterSpec(
-                    new EllipticCurve(
-                            new ECFieldFp(new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                                                          + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)),
-                            new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-                                                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC", 16),
-                            new BigInteger("0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951"
-                                            + "EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00", 16)),
-                    new ECPoint(
-                            new BigInteger("00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77"
-                                            + "EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66", 16),
-                            new BigInteger("011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE7299"
-                                            + "5EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650", 16)),
-                    new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B"
-                                    + "7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409", 16),
-                    1),
-            66,
-            BuiltinDigests.sha512);
+    nistp256(Constants.NISTP256, new int[] { 1, 2, 840, 10045, 3, 1, 7 },
+             new ECParameterSpec(
+                     new EllipticCurve(
+                             new ECFieldFp(
+                                     new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16)),
+                             new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16),
+                             new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16)),
+                     new ECPoint(
+                             new BigInteger("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296", 16),
+                             new BigInteger("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5", 16)),
+                     new BigInteger("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16),
+                     1),
+             32,
+             BuiltinDigests.sha256),
+    nistp384(Constants.NISTP384, new int[] { 1, 3, 132, 0, 34 },
+             new ECParameterSpec(
+                     new EllipticCurve(
+                             new ECFieldFp(
+                                     new BigInteger(
+                                             "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF",
+                                             16)),
+                             new BigInteger(
+                                     "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC",
+                                     16),
+                             new BigInteger(
+                                     "B3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF",
+                                     16)),
+                     new ECPoint(
+                             new BigInteger(
+                                     "AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7",
+                                     16),
+                             new BigInteger(
+                                     "3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F",
+                                     16)),
+                     new BigInteger(
+                             "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973",
+                             16),
+                     1),
+             48,
+             BuiltinDigests.sha384),
+    nistp521(Constants.NISTP521, new int[] { 1, 3, 132, 0, 35 },
+             new ECParameterSpec(
+                     new EllipticCurve(
+                             new ECFieldFp(
+                                     new BigInteger(
+                                             "01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                                                    + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+                                             16)),
+                             new BigInteger(
+                                     "01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+                                            + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC",
+                                     16),
+                             new BigInteger(
+                                     "0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951"
+                                            + "EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00",
+                                     16)),
+                     new ECPoint(
+                             new BigInteger(
+                                     "00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77"
+                                            + "EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66",
+                                     16),
+                             new BigInteger(
+                                     "011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE7299"
+                                            + "5EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650",
+                                     16)),
+                     new BigInteger(
+                             "01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B"
+                                    + "7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409",
+                             16),
+                     1),
+             66,
+             BuiltinDigests.sha512);
 
     /**
      * A {@link Set} of all the known curves
      */
-    public static final Set<ECCurves> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(ECCurves.class));
+    public static final Set<ECCurves> VALUES = Collections.unmodifiableSet(EnumSet.allOf(ECCurves.class));
 
     /**
      * A {@link Set} of all the known curves names
      */
-    public static final NavigableSet<String> NAMES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> NAMES = Collections.unmodifiableNavigableSet(
             GenericUtils.mapSort(VALUES, ECCurves::getName, String.CASE_INSENSITIVE_ORDER));
 
     /**
      * A {@link Set} of all the known curves key types
      */
-    public static final NavigableSet<String> KEY_TYPES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> KEY_TYPES = Collections.unmodifiableNavigableSet(
             GenericUtils.mapSort(VALUES, ECCurves::getKeyType, String.CASE_INSENSITIVE_ORDER));
 
     public static final Comparator<ECCurves> BY_KEY_SIZE = (o1, o2) -> {
@@ -130,8 +154,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
         return Integer.compare(k1, k2);
     };
 
-    public static final List<ECCurves> SORTED_KEY_SIZE =
-        Collections.unmodifiableList(VALUES.stream()
+    public static final List<ECCurves> SORTED_KEY_SIZE = Collections.unmodifiableList(VALUES.stream()
             .sorted(BY_KEY_SIZE)
             .collect(Collectors.toList()));
 
@@ -155,7 +178,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
         this.digestFactory = Objects.requireNonNull(digestFactory, "No digestFactory");
     }
 
-    @Override   // The curve's standard name
+    @Override // The curve's standard name
     public final String getName() {
         return name;
     }
@@ -202,9 +225,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * @param type The key type value - ignored if {@code null}/empty
-     * @return The matching {@link ECCurves} constant - {@code null} if
-     * no match found case <U>insensitive</U>
+     * @param  type The key type value - ignored if {@code null}/empty
+     * @return      The matching {@link ECCurves} constant - {@code null} if no match found case <U>insensitive</U>
      */
     public static ECCurves fromKeyType(String type) {
         if (GenericUtils.isEmpty(type)) {
@@ -221,28 +243,26 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * @param name The curve name (case <U>insensitive</U> - ignored if {@code null}/empty
-     * @return The matching {@link ECCurves} instance - {@code null} if no
-     * match found
+     * @param  name The curve name (case <U>insensitive</U> - ignored if {@code null}/empty
+     * @return      The matching {@link ECCurves} instance - {@code null} if no match found
      */
     public static ECCurves fromCurveName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**
-     * @param key The {@link ECKey} - ignored if {@code null}
-     * @return The matching {@link ECCurves} instance - {@code null} if no
-     * match found
+     * @param  key The {@link ECKey} - ignored if {@code null}
+     * @return     The matching {@link ECCurves} instance - {@code null} if no match found
      */
     public static ECCurves fromECKey(ECKey key) {
         return fromCurveParameters((key == null) ? null : key.getParams());
     }
 
     /**
-     * @param params The curve's {@link ECParameterSpec} - ignored if {@code null}
-     * @return The matching {@link ECCurves} value - {@code null} if no match found
-     * @see #getCurveSize(ECParameterSpec)
-     * @see #fromCurveSize(int)
+     * @param  params The curve's {@link ECParameterSpec} - ignored if {@code null}
+     * @return        The matching {@link ECCurves} value - {@code null} if no match found
+     * @see           #getCurveSize(ECParameterSpec)
+     * @see           #fromCurveSize(int)
      */
     public static ECCurves fromCurveParameters(ECParameterSpec params) {
         if (params == null) {
@@ -253,9 +273,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * @param keySize The key size (in bits)
-     * @return The matching {@link ECCurves} value - {@code null} if no
-     * match found
+     * @param  keySize The key size (in bits)
+     * @return         The matching {@link ECCurves} value - {@code null} if no match found
      */
     public static ECCurves fromCurveSize(int keySize) {
         if (keySize <= 0) {
@@ -315,8 +334,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * @param params The curve's {@link ECParameterSpec}
-     * @return The curve's key size in bits
+     * @param  params                   The curve's {@link ECParameterSpec}
+     * @return                          The curve's key size in bits
      * @throws IllegalArgumentException if invalid parameters provided
      */
     public static int getCurveSize(ECParameterSpec params) {
@@ -362,13 +381,12 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
     }
 
     /**
-     * Converts the given octet string (defined by ASN.1 specifications) to a {@link BigInteger}
-     * As octet strings always represent positive integers, a zero-byte is prepended to
-     * the given array if necessary (if is MSB equal to 1), then this is converted to BigInteger
-     * The conversion is defined in the Section 2.3.8
+     * Converts the given octet string (defined by ASN.1 specifications) to a {@link BigInteger} As octet strings always
+     * represent positive integers, a zero-byte is prepended to the given array if necessary (if is MSB equal to 1),
+     * then this is converted to BigInteger The conversion is defined in the Section 2.3.8
      *
-     * @param octets - octet string bytes to be converted
-     * @return The {@link BigInteger} representation of the octet string
+     * @param  octets - octet string bytes to be converted
+     * @return        The {@link BigInteger} representation of the octet string
      */
     public static BigInteger octetStringToInteger(byte... octets) {
         if (octets == null) {
@@ -393,7 +411,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
         byte indicator = octets[startIndex];
         ECCurves.ECPointCompression compression = ECCurves.ECPointCompression.fromIndicatorValue(indicator);
         if (compression == null) {
-            throw new UnsupportedOperationException("Unknown compression indicator value: 0x" + Integer.toHexString(indicator & 0xFF));
+            throw new UnsupportedOperationException(
+                    "Unknown compression indicator value: 0x" + Integer.toHexString(indicator & 0xFF));
         }
 
         // The coordinates actually start after the compression indicator
@@ -411,7 +430,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             }
         }
 
-        return -1;    // all zeroes
+        return -1; // all zeroes
     }
 
     public static final class Constants {
@@ -433,11 +452,12 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
      * The various {@link ECPoint} representation compression indicators
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see <A HREF="https://tools.ietf.org/html/rfc5480#section-2.2">RFC-5480 - section 2.2</A>
+     * @see    <A HREF="https://tools.ietf.org/html/rfc5480#section-2.2">RFC-5480 - section 2.2</A>
      */
     public enum ECPointCompression {
         // see http://tools.ietf.org/html/draft-jivsov-ecc-compact-00
-        // see http://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
+        // see
+        // http://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
         VARIANT2((byte) 0x02) {
             @Override
             public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
@@ -446,7 +466,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 BigInteger x = octetStringToInteger(xp);
 
                 // TODO derive even Y...
-                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+                throw new UnsupportedOperationException(
+                        "octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
             }
         },
         VARIANT3((byte) 0x03) {
@@ -457,17 +478,19 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 BigInteger x = octetStringToInteger(xp);
 
                 // TODO derive odd Y...
-                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+                throw new UnsupportedOperationException(
+                        "octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
             }
         },
         UNCOMPRESSED((byte) 0x04) {
             @Override
             public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
-                int numElements = len / 2;    /* x, y */
-                if (len != (numElements * 2)) {    // make sure length is not odd
-                    throw new IllegalArgumentException("octetStringToEcPoint(" + name() + ") "
-                            + " invalid remainder octets representation: "
-                            + " expected=" + (2 * numElements) + ", actual=" + len);
+                int numElements = len / 2; /* x, y */
+                if (len != (numElements * 2)) { // make sure length is not odd
+                    throw new IllegalArgumentException(
+                            "octetStringToEcPoint(" + name() + ") "
+                                                       + " invalid remainder octets representation: "
+                                                       + " expected=" + (2 * numElements) + ", actual=" + len);
                 }
 
                 byte[] xp = new byte[numElements];
@@ -484,7 +507,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
                 ECCurves curve = fromCurveName(curveName);
                 if (curve == null) {
-                    throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
+                    throw new StreamCorruptedException(
+                            "writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
                 }
 
                 int numElements = curve.getNumPointOctets();
@@ -495,8 +519,8 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             }
         };
 
-        public static final Set<ECPointCompression> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
+        public static final Set<ECPointCompression> VALUES
+                = Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
 
         private final byte indicatorValue;
 
@@ -515,9 +539,10 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 writeECPoint(baos, curveName, p);
                 return baos.toByteArray();
             } catch (IOException e) {
-                throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
-                        + " failed (" + e.getClass().getSimpleName() + ")"
-                        + " to write data: " + e.getMessage(),
+                throw new RuntimeException(
+                        "ecPointToOctetString(" + curveName + ")"
+                                           + " failed (" + e.getClass().getSimpleName() + ")"
+                                           + " to write data: " + e.getMessage(),
                         e);
             }
         }
@@ -535,16 +560,17 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             int startIndex = 0;
             int vLen = vp.length;
             if (vLen > numElements) {
-                if (vp[0] == 0) {   // skip artificial positive sign
+                if (vp[0] == 0) { // skip artificial positive sign
                     startIndex++;
                     vLen--;
                 }
             }
 
             if (vLen > numElements) {
-                throw new StreamCorruptedException("writeCoordinate(" + name() + ")[" + n + "]"
-                        + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
-                        + " for " + v);
+                throw new StreamCorruptedException(
+                        "writeCoordinate(" + name() + ")[" + n + "]"
+                                                   + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
+                                                   + " for " + v);
             }
 
             if (vLen < numElements) {
@@ -560,7 +586,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
 
         public static ECPointCompression fromIndicatorValue(int value) {
             if ((value < 0) || (value > 0xFF)) {
-                return null;    // must be a byte value
+                return null; // must be a byte value
             }
 
             for (ECPointCompression c : VALUES) {

@@ -122,7 +122,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     public T subpath(int beginIndex, int endIndex) {
         int maxIndex = getNameCount();
         if ((beginIndex < 0) || (beginIndex >= maxIndex) || (endIndex > maxIndex) || (beginIndex >= endIndex)) {
-            throw new IllegalArgumentException("subpath(" + beginIndex + "," + endIndex + ") bad index range - allowed [0-" + maxIndex + "]");
+            throw new IllegalArgumentException(
+                    "subpath(" + beginIndex + "," + endIndex + ") bad index range - allowed [0-" + maxIndex + "]");
         }
         return create(null, names.subList(beginIndex, endIndex));
     }
@@ -309,7 +310,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers)
+            throws IOException {
         throw new UnsupportedOperationException("Register to watch " + toAbsolutePath() + " N/A");
     }
 
@@ -359,7 +361,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     protected T checkPath(Path paramPath) {
         Objects.requireNonNull(paramPath, "Missing path argument");
         if (paramPath.getClass() != getClass()) {
-            throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
+            throw new ProviderMismatchException(
+                    "Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
         }
         T t = (T) paramPath;
 

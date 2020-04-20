@@ -18,10 +18,9 @@
  */
 package org.apache.sshd.util.test;
 
-import org.slf4j.LoggerFactory;
-
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,7 +35,7 @@ public class JSchLogger implements Logger {
     @Override
     public boolean isEnabled(int level) {
         switch (level) {
-            case INFO:  // INFO is too "chatty" so we map it to debug
+            case INFO: // INFO is too "chatty" so we map it to debug
             case DEBUG:
                 return log.isDebugEnabled();
             case WARN:
@@ -53,7 +52,7 @@ public class JSchLogger implements Logger {
     @Override
     public void log(int level, String message) {
         switch (level) {
-            case INFO:  // INFO is too "chatty" so we map it to debug
+            case INFO: // INFO is too "chatty" so we map it to debug
             case DEBUG:
                 log.debug(message);
                 break;

@@ -194,7 +194,8 @@ public final class SshFsMounter extends SshServerCliSupport {
                     stdin.close();
                     log.info("destroy(" + username + ")[" + command + "] stdin closed");
                 } catch (IOException e) {
-                    log.warn("destroy(" + username + ")[" + command + "] failed (" + e.getClass().getSimpleName() + ") to close stdin: " + e.getMessage());
+                    log.warn("destroy(" + username + ")[" + command + "] failed (" + e.getClass().getSimpleName()
+                             + ") to close stdin: " + e.getMessage());
                     if (log.isDebugEnabled()) {
                         log.debug("destroy(" + username + ")[" + command + "] failure details", e);
                     }
@@ -271,8 +272,8 @@ public final class SshFsMounter extends SshServerCliSupport {
                 }
 
                 String provider = args[++i];
-                BuiltinIoServiceFactoryFactories factory =
-                    CliSupport.resolveBuiltinIoServiceFactory(System.err, argName, provider);
+                BuiltinIoServiceFactoryFactories factory
+                        = CliSupport.resolveBuiltinIoServiceFactory(System.err, argName, provider);
                 if (factory != null) {
                     System.setProperty(IoServiceFactory.class.getName(), factory.getFactoryClassName());
                 } else {
@@ -298,10 +299,11 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        SshServer sshd = error ? null : setupIoServiceFactory(
-            CoreTestSupportUtils.setupTestServer(SshFsMounter.class), resolver,
-            resolveLoggingVerbosity(resolver, args),
-            System.out, System.err, args);
+        SshServer sshd = error
+                ? null : setupIoServiceFactory(
+                        CoreTestSupportUtils.setupTestServer(SshFsMounter.class), resolver,
+                        resolveLoggingVerbosity(resolver, args),
+                        System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -313,7 +315,8 @@ public final class SshFsMounter extends SshServerCliSupport {
 
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
-        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
+        Path targetFolder = Objects.requireNonNull(CommonTestSupportUtils.detectTargetFolder(MounterCommandFactory.class),
+                "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(targetFolder.resolve("key.pem")));
         } else {

@@ -94,8 +94,8 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
             throws IOException, GeneralSecurityException {
         Iterable<OpenSshCertificate> certificates = loadCertificates(session);
         return StreamSupport.stream(certificates.spliterator(), false)
-            .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
-            .findFirst()
-            .orElse(null);
+                .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
+                .findFirst()
+                .orElse(null);
     }
 }

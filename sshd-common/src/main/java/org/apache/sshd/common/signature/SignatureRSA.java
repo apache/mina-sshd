@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * RSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public abstract class SignatureRSA extends AbstractSignature {
     private int verifierSignatureSize = -1;
@@ -42,8 +42,8 @@ public abstract class SignatureRSA extends AbstractSignature {
     }
 
     /**
-     * @return The expected number of bytes in the signature - non-positive
-     * if not initialized or not intended to be used for verification
+     * @return The expected number of bytes in the signature - non-positive if not initialized or not intended to be
+     *         used for verification
      */
     protected int getVerifierSignatureSize() {
         return verifierSignatureSize;
@@ -70,12 +70,10 @@ public abstract class SignatureRSA extends AbstractSignature {
             /*
              * According to https://tools.ietf.org/html/rfc8332#section-3.2:
              *
-             *      OpenSSH 7.2 (but not 7.2p2) incorrectly encodes the algorithm in the
-             *      signature as "ssh-rsa" when the algorithm in SSH_MSG_USERAUTH_REQUEST
-             *      is "rsa-sha2-256" or "rsa-sha2-512".  In this case, the signature
-             *      does actually use either SHA-256 or SHA-512.  A server MAY, but is
-             *      not required to, accept this variant or another variant that
-             *      corresponds to a good-faith implementation and is considered safe to accept.
+             * OpenSSH 7.2 (but not 7.2p2) incorrectly encodes the algorithm in the signature as "ssh-rsa" when the
+             * algorithm in SSH_MSG_USERAUTH_REQUEST is "rsa-sha2-256" or "rsa-sha2-512". In this case, the signature
+             * does actually use either SHA-256 or SHA-512. A server MAY, but is not required to, accept this variant or
+             * another variant that corresponds to a good-faith implementation and is considered safe to accept.
              */
             String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
             if ((!KeyPairProvider.SSH_RSA.equals(canonicalName))

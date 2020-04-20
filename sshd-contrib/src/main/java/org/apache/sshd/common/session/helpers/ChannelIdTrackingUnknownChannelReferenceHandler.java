@@ -31,10 +31,9 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Makes sure that the referenced &quot;unknown&quot; channel identifier
- * is one that was assigned in the past. <B>Note:</B> it relies on the
- * fact that the default {@code ConnectionService} implementation assigns
- * channels identifiers in ascending order.
+ * Makes sure that the referenced &quot;unknown&quot; channel identifier is one that was assigned in the past.
+ * <B>Note:</B> it relies on the fact that the default {@code ConnectionService} implementation assigns channels
+ * identifiers in ascending order.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -43,8 +42,8 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
         implements ChannelListener {
     public static final AttributeKey<Integer> LAST_CHANNEL_ID_KEY = new AttributeKey<>();
 
-    public static final ChannelIdTrackingUnknownChannelReferenceHandler TRACKER =
-        new ChannelIdTrackingUnknownChannelReferenceHandler();
+    public static final ChannelIdTrackingUnknownChannelReferenceHandler TRACKER
+            = new ChannelIdTrackingUnknownChannelReferenceHandler();
 
     public ChannelIdTrackingUnknownChannelReferenceHandler() {
         super();
@@ -57,27 +56,28 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
         Integer lastTracked = session.setAttribute(LAST_CHANNEL_ID_KEY, channelId);
         if (log.isDebugEnabled()) {
             log.debug("channelInitialized({}) updated last tracked channel ID {} => {}",
-                channel, lastTracked, channelId);
+                    channel, lastTracked, channelId);
         }
     }
 
     @Override
     public Channel handleUnknownChannelCommand(
             ConnectionService service, byte cmd, int channelId, Buffer buffer)
-                throws IOException {
+            throws IOException {
         Session session = service.getSession();
         Integer lastTracked = session.getAttribute(LAST_CHANNEL_ID_KEY);
         if ((lastTracked != null) && (channelId <= lastTracked.intValue())) {
             // Use TRACE level in order to avoid messages flooding
             if (log.isTraceEnabled()) {
                 log.trace("handleUnknownChannelCommand({}) apply default handling for {} on channel={} (lastTracked={})",
-                    session, SshConstants.getCommandMessageName(cmd), channelId, lastTracked);
+                        session, SshConstants.getCommandMessageName(cmd), channelId, lastTracked);
             }
             return super.handleUnknownChannelCommand(service, cmd, channelId, buffer);
         }
 
-        throw new SshChannelNotFoundException(channelId,
-            "Received " + SshConstants.getCommandMessageName(cmd) + " on unassigned channel " + channelId
-            + " (last assigned=" + lastTracked + ")");
+        throw new SshChannelNotFoundException(
+                channelId,
+                "Received " + SshConstants.getCommandMessageName(cmd) + " on unassigned channel " + channelId
+                           + " (last assigned=" + lastTracked + ")");
     }
 }

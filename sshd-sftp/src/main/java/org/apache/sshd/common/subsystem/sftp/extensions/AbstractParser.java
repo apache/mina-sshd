@@ -22,8 +22,8 @@ package org.apache.sshd.common.subsystem.sftp.extensions;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * @param <T> Parse result type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Parse result type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractParser<T> implements ExtensionParser<T> {
     private final String name;

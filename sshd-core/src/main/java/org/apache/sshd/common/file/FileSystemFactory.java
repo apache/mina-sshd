@@ -35,8 +35,8 @@ public interface FileSystemFactory {
     /**
      * Create user specific file system.
      *
-     * @param session The session created for the user
-     * @return The current {@link FileSystem} for the provided session
+     * @param  session     The session created for the user
+     * @return             The current {@link FileSystem} for the provided session
      * @throws IOException if the filesystem can not be created
      */
     FileSystem createFileSystem(Session session) throws IOException;

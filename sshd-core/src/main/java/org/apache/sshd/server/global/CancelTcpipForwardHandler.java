@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * Handler for &quot;cancel-tcpip-forward&quot; global request.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc4254#section-7">RFC4254 section 7</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc4254#section-7">RFC4254 section 7</A>
  */
 public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestHandler {
     public static final String REQUEST = "cancel-tcpip-forward";
@@ -52,7 +52,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
     @Override
     public Result process(
             ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
-                throws Exception {
+            throws Exception {
         if (!REQUEST.equals(request)) {
             return super.process(connectionService, request, wantReply, buffer);
         }

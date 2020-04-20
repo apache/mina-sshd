@@ -29,10 +29,9 @@ import java.util.function.Predicate;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 
 /**
- * Wraps several {@link ClientIdentityProvider} into a {@link KeyPair}
- * {@link Iterator} that invokes each provider &quot;lazily&quot; - i.e.,
- * only when {@link Iterator#hasNext()} is invoked. This prevents password
- * protected private keys to be decrypted until they are actually needed.
+ * Wraps several {@link ClientIdentityProvider} into a {@link KeyPair} {@link Iterator} that invokes each provider
+ * &quot;lazily&quot; - i.e., only when {@link Iterator#hasNext()} is invoked. This prevents password protected private
+ * keys to be decrypted until they are actually needed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -46,17 +45,17 @@ public class LazyClientIdentityIterator implements Iterator<KeyPair> {
     private final Predicate<? super KeyPair> filter;
 
     /**
-     * @param providers The providers - ignored if {@code null}
-     * @param kpExtractor The (never {@code null}) extractor of the {@link KeyPair}
-     * from the {@link ClientIdentityProvider} argument. If returned pair is
-     * {@code null} then next provider is queried.
-     * @param filter Any further filter to apply on (non-{@code null}) key pairs
-     * before returning it as the {@link Iterator#next()} result.
+     * @param providers   The providers - ignored if {@code null}
+     * @param kpExtractor The (never {@code null}) extractor of the {@link KeyPair} from the
+     *                    {@link ClientIdentityProvider} argument. If returned pair is {@code null} then next provider
+     *                    is queried.
+     * @param filter      Any further filter to apply on (non-{@code null}) key pairs before returning it as the
+     *                    {@link Iterator#next()} result.
      */
     public LazyClientIdentityIterator(
-            Iterator<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
-            Predicate<? super KeyPair> filter) {
+                                      Iterator<? extends ClientIdentityProvider> providers,
+                                      Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
+                                      Predicate<? super KeyPair> filter) {
         this.providers = providers;
         this.kpExtractor = Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
         this.filter = filter;

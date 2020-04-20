@@ -50,12 +50,17 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
         List<Integer> available = new ArrayList<>();
         Random rnd = new Random(System.nanoTime());
         ClientSession session = Mockito.mock(ClientSession.class);
-        for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; expected++) {
-            assertEquals("Mismatched directly selected for available=" + available, expected, SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
+        for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+             expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+             expected++) {
+            assertEquals("Mismatched directly selected for available=" + available, expected,
+                    SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
             available.add(expected);
         }
 
-        for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; expected++) {
+        for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+             expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+             expected++) {
             for (int index = 0; index < available.size(); index++) {
                 Collections.shuffle(available, rnd);
                 assertEquals("Mismatched suffling selected for current=" + expected + ", available=" + available,
@@ -73,7 +78,9 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
     @Test
     public void testPreferredVersionSelector() {
         List<Integer> available = new ArrayList<>();
-        for (int version = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; version++) {
+        for (int version = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+             version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+             version++) {
             available.add(version);
         }
 
@@ -86,18 +93,21 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
             SftpVersionSelector selector = SftpVersionSelector.preferredVersionSelector(preferred);
             int expected = preferred.get(0);
 
-            for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; current++) {
-                assertEquals("Mismatched selected for current= " + current + ", available=" + available + ", preferred=" + preferred,
-                             expected, selector.selectVersion(session, current, available));
+            for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+                 current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+                 current++) {
+                assertEquals(
+                        "Mismatched selected for current= " + current + ", available=" + available + ", preferred=" + preferred,
+                        expected, selector.selectVersion(session, current, available));
 
                 try {
                     Collections.shuffle(unavailable, rnd);
                     int version = unavailable.get(0);
                     int actual = selector.selectVersion(session, version, unavailable);
                     fail("Unexpected selected version (" + actual + ")"
-                            + " for current= " + version
-                            + ", available=" + unavailable
-                            + ", preferred=" + preferred);
+                         + " for current= " + version
+                         + ", available=" + unavailable
+                         + ", preferred=" + preferred);
                 } catch (IllegalStateException e) {
                     // expected
                 }
@@ -117,13 +127,17 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
 
     private static void testVersionSelector(SftpVersionSelector selector, int expected) {
         List<Integer> available = new ArrayList<>();
-        for (int version = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; version++) {
+        for (int version = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+             version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+             version++) {
             available.add(version);
         }
 
         Random rnd = new Random(System.nanoTime());
         ClientSession session = Mockito.mock(ClientSession.class);
-        for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL; current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL; current++) {
+        for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+             current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+             current++) {
             for (int index = 0; index < available.size(); index++) {
                 assertEquals("Mismatched selection for current=" + current + ", available=" + available,
                         expected, selector.selectVersion(session, current, available));

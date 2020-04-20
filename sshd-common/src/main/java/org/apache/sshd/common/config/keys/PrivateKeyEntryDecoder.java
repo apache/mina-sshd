@@ -38,17 +38,17 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * @param <PUB> Type of {@link PublicKey}
- * @param <PRV> Type of {@link PrivateKey}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey}
+ * @param  <PRV> Type of {@link PrivateKey}
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-            extends KeyEntryResolver<PUB, PRV>, PrivateKeyEntryResolver {
+        extends KeyEntryResolver<PUB, PRV>, PrivateKeyEntryResolver {
 
     @Override
     default PrivateKey resolve(
             SessionContext session, String keyType, byte[] keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type provided");
         Collection<String> supported = getSupportedKeyTypes();
         if ((GenericUtils.size(supported) > 0) && supported.contains(keyType)) {
@@ -59,26 +59,25 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param passwordProvider The {@link FilePasswordProvider} to use
-     * in case the data is encrypted - may be {@code null} if no encrypted
-     * data is expected
-     * @param keyData The key data bytes in {@code OpenSSH} format (after
-     *                BASE64 decoding) - ignored if {@code null}/empty
-     * @return The decoded {@link PrivateKey} - or {@code null} if no data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  passwordProvider         The {@link FilePasswordProvider} to use in case the data is encrypted - may be
+     *                                  {@code null} if no encrypted data is expected
+     * @param  keyData                  The key data bytes in {@code OpenSSH} format (after BASE64 decoding) - ignored
+     *                                  if {@code null}/empty
+     * @return                          The decoded {@link PrivateKey} - or {@code null} if no data
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
     default PRV decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, byte... keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return decodePrivateKey(session, passwordProvider, keyData, 0, NumberUtils.length(keyData));
     }
 
     default PRV decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, byte[] keyData, int offset, int length)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (length <= 0) {
             return null;
         }
@@ -90,7 +89,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
 
     default PRV decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = KeyEntryResolver.decodeString(keyData, KeyPairResourceLoader.MAX_KEY_TYPE_NAME_LENGTH);
         if (GenericUtils.isEmpty(type)) {
@@ -106,30 +105,29 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param keyType The reported / encode key type
-     * @param passwordProvider The {@link FilePasswordProvider} to use
-     * in case the data is encrypted - may be {@code null} if no encrypted
-     * data is expected
-     * @param keyData The key data bytes stream positioned after the key type decoding
-     *                and making sure it is one of the supported types
-     * @return The decoded {@link PrivateKey}
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  keyType                  The reported / encode key type
+     * @param  passwordProvider         The {@link FilePasswordProvider} to use in case the data is encrypted - may be
+     *                                  {@code null} if no encrypted data is expected
+     * @param  keyData                  The key data bytes stream positioned after the key type decoding and making sure
+     *                                  it is one of the supported types
+     * @return                          The decoded {@link PrivateKey}
      * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
     PRV decodePrivateKey(
-        SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
+            SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException;
 
     /**
-     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same
-     * one used by the {@code decodePublicKey} method(s)
+     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same one used by the {@code decodePublicKey}
+     * method(s)
      *
-     * @param s   The {@link OutputStream} to write the data to
-     * @param key The {@link PrivateKey} - may not be {@code null}
-     * @return The key type value - one of the {@link #getSupportedKeyTypes()} or
-     * {@code null} if encoding not supported
+     * @param  s           The {@link OutputStream} to write the data to
+     * @param  key         The {@link PrivateKey} - may not be {@code null}
+     * @return             The key type value - one of the {@link #getSupportedKeyTypes()} or {@code null} if encoding
+     *                     not supported
      * @throws IOException If failed to generate the encoding
      */
     default String encodePrivateKey(OutputStream s, PRV key) throws IOException {
@@ -144,8 +142,8 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
     /**
      * Attempts to recover the public key given the private one
      *
-     * @param prvKey The {@link PrivateKey}
-     * @return The recovered {@link PublicKey} - {@code null} if cannot recover it
+     * @param  prvKey                   The {@link PrivateKey}
+     * @return                          The recovered {@link PublicKey} - {@code null} if cannot recover it
      * @throws GeneralSecurityException If failed to generate the public key
      */
     default PUB recoverPublicKey(PRV prvKey) throws GeneralSecurityException {

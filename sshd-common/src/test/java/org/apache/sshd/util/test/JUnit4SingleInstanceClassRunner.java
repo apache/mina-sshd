@@ -27,7 +27,7 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 
 /**
- * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-764">SSHD-764</A>
+ * @see    <A HREF="https://issues.apache.org/jira/browse/SSHD-764">SSHD-764</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JUnit4SingleInstanceClassRunner extends BlockJUnit4ClassRunner {

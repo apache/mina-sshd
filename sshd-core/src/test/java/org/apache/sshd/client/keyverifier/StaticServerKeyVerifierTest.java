@@ -57,13 +57,14 @@ public class StaticServerKeyVerifierTest extends BaseTestSupport {
     }
 
     private void testStaticServerKeyVerifier(StaticServerKeyVerifier authenticator) throws Exception {
-        Method method = ServerKeyVerifier.class.getMethod("verifyServerKey", ClientSession.class, SocketAddress.class, PublicKey.class);
+        Method method = ServerKeyVerifier.class.getMethod("verifyServerKey", ClientSession.class, SocketAddress.class,
+                PublicKey.class);
         PublicKey key = Mockito.mock(PublicKey.class);
         Mockito.when(key.getAlgorithm()).thenReturn(getCurrentTestName());
         Mockito.when(key.getEncoded()).thenReturn(GenericUtils.EMPTY_BYTE_ARRAY);
         Mockito.when(key.getFormat()).thenReturn(getCurrentTestName());
 
-        Object[] args = {Mockito.mock(ClientSession.class), new InetSocketAddress(TEST_LOCALHOST, 7365), key};
+        Object[] args = { Mockito.mock(ClientSession.class), new InetSocketAddress(TEST_LOCALHOST, 7365), key };
         Object[] invArgs = new Object[args.length];
         Random rnd = new Random(System.nanoTime());
         boolean expected = authenticator.isAccepted();

@@ -32,6 +32,12 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Objects;
 
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
+import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
@@ -39,13 +45,6 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -58,15 +57,15 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     public OpenSSHEd25519PrivateKeyEntryDecoder() {
         super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
-            Collections.unmodifiableList(
-                Collections.singletonList(
-                    KeyPairProvider.SSH_ED25519)));
+              Collections.unmodifiableList(
+                      Collections.singletonList(
+                              KeyPairProvider.SSH_ED25519)));
     }
 
     @Override
     public EdDSAPrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
         }
@@ -85,11 +84,14 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
             pk = KeyEntryResolver.readRLEBytes(keyData, PK_SIZE * 2);
             keypair = KeyEntryResolver.readRLEBytes(keyData, KEYPAIR_SIZE * 2);
             if (pk.length != PK_SIZE) {
-                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
+                throw new InvalidKeyException(
+                        String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
             }
 
             if (keypair.length != KEYPAIR_SIZE) {
-                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length, KEYPAIR_SIZE));
+                throw new InvalidKeyException(
+                        String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length,
+                                KEYPAIR_SIZE));
             }
 
             // verify that the keypair contains the expected pk

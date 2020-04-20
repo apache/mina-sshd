@@ -66,7 +66,7 @@ public class DefaultAgentForwardSupport extends AbstractCloseable implements Age
             return agentId;
         } catch (Throwable t) {
             log.error("initialize({}) failed ({}) to create server: {}",
-                  session, t.getClass().getSimpleName(), t.getMessage());
+                    session, t.getClass().getSimpleName(), t.getMessage());
             if (log.isDebugEnabled()) {
                 log.error("initialize(" + session + ") server creation failure details", t);
             }

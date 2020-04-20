@@ -97,15 +97,13 @@ public abstract class Buffer implements Readable {
     public abstract int wpos();
 
     /**
-     * @param wpos Set current writing position - <B>Note:</B> if necessary, the
-     * underlying data buffer will be increased so as to allow writing from the
-     * new position
+     * @param wpos Set current writing position - <B>Note:</B> if necessary, the underlying data buffer will be
+     *             increased so as to allow writing from the new position
      */
     public abstract void wpos(int wpos);
 
     /**
-     * @return Number of bytes that can still be written without re-sizing
-     * the internal buffer
+     * @return Number of bytes that can still be written without re-sizing the internal buffer
      */
     public abstract int capacity();
 
@@ -120,10 +118,9 @@ public abstract class Buffer implements Readable {
     public abstract byte[] getBytesConsumed();
 
     /**
-     * @param pos A position in the <U>raw</U> underlying data bytes
-     * @return The byte at the specified position without changing the
-     * current {@link #rpos() read position}. <B>Note:</B> no validation
-     * is made whether the position lies within array boundaries
+     * @param  pos A position in the <U>raw</U> underlying data bytes
+     * @return     The byte at the specified position without changing the current {@link #rpos() read position}.
+     *             <B>Note:</B> no validation is made whether the position lies within array boundaries
      */
     public byte rawByte(int pos) {
         byte[] data = array();
@@ -131,11 +128,10 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param pos A position in the <U>raw</U> underlying data bytes
-     * @return The unsigned 32 bit integer at the specified position
-     * without changing the current {@link #rpos() read position}.
-     * <B>Note:</B> no validation is made whether the position and
-     * the required extra 4 bytes lie within array boundaries
+     * @param  pos A position in the <U>raw</U> underlying data bytes
+     * @return     The unsigned 32 bit integer at the specified position without changing the current {@link #rpos()
+     *             read position}. <B>Note:</B> no validation is made whether the position and the required extra 4
+     *             bytes lie within array boundaries
      */
     public long rawUInt(int pos) {
         byte[] data = array();
@@ -143,8 +139,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * &quot;Shift&quot; the internal data so that reading starts from
-     * position zero.
+     * &quot;Shift&quot; the internal data so that reading starts from position zero.
      */
     public abstract void compact();
 
@@ -160,8 +155,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Reset read/write positions to zero - <B>Note:</B> zeroes
-     * any previously existing data
+     * Reset read/write positions to zero - <B>Note:</B> zeroes any previously existing data
      *
      * @see #clear(boolean)
      */
@@ -251,12 +245,12 @@ public abstract class Buffer implements Readable {
 
     public void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver) {
         BufferUtils.dumpHex(
-            logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
+                logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
     }
 
-    /*======================
-       Read methods
-     ======================*/
+    /*
+     * ====================== Read methods ======================
+     */
 
     public int getUByte() {
         return getByte() & 0xFF;
@@ -315,8 +309,8 @@ public abstract class Buffer implements Readable {
     /**
      * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>:
      *
-     *      A name-list is represented as a uint32 containing its length (number of bytes
-     *      that follow) followed by a comma-separated list of zero or more names.
+     * A name-list is represented as a uint32 containing its length (number of bytes that follow) followed by a
+     * comma-separated list of zero or more names.
      *
      * @return The parsed result
      */
@@ -335,9 +329,9 @@ public abstract class Buffer implements Readable {
     /**
      * Parses a string that contains values separated by a delimiter
      *
-     * @param charset The {@link Charset} to use to read the string
-     * @param separator The separator
-     * @return A {@link List} of the parsed values
+     * @param  charset   The {@link Charset} to use to read the string
+     * @param  separator The separator
+     * @return           A {@link List} of the parsed values
      */
     public List<String> getNameList(Charset charset, char separator) {
         String list = getString(charset);
@@ -346,26 +340,24 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param usePrependedLength If {@code true} then there is a 32-bit
-     * value indicating the number of strings to read. Otherwise, the
-     * method will use a &quot;greedy&quot; reading of strings while more
-     * data available.
-     * @return A {@link Collection} of the read strings
-     * @see #getStringList(boolean, Charset)
+     * @param  usePrependedLength If {@code true} then there is a 32-bit value indicating the number of strings to read.
+     *                            Otherwise, the method will use a &quot;greedy&quot; reading of strings while more data
+     *                            available.
+     * @return                    A {@link Collection} of the read strings
+     * @see                       #getStringList(boolean, Charset)
      */
     public Collection<String> getStringList(boolean usePrependedLength) {
         return getStringList(usePrependedLength, StandardCharsets.UTF_8);
     }
 
     /**
-     * @param usePrependedLength If {@code true} then there is a 32-bit
-     * value indicating the number of strings to read. Otherwise, the
-     * method will use a &quot;greedy&quot; reading of strings while more
-     * data available.
-     * @param charset The {@link Charset} to use for the strings
-     * @return A {@link Collection} of the read strings
-     * @see #getStringList(int, Charset)
-     * @see #getAvailableStrings()
+     * @param  usePrependedLength If {@code true} then there is a 32-bit value indicating the number of strings to read.
+     *                            Otherwise, the method will use a &quot;greedy&quot; reading of strings while more data
+     *                            available.
+     * @param  charset            The {@link Charset} to use for the strings
+     * @return                    A {@link Collection} of the read strings
+     * @see                       #getStringList(int, Charset)
+     * @see                       #getAvailableStrings()
      */
     public Collection<String> getStringList(boolean usePrependedLength, Charset charset) {
         if (usePrependedLength) {
@@ -378,17 +370,17 @@ public abstract class Buffer implements Readable {
 
     /**
      * @return The remaining data as a list of strings
-     * @see #getAvailableStrings(Charset)
+     * @see    #getAvailableStrings(Charset)
      */
     public Collection<String> getAvailableStrings() {
         return getAvailableStrings(StandardCharsets.UTF_8);
     }
 
     /**
-     * @param charset The {@link Charset} to use for the strings
-     * @return The remaining data as a list of strings
-     * @see #available()
-     * @see #getString(Charset)
+     * @param  charset The {@link Charset} to use for the strings
+     * @return         The remaining data as a list of strings
+     * @see            #available()
+     * @see            #getString(Charset)
      */
     public Collection<String> getAvailableStrings(Charset charset) {
         Collection<String> list = new LinkedList<>();
@@ -401,19 +393,19 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param count The <U>exact</U> number of strings to read - can be zero
-     * @return A {@link List} with the specified number of strings
-     * @see #getStringList(int, Charset)
+     * @param  count The <U>exact</U> number of strings to read - can be zero
+     * @return       A {@link List} with the specified number of strings
+     * @see          #getStringList(int, Charset)
      */
     public List<String> getStringList(int count) {
         return getStringList(count, StandardCharsets.UTF_8);
     }
 
     /**
-     * @param count   The <U>exact</U> number of strings to read - can be zero
-     * @param charset The {@link Charset} of the strings
-     * @return A {@link List} with the specified number of strings
-     * @see #getString(Charset)
+     * @param  count   The <U>exact</U> number of strings to read - can be zero
+     * @param  charset The {@link Charset} of the strings
+     * @return         A {@link List} with the specified number of strings
+     * @see            #getString(Charset)
      */
     public List<String> getStringList(int count, Charset charset) {
         if ((count < 0) || (count > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
@@ -435,8 +427,8 @@ public abstract class Buffer implements Readable {
     /**
      * Reads a string using a given charset.
      *
-     * @param charset The {@link Charset} to use for the string bytes
-     * @return The read string
+     * @param  charset The {@link Charset} to use for the string bytes
+     * @return         The read string
      */
     public abstract String getString(Charset charset);
 
@@ -465,11 +457,10 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param parser A {@link BufferPublicKeyParser} to extract the key from the buffer
-     * - never {@code null}
-     * @return The extracted {@link PublicKey} - may be {@code null} if the parser so decided
+     * @param  parser       A {@link BufferPublicKeyParser} to extract the key from the buffer - never {@code null}
+     * @return              The extracted {@link PublicKey} - may be {@code null} if the parser so decided
      * @throws SshException If failed to extract the key
-     * @see #getRawPublicKey(BufferPublicKeyParser)
+     * @see                 #getRawPublicKey(BufferPublicKeyParser)
      */
     public PublicKey getPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
         int ow = wpos();
@@ -491,9 +482,8 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param parser A {@link BufferPublicKeyParser} to extract the key from the buffer
-     * - never {@code null}
-     * @return The extracted {@link PublicKey} - may be {@code null} if the parser so decided
+     * @param  parser       A {@link BufferPublicKeyParser} to extract the key from the buffer - never {@code null}
+     * @return              The extracted {@link PublicKey} - may be {@code null} if the parser so decided
      * @throws SshException If failed to extract the key
      */
     public PublicKey getRawPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
@@ -571,9 +561,10 @@ public abstract class Buffer implements Readable {
         try {
             group = ECCurves.octetStringToEcPoint(groupBytes);
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ")"
-                    + " failed (" + e.getClass().getSimpleName() + ")"
-                    + " to decode EC group for curve: " + e.getMessage(),
+            throw new InvalidKeySpecException(
+                    "extractEC(" + expectedCurveName + ")"
+                                              + " failed (" + e.getClass().getSimpleName() + ")"
+                                              + " to decode EC group for curve: " + e.getMessage(),
                     e);
         }
 
@@ -586,8 +577,8 @@ public abstract class Buffer implements Readable {
     /**
      * Makes sure the buffer contains enough data to accommodate the requested length
      *
-     * @param reqLen Requested data in bytes
-     * @return Same as input if validation successful
+     * @param  reqLen          Requested data in bytes
+     * @return                 Same as input if validation successful
      * @throws BufferException If negative length or beyond available requested
      */
     public int ensureAvailable(int reqLen) throws BufferException {
@@ -603,9 +594,9 @@ public abstract class Buffer implements Readable {
         return reqLen;
     }
 
-    /*======================
-       Write methods
-     ======================*/
+    /*
+     * ====================== Write methods ======================
+     */
 
     public void putByte(byte b) {
         ensureCapacity(Byte.BYTES);
@@ -614,13 +605,11 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Checks if the <tt>buffer</tt> argument is an array of bytes,
-     * a {@link Readable} instance or a {@link ByteBuffer} and invokes
-     * the appropriate {@code putXXX} method. If {@code null} then
-     * puts an empty byte array value
+     * Checks if the <tt>buffer</tt> argument is an array of bytes, a {@link Readable} instance or a {@link ByteBuffer}
+     * and invokes the appropriate {@code putXXX} method. If {@code null} then puts an empty byte array value
      *
      * @param buffer The buffered data object to inspect
-     * @see #putBufferedData(Object)
+     * @see          #putBufferedData(Object)
      */
     public void putOptionalBufferedData(Object buffer) {
         if (buffer == null) {
@@ -631,13 +620,11 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Checks if the <tt>buffer</tt> argument is an array of bytes,
-     * a {@link Readable} instance or a {@link ByteBuffer} and invokes
-     * the appropriate {@code putXXX} method.
+     * Checks if the <tt>buffer</tt> argument is an array of bytes, a {@link Readable} instance or a {@link ByteBuffer}
+     * and invokes the appropriate {@code putXXX} method.
      *
-     * @param buffer The (never {@code null}) buffer object to put
-     * @throws IllegalArgumentException If <tt>buffer</tt> is none of the
-     * supported types
+     * @param  buffer                   The (never {@code null}) buffer object to put
+     * @throws IllegalArgumentException If <tt>buffer</tt> is none of the supported types
      */
     public void putBufferedData(Object buffer) {
         Objects.requireNonNull(buffer, "No buffered data to encode");
@@ -648,8 +635,9 @@ public abstract class Buffer implements Readable {
         } else if (buffer instanceof ByteBuffer) {
             putBuffer((ByteBuffer) buffer);
         } else {
-            throw new IllegalArgumentException("No buffered overload found for "
-                + ((buffer == null) ? null : buffer.getClass().getName()));
+            throw new IllegalArgumentException(
+                    "No buffered overload found for "
+                                               + ((buffer == null) ? null : buffer.getClass().getName()));
         }
     }
 
@@ -708,9 +696,8 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Adds the bytes to the buffer and wipes the data from the
-     * input buffer <U>after</U> having added it - useful for sensitive
-     * information such as password
+     * Adds the bytes to the buffer and wipes the data from the input buffer <U>after</U> having added it - useful for
+     * sensitive information such as password
      *
      * @param b The buffer to add - OK if {@code null}
      */
@@ -738,10 +725,10 @@ public abstract class Buffer implements Readable {
     /**
      * Encodes the {@link Objects#toString(Object, String) toString} value of each member.
      *
-     * @param objects The objects to be encoded in the buffer - OK if {@code null}/empty
-     * @param prependLength If {@code true} then the list is preceded by a 32-bit count
-     * of the number of members in the list
-     * @see #putStringList(Collection, Charset, boolean)
+     * @param objects       The objects to be encoded in the buffer - OK if {@code null}/empty
+     * @param prependLength If {@code true} then the list is preceded by a 32-bit count of the number of members in the
+     *                      list
+     * @see                 #putStringList(Collection, Charset, boolean)
      */
     public void putStringList(Collection<?> objects, boolean prependLength) {
         putStringList(objects, StandardCharsets.UTF_8, prependLength);
@@ -750,12 +737,11 @@ public abstract class Buffer implements Readable {
     /**
      * Encodes the {@link Objects#toString(Object, String) toString} value of each member
      *
-     * @param objects       The objects to be encoded in the buffer - OK if
-     *                      {@code null}/empty
+     * @param objects       The objects to be encoded in the buffer - OK if {@code null}/empty
      * @param charset       The {@link Charset} to use for encoding
-     * @param prependLength If {@code true} then the list is preceded by
-     *                      a 32-bit count of the number of members in the list
-     * @see #putString(String, Charset)
+     * @param prependLength If {@code true} then the list is preceded by a 32-bit count of the number of members in the
+     *                      list
+     * @see                 #putString(String, Charset)
      */
     public void putStringList(Collection<?> objects, Charset charset, boolean prependLength) {
         int numObjects = GenericUtils.size(objects);
@@ -774,11 +760,11 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>:
-     * <CODE>
+     * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>: <CODE>
      *      A name-list is represented as a uint32 containing its length (number of bytes
      *      that follow) followed by a comma-separated list of zero or more names.
      * </CODE>
+     * 
      * @param names The name list to put
      */
     public void putNameList(Collection<String> names) {
@@ -796,8 +782,8 @@ public abstract class Buffer implements Readable {
     /**
      * Adds a string that contains values separated by a delimiter
      *
-     * @param names The names to set
-     * @param charset The {@link Charset} to use to encode the string
+     * @param names     The names to set
+     * @param charset   The {@link Charset} to use to encode the string
      * @param separator The separator
      */
     public void putNameList(Collection<String> names, Charset charset, char separator) {
@@ -819,12 +805,12 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Zeroes the input array <U>after</U> having put the characters in the
-     * buffer - useful for sensitive information such as passwords
+     * Zeroes the input array <U>after</U> having put the characters in the buffer - useful for sensitive information
+     * such as passwords
      *
      * @param chars The characters to put in the buffer - may be {@code null}/empty
-     * @see #putAndWipeChars(char[], Charset)
-     * @see #putChars(char[], Charset)
+     * @see         #putAndWipeChars(char[], Charset)
+     * @see         #putChars(char[], Charset)
      */
     public void putAndWipeChars(char[] chars) {
         putAndWipeChars(chars, 0, GenericUtils.length(chars));
@@ -1007,11 +993,10 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param capacity The required capacity
-     * @param growthFactor An {@link IntUnaryOperator} that is invoked if the current
-     * capacity is insufficient. The argument is the minimum required new data length,
-     * the function result should be the effective new data length to be allocated - if
-     * less than minimum then an exception is thrown
+     * @param capacity     The required capacity
+     * @param growthFactor An {@link IntUnaryOperator} that is invoked if the current capacity is insufficient. The
+     *                     argument is the minimum required new data length, the function result should be the effective
+     *                     new data length to be allocated - if less than minimum then an exception is thrown
      */
     public abstract void ensureCapacity(int capacity, IntUnaryOperator growthFactor);
 
@@ -1023,9 +1008,9 @@ public abstract class Buffer implements Readable {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[rpos=" + rpos()
-            + ", wpos=" + wpos()
-            + ", size=" + size()
-            + "]";
+               + "[rpos=" + rpos()
+               + ", wpos=" + wpos()
+               + ", size=" + size()
+               + "]";
     }
 }

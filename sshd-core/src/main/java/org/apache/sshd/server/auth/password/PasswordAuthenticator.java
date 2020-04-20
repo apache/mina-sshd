@@ -31,29 +31,27 @@ public interface PasswordAuthenticator {
     /**
      * Check the validity of a password.
      *
-     * @param username The username credential
-     * @param password The provided password
-     * @param session  The {@link ServerSession} attempting the authentication
-     * @return {@code true} indicating if authentication succeeded
-     * @throws PasswordChangeRequiredException If the password is expired or
-     * not strong enough to suit the server's policy
-     * @throws AsyncAuthException If the authentication is performed asynchronously
+     * @param  username                        The username credential
+     * @param  password                        The provided password
+     * @param  session                         The {@link ServerSession} attempting the authentication
+     * @return                                 {@code true} indicating if authentication succeeded
+     * @throws PasswordChangeRequiredException If the password is expired or not strong enough to suit the server's
+     *                                         policy
+     * @throws AsyncAuthException              If the authentication is performed asynchronously
      */
     boolean authenticate(String username, String password, ServerSession session)
-        throws PasswordChangeRequiredException, AsyncAuthException;
+            throws PasswordChangeRequiredException, AsyncAuthException;
 
     /**
-     * Invoked when the client sends a {@code SSH_MSG_USERAUTH_REQUEST} indicating
-     * a password change. This can happen if the {@code authenticate} method
-     * threw {@link PasswordChangeRequiredException} thus telling the client that
-     * it needs to provide a new password. Throws {@link UnsupportedOperationException}
-     * by default.
+     * Invoked when the client sends a {@code SSH_MSG_USERAUTH_REQUEST} indicating a password change. This can happen if
+     * the {@code authenticate} method threw {@link PasswordChangeRequiredException} thus telling the client that it
+     * needs to provide a new password. Throws {@link UnsupportedOperationException} by default.
      *
-     * @param session  The {@link ServerSession} attempting the authentication
-     * @param username The username credential
-     * @param oldPassword The old password
-     * @param newPassword The new password
-     * @return {@code true} if password change accepted
+     * @param  session     The {@link ServerSession} attempting the authentication
+     * @param  username    The username credential
+     * @param  oldPassword The old password
+     * @param  newPassword The new password
+     * @return             {@code true} if password change accepted
      */
     default boolean handleClientPasswordChangeRequest(
             ServerSession session, String username, String oldPassword, String newPassword) {

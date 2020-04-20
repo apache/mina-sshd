@@ -31,7 +31,8 @@ import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Issue a &quot;keyboard-interactive&quot; command according to <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
+ * Issue a &quot;keyboard-interactive&quot; command according to
+ * <A HREF="https://tools.ietf.org/html/rfc4256">RFC4256</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -56,14 +57,14 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     protected Boolean doInitialAuth(
             ServerSession session, String username, KeyboardInteractiveAuthenticator auth, Buffer buffer)
-                throws Exception {
+            throws Exception {
         String lang = buffer.getString();
         String subMethods = buffer.getString();
         boolean debugEnabled = log.isDebugEnabled();
         if (auth == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive authenticator to generate challenge",
-                      username, session, subMethods, lang);
+                        username, session, subMethods, lang);
             }
             return false;
         }
@@ -73,7 +74,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             challenge = auth.generateChallenge(session, username, lang, subMethods);
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
-                 username, session, e.getClass().getSimpleName(), e.getMessage());
+                    username, session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
             }
@@ -83,16 +84,16 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (challenge == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{})[methods={}, lang={}] - no interactive challenge generated",
-                      username, session, subMethods, lang);
+                        username, session, subMethods, lang);
             }
             return false;
         }
 
         if (debugEnabled) {
             log.debug("doAuth({}@{})[methods={}, lang={}] challenge name={}, instruction={}, lang={}, num. prompts={}",
-                  username, session, subMethods, lang,
-                  challenge.getInteractionName(), challenge.getInteractionInstruction(),
-                  challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
+                    username, session, subMethods, lang,
+                    challenge.getInteractionName(), challenge.getInteractionInstruction(),
+                    challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
         }
 
         // Prompt for password
@@ -104,7 +105,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     protected Boolean doValidateAuthResponse(
             ServerSession session, String username, KeyboardInteractiveAuthenticator auth, Buffer buffer)
-                throws Exception {
+            throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
             throw new SshException("Received unexpected message: " + SshConstants.getCommandMessageName(cmd));
@@ -131,7 +132,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (auth == null) {
             if (debugEnabled) {
                 log.debug("doAuth({}@{}) no interactive authenticator to validate {} responses",
-                      username, session, num);
+                        username, session, num);
             }
             return false;
         }
@@ -141,7 +142,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             authed = auth.authenticate(session, username, responses);
         } catch (Error e) {
             log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
-                 username, session, e.getClass().getSimpleName(), e.getMessage());
+                    username, session, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
                 log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
             }
@@ -150,7 +151,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
         if (debugEnabled) {
             log.debug("doAuth({}@{}) authenticate {} responses result: {}",
-                  username, session, num, authed);
+                    username, session, num, authed);
         }
 
         return authed;

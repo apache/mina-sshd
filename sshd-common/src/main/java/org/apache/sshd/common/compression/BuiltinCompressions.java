@@ -70,11 +70,9 @@ public enum BuiltinCompressions implements CompressionFactory {
         }
     };
 
-    public static final Set<BuiltinCompressions> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
+    public static final Set<BuiltinCompressions> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
 
-    private static final Map<String, CompressionFactory> EXTENSIONS =
-        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, CompressionFactory> EXTENSIONS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String name;
 
@@ -108,13 +106,12 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     /**
-     * Registered a {@link org.apache.sshd.common.NamedFactory} to be available besides the built-in
-     * ones when parsing configuration
+     * Registered a {@link org.apache.sshd.common.NamedFactory} to be available besides the built-in ones when parsing
+     * configuration
      *
-     * @param extension The factory to register
-     * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     * @param  extension                The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null}, or overrides a built-in one or overrides
+     *                                  another registered factory with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(CompressionFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
@@ -127,8 +124,8 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     /**
-     * @return A {@link SortedSet} of the currently registered extensions, sorted
-     * according to the factory name (case <U>insensitive</U>)
+     * @return A {@link SortedSet} of the currently registered extensions, sorted according to the factory name (case
+     *         <U>insensitive</U>)
      */
     public static NavigableSet<CompressionFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
@@ -139,8 +136,8 @@ public enum BuiltinCompressions implements CompressionFactory {
     /**
      * Unregisters specified extension
      *
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The registered extension - {@code null} if not found
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The registered extension - {@code null} if not found
      */
     public static CompressionFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -157,18 +154,17 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     /**
-     * @param compressions A comma-separated list of Compressions' names - ignored
-     *                     if {@code null}/empty
-     * @return A {@link ParseResult} containing the successfully parsed
-     * factories and the unknown ones. <B>Note:</B> it is up to caller to
-     * ensure that the lists do not contain duplicates
+     * @param  compressions A comma-separated list of Compressions' names - ignored if {@code null}/empty
+     * @return              A {@link ParseResult} containing the successfully parsed factories and the unknown ones.
+     *                      <B>Note:</B> it is up to caller to ensure that the lists do not contain duplicates
      */
     public static ParseResult parseCompressionsList(String compressions) {
         return parseCompressionsList(GenericUtils.split(compressions, ','));
     }
 
     public static ParseResult parseCompressionsList(String... compressions) {
-        return parseCompressionsList(GenericUtils.isEmpty((Object[]) compressions) ? Collections.emptyList() : Arrays.asList(compressions));
+        return parseCompressionsList(
+                GenericUtils.isEmpty((Object[]) compressions) ? Collections.emptyList() : Arrays.asList(compressions));
     }
 
     public static ParseResult parseCompressionsList(Collection<String> compressions) {
@@ -195,9 +191,8 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     /**
-     * @param name The factory name
-     * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension
+     * @param  name The factory name
+     * @return      The factory or {@code null} if it is neither a built-in one or a registered extension
      */
     public static CompressionFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {

@@ -39,11 +39,10 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
     public static final String PGP_RSA_KEY = "pgp-sign-rsa";
     public static final String PGP_DSS_KEY = "pgp-sign-dss";
 
-    public static final NavigableSet<String> PGP_KEY_TYPES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> PGP_KEY_TYPES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                PGP_RSA_KEY,
-                PGP_DSS_KEY));
+                    PGP_RSA_KEY,
+                    PGP_DSS_KEY));
 
     public static final PGPPublicKeyEntryDataResolver DEFAULT = new PGPPublicKeyEntryDataResolver();
 
@@ -63,7 +62,7 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
 
     public static byte[] decodeKeyFingerprint(String encData) {
         if (GenericUtils.isEmpty(encData)) {
-            return GenericUtils.EMPTY_BYTE_ARRAY;   // debug breakpoint
+            return GenericUtils.EMPTY_BYTE_ARRAY; // debug breakpoint
         }
 
         return BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, encData);
@@ -71,15 +70,15 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
 
     public static String encodeKeyFingerprint(byte[] keyData) {
         if (NumberUtils.isEmpty(keyData)) {
-            return "";  // debug breakpoint
+            return ""; // debug breakpoint
         }
 
         return BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, keyData).toUpperCase();
     }
 
     /**
-     * Used in order to add the {@link #DEFAULT default resolver} for all
-     * the {@link #PGP_KEY_TYPES standard PGP key types}.
+     * Used in order to add the {@link #DEFAULT default resolver} for all the {@link #PGP_KEY_TYPES standard PGP key
+     * types}.
      *
      * @see PublicKeyEntry#registerKeyDataEntryResolver(String, PublicKeyEntryDataResolver)
      */
@@ -100,8 +99,8 @@ public class PGPPublicKeyEntryDataResolver implements PublicKeyEntryDataResolver
             case PublicKeyAlgorithmTags.DSA:
                 return PGP_DSS_KEY;
 
-            case PublicKeyAlgorithmTags.ECDSA:  // TODO find out how these key types are called
-            case PublicKeyAlgorithmTags.EDDSA:  // TODO find out how these key types are called
+            case PublicKeyAlgorithmTags.ECDSA: // TODO find out how these key types are called
+            case PublicKeyAlgorithmTags.EDDSA: // TODO find out how these key types are called
             default:
                 return null;
 

@@ -19,9 +19,8 @@
 package org.apache.sshd.common.digest;
 
 /**
- * Interface used to compute digests, based on algorithms such as MD5 or SHA1.
- * The digest implementation are compared first by the algorithm name (case
- * <U>insensitive</U> and second according to the block size
+ * Interface used to compute digests, based on algorithms such as MD5 or SHA1. The digest implementation are compared
+ * first by the algorithm name (case <U>insensitive</U> and second according to the block size
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

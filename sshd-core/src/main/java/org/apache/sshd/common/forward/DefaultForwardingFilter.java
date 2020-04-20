@@ -78,8 +78,7 @@ public class DefaultForwardingFilter
         implements ForwardingFilter, SessionHolder<Session>, PortForwardingEventListenerManager {
 
     /**
-     * Used to configure the timeout (milliseconds) for receiving a response
-     * for the forwarding request
+     * Used to configure the timeout (milliseconds) for receiving a response for the forwarding request
      *
      * @see #DEFAULT_FORWARD_REQUEST_TIMEOUT
      */
@@ -90,8 +89,8 @@ public class DefaultForwardingFilter
      */
     public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
-    public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS =
-        Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
+    public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS
+            = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = () -> new SocksProxy(getConnectionService());
@@ -187,7 +186,8 @@ public class DefaultForwardingFilter
     }
 
     @Override
-    public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
+    public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote)
+            throws IOException {
         Objects.requireNonNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
         Objects.requireNonNull(remote, "Remote address is null");
@@ -205,14 +205,16 @@ public class DefaultForwardingFilter
             synchronized (localLock) {
                 SshdSocketAddress prevRemote = localToRemote.get(port);
                 if (prevRemote != null) {
-                    throw new IOException("Multiple local port forwarding addressing on port=" + port
-                        + ": current=" + remote + ", previous=" + prevRemote);
+                    throw new IOException(
+                            "Multiple local port forwarding addressing on port=" + port
+                                          + ": current=" + remote + ", previous=" + prevRemote);
                 }
 
                 InetSocketAddress prevBound = boundLocals.get(port);
                 if (prevBound != null) {
-                    throw new IOException("Multiple local port forwarding bindings on port=" + port
-                        + ": current=" + bound + ", previous=" + prevBound);
+                    throw new IOException(
+                            "Multiple local port forwarding bindings on port=" + port
+                                          + ": current=" + bound + ", previous=" + prevBound);
                 }
 
                 localToRemote.put(port, remote);
@@ -258,7 +260,7 @@ public class DefaultForwardingFilter
 
     protected void unbindLocalForwarding(
             SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound)
-                throws IOException {
+            throws IOException {
         if ((bound != null) && (acceptor != null)) {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding({} => {}) unbind {}", local, remote, bound);
@@ -280,13 +282,14 @@ public class DefaultForwardingFilter
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding({} => {}) no mapping({}) or acceptor({})",
-                    local, remote, bound, acceptor);
+                        local, remote, bound, acceptor);
             }
         }
     }
 
     @Override
-    public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
+    public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local)
+            throws IOException {
         Objects.requireNonNull(local, "Local address is null");
         Objects.requireNonNull(remote, "Remote address is null");
 
@@ -295,7 +298,7 @@ public class DefaultForwardingFilter
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
         buffer.putString("tcpip-forward");
-        buffer.putBoolean(true);    // want reply
+        buffer.putBoolean(true); // want reply
         buffer.putString(remoteHost);
         buffer.putInt(remotePort);
 
@@ -313,7 +316,9 @@ public class DefaultForwardingFilter
             synchronized (remoteToLocal) {
                 SshdSocketAddress prev = remoteToLocal.get(port);
                 if (prev != null) {
-                    throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
+                    throw new IOException(
+                            "Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous="
+                                          + prev);
                 }
                 remoteToLocal.put(port, local);
             }
@@ -359,7 +364,7 @@ public class DefaultForwardingFilter
             Session session = getSession();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, remoteHost.length() + Long.SIZE);
             buffer.putString("cancel-tcpip-forward");
-            buffer.putBoolean(false);   // want reply
+            buffer.putBoolean(false); // want reply
             buffer.putString(remoteHost);
             buffer.putInt(port);
 
@@ -381,7 +386,7 @@ public class DefaultForwardingFilter
 
     protected void signalTearingDownExplicitTunnel(
             SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remote)
-                throws IOException {
+            throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
                 signalTearingDownExplicitTunnel(l, boundAddress, localForwarding, remote);
@@ -395,16 +400,19 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal tearing down explicit tunnel for local=" + localForwarding
-                        + " on bound=" + boundAddress, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal tearing down explicit tunnel for local=" + localForwarding
+                                      + " on bound=" + boundAddress,
+                        t);
             }
         }
     }
 
     protected void signalTearingDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress)
-                throws IOException {
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding,
+            SshdSocketAddress remoteAddress)
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -414,7 +422,7 @@ public class DefaultForwardingFilter
 
     protected void signalTornDownExplicitTunnel(
             SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
-                throws IOException {
+            throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
                 signalTornDownExplicitTunnel(l, boundAddress, localForwarding, remoteAddress, reason);
@@ -428,16 +436,19 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal torn down explicit tunnel local=" + localForwarding
-                        + " on bound=" + boundAddress, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal torn down explicit tunnel local=" + localForwarding
+                                      + " on bound=" + boundAddress,
+                        t);
             }
         }
     }
 
     protected void signalTornDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
-                    throws IOException {
+            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding,
+            SshdSocketAddress remoteAddress, Throwable reason)
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -464,14 +475,16 @@ public class DefaultForwardingFilter
             synchronized (dynamicLock) {
                 SocksProxy prevProxy = dynamicLocal.get(port);
                 if (prevProxy != null) {
-                    throw new IOException("Multiple dynamic port mappings found for port=" + port
-                        + ": current=" + proxy + ", previous=" + prevProxy);
+                    throw new IOException(
+                            "Multiple dynamic port mappings found for port=" + port
+                                          + ": current=" + proxy + ", previous=" + prevProxy);
                 }
 
                 InetSocketAddress prevBound = boundDynamic.get(port);
                 if (prevBound != null) {
-                    throw new IOException("Multiple dynamic port bindings found for port=" + port
-                        + ": current=" + bound + ", previous=" + prevBound);
+                    throw new IOException(
+                            "Multiple dynamic port bindings found for port=" + port
+                                          + ": current=" + bound + ", previous=" + prevBound);
                 }
 
                 proxy = new SocksProxy(service);
@@ -504,7 +517,7 @@ public class DefaultForwardingFilter
 
     protected void signalEstablishedDynamicTunnel(
             SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
+            throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
                 signalEstablishedDynamicTunnel(l, local, boundAddress, reason);
@@ -518,16 +531,19 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal establishing dynamic tunnel for local=" + local
-                        + " on bound=" + boundAddress, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal establishing dynamic tunnel for local=" + local
+                                      + " on bound=" + boundAddress,
+                        t);
             }
         }
     }
 
-    protected void signalEstablishedDynamicTunnel(PortForwardingEventListener listener,
-                SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
+    protected void signalEstablishedDynamicTunnel(
+            PortForwardingEventListener listener,
+            SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -549,13 +565,16 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal establishing dynamic tunnel for local=" + local, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal establishing dynamic tunnel for local=" + local,
+                        t);
             }
         }
     }
 
-    protected void signalEstablishingDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress local) throws IOException {
+    protected void signalEstablishingDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress local)
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -577,7 +596,8 @@ public class DefaultForwardingFilter
     }
 
     protected void unbindDynamicForwarding(
-            SshdSocketAddress local, SocksProxy proxy, InetSocketAddress bound) throws IOException {
+            SshdSocketAddress local, SocksProxy proxy, InetSocketAddress bound)
+            throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if ((bound != null) || (proxy != null)) {
 
@@ -602,7 +622,7 @@ public class DefaultForwardingFilter
                         } else {
                             if (debugEnabled) {
                                 log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
-                                    local, acceptor, bound);
+                                        local, acceptor, bound);
                             }
                         }
                     }
@@ -634,13 +654,16 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal tearing down dynamic tunnel for address=" + address, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal tearing down dynamic tunnel for address=" + address,
+                        t);
             }
         }
     }
 
-    protected void signalTearingDownDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress address) throws IOException {
+    protected void signalTearingDownDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress address)
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -662,15 +685,17 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal torn down dynamic tunnel for address=" + address, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal torn down dynamic tunnel for address=" + address,
+                        t);
             }
         }
     }
 
     protected void signalTornDownDynamicTunnel(
             PortForwardingEventListener listener, SshdSocketAddress address, Throwable reason)
-                    throws IOException {
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -696,13 +721,14 @@ public class DefaultForwardingFilter
         try {
             if ((filter == null) || (!filter.canListen(local, session))) {
                 if (log.isDebugEnabled()) {
-                    log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null) + "] rejected");
+                    log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null)
+                              + "] rejected");
                 }
                 return null;
             }
         } catch (Error e) {
             log.warn("localPortForwardingRequested({})[{}] failed ({}) to consult forwarding filter: {}",
-                 session, local, e.getClass().getSimpleName(), e.getMessage());
+                    session, local, e.getClass().getSimpleName(), e.getMessage());
             if (log.isDebugEnabled()) {
                 log.warn("localPortForwardingRequested(" + session + ")[" + local + "] filter consultation failure details", e);
             }
@@ -721,7 +747,8 @@ public class DefaultForwardingFilter
             boolean added;
             synchronized (localForwards) {
                 // NOTE !!! it is crucial to use the bound address host name first
-                added = localForwards.add(new LocalForwardingEntry(result.getHostName(), local.getHostName(), result.getPort()));
+                added = localForwards
+                        .add(new LocalForwardingEntry(result.getHostName(), local.getHostName(), result.getPort()));
             }
 
             if (!added) {
@@ -778,7 +805,7 @@ public class DefaultForwardingFilter
 
     protected void signalEstablishingExplicitTunnel(
             SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException {
+            throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
                 signalEstablishingExplicitTunnel(l, local, remote, localForwarding);
@@ -792,16 +819,18 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal establishing explicit tunnel for local=" + local
-                        + ", remote=" + remote + ", localForwarding=" + localForwarding, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal establishing explicit tunnel for local=" + local
+                                      + ", remote=" + remote + ", localForwarding=" + localForwarding,
+                        t);
             }
         }
     }
 
     protected void signalEstablishingExplicitTunnel(
             PortForwardingEventListener listener, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                throws IOException {
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -812,7 +841,7 @@ public class DefaultForwardingFilter
     protected void signalEstablishedExplicitTunnel(
             SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
             SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
+            throws IOException {
         try {
             invokePortEventListenerSignaller(l -> {
                 signalEstablishedExplicitTunnel(l, local, remote, localForwarding, boundAddress, reason);
@@ -826,18 +855,21 @@ public class DefaultForwardingFilter
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                        + " to signal established explicit tunnel for local=" + local
-                        + ", remote=" + remote + ", localForwarding=" + localForwarding
-                        + ", bound=" + boundAddress, t);
+                throw new IOException(
+                        "Failed (" + t.getClass().getSimpleName() + ")"
+                                      + " to signal established explicit tunnel for local=" + local
+                                      + ", remote=" + remote + ", localForwarding=" + localForwarding
+                                      + ", bound=" + boundAddress,
+                        t);
             }
         }
     }
 
-    protected void signalEstablishedExplicitTunnel(PortForwardingEventListener listener,
+    protected void signalEstablishedExplicitTunnel(
+            PortForwardingEventListener listener,
             SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
             SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
+            throws IOException {
         if (listener == null) {
             return;
         }
@@ -868,7 +900,7 @@ public class DefaultForwardingFilter
 
     protected void invokePortEventListenerSignallerListeners(
             Collection<? extends PortForwardingEventListener> listeners, Invoker<PortForwardingEventListener, Void> invoker)
-                    throws Throwable {
+            throws Throwable {
         if (GenericUtils.isEmpty(listeners)) {
             return;
         }
@@ -894,8 +926,9 @@ public class DefaultForwardingFilter
     }
 
     protected void invokePortEventListenerSignallerHolders(
-            Collection<? extends PortForwardingEventListenerManager> holders, Invoker<PortForwardingEventListener, Void> invoker)
-                    throws Throwable {
+            Collection<? extends PortForwardingEventListenerManager> holders,
+            Invoker<PortForwardingEventListener, Void> invoker)
+            throws Throwable {
         if (GenericUtils.isEmpty(holders)) {
             return;
         }
@@ -915,7 +948,8 @@ public class DefaultForwardingFilter
 
             if (m instanceof PortForwardingEventListenerManagerHolder) {
                 try {
-                    invokePortEventListenerSignallerHolders(((PortForwardingEventListenerManagerHolder) m).getRegisteredManagers(), invoker);
+                    invokePortEventListenerSignallerHolders(
+                            ((PortForwardingEventListenerManagerHolder) m).getRegisteredManagers(), invoker);
                 } catch (Throwable t) {
                     Throwable e = GenericUtils.peelException(t);
                     err = GenericUtils.accumulateException(err, e);
@@ -941,12 +975,13 @@ public class DefaultForwardingFilter
     }
 
     /**
-     * @param address        The request bind address
-     * @param handlerFactory A {@link Factory} to create an {@link IoHandler} if necessary
-     * @return The {@link InetSocketAddress} to which the binding occurred
-     * @throws IOException If failed to bind
+     * @param  address        The request bind address
+     * @param  handlerFactory A {@link Factory} to create an {@link IoHandler} if necessary
+     * @return                The {@link InetSocketAddress} to which the binding occurred
+     * @throws IOException    If failed to bind
      */
-    private InetSocketAddress doBind(SshdSocketAddress address, Factory<? extends IoHandler> handlerFactory) throws IOException {
+    private InetSocketAddress doBind(SshdSocketAddress address, Factory<? extends IoHandler> handlerFactory)
+            throws IOException {
         if (acceptor == null) {
             Session session = getSession();
             FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
@@ -1003,8 +1038,8 @@ public class DefaultForwardingFilter
             int localPort = local.getPort();
             SshdSocketAddress remote = localToRemote.get(localPort);
             TcpipClientChannel.Type channelType = (remote == null)
-                ? TcpipClientChannel.Type.Forwarded
-                : TcpipClientChannel.Type.Direct;
+                    ? TcpipClientChannel.Type.Forwarded
+                    : TcpipClientChannel.Type.Direct;
             TcpipClientChannel channel = new TcpipClientChannel(channelType, session, remote);
             session.setAttribute(TcpipClientChannel.class, channel);
 
@@ -1015,19 +1050,19 @@ public class DefaultForwardingFilter
                 if (accepted instanceof InetSocketAddress) {
                     synchronized (localForwards) {
                         localEntry = LocalForwardingEntry.findMatchingEntry(
-                            ((InetSocketAddress) accepted).getHostString(), localPort, localForwards);
+                                ((InetSocketAddress) accepted).getHostString(), localPort, localForwards);
                     }
                 }
 
                 if (localEntry != null) {
                     if (debugEnabled) {
                         log.debug("sessionCreated({})[local={}, remote={}, accepted={}] localEntry={}",
-                            session, local, remote, accepted, localEntry);
+                                session, local, remote, accepted, localEntry);
                     }
                     channel.updateLocalForwardingEntry(localEntry);
                 } else {
                     log.warn("sessionCreated({})[local={}, remote={}] cannot locate original local entry for accepted={}",
-                        session, local, remote, accepted);
+                            session, local, remote, accepted);
                 }
             } else {
                 if (debugEnabled) {
@@ -1040,7 +1075,7 @@ public class DefaultForwardingFilter
                 Throwable t = future.getException();
                 if (t != null) {
                     log.warn("Failed ({}) to open channel for session={}: {}",
-                             t.getClass().getSimpleName(), session, t.getMessage());
+                            t.getClass().getSimpleName(), session, t.getMessage());
                     if (debugEnabled) {
                         log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
                     }
@@ -1056,7 +1091,7 @@ public class DefaultForwardingFilter
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
             if (debugEnabled) {
                 log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
-                    session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
+                        session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
             }
             if (channel == null) {
                 return;
@@ -1067,8 +1102,8 @@ public class DefaultForwardingFilter
                 channel.close(true);
             } else {
                 /*
-                 *  Make sure channel is pending messages have all been sent in case the client was very fast
-                 *  and sent data + closed the connection before channel open was completed.
+                 * Make sure channel is pending messages have all been sent in case the client was very fast and sent
+                 * data + closed the connection before channel open was completed.
                  */
                 OpenFuture openFuture = channel.getOpenFuture();
                 Throwable err = openFuture.getException();
@@ -1098,7 +1133,7 @@ public class DefaultForwardingFilter
 
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={}, count={}, handle len={}",
-                      session, channel, totalMessages, message.available());
+                        session, channel, totalMessages, message.available());
             }
 
             ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
@@ -1108,15 +1143,15 @@ public class DefaultForwardingFilter
                     exceptionCaught(session, e);
                 } catch (Exception err) {
                     log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
-                        session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
-                        e.getMessage(), channel, err.getMessage());
+                            session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
+                            e.getMessage(), channel, err.getMessage());
                 }
             };
 
             int pendCount = messagesQueue.handleIncomingMessage(buffer, errHandler);
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={} pend count={} after processing message",
-                    session, channel, pendCount);
+                        session, channel, pendCount);
             }
         }
 
@@ -1145,11 +1180,11 @@ public class DefaultForwardingFilter
     public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
         synchronized (localToRemote) {
             return localToRemote.isEmpty()
-                 ? Collections.emptyList()
-                 : localToRemote.entrySet()
-                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
-                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
-                     .collect(Collectors.toCollection(() -> new ArrayList<>(localToRemote.size())));
+                    ? Collections.emptyList()
+                    : localToRemote.entrySet()
+                            .stream() // return an immutable clone to avoid 'setValue' calls on a shared instance
+                            .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                            .collect(Collectors.toCollection(() -> new ArrayList<>(localToRemote.size())));
         }
     }
 
@@ -1168,11 +1203,11 @@ public class DefaultForwardingFilter
     public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
         synchronized (remoteToLocal) {
             return remoteToLocal.isEmpty()
-                 ? Collections.emptyList()
-                 : remoteToLocal.entrySet()
-                     .stream()  // return an immutable clone to avoid 'setValue' calls on a shared instance
-                     .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
-                     .collect(Collectors.toCollection(() -> new ArrayList<>(remoteToLocal.size())));
+                    ? Collections.emptyList()
+                    : remoteToLocal.entrySet()
+                            .stream() // return an immutable clone to avoid 'setValue' calls on a shared instance
+                            .map(e -> new SimpleImmutableEntry<>(e.getKey(), e.getValue()))
+                            .collect(Collectors.toCollection(() -> new ArrayList<>(remoteToLocal.size())));
         }
     }
 

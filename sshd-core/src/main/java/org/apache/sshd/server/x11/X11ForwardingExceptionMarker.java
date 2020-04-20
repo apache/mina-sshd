@@ -20,8 +20,8 @@
 package org.apache.sshd.server.x11;
 
 /**
- * Special marker interface used to signal to the forwarding filter that an exception
- * has been caught on the forwarded channel
+ * Special marker interface used to signal to the forwarding filter that an exception has been caught on the forwarded
+ * channel
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

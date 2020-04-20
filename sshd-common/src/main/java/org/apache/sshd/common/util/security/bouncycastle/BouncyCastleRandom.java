@@ -27,10 +27,8 @@ import org.bouncycastle.crypto.prng.RandomGenerator;
 import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 
 /**
- * BouncyCastle <code>Random</code>.
- * This pseudo random number generator uses the a very fast PRNG from BouncyCastle.
- * The JRE random will be used when creating a new generator to add some random
- * data to the seed.
+ * BouncyCastle <code>Random</code>. This pseudo random number generator uses the a very fast PRNG from BouncyCastle.
+ * The JRE random will be used when creating a new generator to add some random data to the seed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -56,8 +54,7 @@ public final class BouncyCastleRandom extends AbstractRandom {
     }
 
     /**
-     * Returns a pseudo-random uniformly distributed {@code int}
-     * in the half-open range [0, n).
+     * Returns a pseudo-random uniformly distributed {@code int} in the half-open range [0, n).
      */
     @Override
     public int random(int n) {

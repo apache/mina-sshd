@@ -51,7 +51,7 @@ public class DirectoryScannerTest extends JUnitTestSupport {
     @Test
     public void testDeepScanning() throws IOException {
         Path rootDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
-        CommonTestSupportUtils.deleteRecursive(rootDir);    // start fresh
+        CommonTestSupportUtils.deleteRecursive(rootDir); // start fresh
 
         List<Path> expected = new ArrayList<>();
         Path curLevel = rootDir;
@@ -75,7 +75,7 @@ public class DirectoryScannerTest extends JUnitTestSupport {
     @Test
     public void testFileSuffixMatching() throws IOException {
         Path rootDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
-        CommonTestSupportUtils.deleteRecursive(rootDir);    // start fresh
+        CommonTestSupportUtils.deleteRecursive(rootDir); // start fresh
         Files.createDirectories(rootDir);
 
         List<Path> expected = new ArrayList<>();

@@ -54,8 +54,7 @@ public abstract class SignatureVariantTestSupport extends JUnitTestSupport {
         URL urlKeyPair = SignatureVariantTestSupport.class.getResource(resourceKey);
         assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
         try (InputStream stream = urlKeyPair.openStream()) {
-            Iterable<KeyPair> ids =
-                SecurityUtils.loadKeyPairIdentities(
+            Iterable<KeyPair> ids = SecurityUtils.loadKeyPairIdentities(
                     null, NamedResource.ofName(resourceKey), stream, null);
             return GenericUtils.head(ids);
         }
@@ -64,7 +63,7 @@ public abstract class SignatureVariantTestSupport extends JUnitTestSupport {
     @Test
     public void testSignature() throws Exception {
         byte[] data = (getClass().getName() + "#" + getCurrentTestName())
-            .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
         Signature signer = factory.create();
         signer.initSigner(null, kp.getPrivate());
         signer.update(null, data);

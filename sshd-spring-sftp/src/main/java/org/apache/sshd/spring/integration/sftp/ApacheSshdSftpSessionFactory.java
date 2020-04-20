@@ -111,9 +111,8 @@ public class ApacheSshdSftpSessionFactory
     }
 
     /**
-     * The port over which the SFTP connection shall be established. If not specified,
-     * this value defaults to <code>22</code>. If specified, this property must
-     * be a positive number.
+     * The port over which the SFTP connection shall be established. If not specified, this value defaults to
+     * <code>22</code>. If specified, this property must be a positive number.
      *
      * @param port The port value
      */
@@ -143,11 +142,11 @@ public class ApacheSshdSftpSessionFactory
     }
 
     /**
-     * The password to authenticate against the remote host. If a password is
-     * not provided, then a {@link #setPrivateKeyLocation(Resource)} call is mandatory.
+     * The password to authenticate against the remote host. If a password is not provided, then a
+     * {@link #setPrivateKeyLocation(Resource)} call is mandatory.
      *
-     * @param password The password to use - if {@code null} then no password
-     * is set - in which case the {@link #getPrivateKeyLocation()} resource is used
+     * @param password The password to use - if {@code null} then no password is set - in which case the
+     *                 {@link #getPrivateKeyLocation()} resource is used
      */
     @Override
     public void setPassword(String password) {
@@ -159,9 +158,9 @@ public class ApacheSshdSftpSessionFactory
     }
 
     /**
-     * Allows you to set a {@link Resource}, which represents the location of the
-     * private key used for authenticating against the remote host. If the privateKey
-     * is not provided, then the {@link #setPassword(String)} call is mandatory
+     * Allows you to set a {@link Resource}, which represents the location of the private key used for authenticating
+     * against the remote host. If the privateKey is not provided, then the {@link #setPassword(String)} call is
+     * mandatory
      *
      * @param privateKey The private key {@link Resource}
      */
@@ -174,8 +173,7 @@ public class ApacheSshdSftpSessionFactory
     }
 
     /**
-     * @param privateKeyPassphrase The password for the private key - required if
-     * the private key resource is encrypted
+     * @param privateKeyPassphrase The password for the private key - required if the private key resource is encrypted
      */
     public void setPrivateKeyPassphrase(String privateKeyPassphrase) {
         this.privateKeyPassphrase = privateKeyPassphrase;
@@ -199,7 +197,7 @@ public class ApacheSshdSftpSessionFactory
         this.privateKeyPair = privateKeyPair;
     }
 
-    @Override   // In seconds
+    @Override // In seconds
     public long getConnectTimeout() {
         return connTimeout;
     }
@@ -209,7 +207,7 @@ public class ApacheSshdSftpSessionFactory
         connTimeout = timeout;
     }
 
-    @Override   // In seconds
+    @Override // In seconds
     public long getAuthenticationTimeout() {
         return authTimeout;
     }
@@ -224,8 +222,7 @@ public class ApacheSshdSftpSessionFactory
     }
 
     /**
-     * @param sessionConfig Extra {@link Properties} that can be used to set specific
-     * SSHD session properties
+     * @param sessionConfig Extra {@link Properties} that can be used to set specific SSHD session properties
      */
     public void setSessionConfig(Properties sessionConfig) {
         this.sessionConfig = sessionConfig;
@@ -258,7 +255,7 @@ public class ApacheSshdSftpSessionFactory
         } else {
             int fixedVersion = Integer.parseInt(version);
             ValidateUtils.checkTrue((fixedVersion >= SftpSubsystemEnvironment.LOWER_SFTP_IMPL)
-                && (fixedVersion <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL),
+                    && (fixedVersion <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL),
                     "Unsupported SFTP version: %s", version);
             setSftpVersionSelector(SftpVersionSelector.fixedVersionSelector(fixedVersion));
         }
@@ -298,8 +295,8 @@ public class ApacheSshdSftpSessionFactory
         KeyPair kp = getPrivateKeyPair();
         Resource privateKeyLocation = getPrivateKeyLocation();
         ValidateUtils.checkState(
-            GenericUtils.isNotEmpty(getPassword()) || (kp != null) || (privateKeyLocation != null),
-            "Either password or private key must be provided");
+                GenericUtils.isNotEmpty(getPassword()) || (kp != null) || (privateKeyLocation != null),
+                "Either password or private key must be provided");
 
         SshClient client = getSshClient();
         if (client == null) {
@@ -323,7 +320,7 @@ public class ApacheSshdSftpSessionFactory
         SshClient client = getSshClient();
         if ((client != null) && client.isOpen()) {
             log.info("destroy() - stopping client");
-            client.close(false);    // do not wait for the close to complete
+            client.close(false); // do not wait for the close to complete
             log.info("destroy() - client stopped");
         }
     }
@@ -341,21 +338,22 @@ public class ApacheSshdSftpSessionFactory
 
         kp = loadPrivateKey(session, location, getPrivateKeyPassphrase());
         if (kp != null) {
-            setPrivateKeyPair(kp);  // cache it for re-use
+            setPrivateKeyPair(kp); // cache it for re-use
         }
 
         return kp;
     }
 
-    protected FilePasswordProvider resolveFilePasswordProvider(ClientSession session, Resource keyResource, String keyPassword) {
+    protected FilePasswordProvider resolveFilePasswordProvider(
+            ClientSession session, Resource keyResource, String keyPassword) {
         FilePasswordProvider provider = getFilePasswordProvider();
         if (provider != null) {
             return provider;
         }
 
         return GenericUtils.isEmpty(keyPassword)
-             ? FilePasswordProvider.EMPTY
-             : FilePasswordProvider.of(keyPassword);
+                ? FilePasswordProvider.EMPTY
+                : FilePasswordProvider.of(keyPassword);
     }
 
     protected KeyPair loadPrivateKey(ClientSession session, Resource keyResource, String keyPassword)
@@ -382,7 +380,7 @@ public class ApacheSshdSftpSessionFactory
         if (debugEnabled) {
             PublicKey pubKey = kp.getPublic();
             log.debug("loadPrivateKey({}) loaded {} key={} from {}",
-                session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey), keyResource);
+                    session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey), keyResource);
         }
         return kp;
     }
@@ -401,15 +399,15 @@ public class ApacheSshdSftpSessionFactory
                 try {
                     ClientSession sessionInstance = session;
                     Session<DirEntry> result = sharedInstance
-                        ? new SpringSftpSession(sftpClient)
-                        : new SpringSftpSession(sftpClient, () -> {
-                            try {
-                                sessionInstance.close();
-                                return null;
-                            } catch (Exception e) {
-                                return e;
-                            }
-                        });
+                            ? new SpringSftpSession(sftpClient)
+                            : new SpringSftpSession(sftpClient, () -> {
+                                try {
+                                    sessionInstance.close();
+                                    return null;
+                                } catch (Exception e) {
+                                    return e;
+                                }
+                            });
                     // avoid auto-close at finally clause
                     sftpClient = null;
                     session = null;
@@ -455,7 +453,8 @@ public class ApacheSshdSftpSessionFactory
     protected ClientSession createClientSession() throws Exception {
         String hostname = ValidateUtils.checkNotNullAndNotEmpty(getHost(), "Host must not be empty");
         String username = ValidateUtils.checkNotNullAndNotEmpty(getUsername(), "User must not be empty");
-        ClientSession session = createClientSession(hostname, username, getPort(), getEffectiveTimeoutValue(getConnectTimeout()));
+        ClientSession session
+                = createClientSession(hostname, username, getPort(), getEffectiveTimeoutValue(getConnectTimeout()));
         try {
             session = configureClientSessionProperties(session, getSessionConfig());
             session = authenticateClientSession(session, getEffectiveTimeoutValue(getAuthenticationTimeout()));
@@ -516,7 +515,7 @@ public class ApacheSshdSftpSessionFactory
             if (debugEnabled) {
                 PublicKey pubKey = privateKeyIdentity.getPublic();
                 log.debug("authenticateClientSession({}) using {} key={}",
-                    session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey));
+                        session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey));
             }
             session.addPublicKeyIdentity(privateKeyIdentity);
         }

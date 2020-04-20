@@ -34,7 +34,8 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractOpenSSHStatCommandExtension extends AbstractSftpClientExtension {
-    protected AbstractOpenSSHStatCommandExtension(String name, SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
+    protected AbstractOpenSSHStatCommandExtension(String name, SftpClient client, RawSftpClient raw,
+                                                  Map<String, byte[]> extensions) {
         super(name, client, raw, extensions);
     }
 
@@ -44,7 +45,8 @@ public abstract class AbstractOpenSSHStatCommandExtension extends AbstractSftpCl
 
         if (log.isDebugEnabled()) {
             log.debug("doGetStat({})[{}]", getName(),
-                      (target instanceof CharSequence) ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
+                    (target instanceof CharSequence)
+                            ? target : BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));

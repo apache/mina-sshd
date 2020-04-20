@@ -55,9 +55,9 @@ public class ByteArrayBuffer extends Buffer {
     /**
      * Allocates a buffer for writing purposes
      *
-     * @param size Initial buffer size - <B>Note:</B> it is <U>rounded</U> to the
-     * closest power of 2 that is greater or equal to it.
-     * @see #ByteArrayBuffer(int, boolean)
+     * @param size Initial buffer size - <B>Note:</B> it is <U>rounded</U> to the closest power of 2 that is greater or
+     *             equal to it.
+     * @see        #ByteArrayBuffer(int, boolean)
      */
     public ByteArrayBuffer(int size) {
         this(size, true);
@@ -66,9 +66,8 @@ public class ByteArrayBuffer extends Buffer {
     /**
      * Allocates a buffer for writing purposes
      *
-     * @param size Initial buffer size
-     * @param roundOff Whether to round it to closest power of 2 that is greater or
-     * equal to the specified size
+     * @param size     Initial buffer size
+     * @param roundOff Whether to round it to closest power of 2 that is greater or equal to the specified size
      */
     public ByteArrayBuffer(int size, boolean roundOff) {
         this(new byte[roundOff ? BufferUtils.getNextPowerOf2(size) : size], false);
@@ -78,7 +77,7 @@ public class ByteArrayBuffer extends Buffer {
      * Wraps data bytes for reading
      *
      * @param data Data bytes to read from
-     * @see #ByteArrayBuffer(byte[], boolean)
+     * @see        #ByteArrayBuffer(byte[], boolean)
      */
     public ByteArrayBuffer(byte[] data) {
         this(data, 0, data.length, true);
@@ -96,9 +95,9 @@ public class ByteArrayBuffer extends Buffer {
      * Wraps data bytes for reading
      *
      * @param data Data bytes to read from
-     * @param off Offset to read from
-     * @param len Available bytes from given offset
-     * @see #ByteArrayBuffer(byte[], int, int, boolean)
+     * @param off  Offset to read from
+     * @param len  Available bytes from given offset
+     * @see        #ByteArrayBuffer(byte[], int, int, boolean)
      */
     public ByteArrayBuffer(byte[] data, int off, int len) {
         this(data, off, len, true);
@@ -106,8 +105,8 @@ public class ByteArrayBuffer extends Buffer {
 
     /**
      * @param data Data bytes to use
-     * @param off Offset to read/write (according to <tt>read</tt> parameter)
-     * @param len Available bytes from given offset
+     * @param off  Offset to read/write (according to <tt>read</tt> parameter)
+     * @param len  Available bytes from given offset
      * @param read Whether the data bytes are for reading or writing
      */
     public ByteArrayBuffer(byte[] data, int off, int len, boolean read) {
@@ -254,7 +253,7 @@ public class ByteArrayBuffer extends Buffer {
     protected void copyRawBytes(int offset, byte[] buf, int pos, int len) {
         if ((offset < 0) || (pos < 0) || (len < 0)) {
             throw new IndexOutOfBoundsException(
-                "Invalid offset(" + offset + ")/position(" + pos + ")/length(" + len + ") required");
+                    "Invalid offset(" + offset + ")/position(" + pos + ")/length(" + len + ") required");
         }
         System.arraycopy(data, rpos + offset, buf, pos, len);
     }
@@ -270,7 +269,8 @@ public class ByteArrayBuffer extends Buffer {
             int minimum = curPos + capacity;
             int actual = growthFactor.applyAsInt(minimum);
             if (actual < minimum) {
-                throw new IllegalStateException("ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
+                throw new IllegalStateException(
+                        "ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
             }
             byte[] tmp = new byte[actual];
             System.arraycopy(data, 0, tmp, 0, data.length);
@@ -284,27 +284,25 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     /**
-     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U>
-     * of the original data
+     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U> of the original data
      *
-     * @param data   The original data buffer
-     * @return A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data
-     * starting at zero read position
-     * @see #getCompactClone(byte[], int, int)
+     * @param  data The original data buffer
+     * @return      A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data starting at zero read
+     *              position
+     * @see         #getCompactClone(byte[], int, int)
      */
     public static ByteArrayBuffer getCompactClone(byte[] data) {
         return getCompactClone(data, 0, NumberUtils.length(data));
     }
 
     /**
-     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U>
-     * of the original data
+     * Creates a compact buffer (i.e., one that starts at offset zero) containing a <U>copy</U> of the original data
      *
-     * @param data   The original data buffer
-     * @param offset The offset of the valid data in the buffer
-     * @param len    The size (in bytes) of of the valid data in the buffer
-     * @return A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data
-     * starting at zero read position
+     * @param  data   The original data buffer
+     * @param  offset The offset of the valid data in the buffer
+     * @param  len    The size (in bytes) of of the valid data in the buffer
+     * @return        A {@link ByteArrayBuffer} containing a <U>copy</U> of the original data starting at zero read
+     *                position
      */
     public static ByteArrayBuffer getCompactClone(byte[] data, int offset, int len) {
         byte[] clone = (len > 0) ? new byte[len] : GenericUtils.EMPTY_BYTE_ARRAY;

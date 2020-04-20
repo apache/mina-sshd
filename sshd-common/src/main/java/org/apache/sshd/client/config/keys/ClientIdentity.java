@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.io.IoUtils;
  * Provides keys loading capability from the user's keys folder - e.g., {@code id_rsa}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see org.apache.sshd.common.util.security.SecurityUtils#getKeyPairResourceParser()
+ * @see    org.apache.sshd.common.util.security.SecurityUtils#getKeyPairResourceParser()
  */
 public final class ClientIdentity {
 
@@ -56,17 +56,16 @@ public final class ClientIdentity {
 
     public static final String ID_FILE_SUFFIX = "";
 
-    public static final Function<String, String> ID_GENERATOR =
-            ClientIdentity::getIdentityFileName;
+    public static final Function<String, String> ID_GENERATOR = ClientIdentity::getIdentityFileName;
 
     private ClientIdentity() {
         throw new UnsupportedOperationException("No instance");
     }
 
     /**
-     * @param name The file name - ignored if {@code null}/empty
-     * @return The identity type - {@code null} if cannot determine it - e.g.,
-     * does not start with the {@link #ID_FILE_PREFIX}
+     * @param  name The file name - ignored if {@code null}/empty
+     * @return      The identity type - {@code null} if cannot determine it - e.g., does not start with the
+     *              {@link #ID_FILE_PREFIX}
      */
     public static String getIdentityType(String name) {
         if (GenericUtils.isEmpty(name)
@@ -83,131 +82,121 @@ public final class ClientIdentity {
     }
 
     /**
-     * @param type The identity type - e.g., {@code rsa} - ignored
-     *             if {@code null}/empty
-     * @return The matching file name for the identity - {@code null}
-     * if no name
-     * @see #ID_FILE_PREFIX
-     * @see #ID_FILE_SUFFIX
-     * @see IdentityUtils#getIdentityFileName(String, String, String)
+     * @param  type The identity type - e.g., {@code rsa} - ignored if {@code null}/empty
+     * @return      The matching file name for the identity - {@code null} if no name
+     * @see         #ID_FILE_PREFIX
+     * @see         #ID_FILE_SUFFIX
+     * @see         IdentityUtils#getIdentityFileName(String, String, String)
      */
     public static String getIdentityFileName(String type) {
         return IdentityUtils.getIdentityFileName(ID_FILE_PREFIX, type, ID_FILE_SUFFIX);
     }
 
     /**
-     * @param strict        If {@code true} then files that do not have the required
-     *                      access rights are excluded from consideration
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
-     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@code FilePasswordProvider#getPassword} is the path of the
-     *                      file whose key is to be loaded
-     * @param options       The {@link LinkOption}s to apply when checking
-     *                      for existence
-     * @return A {@link KeyPair} for the identities - {@code null} if no identities
-     * available (e.g., after filtering unsupported ones or strict permissions)
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          A {@link KeyPair} for the identities - {@code null} if no identities available
+     *                                  (e.g., after filtering unsupported ones or strict permissions)
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see PublicKeyEntry#getDefaultKeysFolderPath()
-     * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
+     * @see                             PublicKeyEntry#getDefaultKeysFolderPath()
+     * @see                             #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
      */
     public static KeyPairProvider loadDefaultKeyPairProvider(
             boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadDefaultKeyPairProvider(PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
     }
 
     /**
-     * @param dir           The folder to scan for the built-in identities
-     * @param strict        If {@code true} then files that do not have the required
-     *                      access rights are excluded from consideration
-     * @param supportedOnly If {@code true} then ignore identities that are not
-     *                      supported internally
-     * @param provider      A {@link FilePasswordProvider} - may be {@code null}
-     *                      if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                      to {@code FilePasswordProvider#getPassword} is the path of the
-     *                      file whose key is to be loaded
-     * @param options       The {@link LinkOption}s to apply when checking
-     *                      for existence
-     * @return A {@link KeyPair} for the identities - {@code null} if no identities
-     * available (e.g., after filtering unsupported ones or strict permissions)
+     * @param  dir                      The folder to scan for the built-in identities
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  supportedOnly            If {@code true} then ignore identities that are not supported internally
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          A {@link KeyPair} for the identities - {@code null} if no identities available
+     *                                  (e.g., after filtering unsupported ones or strict permissions)
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
-     * @see IdentityUtils#createKeyPairProvider(Map, boolean)
+     * @see                             #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
+     * @see                             IdentityUtils#createKeyPairProvider(Map, boolean)
      */
     public static KeyPairProvider loadDefaultKeyPairProvider(
             Path dir, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Map<String, KeyPair> ids = loadDefaultIdentities(dir, strict, provider, options);
         return IdentityUtils.createKeyPairProvider(ids, supportedOnly);
     }
 
     /**
-     * @param strict   If {@code true} then files that do not have the required
-     *                 access rights are excluded from consideration
-     * @param provider A {@link FilePasswordProvider} - may be {@code null}
-     *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@code FilePasswordProvider#getPassword} is the path of the
-     *                 file whose key is to be loaded
-     * @param options  The {@link LinkOption}s to apply when checking
-     *                 for existence
-     * @return A {@link Map} of the found files where key=identity type (case
-     * <U>insensitive</U>), value=the {@link KeyPair} of the identity
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          A {@link Map} of the found files where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see PublicKeyEntry#getDefaultKeysFolderPath()
-     * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
+     * @see                             PublicKeyEntry#getDefaultKeysFolderPath()
+     * @see                             #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
      */
     public static Map<String, KeyPair> loadDefaultIdentities(
             boolean strict, FilePasswordProvider provider, LinkOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadDefaultIdentities(PublicKeyEntry.getDefaultKeysFolderPath(), strict, provider, options);
     }
 
     /**
-     * @param dir      The folder to scan for the built-in identities
-     * @param strict   If {@code true} then files that do not have the required
-     *                 access rights are excluded from consideration
-     * @param provider A {@link FilePasswordProvider} - may be {@code null}
-     *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                 to {@code FilePasswordProvider#getPassword} is the path of the
-     *                 file whose key is to be loaded
-     * @param options  The {@link LinkOption}s to apply when checking
-     *                 for existence
-     * @return A {@link Map} of the found files where key=identity type (case
-     * <U>insensitive</U>), value=the {@link KeyPair} of the identity
+     * @param  dir                      The folder to scan for the built-in identities
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          A {@link Map} of the found files where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see BuiltinIdentities
+     * @see                             BuiltinIdentities
      */
     public static Map<String, KeyPair> loadDefaultIdentities(
             Path dir, boolean strict, FilePasswordProvider provider, LinkOption... options)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return loadIdentities(null, dir, strict, BuiltinIdentities.NAMES, ID_GENERATOR, provider, options);
     }
 
     /**
      * Scans a folder and loads all available identity files
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param dir         The {@link Path} of the folder to scan - ignored if not exists
-     * @param strict      If {@code true} then files that do not have the required
-     *                    access rights are excluded from consideration
-     * @param types       The identity types - ignored if {@code null}/empty
-     * @param idGenerator A {@link Function} to derive the file name
-     *                    holding the specified type
-     * @param provider    A {@link FilePasswordProvider} - may be {@code null}
-     *                    if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     *                    to {@code FilePasswordProvider#getPassword} is the path of the
-     *                    file whose key is to be loaded
-     * @param options     The {@link LinkOption}s to apply when checking
-     *                    for existence
-     * @return A {@link Map} of the found files where key=identity type (case
-     * <U>insensitive</U>), value=the {@link KeyPair} of the identity
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  dir                      The {@link Path} of the folder to scan - ignored if not exists
+     * @param  strict                   If {@code true} then files that do not have the required access rights are
+     *                                  excluded from consideration
+     * @param  types                    The identity types - ignored if {@code null}/empty
+     * @param  idGenerator              A {@link Function} to derive the file name holding the specified type
+     * @param  provider                 A {@link FilePasswordProvider} - may be {@code null} if the loaded keys are
+     *                                  <U>guaranteed</U> not to be encrypted. The argument to
+     *                                  {@code FilePasswordProvider#getPassword} is the path of the file whose key is to
+     *                                  be loaded
+     * @param  options                  The {@link LinkOption}s to apply when checking for existence
+     * @return                          A {@link Map} of the found files where key=identity type (case
+     *                                  <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
      */
@@ -223,22 +212,21 @@ public final class ClientIdentity {
     /**
      * Scans a folder for possible identity files
      *
-     * @param dir         The {@link Path} of the folder to scan - ignored if not exists
-     * @param strict      If {@code true} then files that do not have the required
-     *                    access rights are excluded from consideration
-     * @param types       The identity types - ignored if {@code null}/empty
-     * @param idGenerator A {@link Function} to derive the file name
-     *                    holding the specified type
-     * @param options     The {@link LinkOption}s to apply when checking
-     *                    for existence
-     * @return A {@link Map} of the found files where key=identity type (case
-     * <U>insensitive</U>), value=the {@link Path} of the file holding the key
+     * @param  dir         The {@link Path} of the folder to scan - ignored if not exists
+     * @param  strict      If {@code true} then files that do not have the required access rights are excluded from
+     *                     consideration
+     * @param  types       The identity types - ignored if {@code null}/empty
+     * @param  idGenerator A {@link Function} to derive the file name holding the specified type
+     * @param  options     The {@link LinkOption}s to apply when checking for existence
+     * @return             A {@link Map} of the found files where key=identity type (case <U>insensitive</U>), value=the
+     *                     {@link Path} of the file holding the key
      * @throws IOException If failed to access the file system
-     * @see KeyUtils#validateStrictKeyFilePermissions(Path, LinkOption...)
+     * @see                KeyUtils#validateStrictKeyFilePermissions(Path, LinkOption...)
      */
     public static Map<String, Path> scanIdentitiesFolder(
-            Path dir, boolean strict, Collection<String> types, Function<? super String, String> idGenerator, LinkOption... options)
-                throws IOException {
+            Path dir, boolean strict, Collection<String> types, Function<? super String, String> idGenerator,
+            LinkOption... options)
+            throws IOException {
         if (GenericUtils.isEmpty(types)) {
             return Collections.emptyMap();
         }

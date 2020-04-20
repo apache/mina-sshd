@@ -39,14 +39,14 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     }
 
     /**
-     * Make sure that the builder returns a factory with the default values
-     * if no {@code withXXX} method is invoked
+     * Make sure that the builder returns a factory with the default values if no {@code withXXX} method is invoked
      */
     @Test
     public void testBuilderDefaultFactoryValues() {
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder().build();
         assertNull("Mismatched executor", factory.resolveExecutorService());
-        assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY, factory.getUnsupportedAttributePolicy());
+        assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY,
+                factory.getUnsupportedAttributePolicy());
     }
 
     /**
@@ -56,8 +56,7 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     public void testBuilderCorrectlyInitializesFactory() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         CloseableExecutorService service = dummyExecutor();
-        SftpSubsystemFactory factory =
-            builder.withExecutorServiceProvider(() -> service)
+        SftpSubsystemFactory factory = builder.withExecutorServiceProvider(() -> service)
                 .build();
         assertSame("Mismatched executor", service, factory.resolveExecutorService());
 
@@ -69,16 +68,11 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
 
     /**
      * <UL>
-     * <LI>
-     * Make sure the builder returns new instances on every call to
-     * {@link SftpSubsystemFactory.Builder#build()} method
-     * </LI>
+     * <LI>Make sure the builder returns new instances on every call to {@link SftpSubsystemFactory.Builder#build()}
+     * method</LI>
      *
-     * <LI>
-     * Make sure values are preserved between successive invocations
-     * of the {@link SftpSubsystemFactory.Builder#build()} method
-     * </LI>
-     * </UL
+     * <LI>Make sure values are preserved between successive invocations of the
+     * {@link SftpSubsystemFactory.Builder#build()} method</LI> </UL
      */
     @Test
     public void testBuilderUniqueInstance() {

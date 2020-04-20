@@ -35,30 +35,31 @@ public interface SftpErrorStatusDataHandler {
     };
 
     /**
-     * @param sftpSubsystem The SFTP subsystem instance
-     * @param id The command identifier
-     * @param e Thrown exception
-     * @param cmd The command that was attempted
-     * @param args The relevant command arguments - <B>Note:</B> provided only for
-     * <U>logging</U> purposes and subject to type and/or order change at any version
-     * @return The relevant sub-status to send as failure indication for the failed command
-     * @see SftpHelper#resolveSubstatus(Throwable)
+     * @param  sftpSubsystem The SFTP subsystem instance
+     * @param  id            The command identifier
+     * @param  e             Thrown exception
+     * @param  cmd           The command that was attempted
+     * @param  args          The relevant command arguments - <B>Note:</B> provided only for <U>logging</U> purposes and
+     *                       subject to type and/or order change at any version
+     * @return               The relevant sub-status to send as failure indication for the failed command
+     * @see                  SftpHelper#resolveSubstatus(Throwable)
      */
     default int resolveSubStatus(SftpSubsystemEnvironment sftpSubsystem, int id, Throwable e, int cmd, Object... args) {
         return SftpHelper.resolveSubstatus(e);
     }
 
     /**
-     * @param sftpSubsystem The SFTP subsystem instance
-     * @param id The command identifier
-     * @param e Thrown exception
-     * @param subStatus The sub-status code obtained from invocation of
-     * {@link #resolveSubStatus(SftpSubsystemEnvironment, int, Throwable, int, Object...) resolveSubStatus}
-     * @param cmd The command that was attempted
-     * @param args The relevant command arguments - <B>Note:</B> provided only for
-     * <U>logging</U> purposes and subject to type and/or order change at any version
-     * @return The human readable text message that explains the failure reason
-     * @see SftpHelper#resolveStatusMessage(int)
+     * @param  sftpSubsystem The SFTP subsystem instance
+     * @param  id            The command identifier
+     * @param  e             Thrown exception
+     * @param  subStatus     The sub-status code obtained from invocation of
+     *                       {@link #resolveSubStatus(SftpSubsystemEnvironment, int, Throwable, int, Object...)
+     *                       resolveSubStatus}
+     * @param  cmd           The command that was attempted
+     * @param  args          The relevant command arguments - <B>Note:</B> provided only for <U>logging</U> purposes and
+     *                       subject to type and/or order change at any version
+     * @return               The human readable text message that explains the failure reason
+     * @see                  SftpHelper#resolveStatusMessage(int)
      */
     default String resolveErrorMessage(
             SftpSubsystemEnvironment sftpSubsystem, int id, Throwable e, int subStatus, int cmd, Object... args) {
@@ -66,15 +67,16 @@ public interface SftpErrorStatusDataHandler {
     }
 
     /**
-     * @param sftpSubsystem The SFTP subsystem instance
-     * @param id The command identifier
-     * @param e Thrown exception
-     * @param subStatus The sub-status code obtained from invocation of
-     * {@link #resolveSubStatus(SftpSubsystemEnvironment, int, Throwable, int, Object...) resolveSubStatus}
-     * @param cmd The command that was attempted
-     * @param args The relevant command arguments - <B>Note:</B> provided only for
-     * <U>logging</U> purposes and subject to type and/or order change at any version
-     * @return The error message language tag - recommend returning empty string
+     * @param  sftpSubsystem The SFTP subsystem instance
+     * @param  id            The command identifier
+     * @param  e             Thrown exception
+     * @param  subStatus     The sub-status code obtained from invocation of
+     *                       {@link #resolveSubStatus(SftpSubsystemEnvironment, int, Throwable, int, Object...)
+     *                       resolveSubStatus}
+     * @param  cmd           The command that was attempted
+     * @param  args          The relevant command arguments - <B>Note:</B> provided only for <U>logging</U> purposes and
+     *                       subject to type and/or order change at any version
+     * @return               The error message language tag - recommend returning empty string
      */
     default String resolveErrorLanguage(
             SftpSubsystemEnvironment sftpSubsystem, int id, Throwable e, int subStatus, int cmd, Object... args) {

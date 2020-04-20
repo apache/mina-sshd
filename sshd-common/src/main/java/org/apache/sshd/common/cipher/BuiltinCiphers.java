@@ -73,11 +73,9 @@ public enum BuiltinCiphers implements CipherFactory {
     blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
     tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", 192, "DESede/CBC/NoPadding", 8);
 
-    public static final Set<BuiltinCiphers> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
+    public static final Set<BuiltinCiphers> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
 
-    private static final Map<String, CipherFactory> EXTENSIONS =
-        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<String, CipherFactory> EXTENSIONS = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private final String factoryName;
     private final int ivsize;
@@ -89,8 +87,8 @@ public enum BuiltinCiphers implements CipherFactory {
     private final boolean supported;
 
     BuiltinCiphers(
-            String factoryName, int ivsize, int kdfSize,
-            String algorithm, int keySize, String transformation, int blkSize) {
+                   String factoryName, int ivsize, int kdfSize,
+                   String algorithm, int keySize, String transformation, int blkSize) {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
         this.kdfSize = kdfSize;
@@ -99,9 +97,8 @@ public enum BuiltinCiphers implements CipherFactory {
         this.transformation = transformation;
         this.blkSize = blkSize;
         /*
-         * This can be done once since in order to change the support the JVM
-         * needs to be stopped, some unlimited-strength files need be installed
-         * and then the JVM re-started. Therefore, the answer is not going to
+         * This can be done once since in order to change the support the JVM needs to be stopped, some
+         * unlimited-strength files need be installed and then the JVM re-started. Therefore, the answer is not going to
          * change while the JVM is running
          */
         this.supported = Constants.NONE.equals(factoryName) || Cipher.checkSupported(this.transformation, this.keysize);
@@ -118,9 +115,8 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @return {@code true} if the current JVM configuration supports this
-     * cipher - e.g., AES-256 requires the <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/">
-     * Java Cryptography Extension (JCE)</A>
+     * @return {@code true} if the current JVM configuration supports this cipher - e.g., AES-256 requires the
+     *         <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/"> Java Cryptography Extension (JCE)</A>
      */
     @Override
     public boolean isSupported() {
@@ -160,18 +156,16 @@ public enum BuiltinCiphers implements CipherFactory {
     @Override
     public Cipher create() {
         return new BaseCipher(
-            getIVSize(), getKdfSize(), getAlgorithm(),
-            getKeySize(), getTransformation(), getCipherBlockSize());
+                getIVSize(), getKdfSize(), getAlgorithm(),
+                getKeySize(), getTransformation(), getCipherBlockSize());
     }
 
     /**
-     * Registered a {@link NamedFactory} to be available besides the built-in
-     * ones when parsing configuration
+     * Registered a {@link NamedFactory} to be available besides the built-in ones when parsing configuration
      *
-     * @param extension The factory to register
-     * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     * @param  extension                The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null}, or overrides a built-in one or overrides
+     *                                  another registered factory with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(CipherFactory extension) {
         String name = Objects.requireNonNull(extension, "No extension provided").getName();
@@ -184,8 +178,8 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @return A {@link SortedSet} of the currently registered extensions, sorted
-     * according to the factory name (case <U>insensitive</U>)
+     * @return A {@link SortedSet} of the currently registered extensions, sorted according to the factory name (case
+     *         <U>insensitive</U>)
      */
     public static NavigableSet<CipherFactory> getRegisteredExtensions() {
         synchronized (EXTENSIONS) {
@@ -196,8 +190,8 @@ public enum BuiltinCiphers implements CipherFactory {
     /**
      * Unregisters specified extension
      *
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The registered extension - {@code null} if not found
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The registered extension - {@code null} if not found
      */
     public static NamedFactory<Cipher> unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -210,9 +204,9 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param s The {@link Enum}'s name - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinCiphers} whose {@link Enum#name()} matches
-     * (case <U>insensitive</U>) the provided argument - {@code null} if no match
+     * @param  s The {@link Enum}'s name - ignored if {@code null}/empty
+     * @return   The matching {@link BuiltinCiphers} whose {@link Enum#name()} matches (case <U>insensitive</U>) the
+     *           provided argument - {@code null} if no match
      */
     public static BuiltinCiphers fromString(String s) {
         if (GenericUtils.isEmpty(s)) {
@@ -229,10 +223,10 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param factory The {@link NamedFactory} for the cipher - ignored if {@code null}
-     * @return The matching {@link BuiltinCiphers} whose factory name matches
-     * (case <U>insensitive</U>) the cipher factory name
-     * @see #fromFactoryName(String)
+     * @param  factory The {@link NamedFactory} for the cipher - ignored if {@code null}
+     * @return         The matching {@link BuiltinCiphers} whose factory name matches (case <U>insensitive</U>) the
+     *                 cipher factory name
+     * @see            #fromFactoryName(String)
      */
     public static BuiltinCiphers fromFactory(NamedFactory<Cipher> factory) {
         if (factory == null) {
@@ -243,19 +237,18 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param name The factory name - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinCiphers} whose factory name matches
-     * (case <U>insensitive</U>) the provided name - {@code null} if no match
+     * @param  name The factory name - ignored if {@code null}/empty
+     * @return      The matching {@link BuiltinCiphers} whose factory name matches (case <U>insensitive</U>) the
+     *              provided name - {@code null} if no match
      */
     public static BuiltinCiphers fromFactoryName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**
-     * @param ciphers A comma-separated list of ciphers' names - ignored if {@code null}/empty
-     * @return A {@link ParseResult} containing the successfully parsed
-     * factories and the unknown ones. <B>Note:</B> it is up to caller to
-     * ensure that the lists do not contain duplicates
+     * @param  ciphers A comma-separated list of ciphers' names - ignored if {@code null}/empty
+     * @return         A {@link ParseResult} containing the successfully parsed factories and the unknown ones.
+     *                 <B>Note:</B> it is up to caller to ensure that the lists do not contain duplicates
      */
     public static ParseResult parseCiphersList(String ciphers) {
         return parseCiphersList(GenericUtils.split(ciphers, ','));
@@ -289,9 +282,8 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param name The factory name
-     * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension
+     * @param  name The factory name
+     * @return      The factory or {@code null} if it is neither a built-in one or a registered extension
      */
     public static CipherFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
@@ -323,8 +315,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
     public static final class Constants {
         public static final String NONE = "none";
-        public static final Pattern NONE_CIPHER_PATTERN =
-                Pattern.compile("(^|.*,)" + NONE + "($|,.*)");
+        public static final Pattern NONE_CIPHER_PATTERN = Pattern.compile("(^|.*,)" + NONE + "($|,.*)");
 
         public static final String AES128_CBC = "aes128-cbc";
         public static final String AES128_CTR = "aes128-ctr";
@@ -342,8 +333,8 @@ public enum BuiltinCiphers implements CipherFactory {
         }
 
         /**
-         * @param s A comma-separated list of ciphers - ignored if {@code null}/empty
-         * @return {@code true} if the {@link #NONE} cipher name appears in it
+         * @param  s A comma-separated list of ciphers - ignored if {@code null}/empty
+         * @return   {@code true} if the {@link #NONE} cipher name appears in it
          */
         public static boolean isNoneCipherIncluded(String s) {
             if (GenericUtils.isEmpty(s)) {

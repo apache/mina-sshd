@@ -53,17 +53,16 @@ public interface SecurityProviderChoice extends NamedResource {
     };
 
     /**
-     * @return {@code true} if to use the provider's name rather than its
-     * {@link Provider} instance - default={@code true}.
+     * @return {@code true} if to use the provider's name rather than its {@link Provider} instance -
+     *         default={@code true}.
      */
     default boolean isNamedProviderUsed() {
         return true;
     }
 
     /**
-     * @return The security {@link Provider} to use in case {@link #isNamedProviderUsed()}
-     * is {@code false}. Can be {@code null} if {@link #isNamedProviderUsed()} is {@code true},
-     * but not recommended.
+     * @return The security {@link Provider} to use in case {@link #isNamedProviderUsed()} is {@code false}. Can be
+     *         {@code null} if {@link #isNamedProviderUsed()} is {@code true}, but not recommended.
      */
     Provider getSecurityProvider();
 
@@ -98,8 +97,8 @@ public interface SecurityProviderChoice extends NamedResource {
         Objects.requireNonNull(provider, "No provider instance");
         return new SecurityProviderChoice() {
             private final String s = SecurityProviderChoice.class.getSimpleName()
-                    + "[" + Provider.class.getSimpleName() + "]"
-                    + "[" + provider.getName() + "]";
+                                     + "[" + Provider.class.getSimpleName() + "]"
+                                     + "[" + provider.getName() + "]";
 
             @Override
             public String getName() {

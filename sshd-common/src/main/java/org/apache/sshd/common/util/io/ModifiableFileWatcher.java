@@ -43,22 +43,19 @@ import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Watches over changes for a file and re-loads them if file has changed - including
- * if file is deleted or (re-)created
+ * Watches over changes for a file and re-loads them if file has changed - including if file is deleted or (re-)created
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ModifiableFileWatcher extends AbstractLoggingBean {
 
     /**
-     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict
-     * permissions are enforced on key files
+     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict permissions are enforced on key files
      */
-    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
-        Collections.unmodifiableSet(
+    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION = Collections.unmodifiableSet(
             EnumSet.of(
-                PosixFilePermission.GROUP_WRITE,
-                PosixFilePermission.OTHERS_WRITE));
+                    PosixFilePermission.GROUP_WRITE,
+                    PosixFilePermission.OTHERS_WRITE));
 
     protected final LinkOption[] options;
 
@@ -106,7 +103,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     /**
-     * @return {@code true} if the watched file has probably been changed
+     * @return             {@code true} if the watched file has probably been changed
      * @throws IOException If failed to query file data
      */
     public boolean checkReloadRequired() throws IOException {
@@ -147,9 +144,8 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     /**
-     * Resets the state attributes used to detect changes to the initial
-     * construction values - i.e., file assumed not to exist and no known
-     * size of modify time
+     * Resets the state attributes used to detect changes to the initial construction values - i.e., file assumed not to
+     * exist and no known size of modify time
      */
     public void resetReloadAttributes() {
         lastExisted.set(false);
@@ -158,13 +154,12 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     /**
-     * May be called to refresh the state attributes used to detect changes
-     * e.g., file existence, size and last-modified time once re-loading is
-     * successfully completed. If the file does not exist then the attributes
-     * are reset to an &quot;unknown&quot; state.
+     * May be called to refresh the state attributes used to detect changes e.g., file existence, size and last-modified
+     * time once re-loading is successfully completed. If the file does not exist then the attributes are reset to an
+     * &quot;unknown&quot; state.
      *
      * @throws IOException If failed to access the file (if exists)
-     * @see #resetReloadAttributes()
+     * @see                #resetReloadAttributes()
      */
     public void updateReloadAttributes() throws IOException {
         if (exists()) {
@@ -196,34 +191,41 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     }
 
     /**
-     * <P>Checks if a path has strict permissions</P>
+     * <P>
+     * Checks if a path has strict permissions
+     * </P>
      * <UL>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * (For {@code Unix}) The path may not have group or others write permissions
-     * </P></LI>
+     * </P>
+     * </LI>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * The path must be owned by current user.
-     * </P></LI>
+     * </P>
+     * </LI>
      *
-     * <LI><P>
+     * <LI>
+     * <P>
      * (For {@code Unix}) The path may be owned by root.
-     * </P></LI>
+     * </P>
+     * </LI>
      *
      * </UL>
      *
-     * @param path    The {@link Path} to be checked - ignored if {@code null}
-     *                or does not exist
-     * @param options The {@link LinkOption}s to use to query the file's permissions
-     * @return The violated permission as {@link SimpleImmutableEntry} where key
-     * is a loggable message and value is the offending object
-     * - e.g., {@link PosixFilePermission} or {@link String} for owner. Return
-     * value is {@code null} if no violations detected
+     * @param  path        The {@link Path} to be checked - ignored if {@code null} or does not exist
+     * @param  options     The {@link LinkOption}s to use to query the file's permissions
+     * @return             The violated permission as {@link SimpleImmutableEntry} where key is a loggable message and
+     *                     value is the offending object - e.g., {@link PosixFilePermission} or {@link String} for
+     *                     owner. Return value is {@code null} if no violations detected
      * @throws IOException If failed to retrieve the permissions
-     * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
+     * @see                #STRICTLY_PROHIBITED_FILE_PERMISSION
      */
-    public static SimpleImmutableEntry<String, Object> validateStrictConfigFilePermissions(Path path, LinkOption... options) throws IOException {
+    public static SimpleImmutableEntry<String, Object> validateStrictConfigFilePermissions(Path path, LinkOption... options)
+            throws IOException {
         if ((path == null) || (!Files.exists(path, options))) {
             return null;
         }

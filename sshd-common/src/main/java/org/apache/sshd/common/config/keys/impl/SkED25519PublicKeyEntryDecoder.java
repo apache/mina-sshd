@@ -32,13 +32,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.util.security.eddsa.Ed25519PublicKeyDecoder;
-
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -58,13 +57,14 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
     @Override
     public SkED25519PublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KEY_TYPE.equals(keyType)) {
             throw new InvalidKeySpecException("Invalid keyType: " + keyType);
         }
 
         boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
-        EdDSAPublicKey edDSAPublicKey = Ed25519PublicKeyDecoder.INSTANCE.decodePublicKey(session, KeyPairProvider.SSH_ED25519, keyData, headers);
+        EdDSAPublicKey edDSAPublicKey
+                = Ed25519PublicKeyDecoder.INSTANCE.decodePublicKey(session, KeyPairProvider.SSH_ED25519, keyData, headers);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
         return new SkED25519PublicKey(appName, noTouchRequired, edDSAPublicKey);
     }

@@ -55,9 +55,9 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  */
 public interface SftpClient extends SubsystemClient {
     /**
-     * Used to indicate the {@link Charset} (or its name) for decoding
-     * referenced files/folders names - extracted from the client session
-     * when 1st initialized.
+     * Used to indicate the {@link Charset} (or its name) for decoding referenced files/folders names - extracted from
+     * the client session when 1st initialized.
+     * 
      * @see #DEFAULT_NAME_DECODING_CHARSET
      * @see #getNameDecodingCharset()
      * @see #setNameDecodingCharset(Charset)
@@ -80,21 +80,20 @@ public interface SftpClient extends SubsystemClient {
         /**
          * The {@link Set} of {@link OpenOption}-s supported by {@link #fromOpenOptions(Collection)}
          */
-        public static final Set<OpenOption> SUPPORTED_OPTIONS =
-            Collections.unmodifiableSet(
+        public static final Set<OpenOption> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
                 EnumSet.of(
-                    StandardOpenOption.READ, StandardOpenOption.APPEND,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
-                    StandardOpenOption.SPARSE));
+                        StandardOpenOption.READ, StandardOpenOption.APPEND,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
+                        StandardOpenOption.SPARSE));
 
         /**
          * Converts {@link StandardOpenOption}-s into {@link OpenMode}-s
          *
-         * @param options The original options - ignored if {@code null}/empty
-         * @return A {@link Set} of the equivalent modes
+         * @param  options                  The original options - ignored if {@code null}/empty
+         * @return                          A {@link Set} of the equivalent modes
          * @throws IllegalArgumentException If an unsupported option is requested
-         * @see #SUPPORTED_OPTIONS
+         * @see                             #SUPPORTED_OPTIONS
          */
         public static Set<OpenMode> fromOpenOptions(Collection<? extends OpenOption> options) {
             if (GenericUtils.isEmpty(options)) {
@@ -120,8 +119,7 @@ public interface SftpClient extends SubsystemClient {
                     /*
                      * As per the Javadoc:
                      *
-                     *      The option is ignored when the file system does not
-                     *  support the creation of sparse files
+                     * The option is ignored when the file system does not support the creation of sparse files
                      */
                     continue;
                 } else {
@@ -172,8 +170,8 @@ public interface SftpClient extends SubsystemClient {
         }
 
         /**
-         * @return A <U>cloned</U> instance of the identifier in order to
-         * avoid inadvertent modifications to the handle contents
+         * @return A <U>cloned</U> instance of the identifier in order to avoid inadvertent modifications to the handle
+         *         contents
          */
         public byte[] getIdentifier() {
             return id.clone();
@@ -286,9 +284,8 @@ public interface SftpClient extends SubsystemClient {
              * According to https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
              * section 7.5
              *
-             *      If either the owner or group field is zero length, the field
-             *      should be considered absent, and no change should be made to
-             *      that specific field during a modification operation.
+             * If either the owner or group field is zero length, the field should be considered absent, and no change
+             * should be made to that specific field during a modification operation.
              */
             if (GenericUtils.isEmpty(owner)) {
                 removeFlag(Attribute.OwnerGroup);
@@ -312,9 +309,8 @@ public interface SftpClient extends SubsystemClient {
              * According to https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
              * section 7.5
              *
-             *      If either the owner or group field is zero length, the field
-             *      should be considered absent, and no change should be made to
-             *      that specific field during a modification operation.
+             * If either the owner or group field is zero length, the field should be considered absent, and no change
+             * should be made to that specific field during a modification operation.
              */
             if (GenericUtils.isEmpty(group)) {
                 removeFlag(Attribute.OwnerGroup);
@@ -469,17 +465,17 @@ public interface SftpClient extends SubsystemClient {
         @Override
         public String toString() {
             return "type=" + getType()
-                 + ";size=" + getSize()
-                 + ";uid=" + getUserId()
-                 + ";gid=" + getGroupId()
-                 + ";perms=0x" + Integer.toHexString(getPermissions())
-                 + ";flags=" + getFlags()
-                 + ";owner=" + getOwner()
-                 + ";group=" + getGroup()
-                 + ";aTime=" + getAccessTime()
-                 + ";cTime=" + getCreateTime()
-                 + ";mTime=" + getModifyTime()
-                 + ";extensions=" + getExtensions().keySet();
+                   + ";size=" + getSize()
+                   + ";uid=" + getUserId()
+                   + ";gid=" + getGroupId()
+                   + ";perms=0x" + Integer.toHexString(getPermissions())
+                   + ";flags=" + getFlags()
+                   + ";owner=" + getOwner()
+                   + ";group=" + getGroup()
+                   + ";aTime=" + getAccessTime()
+                   + ";cTime=" + getCreateTime()
+                   + ";mTime=" + getModifyTime()
+                   + ";extensions=" + getExtensions().keySet();
         }
     }
 
@@ -554,10 +550,8 @@ public interface SftpClient extends SubsystemClient {
     long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
-     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager}
-     * to control the internal timeout used by the client to open a channel.
-     * If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value
-     * is used
+     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager} to control the internal timeout
+     * used by the client to open a channel. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value is used
      */
     String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
     long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
@@ -565,8 +559,7 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Default modes for opening a channel if no specific modes specified
      */
-    Set<OpenMode> DEFAULT_CHANNEL_MODES =
-        Collections.unmodifiableSet(EnumSet.of(OpenMode.Read, OpenMode.Write));
+    Set<OpenMode> DEFAULT_CHANNEL_MODES = Collections.unmodifiableSet(EnumSet.of(OpenMode.Read, OpenMode.Write));
 
     /**
      * @return The negotiated SFTP protocol version
@@ -580,15 +573,15 @@ public interface SftpClient extends SubsystemClient {
 
     /**
      * @return The (never {@code null}) {@link Charset} used to decode referenced files/folders names
-     * @see #NAME_DECODING_CHARSET
+     * @see    #NAME_DECODING_CHARSET
      */
     Charset getNameDecodingCharset();
 
     void setNameDecodingCharset(Charset cs);
 
     /**
-     * @return An (unmodifiable) {@link NavigableMap} of the reported server extensions.
-     * where key=extension name (case <U>insensitive</U>)
+     * @return An (unmodifiable) {@link NavigableMap} of the reported server extensions. where key=extension name (case
+     *         <U>insensitive</U>)
      */
     NavigableMap<String, byte[]> getServerExtensions();
 
@@ -601,10 +594,10 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Opens a remote file for read
      *
-     * @param path The remote path
-     * @return The file's {@link CloseableHandle}
+     * @param  path        The remote path
+     * @return             The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
-     * @see #open(String, Collection)
+     * @see                #open(String, Collection)
      */
     default CloseableHandle open(String path) throws IOException {
         return open(path, Collections.emptySet());
@@ -613,12 +606,11 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Opens a remote file with the specified mode(s)
      *
-     * @param path    The remote path
-     * @param options The desired mode - if none specified
-     *                then {@link OpenMode#Read} is assumed
-     * @return The file's {@link CloseableHandle}
+     * @param  path        The remote path
+     * @param  options     The desired mode - if none specified then {@link OpenMode#Read} is assumed
+     * @return             The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
-     * @see #open(String, Collection)
+     * @see                #open(String, Collection)
      */
     default CloseableHandle open(String path, OpenMode... options) throws IOException {
         return open(path, GenericUtils.of(options));
@@ -627,10 +619,9 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Opens a remote file with the specified mode(s)
      *
-     * @param path    The remote path
-     * @param options The desired mode - if none specified
-     *                then {@link OpenMode#Read} is assumed
-     * @return The file's {@link CloseableHandle}
+     * @param  path        The remote path
+     * @param  options     The desired mode - if none specified then {@link OpenMode#Read} is assumed
+     * @return             The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
      */
     CloseableHandle open(String path, Collection<OpenMode> options) throws IOException;
@@ -638,13 +629,13 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Close the handle obtained from one of the {@code open} methods
      *
-     * @param handle The {@code Handle} to close
+     * @param  handle      The {@code Handle} to close
      * @throws IOException If failed to execute
      */
     void close(Handle handle) throws IOException;
 
     /**
-     * @param path The remote path to remove
+     * @param  path        The remote path to remove
      * @throws IOException If failed to execute
      */
     void remove(String path) throws IOException;
@@ -662,30 +653,30 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Reads data from the open (file) handle
      *
-     * @param handle     The file {@link Handle} to read from
-     * @param fileOffset The file offset to read from
-     * @param dst        The destination buffer
-     * @return Number of read bytes - {@code -1} if EOF reached
+     * @param  handle      The file {@link Handle} to read from
+     * @param  fileOffset  The file offset to read from
+     * @param  dst         The destination buffer
+     * @return             Number of read bytes - {@code -1} if EOF reached
      * @throws IOException If failed to read the data
-     * @see #read(Handle, long, byte[], int, int)
+     * @see                #read(Handle, long, byte[], int, int)
      */
-    default int read(Handle handle, long fileOffset, byte[] dst) throws IOException  {
+    default int read(Handle handle, long fileOffset, byte[] dst) throws IOException {
         return read(handle, fileOffset, dst, null);
     }
 
     /**
      * Reads data from the open (file) handle
      *
-     * @param handle     The file {@link Handle} to read from
-     * @param fileOffset The file offset to read from
-     * @param dst        The destination buffer
-     * @param eofSignalled If not {@code null} then upon return holds a value indicating
-     *                   whether EOF was reached due to the read. If {@code null} indicator
-     *                   value then this indication is not available
-     * @return Number of read bytes - {@code -1} if EOF reached
-     * @throws IOException If failed to read the data
-     * @see #read(Handle, long, byte[], int, int, AtomicReference)
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     * @param  handle       The file {@link Handle} to read from
+     * @param  fileOffset   The file offset to read from
+     * @param  dst          The destination buffer
+     * @param  eofSignalled If not {@code null} then upon return holds a value indicating whether EOF was reached due to
+     *                      the read. If {@code null} indicator value then this indication is not available
+     * @return              Number of read bytes - {@code -1} if EOF reached
+     * @throws IOException  If failed to read the data
+     * @see                 #read(Handle, long, byte[], int, int, AtomicReference)
+     * @see                 <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 -
+     *                      section 9.3</A>
      */
     default int read(Handle handle, long fileOffset, byte[] dst, AtomicReference<Boolean> eofSignalled) throws IOException {
         return read(handle, fileOffset, dst, 0, dst.length, eofSignalled);
@@ -698,19 +689,20 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Reads data from the open (file) handle
      *
-     * @param handle     The file {@link Handle} to read from
-     * @param fileOffset The file offset to read from
-     * @param dst        The destination buffer
-     * @param dstOffset  Offset in destination buffer to place the read data
-     * @param len        Available destination buffer size to read
-     * @param eofSignalled If not {@code null} then upon return holds a value indicating
-     *                   whether EOF was reached due to the read. If {@code null} indicator
-     *                   value then this indication is not available
-     * @return Number of read bytes - {@code -1} if EOF reached
-     * @throws IOException If failed to read the data
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 - section 9.3</A>
+     * @param  handle       The file {@link Handle} to read from
+     * @param  fileOffset   The file offset to read from
+     * @param  dst          The destination buffer
+     * @param  dstOffset    Offset in destination buffer to place the read data
+     * @param  len          Available destination buffer size to read
+     * @param  eofSignalled If not {@code null} then upon return holds a value indicating whether EOF was reached due to
+     *                      the read. If {@code null} indicator value then this indication is not available
+     * @return              Number of read bytes - {@code -1} if EOF reached
+     * @throws IOException  If failed to read the data
+     * @see                 <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.3">SFTP v6 -
+     *                      section 9.3</A>
      */
-    int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled) throws IOException;
+    int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled)
+            throws IOException;
 
     default void write(Handle handle, long fileOffset, byte[] src) throws IOException {
         write(handle, fileOffset, src, 0, src.length);
@@ -719,11 +711,11 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Write data to (open) file handle
      *
-     * @param handle     The file {@link Handle}
-     * @param fileOffset Zero-based offset to write in file
-     * @param src        Data buffer
-     * @param srcOffset  Offset of valid data in buffer
-     * @param len        Number of bytes to write
+     * @param  handle      The file {@link Handle}
+     * @param  fileOffset  Zero-based offset to write in file
+     * @param  src         Data buffer
+     * @param  srcOffset   Offset of valid data in buffer
+     * @param  len         Number of bytes to write
      * @throws IOException If failed to write the data
      */
     void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException;
@@ -731,7 +723,7 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Create remote directory
      *
-     * @param path Remote directory path
+     * @param  path        Remote directory path
      * @throws IOException If failed to execute
      */
     void mkdir(String path) throws IOException;
@@ -739,7 +731,7 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Remove remote directory
      *
-     * @param path Remote directory path
+     * @param  path        Remote directory path
      * @throws IOException If failed to execute
      */
     void rmdir(String path) throws IOException;
@@ -747,20 +739,18 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Obtain a handle for a directory
      *
-     * @param path Remote directory path
-     * @return The associated directory {@link Handle}
+     * @param  path        Remote directory path
+     * @return             The associated directory {@link Handle}
      * @throws IOException If failed to execute
      */
     CloseableHandle openDir(String path) throws IOException;
 
     /**
-     * @param handle Directory {@link Handle} to read from
-     * @return A {@link List} of entries - {@code null} to indicate no more entries
-     * <B>Note:</B> the list may be <U>incomplete</U> since the client and
-     * server have some internal imposed limit on the number of entries they
-     * can process. Therefore several calls to this method may be required
-     * (until {@code null}). In order to iterate over all the entries use
-     * {@link #readDir(String)}
+     * @param  handle      Directory {@link Handle} to read from
+     * @return             A {@link List} of entries - {@code null} to indicate no more entries <B>Note:</B> the list
+     *                     may be <U>incomplete</U> since the client and server have some internal imposed limit on the
+     *                     number of entries they can process. Therefore several calls to this method may be required
+     *                     (until {@code null}). In order to iterate over all the entries use {@link #readDir(String)}
      * @throws IOException If failed to access the remote site
      */
     default List<DirEntry> readDir(Handle handle) throws IOException {
@@ -768,24 +758,23 @@ public interface SftpClient extends SubsystemClient {
     }
 
     /**
-     * @param handle Directory {@link Handle} to read from
-     * @return A {@link List} of entries - {@code null} to indicate no more entries
-     * @param eolIndicator An indicator that can be used to get information
-     * whether end of list has been reached - ignored if {@code null}. Upon
-     * return, set value indicates whether all entries have been exhausted - a {@code null}
-     * value means that this information cannot be provided and another call to
-     * {@code readDir} is necessary in order to verify that no more entries are pending
-     * @throws IOException If failed to access the remote site
-     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
+     * @param  handle       Directory {@link Handle} to read from
+     * @return              A {@link List} of entries - {@code null} to indicate no more entries
+     * @param  eolIndicator An indicator that can be used to get information whether end of list has been reached -
+     *                      ignored if {@code null}. Upon return, set value indicates whether all entries have been
+     *                      exhausted - a {@code null} value means that this information cannot be provided and another
+     *                      call to {@code readDir} is necessary in order to verify that no more entries are pending
+     * @throws IOException  If failed to access the remote site
+     * @see                 <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 -
+     *                      section 9.4</A>
      */
     List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException;
 
     /**
-     * @param handle A directory {@link Handle}
-     * @return An {@link Iterable} that can be used to iterate over all the
-     * directory entries (like {@link #readDir(String)}). <B>Note:</B> the
-     * iterable instance is not re-usable - i.e., files can be iterated
-     * only <U>once</U>
+     * @param  handle      A directory {@link Handle}
+     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (like
+     *                     {@link #readDir(String)}). <B>Note:</B> the iterable instance is not re-usable - i.e., files
+     *                     can be iterated only <U>once</U>
      * @throws IOException If failed to access the directory
      */
     default Iterable<DirEntry> listDir(Handle handle) throws IOException {
@@ -799,10 +788,10 @@ public interface SftpClient extends SubsystemClient {
     /**
      * The effective &quot;normalized&quot; remote path
      *
-     * @param path The requested path - may be relative, and/or contain
-     * dots - e.g., &quot;.&quot;, &quot;..&quot;, &quot;./foo&quot;, &quot;../bar&quot;
+     * @param  path        The requested path - may be relative, and/or contain dots - e.g., &quot;.&quot;,
+     *                     &quot;..&quot;, &quot;./foo&quot;, &quot;../bar&quot;
      *
-     * @return The effective &quot;normalized&quot; remote path
+     * @return             The effective &quot;normalized&quot; remote path
      * @throws IOException If failed to execute
      */
     String canonicalPath(String path) throws IOException;
@@ -810,8 +799,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Retrieve remote path meta-data - follow symbolic links if encountered
      *
-     * @param path The remote path
-     * @return The associated {@link Attributes}
+     * @param  path        The remote path
+     * @return             The associated {@link Attributes}
      * @throws IOException If failed to execute
      */
     Attributes stat(String path) throws IOException;
@@ -819,8 +808,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Retrieve remote path meta-data - do <B>not</B> follow symbolic links
      *
-     * @param path The remote path
-     * @return The associated {@link Attributes}
+     * @param  path        The remote path
+     * @return             The associated {@link Attributes}
      * @throws IOException If failed to execute
      */
     Attributes lstat(String path) throws IOException;
@@ -828,8 +817,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Retrieve file/directory handle meta-data
      *
-     * @param handle The {@link Handle} obtained via one of the {@code open} calls
-     * @return The associated {@link Attributes}
+     * @param  handle      The {@link Handle} obtained via one of the {@code open} calls
+     * @return             The associated {@link Attributes}
      * @throws IOException If failed to execute
      */
     Attributes stat(Handle handle) throws IOException;
@@ -837,8 +826,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Update remote node meta-data
      *
-     * @param path The remote path
-     * @param attributes The {@link Attributes} to update
+     * @param  path        The remote path
+     * @param  attributes  The {@link Attributes} to update
      * @throws IOException If failed to execute
      */
     void setStat(String path, Attributes attributes) throws IOException;
@@ -846,8 +835,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Update remote node meta-data
      *
-     * @param handle The {@link Handle} obtained via one of the {@code open} calls
-     * @param attributes The {@link Attributes} to update
+     * @param  handle      The {@link Handle} obtained via one of the {@code open} calls
+     * @param  attributes  The {@link Attributes} to update
      * @throws IOException If failed to execute
      */
     void setStat(Handle handle, Attributes attributes) throws IOException;
@@ -855,8 +844,8 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Retrieve target of a link
      *
-     * @param path Remote path that represents a link
-     * @return The link target
+     * @param  path        Remote path that represents a link
+     * @return             The link target
      * @throws IOException If failed to execute
      */
     String readLink(String path) throws IOException;
@@ -864,10 +853,10 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Create symbolic link
      *
-     * @param linkPath   The link location
-     * @param targetPath The referenced target by the link
+     * @param  linkPath    The link location
+     * @param  targetPath  The referenced target by the link
      * @throws IOException If failed to execute
-     * @see #link(String, String, boolean)
+     * @see                #link(String, String, boolean)
      */
     default void symLink(String linkPath, String targetPath) throws IOException {
         link(linkPath, targetPath, true);
@@ -876,9 +865,9 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Create a link
      *
-     * @param linkPath   The link location
-     * @param targetPath The referenced target by the link
-     * @param symbolic   If {@code true} then make this a symbolic link, otherwise a hard one
+     * @param  linkPath    The link location
+     * @param  targetPath  The referenced target by the link
+     * @param  symbolic    If {@code true} then make this a symbolic link, otherwise a hard one
      * @throws IOException If failed to execute
      */
     void link(String linkPath, String targetPath, boolean symbolic) throws IOException;
@@ -896,7 +885,8 @@ public interface SftpClient extends SubsystemClient {
         return openRemotePathChannel(path, GenericUtils.isEmpty(options) ? Collections.emptyList() : Arrays.asList(options));
     }
 
-    default SftpRemotePathChannel openRemotePathChannel(String path, Collection<? extends OpenOption> options) throws IOException {
+    default SftpRemotePathChannel openRemotePathChannel(String path, Collection<? extends OpenOption> options)
+            throws IOException {
         return openRemoteFileChannel(path, OpenMode.fromOpenOptions(options));
     }
 
@@ -907,25 +897,25 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Opens an {@link SftpRemotePathChannel} on the specified remote path
      *
-     * @param path The remote path
-     * @param modes The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
-     * @return The open {@link SftpRemotePathChannel} - <B>Note:</B> do not close this
-     * owner client instance until the channel is no longer needed since it uses the client
-     * for providing the channel's functionality.
+     * @param  path        The remote path
+     * @param  modes       The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
+     * @return             The open {@link SftpRemotePathChannel} - <B>Note:</B> do not close this owner client instance
+     *                     until the channel is no longer needed since it uses the client for providing the channel's
+     *                     functionality.
      * @throws IOException If failed to open the channel
-     * @see java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
-     * @see java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
+     * @see                java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
+     * @see                java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
      */
     default SftpRemotePathChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
         return new SftpRemotePathChannel(path, this, false, GenericUtils.isEmpty(modes) ? DEFAULT_CHANNEL_MODES : modes);
     }
 
     /**
-     * @param path The remote directory path
-     * @return An {@link Iterable} that can be used to iterate over all the
-     * directory entries (unlike {@link #readDir(Handle)})
+     * @param  path        The remote directory path
+     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (unlike
+     *                     {@link #readDir(Handle)})
      * @throws IOException If failed to access the remote site
-     * @see #readDir(Handle)
+     * @see                #readDir(Handle)
      */
     default Iterable<DirEntry> readDir(String path) throws IOException {
         if (!isOpen()) {
@@ -958,15 +948,16 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Read a remote file's data via an input stream
      *
-     * @param path       The remote file path
-     * @param bufferSize The internal read buffer size
-     * @param mode       The remote file {@link OpenMode}s
-     * @return An {@link InputStream} for reading the remote file data
+     * @param  path        The remote file path
+     * @param  bufferSize  The internal read buffer size
+     * @param  mode        The remote file {@link OpenMode}s
+     * @return             An {@link InputStream} for reading the remote file data
      * @throws IOException If failed to execute
      */
     default InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
         if (bufferSize < MIN_READ_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
+            throw new IllegalArgumentException(
+                    "Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
         }
 
         if (!isOpen()) {
@@ -999,15 +990,16 @@ public interface SftpClient extends SubsystemClient {
     /**
      * Write to a remote file via an output stream
      *
-     * @param path       The remote file path
-     * @param bufferSize The internal write buffer size
-     * @param mode       The remote file {@link OpenMode}s
-     * @return An {@link OutputStream} for writing the data
+     * @param  path        The remote file path
+     * @param  bufferSize  The internal write buffer size
+     * @param  mode        The remote file {@link OpenMode}s
+     * @return             An {@link OutputStream} for writing the data
      * @throws IOException If failed to execute
      */
     default OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
+            throw new IllegalArgumentException(
+                    "Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
         }
 
         if (!isOpen()) {
@@ -1018,21 +1010,21 @@ public interface SftpClient extends SubsystemClient {
     }
 
     /**
-     * @param <E>           The generic extension type
-     * @param extensionType The extension type
-     * @return The extension instance - <B>Note:</B> it is up to the caller
-     * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if
-     * this extension type is not implemented by the client
-     * @see #getServerExtensions()
+     * @param  <E>           The generic extension type
+     * @param  extensionType The extension type
+     * @return               The extension instance - <B>Note:</B> it is up to the caller to invoke
+     *                       {@link SftpClientExtension#isSupported()} - {@code null} if this extension type is not
+     *                       implemented by the client
+     * @see                  #getServerExtensions()
      */
     <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType);
 
     /**
-     * @param extensionName The extension name
-     * @return The extension instance - <B>Note:</B> it is up to the caller
-     * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if
-     * this extension type is not implemented by the client
-     * @see #getServerExtensions()
+     * @param  extensionName The extension name
+     * @return               The extension instance - <B>Note:</B> it is up to the caller to invoke
+     *                       {@link SftpClientExtension#isSupported()} - {@code null} if this extension type is not
+     *                       implemented by the client
+     * @see                  #getServerExtensions()
      */
     SftpClientExtension getExtension(String extensionName);
 }

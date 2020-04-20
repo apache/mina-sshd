@@ -36,13 +36,13 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class SttySupport {
     public static final int DEFAULT_TERMINAL_WIDTH = 80;
-    public static final int  DEFAULT_TERMINAL_HEIGHT = 24;
+    public static final int DEFAULT_TERMINAL_HEIGHT = 24;
 
     public static final String SSHD_STTY_COMMAND_PROP = "sshd.sttyCommand";
     public static final String DEFAULT_SSHD_STTY_COMMAND = "stty";
 
-    private static final AtomicReference<String> STTY_COMMAND_HOLDER =
-        new AtomicReference<>(System.getProperty(SSHD_STTY_COMMAND_PROP, DEFAULT_SSHD_STTY_COMMAND));
+    private static final AtomicReference<String> STTY_COMMAND_HOLDER
+            = new AtomicReference<>(System.getProperty(SSHD_STTY_COMMAND_PROP, DEFAULT_SSHD_STTY_COMMAND));
     private static final AtomicReference<String> TTY_PROPS_HOLDER = new AtomicReference<>(null);
     private static final AtomicLong TTY_PROPS_LAST_FETCHED_HOLDER = new AtomicLong(0L);
 
@@ -137,13 +137,13 @@ public final class SttySupport {
     }
 
     /**
-     * <P>Returns the value of "stty size" width param.</P>
+     * <P>
+     * Returns the value of "stty size" width param.
+     * </P>
      *
      * <P>
-     * <strong>Note</strong>: this method caches the value from the
-     * first time it is called in order to increase speed, which means
-     * that changing to size of the terminal will not be reflected
-     * in the console.
+     * <strong>Note</strong>: this method caches the value from the first time it is called in order to increase speed,
+     * which means that changing to size of the terminal will not be reflected in the console.
      * </P>
      *
      * @return The terminal width
@@ -157,18 +157,18 @@ public final class SttySupport {
 
             return val;
         } catch (Exception e) {
-            return DEFAULT_TERMINAL_WIDTH;  // debug breakpoint
+            return DEFAULT_TERMINAL_WIDTH; // debug breakpoint
         }
     }
 
     /**
-     * <P>Returns the value of "stty size" height param.</P>
+     * <P>
+     * Returns the value of "stty size" height param.
+     * </P>
      *
      * <P>
-     * <strong>Note</strong>: this method caches the value from the
-     * first time it is called in order to increase speed, which means
-     * that changing to size of the terminal will not be reflected
-     * in the console.
+     * <strong>Note</strong>: this method caches the value from the first time it is called in order to increase speed,
+     * which means that changing to size of the terminal will not be reflected in the console.
      * </P>
      *
      * @return The terminal height
@@ -182,7 +182,7 @@ public final class SttySupport {
 
             return val;
         } catch (Exception e) {
-            return DEFAULT_TERMINAL_HEIGHT;  // debug breakpoint
+            return DEFAULT_TERMINAL_HEIGHT; // debug breakpoint
         }
     }
 
@@ -221,28 +221,26 @@ public final class SttySupport {
     }
 
     /**
-     * Execute the stty command with the specified arguments
-     * against the current active terminal.
+     * Execute the stty command with the specified arguments against the current active terminal.
      *
-     * @param args The command arguments
-     * @return The execution result
-     * @throws IOException If failed to execute the command
+     * @param  args                 The command arguments
+     * @return                      The execution result
+     * @throws IOException          If failed to execute the command
      * @throws InterruptedException If interrupted while awaiting command execution
-     * @see #exec(String)
+     * @see                         #exec(String)
      */
     public static String stty(String args) throws IOException, InterruptedException {
         return exec("stty " + args + " < /dev/tty").trim();
     }
 
     /**
-     * Execute the specified command and return the output
-     * (both stdout and stderr).
+     * Execute the specified command and return the output (both stdout and stderr).
      *
-     * @param cmd The command to execute
-     * @return The execution result
-     * @throws IOException If failed to execute the command
+     * @param  cmd                  The command to execute
+     * @return                      The execution result
+     * @throws IOException          If failed to execute the command
      * @throws InterruptedException If interrupted while awaiting command execution
-     * @see #exec(String[])
+     * @see                         #exec(String[])
      */
     public static String exec(final String cmd)
             throws IOException, InterruptedException {
@@ -250,12 +248,11 @@ public final class SttySupport {
     }
 
     /**
-     * Execute the specified command and return the output
-     * (both stdout and stderr).
+     * Execute the specified command and return the output (both stdout and stderr).
      *
-     * @param cmd The command components
-     * @return The execution result
-     * @throws IOException If failed to execute the command
+     * @param  cmd                  The command components
+     * @return                      The execution result
+     * @throws IOException          If failed to execute the command
      * @throws InterruptedException If interrupted while awaiting command execution
      */
     private static String exec(String... cmd)
@@ -286,16 +283,15 @@ public final class SttySupport {
 
     /**
      * @return The command to use to set the terminal options.
-     * @see #setSttyCommand(String)
+     * @see    #setSttyCommand(String)
      */
     public static String getSttyCommand() {
         return STTY_COMMAND_HOLDER.get();
     }
 
     /**
-     * @param cmd The command to use to set the terminal options. Defaults
-     * to {@link #DEFAULT_SSHD_STTY_COMMAND}, or the value of the
-     * {@link #SSHD_STTY_COMMAND_PROP} system property if not set via this method
+     * @param cmd The command to use to set the terminal options. Defaults to {@link #DEFAULT_SSHD_STTY_COMMAND}, or the
+     *            value of the {@link #SSHD_STTY_COMMAND_PROP} system property if not set via this method
      */
     public static void setSttyCommand(String cmd) {
         STTY_COMMAND_HOLDER.set(cmd);

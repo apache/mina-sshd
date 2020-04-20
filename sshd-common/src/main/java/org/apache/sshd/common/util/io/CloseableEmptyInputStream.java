@@ -24,8 +24,8 @@ import java.nio.channels.Channel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A {@code /dev/null} stream that can be closed - in which case it will throw
- * {@link IOException}s if invoked after being closed
+ * A {@code /dev/null} stream that can be closed - in which case it will throw {@link IOException}s if invoked after
+ * being closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -89,7 +89,7 @@ public class CloseableEmptyInputStream extends EmptyInputStream implements Chann
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
-            //noinspection UnnecessaryReturnStatement
+            // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

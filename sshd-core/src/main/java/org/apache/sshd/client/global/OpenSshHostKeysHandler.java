@@ -30,12 +30,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 
 /**
- * A handler for the &quot;hostkeys-00@openssh.com&quot; request - for now, only
- * reads the presented host key. One can override the {@link #handleHostKeys(Session, Collection, boolean, Buffer)}
- * methods in order to do something with the keys
+ * A handler for the &quot;hostkeys-00@openssh.com&quot; request - for now, only reads the presented host key. One can
+ * override the {@link #handleHostKeys(Session, Collection, boolean, Buffer)} methods in order to do something with the
+ * keys
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol - section 2.5</a>
+ * @see    <a href="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH protocol - section 2.5</a>
  */
 public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler {
     public static final String REQUEST = "hostkeys-00@openssh.com";
@@ -52,12 +52,12 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler {
     @Override
     protected Result handleHostKeys(
             Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer)
-                throws Exception {
+            throws Exception {
         // according to the spec, no reply should be required
         ValidateUtils.checkTrue(!wantReply, "Unexpected reply required for the host keys of %s", session);
         if (log.isDebugEnabled()) {
             log.debug("handleHostKeys({})[want-reply={}] received {} keys",
-                      session, wantReply, GenericUtils.size(keys));
+                    session, wantReply, GenericUtils.size(keys));
         }
 
         return Result.Replied;

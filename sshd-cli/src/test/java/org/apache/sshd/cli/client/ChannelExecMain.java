@@ -40,7 +40,8 @@ public class ChannelExecMain extends BaseTestSupport {
     }
 
     public static void doExecuteCommands(
-            BufferedReader stdin, PrintStream stdout, PrintStream stderr, ClientSession session) throws Exception {
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr, ClientSession session)
+            throws Exception {
         while (true) {
             stdout.print("> ");
 
@@ -77,10 +78,11 @@ public class ChannelExecMain extends BaseTestSupport {
         PrintStream stderr = System.err;
         try (BufferedReader stdin = new BufferedReader(
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
-            ClientSession session = SshClientCliSupport.setupClientSession("-P", stdin, CliSupport.resolveLoggingVerbosity(args), stdout, stderr, args);
+            ClientSession session = SshClientCliSupport.setupClientSession("-P", stdin,
+                    CliSupport.resolveLoggingVerbosity(args), stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: channelExec [-i identity] [-l login] [-P port] [-o option=value]"
-                        + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
+                                   + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
                 return;
             }

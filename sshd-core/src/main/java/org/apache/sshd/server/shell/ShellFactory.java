@@ -25,16 +25,14 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
- * Shell(s) are executed on the server side when a &quot;shell&quot;
- * channel is established
+ * Shell(s) are executed on the server side when a &quot;shell&quot; channel is established
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ShellFactory {
     /**
-     * @param channel The {@link ChannelSession} through which the command has been
-     * received
-     * @return The {@link Command} representing the shell to be executed
+     * @param  channel     The {@link ChannelSession} through which the command has been received
+     * @return             The {@link Command} representing the shell to be executed
      * @throws IOException If failed to create the shell
      */
     Command createShell(ChannelSession channel) throws IOException;

@@ -22,8 +22,7 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 
 /**
- * Represents a command capable of doing non-blocking io.
- * If this interface is implemented by a command, the usual
+ * Represents a command capable of doing non-blocking io. If this interface is implemented by a command, the usual
  * blocking input / output / error streams won't be set.
  */
 public interface AsyncCommand extends Command {

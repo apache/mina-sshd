@@ -34,8 +34,8 @@ public class SessionKeyPairIterator extends AbstractKeyPairIterator<KeyPairIdent
 
     public SessionKeyPairIterator(ClientSession session, SignatureFactoriesManager signatureFactories, Iterator<KeyPair> keys) {
         super(session);
-        this.signatureFactories = signatureFactories;   // OK if null
-        this.keys = keys;   // OK if null
+        this.signatureFactories = signatureFactories; // OK if null
+        this.keys = keys; // OK if null
     }
 
     @Override

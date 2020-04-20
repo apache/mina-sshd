@@ -69,8 +69,7 @@ public final class GenericUtils {
     public static final boolean[] EMPTY_BOOLEAN_ARRAY = {};
 
     /**
-     * A value indicating a {@code null} value - to be used as a placeholder
-     * where {@code null}s are not allowed
+     * A value indicating a {@code null} value - to be used as a placeholder where {@code null}s are not allowed
      */
     public static final Object NULL = new Object();
 
@@ -111,26 +110,25 @@ public final class GenericUtils {
     }
 
     /**
-     * @param s The {@link String} value to calculate the hash code on - may
-     * be {@code null}/empty in which case a value of zero is returned
-     * @return The calculated hash code
-     * @see #hashCode(String, Boolean)
+     * @param  s The {@link String} value to calculate the hash code on - may be {@code null}/empty in which case a
+     *           value of zero is returned
+     * @return   The calculated hash code
+     * @see      #hashCode(String, Boolean)
      */
     public static int hashCode(String s) {
         return hashCode(s, null);
     }
 
     /**
-     * @param s The {@link String} value to calculate the hash code on - may
-     * be {@code null}/empty in which case a value of zero is returned
-     * @param useUppercase Whether to convert the string to uppercase, lowercase
-     * or not at all:
-     * <UL>
-     *      <LI>{@code null} - no conversion</LI>
-     *      <LI>{@link Boolean#TRUE} - get hash code of uppercase</LI>
-     *      <LI>{@link Boolean#FALSE} - get hash code of lowercase</LI>
-     * </UL>
-     * @return The calculated hash code
+     * @param  s            The {@link String} value to calculate the hash code on - may be {@code null}/empty in which
+     *                      case a value of zero is returned
+     * @param  useUppercase Whether to convert the string to uppercase, lowercase or not at all:
+     *                      <UL>
+     *                      <LI>{@code null} - no conversion</LI>
+     *                      <LI>{@link Boolean#TRUE} - get hash code of uppercase</LI>
+     *                      <LI>{@link Boolean#FALSE} - get hash code of lowercase</LI>
+     *                      </UL>
+     * @return              The calculated hash code
      */
     public static int hashCode(String s, Boolean useUppercase) {
         if (isEmpty(s)) {
@@ -148,9 +146,9 @@ public final class GenericUtils {
         if (isSameReference(s1, s2)) {
             return 0;
         } else if (s1 == null) {
-            return +1;    // push null(s) to end
+            return +1; // push null(s) to end
         } else if (s2 == null) {
-            return -1;    // push null(s) to end
+            return -1; // push null(s) to end
         } else if (caseSensitive) {
             return s1.compareTo(s2);
         } else {
@@ -207,7 +205,7 @@ public final class GenericUtils {
         int lastPos = 0;
         int curPos = s.indexOf(ch);
         if (curPos < 0) {
-            return new String[]{s};
+            return new String[] { s };
         }
 
         Collection<String> values = new LinkedList<>();
@@ -223,7 +221,7 @@ public final class GenericUtils {
 
             curPos = s.indexOf(ch, lastPos);
             if (curPos < lastPos) {
-                break;  // no more separators
+                break; // no more separators
             }
         } while (curPos < s.length());
 
@@ -237,7 +235,7 @@ public final class GenericUtils {
     }
 
     public static <T> String join(T[] values, char ch) {
-        return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), ch);
+        return join(isEmpty(values) ? Collections.<T> emptyList() : Arrays.asList(values), ch);
     }
 
     public static String join(Iterable<?> iter, char ch) {
@@ -250,7 +248,7 @@ public final class GenericUtils {
         }
 
         StringBuilder sb = new StringBuilder();
-        do {    // we already asked hasNext...
+        do { // we already asked hasNext...
             Object o = iter.next();
             if (sb.length() > 0) {
                 sb.append(ch);
@@ -262,7 +260,7 @@ public final class GenericUtils {
     }
 
     public static <T> String join(T[] values, CharSequence sep) {
-        return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), sep);
+        return join(isEmpty(values) ? Collections.<T> emptyList() : Arrays.asList(values), sep);
     }
 
     public static String join(Iterable<?> iter, CharSequence sep) {
@@ -275,7 +273,7 @@ public final class GenericUtils {
         }
 
         StringBuilder sb = new StringBuilder();
-        do {    // we already asked hasNext...
+        do { // we already asked hasNext...
             Object o = iter.next();
             if (sb.length() > 0) {
                 sb.append(sep);
@@ -351,13 +349,12 @@ public final class GenericUtils {
     }
 
     /**
-     * Compares 2 character arrays - <B>Note:</B> {@code null} and empty
-     * are considered <U>equal</U>
+     * Compares 2 character arrays - <B>Note:</B> {@code null} and empty are considered <U>equal</U>
      *
-     * @param c1 1st array
-     * @param c2 2nd array
-     * @return Negative is 1st array comes first in lexicographical order,
-     * positive if 2nd array comes first and zero if equal
+     * @param  c1 1st array
+     * @param  c2 2nd array
+     * @return    Negative is 1st array comes first in lexicographical order, positive if 2nd array comes first and zero
+     *            if equal
      */
     public static int compare(char[] c1, char[] c2) {
         int l1 = length(c1);
@@ -380,7 +377,7 @@ public final class GenericUtils {
         return 0;
     }
 
-    @SafeVarargs    // there is no EnumSet.of(...) so we have to provide our own
+    @SafeVarargs // there is no EnumSet.of(...) so we have to provide our own
     public static <E extends Enum<E>> Set<E> of(E... values) {
         return of(isEmpty(values) ? Collections.emptySet() : Arrays.asList(values));
     }
@@ -393,8 +390,7 @@ public final class GenericUtils {
         Set<E> result = null;
         for (E v : values) {
             /*
-             * A trick to compensate for the fact that we do not have
-             * the enum Class to invoke EnumSet.noneOf
+             * A trick to compensate for the fact that we do not have the enum Class to invoke EnumSet.noneOf
              */
             if (result == null) {
                 result = EnumSet.of(v);
@@ -467,7 +463,7 @@ public final class GenericUtils {
             } else if (i2.hasNext()) {
                 return index;
             } else {
-                return -1;  // neither has a next value - both exhausted at the same time
+                return -1; // neither has a next value - both exhausted at the same time
             }
         }
     }
@@ -574,11 +570,10 @@ public final class GenericUtils {
     }
 
     /**
-     * @param <V>    The element type
-     * @param comp   The (non-{@code null}) {@link Comparator} to use
-     * @param values The values to be added (ignored if {@code null})
-     * @return A {@link NavigableSet} containing the values (if any) sorted
-     * using the provided comparator
+     * @param  <V>    The element type
+     * @param  comp   The (non-{@code null}) {@link Comparator} to use
+     * @param  values The values to be added (ignored if {@code null})
+     * @return        A {@link NavigableSet} containing the values (if any) sorted using the provided comparator
      */
     @SafeVarargs
     public static <V> NavigableSet<V> asSortedSet(Comparator<? super V> comp, V... values) {
@@ -586,11 +581,10 @@ public final class GenericUtils {
     }
 
     /**
-     * @param <V>    The element type
-     * @param comp   The (non-{@code null}) {@link Comparator} to use
-     * @param values The values to be added (ignored if {@code null}/empty)
-     * @return A {@link NavigableSet} containing the values (if any) sorted
-     * using the provided comparator
+     * @param  <V>    The element type
+     * @param  comp   The (non-{@code null}) {@link Comparator} to use
+     * @param  values The values to be added (ignored if {@code null}/empty)
+     * @return        A {@link NavigableSet} containing the values (if any) sorted using the provided comparator
      */
     public static <V> NavigableSet<V> asSortedSet(
             Comparator<? super V> comp, Collection<? extends V> values) {
@@ -602,9 +596,9 @@ public final class GenericUtils {
     }
 
     /**
-     * @param <V> Type of mapped value
-     * @return A {@link Supplier} that returns a <U>new</U> {@link NavigableMap}
-     * whenever its {@code get()} method is invoked
+     * @param  <V> Type of mapped value
+     * @return     A {@link Supplier} that returns a <U>new</U> {@link NavigableMap} whenever its {@code get()} method
+     *             is invoked
      */
     @SuppressWarnings("unchecked")
     public static <V> Supplier<NavigableMap<String, V>> caseInsensitiveMap() {
@@ -614,15 +608,15 @@ public final class GenericUtils {
     /**
      * Flips between keys and values of an input map
      *
-     * @param <K> Original map key type
-     * @param <V> Original map value type
-     * @param <M> Flipped map type
-     * @param map The original map to flip
-     * @param mapCreator The creator of the target map
-     * @param allowDuplicates Whether to ignore duplicates on flip
-     * @return The flipped map result
-     * @throws IllegalArgumentException if <tt>allowDuplicates</tt> is {@code false}
-     * and a duplicate value found in the original map.
+     * @param  <K>                      Original map key type
+     * @param  <V>                      Original map value type
+     * @param  <M>                      Flipped map type
+     * @param  map                      The original map to flip
+     * @param  mapCreator               The creator of the target map
+     * @param  allowDuplicates          Whether to ignore duplicates on flip
+     * @return                          The flipped map result
+     * @throws IllegalArgumentException if <tt>allowDuplicates</tt> is {@code false} and a duplicate value found in the
+     *                                  original map.
      */
     public static <K, V, M extends Map<V, K>> M flipMap(
             Map<? extends K, ? extends V> map, Supplier<? extends M> mapCreator, boolean allowDuplicates) {
@@ -630,7 +624,8 @@ public final class GenericUtils {
         map.forEach((key, value) -> {
             K prev = result.put(value, key);
             if ((prev != null) && (!allowDuplicates)) {
-                ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key, prev);
+                ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key,
+                        prev);
             }
         });
 
@@ -646,16 +641,16 @@ public final class GenericUtils {
     /**
      * Creates a map out of a group of values
      *
-     * @param <K> The key type
-     * @param <V> The value type
-     * @param <M> The result {@link Map} type
-     * @param keyMapper The {@link Function} that generates a key for a given value.
-     * If the returned key is {@code null} then the value is not mapped
-     * @param mapCreator The {@link Supplier} used to create/retrieve the result map - provided
-     * non-empty group of values
-     * @param values The values to be mapped
-     * @return The resulting {@link Map} - <B>Note:</B> no validation is made to ensure
-     * that 2 (or more) values are not mapped to the same key
+     * @param  <K>        The key type
+     * @param  <V>        The value type
+     * @param  <M>        The result {@link Map} type
+     * @param  keyMapper  The {@link Function} that generates a key for a given value. If the returned key is
+     *                    {@code null} then the value is not mapped
+     * @param  mapCreator The {@link Supplier} used to create/retrieve the result map - provided non-empty group of
+     *                    values
+     * @param  values     The values to be mapped
+     * @return            The resulting {@link Map} - <B>Note:</B> no validation is made to ensure that 2 (or more)
+     *                    values are not mapped to the same key
      */
     public static <K, V, M extends Map<K, V>> M mapValues(
             Function<? super V, ? extends K> keyMapper,
@@ -665,7 +660,7 @@ public final class GenericUtils {
         for (V v : values) {
             K k = keyMapper.apply(v);
             if (k == null) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
             map.put(k, v);
         }
@@ -676,7 +671,7 @@ public final class GenericUtils {
     @SafeVarargs
     public static <T> T findFirstMatchingMember(Predicate<? super T> acceptor, T... values) {
         return findFirstMatchingMember(acceptor,
-            isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+                isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     public static <T> T findFirstMatchingMember(
@@ -688,38 +683,37 @@ public final class GenericUtils {
     /**
      * Returns a list of all the values that were accepted by a predicate
      *
-     * @param <T> The type of value being evaluated
-     * @param acceptor The {@link Predicate} to consult whether a member is selected
-     * @param values The values to be scanned
-     * @return A {@link List} of all the values that were accepted by the predicate
+     * @param  <T>      The type of value being evaluated
+     * @param  acceptor The {@link Predicate} to consult whether a member is selected
+     * @param  values   The values to be scanned
+     * @return          A {@link List} of all the values that were accepted by the predicate
      */
     @SafeVarargs
     public static <T> List<T> selectMatchingMembers(Predicate<? super T> acceptor, T... values) {
         return selectMatchingMembers(acceptor,
-            isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+                isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
     }
 
     /**
      * Returns a list of all the values that were accepted by a predicate
      *
-     * @param <T> The type of value being evaluated
-     * @param acceptor The {@link Predicate} to consult whether a member is selected
-     * @param values The values to be scanned
-     * @return A {@link List} of all the values that were accepted by the predicate
+     * @param  <T>      The type of value being evaluated
+     * @param  acceptor The {@link Predicate} to consult whether a member is selected
+     * @param  values   The values to be scanned
+     * @return          A {@link List} of all the values that were accepted by the predicate
      */
     public static <T> List<T> selectMatchingMembers(
             Predicate<? super T> acceptor, Collection<? extends T> values) {
         return GenericUtils.stream(values)
-            .filter(acceptor)
-            .collect(Collectors.toList());
+                .filter(acceptor)
+                .collect(Collectors.toList());
     }
 
     /**
-     * @param s The {@link CharSequence} to be checked
-     * @return If the sequence contains any of the {@link #QUOTES}
-     * on <U>both</U> ends, then they are stripped, otherwise
-     * nothing is done
-     * @see #stripDelimiters(CharSequence, char)
+     * @param  s The {@link CharSequence} to be checked
+     * @return   If the sequence contains any of the {@link #QUOTES} on <U>both</U> ends, then they are stripped,
+     *           otherwise nothing is done
+     * @see      #stripDelimiters(CharSequence, char)
      */
     public static CharSequence stripQuotes(CharSequence s) {
         if (isEmpty(s)) {
@@ -729,7 +723,7 @@ public final class GenericUtils {
         for (int index = 0; index < QUOTES.length(); index++) {
             char delim = QUOTES.charAt(index);
             CharSequence v = stripDelimiters(s, delim);
-            if (v != s) {   // if stripped one don't continue
+            if (v != s) { // if stripped one don't continue
                 return v;
             }
         }
@@ -738,10 +732,10 @@ public final class GenericUtils {
     }
 
     /**
-     * @param s     The {@link CharSequence} to be checked
-     * @param delim The expected delimiter
-     * @return If the sequence contains the delimiter on <U>both</U> ends,
-     * then it is are stripped, otherwise nothing is done
+     * @param  s     The {@link CharSequence} to be checked
+     * @param  delim The expected delimiter
+     * @return       If the sequence contains the delimiter on <U>both</U> ends, then it is are stripped, otherwise
+     *               nothing is done
      */
     public static CharSequence stripDelimiters(CharSequence s, char delim) {
         if (isEmpty(s) || (s.length() < 2)) {
@@ -763,12 +757,11 @@ public final class GenericUtils {
     /**
      * Converts a thrown generic exception to a {@link RuntimeException}
      *
-     * @param t The original thrown exception
-     * @param peelThrowable Whether to determine the root cause by &quot;peeling&quot;
-     * any enclosing exceptions
-     * @return The thrown cause if already a runtime exception, otherwise a
-     * runtime exception of the resolved exception as its cause
-     * @see #peelException(Throwable)
+     * @param  t             The original thrown exception
+     * @param  peelThrowable Whether to determine the root cause by &quot;peeling&quot; any enclosing exceptions
+     * @return               The thrown cause if already a runtime exception, otherwise a runtime exception of the
+     *                       resolved exception as its cause
+     * @see                  #peelException(Throwable)
      */
     public static RuntimeException toRuntimeException(Throwable t, boolean peelThrowable) {
         Throwable e = peelThrowable ? peelException(t) : t;
@@ -780,12 +773,11 @@ public final class GenericUtils {
     }
 
     /**
-     * Attempts to get to the &quot;effective&quot; exception being thrown,
-     * by taking care of some known exceptions that wrap the original thrown
-     * one.
+     * Attempts to get to the &quot;effective&quot; exception being thrown, by taking care of some known exceptions that
+     * wrap the original thrown one.
      *
-     * @param t The original {@link Throwable} - ignored if {@code null}
-     * @return The effective exception - same as input if not a wrapper
+     * @param  t The original {@link Throwable} - ignored if {@code null}
+     * @return   The effective exception - same as input if not a wrapper
      */
     public static Throwable peelException(Throwable t) {
         // NOTE: check order is important - e.g., InvocationTargetException extends ReflectiveOperationException
@@ -800,7 +792,7 @@ public final class GenericUtils {
             }
 
             wrapped = t.getCause();
-            if (wrapped != t) {     // make sure it is a real cause
+            if (wrapped != t) { // make sure it is a real cause
                 return peelException(wrapped);
             }
         } else if (t instanceof InvocationTargetException) {
@@ -825,14 +817,13 @@ public final class GenericUtils {
             }
         }
 
-        return t;   // no special handling required or available
+        return t; // no special handling required or available
     }
 
     /**
-     * @param t The original {@link Throwable} - ignored if {@code null}
-     * @return If {@link Throwable#getCause()} is non-{@code null} then
-     * the cause, otherwise the original exception - {@code null} if
-     * the original exception was {@code null}
+     * @param  t The original {@link Throwable} - ignored if {@code null}
+     * @return   If {@link Throwable#getCause()} is non-{@code null} then the cause, otherwise the original exception -
+     *           {@code null} if the original exception was {@code null}
      */
     public static Throwable resolveExceptionCause(Throwable t) {
         if (t == null) {
@@ -848,16 +839,15 @@ public final class GenericUtils {
     }
 
     /**
-     * Used to &quot;accumulate&quot; exceptions of the <U>same type</U>. If the
-     * current exception is {@code null} then the new one becomes the current,
-     * otherwise the new one is added as a <U>suppressed</U> exception to the
-     * current one
+     * Used to &quot;accumulate&quot; exceptions of the <U>same type</U>. If the current exception is {@code null} then
+     * the new one becomes the current, otherwise the new one is added as a <U>suppressed</U> exception to the current
+     * one
      *
-     * @param <T>     The exception type
-     * @param current The current exception
-     * @param extra   The extra/new exception
-     * @return The resolved exception
-     * @see Throwable#addSuppressed(Throwable)
+     * @param  <T>     The exception type
+     * @param  current The current exception
+     * @param  extra   The extra/new exception
+     * @return         The resolved exception
+     * @see            Throwable#addSuppressed(Throwable)
      */
     public static <T extends Throwable> T accumulateException(T current, T extra) {
         if (current == null) {
@@ -882,9 +872,10 @@ public final class GenericUtils {
 
     /**
      * Wraps a value into a {@link Supplier}
-     * @param <T> Type of value being supplied
-     * @param value The value to be supplied
-     * @return The supplier wrapper
+     * 
+     * @param  <T>   Type of value being supplied
+     * @param  value The value to be supplied
+     * @return       The supplier wrapper
      */
     public static <T> Supplier<T> supplierOf(T value) {
         return () -> value;
@@ -893,37 +884,37 @@ public final class GenericUtils {
     /**
      * Resolves to an always non-{@code null} iterator
      *
-     * @param <T> Type of value being iterated
-     * @param iterable The {@link Iterable} instance
-     * @return A non-{@code null} iterator which may be empty if no iterable
-     * instance or no iterator returned from it
-     * @see #iteratorOf(Iterator)
+     * @param  <T>      Type of value being iterated
+     * @param  iterable The {@link Iterable} instance
+     * @return          A non-{@code null} iterator which may be empty if no iterable instance or no iterator returned
+     *                  from it
+     * @see             #iteratorOf(Iterator)
      */
     public static <T> Iterator<T> iteratorOf(Iterable<T> iterable) {
         return iteratorOf((iterable == null) ? null : iterable.iterator());
     }
 
     /**
-     * @param <B> Generic base class
-     * @param <D> Generic child class
-     * @return An identity {@link Function} that returns its input child class as a base class
+     * @param  <B> Generic base class
+     * @param  <D> Generic child class
+     * @return     An identity {@link Function} that returns its input child class as a base class
      */
     public static <B, D extends B> Function<D, B> downcast() {
         return t -> t;
     }
 
     /**
-     * Returns the first element in iterable - it has some optimization for {@link List}-s
-     * {@link Deque}-s and {@link SortedSet}s.
+     * Returns the first element in iterable - it has some optimization for {@link List}-s {@link Deque}-s and
+     * {@link SortedSet}s.
      *
-     * @param <T> Type of element
-     * @param it The {@link Iterable} instance - ignored if {@code null}/empty
-     * @return first element by iteration or {@code null} if none available
+     * @param  <T> Type of element
+     * @param  it  The {@link Iterable} instance - ignored if {@code null}/empty
+     * @return     first element by iteration or {@code null} if none available
      */
     public static <T> T head(Iterable<? extends T> it) {
         if (it == null) {
             return null;
-        } else if (it instanceof Deque<?>) {   // check before (!) instanceof List since LinkedList implements List
+        } else if (it instanceof Deque<?>) { // check before (!) instanceof List since LinkedList implements List
             Deque<? extends T> l = (Deque<? extends T>) it;
             return (l.size() > 0) ? l.getFirst() : null;
         } else if (it instanceof List<?>) {
@@ -941,10 +932,10 @@ public final class GenericUtils {
     /**
      * Resolves to an always non-{@code null} iterator
      *
-     * @param <T> Type of value being iterated
-     * @param iter The {@link Iterator} instance
-     * @return  A non-{@code null} iterator which may be empty if no iterator instance
-     * @see Collections#emptyIterator()
+     * @param  <T>  Type of value being iterated
+     * @param  iter The {@link Iterator} instance
+     * @return      A non-{@code null} iterator which may be empty if no iterator instance
+     * @see         Collections#emptyIterator()
      */
     public static <T> Iterator<T> iteratorOf(Iterator<T> iter) {
         return (iter == null) ? Collections.emptyIterator() : iter;
@@ -979,11 +970,11 @@ public final class GenericUtils {
     }
 
     /**
-     * @param <T> Generic return type
-     * @param values The source values - ignored if {@code null}
-     * @param type The (never @code null) type of values to select - any value
-     * whose type is assignable to this type will be selected by the iterator.
-     * @return The first value that matches the specified type - {@code null} if none found
+     * @param  <T>    Generic return type
+     * @param  values The source values - ignored if {@code null}
+     * @param  type   The (never @code null) type of values to select - any value whose type is assignable to this type
+     *                will be selected by the iterator.
+     * @return        The first value that matches the specified type - {@code null} if none found
      */
     public static <T> T selectNextMatchingValue(Iterator<?> values, Class<T> type) {
         Objects.requireNonNull(type, "No type selector specified");
@@ -1007,17 +998,16 @@ public final class GenericUtils {
     }
 
     /**
-     * Wraps a group of {@link Supplier}s of {@link Iterable} instances into a &quot;unified&quot;
-     * {@link Iterable} of their values, in the same order as the suppliers - i.e., once the values
-     * from a specific supplier are exhausted, the next one is consulted, and so on, until all
-     * suppliers have been consulted
+     * Wraps a group of {@link Supplier}s of {@link Iterable} instances into a &quot;unified&quot; {@link Iterable} of
+     * their values, in the same order as the suppliers - i.e., once the values from a specific supplier are exhausted,
+     * the next one is consulted, and so on, until all suppliers have been consulted
      *
-     * @param <T> Type of value being iterated
-     * @param providers The providers - ignored if {@code null} (i.e., return an empty iterable instance)
-     * @return The wrapping instance
+     * @param  <T>       Type of value being iterated
+     * @param  providers The providers - ignored if {@code null} (i.e., return an empty iterable instance)
+     * @return           The wrapping instance
      */
     public static <T> Iterable<T> multiIterableSuppliers(
             Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
-        return () -> stream(providers).<T>flatMap(s -> stream(s.get())).map(Function.identity()).iterator();
+        return () -> stream(providers).<T> flatMap(s -> stream(s.get())).map(Function.identity()).iterator();
     }
 }

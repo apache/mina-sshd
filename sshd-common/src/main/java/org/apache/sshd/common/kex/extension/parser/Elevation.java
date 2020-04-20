@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.4">RFC-8308 - section 3.4</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc8308#section-3.4">RFC-8308 - section 3.4</A>
  */
 public class Elevation extends AbstractKexExtensionParser<String> {
     public static final String NAME = "elevation";

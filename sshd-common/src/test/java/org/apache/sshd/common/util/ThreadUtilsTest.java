@@ -42,8 +42,9 @@ public class ThreadUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testProtectExecutorServiceShutdown() {
-        for (boolean shutdownOnExit : new boolean[]{true, false}) {
-            assertNull("Unexpected instance for shutdown=" + shutdownOnExit, ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
+        for (boolean shutdownOnExit : new boolean[] { true, false }) {
+            assertNull("Unexpected instance for shutdown=" + shutdownOnExit,
+                    ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
         }
 
         CloseableExecutorService service = ThreadUtils.newSingleThreadExecutor("pool");
@@ -63,10 +64,10 @@ public class ThreadUtilsTest extends JUnitTestSupport {
                 assertTrue("Wrapped service not shutdownNow", wrapped.isShutdown());
                 assertFalse("Protected service is shutdownNow", service.isShutdown());
             } finally {
-                wrapped.shutdownNow();  // just in case
+                wrapped.shutdownNow(); // just in case
             }
         } finally {
-            service.shutdownNow();  // just in case...
+            service.shutdownNow(); // just in case...
         }
     }
 }

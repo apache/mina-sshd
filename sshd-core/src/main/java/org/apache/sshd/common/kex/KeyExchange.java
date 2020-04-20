@@ -37,21 +37,19 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KeyExchange extends NamedResource, SessionHolder<Session> {
-    NavigableMap<Integer, String> GROUP_KEX_OPCODES_MAP =
-        Collections.unmodifiableNavigableMap(
+    NavigableMap<Integer, String> GROUP_KEX_OPCODES_MAP = Collections.unmodifiableNavigableMap(
             LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEX_DH_GEX_"));
 
-    NavigableMap<Integer, String> SIMPLE_KEX_OPCODES_MAP =
-        Collections.unmodifiableNavigableMap(
+    NavigableMap<Integer, String> SIMPLE_KEX_OPCODES_MAP = Collections.unmodifiableNavigableMap(
             LoggingUtils.generateMnemonicMap(SshConstants.class, "SSH_MSG_KEXDH_"));
 
     /**
      * Initialize the key exchange algorithm.
      *
-     * @param v_s     the server identification string
-     * @param v_c     the client identification string
-     * @param i_s     the server key initialization packet
-     * @param i_c     the client key initialization packet
+     * @param  v_s       the server identification string
+     * @param  v_c       the client identification string
+     * @param  i_s       the server key initialization packet
+     * @param  i_c       the client key initialization packet
      * @throws Exception if an error occurs
      */
     void init(byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
@@ -59,9 +57,9 @@ public interface KeyExchange extends NamedResource, SessionHolder<Session> {
     /**
      * Process the next packet
      *
-     * @param cmd the command
-     * @param buffer the packet contents positioned after the command
-     * @return a boolean indicating if the processing is complete or if more packets are to be received
+     * @param  cmd       the command
+     * @param  buffer    the packet contents positioned after the command
+     * @return           a boolean indicating if the processing is complete or if more packets are to be received
      * @throws Exception if an error occurs
      */
     boolean next(int cmd, Buffer buffer) throws Exception;

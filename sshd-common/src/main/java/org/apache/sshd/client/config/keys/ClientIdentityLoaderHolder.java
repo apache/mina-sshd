@@ -25,8 +25,7 @@ package org.apache.sshd.client.config.keys;
 @FunctionalInterface
 public interface ClientIdentityLoaderHolder {
     /**
-     * @return The {@link ClientIdentityLoader} to use in order to load client
-     * key pair identities - never {@code null}
+     * @return The {@link ClientIdentityLoader} to use in order to load client key pair identities - never {@code null}
      */
     ClientIdentityLoader getClientIdentityLoader();
 

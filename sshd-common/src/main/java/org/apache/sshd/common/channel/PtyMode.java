@@ -32,8 +32,8 @@ import java.util.function.ToIntFunction;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * A enum describing the tty modes according to
- * <a href="https://tools.ietf.org/html/rfc4254#section-8">RFC 4254 - section 8</a>.
+ * A enum describing the tty modes according to <a href="https://tools.ietf.org/html/rfc4254#section-8">RFC 4254 -
+ * section 8</a>.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -42,8 +42,8 @@ public enum PtyMode {
     /////////////////////////////// Chars ////////////////////////////////////
 
     /**
-     * Interrupt character; 255 if none. Similarly for the other characters.
-     * Not all of these characters are supported on all systems.
+     * Interrupt character; 255 if none. Similarly for the other characters. Not all of these characters are supported
+     * on all systems.
      */
     VINTR(1),
     /**
@@ -118,8 +118,7 @@ public enum PtyMode {
     ///////////////////////////////// I-flags ////////////////////////////////
 
     /**
-     * The ignore parity flag. The parameter SHOULD be 0 if this flag
-     * is FALSE, and 1 if it is TRUE.
+     * The ignore parity flag. The parameter SHOULD be 0 if this flag is FALSE, and 1 if it is TRUE.
      */
     IGNPAR(30),
     /**
@@ -182,8 +181,7 @@ public enum PtyMode {
      */
     ICANON(51),
     /**
-     * Enable input and output of uppercase characters by preceding their
-     * lowercase equivalents with &quot;\&quot;.
+     * Enable input and output of uppercase characters by preceding their lowercase equivalents with &quot;\&quot;.
      */
     XCASE(52),
     /**
@@ -293,31 +291,30 @@ public enum PtyMode {
     /**
      * An un-modifiable {@link Set} of all defined {@link PtyMode}s
      */
-    public static final Set<PtyMode> MODES =
-        Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
+    public static final Set<PtyMode> MODES = Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
 
-    public static final NavigableMap<Integer, PtyMode> COMMANDS =
-        Collections.unmodifiableNavigableMap(
+    public static final NavigableMap<Integer, PtyMode> COMMANDS = Collections.unmodifiableNavigableMap(
             GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
 
     /**
-     * A {@code null}-safe {@link ToIntFunction} that returns the {@link PtyMode#toInt()} value and (-1) for {@code null}
+     * A {@code null}-safe {@link ToIntFunction} that returns the {@link PtyMode#toInt()} value and (-1) for
+     * {@code null}
      */
     public static final ToIntFunction<PtyMode> OPCODE_EXTRACTOR = v -> (v == null) ? -1 : v.toInt();
 
     /**
-     * A {@code null}-safe {@link Comparator} of {@link PtyMode} values
-     * according to their {@link PtyMode#toInt()} value
+     * A {@code null}-safe {@link Comparator} of {@link PtyMode} values according to their {@link PtyMode#toInt()} value
+     * 
      * @see #OPCODE_EXTRACTOR
      */
     public static final Comparator<PtyMode> BY_OPCODE = new Comparator<PtyMode>() {
-            @Override
-            public int compare(PtyMode o1, PtyMode o2) {
-                int v1 = OPCODE_EXTRACTOR.applyAsInt(o1);
-                int v2 = OPCODE_EXTRACTOR.applyAsInt(o2);
-                return Integer.compare(v1, v2);
-            }
-        };
+        @Override
+        public int compare(PtyMode o1, PtyMode o2) {
+            int v1 = OPCODE_EXTRACTOR.applyAsInt(o1);
+            int v2 = OPCODE_EXTRACTOR.applyAsInt(o2);
+            return Integer.compare(v1, v2);
+        }
+    };
 
     private final int v;
 
@@ -330,9 +327,9 @@ public enum PtyMode {
     }
 
     /**
-     * @param b The numeric value of the option
-     * @return The matching {@link PtyMode} or {@code null} if no match found
-     * @see #toInt()
+     * @param  b The numeric value of the option
+     * @return   The matching {@link PtyMode} or {@code null} if no match found
+     * @see      #toInt()
      */
     public static PtyMode fromInt(int b) {
         return COMMANDS.get(0x00FF & b);
@@ -353,16 +350,16 @@ public enum PtyMode {
     }
 
     /**
-     * @param options The options to enable - ignored if {@code null}/empty
-     * @return A {@link Map} where all the specified {@link PtyMode}s have {@link #TRUE_SETTING}
+     * @param  options The options to enable - ignored if {@code null}/empty
+     * @return         A {@link Map} where all the specified {@link PtyMode}s have {@link #TRUE_SETTING}
      */
     public static Map<PtyMode, Integer> createEnabledOptions(PtyMode... options) {
         return createEnabledOptions(GenericUtils.of(options));
     }
 
     /**
-     * @param options The options to enable - ignored if {@code null}/empty
-     * @return A {@link Map} where all the specified {@link PtyMode}s have {@link #TRUE_SETTING}
+     * @param  options The options to enable - ignored if {@code null}/empty
+     * @return         A {@link Map} where all the specified {@link PtyMode}s have {@link #TRUE_SETTING}
      */
     public static Map<PtyMode, Integer> createEnabledOptions(Collection<PtyMode> options) {
         if (GenericUtils.isEmpty(options)) {
@@ -382,11 +379,10 @@ public enum PtyMode {
     }
 
     /**
-     * @param modes The PTY settings - ignored if {@code null}/empty
-     * @param options The options that should be enabled
-     * @return A {@link Set} of all the {@link PtyMode}s that appeared
-     * in the settings and were enabled
-     * @see #getBooleanSettingValue(Map, PtyMode)
+     * @param  modes   The PTY settings - ignored if {@code null}/empty
+     * @param  options The options that should be enabled
+     * @return         A {@link Set} of all the {@link PtyMode}s that appeared in the settings and were enabled
+     * @see            #getBooleanSettingValue(Map, PtyMode)
      */
     public static Set<PtyMode> resolveEnabledOptions(Map<PtyMode, ?> modes, Collection<PtyMode> options) {
         if (GenericUtils.isEmpty(modes) || GenericUtils.isEmpty(options)) {
@@ -404,17 +400,17 @@ public enum PtyMode {
     }
 
     /**
-     * @param modes The current modes {@link Map}-ing
-     * @param m The required {@link PtyMode}
-     * @return {@code true} if <U>all</U> of these conditions hold:</BR>
-     * <UL>
-     *      <LI>Modes map is not {@code null}/empty</LI>
-     *      <LI>Required mode setting is not {@code null}</LI>
-     *      <LI>The setting has a mapped value</LI>
-     *      <LI>The mapped value is a {@link Number}</LI>
-     *      <LI>The {@link Number#intValue()} is non-zero</LI>
-     * </UL>
-     * @see #getBooleanSettingValue(Object)
+     * @param  modes The current modes {@link Map}-ing
+     * @param  m     The required {@link PtyMode}
+     * @return       {@code true} if <U>all</U> of these conditions hold:</BR>
+     *               <UL>
+     *               <LI>Modes map is not {@code null}/empty</LI>
+     *               <LI>Required mode setting is not {@code null}</LI>
+     *               <LI>The setting has a mapped value</LI>
+     *               <LI>The mapped value is a {@link Number}</LI>
+     *               <LI>The {@link Number#intValue()} is non-zero</LI>
+     *               </UL>
+     * @see          #getBooleanSettingValue(Object)
      */
     public static boolean getBooleanSettingValue(Map<PtyMode, ?> modes, PtyMode m) {
         if ((m == null) || GenericUtils.isEmpty(modes)) {
@@ -425,32 +421,23 @@ public enum PtyMode {
     }
 
     /**
-     * @param modes The {@link Map} of {@link PtyMode}s resolved by the &quot;pty-req&quot; message.
-     * @param enablers A {@link Collection} of enabler settings to be consulted
-     * @param defaultValue The default value to be used if no definite setting could be deduced
-     * @return {@code true} if the CR mode is enabled:</BR>
-     * <UL>
-     *      <LI>
-     *      If<tt>modes</tt> or <tt>enablers</tt> are {@code null}/empty
-     *      then <tt>defaultValue</tt> is used
-     *      </LI>
+     * @param  modes        The {@link Map} of {@link PtyMode}s resolved by the &quot;pty-req&quot; message.
+     * @param  enablers     A {@link Collection} of enabler settings to be consulted
+     * @param  defaultValue The default value to be used if no definite setting could be deduced
+     * @return              {@code true} if the CR mode is enabled:</BR>
+     *                      <UL>
+     *                      <LI>If<tt>modes</tt> or <tt>enablers</tt> are {@code null}/empty then <tt>defaultValue</tt>
+     *                      is used</LI>
      *
-     *      <LI>
-     *      If <U>any</U> of the <tt>enablers</tt> modes are enabled
-     *      then the CR mode is enabled.
-     *      </LI>
+     *                      <LI>If <U>any</U> of the <tt>enablers</tt> modes are enabled then the CR mode is enabled.
+     *                      </LI>
      *
-     *      <LI>
-     *      If <U>none</U> of the <tt>enablers</tt> modes were specified
-     *      then use  <tt>defaultValue</tt>
-     *      </LI>
+     *                      <LI>If <U>none</U> of the <tt>enablers</tt> modes were specified then use
+     *                      <tt>defaultValue</tt></LI>
      *
-     *      <LI>
-     *      Otherwise (i.e., at least one or more of the <tt>enablers</tt>
-     *      modes were specified, but <U>all</U> of them said {@code no})
-     *      then {@code false}.
-     *      </LI>
-     * </UL>
+     *                      <LI>Otherwise (i.e., at least one or more of the <tt>enablers</tt> modes were specified, but
+     *                      <U>all</U> of them said {@code no}) then {@code false}.</LI>
+     *                      </UL>
      */
     public static boolean getBooleanSettingValue(
             Map<PtyMode, ?> modes, Collection<PtyMode> enablers, boolean defaultValue) {
@@ -477,35 +464,35 @@ public enum PtyMode {
         if (settingsCount > 0) {
             return false;
         } else {
-            return defaultValue;    // none of the settings has been found - assume default
+            return defaultValue; // none of the settings has been found - assume default
         }
     }
 
     /**
-     * @param v The value to be tested
-     * @return {@code true} if <U>all</U> of these conditions hold:</BR>
-     * <UL>
-     *      <LI>The mapped value is a {@link Number}</LI>
-     *      <LI>The {@link Number#intValue()} is non-zero</LI>
-     * </UL>
-     * @see #getBooleanSettingValue(int)
+     * @param  v The value to be tested
+     * @return   {@code true} if <U>all</U> of these conditions hold:</BR>
+     *           <UL>
+     *           <LI>The mapped value is a {@link Number}</LI>
+     *           <LI>The {@link Number#intValue()} is non-zero</LI>
+     *           </UL>
+     * @see      #getBooleanSettingValue(int)
      */
     public static boolean getBooleanSettingValue(Object v) {
         return (v instanceof Number) && getBooleanSettingValue(((Number) v).intValue());
     }
 
     /**
-     * @param v The setting value
-     * @return {@code true} if value is non-zero
+     * @param  v The setting value
+     * @return   {@code true} if value is non-zero
      */
     public static boolean getBooleanSettingValue(int v) {
         return v != 0;
     }
 
     /**
-     * @param m The {@link PtyMode}
-     * @return {@code true} if not {@code null} and one of the settings that
-     * refers to a character value - name usually starts with {@code Vxxx}
+     * @param  m The {@link PtyMode}
+     * @return   {@code true} if not {@code null} and one of the settings that refers to a character value - name
+     *           usually starts with {@code Vxxx}
      */
     public static boolean isCharSetting(PtyMode m) {
         if (m == null) {

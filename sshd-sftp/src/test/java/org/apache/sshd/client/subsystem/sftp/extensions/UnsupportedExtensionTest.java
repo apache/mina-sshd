@@ -39,7 +39,7 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
         super();
     }
 
-    @Test   // see SSHD-890
+    @Test // see SSHD-890
     public void testUnsupportedExtension() throws IOException {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
@@ -56,9 +56,9 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
                 int cmd = sftp.send(SftpConstants.SSH_FXP_EXTENDED, buffer);
                 Buffer responseBuffer = sftp.receive(cmd);
 
-                responseBuffer.getInt();                    // Ignoring length
+                responseBuffer.getInt(); // Ignoring length
                 int type = responseBuffer.getUByte();
-                responseBuffer.getInt();                    // Ignoring message ID
+                responseBuffer.getInt(); // Ignoring message ID
                 int substatus = responseBuffer.getInt();
 
                 assertEquals("Type is not STATUS", SftpConstants.SSH_FXP_STATUS, type);

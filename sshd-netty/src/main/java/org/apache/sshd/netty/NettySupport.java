@@ -18,9 +18,8 @@
  */
 package org.apache.sshd.netty;
 
-import org.apache.sshd.common.util.Readable;
-
 import io.netty.buffer.ByteBuf;
+import org.apache.sshd.common.util.Readable;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>

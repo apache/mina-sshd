@@ -140,8 +140,7 @@ public class ClientTest extends BaseTestSupport {
                         };
                     }
                 },
-                ServerConnectionServiceFactory.INSTANCE
-        ));
+                ServerConnectionServiceFactory.INSTANCE));
         sshd.setChannelFactories(Arrays.asList(
                 new ChannelSessionFactory() {
                     @Override
@@ -170,7 +169,7 @@ public class ClientTest extends BaseTestSupport {
         port = sshd.getPort();
 
         client = setupTestClient();
-        clientSessionHolder.set(null);  // just making sure
+        clientSessionHolder.set(null); // just making sure
         client.addSessionListener(clientSessionListener);
     }
 
@@ -182,7 +181,7 @@ public class ClientTest extends BaseTestSupport {
         if (client != null) {
             client.stop();
         }
-        clientSessionHolder.set(null);  // just making sure
+        clientSessionHolder.set(null); // just making sure
     }
 
     @Test
@@ -248,7 +247,7 @@ public class ClientTest extends BaseTestSupport {
 
     private <C extends Closeable> void testClientListener(
             AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory)
-                throws Exception {
+            throws Exception {
         assertNull(channelType.getSimpleName() + ": Unexpected currently active channel", channelHolder.get());
 
         try (C instance = factory.create()) {
@@ -300,8 +299,9 @@ public class ClientTest extends BaseTestSupport {
     }
 
     /**
-     * Makes sure that the {@link ChannelListener}s added to the client, session
-     * and channel are <U>cumulative</U> - i.e., all of them invoked
+     * Makes sure that the {@link ChannelListener}s added to the client, session and channel are <U>cumulative</U> -
+     * i.e., all of them invoked
+     * 
      * @throws Exception If failed
      */
     @Test
@@ -349,16 +349,16 @@ public class ClientTest extends BaseTestSupport {
         for (TestChannelListener l : listeners) {
             if (activeSize >= 0) {
                 assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener",
-                    activeSize, GenericUtils.size(l.getActiveChannels()));
+                        activeSize, GenericUtils.size(l.getActiveChannels()));
             }
 
             if (openSize >= 0) {
                 assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener",
-                    openSize, GenericUtils.size(l.getOpenChannels()));
+                        openSize, GenericUtils.size(l.getOpenChannels()));
             }
 
             assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener",
-                0, GenericUtils.size(l.getFailedChannels()));
+                    0, GenericUtils.size(l.getFailedChannels()));
         }
     }
 
@@ -387,7 +387,7 @@ public class ClientTest extends BaseTestSupport {
 
     private ClientSession createTestClientSession(String host) throws IOException {
         ClientSession session = client.connect(getCurrentTestName(), host, port)
-            .verify(CONNECT_TIMEOUT).getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());

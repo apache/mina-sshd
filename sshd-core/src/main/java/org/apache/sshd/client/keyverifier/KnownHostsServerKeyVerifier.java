@@ -67,8 +67,8 @@ public class KnownHostsServerKeyVerifier
         implements ServerKeyVerifier, ModifiedServerKeyAcceptor {
 
     /**
-     * Standard option used to indicate whether to use strict host key checking or not.
-     * Values may be &quot;yes/no&quot;, &quot;true/false&quot; or &quot;on/off&quot;
+     * Standard option used to indicate whether to use strict host key checking or not. Values may be
+     * &quot;yes/no&quot;, &quot;true/false&quot; or &quot;on/off&quot;
      */
     public static final String STRICT_CHECKING_OPTION = "StrictHostKeyChecking";
 
@@ -79,6 +79,7 @@ public class KnownHostsServerKeyVerifier
 
     /**
      * Represents an entry in the internal verifier's cache
+     * 
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class HostEntryPair {
@@ -118,8 +119,7 @@ public class KnownHostsServerKeyVerifier
 
     protected final Object updateLock = new Object();
     private final ServerKeyVerifier delegate;
-    private final AtomicReference<Collection<HostEntryPair>> keysHolder =
-            new AtomicReference<>(Collections.emptyList());
+    private final AtomicReference<Collection<HostEntryPair>> keysHolder = new AtomicReference<>(Collections.emptyList());
     private ModifiedServerKeyAcceptor modKeyAcceptor;
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file) {
@@ -136,18 +136,16 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * @return The delegate {@link ModifiedServerKeyAcceptor} to consult
-     * if a server presents a modified key. If {@code null} then assumed
-     * to reject such a modification
+     * @return The delegate {@link ModifiedServerKeyAcceptor} to consult if a server presents a modified key. If
+     *         {@code null} then assumed to reject such a modification
      */
     public ModifiedServerKeyAcceptor getModifiedServerKeyAcceptor() {
         return modKeyAcceptor;
     }
 
     /**
-     * @param acceptor The delegate {@link ModifiedServerKeyAcceptor} to
-     * consult if a server presents a modified key. If {@code null} then
-     * assumed to reject such a modification
+     * @param acceptor The delegate {@link ModifiedServerKeyAcceptor} to consult if a server presents a modified key. If
+     *                 {@code null} then assumed to reject such a modification
      */
     public void setModifiedServerKeyAcceptor(ModifiedServerKeyAcceptor acceptor) {
         modKeyAcceptor = acceptor;
@@ -164,7 +162,7 @@ public class KnownHostsServerKeyVerifier
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("verifyServerKey({})[{}] missing known hosts file {}",
-                                  clientSession, remoteAddress, file);
+                                clientSession, remoteAddress, file);
                     }
                     knownHosts = Collections.emptyList();
                 }
@@ -187,10 +185,10 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * @param session The {@link ClientSession} that triggered this request
-     * @param file The {@link Path} to reload from
-     * @return A {@link List} of the loaded {@link HostEntryPair}s - may be {@code null}/empty
-     * @throws IOException If failed to parse the file
+     * @param  session                  The {@link ClientSession} that triggered this request
+     * @param  file                     The {@link Path} to reload from
+     * @return                          A {@link List} of the loaded {@link HostEntryPair}s - may be {@code null}/empty
+     * @throws IOException              If failed to parse the file
      * @throws GeneralSecurityException If failed to resolve the encoded public keys
      */
     protected List<HostEntryPair> reloadKnownHosts(ClientSession session, Path file)
@@ -216,7 +214,7 @@ public class KnownHostsServerKeyVerifier
                 }
             } catch (Throwable t) {
                 log.warn("reloadKnownHosts({}) failed ({}) to load key of {}: {}",
-                         file, t.getClass().getSimpleName(), entry, t.getMessage());
+                        file, t.getClass().getSimpleName(), entry, t.getMessage());
                 if (debugEnabled) {
                     log.debug("reloadKnownHosts(" + file + ") key=" + entry + " load failure details", t);
                 }
@@ -229,25 +227,24 @@ public class KnownHostsServerKeyVerifier
     /**
      * Recover the associated public key from a known host entry
      *
-     * @param session The {@link ClientSession} that triggered this request
-     * @param entry The {@link KnownHostEntry} - ignored if {@code null}
-     * @param resolver The {@link PublicKeyEntryResolver} to use if immediate
-     * - decoding does not work - ignored if {@code null}
-     * @return The extracted {@link PublicKey} - {@code null} if none
-     * @throws IOException If failed to decode the key
+     * @param  session                  The {@link ClientSession} that triggered this request
+     * @param  entry                    The {@link KnownHostEntry} - ignored if {@code null}
+     * @param  resolver                 The {@link PublicKeyEntryResolver} to use if immediate - decoding does not work
+     *                                  - ignored if {@code null}
+     * @return                          The extracted {@link PublicKey} - {@code null} if none
+     * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see #getFallbackPublicKeyEntryResolver()
-     * @see AuthorizedKeyEntry#resolvePublicKey(SessionContext, PublicKeyEntryResolver)
+     * @see                             #getFallbackPublicKeyEntryResolver()
+     * @see                             AuthorizedKeyEntry#resolvePublicKey(SessionContext, PublicKeyEntryResolver)
      */
     protected PublicKey resolveHostKey(
             ClientSession session, KnownHostEntry entry, PublicKeyEntryResolver resolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (entry == null) {
             return null;
         }
 
-        AuthorizedKeyEntry authEntry =
-            ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
+        AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
         PublicKey key = authEntry.resolvePublicKey(session, resolver);
         if (log.isDebugEnabled()) {
             log.debug("resolveHostKey({}) loaded {}-{}", entry, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
@@ -261,7 +258,8 @@ public class KnownHostsServerKeyVerifier
     }
 
     protected boolean acceptKnownHostEntries(
-            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Collection<HostEntryPair> knownHosts) {
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
+            Collection<HostEntryPair> knownHosts) {
         // TODO allow for several candidates and check if ANY of them matches the key and has 'revoked' marker
         HostEntryPair match = findKnownHostEntry(clientSession, remoteAddress, knownHosts);
         if (match == null) {
@@ -280,10 +278,11 @@ public class KnownHostsServerKeyVerifier
             }
         } catch (Throwable t) {
             log.warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
-                     clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage());
+                    clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("acceptKnownHostEntries(" + clientSession + ")[" + remoteAddress + "]"
-                        + " modified server key acceptance failure details", t);
+                          + " modified server key acceptance failure details",
+                        t);
             }
             return false;
         }
@@ -300,34 +299,34 @@ public class KnownHostsServerKeyVerifier
 
     /**
      * Invoked if a matching host entry was found, but the key did not match and
-     * {@link #acceptModifiedServerKey(ClientSession, SocketAddress, KnownHostEntry, PublicKey, PublicKey)}
-     * returned {@code true}. By default it locates the line to be updated and updates only
-     * its key data, marking the file for reload on next verification just to be
-     * on the safe side.
+     * {@link #acceptModifiedServerKey(ClientSession, SocketAddress, KnownHostEntry, PublicKey, PublicKey)} returned
+     * {@code true}. By default it locates the line to be updated and updates only its key data, marking the file for
+     * reload on next verification just to be on the safe side.
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param match The {@link HostEntryPair} whose key does not match
-     * @param actual The presented server {@link PublicKey} to be updated
-     * @param file The file {@link Path} to be updated
-     * @param knownHosts The currently loaded entries
-     * @throws Exception If failed to update the file - <B>Note:</B> this may mean the
-     * file is now corrupted
-     * @see #handleModifiedServerKeyUpdateFailure(ClientSession, SocketAddress, HostEntryPair, PublicKey, Path, Collection, Throwable)
-     * @see #prepareModifiedServerKeyLine(ClientSession, SocketAddress, KnownHostEntry, String, PublicKey, PublicKey)
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  match         The {@link HostEntryPair} whose key does not match
+     * @param  actual        The presented server {@link PublicKey} to be updated
+     * @param  file          The file {@link Path} to be updated
+     * @param  knownHosts    The currently loaded entries
+     * @throws Exception     If failed to update the file - <B>Note:</B> this may mean the file is now corrupted
+     * @see                  #handleModifiedServerKeyUpdateFailure(ClientSession, SocketAddress, HostEntryPair,
+     *                       PublicKey, Path, Collection, Throwable)
+     * @see                  #prepareModifiedServerKeyLine(ClientSession, SocketAddress, KnownHostEntry, String,
+     *                       PublicKey, PublicKey)
      */
     protected void updateModifiedServerKey(
             ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match, PublicKey actual,
             Path file, Collection<HostEntryPair> knownHosts)
-                throws Exception {
+            throws Exception {
         KnownHostEntry entry = match.getHostEntry();
         String matchLine = ValidateUtils.checkNotNullAndNotEmpty(entry.getConfigLine(), "No entry config line");
         String newLine = prepareModifiedServerKeyLine(
-            clientSession, remoteAddress, entry, matchLine, match.getServerKey(), actual);
+                clientSession, remoteAddress, entry, matchLine, match.getServerKey(), actual);
         if (GenericUtils.isEmpty(newLine)) {
             if (log.isDebugEnabled()) {
                 log.debug("updateModifiedServerKey({})[{}] no replacement generated for {}",
-                      clientSession, remoteAddress, matchLine);
+                        clientSession, remoteAddress, matchLine);
             }
             return;
         }
@@ -335,7 +334,7 @@ public class KnownHostsServerKeyVerifier
         if (matchLine.equals(newLine)) {
             if (log.isDebugEnabled()) {
                 log.debug("updateModifiedServerKey({})[{}] unmodified updated line for {}",
-                      clientSession, remoteAddress, matchLine);
+                        clientSession, remoteAddress, matchLine);
             }
             return;
         }
@@ -394,26 +393,27 @@ public class KnownHostsServerKeyVerifier
         if (log.isDebugEnabled()) {
             log.debug("updateModifiedServerKey({}) replaced '{}' with '{}'", file, matchLine, newLine);
         }
-        resetReloadAttributes();    // force reload on next verification
+        resetReloadAttributes(); // force reload on next verification
     }
 
     /**
-     * Invoked by {@link #updateModifiedServerKey(ClientSession, SocketAddress, HostEntryPair, PublicKey, Path, Collection)}
-     * in order to prepare the replacement - by default it replaces the key part with the new one
+     * Invoked by
+     * {@link #updateModifiedServerKey(ClientSession, SocketAddress, HostEntryPair, PublicKey, Path, Collection)} in
+     * order to prepare the replacement - by default it replaces the key part with the new one
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param entry The {@link KnownHostEntry}
-     * @param curLine The current entry line data
-     * @param expected The expected {@link PublicKey}
-     * @param actual The present key to be update
-     * @return The updated line - ignored if {@code null}/empty or same as original one
-     * @throws Exception if failed to prepare the line
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  entry         The {@link KnownHostEntry}
+     * @param  curLine       The current entry line data
+     * @param  expected      The expected {@link PublicKey}
+     * @param  actual        The present key to be update
+     * @return               The updated line - ignored if {@code null}/empty or same as original one
+     * @throws Exception     if failed to prepare the line
      */
     protected String prepareModifiedServerKeyLine(
             ClientSession clientSession, SocketAddress remoteAddress, KnownHostEntry entry,
             String curLine, PublicKey expected, PublicKey actual)
-                throws Exception {
+            throws Exception {
         if ((entry == null) || GenericUtils.isEmpty(curLine)) {
             return curLine; // just to be on the safe side
         }
@@ -432,62 +432,64 @@ public class KnownHostsServerKeyVerifier
 
         ValidateUtils.checkTrue((pos > 0) && (pos < (curLine.length() - 1)), "Missing encoded key in line=%s", curLine);
         StringBuilder sb = new StringBuilder(curLine.length());
-        sb.append(curLine.substring(0, pos));   // copy the marker/patterns as-is
+        sb.append(curLine.substring(0, pos)); // copy the marker/patterns as-is
         PublicKeyEntry.appendPublicKeyEntry(sb.append(' '), actual);
         return sb.toString();
     }
 
     /**
-     * Invoked if {@code #updateModifiedServerKey(ClientSession, SocketAddress, HostEntryPair, PublicKey, Path)}
-     * throws an exception. This may mean the file is corrupted, but it can be recovered from the known hosts
-     * that are being provided. By default, it only logs a warning and does not attempt to recover the file
+     * Invoked if {@code #updateModifiedServerKey(ClientSession, SocketAddress, HostEntryPair, PublicKey, Path)} throws
+     * an exception. This may mean the file is corrupted, but it can be recovered from the known hosts that are being
+     * provided. By default, it only logs a warning and does not attempt to recover the file
      *
      * @param clientSession The {@link ClientSession}
      * @param remoteAddress The remote host address
-     * @param match The {@link HostEntryPair} whose key does not match
-     * @param serverKey The presented server {@link PublicKey} to be updated
-     * @param file The file {@link Path} to be updated
-     * @param knownHosts The currently cached entries (may be {@code null}/empty)
-     * @param reason The failure reason
+     * @param match         The {@link HostEntryPair} whose key does not match
+     * @param serverKey     The presented server {@link PublicKey} to be updated
+     * @param file          The file {@link Path} to be updated
+     * @param knownHosts    The currently cached entries (may be {@code null}/empty)
+     * @param reason        The failure reason
      */
     protected void handleModifiedServerKeyUpdateFailure(
             ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match,
             PublicKey serverKey, Path file, Collection<HostEntryPair> knownHosts, Throwable reason) {
         // NOTE !!! this may mean the file is corrupted, but it can be recovered from the known hosts
         log.warn("acceptKnownHostEntries({})[{}] failed ({}) to update modified server key of {}: {}",
-             clientSession, remoteAddress, reason.getClass().getSimpleName(), match, reason.getMessage());
+                clientSession, remoteAddress, reason.getClass().getSimpleName(), match, reason.getMessage());
         if (log.isDebugEnabled()) {
             log.debug("acceptKnownHostEntries(" + clientSession + ")[" + remoteAddress + "]"
-                    + " modified key update failure details", reason);
+                      + " modified key update failure details",
+                    reason);
         }
     }
 
     /**
-     * Invoked <U>after</U> known host entry located and keys match - by default
-     * checks that entry has not been revoked
+     * Invoked <U>after</U> known host entry located and keys match - by default checks that entry has not been revoked
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param serverKey The presented server {@link PublicKey}
-     * @param entry The {@link KnownHostEntry} value - if {@code null} then no
-     * known matching host entry was found - default will call
-     * {@link #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)}
-     * @return {@code true} if OK to accept the server
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  serverKey     The presented server {@link PublicKey}
+     * @param  entry         The {@link KnownHostEntry} value - if {@code null} then no known matching host entry was
+     *                       found - default will call
+     *                       {@link #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)}
+     * @return               {@code true} if OK to accept the server
      */
-    protected boolean acceptKnownHostEntry(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, KnownHostEntry entry) {
-        if (entry == null) {    // not really expected, but manage it
+    protected boolean acceptKnownHostEntry(
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, KnownHostEntry entry) {
+        if (entry == null) { // not really expected, but manage it
             return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
         }
 
         if ("revoked".equals(entry.getMarker())) {
             log.debug("acceptKnownHostEntry({})[{}] key={}-{} marked as {}",
-                      clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey), entry.getMarker());
+                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey),
+                    entry.getMarker());
             return false;
         }
 
         if (log.isDebugEnabled()) {
             log.debug("acceptKnownHostEntry({})[{}] matched key={}-{}",
-                      clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
+                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
         }
         return true;
     }
@@ -502,7 +504,7 @@ public class KnownHostsServerKeyVerifier
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("findKnownHostEntry({})[{}] host network identities: {}",
-                      clientSession, remoteAddress, candidates);
+                    clientSession, remoteAddress, candidates);
         }
 
         if (GenericUtils.isEmpty(candidates)) {
@@ -516,36 +518,39 @@ public class KnownHostsServerKeyVerifier
                     if (entry.isHostMatch(host.getHostName(), host.getPort())) {
                         if (debugEnabled) {
                             log.debug("findKnownHostEntry({})[{}] matched host={} for entry={}",
-                                       clientSession, remoteAddress, host, entry);
+                                    clientSession, remoteAddress, host, entry);
                         }
                         return match;
                     }
                 } catch (RuntimeException | Error e) {
                     log.warn("findKnownHostEntry({})[{}] failed ({}) to check host={} for entry={}: {}",
-                             clientSession, remoteAddress, e.getClass().getSimpleName(),
-                             host, entry.getConfigLine(), e.getMessage());
+                            clientSession, remoteAddress, e.getClass().getSimpleName(),
+                            host, entry.getConfigLine(), e.getMessage());
                     if (debugEnabled) {
-                        log.debug("findKnownHostEntry(" + clientSession + ") host=" + host + ", entry=" + entry + " match failure details", e);
+                        log.debug("findKnownHostEntry(" + clientSession + ") host=" + host + ", entry=" + entry
+                                  + " match failure details",
+                                e);
                     }
                 }
             }
         }
 
-        return null;    // no match found
+        return null; // no match found
     }
 
     /**
      * Called if failed to reload known hosts - by default invokes
      * {@link #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)}
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param serverKey The presented server {@link PublicKey}
-     * @param reason The {@link Throwable} that indicates the reload failure
-     * @return {@code true} if accept the server key anyway
-     * @see #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  serverKey     The presented server {@link PublicKey}
+     * @param  reason        The {@link Throwable} that indicates the reload failure
+     * @return               {@code true} if accept the server key anyway
+     * @see                  #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)
      */
-    protected boolean acceptIncompleteHostKeys(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Throwable reason) {
+    protected boolean acceptIncompleteHostKeys(
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Throwable reason) {
         log.warn("Failed ({}) to reload server keys from {}: {}",
                 reason.getClass().getSimpleName(), getPath(), reason.getMessage());
         if (log.isDebugEnabled()) {
@@ -555,21 +560,21 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * Invoked if none of the known hosts matches the current one - by default invokes the delegate.
-     * If the delegate accepts the key, then it is <U>appended</U> to the currently monitored entries
-     * and the file is updated
+     * Invoked if none of the known hosts matches the current one - by default invokes the delegate. If the delegate
+     * accepts the key, then it is <U>appended</U> to the currently monitored entries and the file is updated
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param serverKey The presented server {@link PublicKey}
-     * @return {@code true} if accept the server key
-     * @see #updateKnownHostsFile(ClientSession, SocketAddress, PublicKey, Path, Collection)
-     * @see #handleKnownHostsFileUpdateFailure(ClientSession, SocketAddress, PublicKey, Path, Collection, Throwable)
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  serverKey     The presented server {@link PublicKey}
+     * @return               {@code true} if accept the server key
+     * @see                  #updateKnownHostsFile(ClientSession, SocketAddress, PublicKey, Path, Collection)
+     * @see                  #handleKnownHostsFileUpdateFailure(ClientSession, SocketAddress, PublicKey, Path,
+     *                       Collection, Throwable)
      */
     protected boolean acceptUnknownHostKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         if (log.isDebugEnabled()) {
             log.debug("acceptUnknownHostKey({}) host={}, key={}",
-                  clientSession, remoteAddress, KeyUtils.getFingerPrint(serverKey));
+                    clientSession, remoteAddress, KeyUtils.getFingerPrint(serverKey));
         }
 
         if (delegate.verifyServerKey(clientSession, remoteAddress, serverKey)) {
@@ -589,55 +594,57 @@ public class KnownHostsServerKeyVerifier
 
     /**
      * Invoked when {@link #updateKnownHostsFile(ClientSession, SocketAddress, PublicKey, Path, Collection)} fails - by
-     * default just issues a warning. <B>Note:</B> there is a chance that the file is now corrupted and
-     * cannot be re-used, so we provide a way to recover it via overriding this method and using the cached
-     * entries to re-created it.
+     * default just issues a warning. <B>Note:</B> there is a chance that the file is now corrupted and cannot be
+     * re-used, so we provide a way to recover it via overriding this method and using the cached entries to re-created
+     * it.
      *
      * @param clientSession The {@link ClientSession}
      * @param remoteAddress The remote host address
-     * @param serverKey The server {@link PublicKey} that was attempted to update
-     * @param file The file {@link Path} to be updated
-     * @param knownHosts The currently known entries (may be {@code null}/empty
-     * @param reason The failure reason
+     * @param serverKey     The server {@link PublicKey} that was attempted to update
+     * @param file          The file {@link Path} to be updated
+     * @param knownHosts    The currently known entries (may be {@code null}/empty
+     * @param reason        The failure reason
      */
-    protected void handleKnownHostsFileUpdateFailure(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
+    protected void handleKnownHostsFileUpdateFailure(
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
             Path file, Collection<HostEntryPair> knownHosts, Throwable reason) {
         log.warn("handleKnownHostsFileUpdateFailure({})[{}] failed ({}) to update key={}-{} in {}: {}",
-             clientSession, remoteAddress, reason.getClass().getSimpleName(),
-             KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey),
-             file, reason.getMessage());
+                clientSession, remoteAddress, reason.getClass().getSimpleName(),
+                KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey),
+                file, reason.getMessage());
         if (log.isDebugEnabled()) {
             log.debug("handleKnownHostsFileUpdateFailure(" + clientSession + ")[" + remoteAddress + "]"
-                    + " file update failure details", reason);
+                      + " file update failure details",
+                    reason);
         }
     }
 
     /**
-     * Invoked if a new previously unknown host key has been accepted - by default
-     * appends a new entry at the end of the currently monitored known hosts file
+     * Invoked if a new previously unknown host key has been accepted - by default appends a new entry at the end of the
+     * currently monitored known hosts file
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param serverKey The server {@link PublicKey} that to update
-     * @param file The file {@link Path} to be updated
-     * @param knownHosts The currently cached entries (may be {@code null}/empty)
-     * @return The generated {@link KnownHostEntry} or {@code null} if nothing updated.
-     * If anything updated then the file will be re-loaded on next verification
-     * regardless of which server is verified
-     * @throws Exception If failed to update the file - <B>Note:</B> in this case
-     * the file may be corrupted so {@link #handleKnownHostsFileUpdateFailure(ClientSession, SocketAddress, PublicKey, Path, Collection, Throwable)}
-     * will be called in order to enable recovery of its data
-     * @see #resetReloadAttributes()
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  serverKey     The server {@link PublicKey} that to update
+     * @param  file          The file {@link Path} to be updated
+     * @param  knownHosts    The currently cached entries (may be {@code null}/empty)
+     * @return               The generated {@link KnownHostEntry} or {@code null} if nothing updated. If anything
+     *                       updated then the file will be re-loaded on next verification regardless of which server is
+     *                       verified
+     * @throws Exception     If failed to update the file - <B>Note:</B> in this case the file may be corrupted so
+     *                       {@link #handleKnownHostsFileUpdateFailure(ClientSession, SocketAddress, PublicKey, Path, Collection, Throwable)}
+     *                       will be called in order to enable recovery of its data
+     * @see                  #resetReloadAttributes()
      */
     protected KnownHostEntry updateKnownHostsFile(
             ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
             Path file, Collection<HostEntryPair> knownHosts)
-                throws Exception {
+            throws Exception {
         KnownHostEntry entry = prepareKnownHostEntry(clientSession, remoteAddress, serverKey);
         if (entry == null) {
             if (log.isDebugEnabled()) {
                 log.debug("updateKnownHostsFile({})[{}] no entry generated for key={}",
-                      clientSession, remoteAddress, KeyUtils.getFingerPrint(serverKey));
+                        clientSession, remoteAddress, KeyUtils.getFingerPrint(serverKey));
             }
 
             return null;
@@ -652,11 +659,12 @@ public class KnownHostsServerKeyVerifier
                     ? Files.newOutputStream(file, StandardOpenOption.APPEND)
                     : Files.newOutputStream(file)) {
                 if (reuseExisting) {
-                    output.write(eolBytes);    // separate from previous lines
+                    output.write(eolBytes); // separate from previous lines
                 }
 
                 output.write(lineData);
-                output.write(eolBytes); // add another separator for trailing lines - in case regular SSH client appends to it
+                output.write(eolBytes); // add another separator for trailing lines - in case regular SSH client appends
+                                        // to it
             }
         }
 
@@ -668,23 +676,21 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * Invoked by {@link #updateKnownHostsFile(ClientSession, SocketAddress, PublicKey, Path, Collection)}
-     * in order to generate the host entry to be written
+     * Invoked by {@link #updateKnownHostsFile(ClientSession, SocketAddress, PublicKey, Path, Collection)} in order to
+     * generate the host entry to be written
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param serverKey The server {@link PublicKey} that was attempted to update
-     * @return The {@link KnownHostEntry} to use - if {@code null} then entry is
-     * not updated in the file
-     * @throws Exception If failed to generate the entry - e.g. failed to hash
-     * @see #resolveHostNetworkIdentities(ClientSession, SocketAddress)
-     * @see KnownHostEntry#getConfigLine()
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  serverKey     The server {@link PublicKey} that was attempted to update
+     * @return               The {@link KnownHostEntry} to use - if {@code null} then entry is not updated in the file
+     * @throws Exception     If failed to generate the entry - e.g. failed to hash
+     * @see                  #resolveHostNetworkIdentities(ClientSession, SocketAddress)
+     * @see                  KnownHostEntry#getConfigLine()
      */
     protected KnownHostEntry prepareKnownHostEntry(
             ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey)
-                throws Exception {
-        Collection<SshdSocketAddress> patterns =
-            resolveHostNetworkIdentities(clientSession, remoteAddress);
+            throws Exception {
+        Collection<SshdSocketAddress> patterns = resolveHostNetworkIdentities(clientSession, remoteAddress);
         if (GenericUtils.isEmpty(patterns)) {
             return null;
         }
@@ -696,14 +702,11 @@ public class KnownHostsServerKeyVerifier
                 sb.append(',');
             }
 
-            NamedFactory<Mac> digester =
-                getHostValueDigester(clientSession, remoteAddress, hostIdentity);
+            NamedFactory<Mac> digester = getHostValueDigester(clientSession, remoteAddress, hostIdentity);
             if (digester != null) {
                 if (rnd == null) {
-                    FactoryManager manager =
-                        Objects.requireNonNull(clientSession.getFactoryManager(), "No factory manager");
-                    Factory<? extends Random> factory =
-                        Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
+                    FactoryManager manager = Objects.requireNonNull(clientSession.getFactoryManager(), "No factory manager");
+                    Factory<? extends Random> factory = Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
                     rnd = Objects.requireNonNull(factory.create(), "No randomizer created");
                 }
 
@@ -712,8 +715,7 @@ public class KnownHostsServerKeyVerifier
                 byte[] salt = new byte[blockSize];
                 rnd.fill(salt);
 
-                byte[] digestValue =
-                    KnownHostHashValue.calculateHashValue(
+                byte[] digestValue = KnownHostHashValue.calculateHashValue(
                         hostIdentity.getHostName(), hostIdentity.getPort(), mac, salt);
                 KnownHostHashValue.append(sb, digester, salt, digestValue);
             } else {
@@ -726,14 +728,14 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * Invoked by {@link #prepareKnownHostEntry(ClientSession, SocketAddress, PublicKey)}
-     * in order to query whether to use a hashed value instead of a plain one for the
-     * written host name/address - default returns {@code null} - i.e., no hashing
+     * Invoked by {@link #prepareKnownHostEntry(ClientSession, SocketAddress, PublicKey)} in order to query whether to
+     * use a hashed value instead of a plain one for the written host name/address - default returns {@code null} -
+     * i.e., no hashing
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @param hostIdentity The entry's host name/address
-     * @return The digester {@link NamedFactory} - {@code null} if no hashing is to be made
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @param  hostIdentity  The entry's host name/address
+     * @return               The digester {@link NamedFactory} - {@code null} if no hashing is to be made
      */
     protected NamedFactory<Mac> getHostValueDigester(
             ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
@@ -741,21 +743,22 @@ public class KnownHostsServerKeyVerifier
     }
 
     /**
-     * Retrieves the host identities to be used when matching or updating an entry
-     * for it - by default returns the reported remote address and the original
-     * connection target host name/address (if same, then only one value is returned)
+     * Retrieves the host identities to be used when matching or updating an entry for it - by default returns the
+     * reported remote address and the original connection target host name/address (if same, then only one value is
+     * returned)
      *
-     * @param clientSession The {@link ClientSession}
-     * @param remoteAddress The remote host address
-     * @return A {@link Collection} of the {@code InetSocketAddress}-es to use - if
-     * {@code null}/empty then ignored (i.e., no matching is done or no entry is generated)
-     * @see ClientSession#getConnectAddress()
-     * @see SshdSocketAddress#toSshdSocketAddress(SocketAddress)
+     * @param  clientSession The {@link ClientSession}
+     * @param  remoteAddress The remote host address
+     * @return               A {@link Collection} of the {@code InetSocketAddress}-es to use - if {@code null}/empty
+     *                       then ignored (i.e., no matching is done or no entry is generated)
+     * @see                  ClientSession#getConnectAddress()
+     * @see                  SshdSocketAddress#toSshdSocketAddress(SocketAddress)
      */
-    protected Collection<SshdSocketAddress> resolveHostNetworkIdentities(ClientSession clientSession, SocketAddress remoteAddress) {
+    protected Collection<SshdSocketAddress> resolveHostNetworkIdentities(
+            ClientSession clientSession, SocketAddress remoteAddress) {
         /*
-         * NOTE !!! we do not resolve the fully-qualified name to avoid long DNS timeouts.
-         * Instead we use the reported peer address and the original connection target host
+         * NOTE !!! we do not resolve the fully-qualified name to avoid long DNS timeouts. Instead we use the reported
+         * peer address and the original connection target host
          */
         Collection<SshdSocketAddress> candidates = new TreeSet<>(SshdSocketAddress.BY_HOST_AND_PORT);
         candidates.add(SshdSocketAddress.toSshdSocketAddress(remoteAddress));
@@ -765,9 +768,10 @@ public class KnownHostsServerKeyVerifier
     }
 
     @Override
-    public boolean acceptModifiedServerKey(ClientSession clientSession, SocketAddress remoteAddress,
+    public boolean acceptModifiedServerKey(
+            ClientSession clientSession, SocketAddress remoteAddress,
             KnownHostEntry entry, PublicKey expected, PublicKey actual)
-                    throws Exception {
+            throws Exception {
         ModifiedServerKeyAcceptor acceptor = getModifiedServerKeyAcceptor();
         if (acceptor != null) {
             return acceptor.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);

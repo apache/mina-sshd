@@ -48,11 +48,11 @@ import org.junit.runners.MethodSorters;
 public class SignatureRSASHA1Test extends JUnitTestSupport {
     private static final Base64.Decoder B64_DECODER = Base64.getDecoder();
     @SuppressWarnings("checkstyle:linelength")
-    private static final byte[] TEST_MSG =
-        B64_DECODER.decode("AAAAFPHgK1MeV9zNnok3pwNJhCd8SONqMgAAAAlidWlsZHVzZXIAAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAAAdzc2gtcnNhAAABFQAAAAdzc2gtcnNhAAAAASMAAAEBAMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
+    private static final byte[] TEST_MSG = B64_DECODER.decode(
+            "AAAAFPHgK1MeV9zNnok3pwNJhCd8SONqMgAAAAlidWlsZHVzZXIAAAAOc3NoLWNvbm5lY3Rpb24AAAAJcHVibGlja2V5AQAAAAdzc2gtcnNhAAABFQAAAAdzc2gtcnNhAAAAASMAAAEBAMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
     @SuppressWarnings("checkstyle:linelength")
-    private static final byte[] TEST_SIGNATURE =
-        B64_DECODER.decode("AAAAB3NzaC1yc2EAAAD/+Ntnf4qfr2J1voDS6I+u3VRjtMn+LdWJsAZfkLDxRkK1rQxP7QAjLdNqpT4CkWHp8dtoTGFlBFt6NieNJCMTA2KSOxJMZKsX7e/lHkh7C+vhQvJ9eLTKWjCxSFUrcM0NvFhmwbRCffwXSHvAKak4wbmofxQMpd+G4jZkNMz5kGpmeICBcNjRLPb7oXzuGr/g4x/3ge5Qaawqrg/gcZr/sKN6SdE8SszgKYO0SB320N4gcUoShVdLYr9uwdJ+kJoobfkUK6Or171JCctP/cu2nM79lDqVnJw/2jOG8OnTc8zRDXAh0RKoR5rOU8cOHm0Ls2MATsFdnyRU5FGUxqZ+");
+    private static final byte[] TEST_SIGNATURE = B64_DECODER.decode(
+            "AAAAB3NzaC1yc2EAAAD/+Ntnf4qfr2J1voDS6I+u3VRjtMn+LdWJsAZfkLDxRkK1rQxP7QAjLdNqpT4CkWHp8dtoTGFlBFt6NieNJCMTA2KSOxJMZKsX7e/lHkh7C+vhQvJ9eLTKWjCxSFUrcM0NvFhmwbRCffwXSHvAKak4wbmofxQMpd+G4jZkNMz5kGpmeICBcNjRLPb7oXzuGr/g4x/3ge5Qaawqrg/gcZr/sKN6SdE8SszgKYO0SB320N4gcUoShVdLYr9uwdJ+kJoobfkUK6Or171JCctP/cu2nM79lDqVnJw/2jOG8OnTc8zRDXAh0RKoR5rOU8cOHm0Ls2MATsFdnyRU5FGUxqZ+");
     private static PublicKey testKey;
 
     public SignatureRSASHA1Test() {
@@ -63,12 +63,13 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
     public static void initializeTestKey() throws GeneralSecurityException {
         byte[] exp = B64_DECODER.decode("Iw==");
         @SuppressWarnings("checkstyle:linelength")
-        byte[] mod = B64_DECODER.decode("AMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
+        byte[] mod = B64_DECODER.decode(
+                "AMs9HO/NH/Now+6fSnESebaG4wzaYQWA1b/q1TGV1wHNtCg9fGFGVSKs0VxKF4cfVyrSLtgLjnlXQTn+Lm7xiYKGbBbsTQWOqEDaBVBsRbAkxIkpuvr6/EBxwrtDbKmSQYTJZVJSD2bZRYjGsR9gpZXPorOOKFd5EPCMHXsqnhp2hidTGH7cK6RuLk7MNnPISsY0Nbx8/ZvikiPROGcoTZ8bzUv4IaLr3veW6epSeQem8tJqhnrpTHhbLU99zf045M0Gsnk/azjjlBM+qrHZ5FNdC1kowJnLtf2Oy/rUQNpkGJtcBPT8xvreV0wLsn9t3hSxzsc0+VkDNTQRlfU+o3M=");
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.RSA_ALGORITHM);
         testKey = kf.generatePublic(new RSAPublicKeySpec(new BigInteger(mod), new BigInteger(exp)));
     }
 
-    @Test   // see SSHD-642
+    @Test // see SSHD-642
     public void testLeadingZeroesBC() throws Throwable {
         testLeadingZeroes(new Factory<SignatureRSA>() {
             @Override
@@ -77,10 +78,9 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
                     @Override
                     protected java.security.Signature doInitSignature(
                             SessionContext session, String algo, Key key, boolean forSigning)
-                                throws GeneralSecurityException {
+                            throws GeneralSecurityException {
                         assertFalse("Signature not initialized for verification", forSigning);
-                        java.security.Signature signature =
-                            super.doInitSignature(session, algo, key, forSigning);
+                        java.security.Signature signature = super.doInitSignature(session, algo, key, forSigning);
                         if (SecurityUtils.isBouncyCastleRegistered()) {
                             Provider provider = signature.getProvider();
                             String name = provider.getName();
@@ -93,16 +93,15 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         });
     }
 
-    @Test   // see SSHD-642
+    @Test // see SSHD-642
     public void testLeadingZeroesJCE() throws Throwable {
         testLeadingZeroes(() -> new SignatureRSASHA1() {
             @Override
             protected java.security.Signature doInitSignature(
                     SessionContext session, String algo, Key key, boolean forSigning)
-                        throws GeneralSecurityException {
+                    throws GeneralSecurityException {
                 assertFalse("Signature not initialized for verification", forSigning);
-                java.security.Signature signature =
-                    java.security.Signature.getInstance(algo);
+                java.security.Signature signature = java.security.Signature.getInstance(algo);
                 Provider provider = signature.getProvider();
                 String name = provider.getName();
                 assertNotEquals("BC provider used although not required", SecurityUtils.BOUNCY_CASTLE, name);

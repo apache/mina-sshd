@@ -51,12 +51,10 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough
     public static final String BEGIN_MARKER = "BEGIN DSA PRIVATE KEY";
-    public static final List<String> BEGINNERS =
-        Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
 
     public static final String END_MARKER = "END DSA PRIVATE KEY";
-    public static final List<String> ENDERS =
-        Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</A>
@@ -75,14 +73,18 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
             String beginMarker, String endMarker,
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         KeyPair kp = decodeDSSKeyPair(SecurityUtils.getKeyFactory(KeyUtils.DSS_ALGORITHM), stream, false);
         return Collections.singletonList(kp);
     }
 
     /**
-     * <p>The ASN.1 syntax for the private key:</P>
-     * <pre><code>
+     * <p>
+     * The ASN.1 syntax for the private key:
+     * </P>
+     * 
+     * <pre>
+     * <code>
      * DSAPrivateKey ::= SEQUENCE {
      *      version Version,
      *      p       INTEGER,
@@ -91,13 +93,15 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
      *      y       INTEGER,
      *      x       INTEGER
      * }
-     * </code></pre>
-     * @param kf The {@link KeyFactory} To use to generate the keys
-     * @param s The {@link InputStream} containing the encoded bytes
-     * @param okToClose <code>true</code> if the method may close the input
-     * stream regardless of success or failure
-     * @return The recovered {@link KeyPair}
-     * @throws IOException If failed to read or decode the bytes
+     * </code>
+     * </pre>
+     * 
+     * @param  kf                       The {@link KeyFactory} To use to generate the keys
+     * @param  s                        The {@link InputStream} containing the encoded bytes
+     * @param  okToClose                <code>true</code> if the method may close the input stream regardless of success
+     *                                  or failure
+     * @return                          The recovered {@link KeyPair}
+     * @throws IOException              If failed to read or decode the bytes
      * @throws GeneralSecurityException If failed to generate the keys
      */
     public static KeyPair decodeDSSKeyPair(KeyFactory kf, InputStream s, boolean okToClose)

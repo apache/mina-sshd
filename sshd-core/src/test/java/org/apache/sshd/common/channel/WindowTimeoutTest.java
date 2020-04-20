@@ -38,7 +38,7 @@ import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-565">SSHD-565</A>
+ * @see    <A HREF="https://issues.apache.org/jira/browse/SSHD-565">SSHD-565</A>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })

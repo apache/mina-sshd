@@ -35,11 +35,11 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
-     * @param session The {@link ClientSession}
-     * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
-     * registered {@link ScpTransferEventListener} and {@link ScpFileOpener} if any
-     * @see #setScpFileOpener(ScpFileOpener)
-     * @see #setScpTransferEventListener(ScpTransferEventListener)
+     * @param  session The {@link ClientSession}
+     * @return         An {@link ScpClient} instance. <B>Note:</B> uses the currently registered
+     *                 {@link ScpTransferEventListener} and {@link ScpFileOpener} if any
+     * @see            #setScpFileOpener(ScpFileOpener)
+     * @see            #setScpTransferEventListener(ScpTransferEventListener)
      */
     default ScpClient createScpClient(ClientSession session) {
         return createScpClient(session, getScpFileOpener(), getScpTransferEventListener());
@@ -48,12 +48,12 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
-     * @param session The {@link ClientSession}
-     * @param listener A {@link ScpTransferEventListener} that can be used
-     * to receive information about the SCP operations - may be {@code null}
-     * to indicate no more events are required. <B>Note:</B> this listener
-     * is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
-     * @return An {@link ScpClient} instance
+     * @param  session  The {@link ClientSession}
+     * @param  listener A {@link ScpTransferEventListener} that can be used to receive information about the SCP
+     *                  operations - may be {@code null} to indicate no more events are required. <B>Note:</B> this
+     *                  listener is used <U>instead</U> of any listener set via
+     *                  {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     * @return          An {@link ScpClient} instance
      */
     default ScpClient createScpClient(ClientSession session, ScpTransferEventListener listener) {
         return createScpClient(session, getScpFileOpener(), listener);
@@ -62,12 +62,11 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
-     * @param session The {@link ClientSession}
-     * @param opener The {@link ScpFileOpener} to use to control how local files
-     * are read/written. If {@code null} then a default opener is used.
-     * <B>Note:</B> this opener is used <U>instead</U> of any instance
-     * set via {@link #setScpFileOpener(ScpFileOpener)}
-     * @return An {@link ScpClient} instance
+     * @param  session The {@link ClientSession}
+     * @param  opener  The {@link ScpFileOpener} to use to control how local files are read/written. If {@code null}
+     *                 then a default opener is used. <B>Note:</B> this opener is used <U>instead</U> of any instance
+     *                 set via {@link #setScpFileOpener(ScpFileOpener)}
+     * @return         An {@link ScpClient} instance
      */
     default ScpClient createScpClient(ClientSession session, ScpFileOpener opener) {
         return createScpClient(session, opener, getScpTransferEventListener());
@@ -76,31 +75,28 @@ public interface ScpClientCreator extends ScpFileOpenerHolder {
     /**
      * Create an SCP client from this session.
      *
-     * @param session  The {@link ClientSession}
-     * @param opener   The {@link ScpFileOpener} to use to control how local files
-     *                 are read/written. If {@code null} then a default opener is used.
-     *                 <B>Note:</B> this opener is used <U>instead</U> of any instance
-     *                 set via {@link #setScpFileOpener(ScpFileOpener)}
-     * @param listener A {@link ScpTransferEventListener} that can be used
-     *                 to receive information about the SCP operations - may be {@code null}
-     *                 to indicate no more events are required. <B>Note:</B> this listener
-     *                 is used <U>instead</U> of any listener set via
-     *                 {@link #setScpTransferEventListener(ScpTransferEventListener)}
-     * @return An {@link ScpClient} instance
+     * @param  session  The {@link ClientSession}
+     * @param  opener   The {@link ScpFileOpener} to use to control how local files are read/written. If {@code null}
+     *                  then a default opener is used. <B>Note:</B> this opener is used <U>instead</U> of any instance
+     *                  set via {@link #setScpFileOpener(ScpFileOpener)}
+     * @param  listener A {@link ScpTransferEventListener} that can be used to receive information about the SCP
+     *                  operations - may be {@code null} to indicate no more events are required. <B>Note:</B> this
+     *                  listener is used <U>instead</U> of any listener set via
+     *                  {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     * @return          An {@link ScpClient} instance
      */
     ScpClient createScpClient(ClientSession session, ScpFileOpener opener, ScpTransferEventListener listener);
 
     /**
      * @return The last {@link ScpTransferEventListener} set via
-     * {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     *         {@link #setScpTransferEventListener(ScpTransferEventListener)}
      */
     ScpTransferEventListener getScpTransferEventListener();
 
     /**
-     * @param listener A default {@link ScpTransferEventListener} that can be used
-     *                 to receive information about the SCP operations - may be {@code null}
-     *                 to indicate no more events are required
-     * @see #createScpClient(ClientSession, ScpTransferEventListener)
+     * @param listener A default {@link ScpTransferEventListener} that can be used to receive information about the SCP
+     *                 operations - may be {@code null} to indicate no more events are required
+     * @see            #createScpClient(ClientSession, ScpTransferEventListener)
      */
     void setScpTransferEventListener(ScpTransferEventListener listener);
 }

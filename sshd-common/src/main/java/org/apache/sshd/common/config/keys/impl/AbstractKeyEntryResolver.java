@@ -29,13 +29,13 @@ import java.util.Collection;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 
 /**
- * @param <PUB> Type of {@link PublicKey}
- * @param <PRV> Type of {@link PrivateKey}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey}
+ * @param  <PRV> Type of {@link PrivateKey}
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
-            extends AbstractIdentityResourceLoader<PUB, PRV>
-            implements KeyEntryResolver<PUB, PRV>  {
+        extends AbstractIdentityResourceLoader<PUB, PRV>
+        implements KeyEntryResolver<PUB, PRV> {
     protected AbstractKeyEntryResolver(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
         super(pubType, prvType, names);
     }

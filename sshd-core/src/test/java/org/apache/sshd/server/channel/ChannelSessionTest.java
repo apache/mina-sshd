@@ -86,11 +86,11 @@ public class ChannelSessionTest extends BaseTestSupport {
                     invertedIn.flush();
 
                     long waitStart = System.currentTimeMillis();
-                    Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
+                    Collection<ClientChannelEvent> result
+                            = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
                     long waitEnd = System.currentTimeMillis();
                     assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
-                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                            result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
 
                     byte[] b = new byte[1024];
                     InputStream invertedOut = channel.getInvertedOut();
@@ -112,26 +112,25 @@ public class ChannelSessionTest extends BaseTestSupport {
         buffer.putInt(1234);
 
         try (ChannelSession channelSession = new ChannelSession() {
-                {
-                    Window wRemote = getRemoteWindow();
-                    wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
-                }
+            {
+                Window wRemote = getRemoteWindow();
+                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
+            }
         }) {
             AtomicBoolean expanded = new AtomicBoolean(false);
-            channelSession.asyncOut =
-                new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
-                    @Override
-                    public void onWindowExpanded() throws IOException {
-                        expanded.set(true);
-                        super.onWindowExpanded();
-                    }
-                };
+            channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
+                @Override
+                public void onWindowExpanded() throws IOException {
+                    expanded.set(true);
+                    super.onWindowExpanded();
+                }
+            };
             channelSession.handleWindowAdjust(buffer);
             assertTrue("Expanded ?", expanded.get());
         }
     }
 
-    @Test   // see SSHD-652
+    @Test // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         try (ChannelSession session = new ChannelSession() {

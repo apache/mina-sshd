@@ -42,7 +42,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class RSASignatureVariantsTest extends SignatureVariantTestSupport {
     private static KeyPair kp;
@@ -59,9 +59,9 @@ public class RSASignatureVariantsTest extends SignatureVariantTestSupport {
     @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(
-            Arrays.asList(
-                BuiltinSignatures.rsa,
-                BuiltinSignatures.rsaSHA256,
-                BuiltinSignatures.rsaSHA512));
+                Arrays.asList(
+                        BuiltinSignatures.rsa,
+                        BuiltinSignatures.rsaSHA256,
+                        BuiltinSignatures.rsaSHA512));
     }
 }

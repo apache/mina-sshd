@@ -24,8 +24,8 @@ import java.util.function.Supplier;
 /**
  * A generic builder interface
  *
- * @param <T> Type of object being built
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of object being built
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface ObjectBuilder<T> extends Supplier<T> {

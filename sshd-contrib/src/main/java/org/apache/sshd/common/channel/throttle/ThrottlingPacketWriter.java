@@ -39,11 +39,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * A {@link PacketWriter} delegate implementation that &quot;throttles&quot; the
- * output by having a limit on the outstanding packets that have not been sent
- * yet. The {@link #writePacket(Buffer) writePacket} implementation make sure
- * that the limit has not been exceeded - if so, then it waits until pending
- * packets have been successfully sent before sending the next packet.
+ * A {@link PacketWriter} delegate implementation that &quot;throttles&quot; the output by having a limit on the
+ * outstanding packets that have not been sent yet. The {@link #writePacket(Buffer) writePacket} implementation make
+ * sure that the limit has not been exceeded - if so, then it waits until pending packets have been successfully sent
+ * before sending the next packet.
  *
  * <B>Note:</B> {@link #close() closing} the throttler does not close the delegate writer
  *
@@ -75,11 +74,11 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
 
     public ThrottlingPacketWriter(PacketWriter delegate, PropertyResolver resolver) {
         this(delegate, PropertyResolverUtils.getIntProperty(resolver, MAX_PEND_COUNT, DEFAULT_PEND_COUNT_MAX),
-            TimeUnit.SECONDS, PropertyResolverUtils.getLongProperty(resolver, WAIT_TIME_PROP, DEFAULT_MAX_WAIT_TIME));
+             TimeUnit.SECONDS, PropertyResolverUtils.getLongProperty(resolver, WAIT_TIME_PROP, DEFAULT_MAX_WAIT_TIME));
     }
 
     public ThrottlingPacketWriter(
-            PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
+                                  PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
         this(delegate, maxPendingPackets, waitUnit.toMillis(waitCount));
     }
 
@@ -128,7 +127,8 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
                 try {
                     availableCount.wait(remainWait);
                 } catch (InterruptedException e) {
-                    throw new InterruptedIOException("Interrupted after " + (System.currentTimeMillis() - waitStart) + " msec.");
+                    throw new InterruptedIOException(
+                            "Interrupted after " + (System.currentTimeMillis() - waitStart) + " msec.");
                 }
                 long waitDuration = System.currentTimeMillis() - waitStart;
                 if (waitDuration <= 0L) {
@@ -172,12 +172,14 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
                 }
 
                 /*
-                 * If non-positive it may be that close has been signaled or mis-count - in any case, don't take any chances
+                 * If non-positive it may be that close has been signaled or mis-count - in any case, don't take any
+                 * chances
                  */
                 log.error("operationComplete({}) invalid available count: {}", this, available);
             } else {
                 Throwable err = future.getException();
-                log.error("operationComplete({}) Error ({}) signalled: {}", this, err.getClass().getSimpleName(), err.getMessage());
+                log.error("operationComplete({}) Error ({}) signalled: {}", this, err.getClass().getSimpleName(),
+                        err.getMessage());
             }
         } else {
             log.error("operationComplete({}) Incomplete future signalled: {}", this, future);
@@ -209,10 +211,10 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[delegate=" + getDelegate()
-            + ", maxWait=" + getMaxWait()
-            + ", maxPending=" + getMaxPendingPackets()
-            + ", available=" + getAvailablePacketsCount()
-            + "]";
+               + "[delegate=" + getDelegate()
+               + ", maxWait=" + getMaxWait()
+               + ", maxPending=" + getMaxPendingPackets()
+               + ", available=" + getAvailablePacketsCount()
+               + "]";
     }
 }
