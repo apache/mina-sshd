@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
@@ -107,9 +107,39 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         if (total > 0) {
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();
-            long length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
-            if (log.isTraceEnabled()) {
-                log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}", this, resume, length, total);
+            long length;
+            if (remoteWindow.getSize() < total && total <= remoteWindow.getPacketSize()) {
+                // do not chunk when the window is smaller than the packet size
+                length = 0;
+                // do a defensive copy in case the user reuses the buffer
+                IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                pendingWrite.set(f);
+                if (log.isTraceEnabled()) {
+                    log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
+                            this, resume, remoteWindow.getSize());
+                }
+            } else if (total > remoteWindow.getPacketSize()) {
+                if (buffer.rpos() > 0) {
+                    // do a defensive copy in case the user reuses the buffer
+                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                    pendingWrite.set(f);
+                    length = remoteWindow.getPacketSize();
+                    if (log.isTraceEnabled()) {
+                        log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}",
+                                this, resume, length, total);
+                    }
+                    doWriteIfPossible(resume);
+                    return;
+                } else {
+                    length = remoteWindow.getPacketSize();
+                }
+            } else {
+                length = total;
+                if (log.isTraceEnabled()) {
+                    log.trace("doWriteIfPossible({})[resume={}] attempting to write {} bytes", this, resume, length);
+                }
             }
 
             if (length > 0) {
@@ -125,66 +155,12 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                                                        + ") exceeds int boundaries");
                 }
 
-                Session s = channel.getSession();
-                Buffer buf = s.createBuffer(cmd, (int) length + 12);
-                buf.putInt(channel.getRecipient());
-                if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-                    buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
-                }
-                buf.putInt(length);
-                buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
-                buffer.rpos(buffer.rpos() + (int) length);
+                Buffer buf = createSendBuffer(buffer, channel, length);
                 remoteWindow.consume(length);
 
                 try {
-                    ChannelAsyncOutputStream stream = this;
                     IoWriteFuture writeFuture = packetWriter.writePacket(buf);
-                    writeFuture.addListener(new SshFutureListener<IoWriteFuture>() {
-                        @Override
-                        public void operationComplete(IoWriteFuture f) {
-                            if (f.isWritten()) {
-                                handleOperationCompleted();
-                            } else {
-                                handleOperationFailed(f.getException());
-                            }
-                        }
-
-                        @SuppressWarnings("synthetic-access")
-                        private void handleOperationCompleted() {
-                            if (total > length) {
-                                if (log.isTraceEnabled()) {
-                                    log.trace("doWriteIfPossible({}) completed write of {} out of {}", stream, length, total);
-                                }
-                                doWriteIfPossible(false);
-                            } else {
-                                boolean nullified = pendingWrite.compareAndSet(future, null);
-                                if (log.isTraceEnabled()) {
-                                    log.trace("doWriteIfPossible({}) completed write len={}, more={}",
-                                            stream, total, !nullified);
-                                }
-                                future.setValue(Boolean.TRUE);
-                            }
-                        }
-
-                        @SuppressWarnings("synthetic-access")
-                        private void handleOperationFailed(Throwable reason) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("doWriteIfPossible({}) failed ({}) to complete write of {} out of {}: {}",
-                                        stream, reason.getClass().getSimpleName(), length, total, reason.getMessage());
-                            }
-
-                            if (log.isTraceEnabled()) {
-                                log.trace("doWriteIfPossible(" + this + ") write failure details", reason);
-                            }
-
-                            boolean nullified = pendingWrite.compareAndSet(future, null);
-                            if (log.isTraceEnabled()) {
-                                log.trace("doWriteIfPossible({}) failed write len={}, more={}",
-                                        stream, total, !nullified);
-                            }
-                            future.setValue(reason);
-                        }
-                    });
+                    writeFuture.addListener(f -> onWritten(future, total, length, f));
                 } catch (IOException e) {
                     future.setValue(e);
                 }
@@ -200,6 +176,53 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
             future.setValue(Boolean.TRUE);
         }
+    }
+
+    protected void onWritten(IoWriteFutureImpl future, int total, long length, IoWriteFuture f) {
+        if (f.isWritten()) {
+            if (total > length) {
+                if (log.isTraceEnabled()) {
+                    log.trace("onWritten({}) completed write of {} out of {}",
+                            this, length, total);
+                }
+                doWriteIfPossible(false);
+            } else {
+                boolean nullified = pendingWrite.compareAndSet(future, null);
+                if (log.isTraceEnabled()) {
+                    log.trace("onWritten({}) completed write len={}, more={}",
+                            this, total, !nullified);
+                }
+                future.setValue(Boolean.TRUE);
+            }
+        } else {
+            Throwable reason = f.getException();
+            if (log.isDebugEnabled()) {
+                log.debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
+                        this, reason.getClass().getSimpleName(), length, total, reason.getMessage());
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("onWritten(" + this + ") write failure details", reason);
+            }
+            boolean nullified = pendingWrite.compareAndSet(future, null);
+            if (log.isTraceEnabled()) {
+                log.trace("onWritten({}) failed write len={}, more={}",
+                        this, total, !nullified);
+            }
+            future.setValue(reason);
+        }
+    }
+
+    protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
+        Session s = channel.getSession();
+        Buffer buf = s.createBuffer(cmd, (int) length + 12);
+        buf.putInt(channel.getRecipient());
+        if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
+            buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
+        }
+        buf.putInt(length);
+        buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
+        buffer.rpos(buffer.rpos() + (int) length);
+        return buf;
     }
 
     @Override

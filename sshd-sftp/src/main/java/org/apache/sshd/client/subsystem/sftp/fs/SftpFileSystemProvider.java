@@ -74,8 +74,11 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.SftpClientFactory;
+import org.apache.sshd.client.subsystem.sftp.SftpRemotePathChannel;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
+import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
@@ -482,7 +485,33 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             modes = EnumSet.of(SftpClient.OpenMode.Read, SftpClient.OpenMode.Write);
         }
         // TODO: process file attributes
-        return new SftpFileSystemChannel(toSftpPath(path), modes);
+        SftpPath p = toSftpPath(path);
+        return new SftpRemotePathChannel(p.toString(), p.getFileSystem().getClient(), true, modes);
+    }
+
+    @Override
+    public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
+        Collection<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(Arrays.asList(options));
+        if (modes.isEmpty()) {
+            modes = EnumSet.of(SftpClient.OpenMode.Read);
+        }
+        SftpPath p = toSftpPath(path);
+        return p.getFileSystem().getClient().read(p.toString(), modes);
+    }
+
+    @Override
+    public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
+        Set<SftpClient.OpenMode> modes = SftpClient.OpenMode.fromOpenOptions(Arrays.asList(options));
+        if (modes.contains(OpenMode.Read)) {
+            throw new IllegalArgumentException("READ not allowed");
+        }
+        if (modes.isEmpty()) {
+            modes = EnumSet.of(OpenMode.Create, OpenMode.Truncate, OpenMode.Write);
+        } else {
+            modes.add(OpenMode.Write);
+        }
+        SftpPath p = toSftpPath(path);
+        return p.getFileSystem().getClient().write(p.toString(), modes);
     }
 
     @Override
@@ -591,9 +620,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (attrs.isDirectory()) {
             createDirectory(target);
         } else {
-            try (InputStream in = newInputStream(source);
-                 OutputStream os = newOutputStream(target)) {
-                IoUtils.copy(in, os);
+            CopyFileExtension copyFile = src.getFileSystem().getClient().getExtension(CopyFileExtension.class);
+            if (copyFile.isSupported()) {
+                copyFile.copyFile(source.toString(), target.toString(), false);
+            } else {
+                try (InputStream in = newInputStream(source);
+                     OutputStream os = newOutputStream(target)) {
+                    IoUtils.copy(in, os);
+                }
             }
         }
 

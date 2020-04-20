@@ -557,6 +557,21 @@ public class SftpFileSystem
                         "receive(id=" + id + ") delegate is not a " + RawSftpClient.class.getSimpleName());
             }
         }
+
+        @Override
+        public Buffer receive(int id, long timeout) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("receive(id=" + id + ", timeout=" + timeout + ") client is closed");
+            }
+
+            if (delegate instanceof RawSftpClient) {
+                return ((RawSftpClient) delegate).receive(id, timeout);
+            } else {
+                throw new StreamCorruptedException(
+                        "receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
+                                                   + RawSftpClient.class.getSimpleName());
+            }
+        }
     }
 
     public static class DefaultUserPrincipalLookupService extends UserPrincipalLookupService {
