@@ -131,6 +131,8 @@
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
+
+        <dependency.download.silent>true</dependency.download.silent>
     </properties>
 
     <profiles>
@@ -1239,6 +1241,7 @@
                         </goals>
                         <configuration>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                            <silent>${dependency.download.silent}</silent>
                         </configuration>
                     </execution>
                     <execution>
@@ -1250,6 +1253,7 @@
                         <configuration>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
                             <classifier>javadoc</classifier>
+                            <silent>${dependency.download.silent}</silent>
                         </configuration>
                     </execution>
                 </executions>
