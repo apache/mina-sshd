@@ -19,6 +19,8 @@
 package org.apache.sshd.client.subsystem.sftp.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -783,10 +785,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     @Override
     public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        if (eofSignalled != null) {
-            eofSignalled.set(null);
-        }
-
         if (!isOpen()) {
             throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
         }
@@ -802,9 +800,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     protected int checkData(
             int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        if (eofSignalled != null) {
-            eofSignalled.set(null);
-        }
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
         return checkDataResponse(cmd, response, dstOffset, dst, eofSignalled);
@@ -1277,5 +1272,47 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         buffer.putLong(offset);
         buffer.putLong(length);
         checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
+    }
+
+    @Override
+    public InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+            throw new IllegalArgumentException(
+                    "Insufficient read buffer size: " + bufferSize + ", min.="
+                                               + MIN_READ_BUFFER_SIZE);
+        }
+
+        if (!isOpen()) {
+            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
+        }
+
+        return new SftpInputStreamAsync(this, bufferSize, path, mode);
+    }
+
+    @Override
+    public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
+        int packetSize = (int) getChannel().getRemoteWindow().getPacketSize();
+        return read(path, packetSize, mode);
+    }
+
+    @Override
+    public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+            throw new IllegalArgumentException(
+                    "Insufficient write buffer size: " + bufferSize + ", min.="
+                                               + MIN_WRITE_BUFFER_SIZE);
+        }
+
+        if (!isOpen()) {
+            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
+        }
+
+        return new SftpOutputStreamAsync(this, bufferSize, path, mode);
+    }
+
+    @Override
+    public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
+        int packetSize = (int) getChannel().getRemoteWindow().getPacketSize();
+        return write(path, packetSize, mode);
     }
 }

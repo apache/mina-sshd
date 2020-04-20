@@ -586,21 +586,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             try (SftpClient sftp = createSftpClient(session);
                  InputStream stream = sftp.read(
-                         CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
-                assertFalse("Stream reported mark supported", stream.markSupported());
-                try {
-                    stream.mark(data.length);
-                    fail("Unexpected success to mark the read limit");
-                } catch (UnsupportedOperationException e) {
-                    // expected - ignored
-                }
+                         CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile),
+                         OpenMode.Read)) {
 
                 byte[] expected = new byte[data.length / 4];
-                int readLen = stream.read(expected);
-                assertEquals("Failed to read fully initial data", expected.length, readLen);
+                int readLen = expected.length;
+                System.arraycopy(data, 0, expected, 0, readLen);
 
                 byte[] actual = new byte[readLen];
-                stream.reset();
                 readLen = stream.read(actual);
                 assertEquals("Failed to read fully reset data", actual.length, readLen);
                 assertArrayEquals("Mismatched re-read data contents", expected, actual);
@@ -616,12 +609,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 System.arraycopy(data, expected.length + readLen, expected, 0, expected.length);
                 assertArrayEquals("Mismatched skipped forward data contents", expected, actual);
-
-                skipped = stream.skip(0 - readLen);
-                assertEquals("Mismatched backward skip size", readLen, skipped);
-                readLen = stream.read(actual);
-                assertEquals("Failed to read fully skipped backward data", actual.length, readLen);
-                assertArrayEquals("Mismatched skipped backward data contents", expected, actual);
             }
         }
     }

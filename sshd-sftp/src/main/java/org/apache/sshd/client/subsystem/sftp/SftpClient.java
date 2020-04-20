@@ -80,12 +80,14 @@ public interface SftpClient extends SubsystemClient {
         /**
          * The {@link Set} of {@link OpenOption}-s supported by {@link #fromOpenOptions(Collection)}
          */
-        public static final Set<OpenOption> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
-                EnumSet.of(
-                        StandardOpenOption.READ, StandardOpenOption.APPEND,
-                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW,
-                        StandardOpenOption.SPARSE));
+        public static final Set<OpenOption> SUPPORTED_OPTIONS = Collections.unmodifiableSet(EnumSet.of(
+                StandardOpenOption.READ,
+                StandardOpenOption.APPEND,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.SPARSE));
 
         /**
          * Converts {@link StandardOpenOption}-s into {@link OpenMode}-s
@@ -464,17 +466,9 @@ public interface SftpClient extends SubsystemClient {
 
         @Override
         public String toString() {
-            return "type=" + getType()
-                   + ";size=" + getSize()
-                   + ";uid=" + getUserId()
-                   + ";gid=" + getGroupId()
-                   + ";perms=0x" + Integer.toHexString(getPermissions())
-                   + ";flags=" + getFlags()
-                   + ";owner=" + getOwner()
-                   + ";group=" + getGroup()
-                   + ";aTime=" + getAccessTime()
-                   + ";cTime=" + getCreateTime()
-                   + ";mTime=" + getModifyTime()
+            return "type=" + getType() + ";size=" + getSize() + ";uid=" + getUserId() + ";gid=" + getGroupId() + ";perms=0x"
+                   + Integer.toHexString(getPermissions()) + ";flags=" + getFlags() + ";owner=" + getOwner() + ";group="
+                   + getGroup() + ";aTime=" + getAccessTime() + ";cTime=" + getCreateTime() + ";mTime=" + getModifyTime()
                    + ";extensions=" + getExtensions().keySet();
         }
     }
@@ -541,7 +535,7 @@ public interface SftpClient extends SubsystemClient {
     DirEntry[] EMPTY_DIR_ENTRIES = new DirEntry[0];
 
     // default values used if none specified
-    int MIN_BUFFER_SIZE = Byte.MAX_VALUE;
+    int MIN_BUFFER_SIZE = 256;
     int MIN_READ_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int MIN_WRITE_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int IO_BUFFER_SIZE = 32 * 1024;
@@ -954,18 +948,7 @@ public interface SftpClient extends SubsystemClient {
      * @return             An {@link InputStream} for reading the remote file data
      * @throws IOException If failed to execute
      */
-    default InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
-        if (bufferSize < MIN_READ_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
-        }
-
-        if (!isOpen()) {
-            throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-        }
-
-        return new SftpInputStreamWithChannel(this, bufferSize, path, mode);
-    }
+    InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     default OutputStream write(String path) throws IOException {
         return write(path, DEFAULT_WRITE_BUFFER_SIZE);
@@ -996,18 +979,7 @@ public interface SftpClient extends SubsystemClient {
      * @return             An {@link OutputStream} for writing the data
      * @throws IOException If failed to execute
      */
-    default OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
-        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
-        }
-
-        if (!isOpen()) {
-            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-        }
-
-        return new SftpOutputStreamWithChannel(this, bufferSize, path, mode);
-    }
+    OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     /**
      * @param  <E>           The generic extension type

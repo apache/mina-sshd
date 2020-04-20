@@ -32,6 +32,7 @@ import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
@@ -107,9 +108,39 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         if (total > 0) {
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();
-            long length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
-            if (log.isTraceEnabled()) {
-                log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}", this, resume, length, total);
+            long length;
+            if (remoteWindow.getSize() < total && total <= remoteWindow.getPacketSize()) {
+                // do not chunk when the window is smaller than the packet size
+                length = 0;
+                // do a defensive copy in case the user reuses the buffer
+                IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                pendingWrite.set(f);
+                if (log.isTraceEnabled()) {
+                    log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}", this, resume,
+                            remoteWindow.getSize());
+                }
+            } else if (total > remoteWindow.getPacketSize()) {
+                if (buffer.rpos() > 0) {
+                    // do a defensive copy in case the user reuses the buffer
+                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                    pendingWrite.set(f);
+                    length = remoteWindow.getPacketSize();
+                    if (log.isTraceEnabled()) {
+                        log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}", this, resume, length,
+                                total);
+                    }
+                    doWriteIfPossible(resume);
+                    return;
+                } else {
+                    length = remoteWindow.getPacketSize();
+                }
+            } else {
+                length = total;
+                if (log.isTraceEnabled()) {
+                    log.trace("doWriteIfPossible({})[resume={}] attempting to write {} bytes", this, resume, length);
+                }
             }
 
             if (length > 0) {
@@ -125,15 +156,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                                                        + ") exceeds int boundaries");
                 }
 
-                Session s = channel.getSession();
-                Buffer buf = s.createBuffer(cmd, (int) length + 12);
-                buf.putInt(channel.getRecipient());
-                if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-                    buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
-                }
-                buf.putInt(length);
-                buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
-                buffer.rpos(buffer.rpos() + (int) length);
+                Buffer buf = createSendBuffer(buffer, channel, length);
                 remoteWindow.consume(length);
 
                 try {
@@ -200,6 +223,19 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
             future.setValue(Boolean.TRUE);
         }
+    }
+
+    protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
+        Session s = channel.getSession();
+        Buffer buf = s.createBuffer(cmd, (int) length + 12);
+        buf.putInt(channel.getRecipient());
+        if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
+            buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
+        }
+        buf.putInt(length);
+        buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
+        buffer.rpos(buffer.rpos() + (int) length);
+        return buf;
     }
 
     @Override

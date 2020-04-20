@@ -95,6 +95,11 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     @Override
+    public Buffer receive(int id, long timeout) throws IOException {
+        return raw.receive(id, timeout);
+    }
+
+    @Override
     public final boolean isSupported() {
         return supported;
     }
