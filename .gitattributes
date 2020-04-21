@@ -1,22 +1,35 @@
+# NOTE: see https://help.github.com/en/github/using-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings
+# regarding the need to re-normalize the files after changing this one
+
+# Handle line endings automatically for files detected as text 
+# and leave all files detected as binary untouched.
 *               text=auto
+
 *.txt           text eol=lf
 *.sh            text eol=lf
 *.properties    text eol=lf
 *.groovy        text eol=lf
 *.scala         text eol=lf
+*.java          text eol=lf
 *.pl            text eol=lf
+*.md            text eol=lf
 *.awk           text eol=lf
 *.xml           text eol=lf
+*.html          text eol=lf
 *.yaml          text eol=lf
 *.json          text eol=lf
 *.py            text eol=lf
 *.js            text eol=lf
 *.bat           text eol=crlf
-*.vbs	        text eol=crlf
-*.jpg           -text
-*.pdf           -text
-*.png           -text
-*.gif           -text
-*.jar           -text
-*.zip           -text
-*.war           -text
+*.vbs           text eol=crlf
+
+# These files are binary and should be left untouched
+# (binary is macro for -text -diff)
+*.jpg           binary
+*.gif           binary
+*.png           binary
+*.class         binary
+*.pdf           binary
+*.jar           binary
+*.zip           binary
+*.war           binary
