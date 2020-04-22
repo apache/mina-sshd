@@ -529,7 +529,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
                         buffer.putInt(channel.getRecipient());
                         buffer.putInt(length);
                         buffer.wpos(wpos);
-                        return buffer;
+                        Buffer buf = new ByteArrayBuffer(buffer.array(), buffer.rpos(), buffer.available());
+                        buffer.rpos(buffer.wpos());
+                        return buf;
                     } else {
                         return super.createSendBuffer(buffer, channel, length);
                     }

@@ -955,7 +955,6 @@ public abstract class AbstractSession extends SessionHelper {
             Buffer packet = resolveOutputPacket(buffer);
             IoSession networkSession = getIoSession();
             IoWriteFuture future = networkSession.writePacket(packet);
-            buffer.rpos(buffer.wpos());
             return future;
         }
     }
