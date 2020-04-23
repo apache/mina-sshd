@@ -58,6 +58,8 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
+    public static final int INIT_COMMAND_SIZE = Byte.BYTES /* command */ + Integer.BYTES /* version */;
+
     /**
      * Property used to avoid large buffers when {@link #write(Handle, long, byte[], int, int)} is invoked with a large
      * buffer size.
@@ -158,7 +160,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
     /**
      * Sends the specified command, waits for the response and then invokes {@link #checkResponseStatus(int, Buffer)}
-     * 
+     *
      * @param  cmd         The command to send
      * @param  request     The request {@link Buffer}
      * @throws IOException If failed to send, receive or check the returned status
@@ -872,7 +874,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     @Override
     public void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException {
         // do some bounds checking first
-        if ((fileOffset < 0) || (srcOffset < 0) || (len < 0)) {
+        if ((fileOffset < 0L) || (srcOffset < 0) || (len < 0)) {
             throw new IllegalArgumentException(
                     "write(" + handle + ") please ensure all parameters "
                                                + " are non-negative values: file-offset=" + fileOffset
@@ -1281,13 +1283,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
     }
 
-    /**
-     * @param  path        The remote directory path
-     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (unlike
-     *                     {@link #readDir(Handle)})
-     * @throws IOException If failed to access the remote site
-     * @see                #readDir(Handle)
-     */
     @Override
     public Iterable<DirEntry> readDir(String path) throws IOException {
         if (!isOpen()) {
@@ -1297,13 +1292,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return new SftpIterableDirEntry(this, path);
     }
 
-    /**
-     * @param  handle      A directory {@link Handle}
-     * @return             An {@link Iterable} that can be used to iterate over all the directory entries (like
-     *                     {@link #readDir(String)}). <B>Note:</B> the iterable instance is not re-usable - i.e., files
-     *                     can be iterated only <U>once</U>
-     * @throws IOException If failed to access the directory
-     */
     @Override
     public Iterable<DirEntry> listDir(Handle handle) throws IOException {
         if (!isOpen()) {
@@ -1313,20 +1301,8 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         return new StfpIterableDirHandle(this, handle);
     }
 
-    /**
-     * Opens an {@link FileChannel} on the specified remote path
-     *
-     * @param  path        The remote path
-     * @param  modes       The access mode(s) - if {@code null}/empty then the {@link #DEFAULT_CHANNEL_MODES} are used
-     * @return             The open {@link FileChannel} - <B>Note:</B> do not close this owner client instance until the
-     *                     channel is no longer needed since it uses the client for providing the channel's
-     *                     functionality.
-     * @throws IOException If failed to open the channel
-     * @see                java.nio.channels.Channels#newInputStream(java.nio.channels.ReadableByteChannel)
-     * @see                java.nio.channels.Channels#newOutputStream(java.nio.channels.WritableByteChannel)
-     */
     @Override
-    public SftpRemotePathChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
+    public FileChannel openRemoteFileChannel(String path, Collection<OpenMode> modes) throws IOException {
         return new SftpRemotePathChannel(path, this, false, GenericUtils.isEmpty(modes) ? DEFAULT_CHANNEL_MODES : modes);
     }
 
