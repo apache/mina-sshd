@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -61,6 +60,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.NullOutputStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -589,8 +589,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         protected OutputStream createErrOutputStream(Session session) {
-            // TODO use some limit in case some data is constantly written to this stream
-            return new ByteArrayOutputStream();
+            /*
+             * The protocol does not specify how to handle such data but we are lenient and ignore it - similar to
+             * /dev/null
+             */
+            return new NullOutputStream();
         }
     }
 }
