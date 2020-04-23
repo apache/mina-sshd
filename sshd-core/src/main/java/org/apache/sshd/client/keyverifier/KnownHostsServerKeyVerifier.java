@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.hosts.KnownHostHashValue;
@@ -79,7 +80,7 @@ public class KnownHostsServerKeyVerifier
 
     /**
      * Represents an entry in the internal verifier's cache
-     * 
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class HostEntryPair {
@@ -119,7 +120,8 @@ public class KnownHostsServerKeyVerifier
 
     protected final Object updateLock = new Object();
     private final ServerKeyVerifier delegate;
-    private final AtomicReference<Collection<HostEntryPair>> keysHolder = new AtomicReference<>(Collections.emptyList());
+    private final AtomicReference<Supplier<? extends Collection<HostEntryPair>>> keysSupplier
+            = new AtomicReference<>(getKnownHostSupplier(null, getPath()));
     private ModifiedServerKeyAcceptor modKeyAcceptor;
 
     public KnownHostsServerKeyVerifier(ServerKeyVerifier delegate, Path file) {
@@ -153,35 +155,43 @@ public class KnownHostsServerKeyVerifier
 
     @Override
     public boolean verifyServerKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        Collection<HostEntryPair> knownHosts = getLoadedHostsEntries();
         try {
             if (checkReloadRequired()) {
                 Path file = getPath();
                 if (exists()) {
-                    knownHosts = reloadKnownHosts(clientSession, file);
+                    updateReloadAttributes();
+                    keysSupplier.set(GenericUtils.memoizeLock(getKnownHostSupplier(clientSession, file)));
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("verifyServerKey({})[{}] missing known hosts file {}",
                                 clientSession, remoteAddress, file);
                     }
-                    knownHosts = Collections.emptyList();
+                    keysSupplier.set(GenericUtils.memoizeLock(Collections::emptyList));
                 }
-
-                setLoadedHostsEntries(knownHosts);
             }
         } catch (Throwable t) {
             return acceptIncompleteHostKeys(clientSession, remoteAddress, serverKey, t);
         }
 
+        Collection<HostEntryPair> knownHosts = keysSupplier.get().get();
+
         return acceptKnownHostEntries(clientSession, remoteAddress, serverKey, knownHosts);
     }
 
-    protected Collection<HostEntryPair> getLoadedHostsEntries() {
-        return keysHolder.get();
+    protected Supplier<Collection<HostEntryPair>> getKnownHostSupplier(ClientSession clientSession, Path file) {
+        return () -> {
+            try {
+                return reloadKnownHosts(clientSession, file);
+            } catch (Exception e) {
+                log.warn("verifyServerKey({}) Could not reload known hosts file {}",
+                        clientSession, file, e);
+                return Collections.emptyList();
+            }
+        };
     }
 
     protected void setLoadedHostsEntries(Collection<HostEntryPair> keys) {
-        keysHolder.set(keys);
+        keysSupplier.set(() -> keys);
     }
 
     /**
@@ -579,7 +589,7 @@ public class KnownHostsServerKeyVerifier
 
         if (delegate.verifyServerKey(clientSession, remoteAddress, serverKey)) {
             Path file = getPath();
-            Collection<HostEntryPair> keys = getLoadedHostsEntries();
+            Collection<HostEntryPair> keys = keysSupplier.get().get();
             try {
                 updateKnownHostsFile(clientSession, remoteAddress, serverKey, file, keys);
             } catch (Throwable t) {

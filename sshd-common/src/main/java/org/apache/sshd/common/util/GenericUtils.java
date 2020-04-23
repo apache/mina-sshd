@@ -42,6 +42,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1009,5 +1010,28 @@ public final class GenericUtils {
     public static <T> Iterable<T> multiIterableSuppliers(
             Iterable<? extends Supplier<? extends Iterable<? extends T>>> providers) {
         return () -> stream(providers).<T> flatMap(s -> stream(s.get())).map(Function.identity()).iterator();
+    }
+
+    /**
+     * The delegate Suppliers get() method is called exactly once and the result is cached.
+     * 
+     * @param  delegate The actual Supplier
+     * @return          The memoized Supplier
+     */
+    public static <T> Supplier<T> memoizeLock(Supplier<T> delegate) {
+        AtomicReference<T> value = new AtomicReference<>();
+        return () -> {
+            T val = value.get();
+            if (val == null) {
+                synchronized (value) {
+                    val = value.get();
+                    if (val == null) {
+                        val = Objects.requireNonNull(delegate.get());
+                        value.set(val);
+                    }
+                }
+            }
+            return val;
+        };
     }
 }

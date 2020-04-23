@@ -94,6 +94,40 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    public void testParallelLoading() {
+        KnownHostsServerKeyVerifier verifier
+                = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, entriesFile) {
+                    @Override
+                    public ModifiedServerKeyAcceptor getModifiedServerKeyAcceptor() {
+                        return (clientSession, remoteAddress, entry, expected, actual) -> true; // don't care here
+                    }
+
+                    @Override
+                    protected boolean acceptKnownHostEntries(
+                            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
+                            Collection<HostEntryPair> knownHosts) {
+                        if (GenericUtils.isEmpty(knownHosts)) {
+                            fail("Loaded known_hosts collection is empty!");
+                        }
+                        return super.acceptKnownHostEntries(clientSession, remoteAddress, serverKey, knownHosts);
+                    }
+                };
+
+        ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
+        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+
+        HOST_KEYS.entrySet().parallelStream().forEach(line -> {
+            KnownHostEntry entry = hostsEntries.get(line.getKey());
+
+            ClientSession session = Mockito.mock(ClientSession.class);
+            Mockito.when(session.getFactoryManager()).thenReturn(manager);
+
+            Mockito.when(session.getConnectAddress()).thenReturn(line.getKey());
+            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, line.getKey(), line.getValue()));
+        });
+    }
+
+    @Test
     public void testNoUpdatesNoNewHostsAuthentication() throws Exception {
         AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
