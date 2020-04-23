@@ -315,6 +315,8 @@ public abstract class HostPatternsHolder {
      * <LI>Underscore (_)</LI>
      * <LI>Hyphen (-)</LI>
      * <LI>Dot (.)</LI>
+     * <LI>Colon (:)</LI>
+     * <LI>Percent (%) for scoped ipv6</LI>
      * <LI>The {@link #WILDCARD_PATTERN}</LI>
      * <LI>The {@link #SINGLE_CHAR_PATTERN}</LI>
      * </UL>
@@ -335,7 +337,7 @@ public abstract class HostPatternsHolder {
         if ((ch >= '0') && (ch <= '9')) {
             return true;
         }
-        if ("-_.".indexOf(ch) >= 0) {
+        if ("-_.:%".indexOf(ch) >= 0) {
             return true;
         }
         return PATTERN_CHARS.indexOf(ch) >= 0;

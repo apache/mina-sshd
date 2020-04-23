@@ -156,6 +156,28 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
+    public void testIPv6AddressSingleCharPatternMatching() {
+        StringBuilder sb = new StringBuilder().append("fe80::7780:db3:a57:6a9");
+        int sbLen = sb.length();
+
+        for (int v = 0; v <= 255; v++) {
+            sb.setLength(sbLen); // start from scratch
+            sb.append(v);
+
+            String address = sb.toString();
+            // replace the added digits with single char pattern
+            for (int index = sbLen; index < sb.length(); index++) {
+                sb.setCharAt(index, HostPatternsHolder.SINGLE_CHAR_PATTERN);
+            }
+
+            String pattern = sb.toString();
+            HostPatternValue pp = HostPatternsHolder.toPattern(pattern);
+            assertTrue("No match for " + address + " on pattern=" + pattern,
+                    HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
+        }
+    }
+
+    @Test
     public void testIsValidPatternChar() {
         for (char ch = '\0'; ch <= ' '; ch++) {
             assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")",
@@ -181,8 +203,8 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         for (char ch : new char[] {
                 '(', ')', '{', '}', '[', ']', '@',
-                '#', '$', '^', '&', '%', '~', '<', '>',
-                ',', '/', '\\', '\'', '"', ':', ';'
+                '#', '$', '^', '&', '~', '<', '>',
+                ',', '/', '\\', '\'', '"', ';'
         }) {
             assertFalse("Unexpected valid character: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
         }
