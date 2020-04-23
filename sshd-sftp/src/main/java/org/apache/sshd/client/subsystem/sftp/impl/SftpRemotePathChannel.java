@@ -227,18 +227,6 @@ public class SftpRemotePathChannel extends FileChannel {
         return doWrite(buffers, -1L);
     }
 
-    static class Ack {
-        int id;
-        long offset;
-        int length;
-
-        Ack(int id, long offset, int length) {
-            this.id = id;
-            this.offset = offset;
-            this.length = length;
-        }
-    }
-
     protected long doWrite(Collection<? extends ByteBuffer> buffers, long position) throws IOException {
         ensureOpen(WRITE_MODES);
 
@@ -362,11 +350,12 @@ public class SftpRemotePathChannel extends FileChannel {
             try {
                 beginBlocking("transferTo");
 
+                // DO NOT CLOSE THE STREAM AS IT WOULD CLOSE THE HANDLE
+                @SuppressWarnings("resource")
                 SftpInputStreamAsync input = new SftpInputStreamAsync(
                         (AbstractSftpClient) sftp,
                         copySize, position, count, getRemotePath(), handle);
                 totalRead = input.transferTo(count, target);
-                // DO NOT CLOSE THE STREAM AS IT WOULD CLOSE THE HANDLE
                 eof = input.isEof();
                 completed = true;
             } finally {
@@ -379,7 +368,7 @@ public class SftpRemotePathChannel extends FileChannel {
                     this, position, count, copySize, totalRead, eof, target);
         }
 
-        return totalRead > 0L ? totalRead : eof ? -1L : 0L;
+        return (totalRead > 0L) ? totalRead : eof ? -1L : 0L;
     }
 
     @Override
@@ -400,7 +389,6 @@ public class SftpRemotePathChannel extends FileChannel {
         }
 
         boolean completed = false;
-        long curPos = (position >= 0L) ? position : posTracker.get();
         long totalRead = 0L;
         byte[] buffer = new byte[(int) Math.min(copySize, count)];
 
@@ -408,6 +396,8 @@ public class SftpRemotePathChannel extends FileChannel {
             try {
                 beginBlocking("transferFrom");
 
+                // DO NOT CLOSE THE OUTPUT STREAM AS IT WOULD CLOSE THE HANDLE
+                @SuppressWarnings("resource")
                 SftpOutputStreamAsync output = new SftpOutputStreamAsync(
                         (AbstractSftpClient) sftp,
                         copySize, getRemotePath(), handle);
@@ -417,7 +407,6 @@ public class SftpRemotePathChannel extends FileChannel {
                     int read = src.read(wrap);
                     if (read > 0) {
                         output.write(buffer, 0, read);
-                        curPos += read;
                         totalRead += read;
                     } else {
                         break;
@@ -441,8 +430,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
         throw new UnsupportedOperationException(
-                "map(" + getRemotePath() + ")"
-                                                + "[" + mode + "," + position + "," + size + "] N/A");
+                "map(" + getRemotePath() + ")[" + mode + "," + position + "," + size + "] N/A");
     }
 
     @Override

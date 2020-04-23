@@ -32,6 +32,9 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpHelper;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -39,30 +42,18 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.InputStreamWithChannel;
 
 public class SftpInputStreamAsync extends InputStreamWithChannel {
-
-    static class Ack {
-        int id;
-        long offset;
-        int length;
-
-        Ack(int id, long offset, int length) {
-            this.id = id;
-            this.offset = offset;
-            this.length = length;
-        }
-    }
+    protected final byte[] bb = new byte[1];
+    protected final int bufferSize;
+    protected final long fileSize;
+    protected Buffer buffer;
+    protected CloseableHandle handle;
+    protected long requestOffset;
+    protected long clientOffset;
+    protected final Deque<SftpAckData> pendingReads = new LinkedList<>();
+    protected boolean eofIndicator;
 
     private final AbstractSftpClient client;
     private final String path;
-    private final byte[] bb = new byte[1];
-    private final int bufferSize;
-    private final long fileSize;
-    private Buffer buffer;
-    private CloseableHandle handle;
-    private long requestOffset;
-    private long clientOffset;
-    private final Deque<Ack> pendingReads = new LinkedList<>();
-    private boolean eofIndicator;
 
     public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize,
                                 String path, Collection<OpenMode> mode) throws IOException {
@@ -156,8 +147,9 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         if (!isOpen()) {
             throw new IOException("transferTo(" + getPath() + ") stream closed");
         }
+
         long orgOffset = clientOffset;
-        while (!eofIndicator && max > 0) {
+        while ((!eofIndicator) && (max > 0L)) {
             if (hasNoData()) {
                 fillData();
                 if (eofIndicator && hasNoData()) {
@@ -179,11 +171,11 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         return clientOffset - orgOffset;
     }
 
-    @SuppressWarnings("PMD.MissingOverride")
     public long transferTo(OutputStream out) throws IOException {
         if (!isOpen()) {
             throw new IOException("transferTo(" + getPath() + ") stream closed");
         }
+
         long orgOffset = clientOffset;
         while (!eofIndicator) {
             if (hasNoData()) {
@@ -207,41 +199,46 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         if (!isOpen()) {
             throw new IOException("skip(" + getPath() + ") stream closed");
         }
-        if (clientOffset == 0 && pendingReads.isEmpty()) {
+        if ((clientOffset == 0L) && pendingReads.isEmpty()) {
             clientOffset = n;
             return n;
         }
         return super.skip(n);
     }
 
-    boolean hasNoData() {
-        return buffer == null || buffer.available() == 0;
+    protected boolean hasNoData() {
+        return (buffer == null) || (buffer.available() == 0);
     }
 
-    void sendRequests() throws IOException {
+    protected void sendRequests() throws IOException {
         if (!eofIndicator) {
-            long windowSize = client.getChannel().getLocalWindow().getMaxSize();
-            while (pendingReads.size() < (int) (windowSize / bufferSize) && requestOffset < fileSize + bufferSize
+            Channel channel = client.getChannel();
+            Window localWindow = channel.getLocalWindow();
+            long windowSize = localWindow.getMaxSize();
+            Session session = client.getSession();
+            byte[] id = handle.getIdentifier();
+
+            while ((pendingReads.size() < (int) (windowSize / bufferSize)) && (requestOffset < (fileSize + bufferSize))
                     || pendingReads.isEmpty()) {
-                Buffer buf = client.getSession().createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,
-                        23 /* sftp packet */ + 16 + handle.getIdentifier().length);
+                Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,
+                        23 /* sftp packet */ + 16 + id.length);
                 buf.rpos(23);
                 buf.wpos(23);
-                buf.putBytes(handle.getIdentifier());
+                buf.putBytes(id);
                 buf.putLong(requestOffset);
                 buf.putInt(bufferSize);
                 int reqId = client.send(SftpConstants.SSH_FXP_READ, buf);
-                pendingReads.add(new Ack(reqId, requestOffset, bufferSize));
+                pendingReads.add(new SftpAckData(reqId, requestOffset, bufferSize));
                 requestOffset += bufferSize;
             }
         }
     }
 
-    void fillData() throws IOException {
-        Ack ack = pendingReads.pollFirst();
+    protected void fillData() throws IOException {
+        SftpAckData ack = pendingReads.pollFirst();
         if (ack != null) {
             pollBuffer(ack);
-            if (!eofIndicator && clientOffset < ack.offset) {
+            if ((!eofIndicator) && (clientOffset < ack.offset)) {
                 // we are actually missing some data
                 // so request is synchronously
                 byte[] data = new byte[(int) (ack.offset - clientOffset + buffer.available())];
@@ -250,7 +247,8 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
                 AtomicReference<Boolean> eof = new AtomicReference<>();
                 while (cur < nb) {
                     int dlen = client.read(handle, clientOffset, data, cur, nb - cur, eof);
-                    eofIndicator = dlen < 0 || eof.get() != null && eof.get();
+                    Boolean eofSignal = eof.getAndSet(null);
+                    eofIndicator = (dlen < 0) || ((eofSignal != null) && eofSignal.booleanValue());
                     cur += dlen;
                 }
                 buffer.getRawBytes(data, nb, buffer.available());
@@ -259,7 +257,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         }
     }
 
-    void pollBuffer(Ack ack) throws IOException {
+    protected void pollBuffer(SftpAckData ack) throws IOException {
         Buffer buf = client.receive(ack.id);
         int length = buf.getInt();
         int type = buf.getUByte();
@@ -270,7 +268,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
             int rpos = buf.rpos();
             buf.rpos(rpos + dlen);
             Boolean b = SftpHelper.getEndOfFileIndicatorValue(buf, client.getVersion());
-            eofIndicator = b != null && b;
+            eofIndicator = (b != null) && b.booleanValue();
             buf.rpos(rpos);
             buf.wpos(rpos + dlen);
             this.buffer = buf;
@@ -298,7 +296,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
             try {
                 try {
                     while (!pendingReads.isEmpty()) {
-                        Ack ack = pendingReads.removeFirst();
+                        SftpAckData ack = pendingReads.removeFirst();
                         pollBuffer(ack);
                     }
                 } finally {

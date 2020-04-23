@@ -110,6 +110,7 @@ public class FileHandle extends Handle {
         return read(data, 0, data.length, offset);
     }
 
+    @SuppressWarnings("resource")
     public int read(byte[] data, int doff, int length, long offset) throws IOException {
         SeekableByteChannel channel = getFileChannel();
         channel = channel.position(offset);

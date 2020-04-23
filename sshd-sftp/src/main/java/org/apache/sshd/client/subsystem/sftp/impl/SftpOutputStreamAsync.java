@@ -28,6 +28,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -39,27 +40,15 @@ import org.apache.sshd.common.util.io.OutputStreamWithChannel;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpOutputStreamAsync extends OutputStreamWithChannel {
-
-    static class Ack {
-        int id;
-        long offset;
-        int length;
-
-        Ack(int id, long offset, int length) {
-            this.id = id;
-            this.offset = offset;
-            this.length = length;
-        }
-    }
+    protected final byte[] bb = new byte[1];
+    protected final int bufferSize;
+    protected Buffer buffer;
+    protected CloseableHandle handle;
+    protected long offset;
+    protected final Deque<SftpAckData> pendingWrites = new LinkedList<>();
 
     private final AbstractSftpClient client;
     private final String path;
-    private final byte[] bb = new byte[1];
-    private final int bufferSize;
-    private Buffer buffer;
-    private CloseableHandle handle;
-    private long offset;
-    private final Deque<Ack> pendingWrites = new LinkedList<>();
 
     public SftpOutputStreamAsync(AbstractSftpClient client, int bufferSize,
                                  String path, Collection<OpenMode> mode) throws IOException {
@@ -112,14 +101,17 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+        byte[] id = handle.getIdentifier();
+        Session session = client.getSession();
+
         do {
             if (buffer == null) {
-                buffer = client.getSession().createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA, bufferSize);
-                int hdr = (9 + 16 + 8 + handle.getIdentifier().length) + buffer.wpos();
+                buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA, bufferSize);
+                int hdr = 9 + 16 + 8 + id.length + buffer.wpos();
                 buffer.rpos(hdr);
                 buffer.wpos(hdr);
             }
-            int max = bufferSize - (9 + 16 + handle.getIdentifier().length + 72);
+            int max = bufferSize - (9 + 16 + id.length + 72);
             int nb = Math.min(len, max - (buffer.wpos() - buffer.rpos()));
             buffer.putRawBytes(b, off, nb);
             if (buffer.available() == max) {
@@ -137,9 +129,9 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         }
 
         for (;;) {
-            Ack ack = pendingWrites.peek();
+            SftpAckData ack = pendingWrites.peek();
             if (ack != null) {
-                Buffer response = client.receive(ack.id, 0);
+                Buffer response = client.receive(ack.id, 0L);
                 if (response != null) {
                     pendingWrites.removeFirst();
                     client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
@@ -154,7 +146,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         byte[] id = handle.getIdentifier();
         int avail = buffer.available();
         Buffer buf;
-        if (buffer.rpos() >= 16 + id.length) {
+        if (buffer.rpos() >= (16 + id.length)) {
             int wpos = buffer.wpos();
             buffer.rpos(buffer.rpos() - 16 - id.length);
             buffer.wpos(buffer.rpos());
@@ -171,7 +163,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         }
 
         int reqId = client.send(SftpConstants.SSH_FXP_WRITE, buf);
-        pendingWrites.add(new Ack(reqId, offset, avail));
+        pendingWrites.add(new SftpAckData(reqId, offset, avail));
 
         offset += avail;
         buffer = null;
@@ -182,11 +174,11 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         if (isOpen()) {
             try {
                 try {
-                    if (buffer != null && buffer.available() > 0) {
+                    if ((buffer != null) && (buffer.available() > 0)) {
                         flush();
                     }
                     while (!pendingWrites.isEmpty()) {
-                        Ack ack = pendingWrites.removeFirst();
+                        SftpAckData ack = pendingWrites.removeFirst();
                         Buffer response = client.receive(ack.id);
                         client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
                     }

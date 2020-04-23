@@ -49,5 +49,4 @@ public interface RawSftpClient {
      * @throws IOException If connection closed or interrupted
      */
     Buffer receive(int id, long timeout) throws IOException;
-
 }
