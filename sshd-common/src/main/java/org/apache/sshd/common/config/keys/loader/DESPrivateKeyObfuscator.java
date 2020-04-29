@@ -57,8 +57,8 @@ public class DESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     @Override
-    protected byte[] generateInitializationVector(int keyLength) {
-        return super.generateInitializationVector(8 * Byte.SIZE);
+    protected int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException {
+        return 8;
     }
 
     public static final PrivateKeyEncryptionContext resolveEffectiveContext(PrivateKeyEncryptionContext encContext) {

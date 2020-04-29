@@ -21,14 +21,18 @@ package org.apache.sshd.common.config.keys.loader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -54,6 +58,24 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
         int keyLength = resolveKeyLength(encContext);
         byte[] keyValue = deriveEncryptionKey(encContext, keyLength / Byte.SIZE);
         return applyPrivateKeyCipher(bytes, encContext, keyLength, keyValue, encryptIt);
+    }
+
+    @Override
+    protected int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException {
+        int keyLength = resolveKeyLength(encContext);
+        CipherInformation ci = resolveCipherInformation(keyLength, encContext.getCipherMode());
+        if (ci == null) {
+            throw new NoSuchAlgorithmException("No match found for " + encContext);
+        }
+        return ci.getIVSize();
+    }
+
+    protected CipherInformation resolveCipherInformation(int keyLength, String cipherMode) {
+        Predicate<CipherInformation> selector = createCipherSelector(keyLength, cipherMode);
+        return BuiltinCiphers.VALUES.stream()
+                .filter(selector)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -85,6 +107,13 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @SuppressWarnings("synthetic-access")
     public static List<Integer> getAvailableKeyLengths() {
         return LazyKeyLengthsHolder.KEY_LENGTHS;
+    }
+
+    public static Predicate<CipherInformation> createCipherSelector(int keyLength, String cipherMode) {
+        String xformMode = "/" + cipherMode.toUpperCase() + "/";
+        return c -> CIPHER_NAME.equalsIgnoreCase(c.getAlgorithm())
+                && (keyLength == c.getKeySize())
+                && c.getTransformation().contains(xformMode);
     }
 
     private static final class LazyKeyLengthsHolder {

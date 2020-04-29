@@ -20,12 +20,16 @@ package org.apache.sshd.common.config.keys.loader;
 
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.util.Collection;
 import java.util.List;
-import java.util.Random;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -48,8 +52,6 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
-    private static final Random RANDOMIZER = new Random(System.currentTimeMillis());
-
     private final int keyLength;
 
     public AESPrivateKeyObfuscatorTest(int keyLength) {
@@ -67,13 +69,35 @@ public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
     public void testAvailableKeyLengthExists() throws GeneralSecurityException {
         assertEquals("Not a BYTE size multiple", 0, keyLength % Byte.SIZE);
 
-        byte[] iv = new byte[keyLength / Byte.SIZE];
-        synchronized (RANDOMIZER) {
-            RANDOMIZER.nextBytes(iv);
-        }
+        PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext();
+        encContext.setCipherName(AESPrivateKeyObfuscator.CIPHER_NAME);
+        encContext.setCipherMode(PrivateKeyEncryptionContext.DEFAULT_CIPHER_MODE);
+        encContext.setCipherType(Integer.toString(keyLength));
+
+        int actual = AESPrivateKeyObfuscator.INSTANCE.resolveKeyLength(encContext);
+        assertEquals("Mismatched resolved key length", keyLength, actual);
+
+        // see SSHD-987
+        byte[] iv = AESPrivateKeyObfuscator.INSTANCE.generateInitializationVector(encContext);
+        assertEquals("Mismatched IV size", 16 /* TODO change this if GCM allowed */, iv.length);
 
         Key key = new SecretKeySpec(iv, AESPrivateKeyObfuscator.CIPHER_NAME);
         Cipher c = SecurityUtils.getCipher(AESPrivateKeyObfuscator.CIPHER_NAME);
         c.init(Cipher.DECRYPT_MODE, key);
+    }
+
+    @Test
+    public void testSingleCipherMatch() {
+        Predicate<CipherInformation> selector = AESPrivateKeyObfuscator.createCipherSelector(
+                keyLength, PrivateKeyEncryptionContext.DEFAULT_CIPHER_MODE);
+        Collection<CipherInformation> matches = BuiltinCiphers.VALUES.stream()
+                .filter(selector)
+                .collect(Collectors.toList());
+        assertEquals("Mismatched matching ciphers: " + matches, 1, GenericUtils.size(matches));
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[keyLength=" + keyLength + "]";
     }
 }
