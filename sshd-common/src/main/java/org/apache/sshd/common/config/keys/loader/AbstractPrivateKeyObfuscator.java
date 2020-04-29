@@ -57,7 +57,11 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
     @Override
     public byte[] generateInitializationVector(PrivateKeyEncryptionContext encContext)
             throws GeneralSecurityException {
-        return generateInitializationVector(resolveKeyLength(encContext));
+        int ivSize = resolveInitializationVectorLength(encContext);
+        byte[] initVector = new byte[ivSize];
+        Random randomizer = new SecureRandom(); // TODO consider using some pre-created singleton instance
+        randomizer.nextBytes(initVector);
+        return initVector;
     }
 
     @Override
@@ -80,17 +84,8 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         return sb;
     }
 
-    protected byte[] generateInitializationVector(int keyLength) {
-        int keySize = keyLength / Byte.SIZE;
-        if ((keyLength % Byte.SIZE) != 0) { // e.g., if 36-bits then we need 5 bytes to hold
-            keySize++;
-        }
-
-        byte[] initVector = new byte[keySize];
-        Random randomizer = new SecureRandom(); // TODO consider using some pre-created singleton instance
-        randomizer.nextBytes(initVector);
-        return initVector;
-    }
+    protected abstract int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext)
+            throws GeneralSecurityException;
 
     protected abstract int resolveKeyLength(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException;
 
