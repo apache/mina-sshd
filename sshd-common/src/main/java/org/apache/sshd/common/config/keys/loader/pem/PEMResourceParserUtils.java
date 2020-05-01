@@ -91,6 +91,10 @@ public final class PEMResourceParserUtils {
         }
     }
 
+    public static KeyPairPEMResourceParser getPEMResourceParserByOidValues(Collection<? extends Number> oid) {
+        return getPEMResourceParserByOid(GenericUtils.join(oid, '.'));
+    }
+
     public static KeyPairPEMResourceParser getPEMResourceParserByOid(String oid) {
         if (GenericUtils.isEmpty(oid)) {
             return null;

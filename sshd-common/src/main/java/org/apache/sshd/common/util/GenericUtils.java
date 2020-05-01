@@ -873,7 +873,7 @@ public final class GenericUtils {
 
     /**
      * Wraps a value into a {@link Supplier}
-     * 
+     *
      * @param  <T>   Type of value being supplied
      * @param  value The value to be supplied
      * @return       The supplier wrapper
@@ -1014,11 +1014,12 @@ public final class GenericUtils {
 
     /**
      * The delegate Suppliers get() method is called exactly once and the result is cached.
-     * 
+     *
+     * @param <T> Generic type of supplied value
      * @param  delegate The actual Supplier
      * @return          The memoized Supplier
      */
-    public static <T> Supplier<T> memoizeLock(Supplier<T> delegate) {
+    public static <T> Supplier<T> memoizeLock(Supplier<? extends T> delegate) {
         AtomicReference<T> value = new AtomicReference<>();
         return () -> {
             T val = value.get();
