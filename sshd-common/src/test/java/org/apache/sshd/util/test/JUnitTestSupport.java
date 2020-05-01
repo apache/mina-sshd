@@ -447,6 +447,7 @@ public abstract class JUnitTestSupport extends Assert {
             return KeyUtils.EC_ALGORITHM;
         } else {
             return algorithm.toUpperCase(Locale.ENGLISH);
+        }
     }
 
     public static void assertRSAPublicKeyEquals(String message, RSAPublicKey expected, RSAPublicKey actual) {

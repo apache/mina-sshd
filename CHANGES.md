@@ -53,6 +53,10 @@ as much of the available functionality as possible.
 
 * [SSHD-992](https://issues.apache.org/jira/browse/SSHD-984) - Provide more hooks into the SFTP server subsystem via SftpFileSystemAccessor
 
+<<<<<<< HEAD
 * [SSHD-997](https://issues.apache.org/jira/browse/SSHD-997) - Fixed OpenSSH private key decoders for RSA and Ed25519
 
 * [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
+=======
+* [SSHD-989](https://issues.apache.org/jira/browse/SSHD-989) - Implement ECDSA public key recovery for PKCS8 encoded data
+>>>>>>> [SSHD-989] Implement ECDSA public key recovery from PKCS#8 encoded data

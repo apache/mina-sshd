@@ -1015,7 +1015,7 @@ public final class GenericUtils {
     /**
      * The delegate Suppliers get() method is called exactly once and the result is cached.
      *
-     * @param <T> Generic type of supplied value
+     * @param  <T>      Generic type of supplied value
      * @param  delegate The actual Supplier
      * @return          The memoized Supplier
      */
