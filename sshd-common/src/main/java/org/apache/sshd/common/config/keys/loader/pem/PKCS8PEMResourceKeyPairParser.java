@@ -21,13 +21,14 @@ package org.apache.sshd.common.config.keys.loader.pem;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,12 +42,11 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.der.ASN1Object;
-import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <a href="https://tools.ietf.org/html/rfc5208">RFC 5208</A>
  */
 public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough
@@ -73,12 +73,57 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             throws IOException, GeneralSecurityException {
         // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
-        List<Integer> oidAlgorithm = getPKCS8AlgorithmIdentifier(encBytes);
+        PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(encBytes);
+        return extractKeyPairs(
+            session, resourceKey, beginMarker, endMarker,
+            passwordProvider, encBytes, pkcs8Info, headers);
+    }
+
+    public Collection<KeyPair> extractKeyPairs(
+            SessionContext session, NamedResource resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider, byte[] encBytes,
+            PKCS8PrivateKeyInfo pkcs8Info, Map<String, String> headers)
+            throws IOException, GeneralSecurityException {
+        List<Integer> oidAlgorithm = pkcs8Info.getAlgorithmIdentifier();
         PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);
-        PublicKey pubKey = ValidateUtils.checkNotNull(KeyUtils.recoverPublicKey(prvKey),
+        PublicKey pubKey = recoverPublicKey(
+            session, resourceKey, beginMarker, endMarker,
+            passwordProvider, headers, encBytes, pkcs8Info, prvKey);
+        ValidateUtils.checkNotNull(pubKey,
                 "Failed to recover public key of OID=%s", oidAlgorithm);
         KeyPair kp = new KeyPair(pubKey, prvKey);
         return Collections.singletonList(kp);
+
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    protected PublicKey recoverPublicKey(
+            SessionContext session, NamedResource resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            Map<String, String> headers, byte[] encBytes,
+            PKCS8PrivateKeyInfo pkcs8Info, PrivateKey privateKey)
+            throws IOException, GeneralSecurityException {
+        if (privateKey instanceof ECPrivateKey) {
+            return recoverECPublicKey(
+                session, resourceKey, beginMarker, endMarker,
+                passwordProvider, headers, encBytes, pkcs8Info,
+                (ECPrivateKey) privateKey);
+        }
+
+        return KeyUtils.recoverPublicKey(privateKey);
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    protected ECPublicKey recoverECPublicKey(
+            SessionContext session, NamedResource resourceKey,
+            String beginMarker, String endMarker,
+            FilePasswordProvider passwordProvider,
+            Map<String, String> headers, byte[] encBytes,
+            PKCS8PrivateKeyInfo pkcs8Info, ECPrivateKey privateKey)
+            throws IOException, GeneralSecurityException {
+        throw new NoSuchAlgorithmException("TODO: SSHD-976");
     }
 
     public static PrivateKey decodePEMPrivateKeyPKCS8(List<Integer> oidAlgorithm, byte[] keyBytes)
@@ -99,63 +144,5 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         KeyFactory factory = SecurityUtils.getKeyFactory(algorithm);
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
         return factory.generatePrivate(keySpec);
-    }
-
-    public static List<Integer> getPKCS8AlgorithmIdentifier(byte[] input) throws IOException {
-        try (DERParser parser = new DERParser(input)) {
-            return getPKCS8AlgorithmIdentifier(parser);
-        }
-    }
-
-    /**
-     * According to the standard:
-     * 
-     * <PRE>
-     * <CODE>
-     * PrivateKeyInfo ::= SEQUENCE {
-     *          version Version,
-     *          privateKeyAlgorithm PrivateKeyAlgorithmIdentifier,
-     *          privateKey PrivateKey,
-     *          attributes [0] IMPLICIT Attributes OPTIONAL
-     *  }
-     *
-     * Version ::= INTEGER
-     * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
-     * PrivateKey ::= OCTET STRING
-     * Attributes ::= SET OF Attribute
-     * AlgorithmIdentifier ::= SEQUENCE {
-     *      algorithm       OBJECT IDENTIFIER,
-     *      parameters      ANY DEFINED BY algorithm OPTIONAL
-     * }
-     * </CODE>
-     * </PRE>
-     * 
-     * @param  parser      The {@link DERParser} to use
-     * @return             The PKCS8 algorithm OID
-     * @throws IOException If malformed data
-     * @see                #getPKCS8AlgorithmIdentifier(ASN1Object)
-     */
-    public static List<Integer> getPKCS8AlgorithmIdentifier(DERParser parser) throws IOException {
-        return getPKCS8AlgorithmIdentifier(parser.readObject());
-    }
-
-    public static List<Integer> getPKCS8AlgorithmIdentifier(ASN1Object privateKeyInfo) throws IOException {
-        try (DERParser parser = privateKeyInfo.createParser()) {
-            // Skip version
-            ASN1Object versionObject = parser.readObject();
-            if (versionObject == null) {
-                throw new StreamCorruptedException("No version");
-            }
-
-            ASN1Object privateKeyAlgorithm = parser.readObject();
-            if (privateKeyAlgorithm == null) {
-                throw new StreamCorruptedException("No private key algorithm");
-            }
-
-            try (DERParser oidParser = privateKeyAlgorithm.createParser()) {
-                ASN1Object oid = oidParser.readObject();
-                return oid.asOID();
-            }
-        }
     }
 }
