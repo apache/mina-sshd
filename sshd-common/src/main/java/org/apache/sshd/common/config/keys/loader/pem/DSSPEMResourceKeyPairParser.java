@@ -47,6 +47,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <a href="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</a>
  */
 public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough
@@ -56,9 +57,6 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
     public static final String END_MARKER = "END DSA PRIVATE KEY";
     public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
-    /**
-     * @see <A HREF="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</A>
-     */
     public static final String DSS_OID = "1.2.840.10040.4.1";
 
     public static final DSSPEMResourceKeyPairParser INSTANCE = new DSSPEMResourceKeyPairParser();
@@ -82,7 +80,7 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
      * <p>
      * The ASN.1 syntax for the private key:
      * </P>
-     * 
+     *
      * <pre>
      * <code>
      * DSAPrivateKey ::= SEQUENCE {
@@ -95,7 +93,7 @@ public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParse
      * }
      * </code>
      * </pre>
-     * 
+     *
      * @param  kf                       The {@link KeyFactory} To use to generate the keys
      * @param  s                        The {@link InputStream} containing the encoded bytes
      * @param  okToClose                <code>true</code> if the method may close the input stream regardless of success

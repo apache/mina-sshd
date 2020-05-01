@@ -51,6 +51,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <a href="https://tools.ietf.org/html/rfc5915">RFC 5915</a>
  */
 public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     public static final String BEGIN_MARKER = "BEGIN EC PRIVATE KEY";
@@ -91,10 +92,10 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     /**
      * <P>
-     * ASN.1 syntax according to rfc5915 is:
+     * ASN.1 syntax according to <A HREF="https://tools.ietf.org/html/rfc5915">RFC 5915</A> is:
      * </P>
      * </BR>
-     * 
+     *
      * <PRE>
      * <CODE>
      * ECPrivateKey ::= SEQUENCE {
@@ -109,7 +110,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * <I>ECParameters</I> syntax according to RFC5480:
      * </P>
      * </BR>
-     * 
+     *
      * <PRE>
      * <CODE>
      * ECParameters ::= CHOICE {
@@ -119,7 +120,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * }
      * </CODE>
      * </PRE>
-     * 
+     *
      * @param  inputStream The {@link InputStream} containing the DER encoded data
      * @param  okToClose   {@code true} if OK to close the DER stream once parsing complete
      * @return             The decoded {@link SimpleImmutableEntry} of {@link ECPublicKeySpec} and
@@ -134,11 +135,16 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             sequence = parser.readObject();
         }
 
-        if (!ASN1Type.SEQUENCE.equals(sequence.getObjType())) {
-            throw new IOException("Invalid DER: not a sequence: " + sequence.getObjType());
+        return decodeECPrivateKeySpec(sequence);
+    }
+
+    public static SimpleImmutableEntry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(ASN1Object sequence)
+            throws IOException {
+        ASN1Type objType = (sequence == null) ? null : sequence.getObjType();
+        if (!ASN1Type.SEQUENCE.equals(objType)) {
+            throw new IOException("Invalid DER: not a sequence: " + objType);
         }
 
-        // Parse inside the sequence
         try (DERParser parser = sequence.createParser()) {
             ECPrivateKeySpec prvSpec = decodeECPrivateKeySpec(parser);
             ECCurves curve = ECCurves.fromCurveParameters(prvSpec.getParams());
@@ -146,20 +152,45 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
                 throw new StreamCorruptedException("Unknown curve");
             }
 
+            /*
+             * According to https://tools.ietf.org/html/rfc5915 - section 3
+             *
+             * ECPrivateKey ::= SEQUENCE {
+             *      version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+             *      privateKey     OCTET STRING,
+             *      parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
+             *      publicKey  [1] BIT STRING OPTIONAL
+             * }
+             */
             ECPoint w = decodeECPublicKeyValue(curve, parser);
             ECPublicKeySpec pubSpec = new ECPublicKeySpec(w, prvSpec.getParams());
             return new SimpleImmutableEntry<>(pubSpec, prvSpec);
         }
     }
 
+    /*
+     * According to https://tools.ietf.org/html/rfc5915 - section 3
+     *
+     * ECPrivateKey ::= SEQUENCE {
+     *      version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+     *      privateKey     OCTET STRING,
+     *      parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
+     *      publicKey  [1] BIT STRING OPTIONAL
+     * }
+     */
     public static final ECPrivateKeySpec decodeECPrivateKeySpec(DERParser parser) throws IOException {
         // see openssl asn1parse -inform PEM -in ...file... -dump
-        ASN1Object versionObject = parser.readObject(); // Skip version
+        ASN1Object versionObject = parser.readObject();
         if (versionObject == null) {
             throw new StreamCorruptedException("No version");
         }
 
-        // as per RFC-5915 section 3
+        /*
+         * According to https://tools.ietf.org/html/rfc5915 - section 3
+         *
+         *      For this version of the document, it SHALL be set to ecPrivkeyVer1,
+         *      which is of type INTEGER and whose value is one (1)
+         */
         BigInteger version = versionObject.asInteger();
         if (!BigInteger.ONE.equals(version)) {
             throw new StreamCorruptedException("Bad version value: " + version);
@@ -175,6 +206,18 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             throw new StreamCorruptedException("Non-matching private key object type: " + objType);
         }
 
+        /*
+         * According to https://tools.ietf.org/html/rfc5915 - section 3
+         *
+         *      parameters specifies the elliptic curve domain parameters
+         *      associated to the private key.  The type ECParameters is discussed
+         *      in [RFC5480].  As specified in [RFC5480], only the namedCurve
+         *      CHOICE is permitted.  namedCurve is an object identifier that
+         *      fully identifies the required values for a particular set of
+         *      elliptic curve domain parameters.  Though the ASN.1 indicates that
+         *      the parameters field is OPTIONAL, implementations that conform to
+         *      this document MUST always include the parameters field.
+         */
         ASN1Object paramsObject = parser.readObject();
         if (paramsObject == null) {
             throw new StreamCorruptedException("No parameters value");
@@ -206,13 +249,13 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * ASN.1 syntax according to rfc5915 is:
      * </P>
      * </BR>
-     * 
+     *
      * <pre>
      * <code>
      *      publicKey  [1] BIT STRING OPTIONAL
      * </code>
      * </pre>
-     * 
+     *
      * @param  curve       The {@link ECCurves} curve
      * @param  parser      The {@link DERParser} assumed to be positioned at the start of the data
      * @return             The encoded {@link ECPoint}
@@ -225,6 +268,13 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             throw new StreamCorruptedException("No public key data bytes");
         }
 
+        /*
+         * According to https://tools.ietf.org/html/rfc5915
+         *
+         *      Though the ASN.1 indicates publicKey is OPTIONAL,
+         *      implementations that conform to this document SHOULD
+         *      always include the publicKey field
+         */
         try (DERParser dataParser = dataObject.createParser()) {
             ASN1Object pointData = dataParser.readObject();
             if (pointData == null) {
