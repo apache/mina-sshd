@@ -27,8 +27,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,11 +40,13 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.der.ASN1Object;
+import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://tools.ietf.org/html/rfc5208">RFC 5208</A>
+ * @see    <a href="https://tools.ietf.org/html/rfc5208">RFC 5208</A>
  */
 public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough
@@ -75,8 +75,8 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         byte[] encBytes = IoUtils.toByteArray(stream);
         PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(encBytes);
         return extractKeyPairs(
-            session, resourceKey, beginMarker, endMarker,
-            passwordProvider, encBytes, pkcs8Info, headers);
+                session, resourceKey, beginMarker, endMarker,
+                passwordProvider, encBytes, pkcs8Info, headers);
     }
 
     public Collection<KeyPair> extractKeyPairs(
@@ -86,44 +86,22 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             PKCS8PrivateKeyInfo pkcs8Info, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         List<Integer> oidAlgorithm = pkcs8Info.getAlgorithmIdentifier();
-        PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);
-        PublicKey pubKey = recoverPublicKey(
-            session, resourceKey, beginMarker, endMarker,
-            passwordProvider, headers, encBytes, pkcs8Info, prvKey);
-        ValidateUtils.checkNotNull(pubKey,
-                "Failed to recover public key of OID=%s", oidAlgorithm);
-        KeyPair kp = new KeyPair(pubKey, prvKey);
-        return Collections.singletonList(kp);
-
-    }
-
-    @SuppressWarnings("checkstyle:ParameterNumber")
-    protected PublicKey recoverPublicKey(
-            SessionContext session, NamedResource resourceKey,
-            String beginMarker, String endMarker,
-            FilePasswordProvider passwordProvider,
-            Map<String, String> headers, byte[] encBytes,
-            PKCS8PrivateKeyInfo pkcs8Info, PrivateKey privateKey)
-            throws IOException, GeneralSecurityException {
-        if (privateKey instanceof ECPrivateKey) {
-            return recoverECPublicKey(
-                session, resourceKey, beginMarker, endMarker,
-                passwordProvider, headers, encBytes, pkcs8Info,
-                (ECPrivateKey) privateKey);
+        String oid = GenericUtils.join(oidAlgorithm, '.');
+        KeyPair kp;
+        if (SecurityUtils.isECCSupported()
+                && ECDSAPEMResourceKeyPairParser.ECDSA_OID.equals(oid)) {
+            ASN1Object privateKeyBytes = pkcs8Info.getPrivateKeyBytes();
+            try (DERParser parser = privateKeyBytes.createParser()) {
+                kp = ECDSAPEMResourceKeyPairParser.parseECKeyPair(parser);
+            }
+        } else {
+            PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);
+            PublicKey pubKey = ValidateUtils.checkNotNull(KeyUtils.recoverPublicKey(prvKey),
+                    "Failed to recover public key of OID=%s", oidAlgorithm);
+            kp = new KeyPair(pubKey, prvKey);
         }
 
-        return KeyUtils.recoverPublicKey(privateKey);
-    }
-
-    @SuppressWarnings("checkstyle:ParameterNumber")
-    protected ECPublicKey recoverECPublicKey(
-            SessionContext session, NamedResource resourceKey,
-            String beginMarker, String endMarker,
-            FilePasswordProvider passwordProvider,
-            Map<String, String> headers, byte[] encBytes,
-            PKCS8PrivateKeyInfo pkcs8Info, ECPrivateKey privateKey)
-            throws IOException, GeneralSecurityException {
-        throw new NoSuchAlgorithmException("TODO: SSHD-976");
+        return Collections.singletonList(kp);
     }
 
     public static PrivateKey decodePEMPrivateKeyPKCS8(List<Integer> oidAlgorithm, byte[] keyBytes)

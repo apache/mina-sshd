@@ -47,7 +47,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</a>
+ * @see    <a href="https://tools.ietf.org/html/rfc3279#section-2.3.2">RFC-3279 section 2.3.2</a>
  */
 public class DSSPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
     // Not exactly according to standard but good enough

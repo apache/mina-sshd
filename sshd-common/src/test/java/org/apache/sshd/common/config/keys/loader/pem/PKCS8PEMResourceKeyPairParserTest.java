@@ -32,6 +32,7 @@ import java.util.List;
 import org.apache.commons.ssl.PEMItem;
 import org.apache.commons.ssl.PEMUtil;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -73,6 +74,11 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         }
         for (Integer ks : DSS_SIZES) {
             params.add(new Object[] { KeyUtils.DSS_ALGORITHM, ks });
+        }
+        if (SecurityUtils.isECCSupported()) {
+            for (ECCurves curve : ECCurves.VALUES) {
+                params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
+            }
         }
         return params;
     }

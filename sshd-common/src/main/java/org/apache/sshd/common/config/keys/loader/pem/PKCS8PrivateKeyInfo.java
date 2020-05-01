@@ -50,7 +50,7 @@ import org.apache.sshd.common.util.io.der.DERParser;
  * </PRE>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://tools.ietf.org/html/rfc5208#section-5">RFC 5208 - section 5</a>
+ * @see    <a href="https://tools.ietf.org/html/rfc5208#section-5">RFC 5208 - section 5</a>
  */
 public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
     private BigInteger version;
@@ -108,11 +108,11 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
     }
 
     /**
-     * Decodes the current information with the data from the provided encoding.
-     * <B>Note:</B> User should {@link #clear()} the current information before parsing
+     * Decodes the current information with the data from the provided encoding. <B>Note:</B> User should
+     * {@link #clear()} the current information before parsing
      *
-     * @param privateKeyInfo The {@link ASN1Object} encoding
-     * @throws IOException If failed to parse the encoding
+     * @param  privateKeyInfo The {@link ASN1Object} encoding
+     * @throws IOException    If failed to parse the encoding
      */
     public void decode(ASN1Object privateKeyInfo) throws IOException {
         try (DERParser parser = privateKeyInfo.createParser()) {
@@ -158,8 +158,8 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[version=" + getVersion()
-            + ", algorithmIdentifier=" + getAlgorithmIdentifier()
-            + "]";
+               + "[version=" + getVersion()
+               + ", algorithmIdentifier=" + getAlgorithmIdentifier()
+               + "]";
     }
 }

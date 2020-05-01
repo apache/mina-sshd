@@ -36,3 +36,5 @@ where the former validate the messages and deal with the idle timeout, and the l
 * [SSHD-660](https://issues.apache.org/jira/browse/SSHD-660) - Added support for server-side signed certificate keys
 
 * [SSHD-984](https://issues.apache.org/jira/browse/SSHD-984) - Utility method to export KeyPair in OpenSSH format
+
+* [SSHD-986](https://issues.apache.org/jira/browse/SSHD-986) - Implement ECDSA public key recovery for PKCS8 encoded data
