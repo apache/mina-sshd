@@ -21,7 +21,6 @@ package org.apache.sshd.common.config.keys.loader.openssh;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -44,6 +43,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -90,9 +90,19 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
     }
 
     @Override
-    public String encodePrivateKey(OutputStream s, ECPrivateKey key) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, ECPrivateKey key, ECPublicKey pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
-        return null;
+        Objects.requireNonNull(pubKey, "No public key provided");
+        ECCurves curve = ECCurves.fromECKey(key);
+        if (curve == null) {
+            return null;
+        }
+        String curveName = curve.getName();
+        KeyEntryResolver.encodeString(s, curveName);
+        ECCurves.ECPointCompression.UNCOMPRESSED.writeECPoint(s,
+                curveName, pubKey.getW());
+        KeyEntryResolver.encodeBigInt(s, key.getS());
+        return curve.getKeyType();
     }
 
     @Override

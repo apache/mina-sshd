@@ -42,6 +42,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -89,6 +90,23 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
             p = null;
             q = null;
         }
+    }
+
+    @Override
+    public String encodePrivateKey(SecureByteArrayOutputStream s, RSAPrivateKey key, RSAPublicKey pubKey) throws IOException {
+        Objects.requireNonNull(key, "No private key provided");
+        if (key instanceof RSAPrivateCrtKey) {
+            RSAPrivateCrtKey a = (RSAPrivateCrtKey) key;
+            KeyEntryResolver.encodeBigInt(s, a.getModulus()); // n
+            KeyEntryResolver.encodeBigInt(s, a.getPublicExponent()); // e
+            KeyEntryResolver.encodeBigInt(s, a.getPrivateExponent()); // d
+            // CRT coefficient q^-1 mod p
+            KeyEntryResolver.encodeBigInt(s, a.getCrtCoefficient());
+            KeyEntryResolver.encodeBigInt(s, a.getPrimeP()); // p
+            KeyEntryResolver.encodeBigInt(s, a.getPrimeQ()); // q
+            return KeyPairProvider.SSH_RSA;
+        }
+        return null;
     }
 
     @Override

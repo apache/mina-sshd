@@ -21,7 +21,6 @@ package org.apache.sshd.common.config.keys.loader.openssh;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -42,6 +41,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -83,7 +83,7 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
     }
 
     @Override
-    public String encodePrivateKey(OutputStream s, DSAPrivateKey key) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, DSAPrivateKey key, DSAPublicKey pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
         DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
@@ -95,7 +95,7 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
         KeyEntryResolver.encodeBigInt(s, g);
 
         BigInteger x = key.getX();
-        BigInteger y = g.modPow(x, p);
+        BigInteger y = pubKey != null ? pubKey.getY() : g.modPow(x, p);
         KeyEntryResolver.encodeBigInt(s, y);
         KeyEntryResolver.encodeBigInt(s, x);
         return KeyPairProvider.SSH_DSS;

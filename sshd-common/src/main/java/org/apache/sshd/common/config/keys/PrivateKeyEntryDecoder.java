@@ -36,6 +36,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 
 /**
  * @param  <PUB> Type of {@link PublicKey}
@@ -121,16 +122,19 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             throws IOException, GeneralSecurityException;
 
     /**
-     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same one used by the {@code decodePublicKey}
-     * method(s)
+     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same one
+     * used by the {@code decodePublicKey} method(s)
      *
-     * @param  s           The {@link OutputStream} to write the data to
-     * @param  key         The {@link PrivateKey} - may not be {@code null}
-     * @return             The key type value - one of the {@link #getSupportedKeyTypes()} or {@code null} if encoding
-     *                     not supported
+     * @param s      The {@link SecureByteArrayOutputStream} to write the data to.
+     * @param key    The {@link PrivateKey} - may not be {@code null}
+     * @param pubKey The {@link PublicKey} belonging to the private key - must be
+     *               non-{@code null} if {@link #isPublicKeyRecoverySupported()
+     *               public key recovery} is not supported
+     * @return The key type value - one of the {@link #getSupportedKeyTypes()} or
+     *         {@code null} if encoding not supported
      * @throws IOException If failed to generate the encoding
      */
-    default String encodePrivateKey(OutputStream s, PRV key) throws IOException {
+    default String encodePrivateKey(SecureByteArrayOutputStream s, PRV key, PUB pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
         return null;
     }
