@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.security.eddsa;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -44,6 +43,7 @@ import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -130,7 +130,7 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     }
 
     @Override
-    public String encodePrivateKey(OutputStream s, EdDSAPrivateKey key) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, EdDSAPrivateKey key, EdDSAPublicKey pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
         // ed25519 bernstein naming: pk .. public key, sk .. secret key
