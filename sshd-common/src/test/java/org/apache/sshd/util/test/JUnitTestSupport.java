@@ -189,7 +189,7 @@ public abstract class JUnitTestSupport extends Assert {
      * @see                #assertHierarchyTargetFolderExists(Path, LinkOption...) assertHierarchyTargetFolderExists
      */
     protected Path createTempClassFolder() throws IOException {
-        Path tmpDir = detectTargetFolder();
+        Path tmpDir = getTempTargetFolder();
         return assertHierarchyTargetFolderExists(tmpDir.resolve(getClass().getSimpleName()));
     }
 

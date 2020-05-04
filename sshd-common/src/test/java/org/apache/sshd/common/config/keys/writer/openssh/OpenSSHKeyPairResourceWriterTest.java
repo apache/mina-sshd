@@ -118,9 +118,9 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         if (data.provider == null) {
             generator = KeyPairGenerator.getInstance(data.algorithm);
         } else {
-            generator = KeyPairGenerator.getInstance(data.algorithm,
-                    data.provider);
+            generator = KeyPairGenerator.getInstance(data.algorithm, data.provider);
         }
+
         if (data.spec != null) {
             generator.initialize(data.spec);
         } else {
@@ -331,8 +331,19 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     }
 
     private Path getTemporaryOutputFile() throws IOException {
-        Path dir = assertHierarchyTargetFolderExists(getTempTargetFolder());
-        return dir.resolve(getCurrentTestName());
+        Path dir = createTempClassFolder();
+        String testName = getCurrentTestName();
+        int pos = testName.indexOf('[');
+        Path file;
+        if (pos > 0) {
+            String baseName = testName.substring(0, pos);
+            String paramName = testName.substring(pos + 1, testName.length() - 1);
+            file = dir.resolve(baseName + "-" + paramName.replace('(', '-').replace(")", "").trim());
+        } else {
+            file = dir.resolve(testName);
+        }
+        Files.deleteIfExists(file);
+        return file;
     }
 
     @SuppressWarnings("checkstyle:VisibilityModifier")

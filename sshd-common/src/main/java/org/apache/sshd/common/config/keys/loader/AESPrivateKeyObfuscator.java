@@ -61,7 +61,8 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     }
 
     @Override
-    protected int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext) throws GeneralSecurityException {
+    protected int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext)
+            throws GeneralSecurityException {
         int keyLength = resolveKeyLength(encContext);
         CipherInformation ci = resolveCipherInformation(keyLength, encContext.getCipherMode());
         if (ci == null) {

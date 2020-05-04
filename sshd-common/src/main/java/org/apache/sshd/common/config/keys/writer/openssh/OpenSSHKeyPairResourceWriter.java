@@ -51,7 +51,6 @@ import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCrypt;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.writer.KeyPairResourceWriter;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 
 /**
@@ -75,9 +74,9 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
     @Override
     public void writePrivateKey(KeyPair key, String comment, OpenSSHKeyEncryptionContext options, OutputStream out)
             throws IOException, GeneralSecurityException {
-        ValidateUtils.checkNotNull(key, "Cannot write null key");
+        Objects.requireNonNull(key, "Cannot write null key");
         String keyType = KeyUtils.getKeyType(key);
-        if (keyType == null) {
+        if (GenericUtils.isEmpty(keyType)) {
             throw new GeneralSecurityException("Unsupported key: " + key.getClass().getName());
         }
         OpenSSHKeyEncryptionContext opt = determineEncryption(options);
@@ -188,16 +187,19 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
     public static void write(OutputStream out, byte[] bytes, int lineLength) throws IOException {
         byte[] encoded = Base64.getEncoder().encode(bytes);
         Arrays.fill(bytes, (byte) 0);
-        int last = encoded.length;
-        for (int i = 0; i < last; i += lineLength) {
-            if (i + lineLength <= last) {
-                out.write(encoded, i, lineLength);
-            } else {
-                out.write(encoded, i, last - i);
+        try {
+            int last = encoded.length;
+            for (int i = 0; i < last; i += lineLength) {
+                if ((i + lineLength) <= last) {
+                    out.write(encoded, i, lineLength);
+                } else {
+                    out.write(encoded, i, last - i);
+                }
+                out.write('\n');
             }
-            out.write('\n');
+        } finally {
+            Arrays.fill(encoded, (byte) 0);
         }
-        Arrays.fill(encoded, (byte) 0);
     }
 
     /**
@@ -209,23 +211,24 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
     @Override
     public void writePublicKey(PublicKey key, String comment, OutputStream out)
             throws IOException, GeneralSecurityException {
-        StringBuilder b = new StringBuilder();
+        StringBuilder b = new StringBuilder(82);
         PublicKeyEntry.appendPublicKeyEntry(b, key);
-        // Append first line of comment
-        if (comment != null) {
-            String line = firstLine(comment);
-            if (line != null && !line.isEmpty()) {
-                b.append(' ').append(line);
-            }
+        // Append first line of comment - if available
+        String line = firstLine(comment);
+        if (GenericUtils.isNotEmpty(line)) {
+            b.append(' ').append(line);
         }
         write(out, b.toString());
     }
 
     public static String firstLine(String text) {
-        Matcher m = VERTICALSPACE.matcher(text);
-        if (m.find()) {
-            return text.substring(0, m.start());
+        if (GenericUtils.isNotEmpty(text)) {
+            Matcher m = VERTICALSPACE.matcher(text);
+            if (m.find()) {
+                return text.substring(0, m.start()).trim();
+            }
         }
+
         return text;
     }
 
@@ -268,37 +271,38 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
          */
         @Override
         protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext context, int keyLength)
-                throws GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
             byte[] iv = context.getInitVector();
             if (iv == null) {
                 iv = generateInitializationVector(context);
             }
-            byte[] kdfOutput = new byte[keyLength + iv.length];
+
             byte[] salt = new byte[BCRYPT_SALT_LENGTH];
-            BCrypt bcrypt = new BCrypt();
             SecureRandom random = new SecureRandom();
             random.nextBytes(salt);
-            int rounds = options.getKdfRounds();
-            byte[] pwd = null;
-            byte[] result = null;
+
+            byte[] kdfOutput = new byte[keyLength + iv.length];
+            BCrypt bcrypt = new BCrypt();
             // "kdf" collects the salt and number of rounds; not sensitive data.
             try (ByteArrayOutputStream kdf = new ByteArrayOutputStream()) {
-                pwd = convert(options.getPassword());
-                bcrypt.pbkdf(pwd, salt, rounds, kdfOutput);
+                int rounds = options.getKdfRounds();
+                byte[] pwd = convert(options.getPassword());
+                try {
+                    bcrypt.pbkdf(pwd, salt, rounds, kdfOutput);
+                } finally {
+                    if (pwd != null) {
+                        Arrays.fill(pwd, (byte) 0);
+                    }
+                }
+
                 KeyEntryResolver.writeRLEBytes(kdf, salt);
                 KeyEntryResolver.encodeInt(kdf, rounds);
                 kdfOptions = kdf.toByteArray();
                 context.setInitVector(Arrays.copyOfRange(kdfOutput, keyLength, kdfOutput.length));
-                result = Arrays.copyOf(kdfOutput, keyLength);
-            } catch (IOException impossible) {
-                // Never occurs with a ByteArrayOutputStream
+                return Arrays.copyOf(kdfOutput, keyLength);
             } finally {
                 Arrays.fill(kdfOutput, (byte) 0); // Contains the IV at the end
-                if (pwd != null) {
-                    Arrays.fill(pwd, (byte) 0);
-                }
             }
-            return result;
         }
 
         protected byte[] convert(String password) {

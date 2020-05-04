@@ -93,7 +93,7 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
     // see http://www.ict.griffith.edu.au/anthony/info/crypto/openssl.hints (Password to Encryption Key section)
     // see http://openssl.6102.n7.nabble.com/DES-EDE3-CBC-technical-details-td24883.html
     protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext encContext, int outputKeyLength)
-            throws GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Objects.requireNonNull(encContext, "No encryption context");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherName(), "No cipher name");
         ValidateUtils.checkNotNullAndNotEmpty(encContext.getCipherType(), "No cipher type");
