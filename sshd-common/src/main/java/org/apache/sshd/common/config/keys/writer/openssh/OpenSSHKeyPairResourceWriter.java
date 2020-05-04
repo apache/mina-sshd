@@ -48,28 +48,32 @@ import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHParserContext;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCrypt;
+import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.writer.KeyPairResourceWriter;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 
 /**
- * A {@link KeyPairResourceWriter} for writing keys in the modern OpenSSH format, using
- * the OpenBSD bcrypt KDF for passphrase-protected encrypted private keys.
+ * A {@link KeyPairResourceWriter} for writing keys in the modern OpenSSH format, using the OpenBSD bcrypt KDF for
+ * passphrase-protected encrypted private keys.
  */
 public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenSSHKeyEncryptionContext> {
 
+    public static final String DASHES = "-----"; //$NON-NLS-1$
+
+    public static final int LINE_LENGTH = 70;
+
+    public static final OpenSSHKeyPairResourceWriter INSTANCE = new OpenSSHKeyPairResourceWriter();
+
     private static final Pattern VERTICALSPACE = Pattern.compile("\\v"); //$NON-NLS-1$
 
-    private static final String DASHES = "-----"; //$NON-NLS-1$
-
-    private static final int LINE_LENGTH = 70;
-
     public OpenSSHKeyPairResourceWriter() {
-       super();
+        super();
     }
 
     @Override
-    public void writePrivateKey(KeyPair key, String comment, OpenSSHKeyEncryptionContext options, SecureByteArrayOutputStream out)
+    public void writePrivateKey(KeyPair key, String comment, OpenSSHKeyEncryptionContext options, OutputStream out)
             throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNull(key, "Cannot write null key");
         String keyType = KeyUtils.getKeyType(key);
@@ -94,22 +98,19 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         }
         byte[] privateBytes = encodePrivateKey(key, keyType, blockSize, comment);
         String kdfName = OpenSSHParserContext.NONE_CIPHER;
-        byte[] kdfOptions = new byte[0];
+        byte[] kdfOptions = GenericUtils.EMPTY_BYTE_ARRAY;
         try (SecureByteArrayOutputStream bytes = new SecureByteArrayOutputStream()) {
             write(bytes, OpenSSHKeyPairResourceParser.AUTH_MAGIC);
             bytes.write(0);
             if (opt != null) {
                 KeyEncryptor encryptor = new KeyEncryptor(opt);
                 opt.setPrivateKeyObfuscator(encryptor);
-                try {
-                    byte[] encodedBytes = encryptor.applyPrivateKeyCipher(privateBytes, opt, true);
-                    Arrays.fill(privateBytes, (byte) 0);
-                    privateBytes = encodedBytes;
-                    kdfName = "bcrypt"; //$NON-NLS-1$
-                    kdfOptions = encryptor.getKdfOptions();
-                } finally {
-                    opt.clear();
-                }
+
+                byte[] encodedBytes = encryptor.applyPrivateKeyCipher(privateBytes, opt, true);
+                Arrays.fill(privateBytes, (byte) 0);
+                privateBytes = encodedBytes;
+                kdfName = BCryptKdfOptions.NAME;
+                kdfOptions = encryptor.getKdfOptions();
             }
             KeyEntryResolver.encodeString(bytes, cipherName);
             KeyEntryResolver.encodeString(bytes, kdfName);
@@ -125,27 +126,23 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         out.write('\n');
     }
 
-    private static OpenSSHKeyEncryptionContext determineEncryption(OpenSSHKeyEncryptionContext options) {
-        if (options == null) {
+    public static OpenSSHKeyEncryptionContext determineEncryption(OpenSSHKeyEncryptionContext options) {
+        CharSequence password = (options == null) ? null : options.getPassword();
+        if (GenericUtils.isEmpty(password)) {
             return null;
         }
-        char[] passphrase = options.getPassphrase();
-        if (passphrase == null) {
-            return null;
-        }
-        try {
-            for (char ch : passphrase) {
-                if (!Character.isWhitespace(ch)) {
-                    return options;
-                }
+
+        for (int pos = 0, len = password.length(); pos < len; pos++) {
+            char ch = password.charAt(pos);
+            if (!Character.isWhitespace(ch)) {
+                return options;
             }
-        } finally {
-            Arrays.fill(passphrase, '\000');
         }
+
         return null;
     }
 
-    private static byte[] encodePrivateKey(KeyPair key, String keyType, int blockSize, String comment)
+    public static byte[] encodePrivateKey(KeyPair key, String keyType, int blockSize, String comment)
             throws IOException, GeneralSecurityException {
         try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             int check = new SecureRandom().nextInt();
@@ -153,8 +150,9 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
             KeyEntryResolver.encodeInt(out, check);
             KeyEntryResolver.encodeString(out, keyType);
             @SuppressWarnings("unchecked") // Problem with generics
-            PrivateKeyEntryDecoder<PublicKey, PrivateKey> encoder = (PrivateKeyEntryDecoder<PublicKey, PrivateKey>) OpenSSHKeyPairResourceParser
-                    .getPrivateKeyEntryDecoder(keyType);
+            PrivateKeyEntryDecoder<PublicKey, PrivateKey> encoder
+                    = (PrivateKeyEntryDecoder<PublicKey, PrivateKey>) OpenSSHKeyPairResourceParser
+                            .getPrivateKeyEntryDecoder(keyType);
             if (encoder.encodePrivateKey(out, key.getPrivate(), key.getPublic()) == null) {
                 throw new GeneralSecurityException("Cannot encode key of type " + keyType);
             }
@@ -173,10 +171,11 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         }
     }
 
-    private static byte[] encodePublicKey(PublicKey key, String keyType) throws IOException, GeneralSecurityException {
+    public static byte[] encodePublicKey(PublicKey key, String keyType)
+            throws IOException, GeneralSecurityException {
         @SuppressWarnings("unchecked") // Problem with generics.
-        PublicKeyEntryDecoder<PublicKey, ?> decoder = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils
-                .getPublicKeyEntryDecoder(keyType);
+        PublicKeyEntryDecoder<PublicKey, ?> decoder
+                = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(keyType);
         if (decoder == null) {
             throw new GeneralSecurityException("Unknown key type: " + keyType);
         }
@@ -186,7 +185,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         }
     }
 
-    private static void write(OutputStream out, byte[] bytes, int lineLength) throws IOException {
+    public static void write(OutputStream out, byte[] bytes, int lineLength) throws IOException {
         byte[] encoded = Base64.getEncoder().encode(bytes);
         Arrays.fill(bytes, (byte) 0);
         int last = encoded.length;
@@ -204,22 +203,8 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
     /**
      * {@inheritDoc}
      *
-     * Writes the public key in the single-line OpenSSH format "key-type pub-key
-     * comment" without terminating line ending. If the comment has multiple lines,
-     * only the first line is written.
-     */
-    @Override
-    public void writePublicKey(KeyPair key, String comment, OutputStream out)
-            throws IOException, GeneralSecurityException {
-        writePublicKey(key.getPublic(), comment, out);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * Writes the public key in the single-line OpenSSH format "key-type pub-key
-     * comment" without terminating line ending. If the comment has multiple lines,
-     * only the first line is written.
+     * Writes the public key in the single-line OpenSSH format "key-type pub-key comment" without terminating line
+     * ending. If the comment has multiple lines, only the first line is written.
      */
     @Override
     public void writePublicKey(PublicKey key, String comment, OutputStream out)
@@ -236,7 +221,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         write(out, b.toString());
     }
 
-    private static String firstLine(String text) {
+    public static String firstLine(String text) {
         Matcher m = VERTICALSPACE.matcher(text);
         if (m.find()) {
             return text.substring(0, m.start());
@@ -244,18 +229,17 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         return text;
     }
 
-    private static void write(OutputStream out, String s) throws IOException {
+    public static void write(OutputStream out, String s) throws IOException {
         out.write(s.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
      * A key encryptor for modern-style OpenSSH private keys using the bcrypt KDF.
      */
-    private static class KeyEncryptor extends AESPrivateKeyObfuscator {
+    public static class KeyEncryptor extends AESPrivateKeyObfuscator {
+        public static final int BCRYPT_SALT_LENGTH = 16;
 
-        private static final int BCRYPT_SALT_LENGTH = 16;
-
-        private final OpenSSHKeyEncryptionContext options;
+        protected final OpenSSHKeyEncryptionContext options;
 
         private byte[] kdfOptions;
 
@@ -265,8 +249,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
 
         /**
          * Retrieves the KDF options used. Valid only after
-         * {@link #deriveEncryptionKey(PrivateKeyEncryptionContext, int)} has been
-         * called.
+         * {@link #deriveEncryptionKey(PrivateKeyEncryptionContext, int)} has been called.
          *
          * @return the number of KDF rounds applied
          */
@@ -275,13 +258,13 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         }
 
         /**
-         * Derives an encryption key and set the IV on the {@code context} from the
-         * passphase provided by the context using the OpenBSD {@link BCrypt} KDF.
+         * Derives an encryption key and set the IV on the {@code context} from the passphase provided by the context
+         * using the OpenBSD {@link BCrypt} KDF.
          *
-         * @param context   for the encryption, provides the passphrase and transports
-         *                  other encryption-related information including the IV
-         * @param keyLength number of key bytes to generate
-         * @return {@code keyLength} bytes to use as encryption key
+         * @param  context   for the encryption, provides the passphrase and transports other encryption-related
+         *                   information including the IV
+         * @param  keyLength number of key bytes to generate
+         * @return           {@code keyLength} bytes to use as encryption key
          */
         @Override
         protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext context, int keyLength)
@@ -300,7 +283,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
             byte[] result = null;
             // "kdf" collects the salt and number of rounds; not sensitive data.
             try (ByteArrayOutputStream kdf = new ByteArrayOutputStream()) {
-                pwd = convert(options.getPassphrase());
+                pwd = convert(options.getPassword());
                 bcrypt.pbkdf(pwd, salt, rounds, kdfOutput);
                 KeyEntryResolver.writeRLEBytes(kdf, salt);
                 KeyEntryResolver.encodeInt(kdf, rounds);
@@ -318,17 +301,24 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
             return result;
         }
 
-        private byte[] convert(char[] pass) {
-            if (pass == null) {
-                return new byte[0];
+        protected byte[] convert(String password) {
+            if (GenericUtils.isEmpty(password)) {
+                return GenericUtils.EMPTY_BYTE_ARRAY;
             }
-            ByteBuffer bytes = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pass));
+
+            char[] pass = password.toCharArray();
+            ByteBuffer bytes;
+            try {
+                bytes = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pass));
+            } finally {
+                Arrays.fill(pass, '\0');
+            }
+
             byte[] pwd = new byte[bytes.remaining()];
             bytes.get(pwd);
             if (bytes.hasArray()) {
                 Arrays.fill(bytes.array(), (byte) 0);
             }
-            Arrays.fill(pass, '\000');
             return pwd;
         }
     }

@@ -130,7 +130,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, EdDSAPrivateKey key, EdDSAPublicKey pubKey) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, EdDSAPrivateKey key, EdDSAPublicKey pubKey)
+            throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
         // ed25519 bernstein naming: pk .. public key, sk .. secret key

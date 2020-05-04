@@ -23,8 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 /**
- * A {@link ByteArrayOutputStream} that clears its internal buffer after
- * resizing and when it is {@link #close() closed}.
+ * A {@link ByteArrayOutputStream} that clears its internal buffer after resizing and when it is {@link #close()
+ * closed}.
  */
 public final class SecureByteArrayOutputStream extends ByteArrayOutputStream {
 

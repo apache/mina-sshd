@@ -22,7 +22,6 @@ package org.apache.sshd.common.config.keys;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
@@ -122,16 +121,15 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
             throws IOException, GeneralSecurityException;
 
     /**
-     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same one
-     * used by the {@code decodePublicKey} method(s)
+     * Encodes the {@link PrivateKey} using the {@code OpenSSH} format - same one used by the {@code decodePublicKey}
+     * method(s)
      *
-     * @param s      The {@link SecureByteArrayOutputStream} to write the data to.
-     * @param key    The {@link PrivateKey} - may not be {@code null}
-     * @param pubKey The {@link PublicKey} belonging to the private key - must be
-     *               non-{@code null} if {@link #isPublicKeyRecoverySupported()
-     *               public key recovery} is not supported
-     * @return The key type value - one of the {@link #getSupportedKeyTypes()} or
-     *         {@code null} if encoding not supported
+     * @param  s           The {@link SecureByteArrayOutputStream} to write the data to.
+     * @param  key         The {@link PrivateKey} - may not be {@code null}
+     * @param  pubKey      The {@link PublicKey} belonging to the private key - must be non-{@code null} if
+     *                     {@link #isPublicKeyRecoverySupported() public key recovery} is not supported
+     * @return             The key type value - one of the {@link #getSupportedKeyTypes()} or {@code null} if encoding
+     *                     not supported
      * @throws IOException If failed to generate the encoding
      */
     default String encodePrivateKey(SecureByteArrayOutputStream s, PRV key, PUB pubKey) throws IOException {

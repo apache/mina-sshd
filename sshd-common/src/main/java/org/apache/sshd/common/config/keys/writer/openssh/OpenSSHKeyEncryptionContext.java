@@ -19,28 +19,22 @@
 
 package org.apache.sshd.common.config.keys.writer.openssh;
 
-import java.util.Arrays;
-
 import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * A {@link PrivateKeyEncryptionContext} for use with a
- * {@link OpenSSHKeyPairResourceWriter}.
+ * A {@link PrivateKeyEncryptionContext} for use with a {@link OpenSSHKeyPairResourceWriter}.
  */
 public class OpenSSHKeyEncryptionContext extends PrivateKeyEncryptionContext {
 
     /** Default number of bcrypt KDF rounds to apply. */
     public static final int DEFAULT_KDF_ROUNDS = 16;
 
-    private static final String AES = "AES";
-
-    private char[] passphrase;
+    public static final String AES = "AES";
 
     private int kdfRounds = DEFAULT_KDF_ROUNDS;
 
     public OpenSSHKeyEncryptionContext() {
-        super();
         setCipherMode("CTR"); // Set default to CTR, as in OpenSSH
     }
 
@@ -51,55 +45,8 @@ public class OpenSSHKeyEncryptionContext extends PrivateKeyEncryptionContext {
 
     @Override
     public void setCipherName(String value) {
-        ValidateUtils.checkTrue(value != null && value.equalsIgnoreCase(AES),
+        ValidateUtils.checkTrue((value != null) && value.equalsIgnoreCase(AES),
                 "OpenSSHKeyEncryptionContext works only with AES encryption");
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @deprecated Use {@link #getPassphrase()} instead
-     */
-    @Deprecated
-    @Override
-    public String getPassword() {
-        return passphrase == null ? null : new String(passphrase);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @deprecated Use {@link #setPassphrase()} instead
-     */
-    @Deprecated
-    @Override
-    public void setPassword(String value) {
-        setPassphrase(value.toCharArray());
-    }
-
-    /**
-     * Retrieves a <em>copy</em> of the internally stored passphrase. The caller is
-     * responsible for clearing the returned array when it is no longer needed.
-     *
-     * @return the passphrase
-     */
-    public char[] getPassphrase() {
-        return passphrase == null ? null : passphrase.clone();
-    }
-
-    /**
-     * Stores a <em>copy</em> of the passphrase. The caller is responsible for
-     * eventually clearing the array passed as an argument, and for {@link #clear()
-     * clearing} this {@link OpenSSHKeyEncryptionContext} once it is no longer
-     * needed.
-     *
-     * @param passphrase to store
-     */
-    public void setPassphrase(char[] passphrase) {
-        if (this.passphrase != null) {
-            Arrays.fill(this.passphrase, '\000');
-        }
-        this.passphrase = passphrase == null ? null : passphrase.clone();
     }
 
     /**
@@ -112,8 +59,7 @@ public class OpenSSHKeyEncryptionContext extends PrivateKeyEncryptionContext {
     }
 
     /**
-     * Sets the number of KDF rounds to apply. If smaller than the
-     * {@link #DEFAULT_KDF_ROUNDS}, set that default.
+     * Sets the number of KDF rounds to apply. If smaller than the {@link #DEFAULT_KDF_ROUNDS}, set that default.
      *
      * @param rounds number of rounds to apply
      */
@@ -122,26 +68,9 @@ public class OpenSSHKeyEncryptionContext extends PrivateKeyEncryptionContext {
     }
 
     /**
-     * Retrieves the cipher's factory name.
-     *
-     * @return the name
+     * @return the cipher's factory name.
      */
     protected String getCipherFactoryName() {
         return getCipherName().toLowerCase() + getCipherType() + '-' + getCipherMode().toLowerCase();
     }
-
-    /**
-     * Clears internal sensitive data (the password and the init vector).
-     */
-    public void clear() {
-        if (this.passphrase != null) {
-            Arrays.fill(this.passphrase, '\000');
-            this.passphrase = null;
-        }
-        byte[] iv = getInitVector();
-        if (iv != null) {
-            Arrays.fill(iv, (byte) 0);
-        }
-    }
-
 }

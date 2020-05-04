@@ -26,59 +26,59 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 
 import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
-import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 
 /**
- * A {@code KeyPairResourceWriter} can serialize keys to an external
- * representation.
+ * A {@code KeyPairResourceWriter} can serialize keys to an external representation.
  *
- * @param <OPTIONS> The type of {@link PrivateKeyEncryptionContext} to use with
- *                  this {@code KeyPairResourceWriter}.
+ * @param <OPTIONS> The type of {@link PrivateKeyEncryptionContext} to use with this {@code KeyPairResourceWriter}.
  */
 public interface KeyPairResourceWriter<OPTIONS extends PrivateKeyEncryptionContext> {
-
     /**
-     * Writes a serialization of a private key from a given {@link KeyPair} to a
-     * given {@link SecureByteArrayOutputStream}.
+     * Writes a serialization of a private key from a given {@link KeyPair} to a given {@link OutputStream}.
      *
-     * @param key     to write the private key of
-     * @param comment to write with the private key
-     * @param options for writing the key; may be {@code null} if no encryption is
-     *                wanted. The caller is responsible for
-     *                {@link PrivateKeyEncryptionContext#clear() clearing} the
-     *                options when no longer needed. If the passphrase obtained from
-     *                the context is {@code null} or an empty array (length zero or
-     *                containing only whitespace), the key is written unencrypted.
-     * @param out     to write to
-     * @return a byte array containing the serialized private key data
-     * @throws GeneralSecurityException if the key is inconsistent or unknown, or
-     *                                  the encryption specified cannot be applied
+     * @param  key                      to write the private key of
+     * @param  comment                  to write with the private key
+     * @param  options                  for writing the key; may be {@code null} if no encryption is wanted. The caller
+     *                                  is responsible for clearing the options when no longer needed. If the passphrase
+     *                                  obtained from the context is {@code null} or an empty/blank string (length zero
+     *                                  or containing only whitespace), the key is written unencrypted.
+     * @param  out                      The {@link OutputStream} to write to - recommend using a
+     *                                  {@code SecureByteArrayOutputStream} in order to reduce sensitive data exposure
+     *                                  in memory
+     * @throws GeneralSecurityException if the key is inconsistent or unknown, or the encryption specified cannot be
+     *                                  applied
      * @throws IOException              if the key cannot be written
      */
-    void writePrivateKey(KeyPair key, String comment, OPTIONS options, SecureByteArrayOutputStream out)
+    void writePrivateKey(KeyPair key, String comment, OPTIONS options, OutputStream out)
             throws IOException, GeneralSecurityException;
 
     /**
-     * Writes a serialization of a public key from a given {@link KeyPair} to a
-     * given {@link OutputStream}.
+     * Writes a serialization of a public key from a given {@link KeyPair} to a given {@link OutputStream}.
      *
-     * @param key     to write the public key of
-     * @param comment to write with the public key
-     * @param out     to write to
+     * @param  key                      to write the public key of
+     * @param  comment                  to write with the public key
+     * @param  out                      The {@link OutputStream} to write to - recommend using a
+     *                                  {@code SecureByteArrayOutputStream} in order to reduce sensitive data exposure
+     *                                  in memory
      * @throws GeneralSecurityException if the key is unknown
      * @throws IOException              if the key cannot be written
      */
-    void writePublicKey(KeyPair key, String comment, OutputStream out) throws IOException, GeneralSecurityException;
+    default void writePublicKey(KeyPair key, String comment, OutputStream out)
+            throws IOException, GeneralSecurityException {
+        writePublicKey(key.getPublic(), comment, out);
+    }
 
     /**
-     * Writes a serialization of a {@link PublicKey} to a given
-     * {@link OutputStream}.
+     * Writes a serialization of a {@link PublicKey} to a given {@link OutputStream}.
      *
-     * @param key     to write
-     * @param comment to write with the key
-     * @param out     to write to
+     * @param  key                      to write
+     * @param  comment                  to write with the key
+     * @param  out                      The {@link OutputStream} to write to - recommend using a
+     *                                  {@code SecureByteArrayOutputStream} in order to reduce sensitive data exposure
+     *                                  in memory
      * @throws GeneralSecurityException if the key is unknown
      * @throws IOException              if the key cannot be written
      */
-    void writePublicKey(PublicKey key, String comment, OutputStream out) throws IOException, GeneralSecurityException;
+    void writePublicKey(PublicKey key, String comment, OutputStream out)
+            throws IOException, GeneralSecurityException;
 }

@@ -49,11 +49,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
+import org.apache.sshd.common.config.keys.BuiltinIdentities;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -404,12 +407,23 @@ public abstract class JUnitTestSupport extends Assert {
         assertKeyEquals(message + "[private]", expected.getPrivate(), actual.getPrivate());
     }
 
+    public static void assertKeyEncodingEquals(String message, Key expected, Key actual) {
+        if (expected == actual) {
+            return;
+        }
+
+        assertEquals(message + "[format]", expected.getFormat(), actual.getFormat());
+        assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
+    }
+
     public static <T extends Key> void assertKeyEquals(String message, T expected, T actual) {
         if (expected == actual) {
             return;
         }
 
-        assertEquals(message + "[algorithm]", expected.getAlgorithm(), actual.getAlgorithm());
+        assertEquals(message + "[algorithm]",
+                resolveEffectiveAlgorithm(expected.getAlgorithm()),
+                resolveEffectiveAlgorithm(actual.getAlgorithm()));
 
         if (expected instanceof RSAPublicKey) {
             assertRSAPublicKeyEquals(message, RSAPublicKey.class.cast(expected), RSAPublicKey.class.cast(actual));
@@ -424,7 +438,16 @@ public abstract class JUnitTestSupport extends Assert {
         } else if (expected instanceof ECPrivateKey) {
             assertECPrivateKeyEquals(message, ECPrivateKey.class.cast(expected), ECPrivateKey.class.cast(actual));
         }
-        assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
+    }
+
+    public static String resolveEffectiveAlgorithm(String algorithm) {
+        if (GenericUtils.isEmpty(algorithm)) {
+            return algorithm;
+        } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(algorithm)) {
+            return KeyUtils.EC_ALGORITHM;
+        } else {
+            return algorithm.toUpperCase(Locale.ENGLISH);
+        }
     }
 
     public static void assertRSAPublicKeyEquals(String message, RSAPublicKey expected, RSAPublicKey actual) {
