@@ -1030,6 +1030,15 @@
                         -->
                     </dependencies>
                 </plugin>
+                <plugin>
+                    <groupId>net.revelc.code.formatter</groupId>
+                    <artifactId>formatter-maven-plugin</artifactId>
+                    <version>2.11.0</version>
+                    <configuration>
+                        <configFile>${workspace.root.dir}${file.separator}sshd-eclipse-formatter-config.xml</configFile>
+                        <lineEnding>LF</lineEnding>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1072,10 +1081,6 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.11.0</version>
-                <configuration>
-                    <configFile>${workspace.root.dir}${file.separator}sshd-eclipse-formatter-config.xml</configFile>
-                </configuration>
                 <executions>
                     <execution>
                         <id>format</id>

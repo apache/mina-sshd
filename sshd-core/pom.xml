@@ -135,6 +135,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <!-- For some reason the plugin splits the standard
+                            license header to extra blank lines -->
+                        <exclude>src/test/java/org/apache/sshd/deprecated</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>        
             <!-- publish the test-jar since it contains some classes used by other
                 artifacts tests -->
             <plugin>
