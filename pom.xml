@@ -1039,6 +1039,18 @@
                         <lineEnding>LF</lineEnding>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>net.revelc.code</groupId>
+                    <artifactId>impsort-maven-plugin</artifactId>
+                    <version>1.4.1</version>
+                    <configuration>
+                        <lineEnding>LF</lineEnding>
+                        <groups>java.,javax.,org.w3c.,org.xml.,junit.</groups>
+                        <removeUnused>true</removeUnused>
+                        <staticAfter>true</staticAfter>
+                        <staticGroups>java.,javax.,org.w3c.,org.xml.,junit.</staticGroups>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1094,13 +1106,6 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.3.2</version>
-                <configuration>
-                    <groups>java.,javax.,org.w3c.,org.xml.,junit.</groups>
-                    <removeUnused>true</removeUnused>
-                    <staticAfter>true</staticAfter>
-                    <staticGroups>java.,javax.,org.w3c.,org.xml.,junit.</staticGroups>
-                </configuration>
                 <executions>
                     <execution>
                         <id>sort-imports</id>
