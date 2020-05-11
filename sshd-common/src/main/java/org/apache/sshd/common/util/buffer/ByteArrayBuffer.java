@@ -217,7 +217,7 @@ public class ByteArrayBuffer extends Buffer {
     @Override
     public void putBuffer(ByteBuffer buffer) {
         int required = buffer.remaining();
-        ensureCapacity(required + Integer.SIZE);
+        ensureCapacity(required + Integer.BYTES);
         putInt(required);
         buffer.get(data, wpos, required);
         wpos += required;
