@@ -12,12 +12,23 @@
 translated internally into same code flow as if an `SSH_MSH_REQUEST_FAILURE` has
 been received - see [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968).
 
+* Server SFTP subsystem internal code dealing with the local files has been delegated to
+the `SftpFileSystemAccessor` in order to allow easier hooking into the SFTP subsystem.
+
+    * Resolving a local file path for an SFTP remote one
+    * Reading/Writing a file's attribute(s)
+    * Creating files links
+    * Copying / Renaming / Deleting files
+
 ## Minor code helpers
 
 * Handling of debug/ignore/unimplemented messages has been split into `handleXXX` and `doInvokeXXXMsgHandler` methods
 where the former validate the messages and deal with the idle timeout, and the latter execute the actual invcation.
 
 * Added overloaded methods that accept a `java.time.Duration` specifier for timeout value.
+
+* The argument representing the SFTP subsystem in invocations to `SftpFileSystemAccessor` has been enhanced to expose
+as much of the available functionality as possible.
 
 ## Behavioral changes and enhancements
 
@@ -36,3 +47,5 @@ where the former validate the messages and deal with the idle timeout, and the l
 * [SSHD-660](https://issues.apache.org/jira/browse/SSHD-660) - Added support for server-side signed certificate keys
 
 * [SSHD-984](https://issues.apache.org/jira/browse/SSHD-984) - Utility method to export KeyPair in OpenSSH format
+
+* [SSHD-992](https://issues.apache.org/jira/browse/SSHD-984) - Provide more hooks into the SFTP server subsystem via SftpFileSystemAccessor

@@ -362,11 +362,8 @@ public class SftpSubsystem
         SftpEventListener listener = getSftpEventListenerProxy();
         listener.linking(session, link, existing, symLink);
         try {
-            if (symLink) {
-                Files.createSymbolicLink(link, existing);
-            } else {
-                Files.createLink(link, existing);
-            }
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            accessor.createLink(session, this, link, existing, symLink);
         } catch (IOException | RuntimeException e) {
             listener.linked(session, link, existing, symLink, e);
             throw e;

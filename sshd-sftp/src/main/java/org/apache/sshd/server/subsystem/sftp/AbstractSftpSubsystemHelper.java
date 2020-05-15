@@ -23,7 +23,6 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -41,15 +40,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
-import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
-import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
@@ -95,7 +89,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -110,10 +103,10 @@ import org.apache.sshd.server.session.ServerSession;
 @SuppressWarnings("checkstyle:MethodCount") // TODO split this big class and remove the suppression
 public abstract class AbstractSftpSubsystemHelper
         extends AbstractLoggingBean
-        implements SftpEventListenerManager, SftpSubsystemEnvironment {
+        implements SftpSubsystemProxy {
     /**
      * Whether to automatically follow symbolic links when resolving paths
-     * 
+     *
      * @see #DEFAULT_AUTO_FOLLOW_LINKS
      */
     public static final String AUTO_FOLLOW_LINKS = "sftp-auto-follow-links";
@@ -1181,13 +1174,14 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected String doReadLink(int id, String path) throws IOException {
-        Path f = resolveFile(path);
-        Path t = Files.readSymbolicLink(f);
+        Path link = resolveFile(path);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        String target = accessor.resolveLinkTarget(getServerSession(), this, link);
         if (log.isDebugEnabled()) {
             log.debug("doReadLink({})[id={}] path={}[{}]: {}",
-                    getServerSession(), id, path, f, t);
+                    getServerSession(), id, path, link, target);
         }
-        return t.toString();
+        return target;
     }
 
     protected void doRename(Buffer buffer, int id) throws IOException {
@@ -1237,10 +1231,8 @@ public abstract class AbstractSftpSubsystemHelper
 
         listener.moving(session, o, n, opts);
         try {
-            Files.move(o, n,
-                    GenericUtils.isEmpty(opts)
-                            ? IoUtils.EMPTY_COPY_OPTIONS
-                            : opts.toArray(new CopyOption[opts.size()]));
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            accessor.renameFile(session, this, o, n, opts);
         } catch (IOException | RuntimeException e) {
             listener.moved(session, o, n, opts, e);
             throw e;
@@ -1308,10 +1300,8 @@ public abstract class AbstractSftpSubsystemHelper
             throws IOException {
         Path src = resolveFile(srcFile);
         Path dst = resolveFile(dstFile);
-        Files.copy(src, dst,
-                GenericUtils.isEmpty(opts)
-                        ? IoUtils.EMPTY_COPY_OPTIONS
-                        : opts.toArray(new CopyOption[opts.size()]));
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        accessor.copyFile(getServerSession(), this, src, dst, opts);
     }
 
     protected void doBlock(Buffer buffer, int id) throws IOException {
@@ -1582,7 +1572,8 @@ public abstract class AbstractSftpSubsystemHelper
 
         listener.removing(session, p, isDirectory);
         try {
-            Files.delete(p);
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            accessor.removeFile(session, this, p, isDirectory);
         } catch (IOException | RuntimeException e) {
             listener.removed(session, p, isDirectory, e);
             throw e;
@@ -1632,7 +1623,8 @@ public abstract class AbstractSftpSubsystemHelper
             SftpEventListener listener = getSftpEventListenerProxy();
             listener.creating(session, p, attrs);
             try {
-                Files.createDirectory(p);
+                SftpFileSystemAccessor accessor = getFileSystemAccessor();
+                accessor.createDirectory(session, this, p);
                 boolean followLinks = resolvePathResolutionFollowLinks(
                         SftpConstants.SSH_FXP_MKDIR, "", p);
                 doSetAttributes(p, attrs, followLinks);
@@ -2370,7 +2362,7 @@ public abstract class AbstractSftpSubsystemHelper
      * Called by {@link #getAttributes(Path, int, LinkOption...)} in order to complete any attributes that could not be
      * retrieved via the supported file system views. These attributes are deemed important so an extra effort is made
      * to provide a value for them
-     * 
+     *
      * @param  file        The {@link Path} location for the required attributes
      * @param  flags       A mask of the original required attributes - ignored by the default implementation
      * @param  current     The {@link Map} of attributes already retrieved - may be {@code null}/empty and/or
@@ -2465,7 +2457,9 @@ public abstract class AbstractSftpSubsystemHelper
             Path file, String view, LinkOption... options)
             throws IOException {
         try {
-            Map<String, ?> attrs = Files.readAttributes(file, view, options);
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            Map<String, ?> attrs = accessor.readFileAttributes(
+                    getServerSession(), this, file, view, options);
             if (GenericUtils.isEmpty(attrs)) {
                 return Collections.emptyNavigableMap();
             }
@@ -2654,7 +2648,7 @@ public abstract class AbstractSftpSubsystemHelper
             Map<String, byte[]> extensions = (Map<String, byte[]>) value;
             setFileExtensions(file, extensions, options);
         } else {
-            Files.setAttribute(file, view + ":" + attribute, value, options);
+            setFileRawViewAttribute(file, view, attribute, value, options);
         }
     }
 
@@ -2670,18 +2664,23 @@ public abstract class AbstractSftpSubsystemHelper
                     getServerSession(), file, view, attribute, value);
         }
 
-        Files.setAttribute(file, view + ":" + attribute, value, options);
+        setFileRawViewAttribute(file, view, attribute, value, options);
+    }
+
+    protected void setFileRawViewAttribute(
+            Path file, String view, String attribute, Object value, LinkOption... options)
+            throws IOException {
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        accessor.setFileAttribute(
+                getServerSession(), this, file, view, attribute, value, options);
     }
 
     protected void setFileOwnership(
             Path file, String attribute, Principal value, LinkOption... options)
             throws IOException {
-        if (value == null) {
-            return;
-        }
-
+        ServerSession serverSession = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("setFileOwnership({})[{}] {}={}", getServerSession(), file, attribute, value);
+            log.debug("setFileOwnership({})[{}] {}={}", serverSession, file, attribute, value);
         }
 
         /*
@@ -2690,30 +2689,11 @@ public abstract class AbstractSftpSubsystemHelper
          * To ensure consistent and correct behavior across platforms it is recommended that this method should only be
          * used to set the file owner to a user principal that is not a group.
          */
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
         if ("owner".equalsIgnoreCase(attribute)) {
-            FileOwnerAttributeView view = Files.getFileAttributeView(file, FileOwnerAttributeView.class, options);
-            if (view == null) {
-                throw new UnsupportedOperationException("Owner view not supported for " + file);
-            }
-
-            if (!(value instanceof UserPrincipal)) {
-                throw new StreamCorruptedException(
-                        "Owner is not " + UserPrincipal.class.getSimpleName() + ": " + value.getClass().getSimpleName());
-            }
-
-            view.setOwner((UserPrincipal) value);
+            accessor.setFileOwner(serverSession, this, file, value, options);
         } else if ("group".equalsIgnoreCase(attribute)) {
-            PosixFileAttributeView view = Files.getFileAttributeView(file, PosixFileAttributeView.class, options);
-            if (view == null) {
-                throw new UnsupportedOperationException("POSIX view not supported");
-            }
-
-            if (!(value instanceof GroupPrincipal)) {
-                throw new StreamCorruptedException(
-                        "Group is not " + GroupPrincipal.class.getSimpleName() + ": " + value.getClass().getSimpleName());
-            }
-
-            view.setGroup((GroupPrincipal) value);
+            accessor.setGroupOwner(serverSession, this, file, value, options);
         } else {
             throw new UnsupportedOperationException("Unknown ownership attribute: " + attribute);
         }
@@ -2747,34 +2727,26 @@ public abstract class AbstractSftpSubsystemHelper
     protected void setFilePermissions(
             Path file, Set<PosixFilePermission> perms, LinkOption... options)
             throws IOException {
-        if (OsUtils.isWin32()) {
-            IoUtils.setPermissionsToFile(file.toFile(), perms);
-            return;
-        }
-
-        PosixFileAttributeView view = Files.getFileAttributeView(file, PosixFileAttributeView.class, options);
-        if (view == null) {
-            throw new UnsupportedOperationException("POSIX view not supported for " + file);
-        }
-
+        ServerSession serverSession = getServerSession();
         if (log.isTraceEnabled()) {
-            log.trace("setFilePermissions({})[{}] {}", getServerSession(), file, perms);
+            log.trace("setFilePermissions({})[{}] {}", serverSession, file, perms);
         }
-        view.setPermissions(perms);
+
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        accessor.setFilePermissions(
+                serverSession, this, file, perms, options);
     }
 
     protected void setFileAccessControl(
             Path file, List<AclEntry> acl, LinkOption... options)
             throws IOException {
-        AclFileAttributeView view = Files.getFileAttributeView(file, AclFileAttributeView.class, options);
-        if (view == null) {
-            throw new UnsupportedOperationException("ACL view not supported for " + file);
+        ServerSession serverSession = getServerSession();
+        if (log.isTraceEnabled()) {
+            log.trace("setFileAccessControl({})[{}] {}", serverSession, file, acl);
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("setFileAccessControl({})[{}] {}", getServerSession(), file, acl);
-        }
-        view.setAcl(acl);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        accessor.setFileAccessControl(serverSession, this, file, acl, options);
     }
 
     protected void handleUnsupportedAttributes(Collection<String> attributes) {
@@ -2798,32 +2770,21 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected GroupPrincipal toGroup(Path file, GroupPrincipal name) throws IOException {
-        String groupName = name.toString();
-        FileSystem fileSystem = file.getFileSystem();
-        UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
-            if (lookupService == null) {
-                throw new UserPrincipalNotFoundException(groupName);
-            }
-            return lookupService.lookupPrincipalByGroupName(groupName);
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            return accessor.resolveGroupOwner(getServerSession(), this, file, name);
         } catch (IOException e) {
-            handleUserPrincipalLookupServiceException(GroupPrincipal.class, groupName, e);
+            handleUserPrincipalLookupServiceException(GroupPrincipal.class, name.toString(), e);
             return null;
         }
     }
 
     protected UserPrincipal toUser(Path file, UserPrincipal name) throws IOException {
-        String username = name.toString();
-        FileSystem fileSystem = file.getFileSystem();
-        UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
         try {
-            if (lookupService == null) {
-                throw new UserPrincipalNotFoundException(username);
-            }
-
-            return lookupService.lookupPrincipalByName(username);
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            return accessor.resolveFileOwner(getServerSession(), this, file, name);
         } catch (IOException e) {
-            handleUserPrincipalLookupServiceException(UserPrincipal.class, username, e);
+            handleUserPrincipalLookupServiceException(UserPrincipal.class, name.toString(), e);
             return null;
         }
     }
@@ -2954,13 +2915,13 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected Path resolveFile(String remotePath)
             throws IOException, InvalidPathException {
-        Path defaultDir = getDefaultDirectory();
-        String path = SelectorUtils.translateToLocalFileSystemPath(
-                remotePath, '/', defaultDir.getFileSystem());
-        Path p = defaultDir.resolve(path);
+        ServerSession serverSession = getServerSession();
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        Path localPath = accessor.resolveLocalFilePath(
+                serverSession, this, getDefaultDirectory(), remotePath);
         if (log.isTraceEnabled()) {
-            log.trace("resolveFile({}) {} => {}", getServerSession(), remotePath, p);
+            log.trace("resolveFile({}) {} => {}", serverSession, remotePath, localPath);
         }
-        return p;
+        return localPath;
     }
 }

@@ -100,10 +100,10 @@ import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
 import org.apache.sshd.server.subsystem.sftp.FileHandle;
 import org.apache.sshd.server.subsystem.sftp.Handle;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
-import org.apache.sshd.server.subsystem.sftp.SftpEventListenerManager;
 import org.apache.sshd.server.subsystem.sftp.SftpFileSystemAccessor;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemProxy;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
@@ -629,7 +629,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             factory.setFileSystemAccessor(new SftpFileSystemAccessor() {
                 @Override
                 public SeekableByteChannel openFile(
-                        ServerSession session, SftpEventListenerManager subsystem, FileHandle fileHandle, Path file,
+                        ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file,
                         String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
                         throws IOException {
                     fileHolder.set(file);
@@ -639,7 +639,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        ServerSession session, SftpEventListenerManager subsystem,
+                        ServerSession session, SftpSubsystemProxy subsystem,
                         DirectoryHandle dirHandle, Path dir, String handle)
                         throws IOException {
                     dirHolder.set(dir);
