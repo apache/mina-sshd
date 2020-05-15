@@ -105,7 +105,7 @@
         <gmaven.plugin.version>2.1.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>5</groovy.minor.version>
-        <groovy.release.version>10</groovy.release.version>
+        <groovy.release.version>11</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
