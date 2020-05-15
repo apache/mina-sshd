@@ -92,7 +92,7 @@
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
         <maven.compiler.source>${javac.source}</maven.compiler.source>
-        <ant.version>1.10.7</ant.version>
+        <ant.version>1.10.8</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
         <build-helper-maven-plugin.version>3.0.0</build-helper-maven-plugin.version>
 
