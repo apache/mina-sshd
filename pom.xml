@@ -114,7 +114,7 @@
             -->
         <bouncycastle.version>1.64</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <spring.version>5.2.5.RELEASE</spring.version>
+        <spring.version>5.2.6.RELEASE</spring.version>
         <jgit.version>5.7.0.202003110725-r</jgit.version>
         <junit.version>4.13</junit.version>
         <bytebuddy.version>1.10.10</bytebuddy.version>
