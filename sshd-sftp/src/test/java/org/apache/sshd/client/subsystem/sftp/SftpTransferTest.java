@@ -61,6 +61,7 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
             Files.deleteIfExists(remote1);
             Files.deleteIfExists(local2);
 
+            Files.createDirectories(localRoot);
             String data = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")\n";
             try (BufferedWriter bos = Files.newBufferedWriter(local0)) {
                 long count = 0;
