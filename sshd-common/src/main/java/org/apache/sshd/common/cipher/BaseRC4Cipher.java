@@ -29,7 +29,7 @@ public class BaseRC4Cipher extends BaseCipher {
     public static final int SKIP_SIZE = 1536;
 
     public BaseRC4Cipher(int ivsize, int kdfSize, int keySize, int blkSize) {
-        super(ivsize, kdfSize, "ARCFOUR", keySize, "RC4", blkSize);
+        super(ivsize, 0, kdfSize, "ARCFOUR", keySize, "RC4", blkSize);
     }
 
     @Override

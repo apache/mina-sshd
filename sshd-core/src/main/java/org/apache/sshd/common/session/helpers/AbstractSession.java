@@ -51,6 +51,8 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.cipher.BaseCipher;
+import org.apache.sshd.common.cipher.BaseGCMCipher;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
@@ -1107,9 +1109,13 @@ public abstract class AbstractSession extends SessionHelper {
         // Since the caller claims to know how many bytes they will need
         // increase their request to account for our headers/footers if
         // they actually send exactly this amount.
-        boolean etmMode = (outMac == null) ? false : outMac.isEncryptThenMac();
-        int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode);
+        boolean etmMode = outMac != null && outMac.isEncryptThenMac();
+        boolean authMode = outCipher != null && outCipher.getAuthenticationTagSize() > 0;
+        int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode);
         len = SshConstants.SSH_PACKET_HEADER_LEN + len + pad + Byte.BYTES /* the pad length byte */;
+        if (outCipher != null) {
+            len += outCipher.getAuthenticationTagSize();
+        }
         if (outMac != null) {
             len += outMacSize;
         }
@@ -1203,9 +1209,12 @@ public abstract class AbstractSession extends SessionHelper {
             }
 
             // Compute padding length
-            boolean etmMode = (outMac == null) ? false : outMac.isEncryptThenMac();
-            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode);
+            boolean etmMode = outMac != null && outMac.isEncryptThenMac();
+            int authLen = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
+            boolean authMode = authLen > 0;
             int oldLen = len;
+
+            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode); // may need more?
             len = len + pad + Byte.BYTES /* the pad length byte */;
 
             if (traceEnabled) {
@@ -1223,7 +1232,9 @@ public abstract class AbstractSession extends SessionHelper {
                 random.fill(buffer.array(), buffer.wpos() - pad, pad);
             }
 
-            if (etmMode) {
+            if (authMode) {
+                aeadOutgoingBuffer(buffer, off, len);
+            } else if (etmMode) {
                 // Do not encrypt the length field
                 encryptOutgoingBuffer(buffer, off + Integer.BYTES, len);
                 appendOutgoingMac(buffer, off, len);
@@ -1246,6 +1257,20 @@ public abstract class AbstractSession extends SessionHelper {
             throw e;
         } catch (Exception e) {
             throw new SshException(e);
+        }
+    }
+
+    protected void aeadOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
+        if (outCipher instanceof BaseGCMCipher) {
+            BaseGCMCipher cipher = (BaseGCMCipher) outCipher;
+            buf.wpos(offset + Integer.BYTES + len + cipher.getAuthenticationTagSize());
+            byte[] data = buf.array();
+            cipher.incrementIV();
+            cipher.updateAAD(data, offset, Integer.BYTES);
+            cipher.update(data, offset + Integer.BYTES, len);
+            cipher.doFinal(data, offset + Integer.BYTES + len);
+            int blocksCount = len / outCipherSize;
+            outBlocksCount.addAndGet(Math.max(1, blocksCount));
         }
     }
 
@@ -1283,7 +1308,10 @@ public abstract class AbstractSession extends SessionHelper {
     protected void decode() throws Exception {
         // Decoding loop
         for (;;) {
-            boolean etmMode = (inMac == null) ? false : inMac.isEncryptThenMac();
+
+            int authLen = inCipher != null ? inCipher.getAuthenticationTagSize() : 0;
+            boolean etmMode = inMac != null && inMac.isEncryptThenMac();
+            boolean authMode = authLen > 0;
             // Wait for beginning of packet
             if (decoderState == 0) {
                 // The read position should always be 0 at this point because we have compacted this buffer
@@ -1297,11 +1325,11 @@ public abstract class AbstractSession extends SessionHelper {
                  * However, we currently do not have ciphers with a block size of less than 8 we avoid un-necessary
                  * Math.max(minBufLen, 8) for each and every packet
                  */
-                int minBufLen = etmMode ? Integer.BYTES : inCipherSize;
+                int minBufLen = etmMode || authMode ? Integer.BYTES : inCipherSize;
                 // If we have received enough bytes, start processing those
                 if (decoderBuffer.available() > minBufLen) {
                     // Decrypt the first bytes so we can extract the packet length
-                    if ((inCipher != null) && (!etmMode)) {
+                    if ((inCipher != null) && (!etmMode) && (!authMode)) {
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
 
                         int blocksCount = inCipherSize / inCipher.getCipherBlockSize();
@@ -1334,9 +1362,19 @@ public abstract class AbstractSession extends SessionHelper {
                 assert decoderBuffer.rpos() == Integer.BYTES;
                 int macSize = (inMac != null) ? inMacSize : 0;
                 // Check if the packet has been fully received
-                if (decoderBuffer.available() >= (decoderLength + macSize)) {
+                if (decoderBuffer.available() >= (decoderLength + macSize + authLen)) {
                     byte[] data = decoderBuffer.array();
-                    if (etmMode) {
+                    if (authMode) {
+                        final BaseGCMCipher cipher = (BaseGCMCipher) inCipher;
+                        cipher.incrementIV();
+                        // RFC 5647: packet length encoded in additional data and unencrypted
+                        int off = decoderBuffer.rpos();
+                        cipher.updateAAD(data, off - Integer.BYTES, Integer.BYTES);
+                        cipher.update(data, off, decoderLength);
+                        cipher.doFinal(data, Integer.BYTES + decoderLength);
+                        int blocksCount = decoderLength / inCipherSize;
+                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
+                    } else if (etmMode) {
                         validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
 
                         if (inCipher != null) {
@@ -1399,7 +1437,7 @@ public abstract class AbstractSession extends SessionHelper {
                     handleMessage(packet);
 
                     // Set ready to handle next packet
-                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize);
+                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize + authLen);
                     decoderBuffer.wpos(wpos);
                     decoderBuffer.compact();
                     decoderState = 0;
@@ -1610,13 +1648,18 @@ public abstract class AbstractSession extends SessionHelper {
         e_s2c = resizeKey(e_s2c, s2ccipher.getKdfSize(), hash, k, h);
         s2ccipher.init(serverSession ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
-        value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-        Mac s2cmac = NamedFactory.create(getMacFactories(), value);
-        if (s2cmac == null) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown s2c MAC: " + value);
+        Mac s2cmac;
+        if (s2ccipher.getAuthenticationTagSize() == 0) {
+            value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
+            s2cmac = NamedFactory.create(getMacFactories(), value);
+            if (s2cmac == null) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown s2c MAC: " + value);
+            }
+            mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
+            s2cmac.init(mac_s2c);
+        } else {
+            s2cmac = null;
         }
-        mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
-        s2cmac.init(mac_s2c);
 
         value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
         Compression s2ccomp = NamedFactory.create(getCompressionFactories(), value);
@@ -1630,13 +1673,18 @@ public abstract class AbstractSession extends SessionHelper {
         e_c2s = resizeKey(e_c2s, c2scipher.getKdfSize(), hash, k, h);
         c2scipher.init(serverSession ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
-        value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-        Mac c2smac = NamedFactory.create(getMacFactories(), value);
-        if (c2smac == null) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown c2s MAC: " + value);
+        Mac c2smac;
+        if (c2scipher.getAuthenticationTagSize() == 0) {
+            value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
+            c2smac = NamedFactory.create(getMacFactories(), value);
+            if (c2smac == null) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown c2s MAC: " + value);
+            }
+            mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
+            c2smac.init(mac_c2s);
+        } else {
+            c2smac = null;
         }
-        mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
-        c2smac.init(mac_c2s);
 
         value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
         Compression c2scomp = NamedFactory.create(getCompressionFactories(), value);
@@ -1661,12 +1709,12 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         outCipherSize = outCipher.getCipherBlockSize();
-        outMacSize = outMac.getBlockSize();
+        outMacSize = outMac != null ? outMac.getBlockSize() : 0;
         // TODO add support for configurable compression level
         outCompression.init(Compression.Type.Deflater, -1);
 
         inCipherSize = inCipher.getCipherBlockSize();
-        inMacSize = inMac.getBlockSize();
+        inMacSize = inMac != null ? inMac.getBlockSize() : 0;
         inMacResult = new byte[inMacSize];
         // TODO add support for configurable compression level
         inCompression.init(Compression.Type.Inflater, -1);

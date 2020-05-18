@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.common.cipher;
 
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Base class for all Cipher implementations delegating to the JCE provider.
@@ -33,6 +33,7 @@ public class BaseCipher implements Cipher {
 
     private javax.crypto.Cipher cipher;
     private final int ivsize;
+    private final int authSize;
     private final int kdfSize;
     private final String algorithm;
     private final int keySize;
@@ -41,9 +42,10 @@ public class BaseCipher implements Cipher {
     private String s;
 
     public BaseCipher(
-                      int ivsize, int kdfSize, String algorithm,
-                      int keySize, String transformation, int blkSize) {
+            int ivsize, int authSize, int kdfSize, String algorithm,
+            int keySize, String transformation, int blkSize) {
         this.ivsize = ivsize;
+        this.authSize = authSize;
         this.kdfSize = kdfSize;
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
         this.keySize = keySize;
@@ -69,6 +71,11 @@ public class BaseCipher implements Cipher {
     @Override
     public int getIVSize() {
         return ivsize;
+    }
+
+    @Override
+    public int getAuthenticationTagSize() {
+        return authSize;
     }
 
     @Override

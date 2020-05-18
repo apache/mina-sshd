@@ -46,32 +46,40 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinCiphers implements CipherFactory {
-    none(Constants.NONE, 0, 0, "None", 0, "None", 0) {
+    none(Constants.NONE, 0, 0, 0, "None", 0, "None", 0) {
         @Override
         public Cipher create() {
             return new CipherNone();
         }
     },
-    aes128cbc(Constants.AES128_CBC, 16, 16, "AES", 128, "AES/CBC/NoPadding", 16),
-    aes128ctr(Constants.AES128_CTR, 16, 16, "AES", 128, "AES/CTR/NoPadding", 16),
-    aes192cbc(Constants.AES192_CBC, 16, 24, "AES", 192, "AES/CBC/NoPadding", 16),
-    aes192ctr(Constants.AES192_CTR, 16, 24, "AES", 192, "AES/CTR/NoPadding", 16),
-    aes256cbc(Constants.AES256_CBC, 16, 32, "AES", 256, "AES/CBC/NoPadding", 16),
-    aes256ctr(Constants.AES256_CTR, 16, 32, "AES", 256, "AES/CTR/NoPadding", 16),
-    arcfour128(Constants.ARCFOUR128, 8, 16, "ARCFOUR", 128, "RC4", 16) {
+    aes128cbc(Constants.AES128_CBC, 16, 0, 16, "AES", 128, "AES/CBC/NoPadding", 16),
+    aes128ctr(Constants.AES128_CTR, 16, 0, 16, "AES", 128, "AES/CTR/NoPadding", 16),
+    aes128gcm(Constants.AES128_GCM, 12, 16, 16, "AES", 128, "AES/GCM/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseGCMCipher(
+                    getIVSize(), getKdfSize(), getAlgorithm(), getKeySize(), getTransformation(), getCipherBlockSize(), getAuthenticationTagSize());
+        }
+    },
+    // TODO: aes256gcm
+    aes192cbc(Constants.AES192_CBC, 16, 0, 24, "AES", 192, "AES/CBC/NoPadding", 16),
+    aes192ctr(Constants.AES192_CTR, 16, 0, 24, "AES", 192, "AES/CTR/NoPadding", 16),
+    aes256cbc(Constants.AES256_CBC, 16, 0, 32, "AES", 256, "AES/CBC/NoPadding", 16),
+    aes256ctr(Constants.AES256_CTR, 16, 0, 32, "AES", 256, "AES/CTR/NoPadding", 16),
+    arcfour128(Constants.ARCFOUR128, 8, 0, 16, "ARCFOUR", 128, "RC4", 16) {
         @Override
         public Cipher create() {
             return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
         }
     },
-    arcfour256(Constants.ARCFOUR256, 8, 32, "ARCFOUR", 256, "RC4", 32) {
+    arcfour256(Constants.ARCFOUR256, 8, 0, 32, "ARCFOUR", 256, "RC4", 32) {
         @Override
         public Cipher create() {
             return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
         }
     },
-    blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
-    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", 192, "DESede/CBC/NoPadding", 8);
+    blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
+    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 0, 24, "DESede", 192, "DESede/CBC/NoPadding", 8);
 
     public static final Set<BuiltinCiphers> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
 
@@ -79,6 +87,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
     private final String factoryName;
     private final int ivsize;
+    private final int authSize;
     private final int kdfSize;
     private final int keysize;
     private final int blkSize;
@@ -87,10 +96,11 @@ public enum BuiltinCiphers implements CipherFactory {
     private final boolean supported;
 
     BuiltinCiphers(
-                   String factoryName, int ivsize, int kdfSize,
-                   String algorithm, int keySize, String transformation, int blkSize) {
+            String factoryName, int ivsize, final int authSize, int kdfSize,
+            String algorithm, int keySize, String transformation, int blkSize) {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
+        this.authSize = authSize;
         this.kdfSize = kdfSize;
         this.keysize = keySize;
         this.algorithm = algorithm;
@@ -134,6 +144,11 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     @Override
+    public int getAuthenticationTagSize() {
+        return authSize;
+    }
+
+    @Override
     public int getKdfSize() {
         return kdfSize;
     }
@@ -156,7 +171,7 @@ public enum BuiltinCiphers implements CipherFactory {
     @Override
     public Cipher create() {
         return new BaseCipher(
-                getIVSize(), getKdfSize(), getAlgorithm(),
+                getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(),
                 getKeySize(), getTransformation(), getCipherBlockSize());
     }
 
@@ -319,6 +334,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
         public static final String AES128_CBC = "aes128-cbc";
         public static final String AES128_CTR = "aes128-ctr";
+        public static final String AES128_GCM = "aes128-gcm@openssh.com";
         public static final String AES192_CBC = "aes192-cbc";
         public static final String AES192_CTR = "aes192-ctr";
         public static final String AES256_CBC = "aes256-cbc";
