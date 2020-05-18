@@ -65,7 +65,7 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
 
     protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector)
             throws IOException {
-        return new DefaultSftpClient(session);
+        return new DefaultSftpClient(session, selector);
     }
 
     @Override

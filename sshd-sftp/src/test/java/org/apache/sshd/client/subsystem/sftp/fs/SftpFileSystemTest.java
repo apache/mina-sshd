@@ -329,12 +329,13 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testSftpVersionSelector() throws Exception {
         AtomicInteger selected = new AtomicInteger(-1);
-        SftpVersionSelector selector = (session, current, available) -> {
-            int value = GenericUtils.stream(available)
-                    .mapToInt(Integer::intValue)
-                    .filter(v -> v != current)
-                    .max()
-                    .orElseGet(() -> current);
+        SftpVersionSelector selector = (session, initial, current, available) -> {
+            int value = initial
+                    ? current : GenericUtils.stream(available)
+                            .mapToInt(Integer::intValue)
+                            .filter(v -> v != current)
+                            .max()
+                            .orElseGet(() -> current);
             selected.set(value);
             return value;
         };

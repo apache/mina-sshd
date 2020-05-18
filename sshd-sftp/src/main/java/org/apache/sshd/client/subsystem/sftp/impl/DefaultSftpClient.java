@@ -61,6 +61,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NullOutputStream;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -77,7 +78,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
     private Charset nameDecodingCharset = DEFAULT_NAME_DECODING_CHARSET;
 
-    public DefaultSftpClient(ClientSession clientSession) throws IOException {
+    /**
+     * @param  clientSession          The {@link ClientSession}
+     * @param  initialVersionSelector The initial {@link SftpVersionSelector} - if {@code null} then version 6 is
+     *                                assumed.
+     * @throws IOException            If failed to initialize
+     */
+    public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector) throws IOException {
         this.nameDecodingCharset = PropertyResolverUtils.getCharset(
                 clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
@@ -99,7 +106,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         });
 
         try {
-            init(initializationTimeout);
+            init(clientSession, initialVersionSelector, initializationTimeout);
         } catch (IOException | RuntimeException e) {
             this.channel.close(true);
             throw e;
@@ -331,18 +338,26 @@ public class DefaultSftpClient extends AbstractSftpClient {
         return null;
     }
 
-    protected void init(long initializationTimeout) throws IOException {
+    protected void init(ClientSession session, SftpVersionSelector initialVersionSelector, long initializationTimeout)
+            throws IOException {
+        int initialVersion = (initialVersionSelector == null)
+                ? SftpConstants.SFTP_V6
+                : initialVersionSelector.selectVersion(
+                        session, true, SftpConstants.SFTP_V6, SftpSubsystemEnvironment.SUPPORTED_SFTP_VERSIONS);
+        ValidateUtils.checkState(SftpSubsystemEnvironment.SUPPORTED_SFTP_VERSIONS.contains(initialVersion),
+                "Unsupported initial version selected: %d", initialVersion);
+
         // Send init packet
         Buffer buf = new ByteArrayBuffer(INIT_COMMAND_SIZE + SshConstants.SSH_PACKET_HEADER_LEN);
         buf.putInt(INIT_COMMAND_SIZE);
         buf.putByte((byte) SftpConstants.SSH_FXP_INIT);
-        buf.putInt(SftpConstants.SFTP_V6);
+        buf.putInt(initialVersion);
 
         boolean traceEnabled = log.isTraceEnabled();
         IoOutputStream asyncIn = channel.getAsyncIn();
         ClientChannel clientChannel = getClientChannel();
         if (traceEnabled) {
-            log.trace("init({}) send SSH_FXP_INIT", clientChannel);
+            log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
         }
         IoWriteFuture writeFuture = asyncIn.writePacket(buf);
         writeFuture.verify();
@@ -480,7 +495,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         ClientSession session = getClientSession();
-        int selected = selector.selectVersion(session, current, availableVersions);
+        int selected = selector.selectVersion(session, false, current, availableVersions);
         if (debugEnabled) {
             log.debug("negotiateVersion({}) current={} {} -> {}",
                     clientChannel, current, availableVersions, selected);

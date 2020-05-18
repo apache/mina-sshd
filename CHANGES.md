@@ -20,6 +20,9 @@ the `SftpFileSystemAccessor` in order to allow easier hooking into the SFTP subs
     * Creating files links
     * Copying / Renaming / Deleting files
 
+* `SftpVersionSelector` is now consulted when client sends initial command (as well
+as when session is re-negotiated)
+
 ## Minor code helpers
 
 * Handling of debug/ignore/unimplemented messages has been split into `handleXXX` and `doInvokeXXXMsgHandler` methods
@@ -49,3 +52,5 @@ as much of the available functionality as possible.
 * [SSHD-984](https://issues.apache.org/jira/browse/SSHD-984) - Utility method to export KeyPair in OpenSSH format
 
 * [SSHD-992](https://issues.apache.org/jira/browse/SSHD-984) - Provide more hooks into the SFTP server subsystem via SftpFileSystemAccessor
+
+* [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
