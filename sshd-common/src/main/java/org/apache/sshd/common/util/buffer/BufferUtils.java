@@ -385,6 +385,23 @@ public final class BufferUtils {
         return l;
     }
 
+    public static long getLong(byte[] buf, int off, int len) {
+        if (len < Long.BYTES) {
+            throw new IllegalArgumentException("Not enough data for a long: required=" + Long.BYTES + ", available=" + len);
+        }
+
+        long l = (long) buf[off] << 56;
+        l |= ((long) buf[off + 1] & 0xff) << 48;
+        l |= ((long) buf[off + 2] & 0xff) << 40;
+        l |= ((long) buf[off + 3] & 0xff) << 32;
+        l |= ((long) buf[off + 4] & 0xff) << 24;
+        l |= ((long) buf[off + 5] & 0xff) << 16;
+        l |= ((long) buf[off + 6] & 0xff) << 8;
+        l |= (long) buf[off + 7] & 0xff;
+
+        return l;
+    }
+
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
@@ -486,6 +503,23 @@ public final class BufferUtils {
         buf[off + 3] = (byte) (value & 0xFF);
 
         return Integer.BYTES;
+    }
+
+    public static int putLong(long value, byte[] buf, int off, int len) {
+        if (len < Long.BYTES) {
+            throw new IllegalArgumentException("Not enough data for a long: required=" + Long.BYTES + ", available=" + len);
+        }
+
+        buf[off] = (byte) (value >> 56);
+        buf[off + 1] = (byte) (value >> 48);
+        buf[off + 2] = (byte) (value >> 40);
+        buf[off + 3] = (byte) (value >> 32);
+        buf[off + 4] = (byte) (value >> 24);
+        buf[off + 5] = (byte) (value >> 16);
+        buf[off + 6] = (byte) (value >> 8);
+        buf[off + 7] = (byte) value;
+
+        return Long.BYTES;
     }
 
     public static boolean equals(byte[] a1, byte[] a2) {

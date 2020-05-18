@@ -21,6 +21,7 @@ based applications requiring SSH support.
 * [RFC 4716 - The Secure Shell (SSH) Public Key File Format](https://tools.ietf.org/html/rfc4716)
 * [RFC 5208 - Public-Key Cryptography Standards (PKCS) #8 - version 1.2](https://tools.ietf.org/html/rfc5208)
 * [RFC 5480 - Elliptic Curve Cryptography Subject Public Key Information](https://tools.ietf.org/html/rfc5480)
+* [RFC 5647 - AES Galois Counter Mode for the Secure Shell Transport Layer Protocol](https://tools.ietf.org/html/rfc5647)
 * [RFC 5656 - Elliptic Curve Algorithm Integration in the Secure Shell Transport Layer](https://tools.ietf.org/html/rfc5656)
 * [RFC 5915 - Elliptic Curve Private Key Structure](https://tools.ietf.org/html/rfc5915)
 * [RFC 6668 - SHA-2 Data Integrity Verification for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc6668)
@@ -53,7 +54,8 @@ based applications requiring SSH support.
 
 ## Implemented/available support
 
-* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc
+* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc,
+aes128-gcm@openssh.com, aes256-gcm@openssh.com
 * **Digests**: md5, sha1, sha224, sha256, sha384, sha512
 * **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
 , hmac-sha2-512-etm@openssh.com, hmac-sha1-etm@openssh.com
