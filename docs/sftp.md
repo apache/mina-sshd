@@ -184,7 +184,7 @@ range.
 
     SftpVersionSelector myVersionSelector = new SftpVersionSelector() {
         @Override
-        public int selectVersion(ClientSession session, int current, List<Integer> available) {
+        public int selectVersion(ClientSession session, boolean initial, int current, List<Integer> available) {
             int selectedVersion = ...run some logic to decide...;
             return selectedVersion;
         }
@@ -201,6 +201,10 @@ range.
     }
 
 ```
+
+**Note:** the version selector is invoked **twice** - the first time in order to retrieve the initial version
+to be used when estabilishing the SFTP channel, and the second after having done so after receiving the server's
+version. The invocations are distinguished by the `initial` parameter value.
 
 On the server side, version selection restriction is more complex - please remember that according to the
 protocol specification

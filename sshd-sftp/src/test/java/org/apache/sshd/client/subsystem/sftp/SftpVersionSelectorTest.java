@@ -53,18 +53,23 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
         for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
              expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
              expected++) {
-            assertEquals("Mismatched directly selected for available=" + available, expected,
-                    SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
-            available.add(expected);
+            for (boolean initial : new boolean[] { true, false }) {
+                assertEquals("Mismatched directly selected for initial=" + initial + "/available=" + available, expected,
+                        SftpVersionSelector.CURRENT.selectVersion(session, initial, expected, available));
+                available.add(expected);
+            }
         }
 
         for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
              expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
              expected++) {
-            for (int index = 0; index < available.size(); index++) {
-                Collections.shuffle(available, rnd);
-                assertEquals("Mismatched suffling selected for current=" + expected + ", available=" + available,
-                        expected, SftpVersionSelector.CURRENT.selectVersion(session, expected, available));
+            for (boolean initial : new boolean[] { true, false }) {
+                for (int index = 0; index < available.size(); index++) {
+                    Collections.shuffle(available, rnd);
+                    assertEquals("Mismatched suffling selected for initial=" + initial + ", current=" + expected
+                                 + ", available=" + available,
+                            expected, SftpVersionSelector.CURRENT.selectVersion(session, initial, expected, available));
+                }
             }
         }
     }
@@ -93,23 +98,26 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
             SftpVersionSelector selector = SftpVersionSelector.preferredVersionSelector(preferred);
             int expected = preferred.get(0);
 
-            for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
-                 current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
-                 current++) {
-                assertEquals(
-                        "Mismatched selected for current= " + current + ", available=" + available + ", preferred=" + preferred,
-                        expected, selector.selectVersion(session, current, available));
+            for (boolean initial : new boolean[] { true, false }) {
+                for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
+                     current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
+                     current++) {
+                    assertEquals(
+                            "Mismatched selected for current= " + current + ", available=" + available + ", preferred="
+                                 + preferred,
+                            expected, selector.selectVersion(session, initial, current, available));
 
-                try {
-                    Collections.shuffle(unavailable, rnd);
-                    int version = unavailable.get(0);
-                    int actual = selector.selectVersion(session, version, unavailable);
-                    fail("Unexpected selected version (" + actual + ")"
-                         + " for current= " + version
-                         + ", available=" + unavailable
-                         + ", preferred=" + preferred);
-                } catch (IllegalStateException e) {
-                    // expected
+                    try {
+                        Collections.shuffle(unavailable, rnd);
+                        int version = unavailable.get(0);
+                        int actual = selector.selectVersion(session, initial, version, unavailable);
+                        fail("Unexpected selected version (" + actual + ")"
+                             + " for current= " + version
+                             + ", available=" + unavailable
+                             + ", preferred=" + preferred);
+                    } catch (IllegalStateException e) {
+                        // expected
+                    }
                 }
             }
         }
@@ -138,10 +146,12 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
         for (int current = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
              current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
              current++) {
-            for (int index = 0; index < available.size(); index++) {
-                assertEquals("Mismatched selection for current=" + current + ", available=" + available,
-                        expected, selector.selectVersion(session, current, available));
-                Collections.shuffle(available, rnd);
+            for (boolean initial : new boolean[] { true, false }) {
+                for (int index = 0; index < available.size(); index++) {
+                    assertEquals("Mismatched selection for current=" + current + ", available=" + available,
+                            expected, selector.selectVersion(session, initial, current, available));
+                    Collections.shuffle(available, rnd);
+                }
             }
         }
     }
