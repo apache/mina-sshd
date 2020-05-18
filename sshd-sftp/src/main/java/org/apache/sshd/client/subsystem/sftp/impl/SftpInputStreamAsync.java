@@ -171,6 +171,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         return clientOffset - orgOffset;
     }
 
+    @SuppressWarnings("PMD.MissingOverride")
     public long transferTo(OutputStream out) throws IOException {
         if (!isOpen()) {
             throw new IOException("transferTo(" + getPath() + ") stream closed");
