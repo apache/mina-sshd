@@ -16,47 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.cipher;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import java.security.spec.AlgorithmParameterSpec;
 
-public class BaseGCMCipher extends BaseCipher {
-
-    private Mode mode;
-    private SecretKey secretKey;
+public class BaseGCMCipher extends BaseAEADCipher {
 
     public BaseGCMCipher(
-            final int ivsize, final int kdfSize, final String algorithm, final int keySize, final String transformation,
-            final int blkSize, final int authSize) {
+            int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation, int blkSize) {
         super(ivsize, authSize, kdfSize, algorithm, keySize, transformation, blkSize);
     }
 
     @Override
-    protected byte[] initializeKeyData(final Mode mode, final byte[] key, final int reqLen) {
-        byte[] keyData = super.initializeKeyData(mode, key, reqLen);
-        secretKey = new SecretKeySpec(keyData, getAlgorithm());
-        return keyData;
+    protected AlgorithmParameterSpec initializeAlgorithmParameters(byte[] iv) {
+        return new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv);
     }
 
     @Override
-    protected Cipher createCipherInstance(final Mode mode, final byte[] key, final byte[] iv) throws Exception {
-        this.mode = mode;
-        Cipher instance = SecurityUtils.getCipher(getTransformation());
-        instance.init(
-                Mode.Encrypt.equals(this.mode) ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE,
-                secretKey,
-                new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv));
-        return instance;
-    }
-
-    public void incrementIV() throws Exception {
+    protected AlgorithmParameterSpec getNextAlgorithmParameters() {
         Cipher cipher = getCipherInstance();
         Buffer iv = new ByteArrayBuffer(cipher.getIV());
         iv.rpos(Integer.BYTES);
@@ -64,17 +47,7 @@ public class BaseGCMCipher extends BaseCipher {
         ic = (ic + 1) & 0x0ffffffffL;
         iv.wpos(Integer.BYTES);
         iv.putLong(ic);
-        cipher.init(
-                mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE,
-                secretKey,
-                new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv.array()));
+        return new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv.array());
     }
 
-    public void updateAAD(final byte[] additionalAuthenticatedData, final int aadOffset, final int aadLength) {
-        getCipherInstance().updateAAD(additionalAuthenticatedData, aadOffset, aadLength);
-    }
-
-    public void doFinal(final byte[] output, final int outputOffset) throws Exception {
-        getCipherInstance().doFinal(output, outputOffset);
-    }
 }

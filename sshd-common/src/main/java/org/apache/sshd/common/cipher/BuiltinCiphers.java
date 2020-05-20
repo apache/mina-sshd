@@ -58,10 +58,18 @@ public enum BuiltinCiphers implements CipherFactory {
         @Override
         public Cipher create() {
             return new BaseGCMCipher(
-                    getIVSize(), getKdfSize(), getAlgorithm(), getKeySize(), getTransformation(), getCipherBlockSize(), getAuthenticationTagSize());
+                    getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(),
+                    getKeySize(), getTransformation(), getCipherBlockSize());
         }
     },
-    // TODO: aes256gcm
+    aes256gcm(Constants.AES256_GCM, 12, 16, 32, "AES", 256, "AES/GCM/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseGCMCipher(
+                    getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(),
+                    getKeySize(), getTransformation(), getCipherBlockSize());
+        }
+    },
     aes192cbc(Constants.AES192_CBC, 16, 0, 24, "AES", 192, "AES/CBC/NoPadding", 16),
     aes192ctr(Constants.AES192_CTR, 16, 0, 24, "AES", 192, "AES/CTR/NoPadding", 16),
     aes256cbc(Constants.AES256_CBC, 16, 0, 32, "AES", 256, "AES/CBC/NoPadding", 16),
@@ -339,6 +347,7 @@ public enum BuiltinCiphers implements CipherFactory {
         public static final String AES192_CTR = "aes192-ctr";
         public static final String AES256_CBC = "aes256-cbc";
         public static final String AES256_CTR = "aes256-ctr";
+        public static final String AES256_GCM = "aes256-gcm@openssh.com";
         public static final String ARCFOUR128 = "arcfour128";
         public static final String ARCFOUR256 = "arcfour256";
         public static final String BLOWFISH_CBC = "blowfish-cbc";

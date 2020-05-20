@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.StringJoiner;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,8 +52,8 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.cipher.BaseAEADCipher;
 import org.apache.sshd.common.cipher.BaseCipher;
-import org.apache.sshd.common.cipher.BaseGCMCipher;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
@@ -88,6 +89,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+
+import javax.crypto.spec.GCMParameterSpec;
 
 /**
  * <P>
@@ -1110,12 +1113,10 @@ public abstract class AbstractSession extends SessionHelper {
         // increase their request to account for our headers/footers if
         // they actually send exactly this amount.
         boolean etmMode = outMac != null && outMac.isEncryptThenMac();
-        boolean authMode = outCipher != null && outCipher.getAuthenticationTagSize() > 0;
+        int authLen = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
+        boolean authMode = authLen > 0;
         int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode);
-        len = SshConstants.SSH_PACKET_HEADER_LEN + len + pad + Byte.BYTES /* the pad length byte */;
-        if (outCipher != null) {
-            len += outCipher.getAuthenticationTagSize();
-        }
+        len += SshConstants.SSH_PACKET_HEADER_LEN + pad + authLen;
         if (outMac != null) {
             len += outMacSize;
         }
@@ -1180,6 +1181,7 @@ public abstract class AbstractSession extends SessionHelper {
                 }
             }
 
+
             // Grab the length of the packet (excluding the 5 header bytes)
             int len = buffer.available();
             if (log.isDebugEnabled()) {
@@ -1210,12 +1212,13 @@ public abstract class AbstractSession extends SessionHelper {
 
             // Compute padding length
             boolean etmMode = outMac != null && outMac.isEncryptThenMac();
-            int authLen = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
-            boolean authMode = authLen > 0;
+            int authSize = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
+            boolean authMode = authSize > 0;
             int oldLen = len;
 
-            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode); // may need more?
-            len = len + pad + Byte.BYTES /* the pad length byte */;
+            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode);
+
+            len += Byte.BYTES + pad;
 
             if (traceEnabled) {
                 log.trace("encode({}) packet #{} command={}[{}] len={}, pad={}, mac={}",
@@ -1233,6 +1236,9 @@ public abstract class AbstractSession extends SessionHelper {
             }
 
             if (authMode) {
+                // ???
+                int wpos = buffer.wpos();
+                buffer.wpos(wpos + authSize);
                 aeadOutgoingBuffer(buffer, off, len);
             } else if (etmMode) {
                 // Do not encrypt the length field
@@ -1261,17 +1267,16 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected void aeadOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
-        if (outCipher instanceof BaseGCMCipher) {
-            BaseGCMCipher cipher = (BaseGCMCipher) outCipher;
-            buf.wpos(offset + Integer.BYTES + len + cipher.getAuthenticationTagSize());
-            byte[] data = buf.array();
-            cipher.incrementIV();
-            cipher.updateAAD(data, offset, Integer.BYTES);
-            cipher.update(data, offset + Integer.BYTES, len);
-            cipher.doFinal(data, offset + Integer.BYTES + len);
-            int blocksCount = len / outCipherSize;
-            outBlocksCount.addAndGet(Math.max(1, blocksCount));
+        if (!(outCipher instanceof BaseAEADCipher)) {
+            throw new IllegalArgumentException("Expected GCM transformation in cipher but got " + outCipher.getTransformation());
         }
+        BaseAEADCipher cipher = (BaseAEADCipher) outCipher;
+        byte[] data = buf.array();
+        cipher.updateAAD(data, offset, Integer.BYTES);
+        cipher.update(data, offset + Integer.BYTES, len);
+        cipher.doFinal(data, offset + Integer.BYTES + len);
+        int blocksCount = len / outCipherSize;
+        outBlocksCount.addAndGet(Math.max(1, blocksCount));
     }
 
     protected void appendOutgoingMac(Buffer buf, int offset, int len) throws Exception {
@@ -1309,9 +1314,10 @@ public abstract class AbstractSession extends SessionHelper {
         // Decoding loop
         for (;;) {
 
-            int authLen = inCipher != null ? inCipher.getAuthenticationTagSize() : 0;
+            int authSize = inCipher != null ? inCipher.getAuthenticationTagSize() : 0;
+            boolean authMode = authSize > 0;
+            int macSize = inMac != null ? inMacSize : 0;
             boolean etmMode = inMac != null && inMac.isEncryptThenMac();
-            boolean authMode = authLen > 0;
             // Wait for beginning of packet
             if (decoderState == 0) {
                 // The read position should always be 0 at this point because we have compacted this buffer
@@ -1360,18 +1366,16 @@ public abstract class AbstractSession extends SessionHelper {
             } else if (decoderState == 1) {
                 // The read position should always be after reading the packet length at this point
                 assert decoderBuffer.rpos() == Integer.BYTES;
-                int macSize = (inMac != null) ? inMacSize : 0;
                 // Check if the packet has been fully received
-                if (decoderBuffer.available() >= (decoderLength + macSize + authLen)) {
+                if (decoderBuffer.available() >= (decoderLength + macSize + authSize)) {
                     byte[] data = decoderBuffer.array();
                     if (authMode) {
-                        final BaseGCMCipher cipher = (BaseGCMCipher) inCipher;
-                        cipher.incrementIV();
+                        final BaseAEADCipher cipher = (BaseAEADCipher) inCipher;
                         // RFC 5647: packet length encoded in additional data and unencrypted
                         int off = decoderBuffer.rpos();
                         cipher.updateAAD(data, off - Integer.BYTES, Integer.BYTES);
-                        cipher.update(data, off, decoderLength);
-                        cipher.doFinal(data, Integer.BYTES + decoderLength);
+                        cipher.update(data, off, decoderLength + cipher.getAuthenticationTagSize());
+                        cipher.doFinal(data, off + decoderLength);
                         int blocksCount = decoderLength / inCipherSize;
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     } else if (etmMode) {
@@ -1437,7 +1441,7 @@ public abstract class AbstractSession extends SessionHelper {
                     handleMessage(packet);
 
                     // Set ready to handle next packet
-                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize + authLen);
+                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize + authSize);
                     decoderBuffer.wpos(wpos);
                     decoderBuffer.compact();
                     decoderState = 0;
