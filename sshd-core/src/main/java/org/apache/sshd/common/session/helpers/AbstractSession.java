@@ -1370,7 +1370,7 @@ public abstract class AbstractSession extends SessionHelper {
                 if (decoderBuffer.available() >= (decoderLength + macSize + authSize)) {
                     byte[] data = decoderBuffer.array();
                     if (authMode) {
-                        final BaseAEADCipher cipher = (BaseAEADCipher) inCipher;
+                        BaseAEADCipher cipher = (BaseAEADCipher) inCipher;
                         // RFC 5647: packet length encoded in additional data and unencrypted
                         int off = decoderBuffer.rpos();
                         cipher.updateAAD(data, off - Integer.BYTES, Integer.BYTES);
