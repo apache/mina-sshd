@@ -80,9 +80,8 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
         if (!Objects.equals(n, modulus)) {
             log.warn("decodePrivateKey({}) mismatched modulus values: encoded={}, calculated={}", keyType, n, modulus);
         }
-
         try {
-            return generatePrivateKey(new RSAPrivateKeySpec(n, d));
+            return generatePrivateKey(new RSAPrivateCrtKeySpec(n, e, d, p, q, d.mod(p.subtract(BigInteger.ONE)), d.mod(q.subtract(BigInteger.ONE)), inverseQmodP));
         } finally {
             // get rid of sensitive data a.s.a.p
             d = null;
