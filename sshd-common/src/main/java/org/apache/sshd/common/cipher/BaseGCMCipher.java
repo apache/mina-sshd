@@ -19,17 +19,19 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import java.security.spec.AlgorithmParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
-import java.security.spec.AlgorithmParameterSpec;
+
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class BaseGCMCipher extends BaseAEADCipher {
 
     public BaseGCMCipher(
-            int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation, int blkSize) {
+                         int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation,
+                         int blkSize) {
         super(ivsize, authSize, kdfSize, algorithm, keySize, transformation, blkSize);
     }
 

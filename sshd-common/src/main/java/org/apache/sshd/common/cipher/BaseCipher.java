@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
-
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Base class for all Cipher implementations delegating to the JCE provider.
@@ -42,8 +42,8 @@ public class BaseCipher implements Cipher {
     private String s;
 
     public BaseCipher(
-            int ivsize, int authSize, int kdfSize, String algorithm,
-            int keySize, String transformation, int blkSize) {
+                      int ivsize, int authSize, int kdfSize, String algorithm,
+                      int keySize, String transformation, int blkSize) {
         this.ivsize = ivsize;
         this.authSize = authSize;
         this.kdfSize = kdfSize;

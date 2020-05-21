@@ -18,24 +18,30 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.security.SecurityUtils;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.spec.AlgorithmParameterSpec;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.sshd.common.util.security.SecurityUtils;
+
+/**
+ * Base cipher for authenticated encryption with associated data implementations.
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc5116">RFC 5116</a>
+ */
 public abstract class BaseAEADCipher extends BaseCipher {
 
     private Mode mode;
     private SecretKey secretKey;
     private AlgorithmParameterSpec params;
-    private boolean aadWritten;
 
     public BaseAEADCipher(
-            int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation, int blkSize) {
+                          int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation,
+                          int blkSize) {
         super(ivsize, authSize, kdfSize, algorithm, keySize, transformation, blkSize);
     }
 
@@ -61,34 +67,42 @@ public abstract class BaseAEADCipher extends BaseCipher {
         return instance;
     }
 
-    private void init(Cipher cipher) throws InvalidKeyException, InvalidAlgorithmParameterException {
+    /**
+     * Initializes this cipher using the given JDK cipher and the previously configured secret key and algorithm
+     * parameters.
+     *
+     * @param  cipher                             the JDK cipher instance to initialize
+     * @throws InvalidKeyException                if this cipher's secret key is incompatible with the given cipher
+     * @throws InvalidAlgorithmParameterException if this cipher's algorithm parameters are incompatible with the given
+     *                                            cipher
+     */
+    protected void init(Cipher cipher) throws InvalidKeyException, InvalidAlgorithmParameterException {
         cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, params);
     }
 
+    /**
+     * Creates the specific algorithm parameters for the given input initialization vector.
+     *
+     * @param  iv initialization vector provided at construction
+     * @return    this cipher's parameters
+     */
     protected abstract AlgorithmParameterSpec initializeAlgorithmParameters(byte[] iv);
 
+    /**
+     * Returns the next algorithm parameters to use for encrypting or decrypting the next
+     * {@link #updateWithAAD(byte[], int, int, int, int)}} operation.
+     *
+     * @return the parameters for the next updateWithAAD operation
+     */
     protected abstract AlgorithmParameterSpec getNextAlgorithmParameters();
 
     @Override
-    public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
-        if (inputLen != getCipherInstance().update(input, inputOffset, inputLen, input, inputOffset) && mode == Mode.Encrypt) {
-            throw new IllegalStateException();
-        }
-    }
-
-    public void updateAAD(final byte[] additionalAuthenticatedData, final int aadOffset, final int aadLength) throws Exception {
+    public void updateWithAAD(byte[] input, int aadOffset, int aadLen, int inputOffset, int inputLen) throws Exception {
         Cipher cipher = getCipherInstance();
-        if (!aadWritten) {
-            params = getNextAlgorithmParameters();
-            init(cipher);
-        }
-        cipher.updateAAD(additionalAuthenticatedData, aadOffset, aadLength);
-        aadWritten = true;
-    }
-
-    public void doFinal(final byte[] output, final int outputOffset) throws Exception {
-        getCipherInstance().doFinal(output, outputOffset);
-        aadWritten = false;
+        params = getNextAlgorithmParameters();
+        init(cipher);
+        cipher.updateAAD(input, aadOffset, aadLen);
+        cipher.doFinal(input, inputOffset, inputLen, input, inputOffset);
     }
 
 }

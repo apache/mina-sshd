@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.StringJoiner;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,8 +51,6 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.cipher.BaseAEADCipher;
-import org.apache.sshd.common.cipher.BaseCipher;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
@@ -89,8 +86,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-
-import javax.crypto.spec.GCMParameterSpec;
 
 /**
  * <P>
@@ -1181,7 +1176,6 @@ public abstract class AbstractSession extends SessionHelper {
                 }
             }
 
-
             // Grab the length of the packet (excluding the 5 header bytes)
             int len = buffer.available();
             if (log.isDebugEnabled()) {
@@ -1267,14 +1261,11 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected void aeadOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
-        if (!(outCipher instanceof BaseAEADCipher)) {
-            throw new IllegalArgumentException("Expected GCM transformation in cipher but got " + outCipher.getTransformation());
+        if (outCipher == null || outCipher.getAuthenticationTagSize() == 0) {
+            throw new IllegalArgumentException("AEAD mode requires an AEAD cipher");
         }
-        BaseAEADCipher cipher = (BaseAEADCipher) outCipher;
         byte[] data = buf.array();
-        cipher.updateAAD(data, offset, Integer.BYTES);
-        cipher.update(data, offset + Integer.BYTES, len);
-        cipher.doFinal(data, offset + Integer.BYTES + len);
+        outCipher.updateWithAAD(data, offset, Integer.BYTES, offset + Integer.BYTES, len);
         int blocksCount = len / outCipherSize;
         outBlocksCount.addAndGet(Math.max(1, blocksCount));
     }
@@ -1370,12 +1361,9 @@ public abstract class AbstractSession extends SessionHelper {
                 if (decoderBuffer.available() >= (decoderLength + macSize + authSize)) {
                     byte[] data = decoderBuffer.array();
                     if (authMode) {
-                        BaseAEADCipher cipher = (BaseAEADCipher) inCipher;
                         // RFC 5647: packet length encoded in additional data and unencrypted
                         int off = decoderBuffer.rpos();
-                        cipher.updateAAD(data, off - Integer.BYTES, Integer.BYTES);
-                        cipher.update(data, off, decoderLength + cipher.getAuthenticationTagSize());
-                        cipher.doFinal(data, off + decoderLength);
+                        inCipher.updateWithAAD(data, off - Integer.BYTES, Integer.BYTES, off, decoderLength + authSize);
                         int blocksCount = decoderLength / inCipherSize;
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     } else if (etmMode) {

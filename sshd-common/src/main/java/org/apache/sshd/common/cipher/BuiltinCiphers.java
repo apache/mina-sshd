@@ -104,8 +104,8 @@ public enum BuiltinCiphers implements CipherFactory {
     private final boolean supported;
 
     BuiltinCiphers(
-            String factoryName, int ivsize, int authSize, int kdfSize,
-            String algorithm, int keySize, String transformation, int blkSize) {
+                   String factoryName, int ivsize, int authSize, int kdfSize,
+                   String algorithm, int keySize, String transformation, int blkSize) {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
         this.authSize = authSize;

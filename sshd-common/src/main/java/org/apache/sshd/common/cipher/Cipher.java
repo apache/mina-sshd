@@ -65,6 +65,21 @@ public interface Cipher extends CipherInformation {
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 
     /**
+     * Performs in-place authenticated encryption or decrypting with additional data. Authentication tags are implicitly
+     * appended after the output ciphertext or implicitly verified after the input ciphertext.
+     *
+     * @param  input       The input/output bytes
+     * @param  aadOffset   The offset of the additional authenticated data in the input buffer
+     * @param  aadLen      The number of bytes to use as additional authenticated data - starting at aadOffset
+     * @param  inputOffset The offset of the data in the data buffer
+     * @param  inputLen    The number of bytes to update - starting at inputOffset
+     * @throws Exception   If failed to executed
+     */
+    default void updateWithAAD(byte[] input, int aadOffset, int aadLen, int inputOffset, int inputLen) throws Exception {
+        throw new UnsupportedOperationException(getClass() + " does not support additional authenticated data");
+    }
+
+    /**
      * @param  xform     The full cipher transformation - e.g., AES/CBC/NoPadding - never {@code null}/empty
      * @param  keyLength The required key length in bits - always positive
      * @return           {@code true} if the cipher transformation <U>and</U> required key length are supported
