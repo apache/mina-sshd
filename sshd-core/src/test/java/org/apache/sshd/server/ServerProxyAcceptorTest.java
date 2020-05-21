@@ -76,11 +76,11 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
 
     @Test
     public void testClientAddressOverride() throws Exception {
-        final SshdSocketAddress expectedClientAddress = new SshdSocketAddress("7.3.6.5", 7365);
+        SshdSocketAddress expectedClientAddress = new SshdSocketAddress("7.3.6.5", 7365);
         String proxyMetadata = getCurrentTestName()
                                + " " + expectedClientAddress.getHostName()
                                + " " + expectedClientAddress.getPort();
-        final byte[] metaDataBytes = (proxyMetadata + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
+        byte[] metaDataBytes = (proxyMetadata + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
         sshd.setServerProxyAcceptor(new ServerProxyAcceptor() {
             private final AtomicInteger invocationCount = new AtomicInteger(0);
 
@@ -107,7 +107,7 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
             }
         });
 
-        final Semaphore sessionSignal = new Semaphore(0);
+        Semaphore sessionSignal = new Semaphore(0);
         sshd.addSessionListener(new SessionListener() {
             @Override
             public void sessionEvent(Session session, Event event) {
@@ -141,7 +141,7 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
             assertTrue("Failed to receive session signal on time",
-                    sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.SECONDS));
+                    sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
         } finally {
             client.stop();
         }
