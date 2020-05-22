@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.config.keys.writer.openssh;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -179,15 +180,17 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testFileRoundtripWithEncryption() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
-            OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
-            options.setPassword("nonsense");
-            options.setCipherName("AES");
-            options.setCipherMode("CTR");
-            options.setCipherType("256");
+        OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+        options.setPassword("nonsense");
+        options.setCipherName("AES");
+        options.setCipherMode("CTR");
+        options.setCipherType("256");
+
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", options, out);
             writeToFile(tmp, out.toByteArray());
         }
+
         try (InputStream in = Files.newInputStream(tmp)) {
             KeyPair key = SecurityUtils.loadKeyPairIdentities(null,
                     new PathResource(tmp), in, FilePasswordProvider.of("nonsense")).iterator().next();
@@ -195,12 +198,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
             assertKeyPairEquals("Mismatched recovered keys", testKey, key);
             assertTrue("Keys should be equal", compare(key, testKey));
             Path tmp2 = getTemporaryOutputFile("again");
-            try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
-                OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
-                options.setPassword("nonsense");
-                options.setCipherName("AES");
-                options.setCipherMode("CTR");
-                options.setCipherType("256");
+            try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
                 OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(key, "a comment", options, out);
                 writeToFile(tmp2, out.toByteArray());
             }
@@ -221,7 +219,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     public void testFileRoundtripAsymmetric() throws Exception {
         // Write first unencrypted, then encrypted. read both and compare.
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
             writeToFile(tmp, out.toByteArray());
         }
@@ -232,7 +230,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
             assertKeyPairEquals("Mismatched recovered keys", testKey, key);
             assertTrue("Keys should be equal", compare(key, testKey));
             Path tmp2 = getTemporaryOutputFile("again");
-            try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+            try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
                 OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
                 options.setPassword("nonsense");
                 options.setCipherName("AES");
@@ -257,7 +255,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyNoEncryption() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
             writeToFile(tmp, out.toByteArray());
         }
@@ -273,7 +271,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyNoPassword() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", options, out);
             writeToFile(tmp, out.toByteArray());
@@ -290,7 +288,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyEncryptedAesCbc128() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
             options.setPassword("nonsense");
             options.setCipherName("AES");
@@ -313,7 +311,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyEncryptedAesCtr256() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
             options.setPassword("nonsense");
             options.setCipherName("AES");
@@ -336,7 +334,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyEncryptedWrongPassword() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
             options.setPassword("nonsense");
             options.setCipherName("AES");
@@ -358,7 +356,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     @Test
     public void testWritePrivateKeyEncryptedNoPassword() throws Exception {
         Path tmp = getTemporaryOutputFile();
-        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+        try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
             options.setPassword("nonsense");
             options.setCipherName("AES");
@@ -380,7 +378,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         AuthorizedKeyEntry entry = keysRead.get(0);
         String readComment = entry.getComment();
         if (comment == null || comment.isEmpty()) {
-            assertTrue("Unexpected comment", readComment == null || readComment.isEmpty());
+            assertTrue("Unexpected comment: " + readComment, readComment == null || readComment.isEmpty());
         } else {
             assertEquals("Unexpected comment", comment, readComment);
         }
