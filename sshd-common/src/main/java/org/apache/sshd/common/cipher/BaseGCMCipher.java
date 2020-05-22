@@ -37,7 +37,14 @@ public class BaseGCMCipher extends BaseAEADCipher {
 
     @Override
     protected AlgorithmParameterSpec initializeAlgorithmParameters(byte[] iv) {
-        return new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv);
+        Buffer buffer = new ByteArrayBuffer(iv);
+        buffer.rpos(Integer.BYTES);
+        long ic = buffer.getLong();
+        // decrement IV as it will be incremented back to initial value on first call to updateWithAAD
+        ic = (ic - 1) & 0x0ffffffffL;
+        buffer.wpos(Integer.BYTES);
+        buffer.putLong(ic);
+        return new GCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, buffer.array());
     }
 
     @Override
