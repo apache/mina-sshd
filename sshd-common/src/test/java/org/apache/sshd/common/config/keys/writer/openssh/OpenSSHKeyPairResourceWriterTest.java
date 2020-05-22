@@ -38,9 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
-import net.i2p.crypto.eddsa.EdDSAKey;
 import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -130,14 +128,6 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
     }
 
     private boolean compare(KeyPair a, KeyPair b) {
-        if ("EDDSA".equals(data.algorithm)) {
-            // Bug in net.i2p.crypto.eddsa and in sshd? Both also compare the
-            // seed of the private key, but for a generated key, this is some
-            // random value, while it is all zeroes for a key read from a file.
-            return KeyUtils.compareKeys(a.getPublic(), b.getPublic())
-                    && Objects.equals(((EdDSAKey) a.getPrivate()).getParams(),
-                            ((EdDSAKey) b.getPrivate()).getParams());
-        }
         // Compares both public and private keys.
         return KeyUtils.compareKeyPairs(a, b);
     }
@@ -152,6 +142,115 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
             }
         } finally {
             Arrays.fill(sensitiveData, (byte) 0);
+        }
+    }
+
+    @Test
+    public void testFileRoundtripNoEncryption() throws Exception {
+        Path tmp = getTemporaryOutputFile();
+        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
+            writeToFile(tmp, out.toByteArray());
+        }
+        try (InputStream in = Files.newInputStream(tmp)) {
+            KeyPair key = SecurityUtils.loadKeyPairIdentities(null,
+                    new PathResource(tmp), in, null).iterator().next();
+            assertNotNull("No key pair parsed", key);
+            assertKeyPairEquals("Mismatched recovered keys", testKey, key);
+            assertTrue("Keys should be equal", compare(key, testKey));
+            Path tmp2 = getTemporaryOutputFile("again");
+            try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+                OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(key, "a comment", null, out);
+                writeToFile(tmp2, out.toByteArray());
+            }
+            try (InputStream in2 = Files.newInputStream(tmp2)) {
+                KeyPair key2 = SecurityUtils.loadKeyPairIdentities(null,
+                        new PathResource(tmp2), in2, null).iterator().next();
+                assertNotNull("No key pair parsed", key2);
+                assertKeyPairEquals("Mismatched recovered keys", testKey, key2);
+                assertTrue("Keys should be equal", compare(key2, testKey));
+
+                assertKeyPairEquals("Mismatched recovered keys", key, key2);
+                assertTrue("Keys should be equal", compare(key2, key));
+            }
+        }
+    }
+
+    @Test
+    public void testFileRoundtripWithEncryption() throws Exception {
+        Path tmp = getTemporaryOutputFile();
+        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+            OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+            options.setPassword("nonsense");
+            options.setCipherName("AES");
+            options.setCipherMode("CTR");
+            options.setCipherType("256");
+            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", options, out);
+            writeToFile(tmp, out.toByteArray());
+        }
+        try (InputStream in = Files.newInputStream(tmp)) {
+            KeyPair key = SecurityUtils.loadKeyPairIdentities(null,
+                    new PathResource(tmp), in, FilePasswordProvider.of("nonsense")).iterator().next();
+            assertNotNull("No key pair parsed", key);
+            assertKeyPairEquals("Mismatched recovered keys", testKey, key);
+            assertTrue("Keys should be equal", compare(key, testKey));
+            Path tmp2 = getTemporaryOutputFile("again");
+            try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+                OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+                options.setPassword("nonsense");
+                options.setCipherName("AES");
+                options.setCipherMode("CTR");
+                options.setCipherType("256");
+                OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(key, "a comment", options, out);
+                writeToFile(tmp2, out.toByteArray());
+            }
+            try (InputStream in2 = Files.newInputStream(tmp2)) {
+                KeyPair key2 = SecurityUtils.loadKeyPairIdentities(null,
+                        new PathResource(tmp2), in2, FilePasswordProvider.of("nonsense")).iterator().next();
+                assertNotNull("No key pair parsed", key2);
+                assertKeyPairEquals("Mismatched recovered keys", testKey, key2);
+                assertTrue("Keys should be equal", compare(key2, testKey));
+
+                assertKeyPairEquals("Mismatched recovered keys", key, key2);
+                assertTrue("Keys should be equal", compare(key2, key));
+            }
+        }
+    }
+
+    @Test
+    public void testFileRoundtripAsymmetric() throws Exception {
+        // Write first unencrypted, then encrypted. read both and compare.
+        Path tmp = getTemporaryOutputFile();
+        try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
+            writeToFile(tmp, out.toByteArray());
+        }
+        try (InputStream in = Files.newInputStream(tmp)) {
+            KeyPair key = SecurityUtils.loadKeyPairIdentities(null,
+                    new PathResource(tmp), in, null).iterator().next();
+            assertNotNull("No key pair parsed", key);
+            assertKeyPairEquals("Mismatched recovered keys", testKey, key);
+            assertTrue("Keys should be equal", compare(key, testKey));
+            Path tmp2 = getTemporaryOutputFile("again");
+            try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
+                OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+                options.setPassword("nonsense");
+                options.setCipherName("AES");
+                options.setCipherMode("CTR");
+                options.setCipherType("256");
+                OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(key, "a comment", options, out);
+                writeToFile(tmp2, out.toByteArray());
+            }
+            try (InputStream in2 = Files.newInputStream(tmp2)) {
+                KeyPair key2 = SecurityUtils.loadKeyPairIdentities(null,
+                        new PathResource(tmp2), in2, FilePasswordProvider.of("nonsense")).iterator().next();
+                assertNotNull("No key pair parsed", key2);
+                assertKeyPairEquals("Mismatched recovered keys", testKey, key2);
+                assertTrue("Keys should be equal", compare(key2, testKey));
+
+                assertKeyPairEquals("Mismatched recovered keys", key, key2);
+                assertTrue("Keys should be equal", compare(key2, key));
+            }
         }
     }
 
@@ -330,20 +429,28 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         checkPublicKey(tmp, null);
     }
 
-    private Path getTemporaryOutputFile() throws IOException {
+    private Path getTemporaryOutputFile(String suffix) throws IOException {
         Path dir = createTempClassFolder();
         String testName = getCurrentTestName();
         int pos = testName.indexOf('[');
-        Path file;
+        String fileName;
         if (pos > 0) {
             String baseName = testName.substring(0, pos);
             String paramName = testName.substring(pos + 1, testName.length() - 1);
-            file = dir.resolve(baseName + "-" + paramName.replace('(', '-').replace(")", "").trim());
+            fileName = baseName + "-" + paramName.replace('(', '-').replace(")", "").trim();
         } else {
-            file = dir.resolve(testName);
+            fileName = testName;
         }
+        if (suffix != null) {
+            fileName += suffix;
+        }
+        Path file = dir.resolve(fileName);
         Files.deleteIfExists(file);
         return file;
+    }
+
+    private Path getTemporaryOutputFile() throws IOException {
+        return getTemporaryOutputFile(null);
     }
 
     @SuppressWarnings("checkstyle:VisibilityModifier")
