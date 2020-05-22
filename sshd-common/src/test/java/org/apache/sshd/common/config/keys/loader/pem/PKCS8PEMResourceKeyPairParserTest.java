@@ -68,7 +68,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         this.keySize = keySize;
     }
 
-    @Parameters(name = "{0} / {1}")
+    @Parameters(name = "{0}-{1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (Integer ks : RSA_SIZES) {
@@ -87,6 +87,9 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
                 params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
             }
         }
+        if (SecurityUtils.isEDDSACurveSupported()) {
+            params.add(new Object[] { SecurityUtils.EDDSA, 0 });
+        }
         return params;
     }
 
@@ -96,8 +99,8 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         if (keySize > 0) {
             generator.initialize(keySize);
         }
-        KeyPair kp = generator.generateKeyPair();
 
+        KeyPair kp = generator.generateKeyPair();
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             Collection<Object> items = new ArrayList<>();
             PrivateKey prv1 = kp.getPrivate();
@@ -126,11 +129,13 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      * openssl ecparam -genkey -name prime256v1 -noout -out pkcs8-ec-256.key
      * openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in pkcs8-ec-256.key -out pkcs8-ec-256.pem
      *
+     * openssl genpkey -algorithm ed25519 -out pkcs8-ed25519.pem
      * openssl asn1parse -inform PEM -in ...file... -dump
      */
     @Test // see SSHD-989
     public void testPKCS8FileParsing() throws Exception {
-        String resourceKey = "pkcs8-" + algorithm.toLowerCase() + "-" + keySize + ".pem";
+        String baseName = "pkcs8-" + algorithm.toLowerCase();
+        String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".pem";
         URL url = getClass().getResource(resourceKey);
         Assume.assumeTrue("No test file=" + resourceKey, url != null);
 
