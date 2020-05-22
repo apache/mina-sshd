@@ -108,8 +108,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         }
     }
 
-    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm)
-            throws IOException, GeneralSecurityException {
+    private KeyPair testLoadEncryptedRSAPrivateKey(String algorithm) throws Exception {
         return testLoadRSAPrivateKey(DEFAULT_PASSWORD.replace(' ', '-') + "-RSA-" + algorithm.toUpperCase() + "-key");
     }
 
@@ -140,17 +139,17 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         }
     }
 
-    private KeyPair testLoadECPrivateKey(String name) throws IOException, GeneralSecurityException {
+    private KeyPair testLoadECPrivateKey(String name) throws Exception {
         return testLoadPrivateKey(name, ECPublicKey.class, ECPrivateKey.class);
     }
 
-    private KeyPair testLoadRSAPrivateKey(String name) throws IOException, GeneralSecurityException {
+    private KeyPair testLoadRSAPrivateKey(String name) throws Exception {
         return testLoadPrivateKey(name, RSAPublicKey.class, RSAPrivateKey.class);
     }
 
     private KeyPair testLoadPrivateKey(
             String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType)
-            throws IOException, GeneralSecurityException {
+            throws Exception {
         Path folder = getTestResourcesFolder();
         Path file = folder.resolve(name);
         KeyPair kpFile = testLoadPrivateKeyFile(file, pubType, prvType);
@@ -167,6 +166,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
         Package pkg = clazz.getPackage();
         KeyPair kpResource = testLoadPrivateKeyResource(pkg.getName().replace('.', '/') + "/" + name, pubType, prvType);
         assertTrue(name + ": Mismatched key file vs. resource values", KeyUtils.compareKeyPairs(kpFile, kpResource));
+        validateKeyPairSignable(name, kpResource);
         return kpResource;
     }
 

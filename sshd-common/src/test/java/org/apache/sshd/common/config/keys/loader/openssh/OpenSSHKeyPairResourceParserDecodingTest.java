@@ -91,6 +91,8 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
                 fail("Unsupported key type name (" + pubName + "): " + supportedTypeNames);
             }
 
+            validateKeyPairSignable(pubName, kp);
+
             @SuppressWarnings("rawtypes")
             PrivateKeyEntryDecoder decoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
             assertNotNull("No private key decoder", decoder);

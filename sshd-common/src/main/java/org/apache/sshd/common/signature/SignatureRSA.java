@@ -21,7 +21,12 @@ package org.apache.sshd.common.signature;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
+import java.util.Collections;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -35,6 +40,16 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @see    <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public abstract class SignatureRSA extends AbstractSignature {
+    public static final NavigableSet<String> SUPPORTED_KEY_TYPES = Collections.unmodifiableNavigableSet(
+            Stream.of(
+                    KeyPairProvider.SSH_RSA,
+                    KeyPairProvider.SSH_RSA_CERT,
+                    KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
+                    KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS,
+                    KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
+                    KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS)
+                    .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))));
+
     private int verifierSignatureSize = -1;
 
     protected SignatureRSA(String algorithm) {
@@ -64,7 +79,7 @@ public abstract class SignatureRSA extends AbstractSignature {
     @Override
     public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
-        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data, SUPPORTED_KEY_TYPES);
         if (encoding != null) {
             String keyType = encoding.getKey();
             /*
@@ -76,10 +91,7 @@ public abstract class SignatureRSA extends AbstractSignature {
              * another variant that corresponds to a good-faith implementation and is considered safe to accept.
              */
             String canonicalName = KeyUtils.getCanonicalKeyType(keyType);
-            if ((!KeyPairProvider.SSH_RSA.equals(canonicalName))
-                    && (!KeyPairProvider.SSH_RSA_CERT.equals(canonicalName))) {
-                throw new IllegalArgumentException("Mismatched key type: " + keyType);
-            }
+            ValidateUtils.checkTrue(SUPPORTED_KEY_TYPES.contains(canonicalName), "Mismatched key type: %s", keyType);
             data = encoding.getValue();
         }
 

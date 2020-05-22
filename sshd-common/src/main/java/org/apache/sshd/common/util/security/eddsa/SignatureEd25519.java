@@ -37,7 +37,8 @@ public class SignatureEd25519 extends AbstractSignature {
     @Override
     public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
-        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding
+                = extractEncodedSignature(data, k -> KeyPairProvider.SSH_ED25519.equalsIgnoreCase(k));
         if (encoding != null) {
             String keyType = encoding.getKey();
             ValidateUtils.checkTrue(

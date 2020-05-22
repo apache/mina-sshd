@@ -21,10 +21,12 @@ package org.apache.sshd.common.config.keys.loader.pem;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +41,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -108,6 +112,38 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
                 assertKeyEquals("Mismatched private key", prv1, kp2.getPrivate());
             }
         }
+    }
+
+    // see https://gist.github.com/briansmith/2ee42439923d8e65a266994d0f70180b
+    // openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -out
+    // pkcs8-ecdsa-256.pem
+    // openssl ecparam -genkey -name prime256v1 -noout -out pkcs8-ec-256.key
+    // openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in pkcs8-ec-256.key -out pkcs8-ec-256.pem
+
+    // openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 -out pkcs8-rsa-1024.pem
+
+    // openssl asn1parse -inform PEM -in ...file... -dump
+    @Test // see SSHD-989
+    @Ignore("WIP")
+    public void testPKCS8FileParsing() throws Exception {
+        String resourceKey = "pkcs8-" + algorithm.toLowerCase() + "-" + keySize + ".pem";
+        URL url = getClass().getResource(resourceKey);
+        Assume.assumeTrue("No test file=" + resourceKey, url != null);
+
+        Collection<KeyPair> pairs = PKCS8PEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
+        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+
+        assertSignatureMatch("Cannot sign with recovered key pair", GenericUtils.head(pairs));
+    }
+
+    private static void assertSignatureMatch(String message, KeyPair kp) throws GeneralSecurityException {
+        assertSignatureMatch(message, kp.getPrivate(), kp.getPublic());
+    }
+
+    private static void assertSignatureMatch(
+            String message, PrivateKey privateKey, PublicKey publicKey)
+            throws GeneralSecurityException {
+        // TODO
     }
 
     @Override

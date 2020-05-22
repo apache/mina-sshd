@@ -224,6 +224,11 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
                 throw new StreamCorruptedException("Missing named curve parameter");
             }
 
+            /*
+             * SSHD-989 - if object type is BIT STRING then this is the public key - in which case we need to figure out
+             * some other way to recover the curve parameters
+             */
+
             curveOID = namedCurve.asOID();
         }
 

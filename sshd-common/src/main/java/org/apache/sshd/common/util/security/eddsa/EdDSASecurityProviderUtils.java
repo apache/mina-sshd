@@ -48,6 +48,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public final class EdDSASecurityProviderUtils {
     // See EdDSANamedCurveTable
     public static final String CURVE_ED25519_SHA512 = "Ed25519";
+    public static final int KEY_SIZE = 256;
 
     private EdDSASecurityProviderUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -61,8 +62,12 @@ public final class EdDSASecurityProviderUtils {
         return EdDSAPrivateKey.class;
     }
 
+    public static boolean isEDDSAKey(Key key) {
+        return getEDDSAKeySize(key) == KEY_SIZE;
+    }
+
     public static int getEDDSAKeySize(Key key) {
-        return (SecurityUtils.isEDDSACurveSupported() && (key instanceof EdDSAKey)) ? 256 : -1;
+        return (SecurityUtils.isEDDSACurveSupported() && (key instanceof EdDSAKey)) ? KEY_SIZE : -1;
     }
 
     public static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {

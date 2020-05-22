@@ -118,7 +118,8 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         assertTrue("Verifier signature size not initialized", vSize > 0);
 
         // make sure padding is required
-        Map.Entry<String, byte[]> encoding = rsa.extractEncodedSignature(TEST_SIGNATURE);
+        Map.Entry<String, byte[]> encoding = rsa.extractEncodedSignature(
+                TEST_SIGNATURE, SignatureRSA.SUPPORTED_KEY_TYPES);
         assertNotNull("Signature is not encoded", encoding);
         byte[] data = encoding.getValue();
         assertTrue("Signature data size (" + data.length + ") not below verifier size (" + vSize + ")", data.length < vSize);

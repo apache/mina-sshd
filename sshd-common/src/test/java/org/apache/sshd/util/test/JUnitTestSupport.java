@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
@@ -438,6 +439,14 @@ public abstract class JUnitTestSupport extends Assert {
         } else if (expected instanceof ECPrivateKey) {
             assertECPrivateKeyEquals(message, ECPrivateKey.class.cast(expected), ECPrivateKey.class.cast(actual));
         }
+    }
+
+    public static KeyPair validateKeyPairSignable(Object hint, KeyPair kp) throws Exception {
+        assertNotNull(hint + ": no key pair provided", kp);
+        Optional<Boolean> signable = CommonTestSupportUtils.verifySignatureMatch(kp);
+        // if no result then assume "OK"
+        assertTrue(hint + ": Failed to validate signature", signable.orElse(Boolean.TRUE));
+        return kp;
     }
 
     public static String resolveEffectiveAlgorithm(String algorithm) {
