@@ -458,7 +458,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             if ((version >= SftpConstants.SFTP_V6) && (flags & SftpConstants.SSH_FILEXFER_ATTR_CTIME) != 0) {
                 @SuppressWarnings("unused")
                 FileTime attrsChangedTime = SftpHelper.readTime(buffer, version, flags); // TODO the last time the file
-                                                                                         // attributes were changed
+                                                                                        // attributes were changed
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
@@ -492,7 +492,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
                 if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UNTRANSLATED_NAME) != 0) {
                     @SuppressWarnings("unused")
                     String untranslated = getReferencedName(cmd, buffer, nameIndex.getAndIncrement()); // TODO: handle
-                                                                                                       // untranslated-name
+                                                                                                      // untranslated-name
                 }
             }
         } else {

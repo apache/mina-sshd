@@ -115,13 +115,10 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
     }
 
     // see https://gist.github.com/briansmith/2ee42439923d8e65a266994d0f70180b
-    // openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -out
-    // pkcs8-ecdsa-256.pem
+    // openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -out pkcs8-ecdsa-256.pem
     // openssl ecparam -genkey -name prime256v1 -noout -out pkcs8-ec-256.key
     // openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in pkcs8-ec-256.key -out pkcs8-ec-256.pem
-
     // openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 -out pkcs8-rsa-1024.pem
-
     // openssl asn1parse -inform PEM -in ...file... -dump
     @Test // see SSHD-989
     @Ignore("WIP")

@@ -155,12 +155,6 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
                 throw new StreamCorruptedException("Unknown curve");
             }
 
-            /*
-             * According to https://tools.ietf.org/html/rfc5915 - section 3
-             *
-             * ECPrivateKey ::= SEQUENCE { version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1), privateKey OCTET
-             * STRING, parameters [0] ECParameters {{ NamedCurve }} OPTIONAL, publicKey [1] BIT STRING OPTIONAL }
-             */
             ECPoint w = decodeECPublicKeyValue(curve, parser);
             ECPublicKeySpec pubSpec = new ECPublicKeySpec(w, prvSpec.getParams());
             return new SimpleImmutableEntry<>(pubSpec, prvSpec);
@@ -170,8 +164,12 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
     /*
      * According to https://tools.ietf.org/html/rfc5915 - section 3
      *
-     * ECPrivateKey ::= SEQUENCE { version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1), privateKey OCTET STRING,
-     * parameters [0] ECParameters {{ NamedCurve }} OPTIONAL, publicKey [1] BIT STRING OPTIONAL }
+     * ECPrivateKey ::= SEQUENCE {
+     *      version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+     *      privateKey OCTET STRING,
+     *      parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
+     *      publicKey [1] BIT STRING OPTIONAL
+     * }
      */
     public static final ECPrivateKeySpec decodeECPrivateKeySpec(DERParser parser) throws IOException {
         // see openssl asn1parse -inform PEM -in ...file... -dump
@@ -183,8 +181,8 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         /*
          * According to https://tools.ietf.org/html/rfc5915 - section 3
          *
-         * For this version of the document, it SHALL be set to ecPrivkeyVer1, which is of type INTEGER and whose value
-         * is one (1)
+         * For this version of the document, it SHALL be set to ecPrivkeyVer1,
+         * which is of type INTEGER and whose value is one (1)
          */
         BigInteger version = versionObject.asInteger();
         if (!BigInteger.ONE.equals(version)) {
@@ -225,8 +223,9 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             }
 
             /*
-             * SSHD-989 - if object type is BIT STRING then this is the public key - in which case we need to figure out
-             * some other way to recover the curve parameters
+             * SSHD-989 - if object type is BIT STRING then this is the public
+             * key - in which case we need to figure out some other way to recover
+             * the curve parameters
              */
 
             curveOID = namedCurve.asOID();

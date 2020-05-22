@@ -1675,8 +1675,8 @@ public abstract class AbstractSession extends SessionHelper {
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inCipherSize, outCipherSize);
         long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63); // in case
-                                                                                                    // (block-size / 4)
-                                                                                                    // > 63
+                                                                                                   // (block-size / 4)
+                                                                                                   // > 63
         long effectiveRekyBlocksCount = getLongProperty(FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks);
         maxRekeyBlocks.set(effectiveRekyBlocksCount);
         if (debugEnabled) {
