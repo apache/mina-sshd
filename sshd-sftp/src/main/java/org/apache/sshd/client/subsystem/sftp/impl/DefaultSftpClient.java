@@ -309,13 +309,26 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 throw new SshException("Channel is being closed");
             }
 
+            long rcvStart = System.nanoTime();
             Buffer buffer = receive(id, idleTimeout);
+            long rcvEnd = System.nanoTime();
             if (buffer != null) {
                 return buffer;
             }
 
+            long rcvDuration = TimeUnit.NANOSECONDS.toMillis(rcvEnd - rcvStart);
+            if (rcvDuration <= 0L) {
+                idleTimeout--;
+            } else {
+                idleTimeout -= rcvDuration;
+            }
+
+            if (idleTimeout <= 0L) {
+                throw new SshException("Timeout expired while waiting for id=" + id);
+            }
+
             if (traceEnabled) {
-                log.trace("receive({}) check iteration #{} for id={}", this, count, id);
+                log.trace("receive({}) check iteration #{} for id={} remain time={}", this, count, id, idleTimeout);
             }
         }
     }

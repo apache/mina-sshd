@@ -44,32 +44,36 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testTransferIntegrity() throws IOException {
+        Path localRoot = detectTargetFolder().resolve("sftp");
+        Files.createDirectories(localRoot);
+
+        Path local0 = localRoot.resolve("files-0.txt");
+        Files.deleteIfExists(local0);
+
+        String data = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")" + System.lineSeparator();
+        try (BufferedWriter bos = Files.newBufferedWriter(local0)) {
+            long count = 0L;
+            while (count < 1024L * 1024L * 10L) { // 10 MB
+                bos.append(data);
+                count += data.length();
+            }
+        }
+
         try (ClientSession session = createClientSession();
              SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
 
-            Path localRoot = detectTargetFolder().resolve("sftp");
             Path remoteRoot = fs.getDefaultDir().resolve("target/sftp");
-
-            Path local0 = localRoot.resolve("files-0.txt");
             Path remote0 = remoteRoot.resolve("files-1.txt");
-            Path local1 = localRoot.resolve("files-2.txt");
-            Path remote1 = remoteRoot.resolve("files-3.txt");
-            Path local2 = localRoot.resolve("files-4.txt");
-            Files.deleteIfExists(local0);
             Files.deleteIfExists(remote0);
-            Files.deleteIfExists(local1);
-            Files.deleteIfExists(remote1);
-            Files.deleteIfExists(local2);
 
-            Files.createDirectories(localRoot);
-            String data = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")\n";
-            try (BufferedWriter bos = Files.newBufferedWriter(local0)) {
-                long count = 0;
-                while (count < 1024 * 1024 * 10) { // 10 MB
-                    bos.append(data);
-                    count += data.length();
-                }
-            }
+            Path local1 = localRoot.resolve("files-2.txt");
+            Files.deleteIfExists(local1);
+
+            Path remote1 = remoteRoot.resolve("files-3.txt");
+            Files.deleteIfExists(remote1);
+
+            Path local2 = localRoot.resolve("files-4.txt");
+            Files.deleteIfExists(local2);
 
             Files.copy(local0, remote0);
             Files.copy(remote0, local1);
@@ -93,11 +97,12 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private boolean sameContent(Path path, Path path2) throws IOException {
-        byte[] buffer1 = new byte[BUFFER_SIZE];
-        byte[] buffer2 = new byte[BUFFER_SIZE];
+    private static boolean sameContent(Path path, Path path2) throws IOException {
         try (InputStream in1 = Files.newInputStream(path);
              InputStream in2 = Files.newInputStream(path2)) {
+            byte[] buffer1 = new byte[BUFFER_SIZE];
+            byte[] buffer2 = new byte[BUFFER_SIZE];
+
             while (true) {
                 int nRead1 = readNBytes(in1, buffer1);
                 int nRead2 = readNBytes(in2, buffer2);
@@ -119,17 +124,16 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private int readNBytes(InputStream is, byte[] b) throws IOException {
+    private static int readNBytes(InputStream is, byte[] b) throws IOException {
         int n = 0;
         int len = b.length;
         while (n < len) {
             int count = is.read(b, n, len - n);
             if (count < 0) {
-                break;
+                return n;
             }
             n += count;
         }
         return n;
     }
-
 }
