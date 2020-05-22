@@ -53,4 +53,6 @@ as much of the available functionality as possible.
 
 * [SSHD-992](https://issues.apache.org/jira/browse/SSHD-984) - Provide more hooks into the SFTP server subsystem via SftpFileSystemAccessor
 
+* [SSHD-997](https://issues.apache.org/jira/browse/SSHD-997) - Fixed OpenSSH private key decoders for RSA and Ed25519
+
 * [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
