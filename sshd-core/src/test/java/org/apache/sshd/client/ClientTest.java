@@ -870,10 +870,10 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testClientWithLengthyDialog() throws Exception {
         // Reduce window size and packet size
-//        FactoryManagerUtils.updateProperty(client, SshClient.WINDOW_SIZE, 0x20000);
-//        FactoryManagerUtils.updateProperty(client, SshClient.MAX_PACKET_SIZE, 0x1000);
-//        FactoryManagerUtils.updateProperty(sshd, SshServer.WINDOW_SIZE, 0x20000);
-//        FactoryManagerUtils.updateProperty(sshd, SshServer.MAX_PACKET_SIZE, 0x1000);
+        //        FactoryManagerUtils.updateProperty(client, SshClient.WINDOW_SIZE, 0x20000);
+        //        FactoryManagerUtils.updateProperty(client, SshClient.MAX_PACKET_SIZE, 0x1000);
+        //        FactoryManagerUtils.updateProperty(sshd, SshServer.WINDOW_SIZE, 0x20000);
+        //        FactoryManagerUtils.updateProperty(sshd, SshServer.MAX_PACKET_SIZE, 0x1000);
         client.start();
 
         try (ClientSession session = createTestClientSession();

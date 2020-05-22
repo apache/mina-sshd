@@ -160,7 +160,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() { // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048
-                                       // (inclusive)"
+                                      // (inclusive)"
             return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha1.isSupported();
         }
     },
@@ -177,7 +177,7 @@ public enum BuiltinDHFactories implements DHFactory {
 
         @Override
         public boolean isSupported() { // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048
-                                       // (inclusive)"
+                                      // (inclusive)"
             return SecurityUtils.isDHGroupExchangeSupported() && BuiltinDigests.sha256.isSupported();
         }
 

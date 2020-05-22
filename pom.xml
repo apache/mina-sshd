@@ -1250,6 +1250,8 @@
                             <goal>sources</goal>
                         </goals>
                         <configuration>
+                                <!-- no need to download our own sources - especially snapshot -->
+                            <excludeGroupIds>org.apache.sshd</excludeGroupIds>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
                             <silent>${dependency.download.silent}</silent>
                         </configuration>
@@ -1261,6 +1263,8 @@
                             <goal>resolve</goal>
                         </goals>
                         <configuration>
+                                <!-- no need to download our own documentation - especially snapshot -->
+                            <excludeGroupIds>org.apache.sshd</excludeGroupIds>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
                             <classifier>javadoc</classifier>
                             <silent>${dependency.download.silent}</silent>

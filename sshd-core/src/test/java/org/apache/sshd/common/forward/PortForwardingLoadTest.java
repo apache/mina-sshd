@@ -464,10 +464,10 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     @Test
     public void testForwardingOnLoad() throws Exception {
-//        final String path = "/history/recent/troubles/";
-//        final String host = "www.bbc.co.uk";
-//        final String path = "";
-//        final String host = "www.bahn.de";
+        //        final String path = "/history/recent/troubles/";
+        //        final String host = "www.bbc.co.uk";
+        //        final String path = "";
+        //        final String host = "www.bahn.de";
         final String path = "";
         final String host = TEST_LOCALHOST;
         final int nbThread = 2;
@@ -564,21 +564,21 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         }
         assertTrue("Missing HTML close tag", str.indexOf("</html>") > 0);
         get.releaseConnection();
-//        url.openConnection().setDefaultUseCaches(false);
-//        Reader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-//        try {
-//            StringWriter sw = new StringWriter();
-//            char[] buf = new char[8192];
-//            while (true) {
-//                int len = reader.read(buf);
-//                if (len < 0) {
-//                    break;
-//                }
-//                sw.write(buf, 0, len);
-//            }
-//            assertTrue(sw.toString().indexOf("</html>") > 0);
-//        } finally {
-//            reader.close();
-//        }
+        //        url.openConnection().setDefaultUseCaches(false);
+        //        Reader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+        //        try {
+        //            StringWriter sw = new StringWriter();
+        //            char[] buf = new char[8192];
+        //            while (true) {
+        //                int len = reader.read(buf);
+        //                if (len < 0) {
+        //                    break;
+        //                }
+        //                sw.write(buf, 0, len);
+        //            }
+        //            assertTrue(sw.toString().indexOf("</html>") > 0);
+        //        } finally {
+        //            reader.close();
+        //        }
     }
 }

@@ -61,6 +61,6 @@ public class PipeDataReceiver extends AbstractLoggingBean implements ChannelData
     public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
         out.write(buf, start, len);
         return 0; // ChannelPipedOutputStream calls consume method on its own, so here we return 0 to make the ends
-                  // meet.
+                 // meet.
     }
 }

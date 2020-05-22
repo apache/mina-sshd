@@ -674,7 +674,7 @@ public class KnownHostsServerKeyVerifier
 
                 output.write(lineData);
                 output.write(eolBytes); // add another separator for trailing lines - in case regular SSH client appends
-                                        // to it
+                                       // to it
             }
         }
 

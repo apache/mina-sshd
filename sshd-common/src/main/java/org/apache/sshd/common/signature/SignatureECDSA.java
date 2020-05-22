@@ -103,7 +103,7 @@ public class SignatureECDSA extends AbstractSignature {
     @Override
     public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
-        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data, ECCurves.KEY_TYPES);
         if (encoding != null) {
             String keyType = encoding.getKey();
             ECCurves curve = ECCurves.fromKeyType(keyType);

@@ -101,15 +101,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
             }
 
             byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-            EdDSAPrivateKey privateKey;
-            try {
-                // create the private key
-                EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
-                privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
-            } finally {
-                // get rid of sensitive data a.s.a.p
-                Arrays.fill(sk, (byte) 0);
-            }
+            EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
+            EdDSAPrivateKey privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
 
             // the private key class contains the calculated public key (Abyte)
             // pointers to the corresponding code:

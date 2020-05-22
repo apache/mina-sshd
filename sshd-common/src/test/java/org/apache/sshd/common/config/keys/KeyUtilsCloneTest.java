@@ -116,5 +116,4 @@ public class KeyUtilsCloneTest extends JUnitTestSupport {
             assertTrue(prefix + ": Cloned private key not equals", KeyUtils.compareKeys(k1, k2));
         }
     }
-
 }

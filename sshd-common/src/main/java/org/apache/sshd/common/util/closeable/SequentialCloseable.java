@@ -51,7 +51,7 @@ public class SequentialCloseable extends SimpleCloseable {
                     Closeable c = iterator.next();
                     if (c != null) {
                         if (traceEnabled) {
-                            log.trace("doClose(" + immediately + ") closing " + c);
+                            log.trace("doClose({}) closing {} immediately={}", this, c, immediately);
                         }
                         CloseFuture nextFuture = c.close(immediately);
                         nextFuture.addListener(this);
@@ -60,7 +60,7 @@ public class SequentialCloseable extends SimpleCloseable {
                 }
                 if (!iterator.hasNext()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("doClose(" + immediately + ") signal close complete");
+                        log.debug("doClose({}) signal close complete immediately={}", this, immediately);
                     }
                     future.setClosed();
                 }

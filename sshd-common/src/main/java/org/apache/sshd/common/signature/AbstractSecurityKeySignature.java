@@ -30,12 +30,10 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 public abstract class AbstractSecurityKeySignature implements Signature {
-
     private static final int FLAG_USER_PRESENCE = 0x01;
 
     private final String keyType;
-
-    private SecurityKeyPublicKey publicKey;
+    private SecurityKeyPublicKey<?> publicKey;
     private MessageDigest challengeDigest;
 
     protected AbstractSecurityKeySignature(String keyType) {
@@ -47,7 +45,7 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         if (!(key instanceof SecurityKeyPublicKey)) {
             throw new IllegalArgumentException("Only instances of SecurityKeyPublicKey can be used");
         }
-        this.publicKey = (SecurityKeyPublicKey) key;
+        this.publicKey = (SecurityKeyPublicKey<?>) key;
         this.challengeDigest = SecurityUtils.getMessageDigest("SHA-256");
     }
 

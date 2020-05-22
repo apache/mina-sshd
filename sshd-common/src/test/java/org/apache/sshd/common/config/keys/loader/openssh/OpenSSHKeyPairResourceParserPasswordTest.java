@@ -163,6 +163,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
             case RETRY:
                 assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
                 assertEquals("Mismatched retries count", MAX_RETRIES, retriesCount.getAndSet(0));
+                validateKeyPairSignable(resourceKey, GenericUtils.head(pairs));
                 break;
 
             default:

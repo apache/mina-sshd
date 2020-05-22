@@ -26,17 +26,25 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.CodeSource;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.ProtectionDomain;
+import java.security.PublicKey;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.ECKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,9 +53,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -56,6 +66,8 @@ import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -532,7 +544,7 @@ public final class CommonTestSupportUtils {
         }
     }
 
-    private static <P extends KeyIdentityProvider> P validateKeyPairProvider(P provider) {
+    public static <P extends KeyIdentityProvider> P validateKeyPairProvider(P provider) {
         Objects.requireNonNull(provider, "No provider");
 
         // get the I/O out of the way
@@ -569,6 +581,78 @@ public final class CommonTestSupportUtils {
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
             fos.write(bytes);
             return bytes;
+        }
+    }
+
+    /**
+     * Checks that the key pair can be used to successfully validate a signature
+     *
+     * @param  kp        The {@link KeyPair}
+     * @return           An {@link Optional} holding the verification result - if empty then no appropriate signer was
+     *                   found for the keys.
+     * @throws Exception If failed to generate the signature
+     */
+    public static Optional<Boolean> verifySignatureMatch(KeyPair kp) throws Exception {
+        return verifySignatureMatch(kp.getPrivate(), kp.getPublic());
+    }
+
+    public static Optional<Boolean> verifySignatureMatch(
+            PrivateKey privateKey, PublicKey publicKey)
+            throws Exception {
+        Objects.requireNonNull(privateKey, "No private key provided");
+        Objects.requireNonNull(publicKey, "No public key provided");
+
+        // Use check only the private key so we can detect if "mixed" keys are used by failing the verification
+        if (privateKey instanceof RSAPrivateKey) {
+            return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.rsa));
+        } else if (privateKey instanceof DSAPrivateKey) {
+            return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.dsa));
+        } else if (SecurityUtils.isECCSupported() && (privateKey instanceof ECKey)) {
+            ECCurves curve = ECCurves.fromECKey((ECKey) privateKey);
+            ValidateUtils.checkNotNull(curve, "Unsupported EC key: %s", privateKey);
+            switch (curve) {
+                case nistp256:
+                    return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.nistp256));
+                case nistp384:
+                    return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.nistp384));
+                case nistp521:
+                    return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.nistp521));
+                default: // ignore
+            }
+        } else if (SecurityUtils.isEDDSACurveSupported() && (privateKey instanceof EdDSAPrivateKey)) {
+            return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.ed25519));
+        }
+
+        return Optional.empty();
+    }
+
+    public static boolean verifySignatureMatch(
+            PrivateKey privateKey, PublicKey publicKey, Factory<? extends Signature> factory)
+            throws Exception {
+        Signature signer = factory.create();
+        signer.initSigner(null, privateKey);
+
+        byte[] msg = ("[" + privateKey + "][" + publicKey + "]@" + signer).getBytes(StandardCharsets.UTF_8);
+        signer.update(null, msg);
+        byte[] signature = signer.sign(null);
+
+        Signature verifier = factory.create();
+        verifier.initVerifier(null, publicKey);
+        verifier.update(null, msg);
+        return verifier.verify(null, signature);
+    }
+
+    // clears the sensitive data regardless of success/failure
+    public static void writeSensitiveDataToFile(Path file, byte[] sensitiveData)
+            throws IOException {
+        try (ByteChannel out = Files.newByteChannel(file,
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            ByteBuffer buf = ByteBuffer.wrap(sensitiveData);
+            while (buf.hasRemaining()) {
+                out.write(buf);
+            }
+        } finally {
+            Arrays.fill(sensitiveData, (byte) 0);
         }
     }
 }

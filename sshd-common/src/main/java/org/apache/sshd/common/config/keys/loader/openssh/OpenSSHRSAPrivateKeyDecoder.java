@@ -31,7 +31,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
-import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 import java.util.Objects;
@@ -80,9 +79,9 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
         if (!Objects.equals(n, modulus)) {
             log.warn("decodePrivateKey({}) mismatched modulus values: encoded={}, calculated={}", keyType, n, modulus);
         }
-
         try {
-            return generatePrivateKey(new RSAPrivateKeySpec(n, d));
+            return generatePrivateKey(new RSAPrivateCrtKeySpec(
+                    n, e, d, p, q, d.mod(p.subtract(BigInteger.ONE)), d.mod(q.subtract(BigInteger.ONE)), inverseQmodP));
         } finally {
             // get rid of sensitive data a.s.a.p
             d = null;

@@ -102,7 +102,7 @@ public class SignatureDSA extends AbstractSignature {
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             // probably some encoded data
-            Map.Entry<String, byte[]> encoding = extractEncodedSignature(sig);
+            Map.Entry<String, byte[]> encoding = extractEncodedSignature(sig, k -> KeyPairProvider.SSH_DSS.equalsIgnoreCase(k));
             if (encoding != null) {
                 String keyType = encoding.getKey();
                 ValidateUtils.checkTrue(

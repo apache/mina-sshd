@@ -20,11 +20,14 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
@@ -42,9 +45,12 @@ public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, 
 
     int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; // .. up to and including
 
-    String ALL_SFTP_IMPL = IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
-            .mapToObj(Integer::toString)
-            .collect(Collectors.joining(","));
+    List<Integer> SUPPORTED_SFTP_VERSIONS = Collections.unmodifiableList(
+            IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
+                    .boxed()
+                    .collect(Collectors.toList()));
+
+    String ALL_SFTP_IMPL = GenericUtils.join(SUPPORTED_SFTP_VERSIONS, ',');
 
     @Override
     default ServerSession getSession() {
