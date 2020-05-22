@@ -87,14 +87,23 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             InputStream inputStream, boolean okToClose)
             throws IOException, GeneralSecurityException {
         try (DERParser parser = new DERParser(NoCloseInputStream.resolveInputStream(inputStream, okToClose))) {
-            return parseECKeyPair(parser);
+            return parseECKeyPair(null, parser);
         }
     }
 
-    public static KeyPair parseECKeyPair(DERParser parser)
+    /**
+     * @param  curve                    The {@link ECCurves curve} represented by this data (in case it was optional and
+     *                                  somehow known externally) if {@code null} then it is assumed to be part of the
+     *                                  parsed data. then it is assumed to be part of the data.
+     * @param  parser                   The {@link DERParser} for the data
+     * @return                          The parsed {@link KeyPair}
+     * @throws IOException              If failed to parse the data
+     * @throws GeneralSecurityException If failed to generate the keys
+     */
+    public static KeyPair parseECKeyPair(ECCurves curve, DERParser parser)
             throws IOException, GeneralSecurityException {
         ASN1Object sequence = parser.readObject();
-        Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(sequence);
+        Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(curve, sequence);
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchProviderException("ECC not supported");
         }
@@ -136,12 +145,14 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * </CODE>
      * </PRE>
      *
+     * @param  curve       The {@link ECCurves curve} represented by this data (in case it was optional and somehow
+     *                     known externally) if {@code null} then it is assumed to be part of the parsed data.
      * @param  sequence    The {@link ASN1Object} sequence containing the DER encoded data
      * @return             The decoded {@link SimpleImmutableEntry} of {@link ECPublicKeySpec} and
      *                     {@link ECPrivateKeySpec}
      * @throws IOException If failed to to decode the DER stream
      */
-    public static SimpleImmutableEntry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(ASN1Object sequence)
+    public static Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> decodeECPrivateKeySpec(ECCurves curve, ASN1Object sequence)
             throws IOException {
         ASN1Type objType = (sequence == null) ? null : sequence.getObjType();
         if (!ASN1Type.SEQUENCE.equals(objType)) {
@@ -149,13 +160,10 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         }
 
         try (DERParser parser = sequence.createParser()) {
-            ECPrivateKeySpec prvSpec = decodeECPrivateKeySpec(parser);
-            ECCurves curve = ECCurves.fromCurveParameters(prvSpec.getParams());
-            if (curve == null) {
-                throw new StreamCorruptedException("Unknown curve");
-            }
-
-            ECPoint w = decodeECPublicKeyValue(curve, parser);
+            Map.Entry<ECPrivateKeySpec, ASN1Object> result = decodeECPrivateKeySpec(curve, parser);
+            ECPrivateKeySpec prvSpec = result.getKey();
+            ASN1Object publicData = result.getValue();
+            ECPoint w = (publicData == null) ? decodeECPublicKeyValue(parser) : decodeECPointData(publicData);
             ECPublicKeySpec pubSpec = new ECPublicKeySpec(w, prvSpec.getParams());
             return new SimpleImmutableEntry<>(pubSpec, prvSpec);
         }
@@ -171,7 +179,8 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      *      publicKey [1] BIT STRING OPTIONAL
      * }
      */
-    public static final ECPrivateKeySpec decodeECPrivateKeySpec(DERParser parser) throws IOException {
+    public static Map.Entry<ECPrivateKeySpec, ASN1Object> decodeECPrivateKeySpec(ECCurves curve, DERParser parser)
+            throws IOException {
         // see openssl asn1parse -inform PEM -in ...file... -dump
         ASN1Object versionObject = parser.readObject();
         if (versionObject == null) {
@@ -208,12 +217,36 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
          * curve domain parameters. Though the ASN.1 indicates that the parameters field is OPTIONAL, implementations
          * that conform to this document MUST always include the parameters field.
          */
-        ASN1Object paramsObject = parser.readObject();
-        if (paramsObject == null) {
-            throw new StreamCorruptedException("No parameters value");
+        Map.Entry<ECCurves, ASN1Object> result = parseCurveParameter(parser);
+        ECCurves namedParam = (result == null) ? null : result.getKey();
+        if (namedParam == null) {
+            if (curve == null) {
+                throw new StreamCorruptedException("Cannot determine curve type");
+            }
+        } else if (curve == null) {
+            curve = namedParam;
+        } else if (namedParam != curve) {
+            throw new StreamCorruptedException("Mismatched provide (" + curve + ") vs. parsed curve (" + namedParam + ")");
         }
 
-        // TODO make sure params object tag is 0xA0
+        BigInteger s = ECCurves.octetStringToInteger(keyObject.getPureValueBytes());
+        ECPrivateKeySpec keySpec = new ECPrivateKeySpec(s, curve.getParameters());
+        return new SimpleImmutableEntry<>(keySpec, (result == null) ? null : result.getValue());
+    }
+
+    public static Map.Entry<ECCurves, ASN1Object> parseCurveParameter(DERParser parser) throws IOException {
+        return parseCurveParameter(parser.readObject());
+    }
+
+    public static Map.Entry<ECCurves, ASN1Object> parseCurveParameter(ASN1Object paramsObject) throws IOException {
+        if (paramsObject == null) {
+            return null;
+        }
+
+        ASN1Type objType = paramsObject.getObjType();
+        if (objType == ASN1Type.NULL) {
+            return null;
+        }
 
         List<Integer> curveOID;
         try (DERParser paramsParser = paramsObject.createParser()) {
@@ -223,10 +256,13 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             }
 
             /*
-             * SSHD-989 - if object type is BIT STRING then this is the public
-             * key - in which case we need to figure out some other way to recover
-             * the curve parameters
+             * The curve OID is OPTIONAL - if it is not there then the
+             * public key data replaces it
              */
+            objType = namedCurve.getObjType();
+            if (objType == ASN1Type.BIT_STRING) {
+                return new SimpleImmutableEntry<>(null, namedCurve);
+            }
 
             curveOID = namedCurve.asOID();
         }
@@ -236,8 +272,7 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             throw new StreamCorruptedException("Unknown curve OID: " + curveOID);
         }
 
-        BigInteger s = ECCurves.octetStringToInteger(keyObject.getPureValueBytes());
-        return new ECPrivateKeySpec(s, curve.getParameters());
+        return new SimpleImmutableEntry<>(curve, null);
     }
 
     /**
@@ -252,14 +287,16 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
      * </code>
      * </pre>
      *
-     * @param  curve       The {@link ECCurves} curve
      * @param  parser      The {@link DERParser} assumed to be positioned at the start of the data
      * @return             The encoded {@link ECPoint}
      * @throws IOException If failed to create the point
      */
-    public static final ECPoint decodeECPublicKeyValue(ECCurves curve, DERParser parser) throws IOException {
+    public static final ECPoint decodeECPublicKeyValue(DERParser parser) throws IOException {
+        return decodeECPublicKeyValue(parser.readObject());
+    }
+
+    public static final ECPoint decodeECPublicKeyValue(ASN1Object dataObject) throws IOException {
         // see openssl asn1parse -inform PEM -in ...file... -dump
-        ASN1Object dataObject = parser.readObject();
         if (dataObject == null) {
             throw new StreamCorruptedException("No public key data bytes");
         }
@@ -267,24 +304,26 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         /*
          * According to https://tools.ietf.org/html/rfc5915
          *
-         * Though the ASN.1 indicates publicKey is OPTIONAL, implementations that conform to this document SHOULD always
-         * include the publicKey field
+         * Though the ASN.1 indicates publicKey is OPTIONAL, implementations
+         * that conform to this document SHOULD always include the publicKey field
          */
         try (DERParser dataParser = dataObject.createParser()) {
-            ASN1Object pointData = dataParser.readObject();
-            if (pointData == null) {
-                throw new StreamCorruptedException("Missing public key data parameter");
-            }
-
-            ASN1Type objType = pointData.getObjType();
-            if (!ASN1Type.BIT_STRING.equals(objType)) {
-                throw new StreamCorruptedException("Non-matching public key object type: " + objType);
-            }
-
-            // see https://tools.ietf.org/html/rfc5480#section-2.2
-            byte[] octets = pointData.getValue();
-            return ECCurves.octetStringToEcPoint(octets);
+            return decodeECPointData(dataParser.readObject());
         }
     }
 
+    public static final ECPoint decodeECPointData(ASN1Object pointData) throws IOException {
+        if (pointData == null) {
+            throw new StreamCorruptedException("Missing public key data parameter");
+        }
+
+        ASN1Type objType = pointData.getObjType();
+        if (!ASN1Type.BIT_STRING.equals(objType)) {
+            throw new StreamCorruptedException("Non-matching public key object type: " + objType);
+        }
+
+        // see https://tools.ietf.org/html/rfc5480#section-2.2
+        byte[] octets = pointData.getValue();
+        return ECCurves.octetStringToEcPoint(octets);
+    }
 }

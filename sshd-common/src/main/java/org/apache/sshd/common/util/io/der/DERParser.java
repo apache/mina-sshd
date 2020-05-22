@@ -27,6 +27,7 @@ import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -120,6 +121,11 @@ public class DERParser extends FilterInputStream {
         int tag = read();
         if (tag == -1) {
             return null;
+        }
+
+        ASN1Type objType = ASN1Type.fromDERValue(tag);
+        if (objType == ASN1Type.NULL) {
+            return new ASN1Object((byte) tag, 0, GenericUtils.EMPTY_BYTE_ARRAY);
         }
 
         int length = readLength();

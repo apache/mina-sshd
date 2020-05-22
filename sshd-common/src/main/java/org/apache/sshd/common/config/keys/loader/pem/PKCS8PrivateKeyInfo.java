@@ -55,6 +55,7 @@ import org.apache.sshd.common.util.io.der.DERParser;
 public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
     private BigInteger version;
     private List<Integer> algorithmIdentifier;
+    private ASN1Object algorithmParameter;
     private ASN1Object privateKeyBytes;
 
     public PKCS8PrivateKeyInfo() {
@@ -89,6 +90,14 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
         this.algorithmIdentifier = algorithmIdentifier;
     }
 
+    public ASN1Object getAlgorithmParameter() {
+        return algorithmParameter;
+    }
+
+    public void setAlgorithmParameter(ASN1Object algorithmParameter) {
+        this.algorithmParameter = algorithmParameter;
+    }
+
     public ASN1Object getPrivateKeyBytes() {
         return privateKeyBytes;
     }
@@ -115,6 +124,21 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
      * @throws IOException    If failed to parse the encoding
      */
     public void decode(ASN1Object privateKeyInfo) throws IOException {
+        /*
+         * SEQUENCE {
+         *      INTEGER 0x00 (0 decimal)
+         *      SEQUENCE {
+         *         OBJECTIDENTIFIER encryption type
+         *         OBJECTIDENTIFIER extra info - may be NULL
+         *      }
+         *      OCTETSTRING private key
+         * }
+         */
+        ASN1Type objType = privateKeyInfo.getObjType();
+        if (objType != ASN1Type.SEQUENCE) {
+            throw new StreamCorruptedException("Not a top level sequence: " + objType);
+        }
+
         try (DERParser parser = privateKeyInfo.createParser()) {
             ASN1Object versionObject = parser.readObject();
             if (versionObject == null) {
@@ -128,10 +152,21 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
                 throw new StreamCorruptedException("No private key algorithm");
             }
 
+            objType = privateKeyInfo.getObjType();
+            if (objType != ASN1Type.SEQUENCE) {
+                throw new StreamCorruptedException("Not an algorithm parameters sequence: " + objType);
+            }
+
             try (DERParser oidParser = privateKeyAlgorithm.createParser()) {
                 ASN1Object oid = oidParser.readObject();
                 setAlgorithmIdentifier(oid.asOID());
-                // TODO add optional algorithm identifier parameters parsing
+
+                // Extra information is OPTIONAL
+                ASN1Object extraInfo = oidParser.readObject();
+                objType = (extraInfo == null) ? ASN1Type.NULL : extraInfo.getObjType();
+                if (objType != ASN1Type.NULL) {
+                    setAlgorithmParameter(extraInfo);
+                }
             }
 
             ASN1Object privateKeyData = parser.readObject();
@@ -139,7 +174,7 @@ public class PKCS8PrivateKeyInfo /* TODO Cloneable */ {
                 throw new StreamCorruptedException("No private key data");
             }
 
-            ASN1Type objType = privateKeyData.getObjType();
+            objType = privateKeyData.getObjType();
             if (objType != ASN1Type.OCTET_STRING) {
                 throw new StreamCorruptedException("Private key data not an " + ASN1Type.OCTET_STRING + ": " + objType);
             }

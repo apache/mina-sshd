@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
@@ -41,6 +42,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.der.ASN1Object;
+import org.apache.sshd.common.util.io.der.ASN1Type;
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -91,8 +93,19 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         if (SecurityUtils.isECCSupported()
                 && ECDSAPEMResourceKeyPairParser.ECDSA_OID.equals(oid)) {
             ASN1Object privateKeyBytes = pkcs8Info.getPrivateKeyBytes();
+            ASN1Object extraInfo = pkcs8Info.getAlgorithmParameter();
+            ASN1Type objType = (extraInfo == null) ? ASN1Type.NULL : extraInfo.getObjType();
+            List<Integer> oidCurve = (objType == ASN1Type.NULL) ? Collections.emptyList() : extraInfo.asOID();
+            ECCurves curve = null;
+            if (GenericUtils.isNotEmpty(oidCurve)) {
+                curve = ECCurves.fromOIDValue(oidCurve);
+                if (curve == null) {
+                    throw new NoSuchAlgorithmException("Cannot match EC curve OID=" + oidCurve);
+                }
+            }
+
             try (DERParser parser = privateKeyBytes.createParser()) {
-                kp = ECDSAPEMResourceKeyPairParser.parseECKeyPair(parser);
+                kp = ECDSAPEMResourceKeyPairParser.parseECKeyPair(curve, parser);
             }
         } else {
             PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);

@@ -57,4 +57,4 @@ as much of the available functionality as possible.
 
 * [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
 
-* [SSHD-989](https://issues.apache.org/jira/browse/SSHD-989) - Implement ECDSA public key recovery for PKCS8 encoded data
+* [SSHD-989](https://issues.apache.org/jira/browse/SSHD-989) - Read correctly ECDSA key pair from PKCS8 encoded data
