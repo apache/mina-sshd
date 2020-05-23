@@ -43,6 +43,7 @@ public class BaseGCMCipher extends BaseCipher {
         this.mode = mode;
         secretKey = new SecretKeySpec(key, getAlgorithm());
         parameters = new CounterGCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv);
+        parameters.decrementCounter();
         return SecurityUtils.getCipher(getTransformation());
     }
 
@@ -71,6 +72,15 @@ public class BaseGCMCipher extends BaseCipher {
                 iv[i]++;
                 if (iv[i] != 0) {
                     break; // no carry
+                }
+            }
+        }
+
+        protected void decrementCounter() {
+            for (int i = iv.length - 1; i >= iv.length - Long.BYTES; i--) {
+                iv[i]--;
+                if (iv[i] != -1) {
+                    break; // no borrow
                 }
             }
         }
