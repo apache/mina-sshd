@@ -48,6 +48,14 @@ public class BaseGCMCipher extends BaseCipher {
     }
 
     @Override
+    public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
+        Cipher cipher = getCipherInstance();
+        parameters.incrementCounter();
+        cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, parameters);
+        cipher.doFinal(input, inputOffset, inputLen, input, inputOffset);
+    }
+
+    @Override
     public void updateWithAAD(byte[] input, int aadOffset, int aadLen, int inputOffset, int inputLen) throws Exception {
         Cipher cipher = getCipherInstance();
         parameters.incrementCounter();

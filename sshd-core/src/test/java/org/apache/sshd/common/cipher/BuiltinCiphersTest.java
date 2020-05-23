@@ -37,6 +37,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -193,10 +194,12 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         rnd.nextBytes(iv);
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
-        byte[] data = new byte[cipher.getCipherBlockSize()];
-        rnd.nextBytes(data);
+        byte[] data = new byte[cipher.getCipherBlockSize() + cipher.getAuthenticationTagSize()];
+        for (int i = 0; i < cipher.getCipherBlockSize(); i += Integer.BYTES) {
+            BufferUtils.putUInt(Integer.toUnsignedLong(rnd.nextInt()), data, i, Integer.BYTES);
+        }
 
-        cipher.update(data);
+        cipher.update(data, 0, cipher.getCipherBlockSize());
     }
 
     @Test
