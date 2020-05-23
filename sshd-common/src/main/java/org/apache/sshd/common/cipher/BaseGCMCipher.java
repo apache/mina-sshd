@@ -67,10 +67,11 @@ public class BaseGCMCipher extends BaseCipher {
         }
 
         protected void incrementCounter() {
-            int i = iv.length - 1;
-            while (i >= iv.length - Long.BYTES && ++iv[i] == 0) {
-                // carry to next byte
-                i--;
+            for (int i = iv.length - 1; i >= iv.length - Long.BYTES; i--) {
+                iv[i]++;
+                if (iv[i] != 0) {
+                    break; // no carry
+                }
             }
         }
 
