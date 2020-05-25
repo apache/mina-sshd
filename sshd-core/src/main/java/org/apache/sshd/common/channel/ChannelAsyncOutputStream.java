@@ -108,16 +108,22 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();
             long length;
-            if (remoteWindow.getSize() < total && total <= remoteWindow.getPacketSize()) {
-                // do not chunk when the window is smaller than the packet size
-                length = 0;
-                // do a defensive copy in case the user reuses the buffer
-                IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
-                f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                pendingWrite.set(f);
-                if (log.isTraceEnabled()) {
-                    log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
-                            this, resume, remoteWindow.getSize());
+            if (total > remoteWindow.getSize()) {
+                // if we have a big message and there is enough space, send the next chunk
+                if (remoteWindow.getSize() >= remoteWindow.getPacketSize()) {
+                    // send the first chunk as we have enough space in the window
+                    length = remoteWindow.getPacketSize();
+                } else {
+                    // do not chunk when the window is smaller than the packet size
+                    length = 0;
+                    // do a defensive copy in case the user reuses the buffer
+                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                    pendingWrite.set(f);
+                    if (log.isTraceEnabled()) {
+                        log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
+                                this, resume, remoteWindow.getSize());
+                    }
                 }
             } else if (total > remoteWindow.getPacketSize()) {
                 if (buffer.rpos() > 0) {

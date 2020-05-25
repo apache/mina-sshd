@@ -76,8 +76,7 @@ public interface SftpClientFactory {
     }
 
     default SftpFileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {
-        return createSftpFileSystem(session, selector, SftpClient.DEFAULT_READ_BUFFER_SIZE,
-                SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+        return createSftpFileSystem(session, selector, 0, 0);
     }
 
     default SftpFileSystem createSftpFileSystem(ClientSession session, int version, int readBufferSize, int writeBufferSize)

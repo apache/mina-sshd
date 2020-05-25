@@ -131,12 +131,12 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
             } else {
                 int nb = Math.min(buffer.available(), len);
                 buffer.getRawBytes(b, off, nb);
-                idx += nb;
+                off += nb;
                 len -= nb;
                 clientOffset += nb;
             }
         }
-        int res = idx - off;
+        int res = off - idx;
         if (res == 0 && eofIndicator) {
             res = -1;
         }
