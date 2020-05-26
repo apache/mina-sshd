@@ -20,8 +20,8 @@
 package org.apache.sshd.util.test;
 
 /**
- * Marker interface used as <A HREF="https://github.com/junit-team/junit4/wiki/categories">jUnit category</A>
- * to indicate a test that does not require real client/server interaction.
+ * Marker interface used as <A HREF="https://github.com/junit-team/junit4/wiki/categories">jUnit category</A> to
+ * indicate a test that does not require real client/server interaction.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

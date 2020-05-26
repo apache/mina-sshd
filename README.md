@@ -19,9 +19,13 @@ based applications requiring SSH support.
 * [RFC 4345 - Improved Arcfour Modes for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc4345)
 * [RFC 4419 - Diffie-Hellman Group Exchange for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc4419)
 * [RFC 4716 - The Secure Shell (SSH) Public Key File Format](https://tools.ietf.org/html/rfc4716)
+* [RFC 5208 - Public-Key Cryptography Standards (PKCS) #8 - version 1.2](https://tools.ietf.org/html/rfc5208)
 * [RFC 5480 - Elliptic Curve Cryptography Subject Public Key Information](https://tools.ietf.org/html/rfc5480)
+* [RFC 5656 - Elliptic Curve Algorithm Integration in the Secure Shell Transport Layer](https://tools.ietf.org/html/rfc5656)
+* [RFC 5915 - Elliptic Curve Private Key Structure](https://tools.ietf.org/html/rfc5915)
 * [RFC 6668 - SHA-2 Data Integrity Verification for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc6668)
 * [RFC 8160 - IUTF8 Terminal Mode in Secure Shell (SSH)](https://tools.ietf.org/html/rfc8160)
+* [RFC 8268 - More Modular Exponentiation (MODP) Diffie-Hellman (DH) Key Exchange (KEX) Groups for Secure Shell (SSH)](https://tools.ietf.org/html/rfc8268)
 * [RFC 8308 - Extension Negotiation in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8308)
     * **Note:** - the code contains [**hooks**](./docs/event-listeners.md#kexextensionhandler) for implementing the RFC but
     beyond allowing convenient support for the required protocol details, it does not implement any default logic that handles
@@ -31,6 +35,9 @@ based applications requiring SSH support.
     initialization - see [section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3) and also the
     above mentioned hooks for [RFC 8308](https://tools.ietf.org/html/rfc8308).
 * [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
+* [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
+    * **Note:** the server side supports these keys by default. The client side requires specific initialization
+* [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
 * SFTP version 3-6 + extensions
     * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
     * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)
@@ -47,13 +54,17 @@ based applications requiring SSH support.
 ## Implemented/available support
 
 * **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc
-* **Digests**: md5, sha1, sha224, sha384, sha512
-* **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512
+* **Digests**: md5, sha1, sha224, sha256, sha384, sha512
+* **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
+, hmac-sha2-512-etm@openssh.com, hmac-sha1-etm@openssh.com
 * **Key exchange**: diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
 , diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
 , ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521
 * **Compressions**: none, zlib, zlib@openssh.com
-* **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521, ed25519 (requires `eddsa` optional module)
+* **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
+, ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
+, ssh-rsa-cert-v01@openssh.com, ssh-dss-cert-v01@openssh.com, ssh-ed25519-cert-v01@openssh.com
+, ecdsa-sha2-nistp256-cert-v01@openssh.com, ecdsa-sha2-nistp384-cert-v01@openssh.com, ecdsa-sha2-nistp521-cert-v01@openssh.com
 
 # [Release notes](./CHANGES.md)
 

@@ -53,7 +53,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
         super();
     }
 
-    @Test   // see SSHD-554, SSHD-722
+    @Test // see SSHD-554, SSHD-722
     public void testSetSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
             Map<String, Object> expectedOptions = new LinkedHashMap<String, Object>();
@@ -114,7 +114,8 @@ public class Nio2ServiceTest extends BaseTestSupport {
                 sshd.stop();
             }
 
-            // NOTE: we do not fail the test since some O/S implementations treat the value as a recommendation - i.e., they might ignore it
+            // NOTE: we do not fail the test since some O/S implementations treat the value as a recommendation - i.e.,
+            // they might ignore it
             for (Map.Entry<SocketOption<?>, ? extends Map.Entry<?, ?>> mme : actualOptionValues.entrySet()) {
                 SocketOption<?> option = mme.getKey();
                 Map.Entry<?, ?> vp = mme.getValue();
@@ -122,9 +123,9 @@ public class Nio2ServiceTest extends BaseTestSupport {
                 Object actValue = vp.getValue();
                 Appendable output = Objects.equals(expValue, actValue) ? System.out : System.err;
                 output.append('\t').append(option.name())
-                      .append(": expected=").append(Objects.toString(expValue))
-                      .append(", actual=").append(Objects.toString(actValue))
-                      .append(System.lineSeparator());
+                        .append(": expected=").append(Objects.toString(expValue))
+                        .append(", actual=").append(Objects.toString(actValue))
+                        .append(System.lineSeparator());
                 if (output instanceof Flushable) {
                     ((Flushable) output).flush();
                 }

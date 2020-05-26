@@ -30,7 +30,8 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
+ * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the
+ * client side.
  */
 public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
     private final ConnectionService service;
@@ -52,9 +53,9 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             return channel.getAgent();
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {
-                log.debug("createClient(" + service.getSession() + ")[" + getId() + ")"
-                        + " failed (" + t.getClass().getSimpleName() + ")"
-                        + " to create client: " + t.getMessage());
+                log.warn("createClient(" + service.getSession() + ")[" + getId() + ")"
+                         + " failed (" + t.getClass().getSimpleName() + ")"
+                         + " to create client: " + t.getMessage());
             }
 
             if (t instanceof IOException) {

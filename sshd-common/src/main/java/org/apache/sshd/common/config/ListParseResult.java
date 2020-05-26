@@ -24,14 +24,13 @@ import java.util.List;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Used to hold the result of parsing a list of value. Such result contains known
- * and unknown values - which are accessible via the respective {@link #getParsedValues()}
- * and {@link #getUnsupportedValues()} methods. <B>Note:</B> the returned {@link List}s may
- * be un-modifiable, so it is recommended to avoid attempting changing the, returned
+ * Used to hold the result of parsing a list of value. Such result contains known and unknown values - which are
+ * accessible via the respective {@link #getParsedValues()} and {@link #getUnsupportedValues()} methods. <B>Note:</B>
+ * the returned {@link List}s may be un-modifiable, so it is recommended to avoid attempting changing the, returned
  * list(s)
  *
- * @param <E> Type of list item
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <E> Type of list item
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class ListParseResult<E> {
     private final List<E> parsed;
@@ -43,16 +42,15 @@ public abstract class ListParseResult<E> {
     }
 
     /**
-     * @return The {@link List} of successfully parsed value instances
-     * in the <U>same order</U> as they were encountered during parsing
+     * @return The {@link List} of successfully parsed value instances in the <U>same order</U> as they were encountered
+     *         during parsing
      */
     public final List<E> getParsedValues() {
         return parsed;
     }
 
     /**
-     * @return A {@link List} of unknown/unsupported configuration values for
-     * the factories
+     * @return A {@link List} of unknown/unsupported configuration values for the factories
      */
     public List<String> getUnsupportedValues() {
         return unsupported;
@@ -61,6 +59,6 @@ public abstract class ListParseResult<E> {
     @Override
     public String toString() {
         return "parsed=" + GenericUtils.join(getParsedValues(), ',')
-                + ";unsupported=" + GenericUtils.join(getUnsupportedValues(), ',');
+               + ";unsupported=" + GenericUtils.join(getUnsupportedValues(), ',');
     }
 }

@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.deprecated;
 
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class UserAuthAgent extends AbstractUserAuth {
 
             String keyType = KeyUtils.getKeyType(key);
             byte[] contents = bs.getCompactData();
-            byte[] signature = agent.sign(key, contents);
+            byte[] signature = agent.sign(session, key, contents);
             Buffer bs2 = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE, false);
             bs2.putString(keyType);
             bs2.putBytes(signature);

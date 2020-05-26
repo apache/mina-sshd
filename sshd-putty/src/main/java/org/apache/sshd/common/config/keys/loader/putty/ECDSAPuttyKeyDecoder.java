@@ -58,7 +58,7 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
     @Override
     public Collection<KeyPair> loadKeyPairs(
             NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchAlgorithmException("ECC not supported for " + resourceKey);
         }
@@ -72,22 +72,25 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
         String encCurveName = pubReader.readString();
         String keyCurveName = curve.getName();
         if (!keyCurveName.equals(encCurveName)) {
-            throw new InvalidKeySpecException("Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
+            throw new InvalidKeySpecException(
+                    "Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
         }
 
-        byte[] octets = pubReader.read(Short.MAX_VALUE);    // reasonable max. allowed size
+        byte[] octets = pubReader.read(Short.MAX_VALUE); // reasonable max. allowed size
         ECPoint w;
         try {
             w = ECCurves.octetStringToEcPoint(octets);
             if (w == null) {
-                throw new InvalidKeySpecException("No public ECPoint generated for curve=" + keyCurveName
-                        + " from octets=" + BufferUtils.toHex(':', octets));
+                throw new InvalidKeySpecException(
+                        "No public ECPoint generated for curve=" + keyCurveName
+                                                  + " from octets=" + BufferUtils.toHex(':', octets));
             }
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to generate public ECPoint for curve=" + keyCurveName
-                    + " from octets=" + BufferUtils.toHex(':', octets)
-                    + ": " + e.getMessage());
+            throw new InvalidKeySpecException(
+                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                              + " to generate public ECPoint for curve=" + keyCurveName
+                                              + " from octets=" + BufferUtils.toHex(':', octets)
+                                              + ": " + e.getMessage());
         }
 
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);

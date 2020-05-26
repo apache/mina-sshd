@@ -44,17 +44,18 @@ public class GenericUtilsTest extends JUnitTestSupport {
     @Test
     public void testSplitAndJoin() {
         List<String> expected = Collections.unmodifiableList(
-            Arrays.asList(
-                getClass().getPackage().getName().replace('.', '/'),
-                getClass().getSimpleName(),
-                getCurrentTestName()));
+                Arrays.asList(
+                        getClass().getPackage().getName().replace('.', '/'),
+                        getClass().getSimpleName(),
+                        getCurrentTestName()));
 
         // NOTE: we also test characters that have meaning in String.split(...) as regex ones
-        for (char ch : new char[]{',', '.', '*', '?'}) {
+        for (char ch : new char[] { ',', '.', '*', '?' }) {
             String sep = String.valueOf(ch);
             String s = GenericUtils.join(expected, sep);
             String[] actual = GenericUtils.split(s, ch);
-            assertEquals("Mismatched split length for separator=" + sep, expected.size(), GenericUtils.length((Object[]) actual));
+            assertEquals("Mismatched split length for separator=" + sep, expected.size(),
+                    GenericUtils.length((Object[]) actual));
 
             for (int index = 0; index < actual.length; index++) {
                 String e = expected.get(index);
@@ -85,7 +86,7 @@ public class GenericUtilsTest extends JUnitTestSupport {
     @Test
     public void testStripOnlyFirstLayerQuotes() {
         StringBuilder sb = new StringBuilder().append("||").append(getCurrentTestName()).append("||");
-        char[] delims = {'\'', '"', '"', '\''};
+        char[] delims = { '\'', '"', '"', '\'' };
         for (int index = 0; index < delims.length; index += 2) {
             char topDelim = delims[index];
             char innerDelim = delims[index + 1];
@@ -96,7 +97,8 @@ public class GenericUtilsTest extends JUnitTestSupport {
 
             CharSequence expected = sb.subSequence(1, sb.length() - 1);
             CharSequence actual = GenericUtils.stripQuotes(sb);
-            assertEquals("Mismatched result for delim (" + topDelim + "/" + innerDelim + ")", expected.toString(), actual.toString());
+            assertEquals("Mismatched result for delim (" + topDelim + "/" + innerDelim + ")", expected.toString(),
+                    actual.toString());
         }
     }
 
@@ -115,14 +117,15 @@ public class GenericUtilsTest extends JUnitTestSupport {
     public void testStripDelimitersOnlyIfOnBothEnds() {
         final char delim = '$';
         StringBuilder expected = new StringBuilder().append(delim).append(getCurrentTestName()).append(delim);
-        for (int index : new int[]{0, expected.length() - 1}) {
+        for (int index : new int[] { 0, expected.length() - 1 }) {
             // restore original delimiters
             expected.setCharAt(0, delim);
             expected.setCharAt(expected.length() - 1, delim);
             // trash one end
             expected.setCharAt(index, (char) (delim + 1));
 
-            assertSame("Mismatched result for delim at index=" + index, expected, GenericUtils.stripDelimiters(expected, delim));
+            assertSame("Mismatched result for delim at index=" + index, expected,
+                    GenericUtils.stripDelimiters(expected, delim));
         }
     }
 
@@ -137,10 +140,10 @@ public class GenericUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testAccumulateExceptionOnExistingCurrent() {
-        RuntimeException[] expected = new RuntimeException[]{
-            new IllegalArgumentException(getCurrentTestName()),
-            new ClassCastException(getClass().getName()),
-            new NoSuchElementException(getClass().getPackage().getName())
+        RuntimeException[] expected = new RuntimeException[] {
+                new IllegalArgumentException(getCurrentTestName()),
+                new ClassCastException(getClass().getName()),
+                new NoSuchElementException(getClass().getPackage().getName())
         };
         RuntimeException current = new UnsupportedOperationException("top");
         for (RuntimeException extra : expected) {
@@ -154,10 +157,11 @@ public class GenericUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testNullOrEmptyCharArrayComparison() {
-        char[][] values = new char[][]{null, GenericUtils.EMPTY_CHAR_ARRAY};
+        char[][] values = new char[][] { null, GenericUtils.EMPTY_CHAR_ARRAY };
         for (char[] c1 : values) {
             for (char[] c2 : values) {
-                assertEquals(((c1 == null) ? "null" : "empty") + " vs. " + ((c2 == null) ? "null" : "empty"), 0, GenericUtils.compare(c1, c2));
+                assertEquals(((c1 == null) ? "null" : "empty") + " vs. " + ((c2 == null) ? "null" : "empty"), 0,
+                        GenericUtils.compare(c1, c2));
             }
         }
     }

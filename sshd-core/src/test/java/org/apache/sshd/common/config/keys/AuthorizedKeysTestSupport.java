@@ -64,9 +64,9 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8, options)) {
             w.append(PublicKeyEntry.COMMENT_CHAR)
-                .append(' ').append(getCurrentTestName())
-                .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
-                .append(IoUtils.EOL);
+                    .append(' ').append(getCurrentTestName())
+                    .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
+                    .append(IoUtils.EOL);
             for (String l : keyLines) {
                 w.append(l).append(IoUtils.EOL);
             }
@@ -77,9 +77,9 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
     protected List<String> loadDefaultSupportedKeys() throws IOException {
         return loadSupportedKeys(
-            Objects.requireNonNull(
-                getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
-                "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
+                Objects.requireNonNull(
+                        getClass().getResource(AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME),
+                        "Missing resource=" + AuthorizedKeysAuthenticator.STD_AUTHORIZED_KEYS_FILENAME));
     }
 
     public static List<String> loadSupportedKeys(URL url) throws IOException {

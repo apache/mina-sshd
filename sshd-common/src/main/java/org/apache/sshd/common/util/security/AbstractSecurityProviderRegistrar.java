@@ -33,8 +33,8 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSecurityProviderRegistrar
-                extends AbstractLoggingBean
-                implements SecurityProviderRegistrar {
+        extends AbstractLoggingBean
+        implements SecurityProviderRegistrar {
     protected final Map<String, Object> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     protected final Map<Class<?>, Map<String, Boolean>> supportedEntities = new HashMap<>();
     protected final AtomicReference<Provider> providerHolder = new AtomicReference<>(null);
@@ -73,20 +73,19 @@ public abstract class AbstractSecurityProviderRegistrar
     }
 
     /**
-     * Attempts to see if a provider with this name already registered. If not,
-     * then uses reflection API in order to load and instantiate the specified
-     * <tt>providerClassName</tt>
+     * Attempts to see if a provider with this name already registered. If not, then uses reflection API in order to
+     * load and instantiate the specified <tt>providerClassName</tt>
      *
-     * @param providerClassName The fully-qualified class name to instantiate
-     * if a provider not already registered
-     * @return The resolved {@link Provider} instance - <B>Note:</B> the result
-     * is <U>cached</U> - i.e., successful resolution result will not cause
-     * the code to re-resolve the provider
-     * @throws ReflectiveOperationException If failed to instantiate the provider
+     * @param  providerClassName             The fully-qualified class name to instantiate if a provider not already
+     *                                       registered
+     * @return                               The resolved {@link Provider} instance - <B>Note:</B> the result is
+     *                                       <U>cached</U> - i.e., successful resolution result will not cause the code
+     *                                       to re-resolve the provider
+     * @throws ReflectiveOperationException  If failed to instantiate the provider
      * @throws UnsupportedOperationException If registrar not supported
-     * @see #isSupported()
-     * @see Security#getProvider(String)
-     * @see #createProviderInstance(String)
+     * @see                                  #isSupported()
+     * @see                                  Security#getProvider(String)
+     * @see                                  #createProviderInstance(String)
      */
     protected Provider getOrCreateProvider(String providerClassName) throws ReflectiveOperationException {
         if (!isSupported()) {

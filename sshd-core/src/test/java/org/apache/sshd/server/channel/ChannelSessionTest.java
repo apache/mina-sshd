@@ -73,13 +73,12 @@ public class ChannelSessionTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
-                    channel.open().verify(7L, TimeUnit.SECONDS);
+                    channel.open().verify(OPEN_TIMEOUT);
 
                     OutputStream invertedIn = channel.getInvertedIn();
                     String cmdSent = "echo foo\nexit\n";
@@ -87,11 +86,11 @@ public class ChannelSessionTest extends BaseTestSupport {
                     invertedIn.flush();
 
                     long waitStart = System.currentTimeMillis();
-                    Collection<ClientChannelEvent> result =
-                        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
+                    Collection<ClientChannelEvent> result
+                            = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
                     long waitEnd = System.currentTimeMillis();
                     assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
-                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                            result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
 
                     byte[] b = new byte[1024];
                     InputStream invertedOut = channel.getInvertedOut();
@@ -113,26 +112,25 @@ public class ChannelSessionTest extends BaseTestSupport {
         buffer.putInt(1234);
 
         try (ChannelSession channelSession = new ChannelSession() {
-                {
-                    Window wRemote = getRemoteWindow();
-                    wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
-                }
+            {
+                Window wRemote = getRemoteWindow();
+                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
+            }
         }) {
             AtomicBoolean expanded = new AtomicBoolean(false);
-            channelSession.asyncOut =
-                new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
-                    @Override
-                    public void onWindowExpanded() throws IOException {
-                        expanded.set(true);
-                        super.onWindowExpanded();
-                    }
-                };
+            channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
+                @Override
+                public void onWindowExpanded() throws IOException {
+                    expanded.set(true);
+                    super.onWindowExpanded();
+                }
+            };
             channelSession.handleWindowAdjust(buffer);
             assertTrue("Expanded ?", expanded.get());
         }
     }
 
-    @Test   // see SSHD-652
+    @Test // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         try (ChannelSession session = new ChannelSession() {

@@ -28,49 +28,45 @@ import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
- * The <code>ServerFactoryManager</code> enable the retrieval of additional
- * configuration needed specifically for the server side.
+ * The <code>ServerFactoryManager</code> enable the retrieval of additional configuration needed specifically for the
+ * server side.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ServerFactoryManager
         extends FactoryManager,
-                ServerProxyAcceptorHolder,
-                ServerAuthenticationManager {
+        ServerProxyAcceptorHolder,
+        ServerAuthenticationManager {
 
     /**
-     * Key used to retrieve the value of the maximum concurrent open session count per username.
-     * If not set, then unlimited
+     * Key used to retrieve the value of the maximum concurrent open session count per username. If not set, then
+     * unlimited
      */
     String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
 
     /**
-     * Key used to retrieve any extra lines to be sent during
-     * initial protocol handshake <U>before</U> the identification.
-     * The configured string value should use {@value #SERVER_EXTRA_IDENT_LINES_SEPARATOR}
-     * character to denote line breaks
+     * Key used to retrieve any extra lines to be sent during initial protocol handshake <U>before</U> the
+     * identification. The configured string value should use {@value #SERVER_EXTRA_IDENT_LINES_SEPARATOR} character to
+     * denote line breaks
      */
     String SERVER_EXTRA_IDENTIFICATION_LINES = "server-extra-identification-lines";
 
     /**
-     * Separator used in the {@value #SERVER_EXTRA_IDENTIFICATION_LINES} configuration
-     * string to indicate new line break
+     * Separator used in the {@value #SERVER_EXTRA_IDENTIFICATION_LINES} configuration string to indicate new line break
      */
     char SERVER_EXTRA_IDENT_LINES_SEPARATOR = '|';
 
     /**
-     * Key used to retrieve the value of the server identification string.
-     * If set, then it is <U>appended</U> to the (standard) &quot;SSH-2.0-&quot;
-     * prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot;
-     * plus the current SSHD artifact name and version in uppercase - e.g.,
-     * &quot;SSH-2.0-APACHE-SSHD-1.0.0&quot;
+     * Key used to retrieve the value of the server identification string. If set, then it is <U>appended</U> to the
+     * (standard) &quot;SSH-2.0-&quot; prefix. Otherwise a default is sent that consists of &quot;SSH-2.0-&quot; plus
+     * the current SSHD artifact name and version in uppercase - e.g., &quot;SSH-2.0-APACHE-SSHD-1.0.0&quot;
      */
     String SERVER_IDENTIFICATION = "server-identification";
 
     /**
-     * Key used to configure the timeout used when receiving a close request
-     * on a channel to wait until the command cleanly exits after setting
-     * an EOF on the input stream. In milliseconds.
+     * Key used to configure the timeout used when receiving a close request on a channel to wait until the command
+     * cleanly exits after setting an EOF on the input stream. In milliseconds.
+     * 
      * @see #DEFAULT_COMMAND_EXIT_TIMEOUT
      */
     String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
@@ -81,33 +77,29 @@ public interface ServerFactoryManager
     long DEFAULT_COMMAND_EXIT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
-     * A URL pointing to the moduli file.
-     * If not specified, the default internal file will be used.
+     * A URL pointing to the moduli file. If not specified, the default internal file will be used.
      */
     String MODULI_URL = "moduli-url";
 
     /**
      * Retrieve the {@link ShellFactory} object to be used to create shells.
      *
-     * @return a valid {@link ShellFactory} object or {@code null} if shells
-     * are not supported on this server
+     * @return a valid {@link ShellFactory} object or {@code null} if shells are not supported on this server
      */
     ShellFactory getShellFactory();
 
     /**
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
      *
-     * @return A valid {@link CommandFactory} object or {@code null} if commands
-     * are not supported on this server
+     * @return A valid {@link CommandFactory} object or {@code null} if commands are not supported on this server
      */
     CommandFactory getCommandFactory();
 
     /**
-     * Retrieve the list of named factories for <code>CommandFactory.Command</code> to
-     * be used to create subsystems.
+     * Retrieve the list of named factories for <code>CommandFactory.Command</code> to be used to create subsystems.
      *
-     * @return a list of named {@link SubsystemFactory}-ies
-     * or {@code null}/empty if subsystems are not supported on this server
+     * @return a list of named {@link SubsystemFactory}-ies or {@code null}/empty if subsystems are not supported on
+     *         this server
      */
     List<SubsystemFactory> getSubsystemFactories();
 }

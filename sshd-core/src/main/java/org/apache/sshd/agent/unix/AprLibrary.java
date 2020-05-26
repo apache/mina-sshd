@@ -27,16 +27,15 @@ import org.apache.tomcat.jni.Pool;
 
 /**
  * <p>
- * Internal singleton used for initializing correctly the APR native library
- * and the associated root memory pool.
+ * Internal singleton used for initializing correctly the APR native library and the associated root memory pool.
  * </p>
  *
  * <p>
  * It'll finalize nicely the native resources (libraries and memory pools).
  * </p>
  *
- * Each memory pool used in the APR transport module needs to be children of the
- * root pool {@link AprLibrary#getRootPool()}.
+ * Each memory pool used in the APR transport module needs to be children of the root pool
+ * {@link AprLibrary#getRootPool()}.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
@@ -48,13 +47,11 @@ public final class AprLibrary {
     private final long pool;
 
     /**
-     * APR library singleton constructor. Called only when accessing the
-     * singleton the first time. It is initializing an APR memory pool for
-     * the whole package (a.k.a mother or root pool).
+     * APR library singleton constructor. Called only when accessing the singleton the first time. It is initializing an
+     * APR memory pool for the whole package (a.k.a mother or root pool).
      *
-     * @throws RuntimeException if failed to load the library. <B>Note:</B>
-     * callers should inspect the <U>cause</U> of the exception in case an
-     * {@link Error} was thrown (e.g., {@code UnsatisfiedLinkError}).
+     * @throws RuntimeException if failed to load the library. <B>Note:</B> callers should inspect the <U>cause</U> of
+     *                          the exception in case an {@link Error} was thrown (e.g., {@code UnsatisfiedLinkError}).
      */
     private AprLibrary() {
         try {
@@ -82,8 +79,7 @@ public final class AprLibrary {
     }
 
     /**
-     * initialize the APR Library by loading the associated native libraries
-     * and creating the associated singleton
+     * initialize the APR Library by loading the associated native libraries and creating the associated singleton
      */
     private static synchronized void initialize() {
         if (library == null) {
@@ -110,8 +106,7 @@ public final class AprLibrary {
     }
 
     /**
-     * get the package wide root pool, the mother of all the pool created
-     * in APR transport module.
+     * get the package wide root pool, the mother of all the pool created in APR transport module.
      *
      * @return number identifying the root pool
      */
@@ -155,7 +150,7 @@ public final class AprLibrary {
 
     private static void chmodOwner(String authSocket, boolean execute) throws IOException {
         int perms = org.apache.tomcat.jni.File.APR_FPROT_UREAD
-                | org.apache.tomcat.jni.File.APR_FPROT_UWRITE;
+                    | org.apache.tomcat.jni.File.APR_FPROT_UWRITE;
         if (execute) {
             perms |= org.apache.tomcat.jni.File.APR_FPROT_UEXECUTE;
         }

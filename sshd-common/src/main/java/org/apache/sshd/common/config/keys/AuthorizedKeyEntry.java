@@ -48,13 +48,13 @@ import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 
 /**
- * Represents an entry in the user's {@code authorized_keys} file according
- * to the <A HREF="http://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#.7E.2F.ssh.2Fauthorized_keys">OpenSSH format</A>.
- * <B>Note:</B> {@code equals/hashCode} check only the key type and data - the
- * comment and/or login options are not considered part of equality
+ * Represents an entry in the user's {@code authorized_keys} file according to the
+ * <A HREF="http://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#.7E.2F.ssh.2Fauthorized_keys">OpenSSH
+ * format</A>. <B>Note:</B> {@code equals/hashCode} check only the key type and data - the comment and/or login options
+ * are not considered part of equality
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
+ * @see    <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
  */
 public class AuthorizedKeyEntry extends PublicKeyEntry {
     public static final char BOOLEAN_OPTION_NEGATION_INDICATOR = '!';
@@ -90,28 +90,28 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param fallbackResolver The {@link PublicKeyEntryResolver} to consult if
-     * none of the built-in ones can be used. If {@code null} and no built-in
-     * resolver can be used then an {@link InvalidKeySpecException} is thrown.
-     * @return The resolved {@link PublicKey} - or {@code null} if could not be
-     * resolved. <B>Note:</B> may be called only after key type and data bytes
-     * have been set or exception(s) may be thrown
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @param  fallbackResolver         The {@link PublicKeyEntryResolver} to consult if none of the built-in ones can
+     *                                  be used. If {@code null} and no built-in resolver can be used then an
+     *                                  {@link InvalidKeySpecException} is thrown.
+     * @return                          The resolved {@link PublicKey} - or {@code null} if could not be resolved.
+     *                                  <B>Note:</B> may be called only after key type and data bytes have been set or
+     *                                  exception(s) may be thrown
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
-     * @see PublicKeyEntry#resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
+     * @see                             PublicKeyEntry#resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
      */
     public PublicKey resolvePublicKey(
             SessionContext session, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         return resolvePublicKey(session, getLoginOptions(), fallbackResolver);
     }
 
     @Override
     public PublicKey appendPublicKey(
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
@@ -145,12 +145,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         return key;
     }
 
-    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    @Override // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
     public int hashCode() {
         return super.hashCode();
     }
 
-    @Override   // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
+    @Override // to avoid Findbugs[EQ_DOESNT_OVERRIDE_EQUALS]
     public boolean equals(Object obj) {
         return super.equals(obj);
     }
@@ -161,17 +161,17 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         String kc = getComment();
         Map<?, ?> ko = getLoginOptions();
         return (GenericUtils.isEmpty(ko) ? "" : ko.toString() + " ")
-                + entry
-                + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
+               + entry
+               + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
     }
 
     /**
      * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param url The {@link URL} to read from
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @param  url         The {@link URL} to read from
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(InputStream, boolean)
+     * @see                #readAuthorizedKeys(InputStream, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(URL url) throws IOException {
         try (InputStream in = url.openStream()) {
@@ -182,13 +182,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     /**
      * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param path    {@link Path} to read from
-     * @param options The {@link OpenOption}s to use - if unspecified then appropriate
-     *                defaults assumed
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @param  path        {@link Path} to read from
+     * @param  options     The {@link OpenOption}s to use - if unspecified then appropriate defaults assumed
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(InputStream, boolean)
-     * @see Files#newInputStream(Path, OpenOption...)
+     * @see                #readAuthorizedKeys(InputStream, boolean)
+     * @see                Files#newInputStream(Path, OpenOption...)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption... options) throws IOException {
         try (InputStream in = Files.newInputStream(path, options)) {
@@ -199,11 +198,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     /**
      * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param in The {@link InputStream} to use to read the contents of an {@code authorized_keys} file
-     * @param okToClose {@code true} if method may close the input regardless success or failure
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @param  in          The {@link InputStream} to use to read the contents of an {@code authorized_keys} file
+     * @param  okToClose   {@code true} if method may close the input regardless success or failure
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(Reader, boolean)
+     * @see                #readAuthorizedKeys(Reader, boolean)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(InputStream in, boolean okToClose) throws IOException {
         try (Reader rdr = new InputStreamReader(
@@ -215,11 +214,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     /**
      * Reads read the contents of an {@code authorized_keys} file
      *
-     * @param rdr The {@link Reader} to use to read the contents of an {@code authorized_keys} file
-     * @param okToClose {@code true} if method may close the input regardless success or failure
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @param  rdr         The {@link Reader} to use to read the contents of an {@code authorized_keys} file
+     * @param  okToClose   {@code true} if method may close the input regardless success or failure
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
-     * @see #readAuthorizedKeys(BufferedReader)
+     * @see                #readAuthorizedKeys(BufferedReader)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(Reader rdr, boolean okToClose) throws IOException {
         try (BufferedReader buf = new BufferedReader(NoCloseReader.resolveReader(rdr, okToClose))) {
@@ -228,10 +227,10 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param rdr The {@link BufferedReader} to use to read the contents of an {@code authorized_keys} file
-     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @param  rdr         The {@link BufferedReader} to use to read the contents of an {@code authorized_keys} file
+     * @return             A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
-     * @see #parseAuthorizedKeyEntry(String)
+     * @see                #parseAuthorizedKeyEntry(String)
      */
     public static List<AuthorizedKeyEntry> readAuthorizedKeys(BufferedReader rdr) throws IOException {
         List<AuthorizedKeyEntry> entries = null;
@@ -240,11 +239,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             try {
                 entry = parseAuthorizedKeyEntry(line);
                 if (entry == null) {
-                    continue;   // null, empty or comment line
+                    continue; // null, empty or comment line
                 }
             } catch (RuntimeException | Error e) {
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                        + " to parse key entry=" + line + ": " + e.getMessage());
+                throw new StreamCorruptedException(
+                        "Failed (" + e.getClass().getSimpleName() + ")"
+                                                   + " to parse key entry=" + line + ": " + e.getMessage());
             }
 
             if (entries == null) {
@@ -262,27 +262,27 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @param value Original line from an {@code authorized_keys} file
-     * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
-     * {@code null}/empty or a comment line
+     * @param  value                    Original line from an {@code authorized_keys} file
+     * @return                          {@link AuthorizedKeyEntry} or {@code null} if the line is {@code null}/empty or
+     *                                  a comment line
      * @throws IllegalArgumentException If failed to parse/decode the line
-     * @see #parseAuthorizedKeyEntry(String, PublicKeyEntryDataResolver)
+     * @see                             #parseAuthorizedKeyEntry(String, PublicKeyEntryDataResolver)
      */
     public static AuthorizedKeyEntry parseAuthorizedKeyEntry(String value) throws IllegalArgumentException {
         return parseAuthorizedKeyEntry(value, null);
     }
 
     /**
-     * @param value Original line from an {@code authorized_keys} file
-     * @param resolver The {@link PublicKeyEntryDataResolver} to use - if {@code null}
-     * one will be automatically resolved from the key type
-     * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
-     * {@code null}/empty or a comment line
+     * @param  value                    Original line from an {@code authorized_keys} file
+     * @param  resolver                 The {@link PublicKeyEntryDataResolver} to use - if {@code null} one will be
+     *                                  automatically resolved from the key type
+     * @return                          {@link AuthorizedKeyEntry} or {@code null} if the line is {@code null}/empty or
+     *                                  a comment line
      * @throws IllegalArgumentException If failed to parse/decode the line
      */
     public static AuthorizedKeyEntry parseAuthorizedKeyEntry(
             String value, PublicKeyEntryDataResolver resolver)
-                throws IllegalArgumentException {
+            throws IllegalArgumentException {
         String line = GenericUtils.replaceWhitespaceAndTrim(value);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == COMMENT_CHAR) /* comment ? */) {
             return null;
@@ -322,13 +322,14 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Parses a single line from an {@code authorized_keys} file that is <U>known</U>
-     * to contain login options and separates it to the options and the rest of the line.
+     * Parses a single line from an {@code authorized_keys} file that is <U>known</U> to contain login options and
+     * separates it to the options and the rest of the line.
      *
-     * @param entryLine The line to be parsed
-     * @return A {@link SimpleImmutableEntry} representing the parsed data where key=login options part
-     * and value=rest of the data - {@code null} if no data in line or line starts with comment character
-     * @see <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) - AUTHORIZED_KEYS_FILE_FORMAT</A>
+     * @param  entryLine The line to be parsed
+     * @return           A {@link SimpleImmutableEntry} representing the parsed data where key=login options part and
+     *                   value=rest of the data - {@code null} if no data in line or line starts with comment character
+     * @see              <A HREF="http://man.openbsd.org/sshd.8#AUTHORIZED_KEYS_FILE_FORMAT">sshd(8) -
+     *                   AUTHORIZED_KEYS_FILE_FORMAT</A>
      */
     public static SimpleImmutableEntry<String, String> resolveEntryComponents(String entryLine) {
         String line = GenericUtils.replaceWhitespaceAndTrim(entryLine);
@@ -365,23 +366,23 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * </P>
      *
      * <UL>
-     *      <P><LI>
-     *      Options that have a value are automatically stripped of any surrounding double quotes./
-     *      </LI></P>
+     * <P>
+     * <LI>Options that have a value are automatically stripped of any surrounding double quotes./</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      Options that have no value are marked as {@code true/false} - according
-     *      to the {@link #BOOLEAN_OPTION_NEGATION_INDICATOR}.
-     *      </LI></P>
+     * <P>
+     * <LI>Options that have no value are marked as {@code true/false} - according to the
+     * {@link #BOOLEAN_OPTION_NEGATION_INDICATOR}.</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      Options that appear multiple times are simply concatenated using comma as separator.
-     *      </LI></P>
+     * <P>
+     * <LI>Options that appear multiple times are simply concatenated using comma as separator.</LI>
+     * </P>
      * </UL>
      *
-     * @param options The options line to parse - ignored if {@code null}/empty/blank
-     * @return A {@link NavigableMap} where key=case <U>insensitive</U> option name and value=the parsed value.
-     * @see #addLoginOption(Map, String) addLoginOption
+     * @param  options The options line to parse - ignored if {@code null}/empty/blank
+     * @return         A {@link NavigableMap} where key=case <U>insensitive</U> option name and value=the parsed value.
+     * @see            #addLoginOption(Map, String) addLoginOption
      */
     public static NavigableMap<String, String> parseLoginOptions(String options) {
         String line = GenericUtils.replaceWhitespaceAndTrim(options);
@@ -433,12 +434,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * Parses and adds a new option to the options map. If a valued option is re-specified then
-     * its value(s) are concatenated using comma as separator.
+     * Parses and adds a new option to the options map. If a valued option is re-specified then its value(s) are
+     * concatenated using comma as separator.
      *
-     * @param optsMap Options map to add to
-     * @param option The option data to parse - ignored if {@code null}/empty/blank
-     * @return The updated entry - {@code null} if no option updated in the map
+     * @param  optsMap               Options map to add to
+     * @param  option                The option data to parse - ignored if {@code null}/empty/blank
+     * @return                       The updated entry - {@code null} if no option updated in the map
      * @throws IllegalStateException If a boolean option is re-specified
      */
     public static SimpleImmutableEntry<String, String> addLoginOption(Map<String, String> optsMap, String option) {

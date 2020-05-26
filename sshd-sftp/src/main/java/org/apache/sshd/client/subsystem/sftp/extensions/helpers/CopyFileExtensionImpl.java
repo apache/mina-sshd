@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * Implements the &quot;copy-file&quot; extension
  *
- * @see <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRFAT 00 - section 6</A>
+ * @see    <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRFAT 00 - section 6</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CopyFileExtensionImpl extends AbstractSftpClientExtension implements CopyFileExtension {
@@ -43,8 +43,8 @@ public class CopyFileExtensionImpl extends AbstractSftpClientExtension implement
     @Override
     public void copyFile(String src, String dst, boolean overwriteDestination) throws IOException {
         Buffer buffer = getCommandBuffer(Integer.BYTES + GenericUtils.length(src)
-                + Integer.BYTES + GenericUtils.length(dst)
-                + 1 /* override destination */);
+                                         + Integer.BYTES + GenericUtils.length(dst)
+                                         + 1 /* override destination */);
         buffer.putString(src);
         buffer.putString(dst);
         buffer.putBoolean(overwriteDestination);

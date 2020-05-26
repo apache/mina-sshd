@@ -50,12 +50,11 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSu
         writeDefaultSupportedKeys(file);
 
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-        Collection<PublicKey> keySet =
-            PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
+        Collection<PublicKey> keySet = PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
         PublickeyAuthenticator auth = new DefaultAuthorizedKeysAuthenticator(file, false);
         String thisUser = OsUtils.getCurrentUser();
         ServerSession session = Mockito.mock(ServerSession.class);
-        for (String username : new String[]{null, "", thisUser, getClass().getName() + "#" + getCurrentTestName()}) {
+        for (String username : new String[] { null, "", thisUser, getClass().getName() + "#" + getCurrentTestName() }) {
             boolean expected = thisUser.equals(username);
             for (PublicKey key : keySet) {
                 boolean actual = auth.authenticate(username, key, session);

@@ -215,17 +215,17 @@ public final class SftpConstants {
     public static final int ACE4_WRITE_OWNER = 0x00080000;
     public static final int ACE4_SYNCHRONIZE = 0x00100000;
 
-    public static final int S_IFMT = 0170000;  // bitmask for the file type bitfields
-    public static final int S_IFSOCK = 0140000;  // socket
-    public static final int S_IFLNK = 0120000;  // symbolic link
-    public static final int S_IFREG = 0100000;  // regular file
-    public static final int S_IFBLK = 0060000;  // block device
-    public static final int S_IFDIR = 0040000;  // directory
-    public static final int S_IFCHR = 0020000;  // character device
-    public static final int S_IFIFO = 0010000;  // fifo
-    public static final int S_ISUID = 0004000;  // set UID bit
-    public static final int S_ISGID = 0002000;  // set GID bit
-    public static final int S_ISVTX = 0001000;  // sticky bit
+    public static final int S_IFMT = 0170000; // bitmask for the file type bitfields
+    public static final int S_IFSOCK = 0140000; // socket
+    public static final int S_IFLNK = 0120000; // symbolic link
+    public static final int S_IFREG = 0100000; // regular file
+    public static final int S_IFBLK = 0060000; // block device
+    public static final int S_IFDIR = 0040000; // directory
+    public static final int S_IFCHR = 0020000; // character device
+    public static final int S_IFIFO = 0010000; // fifo
+    public static final int S_ISUID = 0004000; // set UID bit
+    public static final int S_ISGID = 0002000; // set GID bit
+    public static final int S_ISVTX = 0001000; // sticky bit
     public static final int S_IRUSR = 0000400;
     public static final int S_IWUSR = 0000200;
     public static final int S_IXUSR = 0000100;
@@ -277,15 +277,14 @@ public final class SftpConstants {
     }
 
     private static final class LazyCommandNameHolder {
-        private static final Map<Integer, String> NAMES_MAP =
-            Collections.unmodifiableMap(
+        private static final Map<Integer, String> NAMES_MAP = Collections.unmodifiableMap(
                 LoggingUtils.generateMnemonicMap(SftpConstants.class, f -> {
                     String name = f.getName();
                     return name.startsWith("SSH_FXP_")
-                        // exclude the rename modes which are not opcodes
-                        && (!name.startsWith("SSH_FXP_RENAME_"))
-                        // exclude the realpath modes wich are not opcodes
-                        && (!name.startsWith("SSH_FXP_REALPATH_"));
+                            // exclude the rename modes which are not opcodes
+                            && (!name.startsWith("SSH_FXP_RENAME_"))
+                    // exclude the realpath modes wich are not opcodes
+                            && (!name.startsWith("SSH_FXP_REALPATH_"));
                 }));
 
         private LazyCommandNameHolder() {
@@ -296,9 +295,9 @@ public final class SftpConstants {
     /**
      * Converts a command value to a user-friendly name
      *
-     * @param cmd The command value
-     * @return The user-friendly name - if not one of the defined {@code SSH_FXP_XXX}
-     * values then returns the string representation of the command's value
+     * @param  cmd The command value
+     * @return     The user-friendly name - if not one of the defined {@code SSH_FXP_XXX} values then returns the string
+     *             representation of the command's value
      */
     public static String getCommandMessageName(int cmd) {
         @SuppressWarnings("synthetic-access")
@@ -311,8 +310,7 @@ public final class SftpConstants {
     }
 
     private static final class LazyStatusNameHolder {
-        private static final Map<Integer, String> STATUS_MAP =
-            Collections.unmodifiableMap(
+        private static final Map<Integer, String> STATUS_MAP = Collections.unmodifiableMap(
                 LoggingUtils.generateMnemonicMap(SftpConstants.class, "SSH_FX_"));
 
         private LazyStatusNameHolder() {
@@ -323,9 +321,9 @@ public final class SftpConstants {
     /**
      * Converts a return status value to a user-friendly name
      *
-     * @param status The status value
-     * @return The user-friendly name - if not one of the defined {@code SSH_FX_XXX}
-     * values then returns the string representation of the status value
+     * @param  status The status value
+     * @return        The user-friendly name - if not one of the defined {@code SSH_FX_XXX} values then returns the
+     *                string representation of the status value
      */
     public static String getStatusName(int status) {
         @SuppressWarnings("synthetic-access")

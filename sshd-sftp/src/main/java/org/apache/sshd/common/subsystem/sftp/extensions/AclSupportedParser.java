@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -58,8 +59,9 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
 
         public AclCapabilities(int capabilities) {
             // Protect against malicious or malformed packets
-            ValidateUtils.checkTrue((capabilities >= 0) && (capabilities < SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT),
-                "Illogical ACL capabilities count: %d", capabilities);
+            ValidateUtils.checkTrue(
+                    (capabilities >= 0) && (capabilities < SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT),
+                    "Illogical ACL capabilities count: %d", capabilities);
             this.capabilities = capabilities;
         }
 
@@ -107,11 +109,11 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
 
         private static final class LazyAclCapabilityNameHolder {
             private static final String ACL_CAP_NAME_PREFIX = "SSH_ACL_CAP_";
-            private static final NavigableMap<Integer, String> ACL_VALUES_MAP =
-                LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
-            private static final NavigableMap<String, Integer> ACL_NAMES_MAP =
-                Collections.unmodifiableNavigableMap(
-                    GenericUtils.flipMap(ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
+            private static final NavigableMap<Integer, String> ACL_VALUES_MAP
+                    = LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
+            private static final NavigableMap<String, Integer> ACL_NAMES_MAP = Collections.unmodifiableNavigableMap(
+                    GenericUtils.flipMap(
+                            ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
 
             private LazyAclCapabilityNameHolder() {
                 throw new UnsupportedOperationException("No instance allowed");
@@ -124,9 +126,9 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
         }
 
         /**
-         * @param name The ACL capability name - may be without the &quot;SSH_ACL_CAP_xxx&quot; prefix.
-         * Ignored if {@code null}/empty
-         * @return The matching {@link Integer} value - or {@code null} if no match found
+         * @param  name The ACL capability name - may be without the &quot;SSH_ACL_CAP_xxx&quot; prefix. Ignored if
+         *              {@code null}/empty
+         * @return      The matching {@link Integer} value - or {@code null} if no match found
          */
         public static Integer getAclCapabilityValue(String name) {
             if (GenericUtils.isEmpty(name)) {
@@ -157,12 +159,12 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             }
         }
 
-        public static Set<String> decodeAclCapabilities(int mask) {
+        public static NavigableSet<String> decodeAclCapabilities(int mask) {
             if (mask == 0) {
-                return Collections.emptySet();
+                return Collections.emptyNavigableSet();
             }
 
-            Set<String> caps = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            NavigableSet<String> caps = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
             Map<Integer, String> map = getAclCapabilityValuesMap();
             map.forEach((value, name) -> {
                 if ((mask & value) != 0) {

@@ -63,13 +63,14 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     public static final String GPG_V2_PUBLIC_RING_FILENAME = "pubring.kbx";
 
     /** V1 and V2 known public ring file names in <U>order</U> of preference */
-    public static final List<String> PUBLIC_RING_FILES =
-        Collections.unmodifiableList(
+    public static final List<String> PUBLIC_RING_FILES = Collections.unmodifiableList(
             Arrays.asList(GPG_V2_PUBLIC_RING_FILENAME, GPG_V1_PUBLIC_RING_FILENAME));
 
-    /** Holds a {@link Map} whose key=the fingerprint (case <U>insensitive</U>), value=the associated {@link PublicKey} */
-    protected final AtomicReference<NavigableMap<String, PublicKey>> ringKeys =
-        new AtomicReference<>(Collections.emptyNavigableMap());
+    /**
+     * Holds a {@link Map} whose key=the fingerprint (case <U>insensitive</U>), value=the associated {@link PublicKey}
+     */
+    protected final AtomicReference<NavigableMap<String, PublicKey>> ringKeys
+            = new AtomicReference<>(Collections.emptyNavigableMap());
 
     public PGPPublicRingWatcher(Path file) {
         super(file);
@@ -78,7 +79,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     @Override
     public List<PublicKey> loadMatchingKeyFingerprints(
             SessionContext session, Collection<String> fingerprints)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         int numEntries = GenericUtils.size(fingerprints);
         if (numEntries <= 0) {
             return Collections.emptyList();
@@ -109,7 +110,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
             throws IOException, GeneralSecurityException, PGPException {
         NavigableMap<String, PublicKey> keysMap = ringKeys.get();
         if (GenericUtils.isEmpty(keysMap) || checkReloadRequired()) {
-            ringKeys.set(Collections.emptyNavigableMap());  // mark stale
+            ringKeys.set(Collections.emptyNavigableMap()); // mark stale
 
             if (!exists()) {
                 return ringKeys.get();
@@ -134,7 +135,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
 
     protected NavigableMap<String, PublicKey> reloadRingKeys(
             SessionContext session, IoResource<?> resourceKey)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         Ring ring;
         try (InputStream stream = resourceKey.openInputStream()) {
             ring = new Ring(stream);
@@ -145,13 +146,13 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
 
     protected NavigableMap<String, PublicKey> reloadRingKeys(
             SessionContext session, NamedResource resourceKey, Ring ring)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         return reloadRingKeys(session, resourceKey, ring.getKeys());
     }
 
     protected NavigableMap<String, PublicKey> reloadRingKeys(
             SessionContext session, NamedResource resourceKey, Collection<Key> keys)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         if (GenericUtils.isEmpty(keys)) {
             return Collections.emptyNavigableMap();
         }
@@ -172,7 +173,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
 
                 if (debugEnabled) {
                     log.debug("reloadRingKeys({}) loaded {} key ({}) for fingerprint={} from {}",
-                        session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey), fp, resourceKey.getName());
+                            session, KeyUtils.getKeyType(pubKey), KeyUtils.getFingerPrint(pubKey), fp, resourceKey.getName());
                 }
                 if (pubKey == null) {
                     continue;
@@ -196,48 +197,48 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     /**
      * Invoked if failed to extract a {@link PublicKey} from a given {@link Subkey}
      *
-     * @param session The {@link SessionContext} of the invocation - may be {@code null} if
-     * no session context available (e.g., offline tool invocation)
-     * @param resourceKey A key representing the resource from which the key data was read
-     * @param fingerprint The fingerprint value
-     * @param subKey The {@link Subkey} that contains the failed public key
-     * @param reason The reason for the failure
-     * @return The effective key to use - if {@code null} (default behavior) then sub-key is skipped
-     * @throws IOException If failed to process some internal data stream
+     * @param  session                  The {@link SessionContext} of the invocation - may be {@code null} if no session
+     *                                  context available (e.g., offline tool invocation)
+     * @param  resourceKey              A key representing the resource from which the key data was read
+     * @param  fingerprint              The fingerprint value
+     * @param  subKey                   The {@link Subkey} that contains the failed public key
+     * @param  reason                   The reason for the failure
+     * @return                          The effective key to use - if {@code null} (default behavior) then sub-key is
+     *                                  skipped
+     * @throws IOException              If failed to process some internal data stream
      * @throws GeneralSecurityException If failed to generate a surrogate key
-     * @throws PGPException If failed to convert PGP key to Java one
+     * @throws PGPException             If failed to convert PGP key to Java one
      */
     protected PublicKey handlePublicKeyExtractionError(
             SessionContext session, NamedResource resourceKey, String fingerprint, Subkey subKey, Throwable reason)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         log.warn("handlePublicKeyExtractionError({}) failed ({}) to extract value for fingerprint={} from {}: {}",
-            session, reason.getClass().getSimpleName(), fingerprint, resourceKey.getName(), reason.getMessage());
+                session, reason.getClass().getSimpleName(), fingerprint, resourceKey.getName(), reason.getMessage());
         return null;
     }
 
     /**
-    /**
-     * Invoked if duplicate public keys found for the same fingerprint
+     * /** Invoked if duplicate public keys found for the same fingerprint
      *
-     * @param session The {@link SessionContext} of the invocation - may be {@code null} if
-     * no session context available (e.g., offline tool invocation)
-     * @param resourceKey A key representing the resource from which the key data was read
-     * @param fingerprint The duplicate fingerprint
-     * @param subKey The {@link Subkey} from which the duplicate originated
-     * @param k1 The original {@link PublicKey} associated with this fingerprint
-     * @param k2 The replacing {@link PublicKey} associated for same fingerprint
-     * @return The effective key to use (default=the replacing one) - if {@code null}
-     * then associated for the specified fingerprint is nullified
-     * @throws IOException If failed to process some internal data stream
+     * @param  session                  The {@link SessionContext} of the invocation - may be {@code null} if no session
+     *                                  context available (e.g., offline tool invocation)
+     * @param  resourceKey              A key representing the resource from which the key data was read
+     * @param  fingerprint              The duplicate fingerprint
+     * @param  subKey                   The {@link Subkey} from which the duplicate originated
+     * @param  k1                       The original {@link PublicKey} associated with this fingerprint
+     * @param  k2                       The replacing {@link PublicKey} associated for same fingerprint
+     * @return                          The effective key to use (default=the replacing one) - if {@code null} then
+     *                                  associated for the specified fingerprint is nullified
+     * @throws IOException              If failed to process some internal data stream
      * @throws GeneralSecurityException If failed to generate a surrogate key
-     * @throws PGPException If failed to convert PGP key to Java one
+     * @throws PGPException             If failed to convert PGP key to Java one
      */
     protected PublicKey handleDuplicateKeyFingerprint(
             SessionContext session, NamedResource resourceKey, String fingerprint, Subkey subKey, PublicKey k1, PublicKey k2)
-                    throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         log.warn("handleDuplicateKeyFingerprint({}) duplicate keys found for fingerprint={} ({}[{}] / {}[{}]) in {}",
-            session, fingerprint, KeyUtils.getKeyType(k1), KeyUtils.getFingerPrint(k1),
-            KeyUtils.getKeyType(k2), KeyUtils.getFingerPrint(k2), resourceKey.getName());
+                session, fingerprint, KeyUtils.getKeyType(k1), KeyUtils.getFingerPrint(k1),
+                KeyUtils.getKeyType(k2), KeyUtils.getFingerPrint(k2), resourceKey.getName());
         return k2;
     }
 
@@ -258,11 +259,11 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     }
 
     /**
-     * Checks if either the {@value #GPG_V1_PUBLIC_RING_FILENAME} or {@value #GPG_V2_PUBLIC_RING_FILENAME}
-     * exist as a <U>regular</U> file and can be read. <B>Note:</B> it attempts the V2 file first.
+     * Checks if either the {@value #GPG_V1_PUBLIC_RING_FILENAME} or {@value #GPG_V2_PUBLIC_RING_FILENAME} exist as a
+     * <U>regular</U> file and can be read. <B>Note:</B> it attempts the V2 file first.
      *
-     * @param dir The directory to look into
-     * @return The resolved {@link Path} - {@code null} if none of the files exists.
+     * @param  dir The directory to look into
+     * @return     The resolved {@link Path} - {@code null} if none of the files exists.
      */
     public static Path detectDefaultPublicRingFilePath(Path dir) {
         for (String name : PUBLIC_RING_FILES) {

@@ -26,20 +26,20 @@ import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
  */
 public interface UnknownChannelReferenceHandlerManager {
     /**
-     * @return The {@link UnknownChannelReferenceHandlerManager} to use - if
-     * {@code null} then any reference to unknown channel causes an {@link SshChannelNotFoundException}
+     * @return The {@link UnknownChannelReferenceHandlerManager} to use - if {@code null} then any reference to unknown
+     *         channel causes an {@link SshChannelNotFoundException}
      */
     UnknownChannelReferenceHandler getUnknownChannelReferenceHandler();
 
     /**
-     * @param handler The {@link UnknownChannelReferenceHandlerManager} to use - if
-     * {@code null} then any reference to unknown channel causes an {@link SshChannelNotFoundException}
+     * @param handler The {@link UnknownChannelReferenceHandlerManager} to use - if {@code null} then any reference to
+     *                unknown channel causes an {@link SshChannelNotFoundException}
      */
     void setUnknownChannelReferenceHandler(UnknownChannelReferenceHandler handler);
 
     /**
-     * Check if current manager has a specific handler set for it - if not,
-     * try and resolve one from the &quot;parent&quot; container (if any)
+     * Check if current manager has a specific handler set for it - if not, try and resolve one from the
+     * &quot;parent&quot; container (if any)
      *
      * @return The resolved handler instance
      */

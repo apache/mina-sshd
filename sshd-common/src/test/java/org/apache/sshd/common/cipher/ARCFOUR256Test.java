@@ -35,7 +35,7 @@ public class ARCFOUR256Test extends BaseCipherTest {
     @Test
     public void testEncryptDecrypt() throws Exception {
         // for RC4 256 bits we need the JCE unlimited strength policy
-        ensureKeySizeSupported(32, "ARCFOUR", "RC4");
+        ensureCipherInformationKeySizeSupported(BuiltinCiphers.arcfour256);
         testEncryptDecrypt(BuiltinCiphers.arcfour256);
     }
 }

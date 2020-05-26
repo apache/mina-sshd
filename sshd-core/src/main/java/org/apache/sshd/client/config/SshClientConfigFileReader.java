@@ -68,13 +68,13 @@ public final class SshClientConfigFileReader {
             client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
         } else {
             PropertyResolverUtils.updateProperty(
-                client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
+                    client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
 
             interval = PropertyResolverUtils.getLongProperty(
-                props, CLIENT_LIVECHECK_REPLIES_WAIT, DEFAULT_LIVECHECK_REPLY_WAIT);
+                    props, CLIENT_LIVECHECK_REPLIES_WAIT, DEFAULT_LIVECHECK_REPLY_WAIT);
             if (interval > 0L) {
                 PropertyResolverUtils.updateProperty(
-                    client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
+                        client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
             }
         }
 

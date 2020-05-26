@@ -40,9 +40,8 @@ public class BaseDigest implements Digest {
     private MessageDigest md;
 
     /**
-     * Create a new digest using the given algorithm and block size.
-     * The initialization and creation of the underlying {@link MessageDigest}
-     * object will be done in the {@link #init()} method.
+     * Create a new digest using the given algorithm and block size. The initialization and creation of the underlying
+     * {@link MessageDigest} object will be done in the {@link #init()} method.
      *
      * @param algorithm the JCE algorithm to use for this digest
      * @param bsize     the block size of this digest
@@ -107,7 +106,7 @@ public class BaseDigest implements Digest {
     @Override
     public int compareTo(Digest that) {
         if (that == null) {
-            return -1;    // push null(s) to end
+            return -1; // push null(s) to end
         } else if (this == that) {
             return 0;
         }
@@ -116,12 +115,12 @@ public class BaseDigest implements Digest {
         String thatAlg = that.getAlgorithm();
         int nRes = GenericUtils.safeCompare(thisAlg, thatAlg, false);
         if (nRes != 0) {
-            return nRes;    // debug breakpoint
+            return nRes; // debug breakpoint
         }
 
         nRes = Integer.compare(this.getBlockSize(), that.getBlockSize());
         if (nRes != 0) {
-            return nRes;    // debug breakpoint
+            return nRes; // debug breakpoint
         }
 
         return 0;

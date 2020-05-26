@@ -51,68 +51,78 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtension
  */
 public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
     COPY_FILE(SftpConstants.EXT_COPY_FILE, CopyFileExtension.class) {
-        @Override   // co-variant return
-        public CopyFileExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public CopyFileExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new CopyFileExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     COPY_DATA(SftpConstants.EXT_COPY_DATA, CopyDataExtension.class) {
-        @Override   // co-variant return
-        public CopyDataExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public CopyDataExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new CopyDataExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     MD5_FILE(SftpConstants.EXT_MD5_HASH, MD5FileExtension.class) {
-        @Override   // co-variant return
-        public MD5FileExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public MD5FileExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new MD5FileExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     MD5_HANDLE(SftpConstants.EXT_MD5_HASH_HANDLE, MD5HandleExtension.class) {
-        @Override   // co-variant return
-        public MD5HandleExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public MD5HandleExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new MD5HandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     CHECK_FILE_NAME(SftpConstants.EXT_CHECK_FILE_NAME, CheckFileNameExtension.class) {
-        @Override   // co-variant return
-        public CheckFileNameExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public CheckFileNameExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new CheckFileNameExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     CHECK_FILE_HANDLE(SftpConstants.EXT_CHECK_FILE_HANDLE, CheckFileHandleExtension.class) {
-        @Override   // co-variant return
-        public CheckFileHandleExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public CheckFileHandleExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new CheckFileHandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     SPACE_AVAILABLE(SftpConstants.EXT_SPACE_AVAILABLE, SpaceAvailableExtension.class) {
-        @Override   // co-variant return
-        public SpaceAvailableExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public SpaceAvailableExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new SpaceAvailableExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
         }
     },
     OPENSSH_FSYNC(FsyncExtensionParser.NAME, OpenSSHFsyncExtension.class) {
-        @Override   // co-variant return
-        public OpenSSHFsyncExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public OpenSSHFsyncExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHFsyncExtensionImpl(client, raw, extensions);
         }
     },
     OPENSSH_STAT_HANDLE(FstatVfsExtensionParser.NAME, OpenSSHStatHandleExtension.class) {
-        @Override   // co-variant return
-        public OpenSSHStatHandleExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public OpenSSHStatHandleExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHStatHandleExtensionImpl(client, raw, extensions);
         }
     },
     OPENSSH_STAT_PATH(StatVfsExtensionParser.NAME, OpenSSHStatPathExtension.class) {
-        @Override   // co-variant return
-        public OpenSSHStatPathExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+        @Override // co-variant return
+        public OpenSSHStatPathExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHStatPathExtensionImpl(client, raw, extensions);
         }
     };
 
-    public static final Set<BuiltinSftpClientExtensions> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinSftpClientExtensions.class));
+    public static final Set<BuiltinSftpClientExtensions> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(BuiltinSftpClientExtensions.class));
 
     private final String name;
 

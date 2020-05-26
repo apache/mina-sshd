@@ -26,8 +26,8 @@ import java.nio.file.Path;
 import org.apache.sshd.common.NamedResource;
 
 /**
- * @param <T> Type of resource
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of resource
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoResource<T> extends NamedResource, ResourceStreamProvider {
     /**
@@ -43,8 +43,9 @@ public interface IoResource<T> extends NamedResource, ResourceStreamProvider {
     /**
      * Attempts to find the best wrapper for the resource
      *
-     * @param resource The resource object - ignored if {@code null}
-     * @return The best wrapper out of the supported ones ({@code null} if no initial resource)
+     * @param  resource                      The resource object - ignored if {@code null}
+     * @return                               The best wrapper out of the supported ones ({@code null} if no initial
+     *                                       resource)
      * @throws UnsupportedOperationException if no match found
      */
     static IoResource<?> forResource(Object resource) {
@@ -58,7 +59,7 @@ public interface IoResource<T> extends NamedResource, ResourceStreamProvider {
             return new URIResource((URI) resource);
         } else {
             throw new UnsupportedOperationException(
-                "Unsupported resource type " + resource.getClass().getSimpleName() + ": " + resource);
+                    "Unsupported resource type " + resource.getClass().getSimpleName() + ": " + resource);
         }
     }
 }

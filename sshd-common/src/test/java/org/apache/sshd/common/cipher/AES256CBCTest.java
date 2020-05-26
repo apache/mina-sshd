@@ -35,7 +35,7 @@ public class AES256CBCTest extends BaseCipherTest {
     @Test
     public void testEncryptDecrypt() throws Exception {
         // for AES 256 bits we need the JCE unlimited strength policy
-        ensureKeySizeSupported(16, 32, "AES", "AES/CBC/NoPadding");
+        ensureFullCipherInformationSupported(BuiltinCiphers.aes256cbc);
         testEncryptDecrypt(BuiltinCiphers.aes256cbc);
     }
 }

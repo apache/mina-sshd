@@ -35,7 +35,8 @@ public abstract class AbstractFileSystemCommand extends AbstractCommandSupport i
 
     protected FileSystem fileSystem;
 
-    public AbstractFileSystemCommand(String command, CloseableExecutorService executorService) {
+    public AbstractFileSystemCommand(
+                                     String command, CloseableExecutorService executorService) {
         super(command, executorService);
     }
 
@@ -59,7 +60,7 @@ public abstract class AbstractFileSystemCommand extends AbstractCommandSupport i
                 } catch (UnsupportedOperationException | IOException e) {
                     if (log.isDebugEnabled()) {
                         log.debug("destroy({}) - failed ({}) to close file system={}: {}",
-                            this, e.getClass().getSimpleName(), fileSystem, e.getMessage());
+                                this, e.getClass().getSimpleName(), fileSystem, e.getMessage());
                     }
                 } finally {
                     fileSystem = null;

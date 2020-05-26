@@ -104,6 +104,12 @@ While RFC-4256 support is the primary purpose of this interface, it can also be 
 in [RFC 4252 section 5.4](https://www.ietf.org/rfc/rfc4252.txt) as well as its initial identification string as described
 in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
+In this context, regardless of whether such interaction is configured, the default implementation for the client side contains code
+that attempts to auto-detect a password prompt. If it detects it, then it attempts to use one of the registered passwords (if any) as
+the interactive response to the server's challenge - (see client-side implementation of `UserAuthKeyboardInteractive#useCurrentPassword`
+method). Basically, detection occurs by checking if the server sent **exactly one** challenge with no requested echo, and the challenge
+string looks like `"... password ...:"` (**Note:** the auto-detection and password prompt detection patterns are configurable).
+
 ## Using the `SshClient` to connect to a server
 
 Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server.
@@ -188,7 +194,7 @@ identification will ever be received since the multiplexor does not know how to 
 
 ## Keeping the session alive while no traffic
 
-The client-side implementation has a 2 builtin mechanisms for maintaining the session alive as far as the **server** is concerned
+The client-side implementation supports several mechanisms for maintaining the session alive as far as the **server** is concerned
 regardless of the user's own traffic:
 
 * Sending `SSH_MSG_IGNORE` messages every once in a while.
@@ -222,9 +228,9 @@ regardless of the user's own traffic:
 
 **Note(s):**
 
-* Both options are disabled by default - they need to be activated explicitly.
+* Mechanisms are disabled by default - they need to be activated explicitly.
 
-* Both options can be activated either on the `SshClient` (for **global** setup) and/or
+* Mechanisms can be activated either on the `SshClient` (for **global** setup) and/or
 the `ClientSession` (for specific session configuration).
 
 * The `keepalive@,,,,` mechanism **supersedes** the other mechanisms if activated.
@@ -232,7 +238,10 @@ the `ClientSession` (for specific session configuration).
     * If specified timeout expires for the `wantReply` option then session will be **closed**.
 
     * *Any* response - including [`SSH_MSH_REQUEST_FAILURE`](https://tools.ietf.org/html/rfc4254#page-4)
-    is considered a "good" response for the heartbeat request.
+    is considered a "good" response for the heartbeat request. In this context, a special patch
+    has been introduced in [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968) that converts
+    an `SSH_MSG_UNIMPLEMENTED` response to such a global request into a `SSH_MSH_REQUEST_FAILURE`
+    since some servers have been found that violate the standard and reply with it to the request.
 
 * When using the CLI, these options can be configured using the following `-o key=value` properties:
 
@@ -246,7 +255,7 @@ the `ClientSession` (for specific session configuration).
 ## Running a command or opening a shell
 
 When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the
-reported environment variables. By default, unless specific instructions are provided the code uses some internal
+reported environment variables. By default, unless specific instructions are provided, the code uses some internal
 defaults - which however, might not be adequate for the specific client/server.
 
 ```java

@@ -35,8 +35,7 @@ import org.apache.sshd.common.util.GenericUtils;
 @FunctionalInterface
 public interface KeyIdentityProvider {
     /**
-     * An &quot;empty&quot; implementation of {@link KeyIdentityProvider} that
-     * returns an empty group of key pairs
+     * An &quot;empty&quot; implementation of {@link KeyIdentityProvider} that returns an empty group of key pairs
      */
     KeyIdentityProvider EMPTY_KEYS_PROVIDER = new KeyIdentityProvider() {
         @Override
@@ -53,36 +52,38 @@ public interface KeyIdentityProvider {
     /**
      * Load available keys.
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @throws IOException If failed to read/parse the keys data
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
+     * @throws IOException              If failed to read/parse the keys data
      * @throws GeneralSecurityException If failed to generate the keys
-     * @return an {@link Iterable} instance of available keys - ignored if {@code null}
+     * @return                          an {@link Iterable} instance of available keys - ignored if {@code null}
      */
     Iterable<KeyPair> loadKeys(SessionContext session) throws IOException, GeneralSecurityException;
 
     /**
-     * @param provider The {@link KeyIdentityProvider} instance to verify
-     * @return {@code true} if instance is {@code null} or the {@link #EMPTY_KEYS_PROVIDER}
+     * @param  provider The {@link KeyIdentityProvider} instance to verify
+     * @return          {@code true} if instance is {@code null} or the {@link #EMPTY_KEYS_PROVIDER}
      */
     static boolean isEmpty(KeyIdentityProvider provider) {
         return (provider == null) || GenericUtils.isSameReference(provider, EMPTY_KEYS_PROVIDER);
     }
 
     /**
-     * <P>Creates a &quot;unified&quot; {@link KeyIdentityProvider} out of 2 possible ones
-     * as follows:</P></BR>
+     * <P>
+     * Creates a &quot;unified&quot; {@link KeyIdentityProvider} out of 2 possible ones as follows:
+     * </P>
+     * </BR>
      * <UL>
-     *      <LI>If both are {@code null} then return {@code null}.</LI>
-     *      <LI>If either one is {@code null}/{@link #EMPTY_KEYS_PROVIDER empty} then use the non-{@code null} one.</LI>
-     *      <LI>If both are the same instance then use the instance.</U>
-     *      <LI>Otherwise, returns a wrapper that groups both providers.</LI>
+     * <LI>If both are {@code null} then return {@code null}.</LI>
+     * <LI>If either one is {@code null}/{@link #EMPTY_KEYS_PROVIDER empty} then use the non-{@code null} one.</LI>
+     * <LI>If both are the same instance then use the instance.</U>
+     * <LI>Otherwise, returns a wrapper that groups both providers.</LI>
      * </UL>
      *
-     * @param identities The registered key pair identities
-     * @param keys The extra available key pairs
-     * @return The resolved provider
-     * @see #multiProvider(KeyIdentityProvider...)
+     * @param  identities The registered key pair identities
+     * @param  keys       The extra available key pairs
+     * @return            The resolved provider
+     * @see               #multiProvider(KeyIdentityProvider...)
      */
     static KeyIdentityProvider resolveKeyIdentityProvider(
             KeyIdentityProvider identities, KeyIdentityProvider keys) {
@@ -99,10 +100,9 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into a single one
      *
-     * @param providers The providers - ignored if {@code null}/empty (i.e., returns
-     * {@link #EMPTY_KEYS_PROVIDER})
-     * @return The wrapping provider
-     * @see #multiProvider(Collection)
+     * @param  providers The providers - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_KEYS_PROVIDER})
+     * @return           The wrapping provider
+     * @see              #multiProvider(Collection)
      */
     static KeyIdentityProvider multiProvider(KeyIdentityProvider... providers) {
         return multiProvider(GenericUtils.asList(providers));
@@ -111,10 +111,9 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into a single one
      *
-     * @param providers The providers - ignored if {@code null}/empty (i.e., returns
-     * {@link #EMPTY_KEYS_PROVIDER})
-     * @return The wrapping provider
-     * @see MultiKeyIdentityProvider
+     * @param  providers The providers - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_KEYS_PROVIDER})
+     * @return           The wrapping provider
+     * @see              MultiKeyIdentityProvider
      */
     static KeyIdentityProvider multiProvider(Collection<? extends KeyIdentityProvider> providers) {
         int numProviders = GenericUtils.size(providers);
@@ -130,11 +129,11 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyIdentityProvider} into an {@link Iterable} of {@link KeyPair}s
      *
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param providers The group of providers - ignored if {@code null}/empty (i.e., returns an
-     * empty iterable instance)
-     * @return The wrapping iterable
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool or session unknown).
+     * @param  providers The group of providers - ignored if {@code null}/empty (i.e., returns an empty iterable
+     *                   instance)
+     * @return           The wrapping iterable
      */
     static Iterable<KeyPair> iterableOf(SessionContext session, Collection<? extends KeyIdentityProvider> providers) {
         int numProviders = GenericUtils.size(providers);
@@ -145,8 +144,10 @@ public interface KeyIdentityProvider {
             try {
                 return p.loadKeys(session);
             } catch (IOException | GeneralSecurityException e) {
-                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                    + " keys loading exception: " + e.getMessage(), e);
+                throw new RuntimeException(
+                        "Unexpected " + e.getClass().getSimpleName() + ")"
+                                           + " keys loading exception: " + e.getMessage(),
+                        e);
             }
         } else {
             return new Iterable<KeyPair>() {
@@ -166,9 +167,8 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyPair}s into a {@link KeyIdentityProvider}
      *
-     * @param pairs The key pairs - ignored if {@code null}/empty (i.e., returns
-     * {@link #EMPTY_KEYS_PROVIDER}).
-     * @return The provider wrapper
+     * @param  pairs The key pairs - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_KEYS_PROVIDER}).
+     * @return       The provider wrapper
      */
     static KeyIdentityProvider wrapKeyPairs(KeyPair... pairs) {
         return wrapKeyPairs(GenericUtils.asList(pairs));
@@ -177,9 +177,9 @@ public interface KeyIdentityProvider {
     /**
      * Wraps a group of {@link KeyPair}s into a {@link KeyIdentityProvider}
      *
-     * @param pairs The key pairs {@link Iterable} - ignored if {@code null} (i.e., returns
-     * {@link #EMPTY_KEYS_PROVIDER}).
-     * @return The provider wrapper
+     * @param  pairs The key pairs {@link Iterable} - ignored if {@code null} (i.e., returns
+     *               {@link #EMPTY_KEYS_PROVIDER}).
+     * @return       The provider wrapper
      */
     static KeyIdentityProvider wrapKeyPairs(Iterable<KeyPair> pairs) {
         return (pairs == null) ? EMPTY_KEYS_PROVIDER : session -> pairs;
@@ -188,9 +188,9 @@ public interface KeyIdentityProvider {
     /**
      * Attempts to find the first non-{@code null} {@link KeyPair}
      *
-     * @param ids The {@link Iterator} - ignored if {@code null} or no next element available
-     * @return The first non-{@code null} key pair found in the iterator - {@code null} if
-     * all elements exhausted without such an entry
+     * @param  ids The {@link Iterator} - ignored if {@code null} or no next element available
+     * @return     The first non-{@code null} key pair found in the iterator - {@code null} if all elements exhausted
+     *             without such an entry
      */
     static KeyPair exhaustCurrentIdentities(Iterator<? extends KeyPair> ids) {
         while ((ids != null) && ids.hasNext()) {

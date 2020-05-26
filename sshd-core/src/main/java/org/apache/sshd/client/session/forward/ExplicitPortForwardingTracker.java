@@ -35,7 +35,8 @@ public class ExplicitPortForwardingTracker extends PortForwardingTracker impleme
     private final SshdSocketAddress remoteAddress;
 
     public ExplicitPortForwardingTracker(ClientSession session, boolean localForwarding,
-            SshdSocketAddress localAddress, SshdSocketAddress remoteAddress, SshdSocketAddress boundAddress) {
+                                         SshdSocketAddress localAddress, SshdSocketAddress remoteAddress,
+                                         SshdSocketAddress boundAddress) {
         super(session, localAddress, boundAddress);
         this.localForwarding = localForwarding;
         this.remoteAddress = Objects.requireNonNull(remoteAddress, "No remote address specified");
@@ -65,8 +66,8 @@ public class ExplicitPortForwardingTracker extends PortForwardingTracker impleme
     @Override
     public String toString() {
         return super.toString()
-            + "[localForwarding=" + isLocalForwarding()
-            + ", remote=" + getRemoteAddress()
-            + "]";
+               + "[localForwarding=" + isLocalForwarding()
+               + ", remote=" + getRemoteAddress()
+               + "]";
     }
 }

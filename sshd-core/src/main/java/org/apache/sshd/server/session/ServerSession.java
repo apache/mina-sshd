@@ -33,8 +33,8 @@ import org.apache.sshd.server.ServerFactoryManager;
  */
 public interface ServerSession
         extends Session,
-                ServerProxyAcceptorHolder,
-                ServerAuthenticationManager {
+        ServerProxyAcceptorHolder,
+        ServerAuthenticationManager {
 
     /**
      * @return The {@link ServerFactoryManager} for this session
@@ -43,47 +43,47 @@ public interface ServerSession
     ServerFactoryManager getFactoryManager();
 
     /**
-     * @return The {@link SocketAddress} of the remote client. If no proxy wrapping
-     * was used then this is the same as the {@code IoSession#getRemoteAddress()}.
-     * Otherwise, it indicates the real client's address that was somehow transmitted
-     * via the proxy meta-data
+     * @return The {@link SocketAddress} of the remote client. If no proxy wrapping was used then this is the same as
+     *         the {@code IoSession#getRemoteAddress()}. Otherwise, it indicates the real client's address that was
+     *         somehow transmitted via the proxy meta-data
      */
     SocketAddress getClientAddress();
 
     /**
-     * @return The {@link KeyPair} representing the current session's used keys
-     * on KEX - {@code null} if not negotiated yet
+     * @return The {@link KeyPair} representing the current session's used keys on KEX - {@code null} if not negotiated
+     *         yet
      */
     KeyPair getHostKey();
 
     /**
      * Retrieve the current number of sessions active for a given username.
      *
-     * @param userName The name of the user - ignored if {@code null}/empty
-     * @return The current number of live <code>SshSession</code> objects associated with the user
+     * @param  userName The name of the user - ignored if {@code null}/empty
+     * @return          The current number of live <code>SshSession</code> objects associated with the user
      */
     int getActiveSessionCountForUser(String userName);
 
     /**
      * <UL>
-     *      <P><LI>
-     *      Marks the session as authenticated.
-     *      </LI></P>
+     * <P>
+     * <LI>Marks the session as authenticated.</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      Starts the specified service.
-     *      </LI></P>
+     * <P>
+     * <LI>Starts the specified service.</LI>
+     * </P>
      *
-     *      <P><LI>
-     *      Sends the {@code SSH_MSG_USERAUTH_SUCCESS} message.
-     *      </LI></P>
+     * <P>
+     * <LI>Sends the {@code SSH_MSG_USERAUTH_SUCCESS} message.</LI>
+     * </P>
      * </UL>
-     * @param username The authenticated username
-     * @param authService The service to start
-     * @param buffer Any extra data received to use to start the service
-     * @return An {@link IoWriteFuture} that can be used to wait for the
-     * {@code SSH_MSG_USERAUTH_SUCCESS} message send result
-     * @throws Exception if cannot handle the request
+     * 
+     * @param  username    The authenticated username
+     * @param  authService The service to start
+     * @param  buffer      Any extra data received to use to start the service
+     * @return             An {@link IoWriteFuture} that can be used to wait for the {@code SSH_MSG_USERAUTH_SUCCESS}
+     *                     message send result
+     * @throws Exception   if cannot handle the request
      */
     IoWriteFuture signalAuthenticationSuccess(String username, String authService, Buffer buffer) throws Exception;
 }

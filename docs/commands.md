@@ -50,7 +50,7 @@ remain active afterwards...).
      * it down when the command is destroyed
      */
     SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorService(new NoCloseExecutor(mySuperDuperExecutorService))
+        .withExecutorServiceProvider(() -> new NoCloseExecutor(mySuperDuperExecutorService))
         .build();
     SshServer sshd = SshServer.setupDefaultServer();
     sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
@@ -64,7 +64,7 @@ If a single `CloseableExecutorService` is shared between several services, it ne
     CloseableExecutorService sharedService = ...obtain/create an instance...;
 
     SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorService(ThreadUtils.noClose(sharedService))
+        .withExecutorServiceProvider(() -> ThreadUtils.noClose(sharedService))
         .build();
 
    ChannelAgentForwarding forward = new ChannelAgentForwarding(ThreadUtils.noClose(sharedService));

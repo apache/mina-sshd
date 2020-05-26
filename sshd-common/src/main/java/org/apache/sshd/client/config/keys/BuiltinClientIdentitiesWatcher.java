@@ -42,12 +42,12 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     private final boolean supportedOnly;
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
-            ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+                                          ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
-            ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+                                          ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
         this(keysFolder, ids, supportedOnly,
              ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
              FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
@@ -55,12 +55,14 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, boolean supportedOnly,
-            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+                                          ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+                                          boolean strict) {
         this(keysFolder, NamedResource.getNameList(BuiltinIdentities.VALUES), supportedOnly, loader, provider, strict);
     }
 
     public BuiltinClientIdentitiesWatcher(Path keysFolder, Collection<String> ids, boolean supportedOnly,
-            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+                                          ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+                                          boolean strict) {
         super(getBuiltinIdentitiesPaths(keysFolder, ids), loader, provider, strict);
         this.supportedOnly = supportedOnly;
     }
@@ -72,8 +74,8 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
     @Override
     public Iterable<KeyPair> loadKeys(SessionContext session) {
         return isSupportedOnly()
-            ? loadKeys(session, p -> isSupported(session, p))
-            : super.loadKeys(session);
+                ? loadKeys(session, p -> isSupported(session, p))
+                : super.loadKeys(session);
     }
 
     protected boolean isSupported(SessionContext session, KeyPair kp) {
@@ -83,7 +85,7 @@ public class BuiltinClientIdentitiesWatcher extends ClientIdentitiesWatcher {
         }
         if (log.isDebugEnabled()) {
             log.debug("loadKeys - remove unsupported identity={}, key-type={}, key={}",
-                id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                    id, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
         }
         return false;
     }

@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class WindowInitTest extends BaseTestSupport {
@@ -85,12 +85,12 @@ public class WindowInitTest extends BaseTestSupport {
     @Parameters(name = "initial-size={0}, packet-size={1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
-        params.add(new Object[] {Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
-        params.add(new Object[] {BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
-        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, 0L });
-        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE });
-        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L });
-        params.add(new Object[] {FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L });
+        params.add(new Object[] { Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] { BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
+        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, 0L });
+        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE });
+        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L });
+        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L });
         return params;
     }
 

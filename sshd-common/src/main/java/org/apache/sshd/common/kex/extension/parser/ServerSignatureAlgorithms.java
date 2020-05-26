@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.1">RFC-8308 - section 3.1</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc8308#section-3.1">RFC-8308 - section 3.1</A>
  */
 public class ServerSignatureAlgorithms extends AbstractKexExtensionParser<List<String>> {
     public static final String NAME = "server-sig-algs";

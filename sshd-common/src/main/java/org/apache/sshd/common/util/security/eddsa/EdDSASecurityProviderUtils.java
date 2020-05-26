@@ -28,13 +28,6 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
-
 import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -43,6 +36,11 @@ import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
+import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -50,6 +48,7 @@ import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 public final class EdDSASecurityProviderUtils {
     // See EdDSANamedCurveTable
     public static final String CURVE_ED25519_SHA512 = "Ed25519";
+    public static final int KEY_SIZE = 256;
 
     private EdDSASecurityProviderUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -63,8 +62,12 @@ public final class EdDSASecurityProviderUtils {
         return EdDSAPrivateKey.class;
     }
 
+    public static boolean isEDDSAKey(Key key) {
+        return getEDDSAKeySize(key) == KEY_SIZE;
+    }
+
     public static int getEDDSAKeySize(Key key) {
-        return (SecurityUtils.isEDDSACurveSupported() && (key instanceof EdDSAKey)) ? 256 : -1;
+        return (SecurityUtils.isEDDSACurveSupported() && (key instanceof EdDSAKey)) ? KEY_SIZE : -1;
     }
 
     public static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
@@ -76,13 +79,13 @@ public final class EdDSASecurityProviderUtils {
             if (Objects.equals(k1, k2)) {
                 return true;
             } else if (k1 == null || k2 == null) {
-                return false;   // both null is covered by Objects#equals
+                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPublicKey ed1 = (EdDSAPublicKey) k1;
             EdDSAPublicKey ed2 = (EdDSAPublicKey) k2;
             return Arrays.equals(ed1.getAbyte(), ed2.getAbyte())
-                && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
+                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
         }
 
         return false;
@@ -136,13 +139,13 @@ public final class EdDSASecurityProviderUtils {
             if (Objects.equals(k1, k2)) {
                 return true;
             } else if (k1 == null || k2 == null) {
-                return false;   // both null is covered by Objects#equals
+                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPrivateKey ed1 = (EdDSAPrivateKey) k1;
             EdDSAPrivateKey ed2 = (EdDSAPrivateKey) k2;
             return Arrays.equals(ed1.getSeed(), ed2.getSeed())
-                && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
+                    && compareEDDSAKeyParams(ed1.getParams(), ed2.getParams());
         }
 
         return false;
@@ -152,11 +155,11 @@ public final class EdDSASecurityProviderUtils {
         if (Objects.equals(s1, s2)) {
             return true;
         } else if (s1 == null || s2 == null) {
-            return false;   // both null is covered by Objects#equals
+            return false; // both null is covered by Objects#equals
         } else {
             return Objects.equals(s1.getHashAlgorithm(), s2.getHashAlgorithm())
-                && Objects.equals(s1.getCurve(), s2.getCurve())
-                && Objects.equals(s1.getB(), s2.getB());
+                    && Objects.equals(s1.getCurve(), s2.getCurve())
+                    && Objects.equals(s1.getB(), s2.getB());
         }
     }
 
@@ -187,7 +190,6 @@ public final class EdDSASecurityProviderUtils {
         EdDSAPublicKey edKey = ValidateUtils.checkInstanceOf(key, EdDSAPublicKey.class, "Not an EDDSA public key: %s", key);
         byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(edKey);
         ValidateUtils.checkNotNull(seed, "No seed extracted from key: %s", edKey.getA());
-        buffer.putString(KeyPairProvider.SSH_ED25519);
         buffer.putBytes(seed);
         return buffer;
     }

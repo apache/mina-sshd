@@ -21,7 +21,7 @@ package org.apache.sshd.common.subsystem.sftp.extensions.openssh;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 3.3</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 3.3</A>
  */
 public class PosixRenameExtensionParser extends AbstractOpenSSHExtensionParser {
     public static final String NAME = "posix-rename@openssh.com";

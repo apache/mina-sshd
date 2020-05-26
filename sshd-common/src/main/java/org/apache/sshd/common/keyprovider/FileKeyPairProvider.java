@@ -33,10 +33,9 @@ import org.apache.sshd.common.util.io.resource.IoResource;
 import org.apache.sshd.common.util.io.resource.PathResource;
 
 /**
- * This host key provider loads private keys from the specified files. The
- * loading is <U>lazy</U> - i.e., a file is not loaded until it is actually
- * required. Once required though, its loaded {@link KeyPair} result is
- * <U>cached</U> and not re-loaded.
+ * This host key provider loads private keys from the specified files. The loading is <U>lazy</U> - i.e., a file is not
+ * loaded until it is actually required. Once required though, its loaded {@link KeyPair} result is <U>cached</U> and
+ * not re-loaded.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

@@ -21,14 +21,6 @@ package org.apache.sshd.netty;
 
 import java.net.SocketAddress;
 
-import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.io.IoConnectFuture;
-import org.apache.sshd.common.io.IoConnector;
-import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoServiceEventListener;
-import org.apache.sshd.common.io.IoSession;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -41,6 +33,13 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.io.IoConnectFuture;
+import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.common.io.IoSession;
 
 /**
  * The Netty based IoConnector implementation.
@@ -55,52 +54,54 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
 
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
-            .channel(NioSocketChannel.class)
-            .option(ChannelOption.SO_BACKLOG, 100)  // TODO make this configurable
-            .handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                @SuppressWarnings("synthetic-access")
-                protected void initChannel(SocketChannel ch) throws Exception {
-                    IoServiceEventListener listener = getIoServiceEventListener();
-                    SocketAddress local = ch.localAddress();
-                    SocketAddress remote = ch.remoteAddress();
-                    AttributeRepository context = ch.hasAttr(CONTEXT_KEY)
-                        ? ch.attr(CONTEXT_KEY).get()
-                        : null;
-                    try {
-                        if (listener != null) {
-                            try {
-                                listener.connectionEstablished(NettyIoConnector.this, local, context, remote);
-                            } catch (Exception e) {
-                                ch.close();
-                                throw e;
-                            }
-                        }
-
-                        @SuppressWarnings("resource")
-                        NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler, null);
-                        if (context != null) {
-                            session.setAttribute(AttributeRepository.class, context);
-                        }
-
-                        ChannelPipeline p = ch.pipeline();
-                        p.addLast(new LoggingHandler(LogLevel.INFO));   // TODO make this configurable
-                        p.addLast(session.adapter);
-                    } catch (Exception e) {
-                        if (listener != null) {
-                            try {
-                                listener.abortEstablishedConnection(NettyIoConnector.this, local, context, remote, e);
-                            } catch (Exception exc) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("initChannel(" + ch + ") listener=" + listener + " ignoring abort event exception", exc);
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 100) // TODO make this configurable
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        IoServiceEventListener listener = getIoServiceEventListener();
+                        SocketAddress local = ch.localAddress();
+                        SocketAddress remote = ch.remoteAddress();
+                        AttributeRepository context = ch.hasAttr(CONTEXT_KEY)
+                                ? ch.attr(CONTEXT_KEY).get()
+                                : null;
+                        try {
+                            if (listener != null) {
+                                try {
+                                    listener.connectionEstablished(NettyIoConnector.this, local, context, remote);
+                                } catch (Exception e) {
+                                    ch.close();
+                                    throw e;
                                 }
                             }
-                        }
 
-                        throw e;
+                            @SuppressWarnings("resource")
+                            NettyIoSession session = new NettyIoSession(NettyIoConnector.this, handler, null);
+                            if (context != null) {
+                                session.setAttribute(AttributeRepository.class, context);
+                            }
+
+                            ChannelPipeline p = ch.pipeline();
+                            p.addLast(new LoggingHandler(LogLevel.INFO)); // TODO make this configurable
+                            p.addLast(session.adapter);
+                        } catch (Exception e) {
+                            if (listener != null) {
+                                try {
+                                    listener.abortEstablishedConnection(NettyIoConnector.this, local, context, remote, e);
+                                } catch (Exception exc) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("initChannel(" + ch + ") listener=" + listener
+                                                  + " ignoring abort event exception",
+                                                exc);
+                                    }
+                                }
+                            }
+
+                            throw e;
+                        }
                     }
-                }
-            });
+                });
     }
 
     @Override

@@ -76,7 +76,7 @@ public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
     @Override
     public byte[] decodePrivateKeyBytes(
             SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         OpenSSHKdfOptions options = getKdfOptions();
         if (options == null) {
             throw new StreamCorruptedException("No KDF options available for decrypting " + resourceKey);
@@ -88,8 +88,8 @@ public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[cipher=" + getCipherName()
-            + ", kdfOptions=" + getKdfOptions()
-            + "]";
+               + "[cipher=" + getCipherName()
+               + ", kdfOptions=" + getKdfOptions()
+               + "]";
     }
 }

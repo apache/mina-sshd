@@ -36,8 +36,8 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
     MINA("org.apache.sshd.common.io.mina.MinaServiceFactoryFactory"),
     NETTY("org.apache.sshd.netty.NettyIoServiceFactoryFactory");
 
-    public static final Set<BuiltinIoServiceFactoryFactories> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
+    public static final Set<BuiltinIoServiceFactoryFactories> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
 
     private final Class<? extends IoServiceFactoryFactory> factoryClass;
     private final String factoryClassName;

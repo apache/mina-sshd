@@ -38,7 +38,8 @@ public class DefaultForwarderFactory implements ForwardingFilterFactory, PortFor
 
         @Override
         public void removePortForwardingEventListener(PortForwardingEventListener listener) {
-            throw new UnsupportedOperationException("removePortForwardingEventListener(" + listener + ") N/A on default instance");
+            throw new UnsupportedOperationException(
+                    "removePortForwardingEventListener(" + listener + ") N/A on default instance");
         }
 
         @Override
@@ -51,7 +52,7 @@ public class DefaultForwarderFactory implements ForwardingFilterFactory, PortFor
     private final PortForwardingEventListener listenerProxy;
 
     public DefaultForwarderFactory() {
-        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

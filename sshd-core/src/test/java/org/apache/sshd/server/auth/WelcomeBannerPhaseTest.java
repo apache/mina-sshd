@@ -20,7 +20,6 @@
 package org.apache.sshd.server.auth;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
@@ -46,9 +45,10 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class WelcomeBannerPhaseTest extends BaseTestSupport {
+
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -116,21 +116,26 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession session, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 return null;
             }
         });
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
         }
 
         Object banner = welcomeHolder.getAndSet(null);
         if (WelcomeBannerPhase.NEVER.equals(phase)) {
             assertNull("Unexpected banner", banner);
         } else {
-            WelcomeBannerPhase value = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, banner, false, WelcomeBannerPhase.VALUES);
+            WelcomeBannerPhase value
+                    = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, banner, false, WelcomeBannerPhase.VALUES);
             assertSame("Mismatched banner value", phase, value);
         }
     }

@@ -75,7 +75,8 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
     @Test
     public void testParseDHFactorysList() {
         List<String> builtin = NamedResource.getNameList(BuiltinDHFactories.VALUES);
-        List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        List<String> unknown
+                = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
         Random rnd = new Random();
         for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);

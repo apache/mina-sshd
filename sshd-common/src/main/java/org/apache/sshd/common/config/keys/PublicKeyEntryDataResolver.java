@@ -38,11 +38,11 @@ public interface PublicKeyEntryDataResolver {
     };
 
     /**
-     * Decodes the public key entry data bytes from their string representation - by
-     * default it assume {@link Base64} encoding.
+     * Decodes the public key entry data bytes from their string representation - by default it assume {@link Base64}
+     * encoding.
      *
-     * @param encData The encoded data - ignored if {@code null}/empty
-     * @return The decoded data bytes
+     * @param  encData The encoded data - ignored if {@code null}/empty
+     * @return         The decoded data bytes
      */
     default byte[] decodeEntryKeyData(String encData) {
         if (GenericUtils.isEmpty(encData)) {
@@ -54,11 +54,11 @@ public interface PublicKeyEntryDataResolver {
     }
 
     /**
-     * Encodes the public key entry data bytes into their string representation - by
-     * default it assume {@link Base64} encoding.
+     * Encodes the public key entry data bytes into their string representation - by default it assume {@link Base64}
+     * encoding.
      *
-     * @param keyData The key data bytes - ignored if {@code null}/empty
-     * @return The encoded data bytes
+     * @param  keyData The key data bytes - ignored if {@code null}/empty
+     * @return         The encoded data bytes
      */
     default String encodeEntryKeyData(byte[] keyData) {
         if (NumberUtils.isEmpty(keyData)) {

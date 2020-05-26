@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
@@ -76,17 +75,17 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     @Test
     public void testFsync() throws IOException {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp
+                = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
 
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
@@ -104,9 +103,11 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     @Test
     public void testStat() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp
+                = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
-        Files.write(srcFile, (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8), IoUtils.EMPTY_OPEN_OPTIONS);
+        Files.write(srcFile, (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8),
+                IoUtils.EMPTY_OPEN_OPTIONS);
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
 
@@ -127,7 +128,8 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
-                return new SftpSubsystem(resolveExecutorService(),
+                return new SftpSubsystem(
+                        resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
@@ -138,7 +140,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                             result.addAll(original);
                         }
 
-                        for (String name : new String[]{StatVfsExtensionParser.NAME, FstatVfsExtensionParser.NAME}) {
+                        for (String name : new String[] { StatVfsExtensionParser.NAME, FstatVfsExtensionParser.NAME }) {
                             result.add(new OpenSSHExtension(name, "2"));
                         }
 
@@ -151,7 +153,8 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                                 || FstatVfsExtensionParser.NAME.equals(extension)) {
                             String prev = extensionHolder.getAndSet(extension);
                             if (prev != null) {
-                                throw new StreamCorruptedException("executeExtendedCommand(" + extension + ") previous not null: " + prev);
+                                throw new StreamCorruptedException(
+                                        "executeExtendedCommand(" + extension + ") previous not null: " + prev);
                             }
 
                             buffer = prepareReply(buffer);
@@ -171,10 +174,9 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(7L, TimeUnit.SECONDS)
-                    .getSession()) {
+                    .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
 
                 try (SftpClient sftp = createSftpClient(session)) {
                     OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
@@ -197,7 +199,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
     private static void assertOpenSSHStatExtensionInfoEquals(
             String extension, OpenSSHStatExtensionInfo expected, OpenSSHStatExtensionInfo actual)
-                throws Exception {
+            throws Exception {
         Field[] fields = expected.getClass().getFields();
         for (Field f : fields) {
             String name = f.getName();

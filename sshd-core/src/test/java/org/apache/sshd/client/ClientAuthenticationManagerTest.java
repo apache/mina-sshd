@@ -152,7 +152,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
         List<UserAuthFactory> factories = factoriesHolder.get();
         assertEquals("Mismatched factories count",
-            BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+                BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
         for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
             assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
         }
@@ -180,10 +180,10 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
             try (ClientSession session = createMockClientSession(client)) {
                 for (Class<?> provider : new Class<?>[] {
-                    PasswordIdentityProvider.class,
-                    ServerKeyVerifier.class,
-                    UserInteraction.class,
-                    KeyIdentityProvider.class
+                        PasswordIdentityProvider.class,
+                        ServerKeyVerifier.class,
+                        UserInteraction.class,
+                        KeyIdentityProvider.class
                 }) {
                     testClientProvidersPropagation(provider, client, session);
                 }
@@ -193,7 +193,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
     private void testClientProvidersPropagation(
             Class<?> type, ClientAuthenticationManager client, ClientAuthenticationManager session)
-                throws Exception {
+            throws Exception {
         String baseName = type.getSimpleName();
         outputDebugMessage("testClientProvidersPropagation(%s)", baseName);
         assertTrue(baseName + ": not an interface", type.isInterface());
@@ -208,7 +208,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         setter.invoke(session, sessionProvider);
         assertSame(baseName + ": mismatched session override provider", sessionProvider, getter.invoke(session));
 
-        setter.invoke(session, new Object[]{null});
+        setter.invoke(session, new Object[] { null });
         assertSame(baseName + ": mismatched nullified session provider", clientProvider, getter.invoke(session));
     }
 

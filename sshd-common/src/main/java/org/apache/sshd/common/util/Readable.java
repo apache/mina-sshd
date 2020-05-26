@@ -33,8 +33,8 @@ public interface Readable {
     /**
      * Wrap a {@link ByteBuffer} as a {@link Readable} instance
      *
-     * @param buffer The {@link ByteBuffer} to wrap - never {@code null}
-     * @return The {@link Readable} wrapper
+     * @param  buffer The {@link ByteBuffer} to wrap - never {@code null}
+     * @return        The {@link Readable} wrapper
      */
     static Readable readable(ByteBuffer buffer) {
         Objects.requireNonNull(buffer, "No buffer to wrap");

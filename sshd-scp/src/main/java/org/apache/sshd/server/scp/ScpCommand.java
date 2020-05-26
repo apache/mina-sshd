@@ -30,20 +30,18 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * This commands provide SCP support on both server and client side.
- * Permissions and preservation of access / modification times on files
- * are not supported.
+ * This commands provide SCP support on both server and client side. Permissions and preservation of access /
+ * modification times on files are not supported.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand
-        extends AbstractFileSystemCommand {
-
+public class ScpCommand extends AbstractFileSystemCommand {
     protected final int sendBufferSize;
     protected final int receiveBufferSize;
     protected final ScpFileOpener opener;
@@ -59,33 +57,35 @@ public class ScpCommand
     /**
      * @param command         The command to be executed
      * @param executorService An {@link CloseableExecutorService} to be used when
-     *                        {@code start(ChannelSession, Environment)}-ing execution.
-     *                        If {@code null} an ad-hoc single-threaded service is created and used.
+     *                        {@code start(ChannelSession, Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
      * @param fileOpener      The {@link ScpFileOpener} - if {@code null} then {@link DefaultScpFileOpener} is used
      * @param eventListener   An {@link ScpTransferEventListener} - may be {@code null}
-     * @see ThreadUtils#newSingleThreadExecutor(String)
-     * @see ScpHelper#MIN_SEND_BUFFER_SIZE
-     * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
+     * @see                   ThreadUtils#newSingleThreadExecutor(String)
+     * @see                   ScpHelper#MIN_SEND_BUFFER_SIZE
+     * @see                   ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
     public ScpCommand(String command,
-            CloseableExecutorService executorService,
-            int sendSize, int receiveSize,
-            ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
+                      CloseableExecutorService executorService,
+                      int sendSize, int receiveSize,
+                      ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         super(command, executorService);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size "
-                    + "(" + sendSize + ") below minimum required "
-                    + "(" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+            throw new IllegalArgumentException(
+                    "<ScpCommmand>(" + command + ") send buffer size "
+                                               + "(" + sendSize + ") below minimum required "
+                                               + "(" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
         }
         sendBufferSize = sendSize;
 
         if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size "
-                    + "(" + sendSize + ") below minimum required "
-                    + "(" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
+            throw new IllegalArgumentException(
+                    "<ScpCommmand>(" + command + ") receive buffer size "
+                                               + "(" + sendSize + ") below minimum required "
+                                               + "(" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
         receiveBufferSize = receiveSize;
 
@@ -120,7 +120,7 @@ public class ScpCommand
                         case 'd':
                             optD = true;
                             break;
-                        default:  // ignored
+                        default: // ignored
                             if (debugEnabled) {
                                 log.debug("Unknown flag ('{}') in command={}", option, command);
                             }
@@ -158,7 +158,10 @@ public class ScpCommand
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(getServerSession(), in, out, fileSystem, opener, listener);
+        ServerSession session = getServerSession();
+        String command = getCommand();
+        ScpHelper helper = new ScpHelper(
+                session, getInputStream(), getOutputStream(), fileSystem, opener, listener);
         try {
             if (optT) {
                 helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
@@ -168,7 +171,6 @@ public class ScpCommand
                 throw new IOException("Unsupported mode");
             }
         } catch (IOException e) {
-            ServerSession session = getServerSession();
             boolean debugEnabled = log.isDebugEnabled();
             try {
                 Integer statusCode = null;
@@ -186,23 +188,20 @@ public class ScpCommand
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
+                log.error("run({})[{}] Failed ({}) to send error response: {}",
+                        session, command, e.getClass().getSimpleName(), e.getMessage());
                 if (debugEnabled) {
-                    log.debug("run({})[{}] Failed ({}) to send error response: {}",
-                          session, command, e.getClass().getSimpleName(), e.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("run(" + session + ")[" + command + "] error response failure details", e2);
+                    log.error("run(" + session + ")[" + command + "] error response failure details", e2);
                 }
             }
 
+            log.error("run({})[{}] Failed ({}) to run command: {}",
+                    session, command, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("run({})[{}] Failed ({}) to run command: {}",
-                      session, command, e.getClass().getSimpleName(), e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("run(" + session + ")[" + command + "] command execution failure details", e);
+                log.error("run(" + session + ")[" + command + "] command execution failure details", e);
             }
         } finally {
+            ExitCallback callback = getExitCallback();
             if (callback != null) {
                 callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
             }
@@ -212,13 +211,13 @@ public class ScpCommand
     protected void writeCommandResponseMessage(String command, int exitValue, String exitMessage) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
-                  getServerSession(), command, exitValue, exitMessage);
+                    getServerSession(), command, exitValue, exitMessage);
         }
-        ScpHelper.sendResponseMessage(out, exitValue, exitMessage);
+        ScpHelper.sendResponseMessage(getOutputStream(), exitValue, exitMessage);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + getSession() + ") " + command;
+        return super.toString() + "[" + getSession() + "]";
     }
 }

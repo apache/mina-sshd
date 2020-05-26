@@ -20,6 +20,7 @@ package org.apache.sshd.server.scp;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.scp.ScpFileOpener;
 import org.apache.sshd.common.scp.ScpFileOpenerHolder;
@@ -29,24 +30,21 @@ import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 
 /**
- * This <code>CommandFactory</code> can be used as a standalone command factory
- * or can be used to augment another <code>CommandFactory</code> and provides
- * <code>SCP</code> support.
+ * This <code>CommandFactory</code> can be used as a standalone command factory or can be used to augment another
+ * <code>CommandFactory</code> and provides <code>SCP</code> support.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see ScpCommand
+ * @see    ScpCommand
  */
 public class ScpCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ScpFileOpenerHolder,
-        Cloneable,
-        ExecutorServiceCarrier {
+        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable {
 
     public static final String SCP_FACTORY_NAME = "scp";
 
@@ -70,8 +68,9 @@ public class ScpCommandFactory
             return this;
         }
 
-        public Builder withExecutorService(CloseableExecutorService service) {
-            factory.setExecutorService(service);
+        public Builder withExecutorServiceProvider(
+                Supplier<? extends CloseableExecutorService> provider) {
+            factory.setExecutorServiceProvider(provider);
             return this;
         }
 
@@ -101,7 +100,7 @@ public class ScpCommandFactory
         }
     }
 
-    private CloseableExecutorService executors;
+    private Supplier<? extends CloseableExecutorService> executorsProvider;
     private ScpFileOpener fileOpener;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
@@ -110,7 +109,7 @@ public class ScpCommandFactory
 
     public ScpCommandFactory() {
         super(SCP_FACTORY_NAME);
-        listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, listeners);
     }
 
     @Override
@@ -124,19 +123,14 @@ public class ScpCommandFactory
     }
 
     @Override
-    public CloseableExecutorService getExecutorService() {
-        return executors;
+    public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
+        return executorsProvider;
     }
 
-    /**
-     * @param service An {@link CloseableExecutorService} to be used when
-     * starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     * ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     * when the command is terminated - unless it is the ad-hoc service, which will be
-     * shutdown regardless
-     */
-    public void setExecutorService(CloseableExecutorService service) {
-        executors = service;
+    @Override
+    public void setExecutorServiceProvider(
+            Supplier<? extends CloseableExecutorService> provider) {
+        executorsProvider = provider;
     }
 
     public int getSendBufferSize() {
@@ -145,12 +139,14 @@ public class ScpCommandFactory
 
     /**
      * @param sendSize Size (in bytes) of buffer to use when sending files
-     * @see ScpHelper#MIN_SEND_BUFFER_SIZE
+     * @see            ScpHelper#MIN_SEND_BUFFER_SIZE
      */
     public void setSendBufferSize(int sendSize) {
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size "
-                    + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+            throw new IllegalArgumentException(
+                    "<ScpCommandFactory>() send buffer size "
+                                               + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE
+                                               + ")");
         }
         sendBufferSize = sendSize;
     }
@@ -161,20 +157,22 @@ public class ScpCommandFactory
 
     /**
      * @param receiveSize Size (in bytes) of buffer to use when receiving files
-     * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
+     * @see               ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
     public void setReceiveBufferSize(int receiveSize) {
         if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size "
-                    + "(" + receiveSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
+            throw new IllegalArgumentException(
+                    "<ScpCommandFactory>() receive buffer size "
+                                               + "(" + receiveSize + ") below minimum required ("
+                                               + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
         receiveBufferSize = receiveSize;
     }
 
     /**
-     * @param listener The {@link ScpTransferEventListener} to add
-     * @return {@code true} if this is a <U>new</U> listener instance,
-     * {@code false} if the listener is already registered
+     * @param  listener                 The {@link ScpTransferEventListener} to add
+     * @return                          {@code true} if this is a <U>new</U> listener instance, {@code false} if the
+     *                                  listener is already registered
      * @throws IllegalArgumentException if {@code null} listener
      */
     public boolean addEventListener(ScpTransferEventListener listener) {
@@ -186,9 +184,9 @@ public class ScpCommandFactory
     }
 
     /**
-     * @param listener The {@link ScpTransferEventListener} to remove
-     * @return {@code true} if the listener was registered and removed,
-     * {@code false} if the listener was not registered to begin with
+     * @param  listener                 The {@link ScpTransferEventListener} to remove
+     * @return                          {@code true} if the listener was registered and removed, {@code false} if the
+     *                                  listener was not registered to begin with
      * @throws IllegalArgumentException if {@code null} listener
      */
     public boolean removeEventListener(ScpTransferEventListener listener) {
@@ -210,10 +208,15 @@ public class ScpCommandFactory
 
     @Override
     protected Command executeSupportedCommand(String command) {
-        return new ScpCommand(command,
-                getExecutorService(),
+        return new ScpCommand(
+                command,
+                resolveExecutorService(command),
                 getSendBufferSize(), getReceiveBufferSize(),
                 getScpFileOpener(), listenerProxy);
+    }
+
+    protected CloseableExecutorService resolveExecutorService(String command) {
+        return resolveExecutorService();
     }
 
     @Override
@@ -222,10 +225,10 @@ public class ScpCommandFactory
             ScpCommandFactory other = getClass().cast(super.clone());
             // clone the listeners set as well
             other.listeners = new CopyOnWriteArraySet<>(this.listeners);
-            other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
+            other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, other.listeners);
             return other;
         } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);    // un-expected...
+            throw new RuntimeException(e); // un-expected...
         }
     }
 }

@@ -131,11 +131,11 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
     /**
      * Wraps an existing {@link ClientSessionCreator} into a {@link SimpleClient}
      *
-     * @param creator The {@link ClientSessionCreator} - never {@code null}
-     * @param channel The {@link Channel} representing the creator for
-     * relaying {@link #isOpen()} and {@link #close()} calls
-     * @return The {@link SimpleClient} wrapper. <B>Note:</B> closing the wrapper
-     * also closes the underlying sessions creator.
+     * @param  creator The {@link ClientSessionCreator} - never {@code null}
+     * @param  channel The {@link Channel} representing the creator for relaying {@link #isOpen()} and {@link #close()}
+     *                 calls
+     * @return         The {@link SimpleClient} wrapper. <B>Note:</B> closing the wrapper also closes the underlying
+     *                 sessions creator.
      */
     @SuppressWarnings("checkstyle:anoninnerlength")
     public static SimpleClient wrap(ClientSessionCreator creator, Channel channel) {
@@ -177,21 +177,21 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
             @Override
             public ConnectFuture connect(
                     HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
-                        throws IOException {
+                    throws IOException {
                 return creator.connect(hostConfig, context, localAddress);
             }
 
             @Override
             public ConnectFuture connect(
                     String username, SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress)
-                        throws IOException {
+                    throws IOException {
                 return creator.connect(username, targetAddress, context, localAddress);
             }
 
             @Override
             public ConnectFuture connect(
                     String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
-                        throws IOException {
+                    throws IOException {
                 return creator.connect(username, host, port, context, localAddress);
             }
 

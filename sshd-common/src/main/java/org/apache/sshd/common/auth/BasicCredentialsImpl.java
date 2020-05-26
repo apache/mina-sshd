@@ -85,7 +85,7 @@ public class BasicCredentialsImpl implements MutableBasicCredentials, Cloneable 
 
         BasicCredentialsImpl other = (BasicCredentialsImpl) obj;
         return Objects.equals(getUsername(), other.getUsername())
-            && Objects.equals(getPassword(), other.getPassword());
+                && Objects.equals(getPassword(), other.getPassword());
     }
 
     // NOTE: do not implement 'toString' on purpose to avoid inadvertent logging of contents

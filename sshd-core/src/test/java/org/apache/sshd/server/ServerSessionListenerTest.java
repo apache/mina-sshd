@@ -26,7 +26,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -98,7 +97,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see https://issues.apache.org/jira/browse/SSHD-456
+    @Test // see https://issues.apache.org/jira/browse/SSHD-456
     public void testServerStillListensIfSessionListenerThrowsException() throws Exception {
         final Map<String, SocketAddress> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final Logger log = LoggerFactory.getLogger(getClass());
@@ -150,7 +149,8 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                     }
 
                     synchronized (eventsMap) {
-                        assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap, eventsMap.size() >= 3);
+                        assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap,
+                                eventsMap.size() >= 3);
                     }
                 } catch (IOException e) {
                     // expected - ignored
@@ -178,11 +178,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
             @SuppressWarnings("unchecked")
             public void sessionCreated(Session session) {
                 session.setKeyExchangeFactories(
-                    Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
+                        Collections.singletonList((KeyExchangeFactory) kexParams.get(KexProposalOption.ALGORITHMS)));
                 session.setCipherFactories(
-                    Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
+                        Collections.singletonList((NamedFactory<Cipher>) kexParams.get(KexProposalOption.S2CENC)));
                 session.setMacFactories(
-                    Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
+                        Collections.singletonList((NamedFactory<Mac>) kexParams.get(KexProposalOption.S2CMAC)));
             }
         };
         sshd.addSessionListener(listener);
@@ -222,9 +222,9 @@ public class ServerSessionListenerTest extends BaseTestSupport {
 
         try (ClientSession session = createTestClientSession()) {
             assertNotSame("Mismatched default password authenticator",
-                passAuth, sshd.getPasswordAuthenticator());
+                    passAuth, sshd.getPasswordAuthenticator());
             assertNotSame("Mismatched default kb authenticator",
-                KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
+                    KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
             assertEquals("Authenticator override not invoked", 1, passCount.get());
         } finally {
             sshd.removeSessionListener(listener);
@@ -239,13 +239,11 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession() throws Exception {
-        ClientSession session =
-            client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(11L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

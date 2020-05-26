@@ -48,8 +48,8 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
     KBINTERACTIVE(UserAuthKeyboardInteractiveFactory.INSTANCE),
     HOSTBASED(UserAuthHostBasedFactory.INSTANCE);
 
-    public static final Set<BuiltinUserAuthFactories> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinUserAuthFactories.class));
+    public static final Set<BuiltinUserAuthFactories> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(BuiltinUserAuthFactories.class));
 
     private final UserAuthFactory factory;
 
@@ -68,8 +68,8 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
     }
 
     /**
-     * @param name The factory name (case <U>insensitive</U>) - ignored if {@code null}/empty
-     * @return The matching factory instance - {@code null} if no match found
+     * @param  name The factory name (case <U>insensitive</U>) - ignored if {@code null}/empty
+     * @return      The matching factory instance - {@code null} if no match found
      */
     public static UserAuthFactory fromFactoryName(String name) {
         Factory<UserAuthFactory> factory = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
@@ -81,17 +81,17 @@ public enum BuiltinUserAuthFactories implements NamedFactory<UserAuthFactory> {
     }
 
     /**
-     * @param factories A comma-separated list of factories' names - ignored if {@code null}/empty
-     * @return A {@link ParseResult} containing the successfully parsed
-     * factories and the unknown ones. <B>Note:</B> it is up to caller to
-     * ensure that the lists do not contain duplicates
+     * @param  factories A comma-separated list of factories' names - ignored if {@code null}/empty
+     * @return           A {@link ParseResult} containing the successfully parsed factories and the unknown ones.
+     *                   <B>Note:</B> it is up to caller to ensure that the lists do not contain duplicates
      */
     public static ParseResult parseFactoriesList(String factories) {
         return parseFactoriesList(GenericUtils.split(factories, ','));
     }
 
     public static ParseResult parseFactoriesList(String... factories) {
-        return parseFactoriesList(GenericUtils.isEmpty((Object[]) factories) ? Collections.emptyList() : Arrays.asList(factories));
+        return parseFactoriesList(
+                GenericUtils.isEmpty((Object[]) factories) ? Collections.emptyList() : Arrays.asList(factories));
     }
 
     public static ParseResult parseFactoriesList(Collection<String> factories) {

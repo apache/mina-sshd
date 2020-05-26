@@ -37,10 +37,14 @@ import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.Oid;
 
 /**
- * <p>Prototype user authentication handling gssapi-with-mic. Implements <code>HandshakingUserAuth</code> because
- * the process involves several steps.</p>
+ * <p>
+ * Prototype user authentication handling gssapi-with-mic. Implements <code>HandshakingUserAuth</code> because the
+ * process involves several steps.
+ * </p>
  *
- * <p>Several methods are available for overriding in specific circumstances.</p>
+ * <p>
+ * Several methods are available for overriding in specific circumstances.
+ * </p>
  */
 public class UserAuthGSS extends AbstractUserAuth {
     public static final String NAME = UserAuthGSSFactory.NAME;
@@ -117,8 +121,9 @@ public class UserAuthGSS extends AbstractUserAuth {
             int msg = buffer.getUByte();
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
                     || ((msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC)) && context.isEstablished())) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                    "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
+                throw new SshException(
+                        SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
 
             if (debugEnabled) {
@@ -152,7 +157,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 } catch (GSSException e) {
                     if (debugEnabled) {
                         log.debug("doAuth({}@{}) GSS verification {} error: {}",
-                            user, session, e.getClass().getSimpleName(), e.getMessage());
+                                user, session, e.getClass().getSimpleName(), e.getMessage());
                     }
                     return Boolean.FALSE;
                 }
@@ -209,8 +214,8 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Utility to construct an Oid from a string, ignoring the annoying exception.
      *
-     * @param rep The string form
-     * @return The Oid
+     * @param  rep The string form
+     * @return     The Oid
      */
     public static Oid createOID(String rep) {
         try {

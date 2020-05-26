@@ -1,5 +1,4 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
     <!--
 
         Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,7 +27,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.3.1-SNAPSHOT</version>
+    <version>2.4.1-SNAPSHOT</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -93,9 +92,9 @@
         <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
         <maven.compiler.source>${javac.source}</maven.compiler.source>
-        <ant.version>1.10.7</ant.version>
+        <ant.version>1.10.8</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
-        <build-helper-maven-plugin.version>3.0.0</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.1.0</build-helper-maven-plugin.version>
 
         <javac.target>${javac.source}</javac.target>
         <project.build.java.target>${javac.target}</project.build.java.target>
@@ -106,25 +105,45 @@
         <gmaven.plugin.version>2.1.1</gmaven.plugin.version>
         <groovy.major.version>2</groovy.major.version>
         <groovy.minor.version>5</groovy.minor.version>
-        <groovy.release.version>8</groovy.release.version>
+        <groovy.release.version>11</groovy.release.version>
         <groovy.compliance.level>2.0</groovy.compliance.level>
         <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
 
-        <bouncycastle.version>1.63</bouncycastle.version>
-        <slf4j.version>1.7.28</slf4j.version>
-        <spring.version>5.2.0.RELEASE</spring.version>
-        <jgit.version>5.5.0.201909110433-r</jgit.version>
-        <junit.version>4.12</junit.version>
-        <bytebuddy.version>1.10.1</bytebuddy.version>
+            <!-- NOTE: BC 1.65+ seems to have an NPE bug in Key#getAlgorithm()
+                * see https://github.com/bcgit/bc-java/issues/684
+            -->
+        <bouncycastle.version>1.64</bouncycastle.version>
+        <slf4j.version>1.7.30</slf4j.version>
+        <spring.version>5.2.6.RELEASE</spring.version>
+        <jgit.version>5.7.0.202003110725-r</jgit.version>
+        <junit.version>4.13</junit.version>
+        <bytebuddy.version>1.10.10</bytebuddy.version>
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
-        <maven.archiver.version>3.4.0</maven.archiver.version>
+        <maven.archiver.version>3.5.0</maven.archiver.version>
+        <!--
+            NOTE: upgrading beyond this version causes
+            exceptions in the javadoc plugin
+        -->
         <plexus.archiver.version>4.1.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.18.0</pmd.version>
+        <pmd.version>6.23.0</pmd.version>
+
+        <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
+        <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
+
+        <dependency.download.silent>true</dependency.download.silent>
     </properties>
 
     <profiles>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <sshd.tests.timeout.factor>4.0</sshd.tests.timeout.factor>
+                <sshd.tests.rerun.count>4</sshd.tests.rerun.count>
+            </properties>
+        </profile>
+
         <profile>
             <id>quick</id>
             <properties>
@@ -178,7 +197,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>5.2.2</version>
+                        <version>5.3.2</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
@@ -538,7 +557,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>3.1.0</version>
+                <version>3.3.3</version>
             </dependency>
                 <!-- Used by mockito -->
             <dependency>
@@ -571,7 +590,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.10</version>
+                <version>4.5.12</version>
                 <exclusions>
                     <exclusion>    <!-- we are using jcl-over-slf4j -->
                         <groupId>commons-logging</groupId>
@@ -582,7 +601,7 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.12</version>
+                <version>4.4.13</version>
             </dependency>
             <dependency>
                 <groupId>ch.ethz.ganymed</groupId>
@@ -637,6 +656,7 @@
                         <excludes>
                             <exclude>*.md</exclude>
                             <exclude>docs/**</exclude>
+                            <exclude>sshd-sources/**</exclude>
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
@@ -659,6 +679,8 @@
                             <exclude>.project</exclude>
                             <exclude>.classpath</exclude>
                             <exclude>.springBeans</exclude>
+                            <exclude>.pydevproject</exclude>
+                            <exclude>*.pyc</exclude>
                             <exclude>.settings/**</exclude>
                             <exclude>.repository/**</exclude>
                             <exclude>.gitignore</exclude>
@@ -699,8 +721,13 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.1</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.apache.maven</groupId>
@@ -732,7 +759,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>3.2.0</version>
                     <configuration>
                         <additionalOptions>-Xdoclint:-missing</additionalOptions>
                         <encoding>${project.build.sourceEncoding}</encoding>
@@ -807,7 +834,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                     <configuration>
                         <logViolationsToConsole>true</logViolationsToConsole>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -818,7 +845,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.22</version>
+                            <version>8.32</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
@@ -925,7 +952,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.12.0</version>
+                   <version>3.13.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
@@ -951,6 +978,16 @@
                           <artifactId>pmd-java</artifactId>
                           <version>${pmd.version}</version>
                        </dependency>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-javascript</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
+                       <dependency>
+                          <groupId>net.sourceforge.pmd</groupId>
+                          <artifactId>pmd-jsp</artifactId>
+                          <version>${pmd.version}</version>
+                       </dependency>
                    </dependencies>
                </plugin>
                 <plugin>
@@ -961,7 +998,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>3.1.2</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.codehaus.plexus</groupId>
@@ -974,21 +1011,45 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>1.8</version>
+                    <version>3.0.0</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.apache.ant</groupId>
                             <artifactId>ant</artifactId>
                             <version>${ant.version}</version>
                         </dependency>
-                        <dependency>    <!--Artificial dependency for tools.jar in case we invoke javac or javah -->
+                        <!--Artificial dependency for tools.jar in case we invoke javac or javah -->
+                        <!--
+                        <dependency>
                             <groupId>com.sun</groupId>
                             <artifactId>tools</artifactId>
                             <version>${java.version}</version>
                             <scope>system</scope>
                             <systemPath>${java.home}/../lib/tools.jar</systemPath>
                         </dependency>
+                        -->
                     </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>net.revelc.code.formatter</groupId>
+                    <artifactId>formatter-maven-plugin</artifactId>
+                    <version>2.11.0</version>
+                    <configuration>
+                        <configFile>${workspace.root.dir}${file.separator}sshd-eclipse-formatter-config.xml</configFile>
+                        <lineEnding>LF</lineEnding>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>net.revelc.code</groupId>
+                    <artifactId>impsort-maven-plugin</artifactId>
+                    <version>1.4.1</version>
+                    <configuration>
+                        <lineEnding>LF</lineEnding>
+                        <groups>java.,javax.,org.w3c.,org.xml.,junit.</groups>
+                        <removeUnused>true</removeUnused>
+                        <staticAfter>true</staticAfter>
+                        <staticGroups>java.,javax.,org.w3c.,org.xml.,junit.</staticGroups>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -1030,6 +1091,32 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>format</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>net.revelc.code</groupId>
+                <artifactId>impsort-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>sort-imports</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>sort</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
@@ -1044,7 +1131,7 @@
                     <execution>
                         <id>verify-style</id>
                         <!-- Note: phase must be AFTER detection of workspace root dir -->
-                        <phase>initialize</phase>
+                        <phase>process-sources</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -1088,7 +1175,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M2</version>
+                <version>3.0.0-M3</version>
                 <executions>
                     <execution>
                         <id>enforce-versions</id>
@@ -1157,13 +1244,30 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>install</id>
+                        <id>download-sources</id>
                         <phase>install</phase>
                         <goals>    <!-- automatically download the dependency sources - useful for debugging -->
                             <goal>sources</goal>
                         </goals>
                         <configuration>
+                                <!-- no need to download our own sources - especially snapshot -->
+                            <excludeGroupIds>org.apache.sshd</excludeGroupIds>
                             <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                            <silent>${dependency.download.silent}</silent>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>download-javadoc</id>
+                        <phase>install</phase>
+                        <goals>    <!-- automatically download the dependency javadoc - useful for debugging -->
+                            <goal>resolve</goal>
+                        </goals>
+                        <configuration>
+                                <!-- no need to download our own documentation - especially snapshot -->
+                            <excludeGroupIds>org.apache.sshd</excludeGroupIds>
+                            <markersDirectory>${settings.localRepository}/org/apache/sshd/dependency-maven-plugin-markers</markersDirectory>
+                            <classifier>javadoc</classifier>
+                            <silent>${dependency.download.silent}</silent>
                         </configuration>
                     </execution>
                 </executions>
@@ -1171,7 +1275,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-remote-resources-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>1.7.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -1218,7 +1322,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <id>source-release-assembly</id>
@@ -1229,7 +1333,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>4.2.0</version>
+                <version>4.2.1</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
@@ -1261,7 +1365,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.2.0</version>
                 <inherited>true</inherited>
                 <configuration>
                     <archive>
@@ -1299,7 +1403,11 @@
                         <!-- java.io.tmpdir>${project.build.directory}${file.separator}temp</java.io.tmpdir -->
                         <java.awt.headless>true</java.awt.headless>
                         <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
+                        <org.apache.sshd.test.timeout.factor>${sshd.tests.timeout.factor}</org.apache.sshd.test.timeout.factor>
                     </systemPropertyVariables>
+                    <trimStackTrace>false</trimStackTrace>
+                    <!-- lets re-run the failed test one more time, just to be sure -->
+                    <rerunFailingTestsCount>${sshd.tests.rerun.count}</rerunFailingTestsCount>
                 </configuration>
                 <dependencies>
                     <!-- make sure using OUR version -->

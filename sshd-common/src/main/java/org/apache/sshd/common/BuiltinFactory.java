@@ -27,8 +27,8 @@ import org.apache.sshd.common.util.GenericUtils;
 /**
  * A named optional factory.
  *
- * @param <T> The create object instance type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> The create object instance type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
     static <T, E extends BuiltinFactory<T>> List<NamedFactory<T>> setUpFactories(

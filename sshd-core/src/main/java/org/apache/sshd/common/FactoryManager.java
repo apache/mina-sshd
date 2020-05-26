@@ -47,27 +47,26 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 
 /**
- * This interface allows retrieving all the <code>NamedFactory</code> used
- * in the SSH protocol.
+ * This interface allows retrieving all the <code>NamedFactory</code> used in the SSH protocol.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface FactoryManager
         extends KexFactoryManager,
-                SessionListenerManager,
-                ReservedSessionMessagesManager,
-                SessionDisconnectHandlerManager,
-                ChannelListenerManager,
-                ChannelStreamPacketWriterResolverManager,
-                UnknownChannelReferenceHandlerManager,
-                PortForwardingEventListenerManager,
-                IoServiceEventListenerManager,
-                AttributeStore,
-                SessionHeartbeatController {
+        SessionListenerManager,
+        ReservedSessionMessagesManager,
+        SessionDisconnectHandlerManager,
+        ChannelListenerManager,
+        ChannelStreamPacketWriterResolverManager,
+        UnknownChannelReferenceHandlerManager,
+        PortForwardingEventListenerManager,
+        IoServiceEventListenerManager,
+        AttributeStore,
+        SessionHeartbeatController {
 
     /**
-     * Key used to retrieve the value of the channel window size in the
-     * configuration properties map.
+     * Key used to retrieve the value of the channel window size in the configuration properties map.
+     * 
      * @see #DEFAULT_WINDOW_SIZE
      */
     String WINDOW_SIZE = "window-size";
@@ -75,12 +74,12 @@ public interface FactoryManager
     /**
      * Default {@value #WINDOW_SIZE} if none set
      */
-    long DEFAULT_WINDOW_SIZE = 0x200000L;   // actually a UINT32
+    long DEFAULT_WINDOW_SIZE = 0x200000L; // actually a UINT32
 
     /**
-     * Key used to retrieve timeout (msec.) to wait for data to
-     * become available when reading from a channel. If not set
+     * Key used to retrieve timeout (msec.) to wait for data to become available when reading from a channel. If not set
      * or non-positive then infinite value is assumed
+     * 
      * @see #DEFAULT_WINDOW_TIMEOUT
      */
     String WINDOW_TIMEOUT = "window-timeout";
@@ -91,8 +90,8 @@ public interface FactoryManager
     long DEFAULT_WINDOW_TIMEOUT = 0L;
 
     /**
-     * Key used to retrieve the value of the maximum packet size
-     * in the configuration properties map.
+     * Key used to retrieve the value of the maximum packet size in the configuration properties map.
+     * 
      * @see #DEFAULT_MAX_PACKET_SIZE
      */
     String MAX_PACKET_SIZE = "packet-size";
@@ -100,11 +99,11 @@ public interface FactoryManager
     /**
      * Default {@value #MAX_PACKET_SIZE} if none set
      */
-    long DEFAULT_MAX_PACKET_SIZE = 0x8000L;   // actually a UINT32
+    long DEFAULT_MAX_PACKET_SIZE = 0x8000L; // actually a UINT32
 
     /**
-     * A safety value that is designed to avoid an attack that
-     * uses large channel packet sizes
+     * A safety value that is designed to avoid an attack that uses large channel packet sizes
+     * 
      * @see #DEFAULT_LIMIT_PACKET_SIZE
      */
     String LIMIT_PACKET_SIZE = "max-packet-size";
@@ -116,20 +115,20 @@ public interface FactoryManager
 
     /**
      * Number of NIO worker threads to use.
+     * 
      * @see #DEFAULT_NIO_WORKERS
      */
     String NIO_WORKERS = "nio-workers";
 
     /**
-     * Default number of worker threads to use if none set - the number
-     * of available processors + 1
+     * Default number of worker threads to use if none set - the number of available processors + 1
      */
     int DEFAULT_NIO_WORKERS = Runtime.getRuntime().availableProcessors() + 1;
 
     /**
-     * Key used to retrieve the value of the timeout after which
-     * it will close the connection if the other side has not been
-     * authenticated - in milliseconds.
+     * Key used to retrieve the value of the timeout after which it will close the connection if the other side has not
+     * been authenticated - in milliseconds.
+     * 
      * @see #DEFAULT_AUTH_TIMEOUT
      */
     String AUTH_TIMEOUT = "auth-timeout";
@@ -140,8 +139,8 @@ public interface FactoryManager
     long DEFAULT_AUTH_TIMEOUT = TimeUnit.MINUTES.toMillis(2L);
 
     /**
-     * Key used to retrieve the value of idle timeout after which
-     * it will close the connection - in milliseconds.
+     * Key used to retrieve the value of idle timeout after which it will close the connection - in milliseconds.
+     * 
      * @see #DEFAULT_IDLE_TIMEOUT
      */
     String IDLE_TIMEOUT = "idle-timeout";
@@ -152,8 +151,8 @@ public interface FactoryManager
     long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toMillis(10L);
 
     /**
-     * Key used to retrieve the value of the socket read timeout
-     * for NIO2 session implementation - in milliseconds.
+     * Key used to retrieve the value of the socket read timeout for NIO2 session implementation - in milliseconds.
+     * 
      * @see #DEFAULT_NIO2_READ_TIMEOUT
      */
     String NIO2_READ_TIMEOUT = "nio2-read-timeout";
@@ -164,8 +163,8 @@ public interface FactoryManager
     long DEFAULT_NIO2_READ_TIMEOUT = DEFAULT_IDLE_TIMEOUT + TimeUnit.SECONDS.toMillis(15L);
 
     /**
-     * Minimum NIO2 write wait timeout for a single outgoing
-     * packet - in milliseconds
+     * Minimum NIO2 write wait timeout for a single outgoing packet - in milliseconds
+     * 
      * @see #DEFAULT_NIO2_MIN_WRITE_TIMEOUT
      */
     String NIO2_MIN_WRITE_TIMEOUT = "nio2-min-write-timeout";
@@ -176,10 +175,10 @@ public interface FactoryManager
     long DEFAULT_NIO2_MIN_WRITE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     /**
-     * Key used to retrieve the value of the disconnect timeout which
-     * is used when a disconnection is attempted. If the disconnect
-     * message has not been sent before the timeout, the underlying socket
-     * will be forcibly closed - in milliseconds.
+     * Key used to retrieve the value of the disconnect timeout which is used when a disconnection is attempted. If the
+     * disconnect message has not been sent before the timeout, the underlying socket will be forcibly closed - in
+     * milliseconds.
+     * 
      * @see #DEFAULT_DISCONNECT_TIMEOUT
      */
     String DISCONNECT_TIMEOUT = "disconnect-timeout";
@@ -190,9 +189,9 @@ public interface FactoryManager
     long DEFAULT_DISCONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
 
     /**
-     * Key used to configure the timeout used when writing a close request
-     * on a channel. If the message can not be written before the specified
-     * timeout elapses, the channel will be immediately closed. In milliseconds.
+     * Key used to configure the timeout used when writing a close request on a channel. If the message can not be
+     * written before the specified timeout elapses, the channel will be immediately closed. In milliseconds.
+     * 
      * @see #DEFAULT_AUTH_TIMEOUT
      */
     String CHANNEL_CLOSE_TIMEOUT = "channel-close-timeout";
@@ -203,8 +202,8 @@ public interface FactoryManager
     long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
-     * Timeout (milliseconds) to wait for client / server stop request
-     * if immediate stop requested.
+     * Timeout (milliseconds) to wait for client / server stop request if immediate stop requested.
+     * 
      * @see #DEFAULT_STOP_WAIT_TIME
      */
     String STOP_WAIT_TIME = "stop-wait-time";
@@ -215,62 +214,53 @@ public interface FactoryManager
     long DEFAULT_STOP_WAIT_TIME = TimeUnit.MINUTES.toMillis(1L);
 
     /**
-     * Socket backlog.
-     * See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
+     * Socket backlog. See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
      */
     String SOCKET_BACKLOG = "socket-backlog";
 
     /**
-     * Socket keep-alive.
-     * See {@link java.net.StandardSocketOptions#SO_KEEPALIVE}
+     * Socket keep-alive. See {@link java.net.StandardSocketOptions#SO_KEEPALIVE}
      */
     String SOCKET_KEEPALIVE = "socket-keepalive";
 
     /**
-     * Socket send buffer size.
-     * See {@link java.net.StandardSocketOptions#SO_SNDBUF}
+     * Socket send buffer size. See {@link java.net.StandardSocketOptions#SO_SNDBUF}
      */
     String SOCKET_SNDBUF = "socket-sndbuf";
 
     /**
-     * Socket receive buffer size.
-     * See {@link java.net.StandardSocketOptions#SO_RCVBUF}
+     * Socket receive buffer size. See {@link java.net.StandardSocketOptions#SO_RCVBUF}
      */
     String SOCKET_RCVBUF = "socket-rcvbuf";
 
     /**
-     * Socket reuse address.
-     * See {@link java.net.StandardSocketOptions#SO_REUSEADDR}
+     * Socket reuse address. See {@link java.net.StandardSocketOptions#SO_REUSEADDR}
      */
     String SOCKET_REUSEADDR = "socket-reuseaddr";
 
     /**
-     * Socket linger.
-     * See {@link java.net.StandardSocketOptions#SO_LINGER}
+     * Socket linger. See {@link java.net.StandardSocketOptions#SO_LINGER}
      */
     String SOCKET_LINGER = "socket-linger";
 
     /**
-     * Socket tcp no-delay.
-     * See {@link java.net.StandardSocketOptions#TCP_NODELAY}
+     * Socket tcp no-delay. See {@link java.net.StandardSocketOptions#TCP_NODELAY}
      */
     String TCP_NODELAY = "tcp-nodelay";
 
     /**
-     * Read buffer size for NIO2 sessions
-     * See {@link org.apache.sshd.common.io.nio2.Nio2Session}
+     * Read buffer size for NIO2 sessions See {@link org.apache.sshd.common.io.nio2.Nio2Session}
      */
     String NIO2_READ_BUFFER_SIZE = "nio2-read-buf-size";
 
     /**
-     * The default {@code REPORTED_VERSION} of {@link #getVersion()} if the built-in
-     * version information cannot be accessed
+     * The default {@code REPORTED_VERSION} of {@link #getVersion()} if the built-in version information cannot be
+     * accessed
      */
     String DEFAULT_VERSION = "SSHD-UNKNOWN";
 
     /**
-     * Maximum allowed size of the initial identification text sent during
-     * the handshake
+     * Maximum allowed size of the initial identification text sent during the handshake
      */
     String MAX_IDENTIFICATION_SIZE = "max-identification-size";
 
@@ -280,55 +270,56 @@ public interface FactoryManager
     int DEFAULT_MAX_IDENTIFICATION_SIZE = 16 * 1024;
 
     /**
-     * Key re-exchange will be automatically performed after the session
-     * has sent or received the given amount of bytes. If non-positive,
-     * then disabled. The default value is {@value #DEFAULT_REKEY_BYTES_LIMIT}
+     * Key re-exchange will be automatically performed after the session has sent or received the given amount of bytes.
+     * If non-positive, then disabled. The default value is {@value #DEFAULT_REKEY_BYTES_LIMIT}
      */
     String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
 
     /**
      * Default value for {@value #REKEY_BYTES_LIMIT} if no override
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_BYTES_LIMIT = 1024L * 1024L * 1024L; // 1GB
 
     /**
-     * Key re-exchange will be automatically performed after the specified
-     * amount of time has elapsed since the last key exchange - in milliseconds.
-     * If non-positive then disabled. The default value is {@value #DEFAULT_REKEY_TIME_LIMIT}
+     * Key re-exchange will be automatically performed after the specified amount of time has elapsed since the last key
+     * exchange - in milliseconds. If non-positive then disabled. The default value is
+     * {@value #DEFAULT_REKEY_TIME_LIMIT}
      */
     String REKEY_TIME_LIMIT = "rekey-time-limit";
 
     /**
      * Default value for {@value #REKEY_TIME_LIMIT} if none specified
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-9">RFC4253 section 9</A>
      */
     long DEFAULT_REKEY_TIME_LIMIT = 60L * 60L * 1000L; // 1 hour
 
     /**
-     * Key re-exchange will be automatically performed after the specified
-     * number of packets has been exchanged - positive 64-bit value. If
-     * non-positive then disabled. The default is {@value #DEFAULT_REKEY_PACKETS_LIMIT}
+     * Key re-exchange will be automatically performed after the specified number of packets has been exchanged -
+     * positive 64-bit value. If non-positive then disabled. The default is {@value #DEFAULT_REKEY_PACKETS_LIMIT}
      */
     String REKEY_PACKETS_LIMIT = "rekey-packets-limit";
 
     /**
      * Default value for {@value #REKEY_PACKETS_LIMIT} if none specified
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4344#section-3.1">RFC4344 section 3.1</A>
      */
     long DEFAULT_REKEY_PACKETS_LIMIT = 1L << 31;
 
     /**
-     * Key re-exchange will be automatically performed after the specified
-     * number of cipher blocks has been processed - positive 64-bit value. If
-     * non-positive then disabled. The default is calculated according to
+     * Key re-exchange will be automatically performed after the specified number of cipher blocks has been processed -
+     * positive 64-bit value. If non-positive then disabled. The default is calculated according to
      * <A HREF="https://tools.ietf.org/html/rfc4344#section-3.2">RFC4344 section 3.2</A>
      */
     String REKEY_BLOCKS_LIMIT = "rekey-blocks-limit";
 
     /**
-     * Average number of packets to be skipped before an {@code SSH_MSG_IGNORE}
-     * message is inserted in the stream. If non-positive, then feature is disabled
+     * Average number of packets to be skipped before an {@code SSH_MSG_IGNORE} message is inserted in the stream. If
+     * non-positive, then feature is disabled
+     * 
      * @see #IGNORE_MESSAGE_VARIANCE
      * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
@@ -340,10 +331,10 @@ public interface FactoryManager
     long DEFAULT_IGNORE_MESSAGE_FREQUENCY = 1024L;
 
     /**
-     * The variance to be used around the configured {@value #IGNORE_MESSAGE_FREQUENCY}
-     * value in order to avoid insertion at a set frequency. If zero, then <U>exact</U>
-     * frequency is used. If negative, then the <U>absolute</U> value is used. If
-     * greater or equal to the frequency, then assumed to be zero - i.e., no variance
+     * The variance to be used around the configured {@value #IGNORE_MESSAGE_FREQUENCY} value in order to avoid
+     * insertion at a set frequency. If zero, then <U>exact</U> frequency is used. If negative, then the <U>absolute</U>
+     * value is used. If greater or equal to the frequency, then assumed to be zero - i.e., no variance
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
     String IGNORE_MESSAGE_VARIANCE = "ignore-message-variance";
@@ -354,9 +345,9 @@ public interface FactoryManager
     int DEFAULT_IGNORE_MESSAGE_VARIANCE = 32;
 
     /**
-     * Minimum size of {@code SSH_MSG_IGNORE} payload to send if feature enabled. If
-     * non-positive then no message is sent. Otherwise, the actual size is between this
-     * size and twice its value
+     * Minimum size of {@code SSH_MSG_IGNORE} payload to send if feature enabled. If non-positive then no message is
+     * sent. Otherwise, the actual size is between this size and twice its value
+     * 
      * @see <A HREF="https://tools.ietf.org/html/rfc4251#section-9.3.1">RFC4251 section 9.3.1</A>
      */
     String IGNORE_MESSAGE_SIZE = "ignore-message-size";
@@ -368,7 +359,7 @@ public interface FactoryManager
 
     /**
      * The request type of agent forwarding. The value may be {@value #AGENT_FORWARDING_TYPE_IETF} or
-     *  {@value #AGENT_FORWARDING_TYPE_OPENSSH}.
+     * {@value #AGENT_FORWARDING_TYPE_OPENSSH}.
      */
     String AGENT_FORWARDING_TYPE = "agent-fw-auth-type";
 
@@ -383,9 +374,8 @@ public interface FactoryManager
     String AGENT_FORWARDING_TYPE_OPENSSH = "auth-agent-req@openssh.com";
 
     /**
-     * An upper case string identifying the version of the software used on client or server side.
-     * This version includes the name and version of the software and usually looks like this:
-     * <code>SSHD-CORE-1.0</code>
+     * An upper case string identifying the version of the software used on client or server side. This version includes
+     * the name and version of the software and usually looks like this: <code>SSHD-CORE-1.0</code>
      *
      * @return the version of the software
      */
@@ -422,9 +412,8 @@ public interface FactoryManager
     ScheduledExecutorService getScheduledExecutorService();
 
     /**
-     * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.
-     * If no filter has been configured (i.e. this method returns
-     * {@code null}), then all forwarding requests will be rejected.
+     * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server. If no filter has been configured (i.e.
+     * this method returns {@code null}), then all forwarding requests will be rejected.
      *
      * @return The {@link ForwardingFilter} or {@code null}
      */
@@ -452,8 +441,8 @@ public interface FactoryManager
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
      *
-     * @return a valid {@link FileSystemFactory} instance or {@code null} if file based
-     * interactions are not supported on this server
+     * @return a valid {@link FileSystemFactory} instance or {@code null} if file based interactions are not supported
+     *         on this server
      */
     FileSystemFactory getFileSystemFactory();
 
@@ -477,10 +466,10 @@ public interface FactoryManager
     }
 
     /**
-     * @param <T> The generic attribute type
-     * @param manager The {@link FactoryManager} - ignored if {@code null}
-     * @param key The attribute key - never {@code null}
-     * @return Associated value - {@code null} if not found
+     * @param  <T>     The generic attribute type
+     * @param  manager The {@link FactoryManager} - ignored if {@code null}
+     * @param  key     The attribute key - never {@code null}
+     * @return         Associated value - {@code null} if not found
      */
     static <T> T resolveAttribute(FactoryManager manager, AttributeRepository.AttributeKey<T> key) {
         Objects.requireNonNull(key, "No key");

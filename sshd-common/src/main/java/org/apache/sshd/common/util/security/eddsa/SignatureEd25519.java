@@ -20,11 +20,11 @@ package org.apache.sshd.common.util.security.eddsa;
 
 import java.util.Map;
 
+import net.i2p.crypto.eddsa.EdDSAEngine;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.AbstractSignature;
 import org.apache.sshd.common.util.ValidateUtils;
-
-import net.i2p.crypto.eddsa.EdDSAEngine;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -35,12 +35,14 @@ public class SignatureEd25519 extends AbstractSignature {
     }
 
     @Override
-    public boolean verify(byte[] sig) throws Exception {
+    public boolean verify(SessionContext session, byte[] sig) throws Exception {
         byte[] data = sig;
-        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data);
+        Map.Entry<String, byte[]> encoding
+                = extractEncodedSignature(data, k -> KeyPairProvider.SSH_ED25519.equalsIgnoreCase(k));
         if (encoding != null) {
             String keyType = encoding.getKey();
-            ValidateUtils.checkTrue(KeyPairProvider.SSH_ED25519.equals(keyType), "Mismatched key type: %s", keyType);
+            ValidateUtils.checkTrue(
+                    KeyPairProvider.SSH_ED25519.equals(keyType), "Mismatched key type: %s", keyType);
             data = encoding.getValue();
         }
 

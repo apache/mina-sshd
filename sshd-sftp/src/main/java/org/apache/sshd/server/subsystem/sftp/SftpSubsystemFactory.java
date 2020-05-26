@@ -27,6 +27,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -36,7 +37,8 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  */
 public class SftpSubsystemFactory
         extends AbstractSftpEventListenerManager
-        implements SubsystemFactory, SftpEventListenerManager, SftpFileSystemAccessorManager {
+        implements ManagedExecutorServiceSupplier, SubsystemFactory,
+        SftpEventListenerManager, SftpFileSystemAccessorManager {
 
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
@@ -97,16 +99,14 @@ public class SftpSubsystemFactory
         return NAME;
     }
 
+    @Override
     public Supplier<? extends CloseableExecutorService> getExecutorServiceProvider() {
         return executorsProvider;
     }
 
-    /**
-     * @param provider The {@link Supplier} of {@link CloseableExecutorService}-s to be used by the
-     * {@link SftpSubsystem} command when starting execution. If {@code null} then a single-threaded
-     * ad-hoc service is used.
-     */
-    public void setExecutorServiceProvider(Supplier<? extends CloseableExecutorService> provider) {
+    @Override
+    public void setExecutorServiceProvider(
+            Supplier<? extends CloseableExecutorService> provider) {
         executorsProvider = provider;
     }
 
@@ -115,8 +115,8 @@ public class SftpSubsystemFactory
     }
 
     /**
-     * @param p The {@link UnsupportedAttributePolicy} to use if failed to access
-     * some local file attributes - never {@code null}
+     * @param p The {@link UnsupportedAttributePolicy} to use if failed to access some local file attributes - never
+     *          {@code null}
      */
     public void setUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
         policy = Objects.requireNonNull(p, "No policy");
@@ -140,15 +140,10 @@ public class SftpSubsystemFactory
         errorStatusDataHandler = Objects.requireNonNull(handler, "No error status data handler provided");
     }
 
-    protected CloseableExecutorService resolveExecutorService() {
-        Supplier<? extends CloseableExecutorService> provider = getExecutorServiceProvider();
-        return (provider == null) ? null : provider.get();
-    }
-
     @Override
     public Command createSubsystem(ChannelSession channel) throws IOException {
-        SftpSubsystem subsystem =
-            new SftpSubsystem(resolveExecutorService(),
+        SftpSubsystem subsystem = new SftpSubsystem(
+                resolveExecutorService(),
                 getUnsupportedAttributePolicy(), getFileSystemAccessor(),
                 getErrorStatusDataHandler());
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);

@@ -20,17 +20,22 @@
 package org.apache.sshd.server.subsystem.sftp;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemEnvironment extends ServerSessionHolder {
+public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, ServerSessionHolder {
     /**
      * Force the use of a given sftp version
      */
@@ -38,11 +43,19 @@ public interface SftpSubsystemEnvironment extends ServerSessionHolder {
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
 
-    int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to and including
+    int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; // .. up to and including
 
-    String ALL_SFTP_IMPL = IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
-            .mapToObj(Integer::toString)
-            .collect(Collectors.joining(","));
+    List<Integer> SUPPORTED_SFTP_VERSIONS = Collections.unmodifiableList(
+            IntStream.rangeClosed(LOWER_SFTP_IMPL, HIGHER_SFTP_IMPL)
+                    .boxed()
+                    .collect(Collectors.toList()));
+
+    String ALL_SFTP_IMPL = GenericUtils.join(SUPPORTED_SFTP_VERSIONS, ',');
+
+    @Override
+    default ServerSession getSession() {
+        return getServerSession();
+    }
 
     /**
      * @return The negotiated version
@@ -50,8 +63,7 @@ public interface SftpSubsystemEnvironment extends ServerSessionHolder {
     int getVersion();
 
     /**
-     * @return The {@link SftpFileSystemAccessor} used to access effective
-     * server-side paths
+     * @return The {@link SftpFileSystemAccessor} used to access effective server-side paths
      */
     SftpFileSystemAccessor getFileSystemAccessor();
 
@@ -61,8 +73,7 @@ public interface SftpSubsystemEnvironment extends ServerSessionHolder {
     UnsupportedAttributePolicy getUnsupportedAttributePolicy();
 
     /**
-     * @return The default root directory used to resolve relative paths
-     * - a.k.a. the {@code chroot} location
+     * @return The default root directory used to resolve relative paths - a.k.a. the {@code chroot} location
      */
     Path getDefaultDirectory();
 }

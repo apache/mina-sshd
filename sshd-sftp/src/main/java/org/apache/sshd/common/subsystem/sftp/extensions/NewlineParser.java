@@ -34,7 +34,8 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 public class NewlineParser extends AbstractParser<Newline> {
     /**
      * The &quot;newline&quot; extension information as per
-     * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 Section 4.3</A>
+     * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09
+     * Section 4.3</A>
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */

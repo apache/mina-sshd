@@ -39,20 +39,18 @@ public final class ThreadUtils {
     }
 
     /**
-     * Wraps an {@link CloseableExecutorService} in such a way as to &quot;protect&quot;
-     * it for calls to the {@link CloseableExecutorService#shutdown()} or
-     * {@link CloseableExecutorService#shutdownNow()}. All other calls are delegated as-is
-     * to the original service. <B>Note:</B> the exposed wrapped proxy will
-     * answer correctly the {@link CloseableExecutorService#isShutdown()} query if indeed
-     * one of the {@code shutdown} methods was invoked.
+     * Wraps an {@link CloseableExecutorService} in such a way as to &quot;protect&quot; it for calls to the
+     * {@link CloseableExecutorService#shutdown()} or {@link CloseableExecutorService#shutdownNow()}. All other calls
+     * are delegated as-is to the original service. <B>Note:</B> the exposed wrapped proxy will answer correctly the
+     * {@link CloseableExecutorService#isShutdown()} query if indeed one of the {@code shutdown} methods was invoked.
      *
-     * @param executorService The original service - ignored if {@code null}
-     * @param shutdownOnExit  If {@code true} then it is OK to shutdown the executor
-     *                        so no wrapping takes place.
-     * @return Either the original service or a wrapped one - depending on the
-     * value of the <tt>shutdownOnExit</tt> parameter
+     * @param  executorService The original service - ignored if {@code null}
+     * @param  shutdownOnExit  If {@code true} then it is OK to shutdown the executor so no wrapping takes place.
+     * @return                 Either the original service or a wrapped one - depending on the value of the
+     *                         <tt>shutdownOnExit</tt> parameter
      */
-    public static CloseableExecutorService protectExecutorServiceShutdown(CloseableExecutorService executorService, boolean shutdownOnExit) {
+    public static CloseableExecutorService protectExecutorServiceShutdown(
+            CloseableExecutorService executorService, boolean shutdownOnExit) {
         if (executorService == null || shutdownOnExit || executorService instanceof NoCloseExecutor) {
             return executorService;
         } else {
@@ -78,13 +76,13 @@ public final class ThreadUtils {
 
     public static <T> T createDefaultInstance(
             Class<?> anchor, Class<T> targetType, String className)
-                throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         return createDefaultInstance(resolveDefaultClassLoaders(anchor), targetType, className);
     }
 
     public static <T> T createDefaultInstance(
             ClassLoader cl, Class<T> targetType, String className)
-                throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         Class<?> instanceType = cl.loadClass(className);
         Object instance = instanceType.newInstance();
         return targetType.cast(instance);
@@ -92,7 +90,7 @@ public final class ThreadUtils {
 
     public static <T> T createDefaultInstance(
             Iterable<? extends ClassLoader> cls, Class<T> targetType, String className)
-                throws ReflectiveOperationException {
+            throws ReflectiveOperationException {
         for (ClassLoader cl : cls) {
             try {
                 return createDefaultInstance(cl, targetType, className);
@@ -104,28 +102,34 @@ public final class ThreadUtils {
     }
 
     /**
-     * <P>Attempts to find the most suitable {@link ClassLoader} as follows:</P>
+     * <P>
+     * Attempts to find the most suitable {@link ClassLoader} as follows:
+     * </P>
      * <UL>
-     *      <LI><P>
-     *      Check the {@link Thread#getContextClassLoader()} value
-     *      </P></LI>
+     * <LI>
+     * <P>
+     * Check the {@link Thread#getContextClassLoader()} value
+     * </P>
+     * </LI>
      *
-     *      <LI><P>
-     *      If no thread context class loader then check the anchor
-     *      class (if given) for its class loader
-     *      </P></LI>
+     * <LI>
+     * <P>
+     * If no thread context class loader then check the anchor class (if given) for its class loader
+     * </P>
+     * </LI>
      *
-     *      <LI><P>
-     *      If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
-     *      </P></LI>
+     * <LI>
+     * <P>
+     * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
+     * </P>
+     * </LI>
      * </UL>
      *
-     * @param anchor The anchor {@link Class} to use if no current thread context
-     * class loader - ignored if {@code null}
+     * @param  anchor The anchor {@link Class} to use if no current thread context class loader - ignored if
+     *                {@code null}
      *
-     * @return The resolved {@link ClassLoader} - <B>Note:</B> might still be {@code null}
-     * if went all the way &quot;down&quot; to the system class loader and it was also
-     * {@code null}.
+     * @return        The resolved {@link ClassLoader} - <B>Note:</B> might still be {@code null} if went all the way
+     *                &quot;down&quot; to the system class loader and it was also {@code null}.
      */
     public static ClassLoader resolveDefaultClassLoader(Class<?> anchor) {
         Thread thread = Thread.currentThread();
@@ -138,7 +142,7 @@ public final class ThreadUtils {
             cl = anchor.getClassLoader();
         }
 
-        if (cl == null) {   // can happen for core Java classes
+        if (cl == null) { // can happen for core Java classes
             cl = ClassLoader.getSystemClassLoader();
         }
 
@@ -149,15 +153,14 @@ public final class ThreadUtils {
         Class<?> effectiveAnchor = (anchor == null) ? ThreadUtils.class : anchor;
         return new Iterator<ClassLoader>() {
             @SuppressWarnings({ "unchecked", "checkstyle:Indentation" })
-            private final Supplier<? extends ClassLoader>[] suppliers =
-                new Supplier[] {
+            private final Supplier<? extends ClassLoader>[] suppliers = new Supplier[] {
                     () -> {
                         Thread thread = Thread.currentThread();
                         return thread.getContextClassLoader();
                     },
                     () -> effectiveAnchor.getClassLoader(),
                     ClassLoader::getSystemClassLoader
-                };
+            };
 
             private int index;
 

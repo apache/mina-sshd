@@ -37,9 +37,10 @@ public class AbstractDHTest extends BaseTestSupport {
 
     @Test
     public void testStripLeadingZeroes() {
-        byte[] data = {3, 7, 7, 3, 4, 7};
+        byte[] data = { 3, 7, 7, 3, 4, 7 };
         for (int index = 1; index <= data.length; index++) {
-            assertSame("Unexpected sub-array generation for " + Arrays.toString(data), data, AbstractDH.stripLeadingZeroes(data));
+            assertSame("Unexpected sub-array generation for " + Arrays.toString(data), data,
+                    AbstractDH.stripLeadingZeroes(data));
             if (index < data.length) {
                 data[index] = 0;
             }

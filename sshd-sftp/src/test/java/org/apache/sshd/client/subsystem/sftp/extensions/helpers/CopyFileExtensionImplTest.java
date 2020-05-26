@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
@@ -57,7 +56,7 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
     public void testCopyFileExtension() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-            SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
@@ -73,10 +72,9 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);

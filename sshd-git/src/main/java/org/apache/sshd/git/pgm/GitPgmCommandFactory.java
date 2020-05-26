@@ -18,9 +18,12 @@
  */
 package org.apache.sshd.git.pgm;
 
+import java.util.function.Supplier;
+
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.git.AbstractGitCommandFactory;
 import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.git.pack.GitPackCommandFactory;
 import org.apache.sshd.server.command.CommandFactory;
 
 /**
@@ -52,12 +55,14 @@ public class GitPgmCommandFactory extends AbstractGitCommandFactory {
     }
 
     @Override
-    public GitPgmCommandFactory withExecutorService(CloseableExecutorService executorService) {
-        return (GitPgmCommandFactory) super.withExecutorService(executorService);
+    public GitPackCommandFactory withExecutorServiceProvider(
+            Supplier<? extends CloseableExecutorService> provider) {
+        return (GitPackCommandFactory) super.withExecutorServiceProvider(provider);
     }
 
     @Override
     public GitPgmCommand createGitCommand(String command) {
-        return new GitPgmCommand(getGitLocationResolver(), command.substring(GIT_COMMAND_PREFIX.length()), getExecutorService());
+        String rawCommand = command.substring(GIT_COMMAND_PREFIX.length());
+        return new GitPgmCommand(getGitLocationResolver(), rawCommand, resolveExecutorService(command));
     }
 }

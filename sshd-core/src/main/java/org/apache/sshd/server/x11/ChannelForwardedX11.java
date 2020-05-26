@@ -65,7 +65,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         Window wLocal = getLocalWindow();
         String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
-            remoteHost.length() + type.length() + Integer.SIZE);
+                remoteHost.length() + type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putInt(getId());
         buffer.putInt(wLocal.getSize());
@@ -80,11 +80,11 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     protected synchronized void doOpen() throws IOException {
         if (Streaming.Async.equals(streaming)) {
             throw new IllegalArgumentException(
-                "Asynchronous streaming isn't supported yet on this channel");
+                    "Asynchronous streaming isn't supported yet on this channel");
         }
 
         out = new ChannelOutputStream(
-            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
+                this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
         invertedIn = out;
     }
 
@@ -96,7 +96,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     @Override
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-            "Data length exceeds int boundaries: %d", len);
+                "Data length exceeds int boundaries: %d", len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
         // use a clone in case data buffer is re-used

@@ -34,17 +34,17 @@ public class BaseRC4Cipher extends BaseCipher {
 
     @Override
     protected byte[] initializeIVData(Mode mode, byte[] iv, int reqLen) {
-        return iv;  // not used in any way
+        return iv; // not used in any way
     }
 
     @Override
     protected javax.crypto.Cipher createCipherInstance(Mode mode, byte[] key, byte[] iv) throws Exception {
         javax.crypto.Cipher instance = SecurityUtils.getCipher(getTransformation());
         instance.init(
-            Mode.Encrypt.equals(mode)
-                ? javax.crypto.Cipher.ENCRYPT_MODE
-                : javax.crypto.Cipher.DECRYPT_MODE,
-            new SecretKeySpec(key, getAlgorithm()));
+                Mode.Encrypt.equals(mode)
+                        ? javax.crypto.Cipher.ENCRYPT_MODE
+                        : javax.crypto.Cipher.DECRYPT_MODE,
+                new SecretKeySpec(key, getAlgorithm()));
 
         byte[] foo = new byte[1];
         for (int i = 0; i < SKIP_SIZE; i++) {

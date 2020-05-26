@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.SshdEventListener;
 public interface SignalListener extends SshdEventListener {
     /**
      * @param channel The {@link Channel} through which the signal was received
-     * @param signal The received {@link Signal}
+     * @param signal  The received {@link Signal}
      */
     void signal(Channel channel, Signal signal);
 

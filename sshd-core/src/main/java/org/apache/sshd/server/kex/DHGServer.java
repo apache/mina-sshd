@@ -70,8 +70,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
             @Override
             public String toString() {
                 return NamedFactory.class.getSimpleName()
-                    + "<" + KeyExchange.class.getSimpleName() + ">"
-                    + "[" + getName() + "]";
+                       + "<" + KeyExchange.class.getSimpleName() + ">"
+                       + "[" + getName() + "]";
             }
         };
     }
@@ -90,12 +90,13 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("next({})[{}] process command={}",
-                this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
+                    this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
+            throw new SshException(
+                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 
         e = buffer.getMPIntAsBytes();
@@ -104,10 +105,11 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+
         Signature sig = ValidateUtils.checkNotNull(
-            NamedFactory.create(session.getSignatureFactories(), algo),
-            "Unknown negotiated server keys: %s", algo);
-        sig.initSigner(kp.getPrivate());
+                NamedFactory.create(session.getSignatureFactories(), algo),
+                "Unknown negotiated server keys: %s", algo);
+        sig.initSigner(session, kp.getPrivate());
 
         buffer = new ByteArrayBuffer();
         buffer.putRawPublicKey(kp.getPublic());
@@ -124,11 +126,11 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putMPInt(k);
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
-        sig.update(h);
+        sig.update(session, h);
 
         buffer.clear();
         buffer.putString(algo);
-        byte[] sigBytes = sig.sign();
+        byte[] sigBytes = sig.sign(session);
         buffer.putBytes(sigBytes);
 
         byte[] sigH = buffer.getCompactData();

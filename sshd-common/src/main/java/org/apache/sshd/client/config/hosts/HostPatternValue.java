@@ -26,9 +26,11 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Represents a pattern definition in the <U>known_hosts</U> file
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#About_the_Contents_of_the_known_hosts_Files">
- * OpenSSH cookbook - About the Contents of the known hosts Files</A>
+ * @see    <A HREF=
+ *         "https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#About_the_Contents_of_the_known_hosts_Files">
+ *         OpenSSH cookbook - About the Contents of the known hosts Files</A>
  */
 public class HostPatternValue {
     private Pattern pattern;
@@ -86,8 +88,10 @@ public class HostPatternValue {
         try {
             KnownHostHashValue.appendHostPattern(sb, purePattern, portValue);
         } catch (IOException e) {
-            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
-                + " to append host pattern of " + purePattern + ":" + portValue + ": " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Unexpected (" + e.getClass().getSimpleName() + ") failure"
+                                       + " to append host pattern of " + purePattern + ":" + portValue + ": " + e.getMessage(),
+                    e);
         }
 
         return sb.toString();

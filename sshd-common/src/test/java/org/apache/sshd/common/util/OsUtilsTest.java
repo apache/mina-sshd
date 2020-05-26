@@ -41,7 +41,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetOsTypeByProperty() {
         try {
-            for (String osType : new String[]{"Some-Windows", "Some-Linux"}) {
+            for (String osType : new String[] { "Some-Windows", "Some-Linux" }) {
                 OsUtils.setWin32(null); // force re-detection
 
                 try {
@@ -61,7 +61,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetOsTypeProgrammatically() {
         try {
-            for (boolean expected : new boolean[]{true, false}) {
+            for (boolean expected : new boolean[] { true, false }) {
                 OsUtils.setWin32(expected); // force value
                 assertEquals("Mismatched detection value", expected, OsUtils.isWin32());
             }
@@ -73,7 +73,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetCurrentUserByProperty() {
         try {
-            for (String expected : new String[]{getClass().getSimpleName(), getCurrentTestName()}) {
+            for (String expected : new String[] { getClass().getSimpleName(), getCurrentTestName() }) {
                 OsUtils.setCurrentUser(null); // force re-detection
 
                 try {
@@ -92,7 +92,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetCurrentUserProgrammatically() {
         try {
-            for (String expected : new String[]{getClass().getSimpleName(), getCurrentTestName()}) {
+            for (String expected : new String[] { getClass().getSimpleName(), getCurrentTestName() }) {
                 OsUtils.setCurrentUser(expected); // force value
                 assertEquals("Mismatched detection value", expected, OsUtils.getCurrentUser());
             }
@@ -104,7 +104,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetJavaVersionByProperty() {
         try {
-            for (String value : new String[]{"7.3.6_5", "37.77.34_7-" + getCurrentTestName()}) {
+            for (String value : new String[] { "7.3.6_5", "37.77.34_7-" + getCurrentTestName() }) {
                 OsUtils.setJavaVersion(null); // force re-detection
 
                 try {
@@ -124,7 +124,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     @Test
     public void testSetJavaVersionProgrammatically() {
         try {
-            for (VersionInfo expected : new VersionInfo[]{VersionInfo.parse("7.3.6.5"), VersionInfo.parse("37.77.34.7")}) {
+            for (VersionInfo expected : new VersionInfo[] { VersionInfo.parse("7.3.6.5"), VersionInfo.parse("37.77.34.7") }) {
                 OsUtils.setJavaVersion(expected); // force value
                 assertEquals("Mismatched detection value", expected, OsUtils.getJavaVersion());
             }

@@ -28,13 +28,12 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html"><I>LogLevel</I> configuration value</A>
+ * @see    <A HREF="http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html"><I>LogLevel</I>
+ *         configuration value</A>
  */
 public enum LogLevelValue {
     /*
-     * NOTE(s):
-     * 1. DEBUG and DEBUG1 are EQUIVALENT
-     * 2. Order is important (!!!)
+     * NOTE(s): 1. DEBUG and DEBUG1 are EQUIVALENT 2. Order is important (!!!)
      */
     QUIET(Level.OFF),
     FATAL(Level.SEVERE),
@@ -46,8 +45,7 @@ public enum LogLevelValue {
     DEBUG2(Level.FINER),
     DEBUG3(Level.FINEST);
 
-    public static final Set<LogLevelValue> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
+    public static final Set<LogLevelValue> VALUES = Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
 
     private final Level level;
 

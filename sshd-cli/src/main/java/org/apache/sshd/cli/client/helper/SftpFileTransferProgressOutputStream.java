@@ -40,7 +40,7 @@ public class SftpFileTransferProgressOutputStream extends FilterOutputStream {
     private final char markerChar;
     private final int markersPerLine;
     private final Appendable stdout;
-    private final byte[] workBuf = {0};
+    private final byte[] workBuf = { 0 };
     private long byteCount;
     private long lastMarkOffset;
     private int curMarkersInLine;
@@ -50,7 +50,8 @@ public class SftpFileTransferProgressOutputStream extends FilterOutputStream {
     }
 
     public SftpFileTransferProgressOutputStream(
-            OutputStream out, int markerSize, char markerChar, int markersPerLine, Appendable stdout) {
+                                                OutputStream out, int markerSize, char markerChar, int markersPerLine,
+                                                Appendable stdout) {
         super(Objects.requireNonNull(out, "No target stream"));
 
         ValidateUtils.checkTrue(markerSize > 0, "Invalid marker size: %d", markerSize);

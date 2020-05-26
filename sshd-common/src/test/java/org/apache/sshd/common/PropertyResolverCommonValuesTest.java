@@ -42,7 +42,7 @@ public class PropertyResolverCommonValuesTest extends JUnitTestSupport {
 
     @Test
     public void testToBooleanOnNonBooleanValues() {
-        for (Object v : new Object[] {1, 2L, 3.0f, 4.0d, new Date(), Calendar.class, TimeUnit.DAYS}) {
+        for (Object v : new Object[] { 1, 2L, 3.0f, 4.0d, new Date(), Calendar.class, TimeUnit.DAYS }) {
             try {
                 Boolean result = PropertyResolverUtils.toBoolean(v);
                 fail("Unexpected success for value=" + v + ": " + result);
@@ -54,7 +54,7 @@ public class PropertyResolverCommonValuesTest extends JUnitTestSupport {
 
     @Test
     public void testParseBooleanOnNonBooleanValues() {
-        for (String v : new String[] {getCurrentTestName(), "0", "1"}) {
+        for (String v : new String[] { getCurrentTestName(), "0", "1" }) {
             try {
                 Boolean result = PropertyResolverUtils.parseBoolean(v);
                 fail("Unexpected success for value=" + v + ": " + result);

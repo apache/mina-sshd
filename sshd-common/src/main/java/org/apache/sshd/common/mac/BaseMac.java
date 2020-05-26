@@ -33,29 +33,36 @@ public class BaseMac implements Mac {
     private final int defbsize;
     private final int bsize;
     private final byte[] tmp;
+    private final boolean etmMode;
     private javax.crypto.Mac mac;
     private String s;
 
-    public BaseMac(String algorithm, int bsize, int defbsize) {
+    public BaseMac(String algorithm, int bsize, int defbsize, boolean etmMode) {
         this.algorithm = algorithm;
         this.bsize = bsize;
         this.defbsize = defbsize;
         this.tmp = new byte[defbsize];
+        this.etmMode = etmMode;
     }
 
     @Override
-    public final String getAlgorithm() {
+    public String getAlgorithm() {
         return algorithm;
     }
 
     @Override
-    public final int getBlockSize() {
+    public int getBlockSize() {
         return bsize;
     }
 
     @Override
-    public final int getDefaultBlockSize() {
+    public int getDefaultBlockSize() {
         return defbsize;
+    }
+
+    @Override
+    public boolean isEncryptThenMac() {
+        return etmMode;
     }
 
     @Override
@@ -102,7 +109,8 @@ public class BaseMac implements Mac {
         synchronized (this) {
             if (s == null) {
                 s = getClass().getSimpleName() + "[" + getAlgorithm() + "] - "
-                    + " block=" + getBlockSize() + "/" + getDefaultBlockSize() + " bytes";
+                    + " block=" + getBlockSize() + "/" + getDefaultBlockSize() + " bytes"
+                    + ", encrypt-then-mac=" + isEncryptThenMac();
             }
         }
 

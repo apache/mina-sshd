@@ -27,7 +27,9 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
  * Implements the &quot;statvfs@openssh.com&quot; extension command
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH section 3.4</A>
+ * @see    <A HREF=
+ *         "http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH
+ *         section 3.4</A>
  */
 public interface OpenSSHStatPathExtension extends SftpClientExtension {
     OpenSSHStatExtensionInfo stat(String path) throws IOException;

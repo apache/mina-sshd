@@ -50,7 +50,8 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
     public void testConfigFileReload() throws IOException {
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         AtomicInteger reloadCount = new AtomicInteger();
-        ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".config.txt")) {
+        ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(
+                assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".config.txt")) {
             @Override
             protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
                     throws IOException {
@@ -64,7 +65,8 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
         testConfigFileReload("Non-existing", path, reloadCount, null, resolver, expected, null);
         testConfigFileReload("Empty", path, reloadCount, Collections.emptyList(), resolver, expected, null);
         testConfigFileReload("Global", path, reloadCount,
-                Collections.singletonList(new HostConfigEntry(HostPatternsHolder.ALL_HOSTS_PATTERN, expected.getHost(), expected.getPort(), expected.getUsername())),
+                Collections.singletonList(new HostConfigEntry(
+                        HostPatternsHolder.ALL_HOSTS_PATTERN, expected.getHost(), expected.getPort(), expected.getUsername())),
                 resolver, expected, expected);
         testConfigFileReload("Wildcard", path, reloadCount,
                 Arrays.asList(
@@ -101,7 +103,7 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
             HostConfigEntryResolver resolver,
             HostConfigEntry query,
             HostConfigEntry expected)
-                    throws IOException {
+            throws IOException {
         if (entries == null) {
             if (Files.exists(path)) {
                 Files.delete(path);
@@ -113,8 +115,8 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
         reloadCount.set(0);
 
         for (int index = 1; index < Byte.SIZE; index++) {
-            HostConfigEntry actual =
-                resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), null, query.getUsername(), null);
+            HostConfigEntry actual
+                    = resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), null, query.getUsername(), null);
 
             if (entries == null) {
                 assertEquals(phase + "[" + index + "]: mismatched reload count", 0, reloadCount.get());

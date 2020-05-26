@@ -46,8 +46,8 @@ import org.apache.tomcat.jni.Status;
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
     /**
-     * Property that can be set on the factory manager in order to control
-     * the buffer size used to forward data from the established channel
+     * Property that can be set on the factory manager in order to control the buffer size used to forward data from the
+     * established channel
      *
      * @see #MIN_FORWARDER_BUF_SIZE
      * @see #MAX_FORWARDER_BUF_SIZE
@@ -84,14 +84,14 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
             CloseableExecutorService service = getExecutorService();
             forwardService = (service == null)
-                ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
-                : ThreadUtils.noClose(service);
+                    ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
+                    : ThreadUtils.noClose(service);
 
             int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE,
-                "Copy buf size below min.: %d", copyBufSize);
+                    "Copy buf size below min.: %d", copyBufSize);
             ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE,
-                "Copy buf size above max.: %d", copyBufSize);
+                    "Copy buf size above max.: %d", copyBufSize);
 
             forwarder = forwardService.submit(() -> {
                 try {
@@ -153,15 +153,15 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .close(super.getInnerCloseable())
-            .run(toString(), this::closeImmediately0)
-            .build();
+                .close(super.getInnerCloseable())
+                .run(toString(), this::closeImmediately0)
+                .build();
     }
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-            "Data length exceeds int boundaries: %d", len);
+                "Data length exceeds int boundaries: %d", len);
         int result = Socket.send(handle, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {
             throwException(result);
@@ -171,13 +171,13 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(
-            "AgentForward channel does not support extended data");
+                "AgentForward channel does not support extended data");
     }
 
     /**
      * transform an APR error number in a more fancy exception
      *
-     * @param code APR error code
+     * @param  code                APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     private static void throwException(int code) throws IOException {

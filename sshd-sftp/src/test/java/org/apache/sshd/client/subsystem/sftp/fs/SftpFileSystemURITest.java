@@ -49,7 +49,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class SftpFileSystemURITest extends JUnitTestSupport {
@@ -74,21 +74,24 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
             private static final long serialVersionUID = 1L;
 
             {
-                add(new Object[] {SshdSocketAddress.LOCALHOST_NAME, 0, "user", "password", null});
-                add(new Object[] {"37.77.34.7", 2222, "user", "password", Collections.singletonMap("non-default-port", true)});
-                add(new Object[] {SshdSocketAddress.LOCALHOST_NAME, SshConstants.DEFAULT_PORT, "J@ck", "d@Ripper", new HashMap<String, Object>() {
-                        // not serializing it
-                        private static final long serialVersionUID = 1L;
+                add(new Object[] { SshdSocketAddress.LOCALHOST_NAME, 0, "user", "password", null });
+                add(new Object[] {
+                        "37.77.34.7", 2222, "user", "password", Collections.singletonMap("non-default-port", true) });
+                add(new Object[] {
+                        SshdSocketAddress.LOCALHOST_NAME, SshConstants.DEFAULT_PORT, "J@ck", "d@Ripper",
+                        new HashMap<String, Object>() {
+                            // not serializing it
+                            private static final long serialVersionUID = 1L;
 
-                        {
-                            put("param1", "1st");
-                            put("param2", 2);
-                            put("param3", false);
+                            {
+                                put("param1", "1st");
+                                put("param2", 2);
+                                put("param3", false);
+                            }
                         }
-                    }
                 });
-                add(new Object[] {"19.65.7.3", 0, "J%ck", "d%Ripper", null});
-                add(new Object[] {"19.65.7.3", 0, "user", null, null});
+                add(new Object[] { "19.65.7.3", 0, "J%ck", "d%Ripper", null });
+                add(new Object[] { "19.65.7.3", 0, "user", null, null });
             }
         };
     }
@@ -121,11 +124,11 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[host=" + host
-            + ", port=" + port
-            + ", username=" + username
-            + ", password=" + password
-            + ", params=" + params
-            + "]";
+               + "[host=" + host
+               + ", port=" + port
+               + ", username=" + username
+               + ", password=" + password
+               + ", params=" + params
+               + "]";
     }
 }

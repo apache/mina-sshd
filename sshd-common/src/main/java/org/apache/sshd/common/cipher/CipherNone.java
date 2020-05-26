@@ -19,10 +19,8 @@
 package org.apache.sshd.common.cipher;
 
 /**
- * Represents a no-op cipher.
- * This cipher can not really be used during authentication and should only
- * be used after, so that authentication remains secured, but not the remaining
- * of the exchanges.
+ * Represents a no-op cipher. This cipher can not really be used during authentication and should only be used after, so
+ * that authentication remains secured, but not the remaining of the exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -48,17 +46,17 @@ public class CipherNone implements Cipher {
 
     @Override
     public int getIVSize() {
-        return 8;   // dummy - not zero in order to avoid some code that uses it as divisor
+        return 8; // dummy - not zero in order to avoid some code that uses it as divisor
     }
 
     @Override
     public int getKdfSize() {
-        return 16;   // dummy - not zero in order to avoid some code that uses it as divisor
+        return 16; // dummy - not zero in order to avoid some code that uses it as divisor
     }
 
     @Override
     public int getCipherBlockSize() {
-        return 8;   // dummy - not zero in order to avoid some code that uses it as divisor
+        return 8; // dummy - not zero in order to avoid some code that uses it as divisor
     }
 
     @Override

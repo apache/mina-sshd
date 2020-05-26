@@ -34,9 +34,8 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
- * Monitors the {@code ~/.ssh/known_hosts} file of the user currently running
- * the client, updating and re-loading it if necessary. It also (optionally)
- * enforces the same permissions regime as {@code OpenSSH}.
+ * Monitors the {@code ~/.ssh/known_hosts} file of the user currently running the client, updating and re-loading it if
+ * necessary. It also (optionally) enforces the same permissions regime as {@code OpenSSH}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -61,10 +60,9 @@ public class DefaultKnownHostsServerKeyVerifier extends KnownHostsServerKeyVerif
     }
 
     /**
-     * @return If {@code true} then makes sure that the containing folder
-     * has 0700 access and the file 0644. <B>Note:</B> for <I>Windows</I> it
-     * does not check these permissions
-     * @see #validateStrictConfigFilePermissions(Path, LinkOption...)
+     * @return If {@code true} then makes sure that the containing folder has 0700 access and the file 0644.
+     *         <B>Note:</B> for <I>Windows</I> it does not check these permissions
+     * @see    #validateStrictConfigFilePermissions(Path, LinkOption...)
      */
     public final boolean isStrict() {
         return strict;

@@ -54,7 +54,7 @@ public class BufferTest extends JUnitTestSupport {
     @Test
     public void testPutCharsWithNullOrEmptyValue() {
         Buffer buffer = new ByteArrayBuffer(Integer.SIZE);
-        for (char[] chars : new char[][]{null, GenericUtils.EMPTY_CHAR_ARRAY}) {
+        for (char[] chars : new char[][] { null, GenericUtils.EMPTY_CHAR_ARRAY }) {
             buffer.putChars(chars);
 
             String value = buffer.getString();

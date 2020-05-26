@@ -39,7 +39,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KnownHostHashValueTest extends JUnitTestSupport {
@@ -58,15 +58,17 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
     @Parameters(name = "host={0}, hash={1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(
-            // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
-            new Object[]{"localhost", 10022,
-                "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg="},
-            // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
-            new Object[]{"localhost", SshConstants.DEFAULT_PORT,
-                "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ="},
-            new Object[]{"192.168.1.61", SshConstants.DEFAULT_PORT,
-                "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg="}
-        );
+                // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
+                new Object[] {
+                        "localhost", 10022,
+                        "|1|qhjoqX12EcnwZO3KNbpoFbxrdYE=|J+voEFzRbRL49TiHV+jbUfaS+kg=" },
+                // line generated `ssh xenon@localhost hostname` (SSH-2.0-OpenSSH_7.5)
+                new Object[] {
+                        "localhost", SshConstants.DEFAULT_PORT,
+                        "|1|vLQs+atPgodQmPes21ZaMSgLD0s=|A2K2Ym0ZPtQmD8kB3FVViQvQ7qQ=" },
+                new Object[] {
+                        "192.168.1.61", SshConstants.DEFAULT_PORT,
+                        "|1|F1E1KeoE/eEWhi10WpGv4OdiO6Y=|3988QV0VE8wmZL7suNrYQLITLCg=" });
     }
 
     @Test
@@ -85,16 +87,16 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
     public void testCalculateHashValue() throws Exception {
         byte[] expected = hash.getDigestValue();
         byte[] actual = KnownHostHashValue.calculateHashValue(
-            hostName, port, hash.getDigester(), hash.getSaltValue());
+                hostName, port, hash.getDigester(), hash.getSaltValue());
         assertArrayEquals("Mismatched hash value", expected, actual);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[host=" + hostName
-            + ", port=" + port
-            + ", hashValue=" + hashValue
-            + "]";
+               + "[host=" + hostName
+               + ", port=" + port
+               + ", hashValue=" + hashValue
+               + "]";
     }
 }

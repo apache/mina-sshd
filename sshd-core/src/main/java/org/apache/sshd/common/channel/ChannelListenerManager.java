@@ -38,9 +38,8 @@ public interface ChannelListenerManager {
     void removeChannelListener(ChannelListener listener);
 
     /**
-     * @return A (never {@code null} proxy {@link ChannelListener} that represents
-     * all the currently registered listeners. Any method invocation on the proxy
-     * is replicated to the currently registered listeners
+     * @return A (never {@code null} proxy {@link ChannelListener} that represents all the currently registered
+     *         listeners. Any method invocation on the proxy is replicated to the currently registered listeners
      */
     ChannelListener getChannelListenerProxy();
 

@@ -32,11 +32,10 @@ import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 public class LocalAgentFactory implements SshAgentFactory {
-    public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS =
-        Collections.unmodifiableList(
+    public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS = Collections.unmodifiableList(
             Arrays.asList(
-                ChannelAgentForwardingFactory.OPENSSH,
-                ChannelAgentForwardingFactory.IETF));
+                    ChannelAgentForwardingFactory.OPENSSH,
+                    ChannelAgentForwardingFactory.IETF));
 
     private final SshAgent agent;
 

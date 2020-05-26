@@ -37,8 +37,8 @@ import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.common.util.io.resource.PathResource;
 
 /**
- * A {@link ClientIdentityProvider} that watches a given key file re-loading
- * its contents if it is ever modified, deleted or (re-)created
+ * A {@link ClientIdentityProvider} that watches a given key file re-loading its contents if it is ever modified,
+ * deleted or (re-)created
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -62,12 +62,13 @@ public class ClientIdentityFileWatcher
     }
 
     public ClientIdentityFileWatcher(
-            Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
+                                     Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(path, loader, provider, true);
     }
 
     public ClientIdentityFileWatcher(
-            Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+                                     Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+                                     boolean strict) {
         super(path);
         this.loaderHolder = Objects.requireNonNull(loader, "No client identity loader");
         this.providerHolder = Objects.requireNonNull(provider, "No password provider");
@@ -95,7 +96,7 @@ public class ClientIdentityFileWatcher
             return identitiesHolder.get();
         }
 
-        Iterable<KeyPair> kp = identitiesHolder.getAndSet(null);     // start fresh
+        Iterable<KeyPair> kp = identitiesHolder.getAndSet(null); // start fresh
         Path path = getPath();
         if (!exists()) {
             return identitiesHolder.get();
@@ -110,8 +111,7 @@ public class ClientIdentityFileWatcher
     protected Iterable<KeyPair> reloadClientIdentities(SessionContext session, Path path)
             throws IOException, GeneralSecurityException {
         if (isStrict()) {
-            Map.Entry<String, Object> violation =
-                KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
+            Map.Entry<String, Object> violation = KeyUtils.validateStrictKeyFilePermissions(path, IoUtils.EMPTY_LINK_OPTIONS);
             if (violation != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("reloadClientIdentity({}) ignore due to {}", path, violation.getKey());
@@ -132,7 +132,7 @@ public class ClientIdentityFileWatcher
                         PublicKey key = (kp == null) ? null : kp.getPublic();
                         if (key != null) {
                             log.trace("reloadClientIdentity({}) loaded {}-{}",
-                                location, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                                    location, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
                         }
                     }
                 }

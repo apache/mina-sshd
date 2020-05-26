@@ -6,6 +6,9 @@ Servers/
 RemoteSystemsTempFiles/
 .classpath
 .project
+# Puthon related files
+.pydevproject
+*.pyc
 .checkstyle
 .eclipse-pmd
 .pmd
@@ -15,6 +18,14 @@ RemoteSystemsTempFiles/
 .idea
 .springBeans
 .externalToolBuilders
+
+# Pre-release temporary files
+*.releaseBackup
+release.properties
+
+# VS Code
+.vscode/
+*.code-workspace
 
 # Serialized objects
 *.ser

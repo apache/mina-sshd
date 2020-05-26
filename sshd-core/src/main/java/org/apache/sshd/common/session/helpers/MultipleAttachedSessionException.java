@@ -19,8 +19,9 @@
 package org.apache.sshd.common.session.helpers;
 
 /**
- * Special exception thrown by {@link AbstractSession#attachSession(org.apache.sshd.common.io.IoSession, AbstractSession)}
- * in order to indicate an already attached I/O session
+ * Special exception thrown by
+ * {@link AbstractSession#attachSession(org.apache.sshd.common.io.IoSession, AbstractSession)} in order to indicate an
+ * already attached I/O session
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

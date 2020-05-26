@@ -67,7 +67,8 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
     @Test
     public void testMultipleFilesWatch() throws Exception {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
-        String keyType = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
+        String keyType
+                = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
 
         Path dir = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
         Map<BuiltinIdentities, Path> locationsMap = new EnumMap<>(BuiltinIdentities.class);
@@ -83,7 +84,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 BuiltinIdentities id = findIdentity(location);
                 assertNotNull("Invalid location: " + location, id);
                 KeyPair kp = idsMap.get(id);
@@ -142,7 +143,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
     private static void touchIdentityFile(Path idFile) throws IOException {
         OpenOption[] options = IoUtils.EMPTY_OPEN_OPTIONS;
         if (Files.exists(idFile, IoUtils.EMPTY_LINK_OPTIONS)) {
-            options = new OpenOption[]{StandardOpenOption.WRITE, StandardOpenOption.APPEND};
+            options = new OpenOption[] { StandardOpenOption.WRITE, StandardOpenOption.APPEND };
         }
 
         try (OutputStream out = Files.newOutputStream(idFile, options)) {
@@ -153,7 +154,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
 
     private static void testMultipleFilesWatch(
             String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         Iterable<KeyPair> keys = watcher.loadKeys(null);
         Collection<KeyPair> actual = new ArrayList<>();
         for (KeyPair kp : keys) {

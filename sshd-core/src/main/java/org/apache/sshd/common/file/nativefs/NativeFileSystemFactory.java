@@ -64,7 +64,7 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
      * Set the root location where users home is to be created
      *
      * @param usersHomeDir The root location where users home is to be created - never {@code null}/empty.
-     * @see #isCreateHome()
+     * @see                #isCreateHome()
      */
     public void setUsersHomeDir(String usersHomeDir) {
         this.usersHomeDir = ValidateUtils.checkNotNullAndNotEmpty(usersHomeDir, "No users home dir");
@@ -82,9 +82,8 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
     /**
      * Set if the home directories be created automatically
      *
-     * @param createHome {@code true} if the file system should create the home directory
-     * automatically if not available
-     * @see #getUsersHomeDir()
+     * @param createHome {@code true} if the file system should create the home directory automatically if not available
+     * @see              #getUsersHomeDir()
      */
     public void setCreateHome(boolean createHome) {
         this.createHome = createHome;

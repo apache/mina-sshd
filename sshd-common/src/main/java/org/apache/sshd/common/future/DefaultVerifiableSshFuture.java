@@ -20,8 +20,8 @@
 package org.apache.sshd.common.future;
 
 /**
- * @param <T> Type of future
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of future
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class DefaultVerifiableSshFuture<T extends SshFuture>
         extends DefaultSshFuture<T>

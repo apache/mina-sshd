@@ -44,10 +44,13 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public interface ClientIdentityLoader {
     /**
-     * <P>A default implementation that assumes a file location that <U>must</U> exist.</P>
+     * <P>
+     * A default implementation that assumes a file location that <U>must</U> exist.
+     * </P>
      *
      * <P>
-     * <B>Note:</B> It calls {@link SecurityUtils#loadKeyPairIdentities(SessionContext, NamedResource, InputStream, FilePasswordProvider)}
+     * <B>Note:</B> It calls
+     * {@link SecurityUtils#loadKeyPairIdentities(SessionContext, NamedResource, InputStream, FilePasswordProvider)}
      * </P>
      */
     ClientIdentityLoader DEFAULT = new ClientIdentityLoader() {
@@ -60,7 +63,7 @@ public interface ClientIdentityLoader {
         @Override
         public Iterable<KeyPair> loadClientIdentities(
                 SessionContext session, NamedResource location, FilePasswordProvider provider)
-                    throws IOException, GeneralSecurityException {
+                throws IOException, GeneralSecurityException {
             Path path = toPath(location);
             PathResource resource = new PathResource(path);
             try (InputStream inputStream = resource.openInputStream()) {
@@ -76,7 +79,8 @@ public interface ClientIdentityLoader {
         private Path toPath(NamedResource location) {
             Objects.requireNonNull(location, "No location provided");
 
-            Path path = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(location.getName(), "No location value for %s", location));
+            Path path = Paths
+                    .get(ValidateUtils.checkNotNullAndNotEmpty(location.getName(), "No location value for %s", location));
             path = path.toAbsolutePath();
             path = path.normalize();
             return path;
@@ -84,47 +88,45 @@ public interface ClientIdentityLoader {
     };
 
     /**
-     * @param location The identity key-pair location - the actual meaning (file, URL, etc.)
-     * depends on the implementation.
-     * @return {@code true} if it represents a valid location - the actual meaning of
-     * the validity depends on the implementation
+     * @param  location    The identity key-pair location - the actual meaning (file, URL, etc.) depends on the
+     *                     implementation.
+     * @return             {@code true} if it represents a valid location - the actual meaning of the validity depends
+     *                     on the implementation
      * @throws IOException If failed to validate the location
      */
     boolean isValidLocation(NamedResource location) throws IOException;
 
     /**
-     * @param session The {@link SessionContext} for invoking this load command - may
-     * be {@code null} if not invoked within a session context (e.g., offline tool).
-     * @param location The identity key-pair location - the actual meaning (file, URL, etc.)
-     * depends on the implementation.
-     * @param provider The {@link FilePasswordProvider} to consult if the location contains
-     * an encrypted identity
-     * @return The loaded {@link KeyPair} - {@code null} if location is empty
-     * and it is OK that it does not exist
-     * @throws IOException If failed to access / process the remote location
-     * @throws GeneralSecurityException If failed to convert the contents into
-     * a valid identity
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @param  location                 The identity key-pair location - the actual meaning (file, URL, etc.) depends on
+     *                                  the implementation.
+     * @param  provider                 The {@link FilePasswordProvider} to consult if the location contains an
+     *                                  encrypted identity
+     * @return                          The loaded {@link KeyPair} - {@code null} if location is empty and it is OK that
+     *                                  it does not exist
+     * @throws IOException              If failed to access / process the remote location
+     * @throws GeneralSecurityException If failed to convert the contents into a valid identity
      */
     Iterable<KeyPair> loadClientIdentities(
-        SessionContext session, NamedResource location, FilePasswordProvider provider)
+            SessionContext session, NamedResource location, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException;
 
     /**
      * Uses the provided {@link ClientIdentityLoader} to <U>lazy</U> load the keys locations
      *
-     * @param loader The loader instance to use
-     * @param locations The locations to load - ignored if {@code null}/empty
-     * @param passwordProvider The {@link FilePasswordProvider} to use if any
-     * encrypted keys found
-     * @param ignoreNonExisting Whether to ignore non existing locations as indicated
-     * by {@link #isValidLocation(NamedResource)}
-     * @return The {@link KeyIdentityProvider} wrapper
+     * @param  loader            The loader instance to use
+     * @param  locations         The locations to load - ignored if {@code null}/empty
+     * @param  passwordProvider  The {@link FilePasswordProvider} to use if any encrypted keys found
+     * @param  ignoreNonExisting Whether to ignore non existing locations as indicated by
+     *                           {@link #isValidLocation(NamedResource)}
+     * @return                   The {@link KeyIdentityProvider} wrapper
      */
     static KeyIdentityProvider asKeyIdentityProvider(
             ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
             FilePasswordProvider passwordProvider, boolean ignoreNonExisting) {
         return GenericUtils.isEmpty(locations)
-            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-            : new LazyClientKeyIdentityProvider(loader, locations, passwordProvider, ignoreNonExisting);
+                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+                : new LazyClientKeyIdentityProvider(loader, locations, passwordProvider, ignoreNonExisting);
     }
 }

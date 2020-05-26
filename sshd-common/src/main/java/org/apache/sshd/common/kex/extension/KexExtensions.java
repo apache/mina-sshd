@@ -59,43 +59,40 @@ public final class KexExtensions {
     public static final String SERVER_KEX_EXTENSION = "ext-info-s";
 
     @SuppressWarnings("checkstyle:Indentation")
-    public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL =
-        n -> CLIENT_KEX_EXTENSION.equalsIgnoreCase(n) || SERVER_KEX_EXTENSION.equalsIgnoreCase(n);
+    public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL
+            = n -> CLIENT_KEX_EXTENSION.equalsIgnoreCase(n) || SERVER_KEX_EXTENSION.equalsIgnoreCase(n);
 
     /**
-     * A case <U>insensitive</U> map of all the default known {@link KexExtensionParser}
-     * where key=the extension name
+     * A case <U>insensitive</U> map of all the default known {@link KexExtensionParser} where key=the extension name
      */
-    private static final NavigableMap<String, KexExtensionParser<?>> EXTENSION_PARSERS =
-        Stream.of(
+    private static final NavigableMap<String, KexExtensionParser<?>> EXTENSION_PARSERS = Stream.of(
             ServerSignatureAlgorithms.INSTANCE,
             NoFlowControl.INSTANCE,
             Elevation.INSTANCE,
             DelayCompression.INSTANCE)
-        .collect(Collectors.toMap(
-            NamedResource::getName, Function.identity(),
-            GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+            .collect(Collectors.toMap(
+                    NamedResource::getName, Function.identity(),
+                    GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
     private KexExtensions() {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
     /**
-     * @return A case <U>insensitive</U> copy of the currently registered
-     * {@link KexExtensionParser}s names
+     * @return A case <U>insensitive</U> copy of the currently registered {@link KexExtensionParser}s names
      */
     public static NavigableSet<String> getRegisteredExtensionParserNames() {
         synchronized (EXTENSION_PARSERS) {
             return EXTENSION_PARSERS.isEmpty()
-                 ? Collections.emptyNavigableSet()
-                 : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, EXTENSION_PARSERS.keySet());
+                    ? Collections.emptyNavigableSet()
+                    : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, EXTENSION_PARSERS.keySet());
         }
     }
 
     /**
-     * @param name The (never {@code null}/empty) extension name
-     * @return The registered {@code KexExtensionParser} for the (case <U>insensitive</U>)
-     * extension name - {@code null} if no match found
+     * @param  name The (never {@code null}/empty) extension name
+     * @return      The registered {@code KexExtensionParser} for the (case <U>insensitive</U>) extension name -
+     *              {@code null} if no match found
      */
     public static KexExtensionParser<?> getRegisteredExtensionParser(String name) {
         ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name provided");
@@ -107,9 +104,9 @@ public final class KexExtensions {
     /**
      * Registers a {@link KexExtensionParser} for a named extension
      *
-     * @param parser The (never {@code null}) parser to register
-     * @return The replaced parser for the named extension (case <U>insensitive</U>)
-     * - {@code null} if no previous parser registered for this extension
+     * @param  parser The (never {@code null}) parser to register
+     * @return        The replaced parser for the named extension (case <U>insensitive</U>) - {@code null} if no
+     *                previous parser registered for this extension
      */
     public static KexExtensionParser<?> registerExtensionParser(KexExtensionParser<?> parser) {
         Objects.requireNonNull(parser, "No parser provided");
@@ -122,9 +119,9 @@ public final class KexExtensions {
     /**
      * Registers {@link KexExtensionParser} for a named extension
      *
-     * @param name The (never {@code null}/empty) extension name
-     * @return The removed {@code KexExtensionParser} for the (case <U>insensitive</U>)
-     * extension name - {@code null} if no match found
+     * @param  name The (never {@code null}/empty) extension name
+     * @return      The removed {@code KexExtensionParser} for the (case <U>insensitive</U>) extension name -
+     *              {@code null} if no match found
      */
     public static KexExtensionParser<?> unregisterExtensionParser(String name) {
         ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name provided");
@@ -136,12 +133,12 @@ public final class KexExtensions {
     /**
      * Attempts to parse an {@code SSH_MSG_EXT_INFO} message
      *
-     * @param buffer The {@link Buffer} containing the message
-     * @return A {@link List} of key/value &quot;pairs&quot; where key=the extension
-     * name, value=the parsed value using the matching registered {@link KexExtensionParser}.
-     * If no such parser found then the raw value bytes are set as the extension value.
+     * @param  buffer      The {@link Buffer} containing the message
+     * @return             A {@link List} of key/value &quot;pairs&quot; where key=the extension name, value=the parsed
+     *                     value using the matching registered {@link KexExtensionParser}. If no such parser found then
+     *                     the raw value bytes are set as the extension value.
      * @throws IOException If failed to parse one of the extensions
-     * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-2.3">RFC-8308 - section 2.3</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc8308#section-2.3">RFC-8308 - section 2.3</A>
      */
     public static List<Map.Entry<String, ?>> parseExtensions(Buffer buffer) throws IOException {
         int count = buffer.getInt();
@@ -164,14 +161,12 @@ public final class KexExtensions {
     /**
      * Creates an {@code SSH_MSG_EXT_INFO} message using the provided extensions.
      *
-     * @param exts A {@link Collection} of key/value &quot;pairs&quot; where key=the extension
-     * name, value=the extension value. <B>Note:</B> if a registered {@link KexExtensionParser}
-     * exists for the name, then it is assumed that the value is of the correct type. If
-     * no registered parser found the value is assumed to be either the encoded value as an
-     * array of bytes or as another {@link Readable} (e.g., another {@link Buffer})
-     * or a {@link ByteBuffer}.
-     * @param buffer The target {@link Buffer} - assumed to already contain the
-     *  {@code SSH_MSG_EXT_INFO} opcode
+     * @param  exts        A {@link Collection} of key/value &quot;pairs&quot; where key=the extension name, value=the
+     *                     extension value. <B>Note:</B> if a registered {@link KexExtensionParser} exists for the name,
+     *                     then it is assumed that the value is of the correct type. If no registered parser found the
+     *                     value is assumed to be either the encoded value as an array of bytes or as another
+     *                     {@link Readable} (e.g., another {@link Buffer}) or a {@link ByteBuffer}.
+     * @param  buffer      The target {@link Buffer} - assumed to already contain the {@code SSH_MSG_EXT_INFO} opcode
      * @throws IOException If failed to encode
      */
     public static void putExtensions(Collection<? extends Map.Entry<String, ?>> exts, Buffer buffer) throws IOException {
@@ -185,8 +180,7 @@ public final class KexExtensions {
             String name = ee.getKey();
             Object value = ee.getValue();
             @SuppressWarnings("unchecked")
-            KexExtensionParser<Object> parser =
-                (KexExtensionParser<Object>) getRegisteredExtensionParser(name);
+            KexExtensionParser<Object> parser = (KexExtensionParser<Object>) getRegisteredExtensionParser(name);
             if (parser != null) {
                 parser.putExtension(value, buffer);
             } else {

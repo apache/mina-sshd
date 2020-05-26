@@ -19,7 +19,6 @@
 
 package org.apache.sshd.client.subsystem;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -31,15 +30,10 @@ public abstract class AbstractSubsystemClient extends AbstractLoggingBean implem
     }
 
     @Override
-    public final ClientSession getSession() {
-        return getClientSession();
-    }
-
-    @Override
     public String toString() {
         return getClass().getSimpleName()
-            + "[name=" + getName()
-            + ", session=" + getSession()
-            + "]";
+               + "[name=" + getName()
+               + ", session=" + getSession()
+               + "]";
     }
 }

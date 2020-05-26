@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -63,7 +62,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator, KeySizeIndicator, OptionalFeature {
     private static SshServer sshd;
@@ -77,7 +76,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
     private final PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
 
     public SignatureFactoriesTest(
-            String keyType, NamedFactory<Signature> factory, int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
+                                  String keyType, NamedFactory<Signature> factory,
+                                  int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         this.factory = supported ? Objects.requireNonNull(factory, "No signature factory provided") : factory;
         if (supported) {
@@ -98,8 +98,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
             for (ECCurves curve : ECCurves.VALUES) {
                 BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
                 addTests(list, curve.getName(), factory,
-                    curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
-                    curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
+                        curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
+                        curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
             }
         } else {
             for (String name : ECCurves.NAMES) {
@@ -107,14 +107,15 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
             }
         }
         addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
-            SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
+                SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
         return Collections.unmodifiableList(list);
     }
 
     private static void addTests(
-            List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes, PublicKeyEntryDecoder<?, ?> decoder) {
+            List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes,
+            PublicKeyEntryDecoder<?, ?> decoder) {
         for (Integer keySize : sizes) {
-            list.add(new Object[]{keyType, factory, keySize, decoder != null, decoder});
+            list.add(new Object[] { keyType, factory, keySize, decoder != null, decoder });
         }
     }
 
@@ -170,7 +171,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
 
     protected void testKeyPairProvider(
             String keyName, int keySize, PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
-                throws Exception {
+            throws Exception {
         testKeyPairProvider(keyName, () -> {
             try {
                 KeyPair kp = decoder.generateKeyPair(keySize);
@@ -184,7 +185,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
 
     protected void testKeyPairProvider(
             String keyName, Factory<Iterable<KeyPair>> keyPairFactory, List<NamedFactory<Signature>> signatures)
-                throws Exception {
+            throws Exception {
         Iterable<KeyPair> iter = keyPairFactory.create();
         testKeyPairProvider(new KeyPairProvider() {
             @Override
@@ -196,15 +197,14 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
 
     protected void testKeyPairProvider(
             KeyPairProvider provider, List<NamedFactory<Signature>> signatures)
-                throws Exception {
+            throws Exception {
         sshd.setKeyPairProvider(provider);
         client.setSignatureFactories(signatures);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
-            s.auth().verify(30L, TimeUnit.SECONDS);
+            s.auth().verify(AUTH_TIMEOUT.multipliedBy(3));
         }
     }
 }

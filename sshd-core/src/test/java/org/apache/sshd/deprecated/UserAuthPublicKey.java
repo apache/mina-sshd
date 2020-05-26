@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.deprecated;
 
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                     ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), alg),
                         "No signature factory located for algorithm=%s",
                         alg);
-                verif.initSigner(key.getPrivate());
+                verif.initSigner(session, key.getPrivate());
 
                 KeyExchange kexValue = session.getKex();
                 byte[] hValue = kexValue.getH();
@@ -82,9 +83,9 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putBoolean(true);
                 bs.putString(alg);
                 bs.putPublicKey(key.getPublic());
-                verif.update(bs.array(), bs.rpos(), bs.available());
+                verif.update(session, bs.array(), bs.rpos(), bs.available());
 
-                byte[] signature = verif.sign();
+                byte[] signature = verif.sign(session);
                 bs = new ByteArrayBuffer(alg.length() + signature.length + Long.SIZE, false);
                 bs.putString(alg);
                 bs.putBytes(signature);

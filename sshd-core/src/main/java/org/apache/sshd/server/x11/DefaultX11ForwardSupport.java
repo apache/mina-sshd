@@ -45,7 +45,6 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements X11ForwardSupport {
-
     private final ConnectionService service;
     private IoAcceptor acceptor;
 
@@ -67,7 +66,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     @Override
     public synchronized String createDisplay(
             boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen)
-                throws IOException {
+            throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         if (isClosed()) {
             throw new IllegalStateException("X11ForwardSupport is closed");
@@ -80,7 +79,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         if (OsUtils.isWin32()) {
             if (debugEnabled) {
                 log.debug("createDisplay(auth={}, cookie={}, screen={}) Windows O/S N/A",
-                          authenticationProtocol, authenticationCookie, screen);
+                        authenticationProtocol, authenticationCookie, screen);
             }
             return null;
         }
@@ -108,8 +107,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             } catch (BindException bindErr) {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) failed ({}) to bind to address={}: {}",
-                              authenticationProtocol, authenticationCookie, screen,
-                              bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
+                            authenticationProtocol, authenticationCookie, screen,
+                            bindErr.getClass().getSimpleName(), addr, bindErr.getMessage());
                 }
 
                 addr = null;
@@ -118,20 +117,20 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
         if (addr == null) {
             log.warn("createDisplay(auth={}, cookie={}, screen={})"
-                   + " failed to allocate internet-domain X11 display socket in range {}-{}",
-                     authenticationProtocol, authenticationCookie, screen,
-                     minDisplayNumber, maxDisplayNumber);
+                     + " failed to allocate internet-domain X11 display socket in range {}-{}",
+                    authenticationProtocol, authenticationCookie, screen,
+                    minDisplayNumber, maxDisplayNumber);
             Collection<SocketAddress> boundAddresses = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(boundAddresses)) {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - no more bound addresses",
-                              authenticationProtocol, authenticationCookie, screen);
+                            authenticationProtocol, authenticationCookie, screen);
                 }
                 close();
             } else {
                 if (debugEnabled) {
                     log.debug("createDisplay(auth={}, cookie={}, screen={}) closing - remaining bound addresses: {}",
-                              authenticationProtocol, authenticationCookie, screen, boundAddresses);
+                            authenticationProtocol, authenticationCookie, screen, boundAddresses);
                 }
             }
 
@@ -142,14 +141,17 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
         int displayNumber = port - basePort;
         String authDisplay = "unix:" + displayNumber + "." + screen;
         try {
-            Process p = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay).start();
+            ProcessBuilder processBuilder = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay);
+            Process p = processBuilder.start();
             int result = p.waitFor();
             if (debugEnabled) {
                 log.debug("createDisplay({}) {} remove result={}", authDisplay, XAUTH_COMMAND, result);
             }
 
             if (result == 0) {
-                p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
+                processBuilder = new ProcessBuilder(
+                        XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie);
+                p = processBuilder.start();
                 result = p.waitFor();
 
                 if (debugEnabled) {
@@ -164,9 +166,9 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             return bindHost + ":" + displayNumber + "." + screen;
         } catch (Throwable e) {
             log.warn("createDisplay({}) failed ({}) run xauth: {}",
-                     authDisplay, e.getClass().getSimpleName(), e.getMessage());
+                    authDisplay, e.getClass().getSimpleName(), e.getMessage());
             if (debugEnabled) {
-                log.debug("createDisplay(" + authDisplay + ") xauth failure details", e);
+                log.warn("createDisplay(" + authDisplay + ") xauth failure details", e);
             }
             return null;
         }
@@ -180,7 +182,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             log.debug("sessionCreated({}) channel{}", session, channel);
         }
         this.service.registerChannel(channel);
-        channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+        long openTimeout = channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        channel.open().verify(openTimeout);
     }
 
     @Override
@@ -214,11 +217,11 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         session.setAttribute(X11ForwardingExceptionMarker.class, cause);
+        log.error("exceptionCaught({}) {}: {}",
+                session, cause.getClass().getSimpleName(), cause.getMessage());
+
         if (log.isDebugEnabled()) {
-            log.debug("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
-        }
-        if (log.isTraceEnabled()) {
-            log.trace("exceptionCaught(" + session + ") caught exception details", cause);
+            log.error("exceptionCaught(" + session + ") caught exception details", cause);
         }
         session.close(true);
     }

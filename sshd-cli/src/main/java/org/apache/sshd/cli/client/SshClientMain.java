@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public class SshClientMain extends SshClientCliSupport {
     protected SshClientMain() {
-        super();    // in case someone wants to extend it
+        super(); // in case someone wants to extend it
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -121,11 +121,13 @@ public class SshClientMain extends SshClientCliSupport {
 
         ClientSession session = null;
         try (BufferedReader stdin = new BufferedReader(
-                new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
+                new InputStreamReader(
+                        new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             if (!error) {
                 setupLogging(level, stdout, stderr, logStream);
 
-                session = setupClientSession(SSH_CLIENT_PORT_OPTION, stdin, level, stdout, stderr, args);
+                session = setupClientSession(
+                        SSH_CLIENT_PORT_OPTION, stdin, level, stdout, stderr, args);
                 if (session == null) {
                     error = true;
                 }
@@ -133,32 +135,25 @@ public class SshClientMain extends SshClientCliSupport {
 
             if (error) {
                 System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutputfile] [-D socksPort]"
-                        + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
-                        + " [-w password] [-c cipherslist] [-m maclist] [-C]"
-                        + " hostname/user@host [command]");
+                                   + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
+                                   + " [-w password] [-c cipherslist] [-m maclist] [-C]"
+                                   + " hostname/user@host [command]");
                 System.exit(-1);
                 return;
             }
 
             try (SshClient client = (SshClient) session.getFactoryManager()) {
                 /*
-                String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-                if (authSock == null && provider != null) {
-                    Iterable<KeyPair> keys = provider.loadKeys();
-                    AgentServer server = new AgentServer();
-                    authSock = server.start();
-                    SshAgent agent = new AgentClient(authSock);
-                    for (KeyPair key : keys) {
-                        agent.addIdentity(key, "");
-                    }
-                    agent.close();
-                    props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
-                }
-                */
+                 * String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME); if (authSock == null && provider
+                 * != null) { Iterable<KeyPair> keys = provider.loadKeys(); AgentServer server = new AgentServer();
+                 * authSock = server.start(); SshAgent agent = new AgentClient(authSock); for (KeyPair key : keys) {
+                 * agent.addIdentity(key, ""); } agent.close(); props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock); }
+                 */
 
                 try {
                     if (socksPort >= 0) {
-                        session.startDynamicPortForwarding(new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
+                        session.startDynamicPortForwarding(
+                                new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
                         Thread.sleep(Long.MAX_VALUE);
                     } else {
                         Map<String, ?> env = resolveClientEnvironment(client);
@@ -169,11 +164,12 @@ public class SshClientMain extends SshClientCliSupport {
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
                         } else {
-                            channel = session.createExecChannel(String.join(" ", command).trim(), ptyConfig, env);
+                            channel = session.createExecChannel(
+                                    String.join(" ", command).trim(), ptyConfig, env);
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);
-                             OutputStream channelErr =  new NoCloseOutputStream(System.err)) {
+                             OutputStream channelErr = new NoCloseOutputStream(System.err)) {
                             channel.setOut(channelOut);
                             channel.setErr(channelErr);
                             channel.open().await(); // TODO use verify and a configurable timeout

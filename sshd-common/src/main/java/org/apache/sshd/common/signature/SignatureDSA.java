@@ -24,6 +24,7 @@ import java.security.SignatureException;
 import java.util.Map;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -34,7 +35,7 @@ import org.apache.sshd.common.util.io.der.DERWriter;
  * DSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public class SignatureDSA extends AbstractSignature {
     public static final String DEFAULT_ALGORITHM = "SHA1withDSA";
@@ -52,13 +53,14 @@ public class SignatureDSA extends AbstractSignature {
     }
 
     @Override
-    public byte[] sign() throws Exception {
-        byte[] sig = super.sign();
+    public byte[] sign(SessionContext session) throws Exception {
+        byte[] sig = super.sign(session);
 
         try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
-                throw new StreamCorruptedException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+                throw new StreamCorruptedException(
+                        "Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
 
             // length of remaining encoding of the 2 integers
@@ -66,12 +68,12 @@ public class SignatureDSA extends AbstractSignature {
             /*
              * There are supposed to be 2 INTEGERs, each encoded with:
              *
-             *  - one byte representing the fact that it is an INTEGER
-             *  - one byte of the integer encoding length
-             *  - at least one byte of integer data (zero length is not an option)
+             * - one byte representing the fact that it is an INTEGER - one byte of the integer encoding length - at
+             * least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException(
+                        "Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -94,41 +96,43 @@ public class SignatureDSA extends AbstractSignature {
     }
 
     @Override
-    public boolean verify(byte[] sig) throws Exception {
+    public boolean verify(SessionContext session, byte[] sig) throws Exception {
         int sigLen = NumberUtils.length(sig);
         byte[] data = sig;
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             // probably some encoded data
-            Map.Entry<String, byte[]> encoding = extractEncodedSignature(sig);
+            Map.Entry<String, byte[]> encoding = extractEncodedSignature(sig, k -> KeyPairProvider.SSH_DSS.equalsIgnoreCase(k));
             if (encoding != null) {
                 String keyType = encoding.getKey();
-                ValidateUtils.checkTrue(KeyPairProvider.SSH_DSS.equals(keyType), "Mismatched key type: %s", keyType);
+                ValidateUtils.checkTrue(
+                        KeyPairProvider.SSH_DSS.equals(keyType), "Mismatched key type: %s", keyType);
                 data = encoding.getValue();
                 sigLen = NumberUtils.length(data);
             }
         }
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
-            throw new SignatureException("Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
-                    + " for " + BufferUtils.toHex(':', data));
+            throw new SignatureException(
+                    "Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
+                                         + " for " + BufferUtils.toHex(':', data));
         }
 
         byte[] rEncoding;
-        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) { // in case length > 0x7F
             w.writeBigInteger(data, 0, MAX_SIGNATURE_VALUE_LENGTH);
             rEncoding = w.toByteArray();
         }
 
         byte[] sEncoding;
-        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) { // in case length > 0x7F
             w.writeBigInteger(data, MAX_SIGNATURE_VALUE_LENGTH, MAX_SIGNATURE_VALUE_LENGTH);
             sEncoding = w.toByteArray();
         }
 
         int length = rEncoding.length + sEncoding.length;
         byte[] encoded;
-        try (DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+        try (DERWriter w = new DERWriter(1 + length + 4)) { // in case length > 0x7F
             w.write(0x30); // SEQUENCE
             w.writeLength(length);
             w.write(rEncoding);

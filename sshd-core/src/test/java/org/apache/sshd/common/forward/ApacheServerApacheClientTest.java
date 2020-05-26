@@ -19,7 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -42,8 +42,7 @@ import org.slf4j.LoggerFactory;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
     private static final Logger LOG = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
-
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10L);
 
     private static int sshServerPort;
     private static SshServer server;
@@ -69,7 +68,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     @AfterClass
     public static void stopServer() throws IOException {
         if (!server.close(true).await(TIMEOUT)) {
-            LOG.warn("Failed to close server within {} sec.", TimeUnit.MILLISECONDS.toSeconds(TIMEOUT));
+            LOG.warn("Failed to close server within {} sec.", TIMEOUT.toMillis() / 1000);
         }
     }
 

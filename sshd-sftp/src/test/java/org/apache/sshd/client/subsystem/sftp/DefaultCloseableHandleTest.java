@@ -77,7 +77,8 @@ public class DefaultCloseableHandleTest extends JUnitTestSupport {
             return null;
         }).when(client).close(ArgumentMatchers.any(Handle.class));
 
-        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName(), getCurrentTestName().getBytes(StandardCharsets.UTF_8));
+        CloseableHandle handle = new DefaultCloseableHandle(
+                client, getCurrentTestName(), getCurrentTestName().getBytes(StandardCharsets.UTF_8));
         for (int index = 0; index < Byte.SIZE; index++) {
             handle.close();
         }

@@ -19,6 +19,9 @@
 
 package org.apache.sshd.netty;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
@@ -26,10 +29,6 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
-
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.Future;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>

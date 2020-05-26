@@ -20,13 +20,19 @@ package org.apache.sshd.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.SocketAddress;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.auth.UserAuthFactoriesManager;
+import org.apache.sshd.common.auth.UserAuthInstance;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
@@ -35,6 +41,10 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -63,14 +73,25 @@ public abstract class CliSupport {
         return true;
     }
 
+    public static <
+            S extends SessionContext,
+            M extends UserAuthInstance<S>, F extends UserAuthMethodFactory<S, M>,
+            I extends UserAuthFactoriesManager<S, M, F>> void setupUserAuthFactories(
+                    I manager, PropertyResolver options) {
+        String methods = options.getString(ConfigFileReaderSupport.PREFERRED_AUTHS_CONFIG_PROP);
+        if (GenericUtils.isNotEmpty(methods)) {
+            manager.setUserAuthFactoriesNameList(methods);
+            return;
+        }
+    }
+
     /**
-     * Scans the arguments for the &quot;-io&quot; command line option and sets the I/O
-     * service accordingly. If no specific option specified then {@link #DEFAULT_IO_SERVICE_FACTORY}
-     * is used.
+     * Scans the arguments for the &quot;-io&quot; command line option and sets the I/O service accordingly. If no
+     * specific option specified then {@link #DEFAULT_IO_SERVICE_FACTORY} is used.
      *
-     * @param stderr Error stream for output of error messages
-     * @param args The arguments to scan
-     * @return The resolved I/O service factory - {@code null} if errors encountered
+     * @param  stderr Error stream for output of error messages
+     * @param  args   The arguments to scan
+     * @return        The resolved I/O service factory - {@code null} if errors encountered
      */
     public static BuiltinIoServiceFactoryFactories resolveIoServiceFactory(PrintStream stderr, String... args) {
         int numArgs = GenericUtils.length(args);
@@ -112,7 +133,7 @@ public abstract class CliSupport {
         BuiltinIoServiceFactoryFactories factory = BuiltinIoServiceFactoryFactories.fromFactoryName(provider);
         if (factory == null) {
             System.err.println(argName + " - unknown provider (" + provider + ")"
-                + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
+                               + " should be one of " + BuiltinIoServiceFactoryFactories.VALUES);
         }
         return factory;
     }
@@ -131,56 +152,150 @@ public abstract class CliSupport {
             return manager;
         }
 
-        manager.setIoServiceEventListener(new IoServiceEventListener() {
-            private final PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
+        PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
+        manager.setIoServiceEventListener(createLoggingIoServiceEventListener(out));
+        manager.addSessionListener(createLoggingSessionListener(out));
+        return manager;
+    }
 
+    public static void printStackTrace(Appendable out, Throwable reason) {
+        if ((reason == null) || (out == null)) {
+            return;
+        }
+
+        if (out instanceof PrintStream) {
+            reason.printStackTrace((PrintStream) out);
+        } else if (out instanceof PrintWriter) {
+            reason.printStackTrace((PrintWriter) out);
+        }
+    }
+
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    public static IoServiceEventListener createLoggingIoServiceEventListener(Appendable out) {
+        return new IoServiceEventListener() {
             @Override
             public void connectionEstablished(
                     IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
-                        throws IOException {
+                    throws IOException {
                 out.append("Connection established via ").append(Objects.toString(connector))
-                    .append("- local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .println();
+                        .append("- local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(System.lineSeparator());
             }
 
             @Override
             public void abortEstablishedConnection(
-                    IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote, Throwable reason)
-                        throws IOException {
+                    IoConnector connector, SocketAddress local, AttributeRepository context,
+                    SocketAddress remote, Throwable reason)
+                    throws IOException {
                 out.append("Abort established connection ").append(Objects.toString(connector))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(" ").println(reason.getMessage());
-                reason.printStackTrace(out);
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                        .append(' ').append(reason.getMessage())
+                        .append(System.lineSeparator());
+                printStackTrace(out, reason);
             }
 
             @Override
-            public void connectionAccepted(IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service)
+            public void connectionAccepted(
+                    IoAcceptor acceptor, SocketAddress local,
+                    SocketAddress remote, SocketAddress service)
                     throws IOException {
                 out.append("Connection accepted via ").append(Objects.toString(acceptor))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(", service=").append(Objects.toString(service))
-                    .println();
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(", service=").append(Objects.toString(service))
+                        .append(System.lineSeparator());
             }
 
             @Override
             public void abortAcceptedConnection(
-                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote, SocketAddress service, Throwable reason)
-                        throws IOException {
+                    IoAcceptor acceptor, SocketAddress local, SocketAddress remote,
+                    SocketAddress service, Throwable reason)
+                    throws IOException {
                 out.append("Abort accepted connection ").append(Objects.toString(acceptor))
-                    .append(" - local=").append(Objects.toString(local))
-                    .append(", remote=").append(Objects.toString(remote))
-                    .append(", service=").append(Objects.toString(service))
-                    .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                    .append(" ").println(reason.getMessage());
-                reason.printStackTrace(out);
+                        .append(" - local=").append(Objects.toString(local))
+                        .append(", remote=").append(Objects.toString(remote))
+                        .append(", service=").append(Objects.toString(service))
+                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
+                        .append(' ').append(reason.getMessage())
+                        .append(System.lineSeparator());
+                printStackTrace(out, reason);
             }
-        });
+        };
+    }
 
-        return manager;
+    @SuppressWarnings("checkstyle:anoninnerlength")
+    public static SessionListener createLoggingSessionListener(Appendable out) {
+        return new SessionListener() {
+            @Override
+            public void sessionPeerIdentificationReceived(
+                    Session session, String version, List<String> extraLines) {
+                try {
+                    out.append(Objects.toString(session))
+                            .append(" peer identification=").append(version)
+                            .append(System.lineSeparator());
+                    if (GenericUtils.isNotEmpty(extraLines)) {
+                        for (String l : extraLines) {
+                            out.append("    => ").append(l).append(System.lineSeparator());
+                        }
+                    }
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionNegotiationEnd(
+                    Session session,
+                    Map<KexProposalOption, String> clientProposal,
+                    Map<KexProposalOption, String> serverProposal,
+                    Map<KexProposalOption, String> negotiatedOptions,
+                    Throwable reason) {
+                if (reason != null) {
+                    return;
+                }
+
+                try {
+                    out.append(Objects.toString(session))
+                            .append(" KEX negotiation results:")
+                            .append(System.lineSeparator());
+                    for (KexProposalOption opt : KexProposalOption.VALUES) {
+                        String value = negotiatedOptions.get(opt);
+                        out.append("    ").append(opt.getDescription())
+                                .append(": ").append(value)
+                                .append(System.lineSeparator());
+                    }
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                try {
+                    out.append(Objects.toString(session))
+                            .append(' ').append(t.getClass().getSimpleName())
+                            .append(": ").append(t.getMessage())
+                            .append(System.lineSeparator());
+                    printStackTrace(out, t);
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                try {
+                    out.append(Objects.toString(session))
+                            .append(" closed")
+                            .append(System.lineSeparator());
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+        };
     }
 
     public static Level resolveLoggingVerbosity(String... args) {
@@ -203,16 +318,16 @@ public abstract class CliSupport {
     }
 
     /**
-     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options.
-     * If found, then uses it as the result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
+     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options. If found, then uses it as the
+     * result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
      *
-     * @param resolver The {@code -o} options specified by the user
-     * @param args The command line arguments
-     * @return The resolved verbosity level
+     * @param  resolver The {@code -o} options specified by the user
+     * @param  args     The command line arguments
+     * @return          The resolved verbosity level
      */
     public static Level resolveLoggingVerbosity(PropertyResolver resolver, String... args) {
         String levelValue = PropertyResolverUtils.getString(
-            resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
+                resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
         if (GenericUtils.isEmpty(levelValue)) {
             return resolveLoggingVerbosity(args);
         }
@@ -220,7 +335,7 @@ public abstract class CliSupport {
         LogLevelValue level = LogLevelValue.fromName(levelValue);
         if (level == null) {
             throw new IllegalArgumentException(
-                "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
+                    "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
         }
 
         return level.getLoggingLevel();

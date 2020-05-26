@@ -52,7 +52,7 @@ public class MockFileSystem extends FileSystem {
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
-            //noinspection UnnecessaryReturnStatement
+            // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

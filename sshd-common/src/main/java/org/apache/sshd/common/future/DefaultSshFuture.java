@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * A default implementation of {@link SshFuture}.
  *
- * @param <T> Type of future
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of future
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> {
     /**
@@ -42,9 +42,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     /**
      * Creates a new instance.
      *
-     * @param id Some identifier useful as {@code toString()} value
-     * @param lock A synchronization object for locking access - if {@code null}
-     * then synchronization occurs on {@code this} instance
+     * @param id   Some identifier useful as {@code toString()} value
+     * @param lock A synchronization object for locking access - if {@code null} then synchronization occurs on
+     *             {@code this} instance
      */
     public DefaultSshFuture(Object id, Object lock) {
         super(id);
@@ -132,8 +132,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     }
 
     /**
-     * @return The result of the asynchronous operation - or {@code null}
-     * if none set.
+     * @return The result of the asynchronous operation - or {@code null} if none set.
      */
     public Object getValue() {
         synchronized (lock) {
@@ -150,10 +149,10 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
             if (result != null) {
                 notifyNow = true;
             } else if (listeners == null) {
-                listeners = listener;   // 1st listener ?
+                listeners = listener; // 1st listener ?
             } else if (listeners instanceof SshFutureListener) {
-                listeners = new Object[]{listeners, listener};
-            } else {    // increase array of registered listeners
+                listeners = new Object[] { listeners, listener };
+            } else { // increase array of registered listeners
                 Object[] ol = (Object[]) listeners;
                 int l = ol.length;
                 Object[] nl = new Object[l + 1];
@@ -176,16 +175,16 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
         synchronized (lock) {
             if (result != null) {
-                return asT();   // the train has already left the station...
+                return asT(); // the train has already left the station...
             }
 
             if (listeners == null) {
-                return asT();   // no registered instances anyway
+                return asT(); // no registered instances anyway
             }
 
             if (listeners == listener) {
-                listeners = null;   // the one and only
-            } else if (!(listeners instanceof SshFutureListener))  {
+                listeners = null; // the one and only
+            } else if (!(listeners instanceof SshFutureListener)) {
                 int l = Array.getLength(listeners);
                 for (int i = 0; i < l; i++) {
                     if (Array.get(listeners, i) == listener) {
@@ -201,10 +200,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
 
     protected void notifyListeners() {
         /*
-         * There won't be any visibility problem or concurrent modification
-         * because result value is checked in both addListener and
-         * removeListener calls under lock. If the result is already set then
-         * both methods will not modify the internal listeners
+         * There won't be any visibility problem or concurrent modification because result value is checked in both
+         * addListener and removeListener calls under lock. If the result is already set then both methods will not
+         * modify the internal listeners
          */
         if (listeners != null) {
             if (listeners instanceof SshFutureListener) {

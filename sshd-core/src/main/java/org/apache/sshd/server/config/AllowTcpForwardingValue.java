@@ -30,7 +30,7 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5">sshd_config(5) section</A>
+ * @see    <A HREF="http://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5">sshd_config(5) section</A>
  */
 public enum AllowTcpForwardingValue implements TcpForwardingFilter {
     ALL {
@@ -78,8 +78,8 @@ public enum AllowTcpForwardingValue implements TcpForwardingFilter {
         }
     };
 
-    public static final Set<AllowTcpForwardingValue> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
+    public static final Set<AllowTcpForwardingValue> VALUES
+            = Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
 
     // NOTE: it also interprets "yes" as "all" and "no" as "none"
     public static AllowTcpForwardingValue fromString(String s) {

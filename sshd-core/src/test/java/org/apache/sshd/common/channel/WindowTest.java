@@ -104,8 +104,7 @@ public class WindowTest extends BaseTestSupport {
                         };
                     }
                 },
-                ServerConnectionServiceFactory.INSTANCE
-        ));
+                ServerConnectionServiceFactory.INSTANCE));
         sshd.setChannelFactories(Arrays.asList(
                 new ChannelSessionFactory() {
                     @Override
@@ -154,13 +153,12 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel()) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -175,20 +173,23 @@ public class WindowTest extends BaseTestSupport {
                     try (BufferedWriter writer = new BufferedWriter(
                             new OutputStreamWriter(channel.getInvertedIn(), StandardCharsets.UTF_8));
                          BufferedReader reader = new BufferedReader(
-                             new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
+                                 new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
 
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
                             writer.write("\n");
                             writer.flush();
 
-                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote",
+                                    TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
                             assertEquals("Mismatched message at line #" + i, message, line);
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
-                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
+                                    TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
+                                    TimeUnit.SECONDS.toMillis(3L));
                         }
                     }
                 }
@@ -207,10 +208,9 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel();
                  PipedInputStream inPis = new PipedInputStream();
@@ -220,7 +220,7 @@ public class WindowTest extends BaseTestSupport {
 
                 channel.setIn(inPis);
                 channel.setOut(outPos);
-                channel.open().verify(7L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -235,19 +235,22 @@ public class WindowTest extends BaseTestSupport {
                     try (BufferedWriter writer = new BufferedWriter(
                             new OutputStreamWriter(inPos, StandardCharsets.UTF_8));
                          BufferedReader reader = new BufferedReader(
-                             new InputStreamReader(outPis, StandardCharsets.UTF_8))) {
+                                 new InputStreamReader(outPis, StandardCharsets.UTF_8))) {
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
                             writer.write('\n');
                             writer.flush();
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
+                                    TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
                             assertEquals("Mismatched message at line #" + i, message, line);
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
-                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
+                                    TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
+                                    TimeUnit.SECONDS.toMillis(3L));
                         }
                     }
                 }
@@ -266,14 +269,13 @@ public class WindowTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel()) {
                 channel.setStreaming(ClientChannel.Streaming.Async);
-                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
                         .getService(ServerConnectionService.class).getChannels())) {
@@ -289,19 +291,22 @@ public class WindowTest extends BaseTestSupport {
                     IoInputStream input = channel.getAsyncOut();
                     for (int i = 0; i < nbMessages; i++) {
                         Buffer buffer = new ByteArrayBuffer(bytes);
-                        output.writePacket(buffer).verify(5L, TimeUnit.SECONDS);
+                        output.writePacket(buffer).verify(DEFAULT_TIMEOUT);
 
-                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote",
+                                TimeUnit.SECONDS.toMillis(3L));
 
                         Buffer buf = new ByteArrayBuffer(16);
                         IoReadFuture future = input.read(buf);
-                        future.verify(5L, TimeUnit.SECONDS);
+                        future.verify(DEFAULT_TIMEOUT);
                         assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
                         assertEquals("Mismatched data at line #" + i, message,
                                 new String(buf.array(), buf.rpos(), buf.available(), StandardCharsets.UTF_8));
 
-                        waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
-                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
+                        waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
+                                TimeUnit.SECONDS.toMillis(3L));
+                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
+                                TimeUnit.SECONDS.toMillis(3L));
                     }
                 }
             }
@@ -310,7 +315,8 @@ public class WindowTest extends BaseTestSupport {
         }
     }
 
-    private static void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
+    private static void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2, long maxWait)
+            throws InterruptedException {
         for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
             if (w1.getSize() != w2.getSize()) {
                 return;
@@ -327,7 +333,8 @@ public class WindowTest extends BaseTestSupport {
         assertNotEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
     }
 
-    private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
+    private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait)
+            throws InterruptedException {
         for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
             if (w1.getSize() == w2.getSize()) {
                 return;

@@ -64,16 +64,17 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        ValidateUtils.checkTrue(!Streaming.Async.equals(streaming), "Asynchronous streaming isn't supported yet on this channel");
+        ValidateUtils.checkTrue(!Streaming.Async.equals(streaming),
+                "Asynchronous streaming isn't supported yet on this channel");
         invertedIn = new ChannelOutputStream(this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
     }
 
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-            .close(super.getInnerCloseable())
-            .run(toString(), () -> Socket.close(socket))
-            .build();
+                .close(super.getInnerCloseable())
+                .run(toString(), () -> Socket.close(socket))
+                .build();
     }
 
     @Override

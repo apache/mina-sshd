@@ -35,8 +35,7 @@ public interface PtyChannelConfigurationHolder {
     String DUMMY_PTY_TYPE = "dummy";
     String WINDOWS_PTY_TYPE = "windows";
 
-    Map<PtyMode, Integer> DEFAULT_PTY_MODES =
-        EnumMapBuilder.<PtyMode, Integer>builder(PtyMode.class)
+    Map<PtyMode, Integer> DEFAULT_PTY_MODES = EnumMapBuilder.<PtyMode, Integer> builder(PtyMode.class)
             .put(PtyMode.ISIG, 1)
             .put(PtyMode.ICANON, 1)
             .put(PtyMode.ECHO, 1)

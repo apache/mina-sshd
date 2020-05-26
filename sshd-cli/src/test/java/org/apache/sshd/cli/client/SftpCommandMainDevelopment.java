@@ -20,8 +20,8 @@
 package org.apache.sshd.cli.client;
 
 /**
- * Just a test class used to invoke {@link SftpCommandMain#main(String[])} in
- * order to have logging - which is in {@code test} scope
+ * Just a test class used to invoke {@link SftpCommandMain#main(String[])} in order to have logging - which is in
+ * {@code test} scope
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

@@ -20,12 +20,10 @@
 package org.apache.sshd.common.forward;
 
 /**
- * Marker interface for classes that allow to add/remove port forwarding
- * listeners. <B>Note:</B> if adding/removing listeners while tunnels are
- * being established and/or torn down there are no guarantees as to the order
- * of the calls to the recently added/removed listener's methods in the interim.
- * The correct order is guaranteed only as of the <U>next</U> tunnel after
- * the listener has been added/removed.
+ * Marker interface for classes that allow to add/remove port forwarding listeners. <B>Note:</B> if adding/removing
+ * listeners while tunnels are being established and/or torn down there are no guarantees as to the order of the calls
+ * to the recently added/removed listener's methods in the interim. The correct order is guaranteed only as of the
+ * <U>next</U> tunnel after the listener has been added/removed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -45,8 +43,7 @@ public interface PortForwardingEventListenerManager {
     void removePortForwardingEventListener(PortForwardingEventListener listener);
 
     /**
-     * @return A proxy listener representing all the currently registered listener
-     * through this manager
+     * @return A proxy listener representing all the currently registered listener through this manager
      */
     PortForwardingEventListener getPortForwardingEventListenerProxy();
 }

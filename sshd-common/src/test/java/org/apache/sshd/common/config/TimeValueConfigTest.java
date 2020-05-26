@@ -41,11 +41,11 @@ public class TimeValueConfigTest extends JUnitTestSupport {
     @Test
     public void testDurationOf() {
         Object[] values = {
-            "600", TimeUnit.SECONDS.toMillis(600L),
-            "10m", TimeUnit.MINUTES.toMillis(10L),
-            "1h30m", TimeUnit.MINUTES.toMillis(90L),
-            "2d", TimeUnit.DAYS.toMillis(2L),
-            "3w", TimeUnit.DAYS.toMillis(3L * 7L)
+                "600", TimeUnit.SECONDS.toMillis(600L),
+                "10m", TimeUnit.MINUTES.toMillis(10L),
+                "1h30m", TimeUnit.MINUTES.toMillis(90L),
+                "2d", TimeUnit.DAYS.toMillis(2L),
+                "3w", TimeUnit.DAYS.toMillis(3L * 7L)
         };
         for (int index = 0; index < values.length; index += 2) {
             String s = (String) values[index];

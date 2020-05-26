@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.GitLocationResolver;
@@ -42,8 +43,6 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  */
@@ -83,7 +82,8 @@ public class GitPackCommandTest extends BaseTestSupport {
                 Git.init().setBare(true).setDirectory(serverDir.toFile()).call();
 
                 JSch.setConfig("StrictHostKeyChecking", "no");
-                CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
                 Path localRootDir = gitRootDir.resolve("local");
                 Path localDir = localRootDir.resolve(serverDir.getFileName());
                 CommonTestSupportUtils.deleteRecursive(localDir);
@@ -91,7 +91,8 @@ public class GitPackCommandTest extends BaseTestSupport {
                 SshClient client = SshClient.setUpDefaultClient();
                 SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
                 try (Git git = Git.cloneRepository()
-                        .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/" + serverDir.getFileName())
+                        .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/"
+                                + serverDir.getFileName())
                         .setDirectory(localDir.toFile())
                         .call()) {
                     assertTrue("Client not started after clone", client.isStarted());

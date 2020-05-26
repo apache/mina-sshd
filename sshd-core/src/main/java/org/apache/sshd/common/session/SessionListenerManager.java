@@ -20,12 +20,10 @@
 package org.apache.sshd.common.session;
 
 /**
- * Marker interface for classes that allow to add/remove session listeners.
- * <B>Note:</B> if adding/removing listeners while connections are being
- * established and/or torn down there are no guarantees as to the order of
- * the calls to the recently added/removed listener's methods in the interim.
- * The correct order is guaranteed only as of the <U>next</U> session after
- * the listener has been added/removed.
+ * Marker interface for classes that allow to add/remove session listeners. <B>Note:</B> if adding/removing listeners
+ * while connections are being established and/or torn down there are no guarantees as to the order of the calls to the
+ * recently added/removed listener's methods in the interim. The correct order is guaranteed only as of the <U>next</U>
+ * session after the listener has been added/removed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -45,9 +43,8 @@ public interface SessionListenerManager {
     void removeSessionListener(SessionListener listener);
 
     /**
-     * @return A (never {@code null} proxy {@link SessionListener} that represents
-     * all the currently registered listeners. Any method invocation on the proxy
-     * is replicated to the currently registered listeners
+     * @return A (never {@code null} proxy {@link SessionListener} that represents all the currently registered
+     *         listeners. Any method invocation on the proxy is replicated to the currently registered listeners
      */
     SessionListener getSessionListenerProxy();
 }

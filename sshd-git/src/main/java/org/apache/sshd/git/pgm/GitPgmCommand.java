@@ -37,13 +37,13 @@ import org.apache.sshd.git.GitLocationResolver;
 public class GitPgmCommand extends AbstractGitCommand {
     /**
      * @param rootDirResolver Resolver for GIT root directory
-     * @param command Command to execute
-     * @param executorService An {@link CloseableExecutorService} to be used
-     * when {@code start(ChannelSession, Environment)}-ing execution. If {@code null}
-     * an ad-hoc single-threaded service is created and used.
+     * @param command         Command to execute
+     * @param executorService An {@link CloseableExecutorService} to be used when
+     *                        {@code start(ChannelSession, Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
      */
     public GitPgmCommand(
-            GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+                         GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
         super(rootDirResolver, command, executorService);
     }
 
@@ -79,7 +79,7 @@ public class GitPgmCommand extends AbstractGitCommand {
                 err.flush();
             } catch (IOException e) {
                 log.warn("Failed {} to flush command={} failure: {}",
-                    e.getClass().getSimpleName(), command, e.getMessage());
+                        e.getClass().getSimpleName(), command, e.getMessage());
             }
             onExit(-1, t.getMessage());
         }

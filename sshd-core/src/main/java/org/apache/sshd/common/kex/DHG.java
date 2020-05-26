@@ -43,7 +43,7 @@ public class DHG extends AbstractDH {
 
     private BigInteger p;
     private BigInteger g;
-    private BigInteger f;  // your public key
+    private BigInteger f; // your public key
     private Factory<? extends Digest> factory;
 
     public DHG(Factory<? extends Digest> digestFactory) throws Exception {
@@ -53,8 +53,8 @@ public class DHG extends AbstractDH {
     public DHG(Factory<? extends Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
         myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
         factory = digestFactory;
-        p = pValue;  // do not check for null-ity since in some cases it can be
-        g = gValue;  // do not check for null-ity since in some cases it can be
+        p = pValue; // do not check for null-ity since in some cases it can be
+        g = gValue; // do not check for null-ity since in some cases it can be
     }
 
     @Override
@@ -122,10 +122,10 @@ public class DHG extends AbstractDH {
     @Override
     public String toString() {
         return super.toString()
-            + "[p=" + p
-            + ", g=" + g
-            + ", f=" + f
-            + ", digest=" + factory
-            + "]";
+               + "[p=" + p
+               + ", g=" + g
+               + ", f=" + f
+               + ", digest=" + factory
+               + "]";
     }
 }

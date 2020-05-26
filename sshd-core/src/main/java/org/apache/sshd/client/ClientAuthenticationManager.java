@@ -20,39 +20,41 @@
 package org.apache.sshd.client;
 
 import java.security.KeyPair;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.auth.UserAuthFactoriesManager;
 import org.apache.sshd.common.keyprovider.KeyIdentityProviderHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Holds information required for the client to perform authentication with the server
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
+public interface ClientAuthenticationManager
+        extends UserAuthFactoriesManager<ClientSession, UserAuth, UserAuthFactory>,
+        KeyIdentityProviderHolder {
 
     /**
-     * Ordered comma separated list of authentications methods.
-     * Authentications methods accepted by the server will be tried in the given order.
-     * If not configured or {@code null}/empty, then the session's {@link #getUserAuthFactories()}
-     * is used as-is
+     * Ordered comma separated list of authentications methods. Authentications methods accepted by the server will be
+     * tried in the given order. If not configured or {@code null}/empty, then the session's
+     * {@link #getUserAuthFactories()} is used as-is
      */
     String PREFERRED_AUTHS = "preferred-auths";
 
     /**
-     * Specifies the number of interactive prompts before giving up.
-     * The argument to this keyword must be an integer.
+     * Specifies the number of interactive prompts before giving up. The argument to this keyword must be an integer.
+     * 
      * @see #DEFAULT_PASSWORD_PROMPTS
      */
     String PASSWORD_PROMPTS = "password-prompts";
@@ -63,56 +65,51 @@ public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
     int DEFAULT_PASSWORD_PROMPTS = 3;
 
     /**
-     * @return The {@link AuthenticationIdentitiesProvider} to be used for attempting
-     * password or public key authentication
+     * @return The {@link AuthenticationIdentitiesProvider} to be used for attempting password or public key
+     *         authentication
      */
     AuthenticationIdentitiesProvider getRegisteredIdentities();
 
     /**
-     * Retrieve {@link PasswordIdentityProvider} used to provide password
-     * candidates
+     * Retrieve {@link PasswordIdentityProvider} used to provide password candidates
      *
-     * @return The {@link PasswordIdentityProvider} instance - ignored if {@code null}
-     * (i.e., no passwords available).
-     * @see #addPasswordIdentity(String)
+     * @return The {@link PasswordIdentityProvider} instance - ignored if {@code null} (i.e., no passwords available).
+     * @see    #addPasswordIdentity(String)
      */
     PasswordIdentityProvider getPasswordIdentityProvider();
 
     void setPasswordIdentityProvider(PasswordIdentityProvider provider);
 
     /**
-     * @param password Password to be added - may not be {@code null}/empty.
-     * <B>Note:</B> this password is <U>in addition</U> to whatever passwords
-     * are available via the {@link PasswordIdentityProvider} (if any)
+     * @param password Password to be added - may not be {@code null}/empty. <B>Note:</B> this password is <U>in
+     *                 addition</U> to whatever passwords are available via the {@link PasswordIdentityProvider} (if
+     *                 any)
      */
     void addPasswordIdentity(String password);
 
     /**
-     * @param password The password to remove - ignored if {@code null}/empty
-     * @return The removed password - same one that was added via
-     * {@link #addPasswordIdentity(String)} - or {@code null} if no
-     * match found
+     * @param  password The password to remove - ignored if {@code null}/empty
+     * @return          The removed password - same one that was added via {@link #addPasswordIdentity(String)} - or
+     *                  {@code null} if no match found
      */
     String removePasswordIdentity(String password);
 
     /**
-     * @param key The {@link KeyPair} to add - may not be {@code null}
-     * <B>Note:</B> this key is <U>in addition</U> to whatever keys
-     * are available via the {@link org.apache.sshd.common.keyprovider.KeyIdentityProvider} (if any)
+     * @param key The {@link KeyPair} to add - may not be {@code null} <B>Note:</B> this key is <U>in addition</U> to
+     *            whatever keys are available via the {@link org.apache.sshd.common.keyprovider.KeyIdentityProvider} (if
+     *            any)
      */
     void addPublicKeyIdentity(KeyPair key);
 
     /**
-     * @param kp The {@link KeyPair} to remove - ignored if {@code null}
-     * @return The removed {@link KeyPair} - same one that was added via
-     * {@link #addPublicKeyIdentity(KeyPair)} - or {@code null} if no
-     * match found
+     * @param  kp The {@link KeyPair} to remove - ignored if {@code null}
+     * @return    The removed {@link KeyPair} - same one that was added via {@link #addPublicKeyIdentity(KeyPair)} - or
+     *            {@code null} if no match found
      */
     KeyPair removePublicKeyIdentity(KeyPair kp);
 
     /**
-     * Retrieve the server key verifier to be used to check the key when connecting
-     * to an SSH server.
+     * Retrieve the server key verifier to be used to check the key when connecting to an SSH server.
      *
      * @return the {@link ServerKeyVerifier} to use - never {@code null}
      */
@@ -121,47 +118,21 @@ public interface ClientAuthenticationManager extends KeyIdentityProviderHolder {
     void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier);
 
     /**
-     * @return A {@link UserInteraction} object to communicate with the user
-     * (may be {@code null} to indicate that no such communication is allowed)
+     * @return A {@link UserInteraction} object to communicate with the user (may be {@code null} to indicate that no
+     *         such communication is allowed)
      */
     UserInteraction getUserInteraction();
 
     void setUserInteraction(UserInteraction userInteraction);
 
-    /**
-     * @return a {@link List} of {@link UserAuthFactory}-ies - never
-     * {@code null}/empty
-     */
-    List<UserAuthFactory> getUserAuthFactories();
-
-    default String getUserAuthFactoriesNameList() {
-        return NamedResource.getNames(getUserAuthFactories());
-    }
-
-    default List<String> getUserAuthFactoriesNames() {
-        return NamedResource.getNameList(getUserAuthFactories());
-    }
-
-    void setUserAuthFactories(List<UserAuthFactory> userAuthFactories);
-
-    default void setUserAuthFactoriesNameList(String names) {
-        setUserAuthFactoriesNames(GenericUtils.split(names, ','));
-    }
-
-    default void setUserAuthFactoriesNames(String... names) {
-        setUserAuthFactoriesNames(
-            GenericUtils.isEmpty((Object[]) names) ? Collections.emptyList() : Arrays.asList(names));
-    }
-
+    @Override
     default void setUserAuthFactoriesNames(Collection<String> names) {
-        BuiltinUserAuthFactories.ParseResult result =
-            BuiltinUserAuthFactories.parseFactoriesList(names);
-        List<UserAuthFactory> factories =
-            ValidateUtils.checkNotNullAndNotEmpty(
-                result.getParsedFactories(), "No supported cipher factories: %s", names);
+        BuiltinUserAuthFactories.ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(names);
+        List<UserAuthFactory> factories = ValidateUtils.checkNotNullAndNotEmpty(
+                result.getParsedFactories(), "No supported user authentication factories: %s", names);
         Collection<String> unsupported = result.getUnsupportedFactories();
         ValidateUtils.checkTrue(
-            GenericUtils.isEmpty(unsupported), "Unsupported cipher factories found: %s", unsupported);
+                GenericUtils.isEmpty(unsupported), "Unsupported user authentication factories found: %s", unsupported);
         setUserAuthFactories(factories);
     }
 }

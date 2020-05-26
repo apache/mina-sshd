@@ -39,7 +39,8 @@ public abstract class SecurityProviderRegistrarTestSupport extends JUnitTestSupp
         return testGetSecurityProviderCaching(prefix, registrar, registrar.getSecurityProvider());
     }
 
-    public static <P extends Provider> P testGetSecurityProviderCaching(String prefix, SecurityProviderRegistrar registrar, P expected) {
+    public static <P extends Provider> P testGetSecurityProviderCaching(
+            String prefix, SecurityProviderRegistrar registrar, P expected) {
         for (int index = 1; index <= Byte.SIZE; index++) {
             Provider actual = registrar.getSecurityProvider();
             assertSame(prefix + ": Mismatched provider instance at invocation #" + index, expected, actual);
@@ -56,7 +57,8 @@ public abstract class SecurityProviderRegistrarTestSupport extends JUnitTestSupp
     public static void assertSecurityEntitySupportState(
             String prefix, SecurityProviderRegistrar registrar, boolean expected, String name, Collection<Class<?>> entities) {
         for (Class<?> entity : entities) {
-            assertEquals(prefix + "[" + entity.getSimpleName() + "]", expected, registrar.isSecurityEntitySupported(entity, name));
+            assertEquals(prefix + "[" + entity.getSimpleName() + "]", expected,
+                    registrar.isSecurityEntitySupported(entity, name));
         }
     }
 }

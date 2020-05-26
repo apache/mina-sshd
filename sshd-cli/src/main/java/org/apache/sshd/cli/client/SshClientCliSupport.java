@@ -104,20 +104,21 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     public static boolean isArgumentedOption(String portOption, String argName) {
         return portOption.equals(argName)
-             || "-io".equals(argName)
-             || "-i".equals(argName)
-             || "-o".equals(argName)
-             || "-l".equals(argName)
-             || "-w".equals(argName)
-             || "-c".equals(argName)
-             || "-m".equals(argName)
-             || "-E".equals(argName);
+                || "-io".equals(argName)
+                || "-i".equals(argName)
+                || "-o".equals(argName)
+                || "-l".equals(argName)
+                || "-w".equals(argName)
+                || "-c".equals(argName)
+                || "-m".equals(argName)
+                || "-E".equals(argName);
     }
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
     public static ClientSession setupClientSession(
-            String portOption, BufferedReader stdin, Level level, PrintStream stdout, PrintStream stderr, String... args)
-                throws Exception {
+            String portOption, BufferedReader stdin, Level level,
+            PrintStream stdout, PrintStream stderr, String... args)
+            throws Exception {
         int port = -1;
         String host = null;
         String login = null;
@@ -176,10 +177,12 @@ public abstract class SshClientCliSupport extends CliSupport {
                 identities.add(idFile);
             } else if ("-C".equals(argName)) {
                 compressions = setupCompressions(argName,
-                    GenericUtils.join(
-                        Arrays.asList(
-                            BuiltinCompressions.Constants.ZLIB, BuiltinCompressions.Constants.DELAYED_ZLIB), ','),
-                    compressions, stderr);
+                        GenericUtils.join(
+                                Arrays.asList(
+                                        BuiltinCompressions.Constants.ZLIB,
+                                        BuiltinCompressions.Constants.DELAYED_ZLIB),
+                                ','),
+                        compressions, stderr);
                 if (GenericUtils.isEmpty(compressions)) {
                     error = true;
                     break;
@@ -218,7 +221,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 }
 
                 host = argName;
-                int pos = host.indexOf('@');  // check if user@host
+                int pos = host.indexOf('@'); // check if user@host
                 if (pos > 0) {
                     if (login == null) {
                         login = host.substring(0, pos);
@@ -241,8 +244,8 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         SshClient client = setupClient(
-            resolver, ciphers, macs, compressions, identities,
-            stdin, stdout, stderr, level, args);
+                resolver, ciphers, macs, compressions, identities,
+                stdin, stdout, stderr, level, args);
         if (client == null) {
             return null;
         }
@@ -259,12 +262,14 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
 
             // TODO use a configurable wait time
-            ClientSession session = client.connect(login, host, port).verify().getSession();
+            ClientSession session = client.connect(login, host, port)
+                    .verify()
+                    .getSession();
             try {
                 if (GenericUtils.length(password) > 0) {
                     session.addPasswordIdentity(password);
                 }
-                session.auth().verify(FactoryManager.DEFAULT_AUTH_TIMEOUT);    // TODO use a configurable wait time
+                session.auth().verify(FactoryManager.DEFAULT_AUTH_TIMEOUT); // TODO use a configurable wait time
                 return session;
             } catch (Exception e) {
                 session.close(true);
@@ -288,7 +293,8 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static Map<String, ?> resolveClientEnvironment(PropertyResolver resolver) {
-        return resolveClientEnvironment((resolver == null) ? Collections.emptyMap() : resolver.getProperties());
+        return resolveClientEnvironment(
+                (resolver == null) ? Collections.emptyMap() : resolver.getProperties());
     }
 
     public static Map<String, ?> resolveClientEnvironment(Map<String, ?> options) {
@@ -297,7 +303,7 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
 
         Map<String, Object> env = Collections.emptyMap();
-        for (String propName : new String[] {SshClientConfigFileReader.SETENV_PROP, SshClientConfigFileReader.SENDENV_PROP}) {
+        for (String propName : new String[] { SshClientConfigFileReader.SETENV_PROP, SshClientConfigFileReader.SENDENV_PROP }) {
             Object v = options.get(propName);
             String s = Objects.toString(v, null);
             if (GenericUtils.isEmpty(s)) {
@@ -315,7 +321,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
                 Object prev = env.put(key, value);
                 if (prev != null) {
-                    continue;   // debug breakpoint
+                    continue; // debug breakpoint
                 }
             }
         }
@@ -325,12 +331,15 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     public static PtyChannelConfiguration resolveClientPtyOptions(PropertyResolver resolver)
             throws IOException, InterruptedException {
-        return resolveClientPtyOptions((resolver == null) ? Collections.emptyMap() : resolver.getProperties());
+        return resolveClientPtyOptions(
+                (resolver == null) ? Collections.emptyMap() : resolver.getProperties());
     }
 
     public static PtyChannelConfiguration resolveClientPtyOptions(Map<String, ?> options)
             throws IOException, InterruptedException {
-        Object v = GenericUtils.isEmpty(options) ? null : options.get(SshClientConfigFileReader.REQUEST_TTY_OPTION);
+        Object v = GenericUtils.isEmpty(options)
+                ? null
+                : options.get(SshClientConfigFileReader.REQUEST_TTY_OPTION);
         String s = Objects.toString(v, "auto");
         boolean autoDetect = "auto".equalsIgnoreCase(s);
         Boolean ptyEnabled = autoDetect ? Boolean.TRUE : PropertyResolverUtils.parseBoolean(s);
@@ -365,12 +374,13 @@ public abstract class SshClientCliSupport extends CliSupport {
         for (String kve : kvp) {
             int pos = kve.indexOf('=');
             String key = (pos >= 0) ? kve.substring(0, pos) : kve;
-            PtyMode mode = ValidateUtils.checkNotNull(PtyMode.fromName(key), "Unknown PTY mode: %s", key);
+            PtyMode mode = ValidateUtils.checkNotNull(
+                    PtyMode.fromName(key), "Unknown PTY mode: %s", key);
             s = (pos >= 0) ? kve.substring(pos + 1) : "";
             Integer value = GenericUtils.isEmpty(s) ? Integer.valueOf(1) : Integer.valueOf(s);
             Integer prev = ptyModes.put(mode, value);
             if (prev != null) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
         }
 
@@ -378,8 +388,10 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static SshClient setupDefaultClient(
-            PropertyResolver resolver, Level level, PrintStream stdout, PrintStream stderr, String... args) {
-        SshClient client = setupIoServiceFactory(SshClient.setUpDefaultClient(), resolver, level, stdout, stderr, args);
+            PropertyResolver resolver, Level level,
+            PrintStream stdout, PrintStream stderr, String... args) {
+        SshClient client = setupIoServiceFactory(
+                SshClient.setUpDefaultClient(), resolver, level, stdout, stderr, args);
         SshClientConfigFileReader.setupClientHeartbeat(client, resolver);
         return client;
     }
@@ -394,7 +406,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr,
             Level level, String[] args)
-                throws Exception {
+            throws Exception {
         if (GenericUtils.isEmpty(ciphers)) {
             ciphers = setupCiphers(resolver, stderr);
             if (ciphers == null) {
@@ -441,6 +453,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
 
             setupServerKeyVerifier(client, resolver, stdin, stdout, stderr);
+            setupUserAuthFactories(client, resolver);
             setupSessionUserInteraction(client, stdin, stdout, stderr);
             setupSessionExtensions(client, resolver, stdin, stdout, stderr);
 
@@ -460,7 +473,7 @@ public abstract class SshClientCliSupport extends CliSupport {
     public static FileKeyPairProvider setupSessionIdentities(
             ClientFactoryManager client, Collection<? extends Path> identities,
             BufferedReader stdin, PrintStream stdout, PrintStream stderr)
-                throws Throwable {
+            throws Throwable {
         client.setFilePasswordProvider((session, file, index) -> {
             stdout.print("Enter password for private key file=" + file + ": ");
             return stdin.readLine();
@@ -502,7 +515,9 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
 
             @Override
-            public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(
+                    ClientSession clientSession, String name, String instruction,
+                    String lang, String[] prompt, boolean[] echo) {
                 int numPropmts = GenericUtils.length(prompt);
                 String[] answers = new String[numPropmts];
                 try {
@@ -512,7 +527,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                     }
                 } catch (IOException e) {
                     stderr.append("WARNING: ").append(e.getClass().getSimpleName())
-                        .append(" while read prompts: ").println(e.getMessage());
+                            .append(" while read prompts: ").println(e.getMessage());
                 }
                 return answers;
             }
@@ -524,7 +539,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                     return stdin.readLine();
                 } catch (IOException e) {
                     stderr.append("WARNING: ").append(e.getClass().getSimpleName())
-                        .append(" while read password: ").println(e.getMessage());
+                            .append(" while read password: ").println(e.getMessage());
                     return null;
                 }
             }
@@ -534,10 +549,12 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static void setupSessionExtensions(
-            KexFactoryManager manager, PropertyResolver resolver, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
-                throws Exception {
+            KexFactoryManager manager, PropertyResolver resolver,
+            BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+            throws Exception {
         Map<String, ?> options = resolver.getProperties();
-        String kexExtension = Objects.toString(options.remove(KexExtensionHandler.class.getSimpleName()), null);
+        String kexExtension = Objects.toString(
+                options.remove(KexExtensionHandler.class.getSimpleName()), null);
         if (GenericUtils.isEmpty(kexExtension)) {
             return;
         }
@@ -553,8 +570,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                 manager.setKexExtensionHandler(handler);
             } catch (Exception e) {
                 stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
-                    .append(" to instantiate KEX extension handler=").append(kexExtension)
-                    .append(": ").println(e.getMessage());
+                        .append(" to instantiate KEX extension handler=").append(kexExtension)
+                        .append(": ").println(e.getMessage());
                 stderr.flush();
                 throw e;
             }
@@ -573,44 +590,49 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
 
         Map<String, ?> options = resolver.getProperties();
-        String strictValue =
-            Objects.toString(options.remove(KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION), "true");
+        String strictValue = Objects.toString(
+                options.remove(KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION), "true");
         if (!ConfigFileReaderSupport.parseBooleanValue(strictValue)) {
             return current;
         }
 
-        String filePath = Objects.toString(options.remove(KnownHostsServerKeyVerifier.KNOWN_HOSTS_FILE_OPTION), null);
+        String filePath = Objects.toString(
+                options.remove(KnownHostsServerKeyVerifier.KNOWN_HOSTS_FILE_OPTION), null);
         if (GenericUtils.isEmpty(filePath)) {
             current = new DefaultKnownHostsServerKeyVerifier(current);
-        } else {    // if user specifies a different location than default be lenient
+        } else { // if user specifies a different location than default be lenient
             current = new DefaultKnownHostsServerKeyVerifier(current, false, Paths.get(filePath));
         }
 
-        ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor((clientSession, remoteAddress, entry, expected, actual) -> {
-            stderr.append("WARNING: Mismatched keys presented by ").append(Objects.toString(remoteAddress))
-                  .append(" for entry=").println(entry);
-            stderr.append("    ").append("Expected=").append(KeyUtils.getKeyType(expected))
-                  .append('-').println(KeyUtils.getFingerPrint(expected));
-            stderr.append("    ").append("Actual=").append(KeyUtils.getKeyType(actual))
-                  .append('-').println(KeyUtils.getFingerPrint(actual));
-            stderr.flush(); // just making sure
+        ((KnownHostsServerKeyVerifier) current).setModifiedServerKeyAcceptor(
+                (clientSession, remoteAddress, entry, expected, actual) -> {
+                    stderr.append("WARNING: Mismatched keys presented by ").append(Objects.toString(remoteAddress))
+                            .append(" for entry=").println(entry);
+                    stderr.append("    ").append("Expected=").append(KeyUtils.getKeyType(expected))
+                            .append('-').println(KeyUtils.getFingerPrint(expected));
+                    stderr.append("    ").append("Actual=").append(KeyUtils.getKeyType(actual))
+                            .append('-').println(KeyUtils.getFingerPrint(actual));
+                    stderr.flush(); // just making sure
 
-            stdout.append("Accept key and update known hosts: y/[N]");
-            stdout.flush(); // just making sure
+                    stdout.append("Accept key and update known hosts: y/[N]");
+                    stdout.flush(); // just making sure
 
-            String ans = GenericUtils.trimToEmpty(stdin.readLine());
-            return (GenericUtils.length(ans) > 0) && (Character.toLowerCase(ans.charAt(0)) == 'y');
-        });
+                    String ans = GenericUtils.trimToEmpty(stdin.readLine());
+                    return (GenericUtils.length(ans) > 0)
+                            && (Character.toLowerCase(ans.charAt(0)) == 'y');
+                });
 
         manager.setServerKeyVerifier(current);
         return current;
     }
 
-    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String... args) {
+    public static OutputStream resolveLoggingTargetStream(
+            PrintStream stdout, PrintStream stderr, String... args) {
         return resolveLoggingTargetStream(stdout, stderr, args, GenericUtils.length(args));
     }
 
-    public static OutputStream resolveLoggingTargetStream(PrintStream stdout, PrintStream stderr, String[] args, int maxIndex) {
+    public static OutputStream resolveLoggingTargetStream(
+            PrintStream stdout, PrintStream stderr, String[] args, int maxIndex) {
         for (int index = 0; index < maxIndex; index++) {
             String argName = args[index];
             if ("-E".equals(argName)) {
@@ -628,7 +650,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                     Path path = Paths.get(argVal).normalize().toAbsolutePath();
                     return Files.newOutputStream(path);
                 } catch (IOException e) {
-                    showError(stderr, "Failed (" + e.getClass().getSimpleName() + ") to open " + argVal + ": " + e.getMessage());
+                    showError(stderr,
+                            "Failed (" + e.getClass().getSimpleName() + ") to open " + argVal + ": " + e.getMessage());
                     return null;
                 }
             }
@@ -638,7 +661,8 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static List<NamedFactory<Compression>> setupCompressions(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(options, ConfigFileReaderSupport.COMPRESSION_PROP);
+        String argVal = PropertyResolverUtils.getString(
+                options, ConfigFileReaderSupport.COMPRESSION_PROP);
         if (GenericUtils.isEmpty(argVal)) {
             return Collections.emptyList();
         }
@@ -668,20 +692,23 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported compressions: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported compressions: ")
+                    .println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);
     }
 
     public static List<NamedFactory<Mac>> setupMacs(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(options, ConfigFileReaderSupport.MACS_CONFIG_PROP);
+        String argVal = PropertyResolverUtils.getString(
+                options, ConfigFileReaderSupport.MACS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
-             ? Collections.emptyList()
-             : setupMacs(ConfigFileReaderSupport.MACS_CONFIG_PROP, argVal, null, stderr);
+                ? Collections.emptyList()
+                : setupMacs(ConfigFileReaderSupport.MACS_CONFIG_PROP, argVal, null, stderr);
     }
 
-    public static List<NamedFactory<Mac>> setupMacs(String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
+    public static List<NamedFactory<Mac>> setupMacs(
+            String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
             showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
@@ -696,21 +723,24 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported MACs: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported MACs: ")
+                    .println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);
     }
 
     public static List<NamedFactory<Cipher>> setupCiphers(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(options, ConfigFileReaderSupport.CIPHERS_CONFIG_PROP);
+        String argVal = PropertyResolverUtils.getString(
+                options, ConfigFileReaderSupport.CIPHERS_CONFIG_PROP);
         return GenericUtils.isEmpty(argVal)
-             ? Collections.emptyList()
-             : setupCiphers(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, argVal, null, stderr);
+                ? Collections.emptyList()
+                : setupCiphers(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, argVal, null, stderr);
     }
 
     // returns null - e.g., re-specified or no supported cipher found
-    public static List<NamedFactory<Cipher>> setupCiphers(String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
+    public static List<NamedFactory<Cipher>> setupCiphers(
+            String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
             showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
@@ -725,13 +755,15 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         Collection<String> unsupported = result.getUnsupportedFactories();
         if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported ciphers: ").println(GenericUtils.join(unsupported, ','));
+            stderr.append("WARNING: Ignored unsupported ciphers: ")
+                    .println(GenericUtils.join(unsupported, ','));
         }
 
         return new ArrayList<>(available);
     }
 
-    public static Handler setupLogging(Level level, PrintStream stdout, PrintStream stderr, OutputStream outputStream) {
+    public static Handler setupLogging(
+            Level level, PrintStream stdout, PrintStream stderr, OutputStream outputStream) {
         Handler fh = new ConsoleHandler() {
             {
                 setOutputStream(outputStream); // override the default (stderr)
@@ -757,7 +789,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                     StringWriter sw = new StringWriter();
                     try (PrintWriter pw = new PrintWriter(sw)) {
                         pw.println();
-                        t.printStackTrace(pw);  // NOPMD
+                        t.printStackTrace(pw); // NOPMD
                     }
                     throwable = sw.toString();
                 }

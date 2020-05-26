@@ -23,11 +23,12 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Response for the &quot;statvfs@openssh.com&quot; and &quot;fstatvfs@openssh.com&quot;
- * extension commands.
+ * Response for the &quot;statvfs@openssh.com&quot; and &quot;fstatvfs@openssh.com&quot; extension commands.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH section 3.4</A>
+ * @see    <A HREF=
+ *         "http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH
+ *         section 3.4</A>
  */
 public class OpenSSHStatExtensionInfo implements Cloneable {
     // The values of the f_flag bitmask
@@ -102,16 +103,16 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
     @Override
     public String toString() {
         return "f_bsize=" + f_bsize
-                + ",f_frsize=" + f_frsize
-                + ",f_blocks=" + f_blocks
-                + ",f_bfree=" + f_bfree
-                + ",f_bavail=" + f_bavail
-                + ",f_files=" + f_files
-                + ",f_ffree=" + f_ffree
-                + ",f_favail=" + f_favail
-                + ",f_fsid=" + f_fsid
-                + ",f_flag=0x" + Long.toHexString(f_flag)
-                + ",f_namemax=" + f_namemax;
+               + ",f_frsize=" + f_frsize
+               + ",f_blocks=" + f_blocks
+               + ",f_bfree=" + f_bfree
+               + ",f_bavail=" + f_bavail
+               + ",f_files=" + f_files
+               + ",f_ffree=" + f_ffree
+               + ",f_favail=" + f_favail
+               + ",f_fsid=" + f_fsid
+               + ",f_flag=0x" + Long.toHexString(f_flag)
+               + ",f_namemax=" + f_namemax;
     }
 
     public static void encode(Buffer buffer, OpenSSHStatExtensionInfo info) {

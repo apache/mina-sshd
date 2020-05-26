@@ -37,6 +37,9 @@ is restarted, the same keys will be used to authenticate the server and avoid th
 the host keys are modified. **Note**: saving key files in PEM format requires  that the [Bouncy Castle](https://www.bouncycastle.org/)
 supporting artifacts be available in the code's classpath.
 
+* `HostKeyCertificateProvider` - used for OpenSSH public-key certificate authentication system
+as defined in [this document](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
+
 * `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will
 be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple
 implementation that you can use if you want. This implementation will create a process and delegate everything to it,

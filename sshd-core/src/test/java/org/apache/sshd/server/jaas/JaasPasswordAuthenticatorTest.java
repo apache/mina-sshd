@@ -59,10 +59,11 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         Configuration config = new Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(DummyLoginModule.class.getName(),
-                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                            new HashMap<>())
+                return new AppConfigurationEntry[] {
+                        new AppConfigurationEntry(
+                                DummyLoginModule.class.getName(),
+                                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                                new HashMap<>())
                 };
             }
 
@@ -82,11 +83,13 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
     @Test
     public void testAuthenticator() {
         JaasPasswordAuthenticator auth = new JaasPasswordAuthenticator();
-        assertNull(auth.getDomain());
+        assertNull("Unexpected initial domain", auth.getDomain());
+
         auth.setDomain("domain");
-        assertEquals("domain", auth.getDomain());
-        assertTrue(auth.authenticate("sshd", "sshd"));
-        assertFalse(auth.authenticate("sshd", "dummy"));
+        assertEquals("Mismatched domain", "domain", auth.getDomain());
+
+        assertTrue(auth.authenticate("sshd", "sshd", null));
+        assertFalse(auth.authenticate("sshd", "dummy", null));
     }
 
     protected static class DummyLoginModule implements LoginModule {
@@ -102,7 +105,9 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         }
 
         @Override
-        public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
+        public void initialize(
+                Subject subject, CallbackHandler callbackHandler,
+                Map<String, ?> sharedState, Map<String, ?> options) {
             this.subject = subject;
             this.callbackHandler = callbackHandler;
         }

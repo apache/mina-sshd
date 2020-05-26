@@ -26,9 +26,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.mac.MacTest;
+import org.apache.sshd.common.mac.MacCompatibilityTest;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
@@ -51,19 +52,17 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import com.jcraft.jsch.JSch;
-
 /**
  * Test compression algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CompressionTest extends BaseTestSupport {
-    private static final Collection<KexProposalOption> COMPRESSION_OPTIONS =
-        Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
+    private static final Collection<KexProposalOption> COMPRESSION_OPTIONS
+            = Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
 
     private static SshServer sshd;
     private static int port;
@@ -97,8 +96,8 @@ public class CompressionTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = CoreTestSupportUtils.setupTestServer(MacTest.class);
-        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacTest.class));
+        sshd = CoreTestSupportUtils.setupTestServer(MacCompatibilityTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
         sshd.start();
         port = sshd.getPort();
     }

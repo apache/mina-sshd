@@ -43,11 +43,10 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UnixAgentFactory implements SshAgentFactory {
-    public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS =
-        Collections.unmodifiableList(
+    public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS = Collections.unmodifiableList(
             Arrays.asList(
-                ChannelAgentForwardingFactory.OPENSSH,
-                ChannelAgentForwardingFactory.IETF));
+                    ChannelAgentForwardingFactory.OPENSSH,
+                    ChannelAgentForwardingFactory.IETF));
 
     private Factory<CloseableExecutorService> executorServiceFactory;
 
@@ -67,8 +66,8 @@ public class UnixAgentFactory implements SshAgentFactory {
     public List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager) {
         if (executorServiceFactory != null) {
             return DEFAULT_FORWARDING_CHANNELS.stream()
-                .map(cf -> new ChannelAgentForwardingFactory(cf.getName(), executorServiceFactory))
-                .collect(Collectors.toList());
+                    .map(cf -> new ChannelAgentForwardingFactory(cf.getName(), executorServiceFactory))
+                    .collect(Collectors.toList());
         } else {
             return DEFAULT_FORWARDING_CHANNELS;
         }

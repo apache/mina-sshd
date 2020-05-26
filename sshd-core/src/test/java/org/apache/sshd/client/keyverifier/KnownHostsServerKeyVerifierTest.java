@@ -94,6 +94,40 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    public void testParallelLoading() {
+        KnownHostsServerKeyVerifier verifier
+                = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, entriesFile) {
+                    @Override
+                    public ModifiedServerKeyAcceptor getModifiedServerKeyAcceptor() {
+                        return (clientSession, remoteAddress, entry, expected, actual) -> true; // don't care here
+                    }
+
+                    @Override
+                    protected boolean acceptKnownHostEntries(
+                            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
+                            Collection<HostEntryPair> knownHosts) {
+                        if (GenericUtils.isEmpty(knownHosts)) {
+                            fail("Loaded known_hosts collection is empty!");
+                        }
+                        return super.acceptKnownHostEntries(clientSession, remoteAddress, serverKey, knownHosts);
+                    }
+                };
+
+        ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
+        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+
+        HOST_KEYS.entrySet().parallelStream().forEach(line -> {
+            KnownHostEntry entry = hostsEntries.get(line.getKey());
+
+            ClientSession session = Mockito.mock(ClientSession.class);
+            Mockito.when(session.getFactoryManager()).thenReturn(manager);
+
+            Mockito.when(session.getConnectAddress()).thenReturn(line.getKey());
+            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, line.getKey(), line.getValue()));
+        });
+    }
+
+    @Test
     public void testNoUpdatesNoNewHostsAuthentication() throws Exception {
         AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
@@ -108,7 +142,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             protected KnownHostEntry updateKnownHostsFile(
                     ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
                     Path file, Collection<HostEntryPair> knownHosts)
-                            throws Exception {
+                    throws Exception {
                 updateCount.incrementAndGet();
                 fail("updateKnownHostsFile(" + clientSession + ")[" + remoteAddress + "] unexpected invocation: " + file);
                 return super.updateKnownHostsFile(clientSession, remoteAddress, serverKey, file, knownHosts);
@@ -142,7 +176,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             protected KnownHostEntry updateKnownHostsFile(
                     ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
                     Path file, Collection<HostEntryPair> knownHosts)
-                            throws Exception {
+                    throws Exception {
                 updateCount.incrementAndGet();
                 return super.updateKnownHostsFile(clientSession, remoteAddress, serverKey, file, knownHosts);
             }
@@ -192,7 +226,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         KnownHostsServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {
             @Override
-            protected NamedFactory<Mac> getHostValueDigester(ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
+            protected NamedFactory<Mac> getHostValueDigester(
+                    ClientSession clientSession, SocketAddress remoteAddress, SshdSocketAddress hostIdentity) {
                 return KnownHostHashValue.DEFAULT_DIGEST;
             }
         };
@@ -233,16 +268,18 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         final PublicKey modifiedKey = kp.getPublic();
         final AtomicInteger acceptCount = new AtomicInteger(0);
-        ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
-            @Override
-            public boolean acceptModifiedServerKey(
-                    ClientSession clientSession, SocketAddress remoteAddress,
-                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
-                acceptCount.incrementAndGet();
-                assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
-                return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
-            }
-        };
+        ServerKeyVerifier verifier
+                = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
+                    @Override
+                    public boolean acceptModifiedServerKey(
+                            ClientSession clientSession, SocketAddress remoteAddress,
+                            KnownHostEntry entry, PublicKey expected, PublicKey actual)
+                            throws Exception {
+                        acceptCount.incrementAndGet();
+                        assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
+                        return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
+                    }
+                };
 
         int validationCount = 0;
         // Cannot use forEach because the validation count variable is not effectively final
@@ -265,7 +302,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             @Override
             public boolean acceptModifiedServerKey(
                     ClientSession clientSession, SocketAddress remoteAddress,
-                    KnownHostEntry entry, PublicKey expected, PublicKey actual) throws Exception {
+                    KnownHostEntry entry, PublicKey expected, PublicKey actual)
+                    throws Exception {
                 assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
                 return true;
             }

@@ -21,14 +21,18 @@ package org.apache.sshd.common.config.keys.loader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -50,10 +54,29 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
     @Override
     public byte[] applyPrivateKeyCipher(
             byte[] bytes, PrivateKeyEncryptionContext encContext, boolean encryptIt)
-                throws GeneralSecurityException, IOException {
+            throws GeneralSecurityException, IOException {
         int keyLength = resolveKeyLength(encContext);
         byte[] keyValue = deriveEncryptionKey(encContext, keyLength / Byte.SIZE);
         return applyPrivateKeyCipher(bytes, encContext, keyLength, keyValue, encryptIt);
+    }
+
+    @Override
+    protected int resolveInitializationVectorLength(PrivateKeyEncryptionContext encContext)
+            throws GeneralSecurityException {
+        int keyLength = resolveKeyLength(encContext);
+        CipherInformation ci = resolveCipherInformation(keyLength, encContext.getCipherMode());
+        if (ci == null) {
+            throw new NoSuchAlgorithmException("No match found for " + encContext);
+        }
+        return ci.getIVSize();
+    }
+
+    protected CipherInformation resolveCipherInformation(int keyLength, String cipherMode) {
+        Predicate<CipherInformation> selector = createCipherSelector(keyLength, cipherMode);
+        return BuiltinCiphers.VALUES.stream()
+                .filter(selector)
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -68,26 +91,34 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
                 }
             }
 
-            throw new InvalidKeySpecException("Unknown " + getCipherName() + " key length: " + cipherType + " - supported: " + sizes);
+            throw new InvalidKeySpecException(
+                    "Unknown " + getCipherName() + " key length: " + cipherType + " - supported: " + sizes);
         } catch (NumberFormatException e) {
-            throw new InvalidKeySpecException("Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(), e);
+            throw new InvalidKeySpecException(
+                    "Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(), e);
         }
     }
 
     /**
-     * @return A {@link List} of {@link Integer}s holding the available key
-     * lengths values (in bits) for the JVM. <B>Note:</B> AES 256 requires
-     * special JCE policy extension installation (e.g., for Java 7 see
-     * <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html">this link</A>)
+     * @return A {@link List} of {@link Integer}s holding the available key lengths values (in bits) for the JVM.
+     *         <B>Note:</B> AES 256 requires special JCE policy extension installation (e.g., for Java 7 see
+     *         <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html">this
+     *         link</A>)
      */
     @SuppressWarnings("synthetic-access")
     public static List<Integer> getAvailableKeyLengths() {
         return LazyKeyLengthsHolder.KEY_LENGTHS;
     }
 
+    public static Predicate<CipherInformation> createCipherSelector(int keyLength, String cipherMode) {
+        String xformMode = "/" + cipherMode.toUpperCase() + "/";
+        return c -> CIPHER_NAME.equalsIgnoreCase(c.getAlgorithm())
+                && (keyLength == c.getKeySize())
+                && c.getTransformation().contains(xformMode);
+    }
+
     private static final class LazyKeyLengthsHolder {
-        private static final List<Integer> KEY_LENGTHS =
-            Collections.unmodifiableList(detectSupportedKeySizes());
+        private static final List<Integer> KEY_LENGTHS = Collections.unmodifiableList(detectSupportedKeySizes());
 
         private LazyKeyLengthsHolder() {
             throw new UnsupportedOperationException("No instance allowed");

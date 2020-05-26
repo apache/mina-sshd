@@ -49,7 +49,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
@@ -65,28 +65,24 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
 
     @Parameters(name = "key={0}, digestFactory={1}, expected={2}")
     public static Collection<Object[]> parameters() throws IOException, GeneralSecurityException {
-        List<? extends Map.Entry<String, List<? extends Map.Entry<DigestFactory, String>>>> keyEntries =
-            Collections.unmodifiableList(Arrays.asList(
-                new SimpleImmutableEntry<>(
-                    // CHECKSTYLE:OFF
+        List<? extends Map.Entry<String, List<? extends Map.Entry<DigestFactory, String>>>> keyEntries
+                = Collections.unmodifiableList(Arrays.asList(
+                        new SimpleImmutableEntry<>(
+                        // CHECKSTYLE:OFF
                     "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAxr3N5fkt966xJINl0hH7Q6lLDRR1D0yMjcXCE5roE9VFut2ctGFuo90TCOxkPOMnwzw"
                     + "ConeyScVF4ConZeWsxbG9VtRh61IeZ6R5P5ZTvE9xPdZBgIEWvU1bRfrrOfSMihqF98pODspE6NoTtND2eglwSGwxcYFmpdTAmu+"
                     + "8qgxgGxlEaaCjqwdiNPZhygrH81Mv2ruolNeZkn4Bj+wFFmZTD/waN1pQaMf+SO1+kEYIYFNl5+8JRGuUcr8MhHHJB+gwqMTF2BSB"
                     + "VITJzZUiQR0TMtkK6Vbs7yt1F9hhzDzAFDwhV+rsfNQaOHpl3zP07qH+/99A0XG1CVcEdHqVMw== lgoldstein@LGOLDSTEIN-WIN7",
                     // CHECKSTYLE:ON
-                    Arrays.asList(
+                                Arrays.asList(
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.md5,
+                                                "MD5:24:32:3c:80:01:b3:e1:fa:7c:53:ca:e3:e8:4e:c6:8e"),
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.sha256,
+                                                "SHA256:1wNOZO+/XgNGJMx8UUJst33V+bBMTz5EcL0B6y2iRv0"))),
                         new SimpleImmutableEntry<>(
-                            BuiltinDigests.md5,
-                            "MD5:24:32:3c:80:01:b3:e1:fa:7c:53:ca:e3:e8:4e:c6:8e"
-                        ),
-                        new SimpleImmutableEntry<>(
-                            BuiltinDigests.sha256,
-                            "SHA256:1wNOZO+/XgNGJMx8UUJst33V+bBMTz5EcL0B6y2iRv0"
-                        )
-                    )
-                ),
-                new SimpleImmutableEntry<>(
-                    // CHECKSTYLE:OFF
+                        // CHECKSTYLE:OFF
                     "ssh-dss AAAAB3NzaC1kc3MAAACBAMg/IxsG5BxnF5gM7IKqqR0rftxZC+n5GlbO+J4H+iIb/KR8NBehkxG3CrBZMF96M2K1sEGYLob+"
                     + "3k4r71oWaPul8n5rt9kpd+JSq4iD2ygOyg6Kd1/YDBHoxneizy6I/bGsLwhAAKWcRNrXmYVKGzhrhvZWN12AJDq2mGdj3szLAAAAFQ"
                     + "D7a2MltdUSF7FU3//SpW4WGjZbeQAAAIBf0nNsfKQL/TEMo7IpTrEMg5V0RnSigCX0+yUERS42GW/ZeCZBJw7oL2XZbuBtu63vMjDg"
@@ -94,34 +90,25 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
                     + "AAAIEAtv+cdRfNevYFkp55jVqazc8zRLvfb64jzgc5oSJVc64kFs4yx+abYpGX9WxNxDlG6g2WiY8voDBB0YnUJsn0kVRjBKX9OceR"
                     + "OxrfT4K4dVbQZsdt+SLaXWL4lGJFrFZL3LZqvySvq6xfhJfakQDDivW4hUOhFPXPHrE5/Ia3T7A= dsa-key-20130709",
                     // CHECKSTYLE:ON
-                    Arrays.asList(
+                                Arrays.asList(
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.md5,
+                                                "MD5:fb:29:14:8d:94:f9:1d:cf:6b:0e:a4:35:1d:83:44:2f"),
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.sha256,
+                                                "SHA256:grxw4KhY1cK6eOczBWs7tDVvo9V0PQw4E1wN1gJvHlw"))),
                         new SimpleImmutableEntry<>(
-                            BuiltinDigests.md5,
-                            "MD5:fb:29:14:8d:94:f9:1d:cf:6b:0e:a4:35:1d:83:44:2f"
-                        ),
-                        new SimpleImmutableEntry<>(
-                            BuiltinDigests.sha256,
-                            "SHA256:grxw4KhY1cK6eOczBWs7tDVvo9V0PQw4E1wN1gJvHlw"
-                        )
-                    )
-                ),
-                new SimpleImmutableEntry<>(
-                    // CHECKSTYLE:OFF
+                        // CHECKSTYLE:OFF
                     "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBFImZtcTj842stlcVHLFBFxTEx7lu3j"
                     + "W9aZCvd0r9fUNKZ6LbRPh6l1oJ4ozArnw7XreQBUc5oNd9HB5RNJ8jl1nWXY5cXBA7McZrKZrYmk+zxNhH6UL+kMLaJkyngJHQw== root@osv-linux",
                     // CHECKSTYLE:ON
-                    Arrays.asList(
-                        new SimpleImmutableEntry<>(
-                            BuiltinDigests.md5,
-                            "MD5:e6:dc:a2:4f:5b:11:b2:3c:0f:e8:f6:d8:d1:01:e9:d3"
-                        ),
-                        new SimpleImmutableEntry<>(
-                            BuiltinDigests.sha512,
-                            "SHA512:4w6ZB78tmFWhpN2J50Ok6WeMJhZp1X0xN0EKWxZmRLcYDbCWhyJDe8lgrQKWqdTCMZ5aNEBl9xQUklcC5Gt2jg"
-                        )
-                    )
-                )
-            ));
+                                Arrays.asList(
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.md5,
+                                                "MD5:e6:dc:a2:4f:5b:11:b2:3c:0f:e8:f6:d8:d1:01:e9:d3"),
+                                        new SimpleImmutableEntry<>(
+                                                BuiltinDigests.sha512,
+                                                "SHA512:4w6ZB78tmFWhpN2J50Ok6WeMJhZp1X0xN0EKWxZmRLcYDbCWhyJDe8lgrQKWqdTCMZ5aNEBl9xQUklcC5Gt2jg")))));
 
         List<Object[]> ret = new ArrayList<>();
         for (Map.Entry<String, ? extends Collection<? extends Map.Entry<DigestFactory, String>>> kentry : keyEntries) {
@@ -129,7 +116,7 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
             try {
                 PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(keyValue);
                 PublicKey key = keyEntry.resolvePublicKey(
-                    null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
+                        null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
                 for (Map.Entry<DigestFactory, String> dentry : kentry.getValue()) {
                     DigestFactory factory = dentry.getKey();
                     String fingerprint = dentry.getValue();
@@ -138,7 +125,7 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
                         continue;
                     }
 
-                    ret.add(new Object[]{key, factory, fingerprint});
+                    ret.add(new Object[] { key, factory, fingerprint });
                 }
             } catch (InvalidKeySpecException e) {
                 System.out.println("Skip unsupported key: " + keyValue);
@@ -152,19 +139,16 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
     public void testFingerprint() throws Exception {
         String name = digestFactory.getName();
         assertEquals(
-            String.format("Fingerprint does not match for digest %s", name),
-            expected,
-            KeyUtils.getFingerPrint(digestFactory, key)
-        );
+                String.format("Fingerprint does not match for digest %s", name),
+                expected,
+                KeyUtils.getFingerPrint(digestFactory, key));
         assertEquals(
-            String.format("Fingerprint check failed for digest %s", name),
-            new SimpleImmutableEntry<>(true, expected),
-            KeyUtils.checkFingerPrint(expected, digestFactory, key)
-        );
+                String.format("Fingerprint check failed for digest %s", name),
+                new SimpleImmutableEntry<>(true, expected),
+                KeyUtils.checkFingerPrint(expected, digestFactory, key));
         assertEquals(
-            String.format("Fingerprint check succeeded for invalid digest %s", name),
-            new SimpleImmutableEntry<>(false, expected),
-            KeyUtils.checkFingerPrint(expected + "A", digestFactory, key)
-        );
+                String.format("Fingerprint check succeeded for invalid digest %s", name),
+                new SimpleImmutableEntry<>(false, expected),
+                KeyUtils.checkFingerPrint(expected + "A", digestFactory, key));
     }
 }

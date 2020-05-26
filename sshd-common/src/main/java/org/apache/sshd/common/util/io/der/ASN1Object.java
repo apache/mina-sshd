@@ -51,14 +51,10 @@ public class ASN1Object implements Serializable, Cloneable {
     }
 
     /*
-     * <P>The first byte in DER encoding is made of following fields</P>
-     * <pre>
-     *-------------------------------------------------
-     *|Bit 8|Bit 7|Bit 6|Bit 5|Bit 4|Bit 3|Bit 2|Bit 1|
-     *-------------------------------------------------
-     *|  Class    | CF  |        Type                 |
-     *-------------------------------------------------
-     * </pre>
+     * <P>The first byte in DER encoding is made of following fields</P> <pre>
+     * ------------------------------------------------- |Bit 8|Bit 7|Bit 6|Bit 5|Bit 4|Bit 3|Bit 2|Bit 1|
+     * ------------------------------------------------- | Class | CF | Type |
+     * ------------------------------------------------- </pre>
      */
     public ASN1Object(byte tag, int len, byte... data) {
         this(ASN1Class.fromDERValue(tag), ASN1Type.fromDERValue(tag), (tag & CONSTRUCTED) == CONSTRUCTED, len, data);
@@ -158,7 +154,7 @@ public class ASN1Object implements Serializable, Cloneable {
             case OBJECT_IDENTIFIER:
                 return asOID();
 
-            case SEQUENCE   :
+            case SEQUENCE:
                 return getValue();
 
             default:
@@ -168,7 +164,8 @@ public class ASN1Object implements Serializable, Cloneable {
 
     /**
      * Get the value as {@link BigInteger}
-     * @return BigInteger
+     * 
+     * @return             BigInteger
      * @throws IOException if type not an {@link ASN1Type#INTEGER}
      */
     public BigInteger asInteger() throws IOException {
@@ -187,7 +184,8 @@ public class ASN1Object implements Serializable, Cloneable {
 
     /**
      * Get value as string. Most strings are treated as Latin-1.
-     * @return Java string
+     * 
+     * @return             Java string
      * @throws IOException if
      */
     public String asString() throws IOException {
@@ -251,7 +249,7 @@ public class ASN1Object implements Serializable, Cloneable {
 
         for (int curPos = 1; curPos < vLen; curPos++) {
             int v = bytes[curPos] & 0xFF;
-            if (v <= 0x7F) {    // short form
+            if (v <= 0x7F) { // short form
                 oid.add(Integer.valueOf(v));
                 continue;
             }
@@ -264,17 +262,17 @@ public class ASN1Object implements Serializable, Cloneable {
                     throw new EOFException("Incomplete OID value");
                 }
 
-                if (subLen > 5) {   // 32 bit values can span at most 5 octets
+                if (subLen > 5) { // 32 bit values can span at most 5 octets
                     throw new StreamCorruptedException("OID component encoding beyond 5 bytes");
                 }
 
                 v = bytes[curPos] & 0xFF;
                 curVal = ((curVal << 7) & 0xFFFFFFFF80L) | (v & 0x7FL);
-                if (curVal  > Integer.MAX_VALUE) {
+                if (curVal > Integer.MAX_VALUE) {
                     throw new StreamCorruptedException("OID value exceeds 32 bits: " + curVal);
                 }
 
-                if (v <= 0x7F) {    // found last octet ?
+                if (v <= 0x7F) { // found last octet ?
                     break;
                 }
             }
@@ -288,9 +286,9 @@ public class ASN1Object implements Serializable, Cloneable {
     @Override
     public int hashCode() {
         return Objects.hash(getObjClass(), getObjType())
-             + Boolean.hashCode(isConstructed())
-             + getLength()
-             + NumberUtils.hashCode(getValue(), 0, getLength());
+               + Boolean.hashCode(isConstructed())
+               + getLength()
+               + NumberUtils.hashCode(getValue(), 0, getLength());
     }
 
     @Override
@@ -307,10 +305,10 @@ public class ASN1Object implements Serializable, Cloneable {
 
         ASN1Object other = (ASN1Object) obj;
         return Objects.equals(this.getObjClass(), other.getObjClass())
-            && Objects.equals(this.getObjType(), other.getObjType())
-            && (this.isConstructed() == other.isConstructed())
-            && (this.getLength() == other.getLength())
-            && (NumberUtils.diffOffset(this.getValue(), 0, other.getValue(), 0, this.getLength()) < 0);
+                && Objects.equals(this.getObjType(), other.getObjType())
+                && (this.isConstructed() == other.isConstructed())
+                && (this.getLength() == other.getLength())
+                && (NumberUtils.diffOffset(this.getValue(), 0, other.getValue(), 0, this.getLength()) < 0);
     }
 
     @Override
@@ -330,9 +328,9 @@ public class ASN1Object implements Serializable, Cloneable {
     @Override
     public String toString() {
         return Objects.toString(getObjClass())
-             + "/" + getObjType()
-             + "/" + isConstructed()
-             + "[" + getLength() + "]"
-             + ": " + BufferUtils.toHex(getValue(), 0, getLength(), ':');
+               + "/" + getObjType()
+               + "/" + isConstructed()
+               + "[" + getLength() + "]"
+               + ": " + BufferUtils.toHex(getValue(), 0, getLength(), ':');
     }
 }

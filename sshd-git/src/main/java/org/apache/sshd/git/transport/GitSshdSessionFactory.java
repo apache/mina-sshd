@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -37,7 +38,9 @@ import org.eclipse.jgit.util.FS;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitSshdSessionFactory extends SshSessionFactory implements ClientSessionHolder {
+public class GitSshdSessionFactory
+        extends SshSessionFactory
+        implements SessionHolder<ClientSession>, ClientSessionHolder {
     public static final GitSshdSessionFactory INSTANCE = new GitSshdSessionFactory();
 
     private final SshClient client;
@@ -48,8 +51,8 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     }
 
     /**
-     * Used to provide an externally managed {@link SshClient} instance. In this case, the
-     * caller is responsible for start/stop-ing the client once no longer needed.
+     * Used to provide an externally managed {@link SshClient} instance. In this case, the caller is responsible for
+     * start/stop-ing the client once no longer needed.
      *
      * @param client The (never {@code null}) client instance
      */
@@ -58,10 +61,10 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     }
 
     /**
-     * Used to provide an externally managed {@link ClientSession} instance. In this case, the
-     * caller is responsible for connecting and disconnecting the session once no longer needed.
-     * <B>Note:</B> in this case, the connection and authentication phase are <U>skipped</U> - i.e.,
-     * any specific host/port/user/password(s) specified in the GIT URI are <U>not used</U>.
+     * Used to provide an externally managed {@link ClientSession} instance. In this case, the caller is responsible for
+     * connecting and disconnecting the session once no longer needed. <B>Note:</B> in this case, the connection and
+     * authentication phase are <U>skipped</U> - i.e., any specific host/port/user/password(s) specified in the GIT URI
+     * are <U>not used</U>.
      *
      * @param session The (never {@code null}) client session instance
      */
@@ -75,7 +78,9 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     }
 
     @Override
-    public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws TransportException {
+    public RemoteSession getSession(
+            URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
+            throws TransportException {
         try {
             return new GitSshdSession(uri, credentialsProvider, fs, tms) {
                 @Override
@@ -91,7 +96,7 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
                 @Override
                 protected ClientSession createClientSession(
                         SshClient clientInstance, String host, String username, int port, String... passwords)
-                            throws IOException, InterruptedException {
+                        throws IOException, InterruptedException {
                     ClientSession thisSession = getClientSession();
                     if (thisSession != null) {
                         return thisSession;
@@ -132,5 +137,10 @@ public class GitSshdSessionFactory extends SshSessionFactory implements ClientSe
     @Override
     public ClientSession getClientSession() {
         return session;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
     }
 }

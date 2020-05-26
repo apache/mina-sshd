@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -100,9 +99,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         try (ClientSession session = client.connect(
                 getClass().getSimpleName(),
                 getClass().getPackage().getName(),
-                getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
+                getMovedPortNumber(port)).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             assertEffectiveRemoteAddress(session, entry);
         } finally {
             client.stop();
@@ -113,21 +112,21 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     public void testNegatedHostEntriesResolution() throws Exception {
         HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
         HostConfigEntry negativeEntry = new HostConfigEntry(
-            Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
-            positiveEntry.getHostName(),
-            getMovedPortNumber(positiveEntry.getPort()),
-            getClass().getPackage().getName());
+                Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
+                positiveEntry.getHostName(),
+                getMovedPortNumber(positiveEntry.getPort()),
+                getClass().getPackage().getName());
         client.setHostConfigEntryResolver(
-            HostConfigEntry.toHostConfigEntryResolver(
-                Arrays.asList(negativeEntry, positiveEntry)));
+                HostConfigEntry.toHostConfigEntryResolver(
+                        Arrays.asList(negativeEntry, positiveEntry)));
         client.start();
 
         try (ClientSession session = client.connect(
                 negativeEntry.getUsername(),
                 negativeEntry.getHostName(),
-                negativeEntry.getPort()).verify(7L, TimeUnit.SECONDS).getSession()) {
+                negativeEntry.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             assertEffectiveRemoteAddress(session, positiveEntry);
         } finally {
             client.stop();
@@ -158,7 +157,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     return Collections.singletonList(identity);
                 }
@@ -175,8 +174,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession session = client.connect(
-                user, host, getMovedPortNumber(port)).verify(7L, TimeUnit.SECONDS).getSession()) {
-            session.auth().verify(5L, TimeUnit.SECONDS);
+                user, host, getMovedPortNumber(port)).verify(CONNECT_TIMEOUT).getSession()) {
+            session.auth().verify(AUTH_TIMEOUT);
             assertEffectiveRemoteAddress(session, entry);
         } finally {
             client.stop();
@@ -186,8 +185,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testUseIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        KeyIdentityProvider clientIdProvider =
-            CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
+        KeyIdentityProvider clientIdProvider
+                = CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
         KeyPair specificIdentity = CommonTestSupportUtils.getFirstKeyPair(sshd);
         KeyPair defaultIdentity = CommonTestSupportUtils.getFirstKeyPair(clientIdProvider);
         ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity),
@@ -225,7 +224,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
             @Override
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 if (isValidLocation(location)) {
                     specificIdentityLoadCount.incrementAndGet();
                     return Collections.singletonList(specificIdentity);
@@ -247,9 +246,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession session = client.connect(entry)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
-            session.auth().verify(5L, TimeUnit.SECONDS);
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.auth().verify(AUTH_TIMEOUT);
             assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
             assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));
             assertEquals("Entry identity not used", 1, specificIdentityLoadCount.get());

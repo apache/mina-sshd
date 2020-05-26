@@ -41,7 +41,7 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
@@ -50,7 +50,7 @@ public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
     private final KeyIdentityProvider expected;
 
     public KeyIdentityProviderResolutionTest(
-            KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
+                                             KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
         this.p1 = p1;
         this.p2 = p2;
         this.expected = expected;
@@ -63,16 +63,18 @@ public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
             private static final long serialVersionUID = 1L;
 
             {
-                add(new Object[]{null, null, null});
-                add(new Object[]{null, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, KeyIdentityProvider.EMPTY_KEYS_PROVIDER});
-                add(new Object[]{KeyIdentityProvider.EMPTY_KEYS_PROVIDER, null, KeyIdentityProvider.EMPTY_KEYS_PROVIDER});
-                add(new Object[]{KeyIdentityProvider.EMPTY_KEYS_PROVIDER, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, KeyIdentityProvider.EMPTY_KEYS_PROVIDER});
+                add(new Object[] { null, null, null });
+                add(new Object[] { null, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, KeyIdentityProvider.EMPTY_KEYS_PROVIDER });
+                add(new Object[] { KeyIdentityProvider.EMPTY_KEYS_PROVIDER, null, KeyIdentityProvider.EMPTY_KEYS_PROVIDER });
+                add(new Object[] {
+                        KeyIdentityProvider.EMPTY_KEYS_PROVIDER, KeyIdentityProvider.EMPTY_KEYS_PROVIDER,
+                        KeyIdentityProvider.EMPTY_KEYS_PROVIDER });
 
                 KeyIdentityProvider p = createKeyIdentityProvider("MOCK");
-                add(new Object[]{null, p, p});
-                add(new Object[]{KeyIdentityProvider.EMPTY_KEYS_PROVIDER, p, p});
-                add(new Object[]{p, null, p});
-                add(new Object[]{p, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, p});
+                add(new Object[] { null, p, p });
+                add(new Object[] { KeyIdentityProvider.EMPTY_KEYS_PROVIDER, p, p });
+                add(new Object[] { p, null, p });
+                add(new Object[] { p, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, p });
             }
 
             private KeyIdentityProvider createKeyIdentityProvider(String name) {

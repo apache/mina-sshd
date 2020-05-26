@@ -36,9 +36,8 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param executors The {@link CloseableExecutorService} to use for spawning threads.
-     * If {@code null} then an internal service is allocated - in which case it
-     * is automatically shutdown
+     * @param executors The {@link CloseableExecutorService} to use for spawning threads. If {@code null} then an
+     *                  internal service is allocated - in which case it is automatically shutdown
      */
     public Nio2ServiceFactoryFactory(Factory<CloseableExecutorService> executors) {
         super(executors);

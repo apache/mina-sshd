@@ -47,12 +47,12 @@ import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
- * Tests the RootedFileSystemProvider implementation of
- * {@link java.nio.file.spi.FileSystemProvider} checking that permissions for
- * generic FS commands are not permitted outside of the root directory.
+ * Tests the RootedFileSystemProvider implementation of {@link java.nio.file.spi.FileSystemProvider} checking that
+ * permissions for generic FS commands are not permitted outside of the root directory.
  *
- * Individual tests are form pairs (e.g. testX, testXInvalid) where testXInvalid
- * is expected to test a parent path of {@link RootedFileSystem#getRoot()}
+ * Individual tests are form pairs (e.g. testX, testXInvalid) where testXInvalid is expected to test a parent path of
+ * {@link RootedFileSystem#getRoot()}
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -68,7 +68,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     @BeforeClass
     public static void initializeFileSystem() throws IOException {
         Path targetFolder = Objects.requireNonNull(
-            CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class), "Failed to detect target folder");
+                CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class),
+                "Failed to detect target folder");
         rootSandbox = FileHelper.createTestSandbox(targetFolder.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox, Collections.emptyMap());
     }
@@ -246,9 +247,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     /* Private helper */
 
     /**
-     * Wrapper around the FileSystemProvider to test generic FS related
-     * commands. All created temp directories and files used for testing are
-     * deleted upon JVM exit.
+     * Wrapper around the FileSystemProvider to test generic FS related commands. All created temp directories and files
+     * used for testing are deleted upon JVM exit.
      */
     @SuppressWarnings("synthetic-access")
     private static final class FileHelper {
@@ -259,10 +259,9 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         /**
          * Create a randomized test sandbox on each test execution
          *
-         * @param tempDir location to create the sandbox
-         * @return the created sandbox Path
-         * @throws IOException
-         *             on failure to create
+         * @param  tempDir     location to create the sandbox
+         * @return             the created sandbox Path
+         * @throws IOException on failure to create
          */
         public static Path createTestSandbox(Path tempDir) throws IOException {
             Path created = Files.createDirectories(tempDir.resolve(RootedFileSystemProviderTest.class.getSimpleName()));

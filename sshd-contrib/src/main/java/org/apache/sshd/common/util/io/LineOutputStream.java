@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Calls the actual writing method only when LF detected in the written stream.
- * <B>Note:</B> it strips CR if found before the LF
+ * Calls the actual writing method only when LF detected in the written stream. <B>Note:</B> it strips CR if found
+ * before the LF
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

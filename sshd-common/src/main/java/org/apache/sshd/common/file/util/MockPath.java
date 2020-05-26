@@ -170,7 +170,7 @@ public class MockPath implements Path {
 
     @Override
     public Iterator<Path> iterator() {
-        return Collections.<Path>singleton(this).iterator();
+        return Collections.<Path> singleton(this).iterator();
     }
 
     @Override

@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://unixhelp.ed.ac.uk/CGI/man-cgi?sshd_config+5">Time formats for SSH configuration values</A>
+ * @see    <A HREF="http://unixhelp.ed.ac.uk/CGI/man-cgi?sshd_config+5">Time formats for SSH configuration values</A>
  */
 public enum TimeValueConfig {
     SECONDS('s', 'S', TimeUnit.SECONDS.toMillis(1L)),
@@ -39,8 +39,7 @@ public enum TimeValueConfig {
     DAYS('d', 'D', TimeUnit.DAYS.toMillis(1L)),
     WEEKS('w', 'W', TimeUnit.DAYS.toMillis(7L));
 
-    public static final Set<TimeValueConfig> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
+    public static final Set<TimeValueConfig> VALUES = Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
 
     private final char loChar;
     private final char hiChar;
@@ -79,10 +78,10 @@ public enum TimeValueConfig {
     }
 
     /**
-     * @param s A time specification
-     * @return The specified duration in milliseconds
-     * @see #parse(String)
-     * @see #durationOf(Map)
+     * @param  s A time specification
+     * @return   The specified duration in milliseconds
+     * @see      #parse(String)
+     * @see      #durationOf(Map)
      */
     public static long durationOf(String s) {
         Map<TimeValueConfig, Long> spec = parse(s);
@@ -90,9 +89,9 @@ public enum TimeValueConfig {
     }
 
     /**
-     * @param s An input time specification containing possibly mixed numbers
-     *          and units - e.g., {@code 3h10m} to indicate 3 hours and 10 minutes
-     * @return A {@link Map} specifying for each time unit its count
+     * @param  s                        An input time specification containing possibly mixed numbers and units - e.g.,
+     *                                  {@code 3h10m} to indicate 3 hours and 10 minutes
+     * @return                          A {@link Map} specifying for each time unit its count
      * @throws NumberFormatException    If bad numbers found - e.g., negative counts
      * @throws IllegalArgumentException If bad format - e.g., unknown unit
      */
@@ -126,7 +125,8 @@ public enum TimeValueConfig {
 
             Long prev = spec.put(c, count);
             if (prev != null) {
-                throw new IllegalArgumentException("parse(" + s + ") " + c.name() + " value re-specified: current=" + count + ", previous=" + prev);
+                throw new IllegalArgumentException(
+                        "parse(" + s + ") " + c.name() + " value re-specified: current=" + count + ", previous=" + prev);
             }
 
             lastPos = curPos + 1;
@@ -144,7 +144,9 @@ public enum TimeValueConfig {
 
             Long prev = spec.put(SECONDS, count);
             if (prev != null) {
-                throw new IllegalArgumentException("parse(" + s + ") last component (" + SECONDS.name() + ") value re-specified: current=" + count + ", previous=" + prev);
+                throw new IllegalArgumentException(
+                        "parse(" + s + ") last component (" + SECONDS.name() + ") value re-specified: current=" + count
+                                                   + ", previous=" + prev);
             }
         }
 
@@ -152,8 +154,8 @@ public enum TimeValueConfig {
     }
 
     /**
-     * @param spec The {@link Map} specifying the count for each {@link TimeValueConfig}
-     * @return The total duration in milliseconds
+     * @param  spec                     The {@link Map} specifying the count for each {@link TimeValueConfig}
+     * @return                          The total duration in milliseconds
      * @throws IllegalArgumentException If negative count for a time unit
      */
     public static long durationOf(Map<TimeValueConfig, ? extends Number> spec) throws IllegalArgumentException {

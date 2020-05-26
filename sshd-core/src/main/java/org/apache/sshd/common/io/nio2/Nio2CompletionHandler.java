@@ -23,9 +23,9 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * @param <V> Result type
- * @param <A> Attachment type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <V> Result type
+ * @param  <A> Attachment type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V, A> {
     protected Nio2CompletionHandler() {

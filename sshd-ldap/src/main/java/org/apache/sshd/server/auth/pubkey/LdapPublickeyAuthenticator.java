@@ -40,11 +40,10 @@ import org.apache.sshd.server.auth.LdapAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * Uses LDAP to retrieve a user's registered public key and compare it with
- * the provided one. The default search pattern attempts to retrieve the user's
- * SSH public key value which is assumed to be in {@code OpenSSH} format. The
- * default assumes that the value resides in the {@link #DEFAULT_PUBKEY_ATTR_NAME}
- * attribute and can be either a single or a multi-valued one
+ * Uses LDAP to retrieve a user's registered public key and compare it with the provided one. The default search pattern
+ * attempts to retrieve the user's SSH public key value which is assumed to be in {@code OpenSSH} format. The default
+ * assumes that the value resides in the {@link #DEFAULT_PUBKEY_ATTR_NAME} attribute and can be either a single or a
+ * multi-valued one
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -62,8 +61,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
     }
 
     /**
-     * @return The LDAP attribute name containing the public key - assumed
-     * by default to be in {@code OpenSSH} format
+     * @return The LDAP attribute name containing the public key - assumed by default to be in {@code OpenSSH} format
      */
     public String getKeyAttributeName() {
         return keyAttributeName;
@@ -80,7 +78,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
             return authenticate(username, key, session, attrs);
         } catch (NamingException | GeneralSecurityException | IOException | RuntimeException e) {
             log.warn("authenticate({}@{}) failed ({}) to query: {}",
-                      username, session, e.getClass().getSimpleName(), e.getMessage());
+                    username, session, e.getClass().getSimpleName(), e.getMessage());
 
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + "@" + session + ") query failure details", e);
@@ -91,15 +89,15 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
     }
 
     /**
-     * @param username The SSH username attempting to authenticate
-     * @param expected The provided {@link PublicKey}
-     * @param session The {@link ServerSession}
-     * @param attrs The extracted LDAP attributes {@link Map}
-     * @return {@code true} whether to accept the presented public key
+     * @param  username                 The SSH username attempting to authenticate
+     * @param  expected                 The provided {@link PublicKey}
+     * @param  session                  The {@link ServerSession}
+     * @param  attrs                    The extracted LDAP attributes {@link Map}
+     * @return                          {@code true} whether to accept the presented public key
      * @throws GeneralSecurityException If failed to recover the public key(s)
-     * @throws IOException If failed to parse the public key(s) data
-     * @see #recoverPublicKeys(String, PublicKey, ServerSession, Map, Object)
-     * @see #authenticate(String, PublicKey, ServerSession, Map, Collection)
+     * @throws IOException              If failed to parse the public key(s) data
+     * @see                             #recoverPublicKeys(String, PublicKey, ServerSession, Map, Object)
+     * @see                             #authenticate(String, PublicKey, ServerSession, Map, Collection)
      */
     protected boolean authenticate(String username, PublicKey expected, ServerSession session, Map<String, ?> attrs)
             throws GeneralSecurityException, IOException {
@@ -109,14 +107,16 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
     }
 
     /**
-     * @param username The SSH username attempting to authenticate
-     * @param expected The provided {@link PublicKey}
-     * @param session The {@link ServerSession}
-     * @param attrs The extracted LDAP attributes {@link Map}
-     * @param keys The {@link Collection} of recovered {@link PublicKey}s - may be {@code null}/empty
-     * @return {@code true} whether to accept the presented public key
+     * @param  username The SSH username attempting to authenticate
+     * @param  expected The provided {@link PublicKey}
+     * @param  session  The {@link ServerSession}
+     * @param  attrs    The extracted LDAP attributes {@link Map}
+     * @param  keys     The {@link Collection} of recovered {@link PublicKey}s - may be {@code null}/empty
+     * @return          {@code true} whether to accept the presented public key
      */
-    protected boolean authenticate(String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Collection<? extends PublicKey> keys) {
+    protected boolean authenticate(
+            String username, PublicKey expected, ServerSession session, Map<String, ?> attrs,
+            Collection<? extends PublicKey> keys) {
         boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(keys)) {
             if (debugEnabled) {
@@ -133,9 +133,9 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
         for (PublicKey actual : keys) {
             if (traceEnabled) {
                 log.trace("authenticate({}@{}) expected={}-{}, actual={}-{}",
-                          username, session,
-                          KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),
-                          KeyUtils.getKeyType(actual), KeyUtils.getFingerPrint(actual));
+                        username, session,
+                        KeyUtils.getKeyType(expected), KeyUtils.getFingerPrint(expected),
+                        KeyUtils.getKeyType(actual), KeyUtils.getFingerPrint(actual));
             }
 
             if (KeyUtils.compareKeys(expected, actual)) {
@@ -151,18 +151,19 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
     }
 
     /**
-     * @param username The SSH username attempting to authenticate
-     * @param expected The provided {@link PublicKey}
-     * @param session The {@link ServerSession}
-     * @param attrs The extracted LDAP attributes {@link Map}
-     * @param keyData The value of the {@link #getKeyAttributeName()} attribute - may be {@code null},
-     * a single object or a collection of such (if multi-valued attribute)
-     * @return A {@link List} of the recovered {@link PublicKey}s - may be {@code null}/empty
+     * @param  username                 The SSH username attempting to authenticate
+     * @param  expected                 The provided {@link PublicKey}
+     * @param  session                  The {@link ServerSession}
+     * @param  attrs                    The extracted LDAP attributes {@link Map}
+     * @param  keyData                  The value of the {@link #getKeyAttributeName()} attribute - may be {@code null},
+     *                                  a single object or a collection of such (if multi-valued attribute)
+     * @return                          A {@link List} of the recovered {@link PublicKey}s - may be {@code null}/empty
      * @throws GeneralSecurityException If failed to recover the public key(s)
-     * @throws IOException If failed to parse the public key(s) data
-     * @see #parsePublicKeyValue(String, PublicKey, ServerSession, Map, Object)
+     * @throws IOException              If failed to parse the public key(s) data
+     * @see                             #parsePublicKeyValue(String, PublicKey, ServerSession, Map, Object)
      */
-    protected List<PublicKey> recoverPublicKeys(String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Object keyData)
+    protected List<PublicKey> recoverPublicKeys(
+            String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Object keyData)
             throws GeneralSecurityException, IOException {
         // handle case of multi-valued attribute
         if (keyData instanceof Collection<?>) {
@@ -171,7 +172,7 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
             for (Object v : values) {
                 PublicKey k = parsePublicKeyValue(username, expected, session, attrs, v);
                 if (k == null) {
-                    continue;   // debug breakpoint
+                    continue; // debug breakpoint
                 }
 
                 keys.add(k);
@@ -185,27 +186,28 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
     }
 
     /**
-     * @param username The SSH username attempting to authenticate
-     * @param expected The provided {@link PublicKey}
-     * @param session The {@link ServerSession}
-     * @param attrs The extracted LDAP attributes {@link Map}
-     * @param keyData One of the values (if multi-valued attribute) - may be {@code null}
-     * @return The extracted {@link PublicKey} or {@code null} if none available
+     * @param  username                 The SSH username attempting to authenticate
+     * @param  expected                 The provided {@link PublicKey}
+     * @param  session                  The {@link ServerSession}
+     * @param  attrs                    The extracted LDAP attributes {@link Map}
+     * @param  keyData                  One of the values (if multi-valued attribute) - may be {@code null}
+     * @return                          The extracted {@link PublicKey} or {@code null} if none available
      * @throws GeneralSecurityException If failed to recover the public key
-     * @throws IOException If failed to parse the public key data
+     * @throws IOException              If failed to parse the public key data
      */
     protected PublicKey parsePublicKeyValue(
             String username, PublicKey expected, ServerSession session, Map<String, ?> attrs, Object keyData)
-                throws GeneralSecurityException, IOException {
+            throws GeneralSecurityException, IOException {
         if (keyData == null) {
             return null;
         }
 
         AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(Objects.toString(keyData, null));
-        PublicKey key = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(session, PublicKeyEntryResolver.FAILING);
+        PublicKey key
+                = Objects.requireNonNull(entry, "No key extracted").resolvePublicKey(session, PublicKeyEntryResolver.FAILING);
         if (log.isTraceEnabled()) {
             log.trace("parsePublicKeyValue({}@{}) {}-{}",
-                      username, session, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                    username, session, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
         }
         return key;
     }

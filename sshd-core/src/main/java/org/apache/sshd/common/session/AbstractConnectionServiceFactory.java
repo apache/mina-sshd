@@ -31,12 +31,13 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBean implements PortForwardingEventListenerManager {
+public abstract class AbstractConnectionServiceFactory extends AbstractLoggingBean
+        implements PortForwardingEventListenerManager {
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
     protected AbstractConnectionServiceFactory() {
-        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, getClass().getClassLoader(), listeners);
+        listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
     }
 
     @Override

@@ -18,10 +18,8 @@
  */
 package org.apache.sshd.client.subsystem.sftp.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
@@ -48,6 +46,12 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.io.IoOutputStream;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -55,8 +59,9 @@ import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.NullOutputStream;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -67,38 +72,27 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Map<Integer, Buffer> messages = new HashMap<>();
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
-    private final byte[] workBuf = new byte[Integer.BYTES];
     private final AtomicInteger versionHolder = new AtomicInteger(0);
     private final AtomicBoolean closing = new AtomicBoolean(false);
     private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
     private Charset nameDecodingCharset = DEFAULT_NAME_DECODING_CHARSET;
 
-    public DefaultSftpClient(ClientSession clientSession) throws IOException {
+    /**
+     * @param  clientSession          The {@link ClientSession}
+     * @param  initialVersionSelector The initial {@link SftpVersionSelector} - if {@code null} then version 6 is
+     *                                assumed.
+     * @throws IOException            If failed to initialize
+     */
+    public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector) throws IOException {
         this.nameDecodingCharset = PropertyResolverUtils.getCharset(
-            clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
+                clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
-        this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
-        this.channel.setOut(new OutputStream() {
-            private final byte[] singleByte = new byte[1];
-
-            @Override
-            public void write(int b) throws IOException {
-                synchronized (singleByte) {
-                    singleByte[0] = (byte) b;
-                    write(singleByte);
-                }
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                data(b, off, len);
-            }
-        });
-        this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
+        this.channel = createSftpChannelSubsystem(clientSession);
+        clientSession.getService(ConnectionService.class).registerChannel(channel);
 
         long initializationTimeout = clientSession.getLongProperty(
-            SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+                SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
             synchronized (messages) {
@@ -112,7 +106,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         });
 
         try {
-            init(initializationTimeout);
+            init(clientSession, initialVersionSelector, initializationTimeout);
         } catch (IOException | RuntimeException e) {
             this.channel.close(true);
             throw e;
@@ -168,10 +162,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     /**
      * Receive binary data
-     * @param buf   The buffer for the incoming data
-     * @param start Offset in buffer to place the data
-     * @param len   Available space in buffer for the data
-     * @return Actual size of received data
+     *
+     * @param  buf         The buffer for the incoming data
+     * @param  start       Offset in buffer to place the data
+     * @param  len         Available space in buffer for the data
+     * @return             Actual size of received data
      * @throws IOException If failed to receive incoming data
      */
     protected int data(byte[] buf, int start, int len) throws IOException {
@@ -204,10 +199,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
     /**
      * Read SFTP packets from buffer
      *
-     * @param incoming The received {@link Buffer}
-     * @return {@code true} if data from incoming buffer was processed
+     * @param  incoming    The received {@link Buffer}
+     * @return             {@code true} if data from incoming buffer was processed
      * @throws IOException if failed to process the buffer
-     * @see #process(Buffer)
+     * @see                #process(Buffer)
      */
     protected boolean receive(Buffer incoming) throws IOException {
         int rpos = incoming.rpos();
@@ -239,7 +234,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     /**
      * Process an SFTP packet
      *
-     * @param incoming The received {@link Buffer}
+     * @param  incoming    The received {@link Buffer}
      * @throws IOException if failed to process the buffer
      */
     protected void process(Buffer incoming) throws IOException {
@@ -255,7 +250,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         if (log.isTraceEnabled()) {
             log.trace("process({}) id={}, type={}, len={}",
-                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
+                    getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
         synchronized (messages) {
@@ -270,15 +265,32 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int len = buffer.available();
         if (log.isTraceEnabled()) {
             log.trace("send({}) cmd={}, len={}, id={}",
-                  getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
+                    getClientChannel(), SftpConstants.getCommandMessageName(cmd), len, id);
         }
 
-        OutputStream dos = channel.getInvertedIn();
-        BufferUtils.writeInt(dos, 1 /* cmd */ + Integer.BYTES /* id */ + len, workBuf);
-        dos.write(cmd & 0xFF);
-        BufferUtils.writeInt(dos, id, workBuf);
-        dos.write(buffer.array(), buffer.rpos(), len);
-        dos.flush();
+        Buffer buf;
+        int hdr = Integer.BYTES /* length */ + 1 /* cmd */ + Integer.BYTES /* id */;
+        if (buffer.rpos() >= hdr) {
+            int wpos = buffer.wpos();
+            int s = buffer.rpos() - hdr;
+            buffer.rpos(s);
+            buffer.wpos(s);
+            buffer.putInt(1 /* cmd */ + Integer.BYTES /* id */ + len); // length
+            buffer.putByte((byte) (cmd & 0xFF)); // cmd
+            buffer.putInt(id); // id
+            buffer.wpos(wpos);
+            buf = buffer;
+        } else {
+            buf = new ByteArrayBuffer(hdr + len);
+            buf.putInt(1 /* cmd */ + Integer.BYTES /* id */ + len);
+            buf.putByte((byte) (cmd & 0xFF));
+            buf.putInt(id);
+            buf.putBuffer(buffer);
+        }
+
+        IoOutputStream asyncIn = channel.getAsyncIn();
+        IoWriteFuture writeFuture = asyncIn.writePacket(buf);
+        writeFuture.verify();
         return id;
     }
 
@@ -286,82 +298,151 @@ public class DefaultSftpClient extends AbstractSftpClient {
     public Buffer receive(int id) throws IOException {
         Session session = getClientSession();
         long idleTimeout = PropertyResolverUtils.getLongProperty(
-            session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+                session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
         if (idleTimeout <= 0L) {
             idleTimeout = FactoryManager.DEFAULT_IDLE_TIMEOUT;
         }
 
-        Integer reqId = id;
         boolean traceEnabled = log.isTraceEnabled();
         for (int count = 1;; count++) {
             if (isClosing() || (!isOpen())) {
                 throw new SshException("Channel is being closed");
             }
 
-            synchronized (messages) {
-                Buffer buffer = messages.remove(reqId);
-                if (buffer != null) {
-                    return buffer;
-                }
+            long rcvStart = System.nanoTime();
+            Buffer buffer = receive(id, idleTimeout);
+            long rcvEnd = System.nanoTime();
+            if (buffer != null) {
+                return buffer;
+            }
 
-                try {
-                    messages.wait(idleTimeout);
-                } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
-                }
+            long rcvDuration = TimeUnit.NANOSECONDS.toMillis(rcvEnd - rcvStart);
+            if (rcvDuration <= 0L) {
+                idleTimeout--;
+            } else {
+                idleTimeout -= rcvDuration;
+            }
+
+            if (idleTimeout <= 0L) {
+                throw new SshException("Timeout expired while waiting for id=" + id);
             }
 
             if (traceEnabled) {
-                log.trace("receive({}) check iteration #{} for id={}", this, count, reqId);
+                log.trace("receive({}) check iteration #{} for id={} remain time={}", this, count, id, idleTimeout);
             }
         }
     }
 
-    protected Buffer read() throws IOException {
-        InputStream dis = channel.getInvertedOut();
-        int length = BufferUtils.readInt(dis, workBuf);
-        // must have at least command + length
-        if (length < (1 + Integer.BYTES)) {
-            throw new IllegalArgumentException("Bad length: " + length);
-        }
-
-        Buffer buffer = new ByteArrayBuffer(length + Integer.BYTES, false);
-        buffer.putInt(length);
-        int nb = length;
-        while (nb > 0) {
-            int readLen = dis.read(buffer.array(), buffer.wpos(), nb);
-            if (readLen < 0) {
-                throw new IllegalArgumentException("Premature EOF while read " + length + " bytes - remaining=" + nb);
+    @Override
+    public Buffer receive(int id, long idleTimeout) throws IOException {
+        synchronized (messages) {
+            Buffer buffer = messages.remove(id);
+            if (buffer != null) {
+                return buffer;
             }
-            buffer.wpos(buffer.wpos() + readLen);
-            nb -= readLen;
+            if (idleTimeout > 0L) {
+                try {
+                    messages.wait(idleTimeout);
+                } catch (InterruptedException e) {
+                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
+                }
+            }
         }
-
-        return buffer;
+        return null;
     }
 
-    protected void init(long initializationTimeout) throws IOException {
-        ValidateUtils.checkTrue(initializationTimeout > 0L, "Invalid initialization timeout: %d", initializationTimeout);
+    protected void init(ClientSession session, SftpVersionSelector initialVersionSelector, long initializationTimeout)
+            throws IOException {
+        int initialVersion = (initialVersionSelector == null)
+                ? SftpConstants.SFTP_V6
+                : initialVersionSelector.selectVersion(
+                        session, true, SftpConstants.SFTP_V6, SftpSubsystemEnvironment.SUPPORTED_SFTP_VERSIONS);
+        ValidateUtils.checkState(SftpSubsystemEnvironment.SUPPORTED_SFTP_VERSIONS.contains(initialVersion),
+                "Unsupported initial version selected: %d", initialVersion);
 
         // Send init packet
-        OutputStream dos = channel.getInvertedIn();
-        BufferUtils.writeInt(dos, 5 /* total length */, workBuf);
-        dos.write(SftpConstants.SSH_FXP_INIT);
-        // Ask for the highest we support and see what the server says
-        BufferUtils.writeInt(dos, SftpConstants.SFTP_V6, workBuf);
-        dos.flush();
+        Buffer buf = new ByteArrayBuffer(INIT_COMMAND_SIZE + SshConstants.SSH_PACKET_HEADER_LEN);
+        buf.putInt(INIT_COMMAND_SIZE);
+        buf.putByte((byte) SftpConstants.SSH_FXP_INIT);
+        buf.putInt(initialVersion);
 
-        Buffer buffer;
-        Integer reqId;
+        boolean traceEnabled = log.isTraceEnabled();
+        IoOutputStream asyncIn = channel.getAsyncIn();
+        ClientChannel clientChannel = getClientChannel();
+        if (traceEnabled) {
+            log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
+        }
+        IoWriteFuture writeFuture = asyncIn.writePacket(buf);
+        writeFuture.verify();
+
+        if (traceEnabled) {
+            log.trace("init({}) wait for SSH_FXP_INIT respose (timeout={})", clientChannel, initializationTimeout);
+        }
+        Buffer buffer = waitForInitResponse(initializationTimeout);
+        handleInitResponse(buffer);
+    }
+
+    protected void handleInitResponse(Buffer buffer) throws IOException {
+        boolean traceEnabled = log.isTraceEnabled();
+        ClientChannel clientChannel = getClientChannel();
+        int length = buffer.getInt();
+        int type = buffer.getUByte();
+        int id = buffer.getInt();
+        if (traceEnabled) {
+            log.trace("handleInitResponse({}) id={} type={} len={}",
+                    clientChannel, id, SftpConstants.getCommandMessageName(type), length);
+        }
+
+        if (type == SftpConstants.SSH_FXP_VERSION) {
+            if ((id < SftpConstants.SFTP_V3) || (id > SftpConstants.SFTP_V6)) {
+                throw new SshException("Unsupported sftp version " + id);
+            }
+            versionHolder.set(id);
+
+            if (traceEnabled) {
+                log.trace("handleInitResponse({}) version={}", clientChannel, versionHolder);
+            }
+
+            while (buffer.available() > 0) {
+                String name = buffer.getString();
+                byte[] data = buffer.getBytes();
+                if (traceEnabled) {
+                    log.trace("handleInitResponse({}) added extension={}", clientChannel, name);
+                }
+                extensions.put(name, data);
+            }
+        } else if (type == SftpConstants.SSH_FXP_STATUS) {
+            int substatus = buffer.getInt();
+            String msg = buffer.getString();
+            String lang = buffer.getString();
+            if (traceEnabled) {
+                log.trace("handleInitResponse({})[id={}] - status: {} [{}] {}",
+                        clientChannel, id, SftpConstants.getStatusName(substatus), lang, msg);
+            }
+
+            throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
+        } else {
+            IOException err = handleUnexpectedPacket(
+                    SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
+            if (err != null) {
+                throw err;
+            }
+
+        }
+    }
+
+    protected Buffer waitForInitResponse(long initializationTimeout) throws IOException {
+        ValidateUtils.checkTrue(initializationTimeout > 0L, "Invalid initialization timeout: %d", initializationTimeout);
+
         synchronized (messages) {
             /*
-             * We need to use a timeout since if the remote server does not support
-             * SFTP, we will not know it immediately. This is due to the fact that the
-             * request for the subsystem does not contain a reply as to its success or
-             * failure. Thus, the SFTP channel is created by the client, but there is
-             * no one on the other side to reply - thus the need for the timeout
+             * We need to use a timeout since if the remote server does not support SFTP, we will not know it
+             * immediately. This is due to the fact that the request for the subsystem does not contain a reply as to
+             * its success or failure. Thus, the SFTP channel is created by the client, but there is no one on the other
+             * side to reply - thus the need for the timeout
              */
-            for (long remainingTimeout = initializationTimeout; (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
+            for (long remainingTimeout = initializationTimeout;
+                 (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
                 try {
                     long sleepStart = System.nanoTime();
                     messages.wait(remainingTimeout);
@@ -374,7 +455,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
                         remainingTimeout -= sleepMillis;
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
+                    throw (IOException) new InterruptedIOException(
+                            "Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
                 }
             }
 
@@ -383,65 +465,20 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
 
             if (messages.isEmpty()) {
-                throw new SocketTimeoutException("No incoming initialization response received within " + initializationTimeout + " msec.");
+                throw new SocketTimeoutException(
+                        "No incoming initialization response received within " + initializationTimeout + " msec.");
             }
 
             Collection<Integer> ids = messages.keySet();
             Iterator<Integer> iter = ids.iterator();
-            reqId = iter.next();
-            buffer = messages.remove(reqId);
-        }
-
-        int length = buffer.getInt();
-        int type = buffer.getUByte();
-        int id = buffer.getInt();
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
-            log.trace("init({}) id={} type={} len={}",
-                  getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
-        }
-
-        if (type == SftpConstants.SSH_FXP_VERSION) {
-            if ((id < SftpConstants.SFTP_V3) || (id > SftpConstants.SFTP_V6)) {
-                throw new SshException("Unsupported sftp version " + id);
-            }
-            versionHolder.set(id);
-
-            if (traceEnabled) {
-                log.trace("init({}) version={}", getClientChannel(), versionHolder);
-            }
-
-            while (buffer.available() > 0) {
-                String name = buffer.getString();
-                byte[] data = buffer.getBytes();
-                if (traceEnabled) {
-                    log.trace("init({}) added extension=", getClientChannel(), name);
-                }
-                extensions.put(name, data);
-            }
-        } else if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
-            if (traceEnabled) {
-                log.trace("init({})[id={}] - status: {} [{}] {}",
-                      getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
-            }
-
-            throwStatusException(SftpConstants.SSH_FXP_INIT, id, substatus, msg, lang);
-        } else {
-            IOException err = handleUnexpectedPacket(
-                SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
-            if (err != null) {
-                throw err;
-            }
-
+            Integer reqId = iter.next();
+            return messages.remove(reqId);
         }
     }
 
     /**
-     * @param selector The {@link SftpVersionSelector} to use - ignored if {@code null}
-     * @return The selected version (may be same as current)
+     * @param  selector    The {@link SftpVersionSelector} to use - ignored if {@code null}
+     * @return             The selected version (may be same as current)
      * @throws IOException If failed to negotiate
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
@@ -461,20 +498,20 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if ((GenericUtils.size(extensions) > 0)
                 && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed)
-                ? null
-                : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
+                    ? null
+                    : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             availableVersions = (vers == null)
-                ? Collections.singletonList(current)
-                : vers.resolveAvailableVersions(current);
+                    ? Collections.singletonList(current)
+                    : vers.resolveAvailableVersions(current);
         } else {
             availableVersions = Collections.singletonList(current);
         }
 
         ClientSession session = getClientSession();
-        int selected = selector.selectVersion(session, current, availableVersions);
+        int selected = selector.selectVersion(session, false, current, availableVersions);
         if (debugEnabled) {
             log.debug("negotiateVersion({}) current={} {} -> {}",
-                clientChannel, current, availableVersions, selected);
+                    clientChannel, current, availableVersions, selected);
         }
 
         if (selected == current) {
@@ -483,17 +520,108 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         if (!availableVersions.contains(selected)) {
             throw new StreamCorruptedException(
-                "Selected version (" + selected + ") not part of available: " + availableVersions);
+                    "Selected version (" + selected + ") not part of available: " + availableVersions);
         }
 
         String verVal = String.valueOf(selected);
         Buffer buffer = new ByteArrayBuffer(
-                Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
-                + Integer.BYTES + verVal.length() + Byte.SIZE, false);
+                Integer.BYTES + SftpConstants.EXT_VERSION_SELECT.length() // extension name
+                                            + Integer.BYTES + verVal.length() + Byte.SIZE,
+                false);
         buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkCommandStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
         versionHolder.set(selected);
         return selected;
+    }
+
+    protected ChannelSubsystem createSftpChannelSubsystem(ClientSession clientSession) {
+        return new SftpChannelSubsystem();
+    }
+
+    protected class SftpChannelSubsystem extends ChannelSubsystem {
+        protected SftpChannelSubsystem() {
+            super(SftpConstants.SFTP_SUBSYSTEM_NAME);
+        }
+
+        @Override
+        protected void doOpen() throws IOException {
+            String systemName = getSubsystem();
+            Session session = getSession();
+            boolean wantReply = this.getBooleanProperty(
+                    REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
+                    Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
+            buffer.putInt(getRecipient());
+            buffer.putString(Channel.CHANNEL_SUBSYSTEM);
+            buffer.putBoolean(wantReply);
+            buffer.putString(systemName);
+            addPendingRequest(Channel.CHANNEL_SUBSYSTEM, wantReply);
+            writePacket(buffer);
+
+            asyncIn = createAsyncInput(session);
+            setOut(createStdOutputStream(session));
+            setErr(createErrOutputStream(session));
+        }
+
+        protected ChannelAsyncOutputStream createAsyncInput(Session session) {
+            return new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                protected CloseFuture doCloseGracefully() {
+                    try {
+                        sendEof();
+                    } catch (IOException e) {
+                        session.exceptionCaught(e);
+                    }
+                    return super.doCloseGracefully();
+                }
+
+                @Override
+                protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
+                    if ((buffer.rpos() >= 9) && (length == buffer.available())) {
+                        int rpos = buffer.rpos();
+                        int wpos = buffer.wpos();
+                        buffer.rpos(rpos - 9);
+                        buffer.wpos(rpos - 8);
+                        buffer.putInt(channel.getRecipient());
+                        buffer.putInt(length);
+                        buffer.wpos(wpos);
+                        Buffer buf = new ByteArrayBuffer(buffer.array(), buffer.rpos(), buffer.available());
+                        buffer.rpos(buffer.wpos());
+                        return buf;
+                    } else {
+                        return super.createSendBuffer(buffer, channel, length);
+                    }
+                }
+            };
+        }
+
+        protected OutputStream createStdOutputStream(Session session) {
+            return new OutputStream() {
+                private final byte[] singleByte = new byte[1];
+
+                @Override
+                public void write(int b) throws IOException {
+                    synchronized (singleByte) {
+                        singleByte[0] = (byte) b;
+                        write(singleByte);
+                    }
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException {
+                    data(b, off, len);
+                }
+            };
+        }
+
+        protected OutputStream createErrOutputStream(Session session) {
+            /*
+             * The protocol does not specify how to handle such data but we are lenient and ignore it - similar to
+             * /dev/null
+             */
+            return new NullOutputStream();
+        }
     }
 }

@@ -52,7 +52,7 @@ public enum BuiltinIdentities implements Identity {
     RSA(Constants.RSA, RSAPublicKey.class, RSAPrivateKey.class, KeyPairProvider.SSH_RSA),
     DSA(Constants.DSA, DSAPublicKey.class, DSAPrivateKey.class, KeyPairProvider.SSH_DSS),
     ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class,
-            ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())) {
+          ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())) {
         @Override
         public boolean isSupported() {
             return SecurityUtils.isECCSupported();
@@ -68,16 +68,14 @@ public enum BuiltinIdentities implements Identity {
         }
     };
 
-    public static final Set<BuiltinIdentities> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
+    public static final Set<BuiltinIdentities> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
 
     /**
      * A case <u>insensitive</u> {@link NavigableSet} of all built-in identities names
      */
-    public static final NavigableSet<String> NAMES =
-        Collections.unmodifiableNavigableSet(
+    public static final NavigableSet<String> NAMES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(
-                String.CASE_INSENSITIVE_ORDER, NamedResource.getNameList(VALUES)));
+                    String.CASE_INSENSITIVE_ORDER, NamedResource.getNameList(VALUES)));
 
     private final String name;
     private final String algorithm;
@@ -90,25 +88,25 @@ public enum BuiltinIdentities implements Identity {
     }
 
     BuiltinIdentities(String name, String algorithm,
-            Class<? extends PublicKey> pubType,
-            Class<? extends PrivateKey> prvType,
-            String keyType) {
+                      Class<? extends PublicKey> pubType,
+                      Class<? extends PrivateKey> prvType,
+                      String keyType) {
         this(name, algorithm, pubType, prvType,
-            Collections.singletonList(
-                ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified")));
+             Collections.singletonList(
+                     ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified")));
     }
 
     BuiltinIdentities(String name, String algorithm,
-            Class<? extends PublicKey> pubType,
-            Class<? extends PrivateKey> prvType,
-            Collection<String> keyTypes) {
+                      Class<? extends PublicKey> pubType,
+                      Class<? extends PrivateKey> prvType,
+                      Collection<String> keyTypes) {
         this.name = name.toLowerCase();
         this.algorithm = algorithm.toUpperCase();
         this.pubType = pubType;
         this.prvType = prvType;
         this.types = Collections.unmodifiableNavigableSet(
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
+                GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                        ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
     }
 
     @Override
@@ -142,18 +140,18 @@ public enum BuiltinIdentities implements Identity {
     }
 
     /**
-     * @param name The identity name - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinIdentities} whose {@link #getName()}
-     * value matches case <U>insensitive</U> or {@code null} if no match found
+     * @param  name The identity name - ignored if {@code null}/empty
+     * @return      The matching {@link BuiltinIdentities} whose {@link #getName()} value matches case
+     *              <U>insensitive</U> or {@code null} if no match found
      */
     public static BuiltinIdentities fromName(String name) {
         return NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**
-     * @param algorithm The algorithm  - ignored if {@code null}/empty
-     * @return The matching {@link BuiltinIdentities} whose {@link #getAlgorithm()}
-     * value matches case <U>insensitive</U> or {@code null} if no match found
+     * @param  algorithm The algorithm - ignored if {@code null}/empty
+     * @return           The matching {@link BuiltinIdentities} whose {@link #getAlgorithm()} value matches case
+     *                   <U>insensitive</U> or {@code null} if no match found
      */
     public static BuiltinIdentities fromAlgorithm(String algorithm) {
         if (GenericUtils.isEmpty(algorithm)) {
@@ -170,11 +168,10 @@ public enum BuiltinIdentities implements Identity {
     }
 
     /**
-     * @param kp The {@link KeyPair} - ignored if {@code null}
-     * @return The matching {@link BuiltinIdentities} provided <U>both</U>
-     * public and public keys are of the same type - {@code null} if no
-     * match could be found
-     * @see #fromKey(Key)
+     * @param  kp The {@link KeyPair} - ignored if {@code null}
+     * @return    The matching {@link BuiltinIdentities} provided <U>both</U> public and public keys are of the same
+     *            type - {@code null} if no match could be found
+     * @see       #fromKey(Key)
      */
     public static BuiltinIdentities fromKeyPair(KeyPair kp) {
         if (kp == null) {
@@ -186,27 +183,26 @@ public enum BuiltinIdentities implements Identity {
         if (Objects.equals(i1, i2)) {
             return i1;
         } else {
-            return null;    // some kind of mixed keys...
+            return null; // some kind of mixed keys...
         }
     }
 
     /**
-     * @param key The {@link Key} instance - ignored if {@code null}
-     * @return The matching {@link BuiltinIdentities} whose either public or
-     * private key type matches the requested one or {@code null} if no match found
-     * @see #fromKeyType(Class)
+     * @param  key The {@link Key} instance - ignored if {@code null}
+     * @return     The matching {@link BuiltinIdentities} whose either public or private key type matches the requested
+     *             one or {@code null} if no match found
+     * @see        #fromKeyType(Class)
      */
     public static BuiltinIdentities fromKey(Key key) {
         return fromKeyType((key == null) ? null : key.getClass());
     }
 
     /**
-     * @param clazz The key type - ignored if {@code null} or not
-     *              a {@link Key} class
-     * @return The matching {@link BuiltinIdentities} whose either public or
-     * private key type matches the requested one or {@code null} if no match found
-     * @see #getPublicKeyType()
-     * @see #getPrivateKeyType()
+     * @param  clazz The key type - ignored if {@code null} or not a {@link Key} class
+     * @return       The matching {@link BuiltinIdentities} whose either public or private key type matches the
+     *               requested one or {@code null} if no match found
+     * @see          #getPublicKeyType()
+     * @see          #getPrivateKeyType()
      */
     public static BuiltinIdentities fromKeyType(Class<?> clazz) {
         if ((clazz == null) || (!Key.class.isAssignableFrom(clazz))) {
@@ -232,12 +228,11 @@ public enum BuiltinIdentities implements Identity {
     }
 
     /**
-     * @param typeName The {@code OpenSSH} key type  e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}.
-     * Ignored if {@code null}/empty.
-     * @return The {@link BuiltinIdentities} that reported the type name
-     * as its {@link #getSupportedKeyTypes()} (case <U>insensitive</U>) - {@code null}
-     * if no match found
-     * @see KeyTypeNamesSupport#findSupporterByKeyTypeName(String, Collection)
+     * @param  typeName The {@code OpenSSH} key type e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}. Ignored if
+     *                  {@code null}/empty.
+     * @return          The {@link BuiltinIdentities} that reported the type name as its {@link #getSupportedKeyTypes()}
+     *                  (case <U>insensitive</U>) - {@code null} if no match found
+     * @see             KeyTypeNamesSupport#findSupporterByKeyTypeName(String, Collection)
      */
     public static BuiltinIdentities fromKeyTypeName(String typeName) {
         return KeyTypeNamesSupport.findSupporterByKeyTypeName(typeName, VALUES);

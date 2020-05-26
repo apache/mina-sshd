@@ -26,14 +26,22 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 
 /**
- * Provides some default implementations
+ * Provides some default implementations for managing channel/connection open/close state
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractCloseable extends IoBaseCloseable {
 
     public enum State {
-        Opened, Graceful, Immediate, Closed
+        /** Connection is open */
+        Opened,
+        /** Connection is being closed gracefully */
+        Graceful,
+        /** Connection is being terminated immediately */
+        Immediate,
+        /** Connection is closed */
+        Closed,
+        /* end */;
     }
 
     /**
@@ -90,7 +98,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                 }
             } else {
                 if (debugEnabled) {
-                    log.debug("close({})[Immediately] state already {}", this, state.get());
+                    log.debug("close({})[Immediately] state already {}", this, state);
                 }
             }
         } else {
@@ -119,7 +127,7 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
                 }
             } else {
                 if (debugEnabled) {
-                    log.debug("close({})[Graceful] state already {}", this, state.get());
+                    log.debug("close({})[Graceful] state already {}", this, state);
                 }
             }
         }
@@ -137,8 +145,8 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
-     * preClose is guaranteed to be called before doCloseGracefully or doCloseImmediately.
-     * When preClose() is called, isClosing() == true
+     * preClose is guaranteed to be called before doCloseGracefully or doCloseImmediately. When preClose() is called,
+     * isClosing() == true
      */
     protected void preClose() {
         // nothing
@@ -149,11 +157,14 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
     }
 
     /**
-     * <P>doCloseImmediately is called once and only once
-     * with state == Immediate</P>
+     * <P>
+     * doCloseImmediately is called once and only once with state == Immediate
+     * </P>
      *
-     * <P>Overriding methods should always call the base implementation.
-     * It may be called concurrently while preClose() or doCloseGracefully is executing</P>
+     * <P>
+     * Overriding methods should always call the base implementation. It may be called concurrently while preClose() or
+     * doCloseGracefully is executing
+     * </P>
      */
     protected void doCloseImmediately() {
         closeFuture.setClosed();

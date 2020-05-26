@@ -40,7 +40,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
@@ -50,7 +50,8 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
     private final Map<String, String> options;
 
     public AuthorizedKeyEntryLoginOptionsParseTest(
-            String value, String loginPart, String keyPart, Map<String, String> options) {
+                                                   String value, String loginPart, String keyPart,
+                                                   Map<String, String> options) {
         this.value = value;
         this.loginPart = loginPart;
         this.keyPart = keyPart;
@@ -100,7 +101,7 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
         }
 
         String value = sb.toString();
-        params.add(new Object[] {value, value.substring(0, pos), value.substring(pos + 1), optionsMap});
+        params.add(new Object[] { value, value.substring(0, pos), value.substring(pos + 1), optionsMap });
     }
 
     @Test

@@ -27,8 +27,8 @@ import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
- * Tracks the contents of a PGP key file - uses the default {@link PGPKeyPairResourceParser#INSTANCE instance}
- * unless otherwise specified.
+ * Tracks the contents of a PGP key file - uses the default {@link PGPKeyPairResourceParser#INSTANCE instance} unless
+ * otherwise specified.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

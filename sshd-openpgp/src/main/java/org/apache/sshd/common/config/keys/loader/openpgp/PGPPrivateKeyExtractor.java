@@ -62,7 +62,7 @@ import org.c02e.jpgpj.Subkey;
 public interface PGPPrivateKeyExtractor {
     default PrivateKey extractPrivateKey(
             NamedResource resourceKey, Subkey sk, PublicKey pubKey)
-                throws IOException, GeneralSecurityException, PGPException {
+            throws IOException, GeneralSecurityException, PGPException {
         if (sk == null) {
             return null;
         }
@@ -84,7 +84,7 @@ public interface PGPPrivateKeyExtractor {
 
     default ECPrivateKey extractECDSAPrivateKey(
             NamedResource resourceKey, ECPublicKey pubKey, ECSecretBCPGKey bcKey)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -100,7 +100,7 @@ public interface PGPPrivateKeyExtractor {
 
     default PrivateKey extractEdDSAPrivateKey(
             NamedResource resourceKey, PublicKey pubKey, EdSecretBCPGKey bcKey)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -114,7 +114,7 @@ public interface PGPPrivateKeyExtractor {
 
     default RSAPrivateKey extractRSAPrivateKey(
             NamedResource resourceKey, RSAPublicKey pubKey, RSASecretBCPGKey bcKey)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -133,7 +133,7 @@ public interface PGPPrivateKeyExtractor {
 
     default DSAPrivateKey extractDSSPrivateKey(
             NamedResource resourceKey, DSAPublicKey pubKey, DSASecretBCPGKey bcKey)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (bcKey == null) {
             return null;
         }
@@ -144,7 +144,7 @@ public interface PGPPrivateKeyExtractor {
         }
 
         return generatePrivateKey(KeyUtils.DSS_ALGORITHM, DSAPrivateKey.class,
-            new DSAPrivateKeySpec(bcKey.getX(), params.getP(), params.getQ(), params.getG()));
+                new DSAPrivateKeySpec(bcKey.getX(), params.getP(), params.getQ(), params.getG()));
     }
 
     <K extends PrivateKey> K generatePrivateKey(String algorithm, Class<K> keyType, KeySpec keySpec)

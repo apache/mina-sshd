@@ -95,7 +95,8 @@ public abstract class Handle implements java.nio.channels.Channel, AttributeStor
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> T computeAttributeIfAbsent(
-            AttributeRepository.AttributeKey<T> key, Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
+            AttributeRepository.AttributeKey<T> key,
+            Function<? super AttributeRepository.AttributeKey<T>, ? extends T> resolver) {
         return (T) attributes.computeIfAbsent(Objects.requireNonNull(key, "No key"), (Function) resolver);
     }
 
@@ -126,7 +127,7 @@ public abstract class Handle implements java.nio.channels.Channel, AttributeStor
     @Override
     public void close() throws IOException {
         if (!closed.getAndSet(true)) {
-            //noinspection UnnecessaryReturnStatement
+            // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

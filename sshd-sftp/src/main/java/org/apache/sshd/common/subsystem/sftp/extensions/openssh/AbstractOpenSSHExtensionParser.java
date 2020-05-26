@@ -80,7 +80,7 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
 
             OpenSSHExtension other = (OpenSSHExtension) obj;
             return Objects.equals(getName(), other.getName())
-                && Objects.equals(getVersion(), other.getVersion());
+                    && Objects.equals(getVersion(), other.getVersion());
         }
 
         @Override

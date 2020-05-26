@@ -80,7 +80,8 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
 
     @Test
     public void testSftpProxyCalls() throws Exception {
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
         Path clientFile = clientFolder.resolve("file.txt");
@@ -91,8 +92,10 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
         try (SftpClient sftp = login()) {
             sftp.mkdir(remoteFileDir);
 
-            byte[] written = (getClass().getSimpleName() + "#" + getCurrentTestName() + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
-            try (SftpClient.CloseableHandle h = sftp.open(remoteFilePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
+            byte[] written
+                    = (getClass().getSimpleName() + "#" + getCurrentTestName() + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
+            try (SftpClient.CloseableHandle h
+                    = sftp.open(remoteFilePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
                 sftp.write(h, 0L, written);
 
                 SftpClient.Attributes attrs = sftp.stat(h);

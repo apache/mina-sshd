@@ -40,15 +40,15 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
- * @param <PUB> Type of {@link PublicKey}
- * @param <PRV> Type of {@link PrivateKey}
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <PUB> Type of {@link PublicKey}
+ * @param  <PRV> Type of {@link PrivateKey}
+ * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         extends IdentityResourceLoader<PUB, PRV> {
     /**
-     * @param keySize Key size in bits
-     * @return A {@link KeyPair} with the specified key size
+     * @param  keySize                  Key size in bits
+     * @return                          A {@link KeyPair} with the specified key size
      * @throws GeneralSecurityException if unable to generate the pair
      */
     default KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
@@ -58,12 +58,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     }
 
     /**
-     * @param kp The {@link KeyPair} to be cloned - ignored if {@code null}
-     * @return A cloned pair (or {@code null} if no original pair)
-     * @throws GeneralSecurityException If failed to clone - e.g., provided key
-     *                                  pair does not contain keys of the expected type
-     * @see #getPublicKeyType()
-     * @see #getPrivateKeyType()
+     * @param  kp                       The {@link KeyPair} to be cloned - ignored if {@code null}
+     * @return                          A cloned pair (or {@code null} if no original pair)
+     * @throws GeneralSecurityException If failed to clone - e.g., provided key pair does not contain keys of the
+     *                                  expected type
+     * @see                             #getPublicKeyType()
+     * @see                             #getPrivateKeyType()
      */
     default KeyPair cloneKeyPair(KeyPair kp) throws GeneralSecurityException {
         if (kp == null) {
@@ -77,7 +77,8 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
             Class<?> orgType = pubOriginal.getClass();
             if (!pubExpected.isAssignableFrom(orgType)) {
                 throw new InvalidKeyException(
-                    "Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                        "Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual="
+                                              + orgType.getSimpleName());
             }
 
             PUB castPub = pubExpected.cast(pubOriginal);
@@ -91,7 +92,8 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
             Class<?> orgType = prvOriginal.getClass();
             if (!prvExpected.isAssignableFrom(orgType)) {
                 throw new InvalidKeyException(
-                    "Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                        "Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual="
+                                              + orgType.getSimpleName());
             }
 
             PRV castPrv = prvExpected.cast(prvOriginal);
@@ -102,27 +104,27 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     }
 
     /**
-     * @param key The {@link PublicKey} to clone - ignored if {@code null}
-     * @return The cloned key (or {@code null} if no original key)
+     * @param  key                      The {@link PublicKey} to clone - ignored if {@code null}
+     * @return                          The cloned key (or {@code null} if no original key)
      * @throws GeneralSecurityException If failed to clone the key
      */
     PUB clonePublicKey(PUB key) throws GeneralSecurityException;
 
     /**
-     * @param key The {@link PrivateKey} to clone - ignored if {@code null}
-     * @return The cloned key (or {@code null} if no original key)
+     * @param  key                      The {@link PrivateKey} to clone - ignored if {@code null}
+     * @return                          The cloned key (or {@code null} if no original key)
      * @throws GeneralSecurityException If failed to clone the key
      */
     PRV clonePrivateKey(PRV key) throws GeneralSecurityException;
 
     /**
-     * @return A {@link KeyPairGenerator} suitable for this decoder
+     * @return                          A {@link KeyPairGenerator} suitable for this decoder
      * @throws GeneralSecurityException If failed to create the generator
      */
     KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException;
 
     /**
-     * @return A {@link KeyFactory} suitable for the specific decoder type
+     * @return                          A {@link KeyFactory} suitable for the specific decoder type
      * @throws GeneralSecurityException If failed to create one
      */
     KeyFactory getKeyFactoryInstance() throws GeneralSecurityException;
@@ -155,10 +157,10 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
 
     static byte[] encodeInt(OutputStream s, int v) throws IOException {
         byte[] bytes = {
-            (byte) ((v >> 24) & 0xFF),
-            (byte) ((v >> 16) & 0xFF),
-            (byte) ((v >> 8) & 0xFF),
-            (byte) (v & 0xFF)
+                (byte) ((v >> 24) & 0xFF),
+                (byte) ((v >> 16) & 0xFF),
+                (byte) ((v >> 8) & 0xFF),
+                (byte) (v & 0xFF)
         };
         s.write(bytes);
         return bytes;
@@ -184,7 +186,8 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     static byte[] readRLEBytes(InputStream s, int maxAllowed) throws IOException {
         int len = decodeInt(s);
         if (len > maxAllowed) {
-            throw new StreamCorruptedException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+            throw new StreamCorruptedException(
+                    "Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
         }
         if (len < 0) {
             throw new StreamCorruptedException("Negative block length requested: " + len);
@@ -196,12 +199,12 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     }
 
     static int decodeInt(InputStream s) throws IOException {
-        byte[] bytes = {0, 0, 0, 0};
+        byte[] bytes = { 0, 0, 0, 0 };
         IoUtils.readFully(s, bytes);
         return ((bytes[0] & 0xFF) << 24)
-                | ((bytes[1] & 0xFF) << 16)
-                | ((bytes[2] & 0xFF) << 8)
-                | (bytes[3] & 0xFF);
+               | ((bytes[1] & 0xFF) << 16)
+               | ((bytes[2] & 0xFF) << 8)
+               | (bytes[3] & 0xFF);
     }
 
     static Map.Entry<String, Integer> decodeString(byte[] buf, int maxChars) {
@@ -219,19 +222,21 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     /**
      * Decodes a run-length encoded string
      *
-     * @param buf The buffer with the data bytes
-     * @param offset The offset in the buffer to decode the string
-     * @param available The max. available data starting from the offset
-     * @param cs The {@link Charset} to use to decode the string
-     * @param maxChars Max. allowed characters in string - if more than
-     * that is encoded then an {@link IndexOutOfBoundsException} will be thrown
-     * @return The decoded string + the offset of the next byte after it
-     * @see #readRLEBytes(byte[], int, int, int)
+     * @param  buf       The buffer with the data bytes
+     * @param  offset    The offset in the buffer to decode the string
+     * @param  available The max. available data starting from the offset
+     * @param  cs        The {@link Charset} to use to decode the string
+     * @param  maxChars  Max. allowed characters in string - if more than that is encoded then an
+     *                   {@link IndexOutOfBoundsException} will be thrown
+     * @return           The decoded string + the offset of the next byte after it
+     * @see              #readRLEBytes(byte[], int, int, int)
      */
     static Map.Entry<String, Integer> decodeString(
             byte[] buf, int offset, int available, Charset cs, int maxChars) {
-        Map.Entry<byte[], Integer> result =
-            readRLEBytes(buf, offset, available, maxChars * 4 /* in case UTF-8 with weird characters */);
+        Map.Entry<byte[], Integer> result = readRLEBytes(buf, offset, available, maxChars * 4 /*
+                                                                                               * in case UTF-8 with
+                                                                                               * weird characters
+                                                                                               */);
         byte[] bytes = result.getKey();
         Integer nextOffset = result.getValue();
         return new SimpleImmutableEntry<>(new String(bytes, cs), nextOffset);
@@ -244,17 +249,18 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     /**
      * Decodes a run-length encoded byte array
      *
-     * @param buf The buffer with the data bytes
-     * @param offset The offset in the buffer to decode the array
-     * @param available The max. available data starting from the offset
-     * @param maxAllowed Max. allowed data in decoded buffer - if more than
-     * that is encoded then an {@link IndexOutOfBoundsException} will be thrown
-     * @return The decoded data buffer + the offset of the next byte after it
+     * @param  buf        The buffer with the data bytes
+     * @param  offset     The offset in the buffer to decode the array
+     * @param  available  The max. available data starting from the offset
+     * @param  maxAllowed Max. allowed data in decoded buffer - if more than that is encoded then an
+     *                    {@link IndexOutOfBoundsException} will be thrown
+     * @return            The decoded data buffer + the offset of the next byte after it
      */
     static Map.Entry<byte[], Integer> readRLEBytes(byte[] buf, int offset, int available, int maxAllowed) {
         int len = decodeInt(buf, offset, available);
         if (len > maxAllowed) {
-            throw new IndexOutOfBoundsException("Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
+            throw new IndexOutOfBoundsException(
+                    "Requested block length (" + len + ") exceeds max. allowed (" + maxAllowed + ")");
         }
         if (len < 0) {
             throw new IndexOutOfBoundsException("Negative block length requested: " + len);
@@ -277,12 +283,13 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
 
     static int decodeInt(byte[] buf, int offset, int available) {
         if (available < Integer.BYTES) {
-            throw new IndexOutOfBoundsException("Available data length (" + available + ") cannot accommodate integer encoding");
+            throw new IndexOutOfBoundsException(
+                    "Available data length (" + available + ") cannot accommodate integer encoding");
         }
 
         return ((buf[offset] & 0xFF) << 24)
-                | ((buf[offset + 1] & 0xFF) << 16)
-                | ((buf[offset + 2] & 0xFF) << 8)
-                | (buf[offset + 3] & 0xFF);
+               | ((buf[offset + 1] & 0xFF) << 16)
+               | ((buf[offset + 2] & 0xFF) << 8)
+               | (buf[offset + 3] & 0xFF);
     }
 }

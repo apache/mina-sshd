@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -94,9 +93,8 @@ import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthenticationTest extends BaseTestSupport {
-    private static final long CONNECT_TIMEOUT = 7L;
-    private static final AttributeRepository.AttributeKey<Boolean> PASSWORD_ATTR =
-        new AttributeRepository.AttributeKey<>();
+
+    private static final AttributeRepository.AttributeKey<Boolean> PASSWORD_ATTR = new AttributeRepository.AttributeKey<>();
 
     private SshServer sshd;
     private int port;
@@ -130,7 +128,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
             try (ClientSession s = client.connect("user", TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity("bad password");
                 assertAuthenticationResult(getCurrentTestName(), s.auth(), false);
@@ -144,15 +142,16 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                Collection<ClientSession.ClientSessionEvent> mask =
-                    EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
-                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, TimeUnit.SECONDS.toMillis(11L));
-                assertFalse("Timeout while waiting on session events", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                Collection<ClientSession.ClientSessionEvent> mask
+                        = EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, DEFAULT_TIMEOUT);
+                assertFalse("Timeout while waiting on session events",
+                        result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 String password = "the-password";
-                for (String username : new String[]{"user1", "user2"}) {
+                for (String username : new String[] { "user1", "user2" }) {
                     try {
                         assertAuthenticationResult(username, authPassword(s, username, password), false);
                     } finally {
@@ -162,7 +161,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
-                result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(3L));
+                result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), DEFAULT_TIMEOUT);
                 assertTrue("Mismatched client session close mask: " + result, result.containsAll(mask));
             } finally {
                 client.stop();
@@ -170,42 +169,37 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-196
+    @Test // see SSHD-196
     public void testChangePassword() throws Exception {
         PasswordAuthenticator delegate = sshd.getPasswordAuthenticator();
         AtomicInteger attemptsCount = new AtomicInteger(0);
-        sshd.setPasswordAuthenticator((username, password, session) -> {
-            if (attemptsCount.incrementAndGet() == 1) {
-                throw new PasswordChangeRequiredException(attemptsCount.toString(),
-                        getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+        AtomicInteger changesCount = new AtomicInteger(0);
+        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session) {
+                if (attemptsCount.incrementAndGet() == 1) {
+                    throw new PasswordChangeRequiredException(
+                            attemptsCount.toString(),
+                            getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                }
+
+                return delegate.authenticate(username, password, session);
             }
 
-            return delegate.authenticate(username, password, session);
-        });
-
-        AtomicInteger changesCount = new AtomicInteger(0);
-        sshd.setUserAuthFactories(Collections.singletonList(
-            new org.apache.sshd.server.auth.password.UserAuthPasswordFactory() {
-                @Override
-                public org.apache.sshd.server.auth.password.UserAuthPassword createUserAuth(ServerSession session) throws IOException {
-                    return new org.apache.sshd.server.auth.password.UserAuthPassword() {
-                        @Override
-                        protected Boolean handleClientPasswordChangeRequest(
-                                Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
-                                    throws Exception {
-                            if (changesCount.incrementAndGet() == 1) {
-                                assertNotEquals("Non-different passwords", oldPassword, newPassword);
-                                return checkPassword(buffer, session, username, newPassword);
-                            } else {
-                                return super.handleClientPasswordChangeRequest(buffer, session, username, oldPassword, newPassword);
-                            }
-                        }
-                    };
+            @Override
+            public boolean handleClientPasswordChangeRequest(
+                    ServerSession session, String username, String oldPassword, String newPassword) {
+                if (changesCount.incrementAndGet() == 1) {
+                    assertNotEquals("Non-different passwords", oldPassword, newPassword);
+                    return authenticate(username, newPassword, session);
+                } else {
+                    return PasswordAuthenticator.super.handleClientPasswordChangeRequest(
+                            session, username, oldPassword, newPassword);
                 }
             }
-        ));
+        });
         PropertyResolverUtils.updateProperty(sshd,
-            ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger updatesCount = new AtomicInteger(0);
@@ -233,36 +227,37 @@ public class AuthenticationTest extends BaseTestSupport {
 
             AtomicInteger sentCount = new AtomicInteger(0);
             client.setUserAuthFactories(Collections.singletonList(
-                new org.apache.sshd.client.auth.password.UserAuthPasswordFactory() {
-                    @Override
-                    public org.apache.sshd.client.auth.password.UserAuthPassword createUserAuth(ClientSession session) throws IOException {
-                        return new org.apache.sshd.client.auth.password.UserAuthPassword() {
-                            @Override
-                            protected IoWriteFuture sendPassword(
-                                    Buffer buffer, ClientSession session, String oldPassword, String newPassword)
+                    new org.apache.sshd.client.auth.password.UserAuthPasswordFactory() {
+                        @Override
+                        public org.apache.sshd.client.auth.password.UserAuthPassword createUserAuth(ClientSession session)
+                                throws IOException {
+                            return new org.apache.sshd.client.auth.password.UserAuthPassword() {
+                                @Override
+                                protected IoWriteFuture sendPassword(
+                                        Buffer buffer, ClientSession session, String oldPassword, String newPassword)
                                         throws IOException {
-                                int count = sentCount.incrementAndGet();
-                                // 1st one is the original one (which is denied by the server)
-                                // 2nd one is the updated one retrieved from the user interaction
-                                if (count == 2) {
-                                    return super.sendPassword(buffer, session, getClass().getName(), newPassword);
-                                } else {
-                                    return super.sendPassword(buffer, session, oldPassword, newPassword);
+                                    int count = sentCount.incrementAndGet();
+                                    // 1st one is the original one (which is denied by the server)
+                                    // 2nd one is the updated one retrieved from the user interaction
+                                    if (count == 2) {
+                                        return super.sendPassword(buffer, session, getClass().getName(), newPassword);
+                                    } else {
+                                        return super.sendPassword(buffer, session, oldPassword, newPassword);
+                                    }
                                 }
-                            }
-                        };
-                    }
-            }));
+                            };
+                        }
+                    }));
             PropertyResolverUtils.updateProperty(client,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+                    ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("No password change request generated", 2, attemptsCount.get());
                 assertEquals("No password change handled", 1, changesCount.get());
                 assertEquals("No user interaction invoked", 1, updatesCount.get());
@@ -279,17 +274,17 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                Collection<ClientSession.ClientSessionEvent> result =
-                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
+                        EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 String password = getCurrentTestName();
                 try {
                     assertAuthenticationResult(getCurrentTestName(),
-                        authPassword(s, getCurrentTestName(), password), false);
+                            authPassword(s, getCurrentTestName(), password), false);
                 } finally {
                     s.removePasswordIdentity(password);
                 }
@@ -308,18 +303,18 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                Collection<ClientSession.ClientSessionEvent> result =
-                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
+                        EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
                 KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY,
-                        authPublicKey(s, getCurrentTestName(), pair), false);
+                            authPublicKey(s, getCurrentTestName(), pair), false);
                 } finally {
                     s.removePublicKeyIdentity(pair);
                 }
@@ -327,7 +322,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 String password = getCurrentTestName();
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PASSWORD,
-                        authPassword(s, getCurrentTestName(), password), true);
+                            authPassword(s, getCurrentTestName(), password), true);
                 } finally {
                     s.removePasswordIdentity(password);
                 }
@@ -345,23 +340,24 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public InteractiveChallenge generateChallenge(
                         ServerSession session, String username, String lang, String subMethods)
-                            throws Exception {
+                        throws Exception {
                     assertEquals("Mismatched user language",
                             PropertyResolverUtils.getStringProperty(
-                                client,
-                                org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
-                                org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
+                                    client,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
                             lang);
                     assertEquals("Mismatched client sub-methods",
                             PropertyResolverUtils.getStringProperty(
-                                client,
-                                org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
-                                org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
+                                    client,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
+                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
                             subMethods);
 
                     InteractiveChallenge challenge = super.generateChallenge(session, username, lang, subMethods);
                     assertEquals("Mismatched interaction name", getInteractionName(session), challenge.getInteractionName());
-                    assertEquals("Mismatched interaction instruction", getInteractionInstruction(session), challenge.getInteractionInstruction());
+                    assertEquals("Mismatched interaction instruction", getInteractionInstruction(session),
+                            challenge.getInteractionInstruction());
                     assertEquals("Mismatched language tag", getInteractionLanguage(session), challenge.getLanguageTag());
 
                     List<PromptEntry> entries = challenge.getPrompts();
@@ -377,7 +373,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public boolean authenticate(
                         ServerSession session, String username, List<String> responses)
-                            throws Exception {
+                        throws Exception {
                     return super.authenticate(session, username, responses);
                 }
 
@@ -385,25 +381,25 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                Collection<ClientSession.ClientSessionEvent> result =
-                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
-                    TimeUnit.SECONDS.toMillis(11L));
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
+                        EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        DEFAULT_TIMEOUT);
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
                 KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY,
-                        authPublicKey(s, getCurrentTestName(), pair), false);
+                            authPublicKey(s, getCurrentTestName(), pair), false);
                 } finally {
                     s.removePublicKeyIdentity(pair);
                 }
 
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.KB_INTERACTIVE,
-                        authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
+                            authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
                 } finally {
                     s.setUserInteraction(null);
                 }
@@ -413,7 +409,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-563
+    @Test // see SSHD-563
     public void testAuthMultiChallengeKeyInteractive() throws Exception {
         Class<?> anchor = getClass();
         InteractiveChallenge challenge = new InteractiveChallenge();
@@ -421,8 +417,7 @@ public class AuthenticationTest extends BaseTestSupport {
         challenge.setInteractionInstruction(anchor.getPackage().getName());
         challenge.setLanguageTag(Locale.getDefault().getLanguage());
 
-        Map<String, String> rspMap =
-            NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
+        Map<String, String> rspMap = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                 .put("class", anchor.getSimpleName())
                 .put("package", anchor.getPackage().getName())
                 .put("test", getCurrentTestName())
@@ -432,14 +427,14 @@ public class AuthenticationTest extends BaseTestSupport {
         }
 
         PropertyResolverUtils.updateProperty(sshd,
-            ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+                ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
         AtomicInteger genCount = new AtomicInteger(0);
         AtomicInteger authCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
             @Override
             public InteractiveChallenge generateChallenge(
                     ServerSession session, String username, String lang, String subMethods)
-                        throws Exception {
+                    throws Exception {
                 assertEquals("Unexpected challenge call", 1, genCount.incrementAndGet());
                 return challenge;
             }
@@ -447,7 +442,7 @@ public class AuthenticationTest extends BaseTestSupport {
             @Override
             public boolean authenticate(
                     ServerSession session, String username, List<String> responses)
-                        throws Exception {
+                    throws Exception {
                 assertEquals("Unexpected authenticate call", 1, authCount.incrementAndGet());
                 assertEquals("Mismatched number of responses", GenericUtils.size(rspMap), GenericUtils.size(responses));
 
@@ -464,7 +459,7 @@ public class AuthenticationTest extends BaseTestSupport {
             }
         });
         PropertyResolverUtils.updateProperty(sshd,
-            ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+                ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger interactiveCount = new AtomicInteger(0);
@@ -504,14 +499,14 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
             });
             PropertyResolverUtils.updateProperty(client,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+                    ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Bad generated challenge count", 1, genCount.get());
                 assertEquals("Bad authentication count", 1, authCount.get());
                 assertEquals("Bad interactive count", 1, interactiveCount.get());
@@ -521,20 +516,21 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-196
+    @Test // see SSHD-196
     public void testAuthPasswordChangeRequest() throws Exception {
         PasswordAuthenticator delegate = Objects.requireNonNull(sshd.getPasswordAuthenticator(), "No password authenticator");
         AtomicInteger attemptsCount = new AtomicInteger(0);
         sshd.setPasswordAuthenticator((username, password, session) -> {
             if (attemptsCount.incrementAndGet() == 1) {
-                throw new PasswordChangeRequiredException(attemptsCount.toString(),
-                    getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                throw new PasswordChangeRequiredException(
+                        attemptsCount.toString(),
+                        getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
             }
 
             return delegate.authenticate(username, password, session);
         });
         PropertyResolverUtils.updateProperty(sshd,
-            ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger updatesCount = new AtomicInteger(0);
@@ -560,15 +556,15 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
             });
             PropertyResolverUtils.updateProperty(client,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+                    ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("No password change request generated", 2, attemptsCount.get());
                 assertEquals("No user interaction invoked", 1, updatesCount.get());
             } finally {
@@ -577,7 +573,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-600
+    @Test // see SSHD-600
     public void testAuthExceptionPropagation() throws Exception {
         try (SshClient client = setupTestClient()) {
             RuntimeException expected = new RuntimeException("Synthetic exception");
@@ -600,12 +596,12 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
 
                 AuthFuture future = s.auth();
-                assertTrue("Failed to complete auth in allocated time", future.await(11L, TimeUnit.SECONDS));
+                assertTrue("Failed to complete auth in allocated time", future.await(DEFAULT_TIMEOUT));
                 assertFalse("Unexpected authentication success", future.isSuccess());
 
                 Throwable signalled = future.getException();
@@ -641,9 +637,9 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Mismatched load passwords count", 1, loadCount.get());
                 assertSame("Mismatched passwords identity provider", provider, s.getPasswordIdentityProvider());
             } finally {
@@ -652,12 +648,12 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-618
+    @Test // see SSHD-618
     public void testPublicKeyAuthDifferentThanKex() throws Exception {
         KeyPairProvider serverKeys = KeyPairProvider.wrap(
-            CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
-            CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
-            CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
+                CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
+                CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
+                CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256));
         sshd.setKeyPairProvider(serverKeys);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
@@ -684,57 +680,62 @@ public class AuthenticationTest extends BaseTestSupport {
                 try {
                     kp = ValidateUtils.checkNotNull(serverKeys.loadKey(null, keyType), "No server key for type=%s", keyType);
                 } catch (IOException | GeneralSecurityException e) {
-                    throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                        + " keys loading exception: " + e.getMessage(), e);
+                    throw new RuntimeException(
+                            "Unexpected " + e.getClass().getSimpleName() + ")"
+                                               + " keys loading exception: " + e.getMessage(),
+                            e);
                 }
                 assertKeyEquals("Mismatched server public keys", kp.getPublic(), serverKey);
                 return true;
             });
 
             // allow only EC keys for public key authentication
-            org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory factory =
-                new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory();
+            org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory factory
+                    = new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory();
             factory.setSignatureFactories(
-                Arrays.asList(
-                    BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
+                    Arrays.asList(
+                            BuiltinSignatures.nistp256, BuiltinSignatures.nistp384, BuiltinSignatures.nistp521));
             client.setUserAuthFactories(Collections.singletonList(factory));
 
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.addPublicKeyIdentity(clientIdentity);
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test   // see SSHD-624
+    @Test // see SSHD-624
     public void testMismatchedUserAuthPkOkData() throws Exception {
         AtomicInteger challengeCounter = new AtomicInteger(0);
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
-                    public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey createUserAuth(ServerSession session) throws IOException {
+                    public org.apache.sshd.server.auth.pubkey.UserAuthPublicKey createUserAuth(ServerSession session)
+                            throws IOException {
                         return new org.apache.sshd.server.auth.pubkey.UserAuthPublicKey() {
                             @Override
                             protected void sendPublicKeyResponse(
                                     ServerSession session, String username, String alg, PublicKey key,
                                     byte[] keyBlob, int offset, int blobLen, Buffer buffer)
-                                        throws Exception {
+                                    throws Exception {
                                 int count = challengeCounter.incrementAndGet();
                                 outputDebugMessage("sendPublicKeyChallenge(%s)[%s]: count=%d", session, alg, count);
                                 if (count == 1) {
                                     // send wrong key type
                                     super.sendPublicKeyResponse(session, username,
-                                        KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
+                                            KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
                                 } else if (count == 2) {
                                     // send another key
-                                    KeyPair otherPair = org.apache.sshd.util.test.CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+                                    KeyPair otherPair = org.apache.sshd.util.test.CommonTestSupportUtils
+                                            .generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
                                     PublicKey otherKey = otherPair.getPublic();
-                                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, blobLen + alg.length() + Long.SIZE);
+                                    Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK,
+                                            blobLen + alg.length() + Long.SIZE);
                                     buf.putString(alg);
                                     buf.putPublicKey(otherKey);
                                     session.writePacket(buf);
@@ -745,7 +746,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         };
                     }
 
-        }));
+                }));
 
         try (SshClient client = setupTestClient()) {
             KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
@@ -754,13 +755,13 @@ public class AuthenticationTest extends BaseTestSupport {
             try {
                 for (int index = 1; index <= 4; index++) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                            .verify(CONNECT_TIMEOUT)
                             .getSession()) {
                         s.addPublicKeyIdentity(clientIdentity);
-                        s.auth().verify(17L, TimeUnit.SECONDS);
+                        s.auth().verify(AUTH_TIMEOUT);
                         assertEquals("Mismatched number of challenges", 3, challengeCounter.get());
                         break;
-                    } catch (SshException e) {   // expected
+                    } catch (SshException e) { // expected
                         outputDebugMessage("%s on retry #%d: %s", e.getClass().getSimpleName(), index, e.getMessage());
 
                         Throwable t = e.getCause();
@@ -773,7 +774,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-620
+    @Test // see SSHD-620
     public void testHostBasedAuthentication() throws Exception {
         String hostClienUser = getClass().getSimpleName();
         String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
@@ -782,19 +783,19 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setHostBasedAuthenticator((session, username, clientHostKey, clientHostName, clientUsername, certificates) -> {
             invocationCount.incrementAndGet();
             return hostClienUser.equals(clientUsername)
-                && hostClientName.equals(clientHostName)
-                && KeyUtils.compareKeys(hostClientKey.getPublic(), clientHostKey);
+                    && hostClientName.equals(clientHostName)
+                    && KeyUtils.compareKeys(hostClientKey.getPublic(), clientHostKey);
         });
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         sshd.setUserAuthFactories(
-            Collections.singletonList(
-                org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
+                Collections.singletonList(
+                        org.apache.sshd.server.auth.hostbased.UserAuthHostBasedFactory.INSTANCE));
 
         try (SshClient client = setupTestClient()) {
-            org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory factory =
-                    new org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory();
+            org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory factory
+                    = new org.apache.sshd.client.auth.hostbased.UserAuthHostBasedFactory();
             // TODO factory.setClientHostname(CLIENT_HOSTNAME);
             factory.setClientUsername(hostClienUser);
             factory.setClientHostKeys(HostKeyIdentityProvider.wrap(hostClientKey));
@@ -802,9 +803,9 @@ public class AuthenticationTest extends BaseTestSupport {
             client.setUserAuthFactories(Collections.singletonList(factory));
             client.start();
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                s.auth().verify(11L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
                 assertEquals("Mismatched authenticator invocation count", 1, invocationCount.get());
             } finally {
                 client.stop();
@@ -812,7 +813,7 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-625
+    @Test // see SSHD-625
     public void testRuntimeErrorsInAuthenticators() throws Exception {
         Error thrown = new OutOfMemoryError(getCurrentTestName());
         PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
@@ -842,13 +843,13 @@ public class AuthenticationTest extends BaseTestSupport {
             try {
                 for (int index = 1; index < 3; index++) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                            .verify(CONNECT_TIMEOUT)
                             .getSession()) {
                         s.addPasswordIdentity(getCurrentTestName());
                         s.addPublicKeyIdentity(kp);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("Failed to complete authentication on time", auth.await(11L, TimeUnit.SECONDS));
+                        assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
                         if (auth.isSuccess()) {
                             assertTrue("Premature authentication success", index > 1);
                             break;
@@ -864,28 +865,29 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-714
+    @Test // see SSHD-714
     public void testPasswordIdentityWithSpacesPrefixOrSuffix() throws Exception {
         sshd.setPasswordAuthenticator((username, password, session) -> {
             return (username != null) && (!username.trim().isEmpty())
-                && (password != null) && (!password.isEmpty())
-                && ((password.charAt(0) == ' ') || (password.charAt(password.length() - 1) == ' '));
+                    && (password != null) && (!password.isEmpty())
+                    && ((password.charAt(0) == ' ') || (password.charAt(password.length() - 1) == ' '));
         });
 
         try (SshClient client = setupTestClient()) {
             client.start();
 
             try {
-                for (String password : new String[]{
-                    " ", "    ", "  " + getCurrentTestName(), getCurrentTestName() + "    "
+                for (String password : new String[] {
+                        " ", "    ", "  " + getCurrentTestName(), getCurrentTestName() + "    "
                 }) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                            .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                            .verify(CONNECT_TIMEOUT)
                             .getSession()) {
                         s.addPasswordIdentity(password);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("No authentication result in time for password='" + password + "'", auth.await(11L, TimeUnit.SECONDS));
+                        assertTrue("No authentication result in time for password='" + password + "'",
+                                auth.await(AUTH_TIMEOUT));
                         assertTrue("Failed to authenticate with password='" + password + "'", auth.isSuccess());
                     }
                 }
@@ -895,13 +897,13 @@ public class AuthenticationTest extends BaseTestSupport {
         }
     }
 
-    @Test   // see SSHD-862
+    @Test // see SSHD-862
     public void testSessionContextPropagatedToKeyFilePasswordProvider() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                    .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 String keyLocation = "super-secret-passphrase-RSA-AES-128-key";
                 FilePasswordProvider passwordProvider = new FilePasswordProvider() {
@@ -909,7 +911,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     @SuppressWarnings("synthetic-access")
                     public String getPassword(
                             SessionContext session, NamedResource resourceKey, int retryIndex)
-                                throws IOException {
+                            throws IOException {
                         assertSame("Mismatched session context", s, session);
                         assertEquals("Mismatched retry index", 0, retryIndex);
 
@@ -943,7 +945,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         return Collections.singletonList(kp);
                     }
                 });
-                s.auth().verify(17L, TimeUnit.SECONDS);
+                s.auth().verify(AUTH_TIMEOUT);
 
                 Boolean passwordRequested = s.getAttribute(PASSWORD_ATTR);
                 assertNotNull("Password provider not invoked", passwordRequested);
@@ -955,7 +957,7 @@ public class AuthenticationTest extends BaseTestSupport {
     }
 
     private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
-        assertTrue(message + ": failed to get result on time", future.await(5L, TimeUnit.SECONDS));
+        assertTrue(message + ": failed to get result on time", future.await(AUTH_TIMEOUT));
         assertEquals(message + ": mismatched authentication result", expected, future.isSuccess());
     }
 
@@ -967,7 +969,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     private static AuthFuture authInteractive(ClientSession s, String user, String pswd) throws IOException {
         s.setUsername(user);
-        final String[] response = {pswd};
+        final String[] response = { pswd };
         s.setUserInteraction(new UserInteraction() {
             @Override
             public boolean isInteractionAllowed(ClientSession session) {
@@ -1005,7 +1007,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
         @Override
         public void handleMessage(Buffer buffer) throws Exception {
-            super.handleMessage(buffer);    // debug breakpoint
+            super.handleMessage(buffer); // debug breakpoint
         }
     }
 }

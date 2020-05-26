@@ -31,7 +31,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
-import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 import java.util.Objects;
@@ -42,6 +41,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -52,13 +52,14 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
     public static final OpenSSHRSAPrivateKeyDecoder INSTANCE = new OpenSSHRSAPrivateKeyDecoder();
 
     public OpenSSHRSAPrivateKeyDecoder() {
-        super(RSAPublicKey.class, RSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
+        super(RSAPublicKey.class, RSAPrivateKey.class,
+              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
     }
 
     @Override
     public RSAPrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_RSA.equals(keyType)) { // just in case we were invoked directly
             throw new InvalidKeySpecException("Unexpected key type: " + keyType);
         }
@@ -78,9 +79,9 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
         if (!Objects.equals(n, modulus)) {
             log.warn("decodePrivateKey({}) mismatched modulus values: encoded={}, calculated={}", keyType, n, modulus);
         }
-
         try {
-            return generatePrivateKey(new RSAPrivateKeySpec(n, d));
+            return generatePrivateKey(new RSAPrivateCrtKeySpec(
+                    n, e, d, p, q, d.mod(p.subtract(BigInteger.ONE)), d.mod(q.subtract(BigInteger.ONE)), inverseQmodP));
         } finally {
             // get rid of sensitive data a.s.a.p
             d = null;
@@ -88,6 +89,23 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
             p = null;
             q = null;
         }
+    }
+
+    @Override
+    public String encodePrivateKey(SecureByteArrayOutputStream s, RSAPrivateKey key, RSAPublicKey pubKey) throws IOException {
+        Objects.requireNonNull(key, "No private key provided");
+        if (key instanceof RSAPrivateCrtKey) {
+            RSAPrivateCrtKey a = (RSAPrivateCrtKey) key;
+            KeyEntryResolver.encodeBigInt(s, a.getModulus()); // n
+            KeyEntryResolver.encodeBigInt(s, a.getPublicExponent()); // e
+            KeyEntryResolver.encodeBigInt(s, a.getPrivateExponent()); // d
+            // CRT coefficient q^-1 mod p
+            KeyEntryResolver.encodeBigInt(s, a.getCrtCoefficient());
+            KeyEntryResolver.encodeBigInt(s, a.getPrimeP()); // p
+            KeyEntryResolver.encodeBigInt(s, a.getPrimeQ()); // q
+            return KeyPairProvider.SSH_RSA;
+        }
+        return null;
     }
 
     @Override

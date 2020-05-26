@@ -30,10 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -42,7 +46,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</a>
+ * @see    <a href="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</a>
  */
 public final class ConfigFileReaderSupport {
 
@@ -52,9 +56,27 @@ public final class ConfigFileReaderSupport {
     public static final String DEFAULT_COMPRESSION = CompressionConfigValue.NO.getName();
     public static final String MAX_SESSIONS_CONFIG_PROP = "MaxSessions";
     public static final int DEFAULT_MAX_SESSIONS = 10;
+
+    public static final String PUBKEY_AUTH_CONFIG_PROP = "PubkeyAuthentication";
+    public static final String DEFAULT_PUBKEY_AUTH = "yes";
+    public static final boolean DEFAULT_PUBKEY_AUTH_VALUE = parseBooleanValue(DEFAULT_PUBKEY_AUTH);
+
     public static final String PASSWORD_AUTH_CONFIG_PROP = "PasswordAuthentication";
-    public static final String DEFAULT_PASSWORD_AUTH = "no";
+    public static final String DEFAULT_PASSWORD_AUTH = "yes";
     public static final boolean DEFAULT_PASSWORD_AUTH_VALUE = parseBooleanValue(DEFAULT_PASSWORD_AUTH);
+
+    public static final String KBD_INTERACTIVE_CONFIG_PROP = "KbdInteractiveAuthentication";
+    public static final String DEFAULT_KBD_INTERACTIVE_AUTH = "yes";
+    public static final boolean DEFAULT_KBD_INTERACTIVE_AUTH_VALUE = parseBooleanValue(DEFAULT_KBD_INTERACTIVE_AUTH);
+
+    public static final String PREFERRED_AUTHS_CONFIG_PROP = "PreferredAuthentications";
+    public static final List<String> DEFAULT_PREFERRED_AUTHS = Collections.unmodifiableList(
+            Arrays.asList(
+                    UserAuthMethodFactory.PUBLIC_KEY,
+                    UserAuthMethodFactory.KB_INTERACTIVE,
+                    UserAuthMethodFactory.PASSWORD));
+    public static final String DEFAULT_PREFERRED_AUTHS_VALUE = GenericUtils.join(DEFAULT_PREFERRED_AUTHS, ',');
+
     public static final String LISTEN_ADDRESS_CONFIG_PROP = "ListenAddress";
     public static final String DEFAULT_BIND_ADDRESS = SshdSocketAddress.IPV4_ANYADDR;
     public static final String PORT_CONFIG_PROP = "Port";
@@ -63,9 +85,6 @@ public final class ConfigFileReaderSupport {
     public static final String USE_DNS_CONFIG_PROP = "UseDNS";
     // NOTE: the usual default is TRUE
     public static final boolean DEFAULT_USE_DNS = true;
-    public static final String PUBKEY_AUTH_CONFIG_PROP = "PubkeyAuthentication";
-    public static final String DEFAULT_PUBKEY_AUTH = "yes";
-    public static final boolean DEFAULT_PUBKEY_AUTH_VALUE = parseBooleanValue(DEFAULT_PUBKEY_AUTH);
     public static final String AUTH_KEYS_FILE_CONFIG_PROP = "AuthorizedKeysFile";
     public static final String MAX_AUTH_TRIES_CONFIG_PROP = "MaxAuthTries";
     public static final int DEFAULT_MAX_AUTH_TRIES = 6;
@@ -77,28 +96,27 @@ public final class ConfigFileReaderSupport {
     public static final long DEFAULT_REKEY_TIME_LIMIT = TimeUnit.HOURS.toMillis(1L);
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String CIPHERS_CONFIG_PROP = "Ciphers";
-    public static final String DEFAULT_CIPHERS =
-            "aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour";
+    public static final String DEFAULT_CIPHERS = "aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-cbc,3des-cbc"
+                                                 + ",blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String MACS_CONFIG_PROP = "MACs";
-    public static final String DEFAULT_MACS =
-            "hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160,hmac-sha1-96,hmac-md5-96,hmac-sha2-256,hmac-sha2-256-96,hmac-sha2-512,hmac-sha2-512-96";
+    public static final String DEFAULT_MACS = "hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160,hmac-sha1-96"
+                                              + ",hmac-md5-96,hmac-sha2-256,hmac-sha2-256-96,hmac-sha2-512,hmac-sha2-512-96";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String KEX_ALGORITHMS_CONFIG_PROP = "KexAlgorithms";
-    public static final String DEFAULT_KEX_ALGORITHMS =
-            "ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521"
-                    + "," + "diffie-hellman-group-exchange-sha256,diffie-hellman-group-exchange-sha1"
-                    // RFC-8268 groups
-                    + "," + "diffie-hellman-group18-sha512,diffie-hellman-group17-sha512"
-                    + "," + "diffie-hellman-group16-sha512,diffie-hellman-group15-sha512"
-                    + "," + "diffie-hellman-group14-sha256"
-                    // Legacy groups
-                    + "," + "diffie-hellman-group14-sha1,diffie-hellman-group1-sha1";
+    public static final String DEFAULT_KEX_ALGORITHMS = "ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521"
+                                                        + ","
+                                                        + "diffie-hellman-group-exchange-sha256,diffie-hellman-group-exchange-sha1"
+                                                        // RFC-8268 groups
+                                                        + "," + "diffie-hellman-group18-sha512,diffie-hellman-group17-sha512"
+                                                        + "," + "diffie-hellman-group16-sha512,diffie-hellman-group15-sha512"
+                                                        + "," + "diffie-hellman-group14-sha256"
+                                                        // Legacy groups
+                                                        + "," + "diffie-hellman-group14-sha1,diffie-hellman-group1-sha1";
     // see http://linux.die.net/man/5/ssh_config
     public static final String HOST_KEY_ALGORITHMS_CONFIG_PROP = "HostKeyAlgorithms";
     // see https://tools.ietf.org/html/rfc5656
-    public static final String DEFAULT_HOST_KEY_ALGORITHMS =
-            KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS;
+    public static final String DEFAULT_HOST_KEY_ALGORITHMS = KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS;
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String LOG_LEVEL_CONFIG_PROP = "LogLevel";
     public static final LogLevelValue DEFAULT_LOG_LEVEL = LogLevelValue.INFO;
@@ -124,7 +142,8 @@ public final class ConfigFileReaderSupport {
     }
 
     public static Properties readConfigFile(InputStream input, boolean okToClose) throws IOException {
-        try (Reader reader = new InputStreamReader(NoCloseInputStream.resolveInputStream(input, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader reader = new InputStreamReader(
+                NoCloseInputStream.resolveInputStream(input, okToClose), StandardCharsets.UTF_8)) {
             return readConfigFile(reader, true);
         }
     }
@@ -136,13 +155,12 @@ public final class ConfigFileReaderSupport {
     }
 
     /**
-     * Reads the configuration file contents into a {@link Properties} instance.
-     * <B>Note:</B> multiple keys value are concatenated using a comma - it is up to
-     * the caller to know which keys are expected to have multiple values and handle
-     * the split accordingly
+     * Reads the configuration file contents into a {@link Properties} instance. <B>Note:</B> multiple keys value are
+     * concatenated using a comma - it is up to the caller to know which keys are expected to have multiple values and
+     * handle the split accordingly
      *
-     * @param rdr The {@link BufferedReader} for reading the file
-     * @return The read properties
+     * @param  rdr         The {@link BufferedReader} for reading the file
+     * @return             The read properties
      * @throws IOException If failed to read or malformed content
      */
     public static Properties readConfigFile(BufferedReader rdr) throws IOException {
@@ -165,8 +183,8 @@ public final class ConfigFileReaderSupport {
             }
 
             /*
-             * Some options use '=', others use ' ' - try both
-             * NOTE: we do not validate the format for each option separately
+             * Some options use '=', others use ' ' - try both NOTE: we do not validate the format for each option
+             * separately
              */
             pos = line.indexOf(' ');
             if (pos < 0) {
@@ -192,11 +210,10 @@ public final class ConfigFileReaderSupport {
     }
 
     /**
-     * @param v Checks if the value is &quot;yes&quot;, &quot;y&quot;,
-     * &quot;on&quot;, &quot;t&quot; or &quot;true&quot;.
-     * @return The result - <B>Note:</B> {@code null}/empty values are
-     * interpreted as {@code false}
-     * @see PropertyResolverUtils#TRUE_VALUES
+     * @param  v Checks if the value is &quot;yes&quot;, &quot;y&quot;, &quot;on&quot;, &quot;t&quot; or
+     *           &quot;true&quot;.
+     * @return   The result - <B>Note:</B> {@code null}/empty values are interpreted as {@code false}
+     * @see      PropertyResolverUtils#TRUE_VALUES
      */
     public static boolean parseBooleanValue(String v) {
         if (GenericUtils.isEmpty(v)) {
@@ -207,11 +224,10 @@ public final class ConfigFileReaderSupport {
     }
 
     /**
-     * Returns a &quot;yes&quot; or &quot;no&quot; value based on the input
-     * parameter
+     * Returns a &quot;yes&quot; or &quot;no&quot; value based on the input parameter
      *
-     * @param flag The required state
-     * @return &quot;yes&quot; if {@code true}, &quot;no&quot; otherwise
+     * @param  flag The required state
+     * @return      &quot;yes&quot; if {@code true}, &quot;no&quot; otherwise
      */
     public static String yesNoValueOf(boolean flag) {
         return flag ? "yes" : "no";

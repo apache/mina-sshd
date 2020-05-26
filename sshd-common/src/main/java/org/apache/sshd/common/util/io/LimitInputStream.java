@@ -106,7 +106,7 @@ public class LimitInputStream extends FilterInputStream implements Channel {
     public void close() throws IOException {
         // do not close the original input stream since it serves for ACK(s)
         if (open.getAndSet(false)) {
-            //noinspection UnnecessaryReturnStatement
+            // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint
         }
     }

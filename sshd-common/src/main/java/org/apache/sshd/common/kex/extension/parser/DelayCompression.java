@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
+ * @see    <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
  */
 public class DelayCompression extends AbstractKexExtensionParser<DelayedCompressionAlgorithms> {
     public static final String NAME = "delay-compression";
@@ -48,7 +48,7 @@ public class DelayCompression extends AbstractKexExtensionParser<DelayedCompress
     @Override
     protected void encode(DelayedCompressionAlgorithms algos, Buffer buffer) throws IOException {
         int lenPos = buffer.wpos();
-        buffer.putInt(0);   // total length placeholder
+        buffer.putInt(0); // total length placeholder
         buffer.putNameList(algos.getClient2Server());
         buffer.putNameList(algos.getServer2Client());
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);

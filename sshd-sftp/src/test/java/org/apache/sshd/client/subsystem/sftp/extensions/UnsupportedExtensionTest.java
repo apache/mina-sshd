@@ -20,7 +20,6 @@
 package org.apache.sshd.client.subsystem.sftp.extensions;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
@@ -40,13 +39,12 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
         super();
     }
 
-    @Test   // see SSHD-890
+    @Test // see SSHD-890
     public void testUnsupportedExtension() throws IOException {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftpClient = createSftpClient(session)) {
                 String opcode = getCurrentTestName();
@@ -58,9 +56,9 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
                 int cmd = sftp.send(SftpConstants.SSH_FXP_EXTENDED, buffer);
                 Buffer responseBuffer = sftp.receive(cmd);
 
-                responseBuffer.getInt();                    // Ignoring length
+                responseBuffer.getInt(); // Ignoring length
                 int type = responseBuffer.getUByte();
-                responseBuffer.getInt();                    // Ignoring message ID
+                responseBuffer.getInt(); // Ignoring message ID
                 int substatus = responseBuffer.getInt();
 
                 assertEquals("Type is not STATUS", SftpConstants.SSH_FXP_STATUS, type);

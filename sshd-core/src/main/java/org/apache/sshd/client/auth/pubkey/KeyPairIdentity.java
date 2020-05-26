@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -41,8 +42,8 @@ public class KeyPairIdentity implements PublicKeyIdentity {
 
     public KeyPairIdentity(SignatureFactoriesManager primary, SignatureFactoriesManager secondary, KeyPair pair) {
         this.signatureFactories = ValidateUtils.checkNotNullAndNotEmpty(
-            SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
-            "No available signature factories");
+                SignatureFactoriesManager.resolveSignatureFactories(primary, secondary),
+                "No available signature factories");
         this.pair = Objects.requireNonNull(pair, "No key pair");
     }
 
@@ -52,23 +53,23 @@ public class KeyPairIdentity implements PublicKeyIdentity {
     }
 
     @Override
-    public byte[] sign(byte[] data) throws Exception {
+    public byte[] sign(SessionContext session, byte[] data) throws Exception {
         String keyType = KeyUtils.getKeyType(getPublicKey());
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(signatureFactories, keyType),
                 "No signer could be located for key type=%s",
                 keyType);
-        verifier.initSigner(pair.getPrivate());
-        verifier.update(data);
-        return verifier.sign();
+        verifier.initSigner(session, pair.getPrivate());
+        verifier.update(session, data);
+        return verifier.sign(session);
     }
 
     @Override
     public String toString() {
         PublicKey pubKey = getPublicKey();
         return getClass().getSimpleName()
-             + " type=" + KeyUtils.getKeyType(pubKey)
-             + ", factories=" + NamedResource.getNames(signatureFactories)
-             + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
+               + " type=" + KeyUtils.getKeyType(pubKey)
+               + ", factories=" + NamedResource.getNames(signatureFactories)
+               + ", fingerprint=" + KeyUtils.getFingerPrint(pubKey);
     }
 }

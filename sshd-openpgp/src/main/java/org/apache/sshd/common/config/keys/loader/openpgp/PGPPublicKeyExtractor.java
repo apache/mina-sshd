@@ -128,14 +128,16 @@ public interface PGPPublicKeyExtractor {
         try {
             w = ECCurves.octetStringToEcPoint(octets);
             if (w == null) {
-                throw new InvalidKeySpecException("No ECPoint generated for curve=" + curve.getName()
-                        + " from octets=" + BufferUtils.toHex(':', octets));
+                throw new InvalidKeySpecException(
+                        "No ECPoint generated for curve=" + curve.getName()
+                                                  + " from octets=" + BufferUtils.toHex(':', octets));
             }
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
-                    + " to generate ECPoint for curve=" + curve.getName()
-                    + " from octets=" + BufferUtils.toHex(':', octets)
-                    + ": " + e.getMessage());
+            throw new InvalidKeySpecException(
+                    "Failed (" + e.getClass().getSimpleName() + ")"
+                                              + " to generate ECPoint for curve=" + curve.getName()
+                                              + " from octets=" + BufferUtils.toHex(':', octets)
+                                              + ": " + e.getMessage());
         }
 
         ECParameterSpec paramSpec = curve.getParameters();

@@ -40,7 +40,8 @@ public class DefaultClientIdentitiesWatcher extends BuiltinClientIdentitiesWatch
     }
 
     public DefaultClientIdentitiesWatcher(
-            boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider, boolean strict) {
+                                          boolean supportedOnly, ClientIdentityLoader loader, FilePasswordProvider provider,
+                                          boolean strict) {
         this(supportedOnly,
              ClientIdentityLoaderHolder.loaderHolderOf(Objects.requireNonNull(loader, "No client identity loader")),
              FilePasswordProviderHolder.providerHolderOf(Objects.requireNonNull(provider, "No password provider")),
@@ -51,12 +52,14 @@ public class DefaultClientIdentitiesWatcher extends BuiltinClientIdentitiesWatch
         this(loader, provider, true);
     }
 
-    public DefaultClientIdentitiesWatcher(ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+    public DefaultClientIdentitiesWatcher(ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+                                          boolean strict) {
         this(true, loader, provider, strict);
     }
 
     public DefaultClientIdentitiesWatcher(boolean supportedOnly,
-            ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider, boolean strict) {
+                                          ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+                                          boolean strict) {
         super(PublicKeyEntry.getDefaultKeysFolderPath(), supportedOnly, loader, provider, strict);
     }
 

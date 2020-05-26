@@ -44,7 +44,7 @@ public class NumberUtilsTest extends JUnitTestSupport {
                 assertEquals("Mismatched lower bound value", expected, NumberUtils.getNextPowerOf2(expected - 1));
             }
 
-            if (expected > 0) {    // avoid the negative value
+            if (expected > 0) { // avoid the negative value
                 assertEquals("Mismatched exact value", expected, NumberUtils.getNextPowerOf2(expected));
             }
         }
@@ -60,9 +60,9 @@ public class NumberUtilsTest extends JUnitTestSupport {
     @Test
     public void testToInteger() {
         assertNull("Unexpected null value", NumberUtils.toInteger(null));
-        for (Number n : new Number[]{
+        for (Number n : new Number[] {
                 Byte.valueOf(Byte.MAX_VALUE), Short.valueOf(Short.MIN_VALUE),
-                Integer.valueOf(Short.MAX_VALUE), Long.valueOf(82007160L)}) {
+                Integer.valueOf(Short.MAX_VALUE), Long.valueOf(82007160L) }) {
             Integer i = NumberUtils.toInteger(n);
             if (n instanceof Integer) {
                 assertSame("Unexpected conversion", n, i);
@@ -74,7 +74,7 @@ public class NumberUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testIsValidIntegerNumber() {
-        for (String s : new String[]{"7", "73", "736", "7365", "19650307"}) {
+        for (String s : new String[] { "7", "73", "736", "7365", "19650307" }) {
             assertTrue(s, NumberUtils.isIntegerNumber(s));
 
             String pos = "+" + s;
@@ -87,7 +87,7 @@ public class NumberUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testIsInvalidIntegerNumber() {
-        for (String s : new String[]{null, "", "    ", getCurrentTestName(), "3rd", "3.14", "-.3"}) {
+        for (String s : new String[] { null, "", "    ", getCurrentTestName(), "3rd", "3.14", "-.3" }) {
             assertFalse(s, NumberUtils.isIntegerNumber(s));
         }
     }

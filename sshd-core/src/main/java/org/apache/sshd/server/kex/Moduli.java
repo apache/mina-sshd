@@ -150,9 +150,9 @@ public final class Moduli {
                 }
 
                 DhGroup group = new DhGroup(
-                    Integer.parseInt(parts[4]) + 1,
-                    new BigInteger(parts[5], 16),
-                    new BigInteger(parts[6], 16));
+                        Integer.parseInt(parts[4]) + 1,
+                        new BigInteger(parts[5], 16),
+                        new BigInteger(parts[6], 16));
                 groups.add(group);
             }
 

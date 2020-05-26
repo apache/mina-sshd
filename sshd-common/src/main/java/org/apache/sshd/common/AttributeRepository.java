@@ -33,13 +33,13 @@ import org.apache.sshd.common.util.GenericUtils;
 public interface AttributeRepository {
     /**
      * <P>
-     * Type safe key for storage of user attributes. Typically it is used as a static
-     * variable that is shared between the producer and the consumer. To further
-     * restrict access the setting or getting it from the store one can add static
-     * {@code get/set methods} e.g:
+     * Type safe key for storage of user attributes. Typically it is used as a static variable that is shared between
+     * the producer and the consumer. To further restrict access the setting or getting it from the store one can add
+     * static {@code get/set methods} e.g:
      * </P>
      *
-     * <pre><code>
+     * <pre>
+     * <code>
      * public static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
      *
      * public static MyValue getMyValue(Session s) {
@@ -49,10 +49,11 @@ public interface AttributeRepository {
      * public static void setMyValue(Session s, MyValue value) {
      *   s.setAttribute(MY_KEY, value);
      * }
-     * </code></pre>
+     * </code>
+     * </pre>
      *
-     * @param <T> type of value stored in the attribute.
-     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     * @param  <T> type of value stored in the attribute.
+     * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     // CHECKSTYLE:OFF
     class AttributeKey<T> {
@@ -70,28 +71,26 @@ public interface AttributeRepository {
     /**
      * Returns the value of the user-defined attribute.
      *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return {@code null} if there is no value associated with the specified key
+     * @param  <T> The generic attribute type
+     * @param  key The key of the attribute; must not be {@code null}.
+     * @return     {@code null} if there is no value associated with the specified key
      */
     <T> T getAttribute(AttributeKey<T> key);
 
     /**
-     * Attempts to resolve the associated value by going up the store's
-     * hierarchy (if any)
+     * Attempts to resolve the associated value by going up the store's hierarchy (if any)
      *
-     * @param <T> The generic attribute type
-     * @param key The key of the attribute; must not be {@code null}.
-     * @return {@code null} if there is no value associated with the specified key
-     * either in this repository or any of its ancestors (if any available)
+     * @param  <T> The generic attribute type
+     * @param  key The key of the attribute; must not be {@code null}.
+     * @return     {@code null} if there is no value associated with the specified key either in this repository or any
+     *             of its ancestors (if any available)
      */
     default <T> T resolveAttribute(AttributeKey<T> key) {
         return getAttribute(key);
     }
 
     /**
-     * @return A {@link Collection} <u>snapshot</u> of all the currently registered
-     * attributes in the repository
+     * @return A {@link Collection} <u>snapshot</u> of all the currently registered attributes in the repository
      */
     Collection<AttributeKey<?>> attributeKeys();
 
@@ -118,8 +117,8 @@ public interface AttributeRepository {
             @Override
             public Collection<AttributeKey<?>> attributeKeys() {
                 return GenericUtils.isEmpty(attributes)
-                     ? Collections.emptySet()
-                     : new HashSet<>(attributes.keySet());
+                        ? Collections.emptySet()
+                        : new HashSet<>(attributes.keySet());
             }
 
             @Override

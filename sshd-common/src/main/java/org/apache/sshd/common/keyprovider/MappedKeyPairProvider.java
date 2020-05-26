@@ -33,19 +33,17 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Holds a {@link Map} of {@link String}-&gt;{@link KeyPair} where the map key
- * is the type and value is the associated {@link KeyPair}
+ * Holds a {@link Map} of {@link String}-&gt;{@link KeyPair} where the map key is the type and value is the associated
+ * {@link KeyPair}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MappedKeyPairProvider implements KeyPairProvider {
     /**
-     * Transforms a {@link Map} of {@link String}-&gt;{@link KeyPair} to a
-     * {@link KeyPairProvider} where map key is the type and value is the
-     * associated {@link KeyPair}
+     * Transforms a {@link Map} of {@link String}-&gt;{@link KeyPair} to a {@link KeyPairProvider} where map key is the
+     * type and value is the associated {@link KeyPair}
      */
-    public static final Function<Map<String, KeyPair>, KeyPairProvider> MAP_TO_KEY_PAIR_PROVIDER =
-            MappedKeyPairProvider::new;
+    public static final Function<Map<String, KeyPair>, KeyPairProvider> MAP_TO_KEY_PAIR_PROVIDER = MappedKeyPairProvider::new;
 
     private final Map<String, KeyPair> pairsMap;
 

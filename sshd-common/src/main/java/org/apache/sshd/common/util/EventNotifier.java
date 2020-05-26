@@ -22,13 +22,13 @@ package org.apache.sshd.common.util;
 /**
  * Notify about the occurrence of an event
  *
- * @param <E> type of event being notified
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <E> type of event being notified
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
 public interface EventNotifier<E> {
     /**
-     * @param event The event
+     * @param  event     The event
      * @throws Exception If failed to process the event notification
      */
     void notifyEvent(E event) throws Exception;

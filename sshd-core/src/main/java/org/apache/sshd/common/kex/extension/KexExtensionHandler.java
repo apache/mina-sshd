@@ -42,15 +42,14 @@ public interface KexExtensionHandler {
      */
     enum AvailabilityPhase {
         /**
-         * Decide whether to delay sending the KEX-INIT message until
-         * the peer one has been received. <B>Note:</B> currently invoked only
-         * by client sessions, but code should not rely on this implicit assumption.
+         * Decide whether to delay sending the KEX-INIT message until the peer one has been received. <B>Note:</B>
+         * currently invoked only by client sessions, but code should not rely on this implicit assumption.
          */
         PREKEX,
 
         /**
-         * About to create the KEX-INIT proposal - should this session declare
-         * it support the KEX negotiation extension mechanism or not.
+         * About to create the KEX-INIT proposal - should this session declare it support the KEX negotiation extension
+         * mechanism or not.
          */
         PROPOSAL,
 
@@ -60,16 +59,16 @@ public interface KexExtensionHandler {
         NEWKEYS,
 
         /**
-         * About to send {@code SSH_MSG_USERAUTH_SUCCESS} message. <B>Note:</B> currently
-         * invoked only by server sessions, but code should not rely on this implicit assumption.
+         * About to send {@code SSH_MSG_USERAUTH_SUCCESS} message. <B>Note:</B> currently invoked only by server
+         * sessions, but code should not rely on this implicit assumption.
          */
         AUTHOK;
     }
 
     /**
-     * @param session The {@link Session} about to execute KEX
-     * @param phase The {@link AvailabilityPhase} hint as to why the query is being made
-     * @return {@code true} whether to KEX extensions are supported/allowed for the session
+     * @param  session     The {@link Session} about to execute KEX
+     * @param  phase       The {@link AvailabilityPhase} hint as to why the query is being made
+     * @return             {@code true} whether to KEX extensions are supported/allowed for the session
      * @throws IOException If failed to process the request
      */
     default boolean isKexExtensionsAvailable(Session session, AvailabilityPhase phase) throws IOException {
@@ -77,84 +76,81 @@ public interface KexExtensionHandler {
     }
 
     /**
-     * Invoked when a peer is ready to send the KEX options proposal or has received
-     * such a proposal. <B>Note:</B> this method is called during the negotiation phase
-     * even if {@code isKexExtensionsAvailable} returns {@code false} for the session.
+     * Invoked when a peer is ready to send the KEX options proposal or has received such a proposal. <B>Note:</B> this
+     * method is called during the negotiation phase even if {@code isKexExtensionsAvailable} returns {@code false} for
+     * the session.
      *
-     * @param session The {@link Session} initiating or receiving the proposal
-     * @param initiator {@code true} if the proposal is about to be sent, {@code false}
-     * if this is a proposal received from the peer.
-     * @param proposal The proposal contents -  <B>Caveat emptor:</B> the proposal is
-     * <U>modifiable</U> i.e., the handler can modify before being sent or before
-     * being processed (if incoming)
+     * @param  session     The {@link Session} initiating or receiving the proposal
+     * @param  initiator   {@code true} if the proposal is about to be sent, {@code false} if this is a proposal
+     *                     received from the peer.
+     * @param  proposal    The proposal contents - <B>Caveat emptor:</B> the proposal is <U>modifiable</U> i.e., the
+     *                     handler can modify before being sent or before being processed (if incoming)
      * @throws IOException If failed to handle the request
      */
     default void handleKexInitProposal(
             Session session, boolean initiator, Map<KexProposalOption, String> proposal)
-                throws IOException {
+            throws IOException {
         // ignored
     }
 
     /**
-     * Invoked during the KEX negotiation phase to inform about option
-     * being negotiated. <B>Note:</B> this method is called during the
-     * negotiation phase even if {@code isKexExtensionsAvailable}
-     * returns {@code false} for the session.
+     * Invoked during the KEX negotiation phase to inform about option being negotiated. <B>Note:</B> this method is
+     * called during the negotiation phase even if {@code isKexExtensionsAvailable} returns {@code false} for the
+     * session.
      *
-     * @param session The {@link Session} executing the negotiation
-     * @param option The negotiated {@link KexProposalOption}
-     * @param nValue The negotiated option value (may be {@code null}/empty).
-     * @param c2sOptions The client proposals
-     * @param cValue The client-side value for the option (may be {@code null}/empty).
-     * @param s2cOptions The server proposals
-     * @param sValue The server-side value for the option (may be {@code null}/empty).
+     * @param  session     The {@link Session} executing the negotiation
+     * @param  option      The negotiated {@link KexProposalOption}
+     * @param  nValue      The negotiated option value (may be {@code null}/empty).
+     * @param  c2sOptions  The client proposals
+     * @param  cValue      The client-side value for the option (may be {@code null}/empty).
+     * @param  s2cOptions  The server proposals
+     * @param  sValue      The server-side value for the option (may be {@code null}/empty).
      * @throws IOException If failed to handle the invocation
      */
     default void handleKexExtensionNegotiation(
             Session session, KexProposalOption option, String nValue,
             Map<KexProposalOption, String> c2sOptions, String cValue,
             Map<KexProposalOption, String> s2cOptions, String sValue)
-                throws IOException {
+            throws IOException {
         // do nothing
     }
 
     /**
      * The phase at which {@code sendKexExtensions} is invoked
+     * 
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     enum KexPhase {
         NEWKEYS,
         AUTHOK;
 
-        public static final Set<KexPhase> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(KexPhase.class));
+        public static final Set<KexPhase> VALUES = Collections.unmodifiableSet(EnumSet.allOf(KexPhase.class));
     }
 
     /**
-     * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message.
-     * <B>Note:</B> this method is called only if {@code isKexExtensionsAvailable}
-     * returns {@code true} for the session.
-     * @param session The {@link Session}
-     * @param phase The phase at which the handler is invoked
+     * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method is
+     * called only if {@code isKexExtensionsAvailable} returns {@code true} for the session.
+     * 
+     * @param  session     The {@link Session}
+     * @param  phase       The phase at which the handler is invoked
      * @throws IOException If failed to handle the invocation
-     * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-2.4">RFC-8308 - section 2.4</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc8308#section-2.4">RFC-8308 - section 2.4</A>
      */
     default void sendKexExtensions(Session session, KexPhase phase) throws IOException {
         // do nothing
     }
 
     /**
-     * Parses the {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method
-     * is called regardless of whether {@code isKexExtensionsAvailable} returns
-     * {@code true} for the session.
+     * Parses the {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method is called regardless of whether
+     * {@code isKexExtensionsAvailable} returns {@code true} for the session.
      *
-     * @param session The {@link Session} through which the message was received
-     * @param buffer The message buffer
-     * @return {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED}
-     * will be generated
+     * @param  session     The {@link Session} through which the message was received
+     * @param  buffer      The message buffer
+     * @return             {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED} will be
+     *                     generated
      * @throws IOException If failed to handle the message
-     * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-2.3">RFC-8308 - section 2.3</A>
-     * @see #handleKexExtensionRequest(Session, int, int, String, byte[])
+     * @see                <A HREF="https://tools.ietf.org/html/rfc8308#section-2.3">RFC-8308 - section 2.3</A>
+     * @see                #handleKexExtensionRequest(Session, int, int, String, byte[])
      */
     default boolean handleKexExtensionsMessage(Session session, Buffer buffer) throws IOException {
         int count = buffer.getInt();
@@ -170,36 +166,34 @@ public interface KexExtensionHandler {
     }
 
     /**
-     * Parses the {@code SSH_MSG_NEWCOMPRESS} message. <B>Note:</B> this method
-     * is called regardless of whether {@code isKexExtensionsAvailable} returns
-     * {@code true} for the session.
+     * Parses the {@code SSH_MSG_NEWCOMPRESS} message. <B>Note:</B> this method is called regardless of whether
+     * {@code isKexExtensionsAvailable} returns {@code true} for the session.
      *
-     * @param session The {@link Session} through which the message was received
-     * @param buffer The message buffer
-     * @return {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED}
-     * will be generated
+     * @param  session     The {@link Session} through which the message was received
+     * @param  buffer      The message buffer
+     * @return             {@code true} if message handled - if {@code false} then {@code SSH_MSG_UNIMPLEMENTED} will be
+     *                     generated
      * @throws IOException If failed to handle the message
-     * @see <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
+     * @see                <A HREF="https://tools.ietf.org/html/rfc8308#section-3.2">RFC-8308 - section 3.2</A>
      */
     default boolean handleKexCompressionMessage(Session session, Buffer buffer) throws IOException {
         return true;
     }
 
     /**
-     * Invoked by {@link #handleKexExtensionsMessage(Session, Buffer)} in order to
-     * handle a specific extension.
+     * Invoked by {@link #handleKexExtensionsMessage(Session, Buffer)} in order to handle a specific extension.
      *
-     * @param session The {@link Session} through which the message was received
-     * @param index The 0-based extension index
-     * @param count The total extensions in the message
-     * @param name The extension name
-     * @param data The extension data
-     * @return {@code true} whether to proceed to the next extension or
-     * stop processing the rest
+     * @param  session     The {@link Session} through which the message was received
+     * @param  index       The 0-based extension index
+     * @param  count       The total extensions in the message
+     * @param  name        The extension name
+     * @param  data        The extension data
+     * @return             {@code true} whether to proceed to the next extension or stop processing the rest
      * @throws IOException If failed to handle the extension
      */
     default boolean handleKexExtensionRequest(
-            Session session, int index, int count, String name, byte[] data) throws IOException {
+            Session session, int index, int count, String name, byte[] data)
+            throws IOException {
         return true;
     }
 }

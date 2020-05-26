@@ -77,10 +77,10 @@ public class EmbeddedCommandRunner {
     /**
      * Execute a command.
      *
-     * @param argv the command and its arguments
-     * @param in the input stream, may be null in which case the system input stream will be used
-     * @param out the output stream, may be null in which case the system output stream will be used
-     * @param err the error stream, may be null in which case the system error stream will be used
+     * @param  argv      the command and its arguments
+     * @param  in        the input stream, may be null in which case the system input stream will be used
+     * @param  out       the output stream, may be null in which case the system output stream will be used
+     * @param  err       the error stream, may be null in which case the system error stream will be used
      * @throws Exception if an error occurs
      */
     public void execute(String[] argv, InputStream in, OutputStream out, OutputStream err) throws Exception {
@@ -137,9 +137,9 @@ public class EmbeddedCommandRunner {
 
         Boolean success = (Boolean) call(cmd, "requiresRepository");
         if (success) {
-            call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {openGitDir(gitdir), gitdir});
+            call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { openGitDir(gitdir), gitdir });
         } else {
-            call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {null, gitdir});
+            call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { null, gitdir });
         }
         try {
             cmd.execute(arguments.toArray(new String[arguments.size()]));
@@ -182,11 +182,13 @@ public class EmbeddedCommandRunner {
         throw new NoSuchFieldException(name);
     }
 
-    private Object call(Object obj, String name) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private Object call(Object obj, String name)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         return call(obj, name, new Class[0], new Object[0]);
     }
 
-    private Object call(Object obj, String name, Class<?>[] types, Object[] args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private Object call(Object obj, String name, Class<?>[] types, Object[] args)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Class<?> clazz = obj.getClass();
         while (clazz != null) {
             try {
@@ -203,23 +205,16 @@ public class EmbeddedCommandRunner {
     /**
      * Evaluate the {@code --git-dir} option and open the repository.
      *
-     * @param gitdir
-     *            the {@code --git-dir} option given on the command line. May be
-     *            null if it was not supplied.
-     * @return the repository to operate on.
-     * @throws IOException
-     *             the repository cannot be opened.
+     * @param  gitdir      the {@code --git-dir} option given on the command line. May be null if it was not supplied.
+     * @return             the repository to operate on.
+     * @throws IOException the repository cannot be opened.
      */
     protected Repository openGitDir(String gitdir) throws IOException {
         return Git.open(new File(gitdir)).getRepository();
         /*
-        RepositoryBuilder rb = new RepositoryBuilder() //
-                .setGitDir(gitdir != null ? new File(gitdir) : null) //
-                .readEnvironment() //
-                .findGitDir();
-        if (rb.getGitDir() == null)
-            throw new Die(CLIText.get().cantFindGitDirectory);
-        return rb.build();
-        */
+         * RepositoryBuilder rb = new RepositoryBuilder() // .setGitDir(gitdir != null ? new File(gitdir) : null) //
+         * .readEnvironment() // .findGitDir(); if (rb.getGitDir() == null) throw new
+         * Die(CLIText.get().cantFindGitDirectory); return rb.build();
+         */
     }
 }

@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
@@ -62,7 +61,8 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
     @Test
     public void testFileStoreReport() throws Exception {
         Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
         Path parentPath = targetPath.getParent();
         FileStore store = Files.getFileStore(lclSftp.getRoot());
         final String queryPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
@@ -72,12 +72,14 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
-                return new SftpSubsystem(resolveExecutorService(),
+                return new SftpSubsystem(
+                        resolveExecutorService(),
                         getUnsupportedAttributePolicy(), getFileSystemAccessor(), getErrorStatusDataHandler()) {
                     @Override
                     protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
                         if (!queryPath.equals(path)) {
-                            throw new StreamCorruptedException("Mismatched query paths: expected=" + queryPath + ", actual=" + path);
+                            throw new StreamCorruptedException(
+                                    "Mismatched query paths: expected=" + queryPath + ", actual=" + path);
                         }
 
                         return expected;
@@ -86,9 +88,10 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
             }
         }));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session
+                = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);

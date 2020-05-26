@@ -24,12 +24,12 @@ import java.security.Security;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 
 /**
- * On Android 9, one cannot use the built in {@code Bouncy Castle} security provider
- * because {@code Android} blocks attempts to use {@code Bouncy Castle} for operations
- * that {@code AndroidOpenSSL} supports.
+ * On Android 9, one cannot use the built in {@code Bouncy Castle} security provider because {@code Android} blocks
+ * attempts to use {@code Bouncy Castle} for operations that {@code AndroidOpenSSL} supports.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <a href="https://developer.android.com/guide/topics/security/cryptography#bc-algorithms">Bouncy Castle algorithms</a>
+ * @see    <a href="https://developer.android.com/guide/topics/security/cryptography#bc-algorithms">Bouncy Castle
+ *         algorithms</a>
  */
 public class AndroidOpenSSLSecurityProviderRegistrar extends AbstractSecurityProviderRegistrar {
     public static final String NAME = "AndroidOpenSSL";

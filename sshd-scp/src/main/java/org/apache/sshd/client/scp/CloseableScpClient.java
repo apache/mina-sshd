@@ -22,8 +22,7 @@ package org.apache.sshd.client.scp;
 import java.nio.channels.Channel;
 
 /**
- * An {@link ScpClient} wrapper that also closes the underlying session
- * when closed
+ * An {@link ScpClient} wrapper that also closes the underlying session when closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

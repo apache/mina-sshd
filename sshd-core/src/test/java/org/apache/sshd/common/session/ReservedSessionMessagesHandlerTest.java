@@ -79,9 +79,10 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         sshd.setReservedSessionMessagesHandler(handler);
 
         client.start();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session
+                = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             testReservedSessionMessagesHandler(session, handler);
         } finally {
             client.stop();
@@ -116,9 +117,10 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             });
 
             client.start();
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session
+                    = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
+                session.auth().verify(AUTH_TIMEOUT);
                 assertTrue("Failed to complete test on time", signal.tryAcquire(31L, TimeUnit.SECONDS));
             } finally {
                 client.stop();
@@ -223,7 +225,8 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         }
 
         @Override
-        public void handleDebugMessage(Session session, boolean display, String msg, String lang, Buffer buffer) throws Exception {
+        public void handleDebugMessage(Session session, boolean display, String msg, String lang, Buffer buffer)
+                throws Exception {
             debugMessages.add(new SimpleImmutableEntry<>(msg, display));
             super.handleDebugMessage(session, display, msg, lang, buffer);
             debugSignal.release();

@@ -43,7 +43,7 @@ public class BufferUtilsTest extends JUnitTestSupport {
     public void testHexEncodeDecode() {
         String expValue = getClass().getName() + "#" + getCurrentTestName();
         byte[] expData = expValue.getBytes(StandardCharsets.UTF_8);
-        for (char sep : new char[]{BufferUtils.EMPTY_HEX_SEPARATOR, ':'}) {
+        for (char sep : new char[] { BufferUtils.EMPTY_HEX_SEPARATOR, ':' }) {
             String hexData = BufferUtils.toHex(sep, expData);
             byte[] actData = BufferUtils.decodeHex(sep, hexData);
             String actValue = new String(actData, StandardCharsets.UTF_8);

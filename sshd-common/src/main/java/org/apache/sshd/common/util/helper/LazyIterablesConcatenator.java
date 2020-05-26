@@ -24,13 +24,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Creates a &quot;smooth&quot; wrapping {@link Iterable} using several
- * underlying ones to provide the values. The &quot;lazy&quot; denomination
- * is due to the fact that no iterable is consulted until the one(s) before
- * it have been fully exhausted.
+ * Creates a &quot;smooth&quot; wrapping {@link Iterable} using several underlying ones to provide the values. The
+ * &quot;lazy&quot; denomination is due to the fact that no iterable is consulted until the one(s) before it have been
+ * fully exhausted.
  *
- * @param <T> Type of element being iterared
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Type of element being iterared
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LazyIterablesConcatenator<T> implements Iterable<T> {
     private final Iterable<? extends Iterable<? extends T>> iterables;
@@ -47,8 +46,8 @@ public class LazyIterablesConcatenator<T> implements Iterable<T> {
     public Iterator<T> iterator() {
         return new Iterator<T>() {
             @SuppressWarnings("synthetic-access")
-            private final Iterator<? extends Iterable<? extends T>> itit =
-                (iterables == null) ? Collections.emptyIterator() : iterables.iterator();
+            private final Iterator<? extends Iterable<? extends T>> itit
+                    = (iterables == null) ? Collections.emptyIterator() : iterables.iterator();
             private Iterator<? extends T> currentIterator;
             private boolean finished;
 
@@ -102,11 +101,11 @@ public class LazyIterablesConcatenator<T> implements Iterable<T> {
     }
 
     /**
-     * @param <T> Type if iterated element
-     * @param iterables The iterables to concatenate - ignored if {@code null}
-     * @return An {@link Iterable} that goes over all the elements in the wrapped
-     * iterables one after the other. The denomination &quot;lazy&quot; indicates
-     * that no iterable is consulted until the previous one has been fully exhausted.
+     * @param  <T>       Type if iterated element
+     * @param  iterables The iterables to concatenate - ignored if {@code null}
+     * @return           An {@link Iterable} that goes over all the elements in the wrapped iterables one after the
+     *                   other. The denomination &quot;lazy&quot; indicates that no iterable is consulted until the
+     *                   previous one has been fully exhausted.
      */
     public static <T> Iterable<T> lazyConcatenateIterables(Iterable<? extends Iterable<? extends T>> iterables) {
         return (iterables == null) ? Collections.emptyList() : new LazyIterablesConcatenator<>(iterables);

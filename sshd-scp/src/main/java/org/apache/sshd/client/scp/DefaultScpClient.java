@@ -51,7 +51,7 @@ public class DefaultScpClient extends AbstractScpClient {
     private final ClientSession clientSession;
 
     public DefaultScpClient(
-            ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
+                            ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.opener = (fileOpener == null) ? DefaultScpFileOpener.INSTANCE : fileOpener;
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
@@ -87,10 +87,10 @@ public class DefaultScpClient extends AbstractScpClient {
              OutputStream invIn = channel.getInvertedIn()) {
             ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, listener);
             helper.receive(local,
-                options.contains(Option.Recursive),
-                options.contains(Option.TargetIsDirectory),
-                options.contains(Option.PreserveAttributes),
-                ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+                    options.contains(Option.Recursive),
+                    options.contains(Option.TargetIsDirectory),
+                    options.contains(Option.PreserveAttributes),
+                    ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
             handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
@@ -98,11 +98,12 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     @Override
-    public void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    public void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time)
+            throws IOException {
         int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
         String name = (namePos < 0)
-            ? remote
-            : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
+                ? remote
+                : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
         Collection<Option> options = (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.emptySet();
         String cmd = ScpClient.createSendCommand(remote, options);
         ClientSession session = getClientSession();
@@ -123,7 +124,7 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     protected <T> void runUpload(
             String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
-                throws IOException {
+            throws IOException {
         local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
         if (local.size() > 1) {
@@ -148,7 +149,7 @@ public class DefaultScpClient extends AbstractScpClient {
                 } catch (UnsupportedOperationException e) {
                     if (log.isDebugEnabled()) {
                         log.debug("runUpload({}) {} => {} - failed ({}) to close file system={}: {}",
-                                  session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
+                                session, remote, local, e.getClass().getSimpleName(), fs, e.getMessage());
                     }
                 }
             }
@@ -158,4 +159,3 @@ public class DefaultScpClient extends AbstractScpClient {
         }
     }
 }
-

@@ -38,9 +38,9 @@ public class DefaultKeyExchangeFuture
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result) {
             throw formatExceptionMessage(
-                SshException::new,
-                "Key exchange failed while waiting %d msec.",
-                timeoutMillis);
+                    SshException::new,
+                    "Key exchange failed while waiting %d msec.",
+                    timeoutMillis);
         }
 
         return this;

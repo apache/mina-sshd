@@ -49,8 +49,7 @@ public class SshBuilderTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that all values in {@link BuiltinCiphers} are
-     * listed in {@link BaseBuilder#DEFAULT_CIPHERS_PREFERENCE}
+     * Make sure that all values in {@link BuiltinCiphers} are listed in {@link BaseBuilder#DEFAULT_CIPHERS_PREFERENCE}
      */
     @Test
     public void testAllBuiltinCiphersListed() {
@@ -61,8 +60,7 @@ public class SshBuilderTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that all values in {@link BuiltinMacs} are
-     * listed in {@link BaseBuilder#DEFAULT_MAC_PREFERENCE}
+     * Make sure that all values in {@link BuiltinMacs} are listed in {@link BaseBuilder#DEFAULT_MAC_PREFERENCE}
      */
     @Test
     public void testAllBuiltinMacsListed() {
@@ -70,8 +68,8 @@ public class SshBuilderTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that all values in {@link BuiltinSignatures} are
-     * listed in {@link ServerBuilder#DEFAULT_SIGNATURE_PREFERENCE}
+     * Make sure that all values in {@link BuiltinSignatures} are listed in
+     * {@link ServerBuilder#DEFAULT_SIGNATURE_PREFERENCE}
      */
     @Test
     public void testAllBuiltinSignaturesListed() {
@@ -79,15 +77,15 @@ public class SshBuilderTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that all values in {@link BuiltinDHFactories} are
-     * listed in {@link BaseBuilder#DEFAULT_KEX_PREFERENCE}
+     * Make sure that all values in {@link BuiltinDHFactories} are listed in {@link BaseBuilder#DEFAULT_KEX_PREFERENCE}
      */
     @Test
     public void testAllBuiltinDHFactoriesListed() {
         testAllInstancesListed(BuiltinDHFactories.VALUES, BaseBuilder.DEFAULT_KEX_PREFERENCE);
     }
 
-    private static <E extends Enum<E>> void testAllInstancesListed(Set<? extends E> expValues, Collection<? extends E> actValues) {
+    private static <
+            E extends Enum<E>> void testAllInstancesListed(Set<? extends E> expValues, Collection<? extends E> actValues) {
         assertEquals("Mismatched actual values size", expValues.size(), actValues.size());
         for (E expected : expValues) {
             assertTrue(expected.name() + " not found in actual values", actValues.contains(expected));
@@ -95,13 +93,12 @@ public class SshBuilderTest extends BaseTestSupport {
     }
 
     /**
-     * Make sure that {@link BaseBuilder#setUpDefaultCiphers(boolean)} returns
-     * the correct result - i.e., according to the {@code ingoreUnsupported}
-     * parameter and in the defined preference order
+     * Make sure that {@link BaseBuilder#setUpDefaultCiphers(boolean)} returns the correct result - i.e., according to
+     * the {@code ingoreUnsupported} parameter and in the defined preference order
      */
     @Test
     public void testSetUpDefaultCiphers() {
-        for (boolean ignoreUnsupported : new boolean[]{true, false}) {
+        for (boolean ignoreUnsupported : new boolean[] { true, false }) {
             List<NamedFactory<Cipher>> ciphers = BaseBuilder.setUpDefaultCiphers(ignoreUnsupported);
             int numCiphers = GenericUtils.size(ciphers);
             // make sure returned list size matches expected count
@@ -129,7 +126,8 @@ public class SshBuilderTest extends BaseTestSupport {
                 assertTrue("Out of actual ciphers for expected=" + expectedName, nameIndex < numCiphers);
 
                 String actualName = cipherNames.get(nameIndex);
-                assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported, expectedName, actualName);
+                assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported,
+                        expectedName, actualName);
                 nameIndex++;
             }
         }

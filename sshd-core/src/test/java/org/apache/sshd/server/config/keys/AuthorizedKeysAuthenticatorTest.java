@@ -63,14 +63,14 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             @Override
             protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
                     Path path, String username, ServerSession session)
-                        throws IOException, GeneralSecurityException {
+                    throws IOException, GeneralSecurityException {
                 assertSame("Mismatched reload path", file, path);
                 reloadCount.incrementAndGet();
                 return super.reloadAuthorizedKeys(path, username, session);
             }
         };
         assertFalse("Unexpected authentication success for missing file " + file,
-            auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+                auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
 
         List<String> keyLines = loadDefaultSupportedKeys();
         assertHierarchyTargetFolderExists(file.getParent());
@@ -78,9 +78,9 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
         while (keyLines.size() > 0) {
             try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
                 w.append(PublicKeyEntry.COMMENT_CHAR)
-                    .append(' ').append(getCurrentTestName())
-                    .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
-                    .append(IoUtils.EOL);
+                        .append(' ').append(getCurrentTestName())
+                        .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
+                        .append(IoUtils.EOL);
                 for (String l : keyLines) {
                     w.append(l).append(IoUtils.EOL);
                 }
@@ -95,14 +95,16 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             reloadCount.set(0);
             for (int index = 0; index < keySet.size(); index++) {
                 PublicKey k = keySet.get(index);
-                String keyData = keyLines.get(index);  // we know they are 1-1 matching
+                String keyData = keyLines.get(index); // we know they are 1-1 matching
 
-                assertTrue("Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData + "] on file=" + file,
-                       auth.authenticate(getCurrentTestName(), k, null));
+                assertTrue("Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData
+                           + "] on file=" + file,
+                        auth.authenticate(getCurrentTestName(), k, null));
 
                 // we expect EXACTLY ONE re-load call since we did not modify the file during the authentication
-                assertEquals("Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1) + " on file=" + file,
-                         1, reloadCount.get());
+                assertEquals("Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1)
+                             + " on file=" + file,
+                        1, reloadCount.get());
             }
 
             keyLines.remove(0);
@@ -110,6 +112,6 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
 
         assertTrue("File no longer exists: " + file, Files.exists(file));
         assertFalse("Unexpected authentication success for empty file " + file,
-            auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+                auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
     }
 }

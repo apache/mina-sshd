@@ -48,7 +48,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class DHGroupDataParseTest extends BaseTestSupport {
@@ -60,7 +60,7 @@ public class DHGroupDataParseTest extends BaseTestSupport {
         this.expected = expected;
     }
 
-    @Parameters(name = "{0}")      // Note: we rely on the naming convention
+    @Parameters(name = "{0}") // Note: we rely on the naming convention
     public static List<Object[]> parameters() throws Exception {
         Collection<String> processedResources = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         List<Object[]> testCases = new ArrayList<>();
@@ -97,7 +97,7 @@ public class DHGroupDataParseTest extends BaseTestSupport {
             assertTrue("Duplicate resource name: " + resName, processedResources.add(resName));
 
             byte[] expected = (byte[]) m.invoke(null, GenericUtils.EMPTY_OBJECT_ARRAY);
-            testCases.add(new Object[] {resName, expected});
+            testCases.add(new Object[] { resName, expected });
         }
 
         assertFalse("No resources processed", processedResources.isEmpty());

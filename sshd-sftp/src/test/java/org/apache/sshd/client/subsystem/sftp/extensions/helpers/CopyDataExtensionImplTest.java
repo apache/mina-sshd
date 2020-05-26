@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
@@ -58,41 +57,39 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
-    private static final List<Object[]> PARAMETERS =
-        Collections.unmodifiableList(
+    private static final List<Object[]> PARAMETERS = Collections.unmodifiableList(
             Arrays.asList(
-                new Object[]{
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                    Integer.valueOf(0),
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                    Long.valueOf(0L)
-                },
-                new Object[]{
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                    Long.valueOf(0L)
-                },
-                new Object[]{
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                    Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
-                },
-                new Object[]{
-                    Integer.valueOf(Byte.MAX_VALUE),
-                    Integer.valueOf(Byte.MAX_VALUE / 2),
-                    Integer.valueOf(Byte.MAX_VALUE),    // attempt to read more than available
-                    Long.valueOf(0L)
-                }
-            ));
+                    new Object[] {
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                            Integer.valueOf(0),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                            Long.valueOf(0L)
+                    },
+                    new Object[] {
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                            Long.valueOf(0L)
+                    },
+                    new Object[] {
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                            Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
+                    },
+                    new Object[] {
+                            Integer.valueOf(Byte.MAX_VALUE),
+                            Integer.valueOf(Byte.MAX_VALUE / 2),
+                            Integer.valueOf(Byte.MAX_VALUE), // attempt to read more than available
+                            Long.valueOf(0L)
+                    }));
 
     private int size;
     private int srcOffset;
-    private int  length;
+    private int length;
     private long dstOffset;
 
     public CopyDataExtensionImplTest(int size, int srcOffset, int length, long dstOffset) throws IOException {
@@ -119,10 +116,10 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
 
     private void testCopyDataExtension(int dataSize, int readOffset, int readLength, long writeOffset) throws Exception {
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
-                + "-" + dataSize
-                + "-" + readOffset + "/" + readLength + "/" + writeOffset
-                + IoUtils.EOL)
-                .getBytes(StandardCharsets.UTF_8);
+                       + "-" + dataSize
+                       + "-" + readOffset + "/" + readLength + "/" + writeOffset
+                       + IoUtils.EOL)
+                               .getBytes(StandardCharsets.UTF_8);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);
@@ -135,7 +132,8 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private void testCopyDataExtension(byte[] data, int readOffset, int readLength, long writeOffset) throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp
+                = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         LinkOption[] options = IoUtils.getLinkOptions(true);
         String baseName = readOffset + "-" + readLength + "-" + writeOffset;
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp, options).resolve(baseName + "-src.txt");
@@ -162,10 +160,9 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         }
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS)
-                .getSession()) {
+                .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
 
             try (SftpClient sftp = createSftpClient(session)) {
                 CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);

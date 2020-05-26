@@ -37,25 +37,23 @@ import org.eclipse.jgit.util.FS;
  */
 public class GitSshdSession extends AbstractLoggingBean implements RemoteSession {
     /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
-     * the default timeout (millis) to connect to the remote SSH server.
-     * If not specified then {@link #DEFAULT_CONNECT_TIMEOUT} is used.
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
+     * (millis) to connect to the remote SSH server. If not specified then {@link #DEFAULT_CONNECT_TIMEOUT} is used.
      */
     public static final String CONNECT_TIMEOUT_PROP = "git-ssh-connect-timeout";
     public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
-     * the default timeout (millis) to authenticate with the remote SSH server.
-     * If not specified then {@link #DEFAULT_AUTH_TIMEOUT} is used.
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
+     * (millis) to authenticate with the remote SSH server. If not specified then {@link #DEFAULT_AUTH_TIMEOUT} is used.
      */
     public static final String AUTH_TIMEOUT_PROP = "git-ssh-connect-timeout";
     public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
-     * the default timeout (millis) to open a channel to the remote SSH server.
-     * If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} is used.
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
+     * (millis) to open a channel to the remote SSH server. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT}
+     * is used.
      */
     public static final String CHANNEL_OPEN_TIMEOUT_PROPT = "git-ssh-channel-open-timeout";
     public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(7L);
@@ -64,7 +62,8 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
     private final ClientSession session;
 
     public GitSshdSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
-            throws IOException, InterruptedException {
+                                                                                               throws IOException,
+                                                                                               InterruptedException {
         String user = uri.getUser();
         final String pass1 = uri.getPass();
         String host = uri.getHost();
@@ -98,15 +97,15 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
 
     protected ClientSession createClientSession(
             SshClient clientInstance, String host, String username, int port, String... passwords)
-                throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("Connecting to {}:{}", host, port);
         }
 
         ClientSession s = clientInstance.connect(username, host, port)
-            .verify(clientInstance.getLongProperty(CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
-            .getSession();
+                .verify(clientInstance.getLongProperty(CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
+                .getSession();
 
         if (debugEnabled) {
             log.debug("Connected to {}:{}", host, port);
@@ -135,7 +134,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
             }
 
             ClientSession result = s;
-            s = null;   // avoid auto-close at finally clause
+            s = null; // avoid auto-close at finally clause
             return result;
         } finally {
             if (s != null) {

@@ -53,7 +53,7 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
@@ -73,19 +73,17 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
         List<Object[]> params = new ArrayList<>();
         for (Integer ks : RSA_SIZES) {
-            params.add(new Object[]{BuiltinIdentities.Constants.RSA, ks});
+            params.add(new Object[] { BuiltinIdentities.Constants.RSA, ks });
         }
         for (Integer ks : DSS_SIZES) {
-            params.add(new Object[]{BuiltinIdentities.Constants.DSA, ks});
+            params.add(new Object[] { BuiltinIdentities.Constants.DSA, ks });
         }
 
-/* TODO - causes an issue where BC cannot parse its own file
-        if (SecurityUtils.isECCSupported()) {
-            for (ECCurves curve : ECCurves.VALUES) {
-                params.add(new Object[]{BuiltinIdentities.Constants.ECDSA, curve.getKeySize()});
-            }
-        }
-*/
+        /*
+         * TODO - causes an issue where BC cannot parse its own file if (SecurityUtils.isECCSupported()) { for (ECCurves
+         * curve : ECCurves.VALUES) { params.add(new Object[]{BuiltinIdentities.Constants.ECDSA, curve.getKeySize()}); }
+         * }
+         */
         return params;
     }
 

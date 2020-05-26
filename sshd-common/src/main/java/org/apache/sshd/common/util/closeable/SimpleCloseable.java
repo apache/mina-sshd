@@ -68,4 +68,9 @@ public class SimpleCloseable extends IoBaseCloseable {
     protected void doClose(boolean immediately) {
         future.setClosed();
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + future + "]";
+    }
 }

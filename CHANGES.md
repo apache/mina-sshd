@@ -2,76 +2,59 @@
 
 # [Version 2.2.0 to 2.3.0](./docs/changes/2.3.0.md)
 
+# [Version 2.3.0 to 2.4.0](./docs/changes/2.4.0.md)
+
 # Planned for next version
 
 ## Major code re-factoring
 
-* `SftpSubSystemFactory` and its `Builder` use a `Supplier<CloseableExecutorService>` instead of
-an executor instance in order to allow users to provide a "fresh" instance every time an SFTP
-session is initiated and protect their instance from shutdown when session is destroyed:
+* Reception of an `SSH_MSG_UNIMPLEMENTED` response to a `SSH_MSG_GLOBAL_REQUEST` is
+translated internally into same code flow as if an `SSH_MSH_REQUEST_FAILURE` has
+been received - see [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968).
 
-```java
-    CloseableExecutorService mySpecialExecutor = ...;
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorServiceProvider(() -> ThreadUtils.noClose(mySpecialExecutor))
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
-```
+* Server SFTP subsystem internal code dealing with the local files has been delegated to
+the `SftpFileSystemAccessor` in order to allow easier hooking into the SFTP subsystem.
 
-* `SubsystemFactory` is a proper interface and it has been refactored to contain a
-`createSubsystem` method that accepts the `ChannelSession` through which the request
-has been made
+    * Resolving a local file path for an SFTP remote one
+    * Reading/Writing a file's attribute(s)
+    * Creating files links
+    * Copying / Renaming / Deleting files
 
-* `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` is consulted wherever
-the standard does not specifically specify the behavior regarding symbolic links handling.
-
-* `UserAuthFactory` is a proper interface and it has been refactored to contain a
-`createUserAuth` method that accepts the session instance through which the request is made.
-
-* `ChannelFactory` is a proper interface and it has been refactored to contain a
-`createChannel` method that accepts the session instance through which the request is made.
-
-* `KeyExchangeFactory` is a proper interface and it has been refactored to contain a
-`createKeyExchange` method that accepts the session instance through which the request is made.
+* `SftpVersionSelector` is now consulted when client sends initial command (as well
+as when session is re-negotiated)
 
 ## Minor code helpers
 
-* `SessionListener` supports `sessionPeerIdentificationReceived` method that is invoked once successful
-peer version data is received.
+* Handling of debug/ignore/unimplemented messages has been split into `handleXXX` and `doInvokeXXXMsgHandler` methods
+where the former validate the messages and deal with the idle timeout, and the latter execute the actual invcation.
 
-* `SessionListener` supports `sessionEstablished` method that is invoked when initial constructor is executed.
+* Added overloaded methods that accept a `java.time.Duration` specifier for timeout value.
 
-* `ChannelIdTrackingUnknownChannelReferenceHandler` extends the functionality of the `DefaultUnknownChannelReferenceHandler`
-by tracking the initialized channels identifiers and being lenient only if command is received for a channel that was
-initialized in the past.
-
-* The internal moduli used in Diffie-Hellman group exchange are **cached** - lazy-loaded the 1st time such an exchange
-occurs. The cache can be invalidated (and thus force a re-load) by invoking `Moduli#clearInternalModuliCache`.
-
-* `DHGEXClient` implementation allows overriding the min./max. key sizes for a specific session Diffi-Helman group
-exchange via properties - see `DHGEXClient#PROP_DHGEX_CLIENT_MIN/MAX/PRF_KEY`. Similar applies for `DHGEXServer` but only for
-the message type=30 (old request).
-
-* `AbstractSignature#doInitSignature` is now provided also with the `Key` instance for which it is invoked.
+* The argument representing the SFTP subsystem in invocations to `SftpFileSystemAccessor` has been enhanced to expose
+as much of the available functionality as possible.
 
 ## Behavioral changes and enhancements
 
-* [SSHD-926](https://issues.apache.org/jira/browse/SSHD-930) - Add support for OpenSSH 'lsetstat@openssh.com' SFTP protocol extension.
+* [SSHD-964](https://issues.apache.org/jira/browse/SSHD-964) - Send SSH_MSG_CHANNEL_EOF when tunnel channel being closed.
 
-* [SSHD-930](https://issues.apache.org/jira/browse/SSHD-930) - Added configuration allowing the user to specify whether client should wait
-for the server's identification before sending its own.
+* [SSHD-967](https://issues.apache.org/jira/browse/SSHD-967) - Extra bytes written when `SftpRemotePathChannel#transferTo` is used.
 
-* [SSHD-931](https://issues.apache.org/jira/browse/SSHD-931) - Using an executor supplier instead of a specific instance in `SftpSubsystemFactory`.
+* [SSHD-968](https://issues.apache.org/jira/browse/SSHD-968) - Interpret SSH_MSG_UNIMPLEMENTED response to a heartbeat request as a liveness indicator
 
-* [SSHD-934](https://issues.apache.org/jira/browse/SSHD-934) - Fixed ECDSA public key encoding into OpenSSH format.
+* [SSHD-970](https://issues.apache.org/jira/browse/SSHD-970) - `transferTo` function of `SftpRemotePathChannel` will loop if count parameter is greater than file size
 
-* [SSHD-937](https://issues.apache.org/jira/browse/SSHD-937) - Provide session instance when creating a subsystem, user authentication, channel.
+* [SSHD-972](https://issues.apache.org/jira/browse/SSHD-972) - Add support for peers using OpenSSH "security key" key types
 
-* [SSHD-941](https://issues.apache.org/jira/browse/SSHD-941) - Allow user to override min./max. key sizes for a specific session Diffi-Helman group
-exchange via properties.
+* [SSHD-977](https://issues.apache.org/jira/browse/SSHD-977) - Apply consistent logging policy to caught exceptions
 
-* [SSHD-943](https://issues.apache.org/jira/browse/SSHD-943) - Provide session instance when KEX factory is invoked in order to create a KeyExchange instance.
+* [SSHD-660](https://issues.apache.org/jira/browse/SSHD-660) - Added support for server-side signed certificate keys
 
-* [SSHD-947](https://issues.apache.org/jira/browse/SSHD-947) - Added configuration allowing the user to specify whether client should wait
-for the server's identification before sending KEX-INIT message.
+* [SSHD-984](https://issues.apache.org/jira/browse/SSHD-984) - Utility method to export KeyPair in OpenSSH format
 
+* [SSHD-992](https://issues.apache.org/jira/browse/SSHD-984) - Provide more hooks into the SFTP server subsystem via SftpFileSystemAccessor
+
+* [SSHD-997](https://issues.apache.org/jira/browse/SSHD-997) - Fixed OpenSSH private key decoders for RSA and Ed25519
+
+* [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
+
+* [SSHD-989](https://issues.apache.org/jira/browse/SSHD-989) - Read correctly ECDSA key pair from PKCS8 encoded data

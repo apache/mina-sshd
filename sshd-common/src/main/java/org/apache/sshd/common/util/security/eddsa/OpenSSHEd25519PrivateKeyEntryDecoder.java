@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.security.eddsa;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -32,20 +31,20 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Objects;
 
-import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.KeyEntryResolver;
-import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
-
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -58,15 +57,15 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
 
     public OpenSSHEd25519PrivateKeyEntryDecoder() {
         super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
-            Collections.unmodifiableList(
-                Collections.singletonList(
-                    KeyPairProvider.SSH_ED25519)));
+              Collections.unmodifiableList(
+                      Collections.singletonList(
+                              KeyPairProvider.SSH_ED25519)));
     }
 
     @Override
     public EdDSAPrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
-                throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
         }
@@ -85,11 +84,14 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
             pk = KeyEntryResolver.readRLEBytes(keyData, PK_SIZE * 2);
             keypair = KeyEntryResolver.readRLEBytes(keyData, KEYPAIR_SIZE * 2);
             if (pk.length != PK_SIZE) {
-                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
+                throw new InvalidKeyException(
+                        String.format(Locale.ENGLISH, "Unexpected pk size: %s (expected %s)", pk.length, PK_SIZE));
             }
 
             if (keypair.length != KEYPAIR_SIZE) {
-                throw new InvalidKeyException(String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length, KEYPAIR_SIZE));
+                throw new InvalidKeyException(
+                        String.format(Locale.ENGLISH, "Unexpected keypair size: %s (expected %s)", keypair.length,
+                                KEYPAIR_SIZE));
             }
 
             // verify that the keypair contains the expected pk
@@ -99,15 +101,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
             }
 
             byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-            EdDSAPrivateKey privateKey;
-            try {
-                // create the private key
-                EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
-                privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
-            } finally {
-                // get rid of sensitive data a.s.a.p
-                Arrays.fill(sk, (byte) 0);
-            }
+            EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
+            EdDSAPrivateKey privateKey = generatePrivateKey(new EdDSAPrivateKeySpec(sk, params));
 
             // the private key class contains the calculated public key (Abyte)
             // pointers to the corresponding code:
@@ -128,7 +123,8 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     }
 
     @Override
-    public String encodePrivateKey(OutputStream s, EdDSAPrivateKey key) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, EdDSAPrivateKey key, EdDSAPublicKey pubKey)
+            throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
         // ed25519 bernstein naming: pk .. public key, sk .. secret key

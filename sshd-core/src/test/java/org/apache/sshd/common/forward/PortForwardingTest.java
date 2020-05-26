@@ -28,6 +28,7 @@ import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,6 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -70,50 +74,52 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-
 /**
  * Port forwarding tests
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingTest extends BaseTestSupport {
+
+    public static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(13L);
+
     @SuppressWarnings("checkstyle:anoninnerlength")
     private static final PortForwardingEventListener SERVER_SIDE_LISTENER = new PortForwardingEventListener() {
         private final org.slf4j.Logger log = LoggerFactory.getLogger(PortForwardingEventListener.class);
 
         @Override
         public void establishingExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                    throws IOException {
+                org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote,
+                boolean localForwarding)
+                throws IOException {
             log.info("establishingExplicitTunnel(session={}, local={}, remote={}, localForwarding={})",
-                 session, local, remote, localForwarding);
+                    session, local, remote, localForwarding);
         }
 
         @Override
         public void establishedExplicitTunnel(
                 org.apache.sshd.common.session.Session session, SshdSocketAddress local,
                 SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
+                throws IOException {
             log.info("establishedExplicitTunnel(session={}, local={}, remote={}, bound={}, localForwarding={}): {}",
-                session, local, remote, boundAddress, localForwarding, reason);
+                    session, local, remote, boundAddress, localForwarding, reason);
         }
 
         @Override
         public void tearingDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
-                    throws IOException {
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                SshdSocketAddress remoteAddress)
+                throws IOException {
             log.info("tearingDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={})",
-                session, address, localForwarding, remoteAddress);
+                    session, address, localForwarding, remoteAddress);
         }
 
         @Override
         public void tornDownExplicitTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
-                    throws IOException {
+                org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                SshdSocketAddress remoteAddress, Throwable reason)
+                throws IOException {
             log.info("tornDownExplicitTunnel(session={}, address={}, localForwarding={}, remote={}, reason={})",
-                 session, address, localForwarding, remoteAddress, reason);
+                    session, address, localForwarding, remoteAddress, reason);
         }
 
         @Override
@@ -124,9 +130,11 @@ public class PortForwardingTest extends BaseTestSupport {
 
         @Override
         public void establishedDynamicTunnel(
-                org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                    throws IOException {
-            log.info("establishedDynamicTunnel(session={}, local={}, bound={}, reason={})", session, local, boundAddress, reason);
+                org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress,
+                Throwable reason)
+                throws IOException {
+            log.info("establishedDynamicTunnel(session={}, local={}, bound={}, reason={})", session, local, boundAddress,
+                    reason);
         }
 
         @Override
@@ -138,7 +146,7 @@ public class PortForwardingTest extends BaseTestSupport {
         @Override
         public void tornDownDynamicTunnel(
                 org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason)
-                    throws IOException {
+                throws IOException {
             log.info("tornDownDynamicTunnel(session={}, address={}, reason={})", session, address, reason);
         }
     };
@@ -151,6 +159,7 @@ public class PortForwardingTest extends BaseTestSupport {
     private static SshClient client;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+
     public PortForwardingTest() {
         super();
     }
@@ -172,12 +181,12 @@ public class PortForwardingTest extends BaseTestSupport {
 
         ForwardingFilterFactory factory = Objects.requireNonNull(sshd.getForwarderFactory(), "No ForwarderFactory");
         sshd.setForwarderFactory(new ForwardingFilterFactory() {
-            private final Class<?>[] interfaces = {ForwardingFilter.class};
-            private final Map<String, String> method2req =
-                NavigableMapBuilder.<String, String>builder(String.CASE_INSENSITIVE_ORDER)
-                    .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
-                    .put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST)
-                    .build();
+            private final Class<?>[] interfaces = { ForwardingFilter.class };
+            private final Map<String, String> method2req
+                    = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
+                            .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
+                            .put("localPortForwardingCancelled", CancelTcpipForwardHandler.REQUEST)
+                            .build();
 
             @Override
             public ForwardingFilter create(ConnectionService service) {
@@ -239,8 +248,8 @@ public class PortForwardingTest extends BaseTestSupport {
         }
     }
 
-    private void waitForForwardingRequest(String expected, long timeout) throws InterruptedException {
-        for (long remaining = timeout; remaining > 0L;) {
+    private void waitForForwardingRequest(String expected, Duration timeout) throws InterruptedException {
+        for (long remaining = timeout.toMillis(); remaining > 0L;) {
             long waitStart = System.currentTimeMillis();
             String actual = REQUESTS_QUEUE.poll(remaining, TimeUnit.MILLISECONDS);
             long waitEnd = System.currentTimeMillis();
@@ -265,7 +274,7 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
@@ -296,19 +305,19 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
-            waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -338,7 +347,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -365,22 +374,26 @@ public class PortForwardingTest extends BaseTestSupport {
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
             public void tornDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
-                        throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                    SshdSocketAddress remoteAddress, Throwable reason)
+                    throws IOException {
                 assertFalse("Unexpected local tunnel has been torn down: address=" + address, localForwarding);
                 assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
             }
 
             @Override
             public void tornDownDynamicTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason) throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason)
+                    throws IOException {
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
             }
 
             @Override
             public void tearingDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
-                        throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                    SshdSocketAddress remoteAddress)
+                    throws IOException {
                 assertFalse("Unexpected local tunnel being torn down: address=" + address, localForwarding);
                 assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
             }
@@ -388,45 +401,57 @@ public class PortForwardingTest extends BaseTestSupport {
             @Override
             public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
                     throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
             }
 
             @Override
             public void establishingExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                            throws IOException {
-                assertFalse("Unexpected local tunnel being established: local=" + local + ", remote=" + remote, localForwarding);
-                assertNull("Duplicate establishment indication call for local address=" + local, localAddressHolder.getAndSet(local));
-                assertNull("Duplicate establishment indication call for remote address=" + remote, remoteAddressHolder.getAndSet(remote));
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote,
+                    boolean localForwarding)
+                    throws IOException {
+                assertFalse("Unexpected local tunnel being established: local=" + local + ", remote=" + remote,
+                        localForwarding);
+                assertNull("Duplicate establishment indication call for local address=" + local,
+                        localAddressHolder.getAndSet(local));
+                assertNull("Duplicate establishment indication call for remote address=" + remote,
+                        remoteAddressHolder.getAndSet(remote));
             }
 
             @Override
             public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
                     throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
             }
 
             @Override
-            public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+            public void establishedExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local,
                     SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
-                            throws IOException {
-                assertFalse("Unexpected local tunnel has been established: local=" + local + ", remote=" + remote + ", bound=" + boundAddress, localForwarding);
+                    throws IOException {
+                assertFalse("Unexpected local tunnel has been established: local=" + local + ", remote=" + remote + ", bound="
+                            + boundAddress,
+                        localForwarding);
                 assertSame("Mismatched established tunnel local address", local, localAddressHolder.get());
                 assertSame("Mismatched established tunnel remote address", remote, remoteAddressHolder.get());
-                assertNull("Duplicate establishment indication call for bound address=" + boundAddress, boundAddressHolder.getAndSet(boundAddress));
+                assertNull("Duplicate establishment indication call for bound address=" + boundAddress,
+                        boundAddressHolder.getAndSet(boundAddress));
             }
 
             @Override
             public void establishedDynamicTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                            throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress,
+                    Throwable reason)
+                    throws IOException {
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
             }
         };
 
         try (ClientSession session = createNativeSession(listener);
-             ExplicitPortForwardingTracker tracker =
-                     session.createRemotePortForwardingTracker(new SshdSocketAddress("", 0), new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
+             ExplicitPortForwardingTracker tracker = session.createRemotePortForwardingTracker(new SshdSocketAddress("", 0),
+                     new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
             assertTrue("Tracker not marked as open", tracker.isOpen());
             assertFalse("Tracker not marked as remote", tracker.isLocalForwarding());
 
@@ -435,7 +460,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -473,7 +498,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -503,8 +528,9 @@ public class PortForwardingTest extends BaseTestSupport {
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
             public void tornDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
-                        throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                    SshdSocketAddress remoteAddress, Throwable reason)
+                    throws IOException {
                 assertTrue("Unexpected remote tunnel has been torn down: address=" + address, localForwarding);
                 assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
             }
@@ -512,14 +538,16 @@ public class PortForwardingTest extends BaseTestSupport {
             @Override
             public void tornDownDynamicTunnel(
                     org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason)
-                        throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
+                    throws IOException {
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel torn down indication: session=" + session + ", address=" + address);
             }
 
             @Override
             public void tearingDownExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding, SshdSocketAddress remoteAddress)
-                        throws IOException {
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress address, boolean localForwarding,
+                    SshdSocketAddress remoteAddress)
+                    throws IOException {
                 assertTrue("Unexpected remote tunnel being torn down: address=" + address, localForwarding);
                 assertEquals("Duplicate tear down signalling", 1, tearDownSignal.incrementAndGet());
             }
@@ -527,45 +555,57 @@ public class PortForwardingTest extends BaseTestSupport {
             @Override
             public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
                     throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel tearing down indication: session=" + session + ", address=" + address);
             }
 
             @Override
             public void establishingExplicitTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-                        throws IOException {
-                assertTrue("Unexpected remote tunnel being established: local=" + local + ", remote=" + remote, localForwarding);
-                assertNull("Duplicate establishment indication call for local address=" + local, localAddressHolder.getAndSet(local));
-                assertNull("Duplicate establishment indication call for remote address=" + remote, remoteAddressHolder.getAndSet(remote));
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress remote,
+                    boolean localForwarding)
+                    throws IOException {
+                assertTrue("Unexpected remote tunnel being established: local=" + local + ", remote=" + remote,
+                        localForwarding);
+                assertNull("Duplicate establishment indication call for local address=" + local,
+                        localAddressHolder.getAndSet(local));
+                assertNull("Duplicate establishment indication call for remote address=" + remote,
+                        remoteAddressHolder.getAndSet(remote));
             }
 
             @Override
             public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
                     throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel establishing indication: session=" + session + ", address=" + local);
             }
 
             @Override
-            public void establishedExplicitTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local,
+            public void establishedExplicitTunnel(
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local,
                     SshdSocketAddress remote, boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
-                        throws IOException {
-                assertTrue("Unexpected remote tunnel has been established: local=" + local + ", remote=" + remote + ", bound=" + boundAddress, localForwarding);
+                    throws IOException {
+                assertTrue("Unexpected remote tunnel has been established: local=" + local + ", remote=" + remote + ", bound="
+                           + boundAddress,
+                        localForwarding);
                 assertSame("Mismatched established tunnel local address", local, localAddressHolder.get());
                 assertSame("Mismatched established tunnel remote address", remote, remoteAddressHolder.get());
-                assertNull("Duplicate establishment indication call for bound address=" + boundAddress, boundAddressHolder.getAndSet(boundAddress));
+                assertNull("Duplicate establishment indication call for bound address=" + boundAddress,
+                        boundAddressHolder.getAndSet(boundAddress));
             }
 
             @Override
             public void establishedDynamicTunnel(
-                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-                        throws IOException {
-                throw new UnsupportedOperationException("Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
+                    org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress,
+                    Throwable reason)
+                    throws IOException {
+                throw new UnsupportedOperationException(
+                        "Unexpected dynamic tunnel established indication: session=" + session + ", address=" + boundAddress);
             }
         };
 
         try (ClientSession session = createNativeSession(listener);
-             ExplicitPortForwardingTracker tracker =
-                 session.createLocalPortForwardingTracker(new SshdSocketAddress("", 0), new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
+             ExplicitPortForwardingTracker tracker = session.createLocalPortForwardingTracker(new SshdSocketAddress("", 0),
+                     new SshdSocketAddress(TEST_LOCALHOST, echoPort))) {
             assertTrue("Tracker not marked as open", tracker.isOpen());
             assertTrue("Tracker not marked as local", tracker.isLocalForwarding());
 
@@ -574,7 +614,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(13L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -627,7 +667,7 @@ public class PortForwardingTest extends BaseTestSupport {
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
-                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                s.setSoTimeout(SO_TIMEOUT);
 
                 for (int i = 0; i < 1000; i++) {
                     output.write(bytes);
@@ -650,7 +690,7 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
 
             try (ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
-                channel.open().verify(9L, TimeUnit.SECONDS);
+                channel.open().verify(OPEN_TIMEOUT);
 
                 String expected = getCurrentTestName();
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
@@ -677,7 +717,7 @@ public class PortForwardingTest extends BaseTestSupport {
             // 1. Create a Port Forward
             int forwardedPort = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
-            waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
+            waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             // 2. Establish a connection through it
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort)) {
@@ -717,10 +757,9 @@ public class PortForwardingTest extends BaseTestSupport {
     }
 
     /**
-     * Close the socket inside this JSCH session. Use reflection to find it and
-     * just close it.
+     * Close the socket inside this JSCH session. Use reflection to find it and just close it.
      *
-     * @param session the Session to violate
+     * @param  session   the Session to violate
      * @throws Exception
      */
     private void rudelyDisconnectJschSession(Session session) throws Exception {
@@ -758,7 +797,7 @@ public class PortForwardingTest extends BaseTestSupport {
             ThreadGroup g = groups[i];
             Collection<Thread> c = findThreads(g, name);
             if (GenericUtils.isEmpty(c)) {
-                continue;   // debug breakpoint
+                continue; // debug breakpoint
             }
             ret.addAll(c);
         }
@@ -786,8 +825,8 @@ public class PortForwardingTest extends BaseTestSupport {
                 if (clazzName.equals("org.apache.sshd.server.session.TcpipForwardSupport")
                         && (methodName.equals("close") || methodName.equals("sessionCreated"))) {
                     log.warn(thread.getName() + " stuck at " + clazzName
-                            + "." + methodName + ": "
-                            + aStack.getLineNumber());
+                             + "." + methodName + ": "
+                             + aStack.getLineNumber());
                     return true;
                 }
             }
@@ -811,11 +850,10 @@ public class PortForwardingTest extends BaseTestSupport {
             client.addPortForwardingEventListener(listener);
         }
 
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session
+                = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(CONNECT_TIMEOUT).getSession();
         session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify(11L, TimeUnit.SECONDS);
+        session.auth().verify(AUTH_TIMEOUT);
         return session;
     }
 }
-
-

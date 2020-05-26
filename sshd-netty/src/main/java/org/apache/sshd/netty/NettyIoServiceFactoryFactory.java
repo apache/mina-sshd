@@ -21,11 +21,10 @@ package org.apache.sshd.netty;
 
 import java.util.Objects;
 
+import io.netty.channel.EventLoopGroup;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-
-import io.netty.channel.EventLoopGroup;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>

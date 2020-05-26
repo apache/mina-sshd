@@ -20,6 +20,8 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.security.PublicKey;
 
+import org.apache.sshd.common.session.SessionContext;
+
 /**
  * Represents a public key identity
  *
@@ -34,9 +36,11 @@ public interface PublicKeyIdentity {
     /**
      * Proves the public key identity by signing the given data
      *
-     * @param data Data to sign
-     * @return Signed data - using the identity
+     * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
+     *                   session context
+     * @param  data      Data to sign
+     * @return           Signed data - using the identity
      * @throws Exception If failed to sign the data
      */
-    byte[] sign(byte[] data) throws Exception;
+    byte[] sign(SessionContext session, byte[] data) throws Exception;
 }

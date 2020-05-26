@@ -25,9 +25,8 @@ package org.apache.sshd.common.config.keys;
 @FunctionalInterface
 public interface FilePasswordProviderHolder {
     /**
-     * @return The {@link FilePasswordProvider} to use if need to load encrypted
-     * identities keys - never {@code null}
-     * @see FilePasswordProvider#EMPTY
+     * @return The {@link FilePasswordProvider} to use if need to load encrypted identities keys - never {@code null}
+     * @see    FilePasswordProvider#EMPTY
      */
     FilePasswordProvider getFilePasswordProvider();
 

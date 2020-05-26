@@ -60,7 +60,7 @@ this feature should be considered **experimental** for the time being. However, 
 The code reads **all** the available key pairs in the key file without any distinction between encryption, decryption,
 authentication or signature ones.
 
-This code relies on the [jpgpgj](https://github.com/justinludwig/jpgpj) support module
+This code relies on the [jpgpj](https://github.com/justinludwig/jpgpj) support module
 
 ```xml
     <dependency>
@@ -132,5 +132,5 @@ public class MyAuthorizedKeysAuthenticatorWithBothPGPAndSsh extends AuthorizedKe
 
 ```
 
-**Note:** in order to support GPG v2 `.kbx` files one requires requires up-to-date [Bouncycastle](https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on/1.61)
+**Note:** in order to support GPG v2 `.kbx` files one requires up-to-date [Bouncycastle](https://mvnrepository.com/artifact/org.bouncycastle/bcpg-jdk15on/1.61)
 and [jpgpj](https://mvnrepository.com/artifact/org.c02e.jpgpj/jpgpj/0.6.1) versions.

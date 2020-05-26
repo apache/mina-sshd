@@ -26,8 +26,7 @@ package org.apache.sshd.common.keyprovider;
  */
 public interface KeyIdentityProviderHolder {
     /**
-     * @return The {@link KeyIdentityProvider} used to provide key-pair(s)
-     * for public key authentication
+     * @return The {@link KeyIdentityProvider} used to provide key-pair(s) for public key authentication
      */
     KeyIdentityProvider getKeyIdentityProvider();
 

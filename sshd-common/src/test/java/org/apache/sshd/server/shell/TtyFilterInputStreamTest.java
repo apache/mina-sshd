@@ -56,14 +56,13 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
 @Category({ NoIoTestCase.class })
 public class TtyFilterInputStreamTest extends JUnitTestSupport {
-    private static final List<PtyMode> MODES =
-        Collections.unmodifiableList(
+    private static final List<PtyMode> MODES = Collections.unmodifiableList(
             Stream.concat(Stream.of(PtyMode.ECHO), TtyFilterInputStream.INPUT_OPTIONS.stream())
-                .collect(Collectors.toList()));
+                    .collect(Collectors.toList()));
 
     private final PtyMode mode;
 
@@ -98,7 +97,8 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
                 }
             }) {
                 long copySize = IoUtils.copy(tty, output);
-                assertTrue("Copy size (" + copySize + ") above total length (" + content.length() + ")", copySize <= content.length());
+                assertTrue("Copy size (" + copySize + ") above total length (" + content.length() + ")",
+                        copySize <= content.length());
             }
 
             assertCRLFCounts(mode, lines.size() - 1 /* last line has no NL */, crCount.get(), lfCount.get());
@@ -109,6 +109,7 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
     public void testInternalBufferSizeDoesNotGrow() throws Exception {
         try (TtyFilterInputStream is = new TtyFilterInputStream(new InputStream() {
             int next;
+
             @Override
             public int read() {
                 next = (next + 1) & 0xFF;
@@ -134,7 +135,7 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
     }
 
     private static void assertCRLFCounts(PtyMode mode, int numLines, int crCount, int lfCount) {
-        switch(mode) {
+        switch (mode) {
             case ECHO:
             case ONLCR:
             case ONOCR:

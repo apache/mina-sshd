@@ -28,8 +28,7 @@ import org.apache.sshd.common.AlgorithmNameProvider;
  */
 public interface MacInformation extends AlgorithmNameProvider {
     /**
-     * @return MAC output block size in bytes - may be less than the default
-     * - e.g., MD5-96
+     * @return MAC output block size in bytes - may be less than the default - e.g., MD5-96
      */
     int getBlockSize();
 
@@ -37,4 +36,8 @@ public interface MacInformation extends AlgorithmNameProvider {
      * @return The &quot;natural&quot; MAC block size in bytes
      */
     int getDefaultBlockSize();
+
+    default boolean isEncryptThenMac() {
+        return false;
+    }
 }

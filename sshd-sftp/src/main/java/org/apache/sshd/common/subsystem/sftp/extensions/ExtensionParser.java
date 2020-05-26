@@ -25,8 +25,8 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.NumberUtils;
 
 /**
- * @param <T> Result type
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> Result type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ExtensionParser<T> extends NamedResource, Function<byte[], T> {
     default T parse(byte[] input) {

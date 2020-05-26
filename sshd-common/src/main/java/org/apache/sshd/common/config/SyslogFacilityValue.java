@@ -27,7 +27,8 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5"><I>SyslogFacility</I> configuration value</A>
+ * @see    <A HREF="https://www.freebsd.org/cgi/man.cgi?query=sshd_config&sektion=5"><I>SyslogFacility</I> configuration
+ *         value</A>
  */
 public enum SyslogFacilityValue {
     DAEMON,
@@ -42,8 +43,7 @@ public enum SyslogFacilityValue {
     LOCAL6,
     LOCAL7;
 
-    public static final Set<SyslogFacilityValue> VALUES =
-        Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
+    public static final Set<SyslogFacilityValue> VALUES = Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
 
     public static SyslogFacilityValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

@@ -33,30 +33,29 @@ import org.apache.sshd.common.util.GenericUtils;
 @FunctionalInterface
 public interface KeyTypeNamesSupport {
     /**
-     * @return The case insensitive {@link NavigableSet} of {@code OpenSSH} key type
-     * names that are supported by this decoder - e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}.
-     * This is not a single name - e.g., ECDSA keys have several curve names.
-     * <B>Caveat:</B> this collection may be un-modifiable...
+     * @return The case insensitive {@link NavigableSet} of {@code OpenSSH} key type names that are supported by this
+     *         decoder - e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}. This is not a single name - e.g., ECDSA
+     *         keys have several curve names. <B>Caveat:</B> this collection may be un-modifiable...
      */
     NavigableSet<String> getSupportedKeyTypes();
 
     /**
-     * @param <S> Generic supporter type
-     * @param typeName The {@code OpenSSH} key type  e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}.
-     * Ignored if {@code null}/empty.
-     * @param supporters The {@link KeyTypeNamesSupport}-ers to query - ignored if {@code null}/empty.
-     * @return The <U>first</U> instance whose {@link #getSupportedKeyTypes()} contains the type name.
+     * @param  <S>        Generic supporter type
+     * @param  typeName   The {@code OpenSSH} key type e.g., {@code ssh-rsa, ssh-dss, ecdsa-sha2-nistp384}. Ignored if
+     *                    {@code null}/empty.
+     * @param  supporters The {@link KeyTypeNamesSupport}-ers to query - ignored if {@code null}/empty.
+     * @return            The <U>first</U> instance whose {@link #getSupportedKeyTypes()} contains the type name.
      */
     static <S extends KeyTypeNamesSupport> S findSupporterByKeyTypeName(String typeName, Collection<? extends S> supporters) {
         return (GenericUtils.isEmpty(typeName) || GenericUtils.isEmpty(supporters))
-             ? null
-             : supporters.stream()
-                 .filter(s -> {
-                     Collection<String> names = (s == null)
-                         ? Collections.emptyNavigableSet()
-                         : s.getSupportedKeyTypes();
-                     return GenericUtils.isNotEmpty(names) && names.contains(typeName);
-                 }).findFirst()
-                 .orElse(null);
+                ? null
+                : supporters.stream()
+                        .filter(s -> {
+                            Collection<String> names = (s == null)
+                                    ? Collections.emptyNavigableSet()
+                                    : s.getSupportedKeyTypes();
+                            return GenericUtils.isNotEmpty(names) && names.contains(typeName);
+                        }).findFirst()
+                        .orElse(null);
     }
 }

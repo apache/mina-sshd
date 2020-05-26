@@ -45,18 +45,18 @@ public class PublicKeyEntryTest extends JUnitTestSupport {
 
     @Test
     public void testFallbackResolver() throws Exception {
-        PublicKeyEntry entry =
-            PublicKeyEntry.parsePublicKeyEntry(
+        PublicKeyEntry entry = PublicKeyEntry.parsePublicKeyEntry(
                 GenericUtils.join(
-                    Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
-        for (PublicKeyEntryResolver resolver : new PublicKeyEntryResolver[]{
-            null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING}) {
+                        Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
+        for (PublicKeyEntryResolver resolver : new PublicKeyEntryResolver[] {
+                null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING }) {
             try {
                 PublicKey key = entry.resolvePublicKey(null, Collections.emptyMap(), resolver);
                 assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);
                 assertNull("Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key), key);
             } catch (GeneralSecurityException e) {
-                assertObjectInstanceOf("Mismatched thrown exception for resolver=" + resolver, InvalidKeySpecException.class, e);
+                assertObjectInstanceOf("Mismatched thrown exception for resolver=" + resolver, InvalidKeySpecException.class,
+                        e);
             }
         }
     }

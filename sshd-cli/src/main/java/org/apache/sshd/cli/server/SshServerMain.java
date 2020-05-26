@@ -19,6 +19,7 @@
 
 package org.apache.sshd.cli.server;
 
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,12 +27,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
+import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
@@ -51,7 +55,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  */
 public class SshServerMain extends SshServerCliSupport {
     public SshServerMain() {
-        super();    // in case someone wants to extend it
+        super(); // in case someone wants to extend it
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -62,6 +66,7 @@ public class SshServerMain extends SshServerCliSupport {
         String hostKeyType = AbstractGeneratorHostKeyProvider.DEFAULT_ALGORITHM;
         int hostKeySize = 0;
         Collection<String> keyFiles = null;
+        Collection<String> certFiles = null;
         Map<String, Object> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         int numArgs = GenericUtils.length(args);
@@ -140,6 +145,11 @@ public class SshServerMain extends SshServerCliSupport {
                         keyFiles = new LinkedList<>();
                     }
                     keyFiles.add(optValue);
+                } else if (ServerIdentity.HOST_CERT_CONFIG_PROP.equals(optName)) {
+                    if (certFiles == null) {
+                        certFiles = new LinkedList<>();
+                    }
+                    certFiles.add(optValue);
                 } else if (ConfigFileReaderSupport.PORT_CONFIG_PROP.equals(optName)) {
                     port = Integer.parseInt(optValue);
                 } else {
@@ -151,14 +161,17 @@ public class SshServerMain extends SshServerCliSupport {
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
         Level level = resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
-            ? null
-            : setupIoServiceFactory(SshServer.setUpDefaultServer(), resolver, level, System.out, System.err, args);
+                ? null
+                : setupIoServiceFactory(
+                        SshServer.setUpDefaultServer(), resolver,
+                        level, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
 
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
+            System.err.println(
+                    "usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
             System.exit(-1);
         }
 
@@ -168,6 +181,11 @@ public class SshServerMain extends SshServerCliSupport {
         SshServerConfigFileReader.setupServerHeartbeat(sshd, resolver);
         KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
+        if (GenericUtils.isNotEmpty(certFiles)) {
+            HostKeyCertificateProvider certProvider = new FileHostKeyCertificateProvider(
+                    certFiles.stream().map(Paths::get).collect(Collectors.toList()));
+            sshd.setHostKeyCertificateProvider(certProvider);
+        }
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
         sshd.setPort(port);
@@ -185,13 +203,13 @@ public class SshServerMain extends SshServerCliSupport {
 
         sshd.setPasswordAuthenticator((username, password, session) -> Objects.equals(username, password));
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        setupUserAuthFactories(sshd, resolver);
         setupServerForwarding(sshd, level, System.out, System.err, resolver);
         sshd.setCommandFactory(new ScpCommandFactory.Builder()
-            .withDelegate(ProcessShellCommandFactory.INSTANCE)
-            .build());
+                .withDelegate(ProcessShellCommandFactory.INSTANCE)
+                .build());
 
-        List<SubsystemFactory> subsystems =
-            resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
+        List<SubsystemFactory> subsystems = resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
             System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
             sshd.setSubsystemFactories(subsystems);
