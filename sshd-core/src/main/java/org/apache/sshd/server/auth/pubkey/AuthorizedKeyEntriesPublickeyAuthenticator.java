@@ -41,16 +41,18 @@ import org.apache.sshd.server.session.ServerSession;
  * Records the matched entry under a session attribute.
  */
 public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
-    public static final AttributeRepository.AttributeKey<AuthorizedKeyEntry> AUTHORIZED_KEY = new AttributeRepository.AttributeKey<>();
+    public static final AttributeRepository.AttributeKey<AuthorizedKeyEntry> AUTHORIZED_KEY
+            = new AttributeRepository.AttributeKey<>();
 
     private Map<AuthorizedKeyEntry, PublicKey> resolvedKeys;
     private Object id;
 
     public AuthorizedKeyEntriesPublickeyAuthenticator(
-            Object id, ServerSession session,
-            Collection<? extends AuthorizedKeyEntry> entries,
-            PublicKeyEntryResolver fallbackResolver)
-            throws IOException, GeneralSecurityException {
+                                                      Object id, ServerSession session,
+                                                      Collection<? extends AuthorizedKeyEntry> entries,
+                                                      PublicKeyEntryResolver fallbackResolver)
+                                                                                               throws IOException,
+                                                                                               GeneralSecurityException {
         this.id = id;
         int numEntries = GenericUtils.size(entries);
         if (numEntries <= 0) {
