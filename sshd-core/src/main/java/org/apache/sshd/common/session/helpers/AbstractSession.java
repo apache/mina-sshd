@@ -1230,7 +1230,6 @@ public abstract class AbstractSession extends SessionHelper {
             }
 
             if (authMode) {
-                // ???
                 int wpos = buffer.wpos();
                 buffer.wpos(wpos + authSize);
                 aeadOutgoingBuffer(buffer, off, len);

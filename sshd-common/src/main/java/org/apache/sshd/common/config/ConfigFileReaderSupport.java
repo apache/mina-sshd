@@ -96,7 +96,9 @@ public final class ConfigFileReaderSupport {
     public static final long DEFAULT_REKEY_TIME_LIMIT = TimeUnit.HOURS.toMillis(1L);
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String CIPHERS_CONFIG_PROP = "Ciphers";
-    public static final String DEFAULT_CIPHERS = "aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-cbc,3des-cbc"
+    public static final String DEFAULT_CIPHERS = "aes128-ctr,aes192-ctr,aes256-ctr,"
+                                                 + "aes128-gcm@openssh.com,aes256-gcm@openssh.com,"
+                                                 + "arcfour256,arcfour128,aes128-cbc,3des-cbc"
                                                  + ",blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String MACS_CONFIG_PROP = "MACs";

@@ -24,6 +24,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 public class BaseGCMCipher extends BaseCipher {
@@ -72,25 +73,22 @@ public class BaseGCMCipher extends BaseCipher {
 
         protected CounterGCMParameterSpec(int tLen, byte[] src) {
             super(tLen, src);
+            if (src.length != 12) {
+                throw new IllegalArgumentException("GCM nonce must be 12 bytes, but given len=" + src.length);
+            }
             iv = src;
         }
 
         protected void incrementCounter() {
-            for (int i = iv.length - 1; i >= iv.length - Long.BYTES; i--) {
-                iv[i]++;
-                if (iv[i] != 0) {
-                    break; // no carry
-                }
-            }
+            int off = iv.length - Long.BYTES;
+            long counter = BufferUtils.getLong(iv, off, Long.BYTES);
+            BufferUtils.putLong(Math.addExact(counter, 1L), iv, off, Long.BYTES);
         }
 
         protected void decrementCounter() {
-            for (int i = iv.length - 1; i >= iv.length - Long.BYTES; i--) {
-                iv[i]--;
-                if (iv[i] != -1) {
-                    break; // no borrow
-                }
-            }
+            int off = iv.length - Long.BYTES;
+            long counter = BufferUtils.getLong(iv, off, Long.BYTES);
+            BufferUtils.putLong(Math.subtractExact(counter, 1L), iv, off, Long.BYTES);
         }
 
         @Override
