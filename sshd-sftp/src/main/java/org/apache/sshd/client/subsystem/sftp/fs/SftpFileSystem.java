@@ -72,14 +72,12 @@ public class SftpFileSystem
     private final int version;
     private final Set<String> supportedViews;
     private SftpPath defaultDir;
-    private int readBufferSize = SftpClient.DEFAULT_READ_BUFFER_SIZE;
-    private int writeBufferSize = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
+    private int readBufferSize;
+    private int writeBufferSize;
     private final List<FileStore> stores;
 
-    public SftpFileSystem(
-                          SftpFileSystemProvider provider, String id, ClientSession session,
-                          SftpClientFactory factory, SftpVersionSelector selector)
-                                                                                   throws IOException {
+    public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session,
+                          SftpClientFactory factory, SftpVersionSelector selector) throws IOException {
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");

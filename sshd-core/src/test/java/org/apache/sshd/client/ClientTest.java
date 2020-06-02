@@ -88,7 +88,6 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -1412,15 +1411,14 @@ public class ClientTest extends BaseTestSupport {
                 channel.setErr(err);
                 channel.open().verify(OPEN_TIMEOUT);
 
-                AbstractSession cs = (AbstractSession) session;
-                Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT, Integer.SIZE);
+                Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_DISCONNECT, Integer.SIZE);
                 buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
                 buffer.putString("Cancel");
                 buffer.putString(""); // TODO add language tag
 
-                IoWriteFuture f = cs.writePacket(buffer);
+                IoWriteFuture f = session.writePacket(buffer);
                 assertTrue("Packet writing not completed in time", f.await(DEFAULT_TIMEOUT));
-                suspend(cs.getIoSession());
+                suspend(session.getIoSession());
 
                 TestEchoShell.latch.await();
             } finally {

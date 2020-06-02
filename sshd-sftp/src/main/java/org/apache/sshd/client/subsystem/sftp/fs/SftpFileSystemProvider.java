@@ -104,9 +104,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String READ_BUFFER_PROP_NAME = "sftp-fs-read-buffer-size";
-    public static final int DEFAULT_READ_BUFFER_SIZE = SftpClient.DEFAULT_READ_BUFFER_SIZE;
     public static final String WRITE_BUFFER_PROP_NAME = "sftp-fs-write-buffer-size";
-    public static final int DEFAULT_WRITE_BUFFER_SIZE = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
     public static final String CONNECT_TIME_PROP_NAME = "sftp-fs-connect-time";
     public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
     public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
@@ -284,8 +282,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
 
-        fileSystem.setReadBufferSize(resolver.getIntProperty(READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(resolver.getIntProperty(WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        Integer bs = resolver.getInteger(READ_BUFFER_PROP_NAME);
+        if (bs != null) {
+            fileSystem.setReadBufferSize(bs);
+        }
+        bs = resolver.getInteger(WRITE_BUFFER_PROP_NAME);
+        if (bs != null) {
+            fileSystem.setWriteBufferSize(bs);
+        }
         if (log.isDebugEnabled()) {
             log.debug("newFileSystem({}): {}", uri.toASCIIString(), fileSystem);
         }
@@ -412,8 +416,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             fileSystems.put(id, fileSystem);
         }
 
-        fileSystem.setReadBufferSize(session.getIntProperty(READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(session.getIntProperty(WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        Integer rbs = session.getInteger(READ_BUFFER_PROP_NAME);
+        if (rbs != null) {
+            fileSystem.setReadBufferSize(rbs);
+        }
+        Integer wbs = session.getInteger(WRITE_BUFFER_PROP_NAME);
+        if (wbs != null) {
+            fileSystem.setWriteBufferSize(wbs);
+        }
         if (log.isDebugEnabled()) {
             log.debug("newFileSystem: {}", fileSystem);
         }

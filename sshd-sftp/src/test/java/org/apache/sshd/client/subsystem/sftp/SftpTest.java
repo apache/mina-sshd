@@ -962,7 +962,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 // Make sure sizes should invoke our internal chunking mechanism
                 ClientChannel clientChannel = sftp.getClientChannel();
                 PropertyResolverUtils.updateProperty(clientChannel, AbstractSftpClient.WRITE_CHUNK_SIZE,
-                        Math.min(SftpClient.DEFAULT_WRITE_BUFFER_SIZE, AbstractSftpClient.DEFAULT_WRITE_CHUNK_SIZE)
+                        Math.min(SftpClient.IO_BUFFER_SIZE, AbstractSftpClient.DEFAULT_WRITE_CHUNK_SIZE)
                                                                                                          - Byte.MAX_VALUE);
 
                 uploadAndVerifyFile(sftp, clientFolder, dir,

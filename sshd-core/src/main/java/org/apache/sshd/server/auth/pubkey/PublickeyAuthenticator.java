@@ -24,7 +24,6 @@ import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
-import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.AsyncAuthException;
@@ -65,11 +64,10 @@ public interface PublickeyAuthenticator {
             Collection<? extends AuthorizedKeyEntry> entries,
             PublicKeyEntryResolver fallbackResolver)
             throws IOException, GeneralSecurityException {
-        Collection<PublicKey> keys = PublicKeyEntry.resolvePublicKeyEntries(session, entries, fallbackResolver);
-        if (GenericUtils.isEmpty(keys)) {
+        if (GenericUtils.isEmpty(entries)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {
-            return new KeySetPublickeyAuthenticator(id, keys);
+            return new AuthorizedKeyEntriesPublickeyAuthenticator(id, session, entries, fallbackResolver);
         }
     }
 }

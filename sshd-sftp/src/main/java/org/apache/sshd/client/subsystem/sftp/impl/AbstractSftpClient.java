@@ -1308,6 +1308,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
     @Override
     public InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize <= 0) {
+            bufferSize = getReadBufferSize();
+        }
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
             throw new IllegalArgumentException(
                     "Insufficient read buffer size: " + bufferSize + ", min.="
@@ -1329,6 +1332,9 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
     @Override
     public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+        if (bufferSize <= 0) {
+            bufferSize = getWriteBufferSize();
+        }
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
             throw new IllegalArgumentException(
                     "Insufficient write buffer size: " + bufferSize + ", min.="
@@ -1347,4 +1353,13 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         int packetSize = (int) getChannel().getRemoteWindow().getPacketSize();
         return write(path, packetSize, mode);
     }
+
+    protected int getReadBufferSize() {
+        return (int) getClientChannel().getLocalWindow().getPacketSize() - 13;
+    }
+
+    protected int getWriteBufferSize() {
+        return (int) getClientChannel().getLocalWindow().getPacketSize() - 13;
+    }
+
 }

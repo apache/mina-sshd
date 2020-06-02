@@ -75,8 +75,12 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
         ClientFactoryManager manager = session.getFactoryManager();
         SftpFileSystemProvider provider = new SftpFileSystemProvider((SshClient) manager, selector);
         SftpFileSystem fs = provider.newFileSystem(session);
-        fs.setReadBufferSize(readBufferSize);
-        fs.setWriteBufferSize(writeBufferSize);
+        if (readBufferSize > 0) {
+            fs.setReadBufferSize(readBufferSize);
+        }
+        if (writeBufferSize > 0) {
+            fs.setWriteBufferSize(writeBufferSize);
+        }
         return fs;
     }
 }

@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem;
@@ -44,6 +43,12 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testTransferIntegrity() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            doTestTransferIntegrity();
+        }
+    }
+
+    protected void doTestTransferIntegrity() throws IOException {
         Path localRoot = detectTargetFolder().resolve("sftp");
         Files.createDirectories(localRoot);
 
@@ -54,8 +59,9 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         try (BufferedWriter bos = Files.newBufferedWriter(local0)) {
             long count = 0L;
             while (count < 1024L * 1024L * 10L) { // 10 MB
-                bos.append(data);
-                count += data.length();
+                String s = String.format("%8x %s", count, data);
+                bos.append(s);
+                count += s.length();
             }
         }
 
@@ -80,16 +86,16 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
             Files.copy(local1, remote1);
             Files.copy(remote1, local2);
 
-            assertTrue("File integrity problem", sameContent(local0, local2));
+            assertSameContent(local0, local2);
         }
     }
 
     private ClientSession createClientSession() throws IOException {
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(7L, TimeUnit.SECONDS).getSession();
+                .verify(CONNECT_TIMEOUT).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.auth().verify(AUTH_TIMEOUT);
             return session;
         } catch (IOException e) {
             session.close();
@@ -97,29 +103,34 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    private static boolean sameContent(Path path, Path path2) throws IOException {
+    private static void assertSameContent(Path path, Path path2) throws IOException {
+        long l1 = Files.size(path);
+        long l2 = Files.size(path2);
+        if (l1 != l2) {
+            fail("Size differ: " + l1 + " / " + l2);
+        }
+        byte[] buffer1 = new byte[BUFFER_SIZE];
+        byte[] buffer2 = new byte[BUFFER_SIZE];
+        int index = 0;
         try (InputStream in1 = Files.newInputStream(path);
              InputStream in2 = Files.newInputStream(path2)) {
-            byte[] buffer1 = new byte[BUFFER_SIZE];
-            byte[] buffer2 = new byte[BUFFER_SIZE];
 
             while (true) {
                 int nRead1 = readNBytes(in1, buffer1);
                 int nRead2 = readNBytes(in2, buffer2);
                 if (nRead1 != nRead2) {
-                    return false;
-                } else if (nRead1 == BUFFER_SIZE) {
-                    if (!Arrays.equals(buffer1, buffer2)) {
-                        return false;
-                    }
-                } else {
-                    for (int i = 0; i < nRead1; i++) {
-                        if (buffer1[i] != buffer2[i]) {
-                            return false;
-                        }
-                    }
-                    return true;
+                    fail("Unable to read bytes");
                 }
+                if (nRead1 == BUFFER_SIZE && Arrays.equals(buffer1, buffer2)) {
+                    index += BUFFER_SIZE;
+                    continue;
+                }
+                for (int i = 0; i < Math.min(nRead1, nRead2); i++) {
+                    if (buffer1[i] != buffer2[i]) {
+                        fail("Content differ at index " + (index + i));
+                    }
+                }
+                break;
             }
         }
     }

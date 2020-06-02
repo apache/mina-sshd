@@ -540,8 +540,6 @@ public interface SftpClient extends SubsystemClient {
     int MIN_READ_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int MIN_WRITE_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int IO_BUFFER_SIZE = 32 * 1024;
-    int DEFAULT_READ_BUFFER_SIZE = IO_BUFFER_SIZE;
-    int DEFAULT_WRITE_BUFFER_SIZE = IO_BUFFER_SIZE;
     long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
@@ -906,7 +904,7 @@ public interface SftpClient extends SubsystemClient {
     Iterable<DirEntry> readDir(String path) throws IOException;
 
     default InputStream read(String path) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE);
+        return read(path, 0);
     }
 
     default InputStream read(String path, int bufferSize) throws IOException {
@@ -914,7 +912,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     default InputStream read(String path, OpenMode... mode) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
+        return read(path, 0, mode);
     }
 
     default InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException {
@@ -922,7 +920,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     default InputStream read(String path, Collection<OpenMode> mode) throws IOException {
-        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
+        return read(path, 0, mode);
     }
 
     /**
@@ -937,7 +935,7 @@ public interface SftpClient extends SubsystemClient {
     InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     default OutputStream write(String path) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE);
+        return write(path, 0);
     }
 
     default OutputStream write(String path, int bufferSize) throws IOException {
@@ -945,7 +943,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     default OutputStream write(String path, OpenMode... mode) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+        return write(path, 0, mode);
     }
 
     default OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException {
@@ -953,7 +951,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     default OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
-        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+        return write(path, 0, mode);
     }
 
     /**
