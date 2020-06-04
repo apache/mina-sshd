@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.scp;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Supplier;
@@ -31,9 +32,11 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
+import org.apache.sshd.server.shell.ShellFactory;
 
 /**
  * This <code>CommandFactory</code> can be used as a standalone command factory or can be used to augment another
@@ -41,10 +44,11 @@ import org.apache.sshd.server.command.CommandFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    ScpCommand
+ * @see    ScpShell
  */
 public class ScpCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable {
+        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable, ShellFactory {
 
     public static final String SCP_FACTORY_NAME = "scp";
 
@@ -102,8 +106,8 @@ public class ScpCommandFactory
 
     private Supplier<? extends CloseableExecutorService> executorsProvider;
     private ScpFileOpener fileOpener;
-    private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
-    private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
+    private int sendBufferSize = ScpHelper.DEFAULT_SEND_BUFFER_SIZE;
+    private int receiveBufferSize = ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE;
     private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
     private ScpTransferEventListener listenerProxy;
 
@@ -211,6 +215,15 @@ public class ScpCommandFactory
         return new ScpCommand(
                 command,
                 resolveExecutorService(command),
+                getSendBufferSize(), getReceiveBufferSize(),
+                getScpFileOpener(), listenerProxy);
+    }
+
+    @Override
+    public Command createShell(ChannelSession channel) throws IOException {
+        return new ScpShell(
+                channel,
+                resolveExecutorService(),
                 getSendBufferSize(), getReceiveBufferSize(),
                 getScpFileOpener(), listenerProxy);
     }

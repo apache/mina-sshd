@@ -50,8 +50,8 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
         ScpCommandFactory factory = new ScpCommandFactory.Builder().build();
         assertNull("Mismatched delegate", factory.getDelegateCommandFactory());
         assertNull("Mismatched executor", factory.getExecutorServiceProvider());
-        assertEquals("Mismatched send size", ScpHelper.MIN_SEND_BUFFER_SIZE, factory.getSendBufferSize());
-        assertEquals("Mismatched receive size", ScpHelper.MIN_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
+        assertEquals("Mismatched send size", ScpHelper.DEFAULT_SEND_BUFFER_SIZE, factory.getSendBufferSize());
+        assertEquals("Mismatched receive size", ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
     }
 
     /**

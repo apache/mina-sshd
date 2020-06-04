@@ -149,7 +149,9 @@ public class ScpTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         sshd = CoreTestSupportUtils.setupTestServer(ScpTest.class);
-        sshd.setCommandFactory(new ScpCommandFactory());
+        ScpCommandFactory factory = new ScpCommandFactory();
+        sshd.setCommandFactory(factory);
+        sshd.setShellFactory(factory);
         sshd.start();
         port = sshd.getPort();
 
