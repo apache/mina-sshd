@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -66,17 +66,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
     }
 
     @Override
-    public FileSystem createFileSystem(Session session) throws IOException {
-        String username = session.getUsername();
-        Path dir = computeRootDir(session);
-        if (dir == null) {
-            throw new InvalidPathException(username, "Cannot resolve home directory");
-        }
-
-        return new RootedFileSystemProvider().newFileSystem(dir, Collections.emptyMap());
-    }
-
-    protected Path computeRootDir(Session session) throws IOException {
+    public Path getUserHomeDir(SessionContext session) throws IOException {
         String username = session.getUsername();
         Path homeDir = getUserHomeDir(username);
         if (homeDir == null) {
@@ -84,5 +74,15 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         }
 
         return homeDir;
+    }
+
+    @Override
+    public FileSystem createFileSystem(SessionContext session) throws IOException {
+        Path dir = getUserHomeDir(session);
+        if (dir == null) {
+            throw new InvalidPathException(session.getUsername(), "Cannot resolve home directory");
+        }
+
+        return new RootedFileSystemProvider().newFileSystem(dir, Collections.emptyMap());
     }
 }

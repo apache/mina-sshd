@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.common.file;
 
+import java.io.IOException;
 import java.nio.file.FileSystem;
+
+import org.apache.sshd.common.session.SessionContext;
 
 /**
  * Interface that can be implemented by a command to be able to access the file system in which this command will be
@@ -26,6 +29,21 @@ import java.nio.file.FileSystem;
  */
 @FunctionalInterface
 public interface FileSystemAware {
+    /**
+     * Sets the {@link FileSystemFactory} used to create the {@link FileSystem} to be used by the session
+     *
+     * @param  factory     The factory instance
+     * @param  session     The {@link SessionContext}
+     * @throws IOException If failed to resolve/create the file system
+     * @see                #setFileSystem(FileSystem)
+     */
+    default void setFileSystemFactory(
+            FileSystemFactory factory, SessionContext session)
+            throws IOException {
+        FileSystem fs = factory.createFileSystem(session);
+        setFileSystem(fs);
+    }
+
     /**
      * Set the file system in which this shell will be executed.
      *

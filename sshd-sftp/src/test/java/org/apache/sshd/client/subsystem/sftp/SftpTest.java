@@ -74,8 +74,10 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.subsystem.sftp.extensions.AclSupportedParser.AclCapabilities;
@@ -254,7 +256,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testNavigateBeyondRootFolder() throws Exception {
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
         FileSystem fsRoot = rootLocation.getFileSystem();
-        sshd.setFileSystemFactory(session1 -> fsRoot);
+        sshd.setFileSystemFactory(new FileSystemFactory() {
+            @Override
+            public Path getUserHomeDir(SessionContext session) throws IOException {
+                return rootLocation;
+            }
+
+            @Override
+            public FileSystem createFileSystem(SessionContext session) throws IOException {
+                return fsRoot;
+            }
+        });
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
