@@ -146,3 +146,28 @@ sshd.setCommandFactory(factory);
 The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTransferEventListener` having the same behavior as the client - i.e.,
 monitoring and intervention on the accessed local files. Furthermore, the factory can also be configured with a custom executor service for
 executing the requested copy commands as well as controlling the internal buffer sizes used to copy files.
+
+### The SCP "shell"
+
+Some SCP clients (e.g. [WinSCP](https://winscp.net/)) open a shell connection even if configured to use pure SCP in order to retrieve information
+about the remote server's files and potentially navigate through them. In other words, SCP is only used as the **transfer** protocol, but
+the application relies on "out-of-band" information (shell in this case) in order to provide the user with the available files list on the
+remote server.
+
+Due to various considerations, some users might not want or be able to provide a full blown shell interface on the server side. For this
+purpose SSHD provides an `ScpShell` class that provides a good enough implementation of the **limited** command types that an SCP client
+is likely to require. For this purpose, the `ScpCommandFactory` also implements `ShellFactory` which spawns the limited `ScpShell` support.
+
+
+```java
+
+    ScpCommandFactory factory = new ScpCommandFactory.Builder()
+        .with(...)
+        .with(...)
+        .build()
+        ;
+    sshd.setCommandFactory(factory);
+    sshd.setShellFactory(factory);
+```
+
+**Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
