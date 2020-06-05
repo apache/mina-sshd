@@ -59,6 +59,7 @@ import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -232,6 +233,24 @@ public abstract class SshServerCliSupport extends CliSupport {
         return factory;
     }
 
+    /**
+     * Attempts to examine the {@link #SHELL_FACTORY_OPTION} configuration.
+     * <UL>
+     * <LI>If missing/empty then returns the {@link #DEFAULT_SHELL_FACTORY}.</LI>
+     *
+     * <LI>If {@link PropertyResolverUtils#isNoneValue(String) NONE} then returns {@code null}</LI>
+     *
+     * <LI>If {@link ScpCommandFactory#SCP_FACTORY_NAME SCP} then returns a {@link ScpCommandFactory}</LI>
+     *
+     * <LI>Otherwise, assumes this is a fully qualified class path of a {@link ShellFactory} implementation and attempts
+     * to load and instantiate it using a public no-args constructor</LI>
+     * </UL>
+     * 
+     * @param  stderr    The STDERR stream for errors
+     * @param  options   The available options - assuming defaults if {@code null}
+     * @return           The resolved {@link ShellFactory}
+     * @throws Exception If failed to resolve
+     */
     public static ShellFactory resolveShellFactory(PrintStream stderr, PropertyResolver options) throws Exception {
         String factory = (options == null) ? null : options.getString(SHELL_FACTORY_OPTION);
         if (GenericUtils.isEmpty(factory)) {
@@ -240,6 +259,10 @@ public abstract class SshServerCliSupport extends CliSupport {
 
         if (PropertyResolverUtils.isNoneValue(factory)) {
             return null;
+        }
+
+        if (ScpCommandFactory.SCP_FACTORY_NAME.equalsIgnoreCase(factory)) {
+            return new ScpCommandFactory();
         }
 
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ShellFactory.class);

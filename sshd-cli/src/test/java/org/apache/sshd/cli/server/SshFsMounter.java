@@ -332,7 +332,18 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
-        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
+
+        ScpCommandFactory scpFactory;
+        if (shellFactory instanceof ScpCommandFactory) {
+            scpFactory = (ScpCommandFactory) shellFactory;
+            scpFactory.setDelegateCommandFactory(MounterCommandFactory.INSTANCE);
+        } else {
+            scpFactory = new ScpCommandFactory.Builder()
+                    .withDelegate(MounterCommandFactory.INSTANCE)
+                    .build();
+        }
+
+        sshd.setCommandFactory(scpFactory);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.setPort(port);
 

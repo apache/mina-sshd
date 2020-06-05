@@ -40,6 +40,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
@@ -205,9 +206,7 @@ public class SshServerMain extends SshServerCliSupport {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         setupUserAuthFactories(sshd, resolver);
         setupServerForwarding(sshd, level, System.out, System.err, resolver);
-        sshd.setCommandFactory(new ScpCommandFactory.Builder()
-                .withDelegate(ProcessShellCommandFactory.INSTANCE)
-                .build());
+        setupCommandFactory(sshd, shellFactory);
 
         List<SubsystemFactory> subsystems = resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
@@ -219,5 +218,18 @@ public class SshServerMain extends SshServerCliSupport {
         sshd.start();
         Thread.sleep(Long.MAX_VALUE);
         System.err.println("Exiting after a very (very very) long time");
+    }
+
+    private static CommandFactory setupCommandFactory(SshServer sshd, ShellFactory shellFactory) {
+        ScpCommandFactory scpFactory;
+        if (shellFactory instanceof ScpCommandFactory) {
+            scpFactory = (ScpCommandFactory) shellFactory;
+        } else {
+            scpFactory = new ScpCommandFactory.Builder()
+                    .withDelegate(ProcessShellCommandFactory.INSTANCE)
+                    .build();
+        }
+        sshd.setCommandFactory(scpFactory);
+        return scpFactory;
     }
 }
