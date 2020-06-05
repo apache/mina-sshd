@@ -760,7 +760,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (command instanceof FileSystemAware) {
             ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
             FileSystemFactory factory = manager.getFileSystemFactory();
-            ((FileSystemAware) command).setFileSystem(factory.createFileSystem(session));
+            ((FileSystemAware) command).setFileSystemFactory(factory, session);
         }
         // If the shell wants to use non-blocking io
         if (command instanceof AsyncCommand) {
