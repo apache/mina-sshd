@@ -90,7 +90,7 @@ implementation of the logging API can be selected from the many existing adaptor
 
 * *sshd-scp* - contains the server side SCP command handler and the SCP client code.
 
-* *sshd-ldap* - contains server-side password and public key authenticators that use and LDAP server.
+* *sshd-ldap* - contains server-side password and public key authenticators that use an LDAP server.
 
 * *sshd-git* - contains replacements for [JGit](https://www.eclipse.org/jgit/) SSH session factory.
 
