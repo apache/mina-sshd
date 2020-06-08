@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
@@ -142,8 +143,7 @@ public class ScpShell extends AbstractFileSystemCommand {
         super.setFileSystemFactory(factory, session);
     }
 
-    protected void println(
-            String cmd, Object x, OutputStream out, Charset cs) {
+    protected void println(String cmd, Object x, OutputStream out, Charset cs) {
         try {
             String s = x.toString();
             if (log.isDebugEnabled()) {
@@ -603,8 +603,10 @@ public class ScpShell extends AbstractFileSystemCommand {
     protected void ls(String[] argv) throws Exception {
         // find options
         boolean optListAll = false;
+        boolean optDirAsPlain = false;
         boolean optLong = false;
         boolean optFullTime = false;
+        String path = null;
         for (int k = 1; k < argv.length; k++) {
             String argValue = argv[k];
             if (GenericUtils.isEmpty(argValue)) {
@@ -628,6 +630,9 @@ public class ScpShell extends AbstractFileSystemCommand {
                         case 'a':
                             optListAll = true;
                             break;
+                        case 'd':
+                            optDirAsPlain = true;
+                            break;
                         case 'l':
                             optLong = true;
                             break;
@@ -636,17 +641,19 @@ public class ScpShell extends AbstractFileSystemCommand {
                             return;
                     }
                 }
+            } else if (path == null) {
+                path = argValue;
             } else {
                 signalError(argv[0], "unsupported option: " + argValue);
                 return;
             }
         }
 
-        doLs(argv, optListAll, optLong, optFullTime);
+        doLs(argv[0], path, optListAll, optLong, optFullTime);
     }
 
     protected void doLs(
-            String argv[], boolean optListAll, boolean optLong, boolean optFullTime)
+            String cmd, String path, boolean optListAll, boolean optLong, boolean optFullTime)
             throws Exception {
         // list current directory content
         Predicate<Path> filter = p -> {
@@ -656,15 +663,26 @@ public class ScpShell extends AbstractFileSystemCommand {
         };
 
         // TODO make sure not listing above user's home directory
-        String[] synth = currentDir.toString().equals("/") ? new String[] { "." } : new String[] { ".", ".." };
+        Stream<Path> files = path != null
+                ? Stream.of(currentDir.resolve(path))
+                : Stream.concat(Stream.of(".", "..").map(currentDir::resolve), Files.list(currentDir));
         OutputStream stdout = getOutputStream();
-        Stream.concat(Stream.of(synth).map(currentDir::resolve), Files.list(currentDir))
+        OutputStream stderr = getErrorStream();
+        variables.put(STATUS, 0);
+        files
                 .filter(filter)
                 .map(p -> new PathEntry(p, currentDir))
                 .sorted()
-                .map(p -> p.display(optLong, optFullTime))
-                .forEach(str -> println(argv[0], str, stdout, nameEncodingCharset));
-        variables.put(STATUS, 0);
+                .forEach(p -> {
+                    try {
+                        String str = p.display(optLong, optFullTime);
+                        println(cmd, str, stdout, nameEncodingCharset);
+                    } catch (NoSuchFileException e) {
+                        println(cmd, cmd + ": " + p.path.toString() + ": no such file or directory", stderr,
+                                nameEncodingCharset);
+                        variables.put(STATUS, 1);
+                    }
+                });
     }
 
     protected static class PathEntry implements Comparable<PathEntry> {
@@ -692,7 +710,11 @@ public class ScpShell extends AbstractFileSystemCommand {
             return Objects.toString(abs);
         }
 
-        public String display(boolean optLongDisplay, boolean optFullTime) {
+        public String display(boolean optLongDisplay, boolean optFullTime) throws NoSuchFileException {
+            if (attributes.isEmpty()) {
+                throw new NoSuchFileException(path.toString());
+            }
+
             String abbrev = shortDisplay();
             if (!optLongDisplay) {
                 return abbrev;
@@ -765,7 +787,11 @@ public class ScpShell extends AbstractFileSystemCommand {
                     // ignore
                 }
             }
-            return path.toString();
+            String str = path.toString();
+            if (str.isEmpty()) {
+                return abs.getFileName().toString();
+            }
+            return str;
         }
 
         protected static String toString(FileTime time, boolean optFullTime) {
@@ -791,14 +817,16 @@ public class ScpShell extends AbstractFileSystemCommand {
             for (String view : views) {
                 try {
                     Map<String, Object> ta = Files.readAttributes(
-                            path, view + ":*", IoUtils.EMPTY_LINK_OPTIONS);
+                            path, view + ":*", IoUtils.getLinkOptions(false));
                     ta.forEach(attrs::putIfAbsent);
                 } catch (IOException e) {
                     // Ignore
                 }
             }
-            attrs.computeIfAbsent("isExecutable", s -> Files.isExecutable(path));
-            attrs.computeIfAbsent("permissions", s -> IoUtils.getPermissionsFromFile(path.toFile()));
+            if (!attrs.isEmpty()) {
+                attrs.computeIfAbsent("isExecutable", s -> Files.isExecutable(path));
+                attrs.computeIfAbsent("permissions", s -> IoUtils.getPermissionsFromFile(path.toFile()));
+            }
             return attrs;
         }
     }

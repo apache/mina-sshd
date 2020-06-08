@@ -60,7 +60,7 @@ public final class OsUtils {
 
     private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
     private static final AtomicReference<VersionInfo> JAVA_VERSION_HOLDER = new AtomicReference<>(null);
-    private static final AtomicReference<Boolean> OS_TYPE_HOLDER = new AtomicReference<>(null);
+    private static final AtomicReference<String> OS_TYPE_HOLDER = new AtomicReference<>(null);
 
     private OsUtils() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -70,40 +70,54 @@ public final class OsUtils {
      * @return true if the host is a UNIX system (and not Windows).
      */
     public static boolean isUNIX() {
-        return !isWin32();
+        return !isWin32() && !isOSX();
+    }
+
+    /**
+     * @return true if the host is a OSX (and not Windows or Unix).
+     */
+    public static boolean isOSX() {
+        return getOS().contains("mac");
     }
 
     /**
      * @return true if the host is Windows (and not UNIX).
      * @see    #OS_TYPE_OVERRIDE_PROP
-     * @see    #setWin32(Boolean)
+     * @see    #setOS(String)
      */
     public static boolean isWin32() {
-        Boolean typeValue;
+        return getOS().contains("windows");
+    }
+
+    /**
+     * Can be used to enforce Win32 or Linux report from {@link #isWin32()}, {@link #isOSX()} or {@link #isUNIX()}
+     * 
+     * @param os The value to set - if {@code null} then O/S type is auto-detected
+     * @see      #isWin32()
+     * @see      #isOSX()
+     * @see      #isUNIX()
+     */
+    public static void setOS(String os) {
+        synchronized (OS_TYPE_HOLDER) {
+            OS_TYPE_HOLDER.set(os);
+        }
+    }
+
+    /**
+     * Retrieve the OS
+     */
+    private static String getOS() {
+        String typeValue;
         synchronized (OS_TYPE_HOLDER) {
             typeValue = OS_TYPE_HOLDER.get();
             if (typeValue != null) { // is it the 1st time
                 return typeValue;
             }
-
             String value = System.getProperty(OS_TYPE_OVERRIDE_PROP, System.getProperty("os.name"));
-            typeValue = GenericUtils.trimToEmpty(value).toLowerCase().contains("windows");
+            typeValue = GenericUtils.trimToEmpty(value).toLowerCase();
             OS_TYPE_HOLDER.set(typeValue);
         }
-
         return typeValue;
-    }
-
-    /**
-     * Can be used to enforce Win32 or Linux report from {@link #isWin32()} or {@link #isUNIX()}
-     * 
-     * @param win32 The value to set - if {@code null} then O/S type is auto-detected
-     * @see         #isWin32()
-     */
-    public static void setWin32(Boolean win32) {
-        synchronized (OS_TYPE_HOLDER) {
-            OS_TYPE_HOLDER.set(win32);
-        }
     }
 
     public static String resolveDefaultInteractiveShellCommand() {

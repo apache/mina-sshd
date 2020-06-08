@@ -41,7 +41,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class NativeFileSystemFactory extends AbstractLoggingBean implements FileSystemFactory {
-    public static final String DEFAULT_USERS_HOME = OsUtils.isWin32() ? "C:\\Users" : "/home";
+    public static final String DEFAULT_USERS_HOME = OsUtils.isWin32() ? "C:\\Users" : OsUtils.isOSX() ? "/Users" : "/home";
 
     public static final NativeFileSystemFactory INSTANCE = new NativeFileSystemFactory();
 
