@@ -23,6 +23,9 @@ the `SftpFileSystemAccessor` in order to allow easier hooking into the SFTP subs
 * `SftpVersionSelector` is now consulted when client sends initial command (as well
 as when session is re-negotiated)
 
+* `ScpCommandFactory` is also a `ShellFactory` that can be used to provide a minimalistic
+shell that is good enough for *WinSCP*.
+
 ## Minor code helpers
 
 * Handling of debug/ignore/unimplemented messages has been split into `handleXXX` and `doInvokeXXXMsgHandler` methods
@@ -58,3 +61,5 @@ as much of the available functionality as possible.
 * [SSHD-998](https://issues.apache.org/jira/browse/SSHD-998) - Take into account SFTP version preference when establishing initial channel
 
 * [SSHD-989](https://issues.apache.org/jira/browse/SSHD-989) - Read correctly ECDSA key pair from PKCS8 encoded data
+
+* [SSHD-1009](https://issues.apache.org/jira/browse/SSHD-1009) - Provide a minimalistic shell for supporting *WinSCP* SCP mode.

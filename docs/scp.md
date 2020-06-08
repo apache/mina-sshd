@@ -136,7 +136,7 @@ non-SCP command is deemed as having failed (same as if it were rejected by the d
 
 ```java
 ScpCommandFactory factory = new ScpCommandFactory.Builder()
-    .withwithDelegate(new MyCommandDelegate())
+    .withDelegate(new MyCommandDelegate())
     .build();
 
 SshServer sshd = ...create an instance...

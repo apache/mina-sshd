@@ -1,4 +1,4 @@
-![Apache MINA SSHD](https://mina.apache.org/staticresources/images/header-sshd.png "Apache MINA SSHD")
+![Apache MINA SSHD](https://mina.apache.org/assets/img/header-sshd.png "Apache MINA SSHD")
 # Apache MINA SSHD
 
 Apache SSHD is a 100% pure java library to support the SSH protocols on both the client and server side. This library can
