@@ -57,11 +57,17 @@ public class BaseGCMCipher extends BaseCipher {
     }
 
     @Override
-    public void updateWithAAD(byte[] input, int aadOffset, int aadLen, int inputOffset, int inputLen) throws Exception {
+    public void updateWithAAD(byte[] input, int offset, int aadLen, int inputLen) throws Exception {
         Cipher cipher = getCipherInstance();
         parameters.incrementCounter();
         cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, parameters);
-        cipher.updateAAD(input, aadOffset, aadLen);
+        if (aadLen > 0) {
+            cipher.updateAAD(input, offset, aadLen);
+        }
+        int inputOffset = offset + aadLen;
+        if (mode == Mode.Decrypt) {
+            inputLen += getAuthenticationTagSize();
+        }
         cipher.doFinal(input, inputOffset, inputLen, input, inputOffset);
     }
 
@@ -93,6 +99,7 @@ public class BaseGCMCipher extends BaseCipher {
 
         @Override
         public byte[] getIV() {
+            // JCE implementation of GCM will complain if the reference doesn't change between inits
             return iv.clone();
         }
     }

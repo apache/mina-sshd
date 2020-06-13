@@ -1264,7 +1264,7 @@ public abstract class AbstractSession extends SessionHelper {
             throw new IllegalArgumentException("AEAD mode requires an AEAD cipher");
         }
         byte[] data = buf.array();
-        outCipher.updateWithAAD(data, offset, Integer.BYTES, offset + Integer.BYTES, len);
+        outCipher.updateWithAAD(data, offset, Integer.BYTES, len);
         int blocksCount = len / outCipherSize;
         outBlocksCount.addAndGet(Math.max(1, blocksCount));
     }
@@ -1361,8 +1361,7 @@ public abstract class AbstractSession extends SessionHelper {
                     byte[] data = decoderBuffer.array();
                     if (authMode) {
                         // RFC 5647: packet length encoded in additional data and unencrypted
-                        int off = decoderBuffer.rpos();
-                        inCipher.updateWithAAD(data, off - Integer.BYTES, Integer.BYTES, off, decoderLength + authSize);
+                        inCipher.updateWithAAD(data, 0, Integer.BYTES, decoderLength);
                         int blocksCount = decoderLength / inCipherSize;
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     } else if (etmMode) {
