@@ -29,9 +29,9 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 
 public class BaseGCMCipher extends BaseCipher {
 
-    private Mode mode;
-    private CounterGCMParameterSpec parameters;
-    private SecretKey secretKey;
+    protected Mode mode;
+    protected CounterGCMParameterSpec parameters;
+    protected SecretKey secretKey;
 
     public BaseGCMCipher(
                          int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation,
@@ -72,7 +72,7 @@ public class BaseGCMCipher extends BaseCipher {
      * Algorithm parameters for AES/GCM that assumes the IV uses an 8-byte counter field as its most significant bytes.
      */
     protected static class CounterGCMParameterSpec extends GCMParameterSpec {
-        private final byte[] iv;
+        protected final byte[] iv;
 
         protected CounterGCMParameterSpec(int tLen, byte[] src) {
             super(tLen, src);
