@@ -27,7 +27,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.4.1-SNAPSHOT</version>
+    <version>2.5.0</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -75,7 +75,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://github.com/apache/mina-sshd/tree/${project.scm.tag}</url>
-        <tag>master</tag>
+        <tag>sshd-2.5.0</tag>
     </scm>
 
     <properties>
