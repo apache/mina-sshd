@@ -127,7 +127,7 @@
         -->
         <plexus.archiver.version>4.1.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.23.0</pmd.version>
+        <pmd.version>6.24.0</pmd.version>
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
