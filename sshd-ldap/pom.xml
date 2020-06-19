@@ -32,7 +32,7 @@
 
     <properties>
         <projectRoot>${project.basedir}/..</projectRoot>
-        <apacheds.version>2.0.0.AM25</apacheds.version>
+        <apacheds.version>2.0.0.AM26</apacheds.version>
     </properties>
 
     <dependencyManagement>
