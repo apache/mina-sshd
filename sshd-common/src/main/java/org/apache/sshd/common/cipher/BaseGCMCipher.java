@@ -44,7 +44,6 @@ public class BaseGCMCipher extends BaseCipher {
         this.mode = mode;
         secretKey = new SecretKeySpec(key, getAlgorithm());
         parameters = new CounterGCMParameterSpec(getAuthenticationTagSize() * Byte.SIZE, iv);
-        parameters.decrementCounter();
         return SecurityUtils.getCipher(getTransformation());
     }
 
@@ -56,7 +55,6 @@ public class BaseGCMCipher extends BaseCipher {
     @Override
     public void updateWithAAD(byte[] input, int offset, int aadLen, int inputLen) throws Exception {
         Cipher cipher = getCipherInstance();
-        parameters.incrementCounter();
         cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, parameters);
         if (aadLen > 0) {
             cipher.updateAAD(input, offset, aadLen);
@@ -66,6 +64,7 @@ public class BaseGCMCipher extends BaseCipher {
             inputLen += getAuthenticationTagSize();
         }
         cipher.doFinal(input, inputOffset, inputLen, input, inputOffset);
+        parameters.incrementCounter();
     }
 
     /**
@@ -79,19 +78,13 @@ public class BaseGCMCipher extends BaseCipher {
             if (src.length != 12) {
                 throw new IllegalArgumentException("GCM nonce must be 12 bytes, but given len=" + src.length);
             }
-            iv = src;
+            iv = src.clone();
         }
 
         protected void incrementCounter() {
             int off = iv.length - Long.BYTES;
             long counter = BufferUtils.getLong(iv, off, Long.BYTES);
             BufferUtils.putLong(Math.addExact(counter, 1L), iv, off, Long.BYTES);
-        }
-
-        protected void decrementCounter() {
-            int off = iv.length - Long.BYTES;
-            long counter = BufferUtils.getLong(iv, off, Long.BYTES);
-            BufferUtils.putLong(Math.subtractExact(counter, 1L), iv, off, Long.BYTES);
         }
 
         @Override
