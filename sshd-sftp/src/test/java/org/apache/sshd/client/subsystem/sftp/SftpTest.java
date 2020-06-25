@@ -67,6 +67,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensi
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.client.subsystem.sftp.impl.DefaultCloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.impl.SftpOutputStreamAsync;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.OptionalFeature;
@@ -1608,19 +1609,55 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     protected void sendFile(String path, String data) throws Exception {
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
-        try {
-            c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), path);
+        try (InputStream srcStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
+            c.put(srcStream, path);
         } finally {
             c.disconnect();
         }
     }
 
-    private String randomString(int size) {
+    private static String randomString(int size) {
         StringBuilder sb = new StringBuilder(size);
         for (int i = 0; i < size; i++) {
             sb.append((char) ((i % 10) + '0'));
         }
         return sb.toString();
+    }
+
+    @Test   // see SSHD-1022
+    public void testFlushOutputStreamWithoutWrite() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (SftpClient sftp = createSftpClient(session)) {
+                Path file = clientFolder.resolve("file.txt");
+                String filePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file);
+                try (OutputStream os = sftp.write(filePath, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
+                    assertObjectInstanceOf(SftpOutputStreamAsync.class.getSimpleName(), SftpOutputStreamAsync.class, os);
+
+                    for (int index = 1; index <= 5; index++) {
+                        outputDebugMessage("%s - pre write flush attempt #%d", getCurrentTestName(), index);
+                        os.flush();
+                    }
+
+                    os.write((getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
+
+                    for (int index = 1; index <= 5; index++) {
+                        outputDebugMessage("%s - post write flush attempt #%d", getCurrentTestName(), index);
+                        os.flush();
+                    }
+                }
+            }
+        }
     }
 
     static class LinkData {

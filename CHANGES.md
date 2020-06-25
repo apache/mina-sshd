@@ -13,3 +13,5 @@
 ## Minor code helpers
 
 ## Behavioral changes and enhancements
+
+* [SSHD-1022](https://issues.apache.org/jira/browse/SSHD-1022) NPE in `SftpOutputStreamAsync#flush()` if no data written in between.
