@@ -192,21 +192,19 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         String keyAlg = KeyUtils.getKeyType(signatureKey);
         String keyId = openSshKey.getId();
 
-        if (KeyPairProvider.SSH_RSA_CERT.equals(openSshKey.getKeyType())) {
-            // allow sha2 signatures for legacy reasons
-            String variant = openSshKey.getSignatureAlg();
-            if ((!GenericUtils.isEmpty(variant))
-                    && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
-                if (log.isDebugEnabled()) {
-                    log.debug("verifyCertificate({})[id={}] Allowing to use variant {} instead of {}",
-                            session, keyId, variant, keyAlg);
-                }
-                keyAlg = variant;
-            } else {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "Found invalid signature alg " + variant + " for key ID=" + keyId);
+        // allow sha2 signatures for legacy reasons
+        String variant = openSshKey.getSignatureAlg();
+        if ((!GenericUtils.isEmpty(variant))
+                && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
+            if (log.isDebugEnabled()) {
+                log.debug("verifyCertificate({})[id={}] Allowing to use variant {} instead of {}",
+                        session, keyId, variant, keyAlg);
             }
+            keyAlg = variant;
+        } else {
+            throw new SshException(
+                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Found invalid signature alg " + variant + " for key ID=" + keyId);
         }
 
         Signature verif = ValidateUtils.checkNotNull(
