@@ -64,6 +64,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final FactoryManager manager;
     private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<>();
     private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
+    private final AtomicLong readCyclesCounter = new AtomicLong();
+    private final AtomicLong lastReadCycleStart = new AtomicLong();
+    private final AtomicLong writeCyclesCounter = new AtomicLong();
+    private final AtomicLong lastWriteCycleStart = new AtomicLong();
 
     public Nio2Session(
                        Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket,
@@ -347,8 +351,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         try {
             boolean debugEnabled = log.isDebugEnabled();
             if (result >= 0) {
-                if (debugEnabled) {
-                    log.debug("handleReadCycleCompletion({}) read {} bytes", this, result);
+                if (log.isTraceEnabled()) {
+                    log.trace("handleReadCycleCompletion({}) read {} bytes after {} nanos at cycle={}",
+                            this, result, System.nanoTime() - lastReadCycleStart.get(), readCyclesCounter);
                 }
                 buffer.flip();
 
@@ -375,6 +380,16 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     protected void handleReadCycleFailure(ByteBuffer buffer, Readable bufReader, Throwable exc, Object attachment) {
+        if (log.isDebugEnabled()) {
+            log.debug("handleReadCycleFailure({}) {} after {} nanos at read cycle={}: {}",
+                    this, exc.getClass().getSimpleName(), System.nanoTime() - lastReadCycleStart.get(),
+                    readCyclesCounter, exc.getMessage());
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("handleReadCycleFailure(" + this + ") cycle=" + readCyclesCounter + " failure details", exc);
+        }
+
         exceptionCaught(exc);
     }
 
@@ -382,6 +397,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         AsynchronousSocketChannel socket = getSocket();
         long readTimeout = manager.getLongProperty(
                 FactoryManager.NIO2_READ_TIMEOUT, FactoryManager.DEFAULT_NIO2_READ_TIMEOUT);
+        readCyclesCounter.incrementAndGet();
+        lastReadCycleStart.set(System.nanoTime());
         socket.read(buffer, readTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 
@@ -417,6 +434,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         AsynchronousSocketChannel socket = getSocket();
         long writeTimeout = manager.getLongProperty(
                 FactoryManager.NIO2_MIN_WRITE_TIMEOUT, FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
+        writeCyclesCounter.incrementAndGet();
+        lastWriteCycleStart.set(System.nanoTime());
         socket.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, null, completion);
     }
 
@@ -453,8 +472,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 finishWrite(future);
             }
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("handleCompletedWriteCycle({}) finished writing len={}", this, writeLen);
+            if (log.isTraceEnabled()) {
+                log.trace("handleCompletedWriteCycle({}) finished writing len={} at cycle={} after {} nanos",
+                        this, writeLen, writeCyclesCounter, System.nanoTime() - lastWriteCycleStart.get());
             }
 
             // This should be called before future.setWritten() to avoid WriteAbortedException
@@ -470,13 +490,15 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket,
             ByteBuffer buffer, int writeLen, Throwable exc, Object attachment) {
         if (log.isDebugEnabled()) {
-            log.debug("handleWriteCycleFailure({}) failed ({}) to write {} bytes: {}",
-                    this, exc.getClass().getSimpleName(), writeLen, exc.getMessage());
+            log.debug("handleWriteCycleFailure({}) failed ({}) to write {} bytes at write cycle={} afer {} nanos: {}",
+                    this, exc.getClass().getSimpleName(), writeLen, writeCyclesCounter,
+                    System.nanoTime() - lastWriteCycleStart.get(), exc.getMessage());
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("handleWriteCycleFailure(" + this + ") len=" + writeLen + " failure details", exc);
+            log.trace("handleWriteCycleFailure(" + this + ") cycle=" + writeCyclesCounter + " failure details", exc);
         }
+
         future.setException(exc);
         exceptionCaught(exc);
 
