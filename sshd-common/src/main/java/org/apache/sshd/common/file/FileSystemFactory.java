@@ -21,23 +21,30 @@ package org.apache.sshd.common.file;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.Path;
 
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 
 /**
  * Factory for file system implementations - it returns the file system for user.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-@FunctionalInterface
 public interface FileSystemFactory {
+    /**
+     *
+     * @param  session     The session created for the user
+     * @return             The recommended user home directory - {@code null} if none
+     * @throws IOException If failed to resolve user's home directory
+     */
+    Path getUserHomeDir(SessionContext session) throws IOException;
 
     /**
      * Create user specific file system.
      *
      * @param  session     The session created for the user
      * @return             The current {@link FileSystem} for the provided session
-     * @throws IOException if the filesystem can not be created
+     * @throws IOException if the file system can not be created
      */
-    FileSystem createFileSystem(Session session) throws IOException;
+    FileSystem createFileSystem(SessionContext session) throws IOException;
 }

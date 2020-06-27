@@ -42,7 +42,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     public void testSetOsTypeByProperty() {
         try {
             for (String osType : new String[] { "Some-Windows", "Some-Linux" }) {
-                OsUtils.setWin32(null); // force re-detection
+                OsUtils.setOS(null); // force re-detection
 
                 try {
                     boolean expected = osType.contains("Windows");
@@ -54,19 +54,29 @@ public class OsUtilsTest extends JUnitTestSupport {
                 }
             }
         } finally {
-            OsUtils.setWin32(null); // force re-detection
+            OsUtils.setOS(null); // force re-detection
         }
     }
 
     @Test
     public void testSetOsTypeProgrammatically() {
         try {
-            for (boolean expected : new boolean[] { true, false }) {
-                OsUtils.setWin32(expected); // force value
-                assertEquals("Mismatched detection value", expected, OsUtils.isWin32());
-            }
+            OsUtils.setOS("windows 10");
+            assertEquals("Mismatched detection value", false, OsUtils.isOSX());
+            assertEquals("Mismatched detection value", false, OsUtils.isUNIX());
+            assertEquals("Mismatched detection value", true, OsUtils.isWin32());
+
+            OsUtils.setOS("mac os");
+            assertEquals("Mismatched detection value", true, OsUtils.isOSX());
+            assertEquals("Mismatched detection value", false, OsUtils.isUNIX());
+            assertEquals("Mismatched detection value", false, OsUtils.isWin32());
+
+            OsUtils.setOS("linux");
+            assertEquals("Mismatched detection value", false, OsUtils.isOSX());
+            assertEquals("Mismatched detection value", true, OsUtils.isUNIX());
+            assertEquals("Mismatched detection value", false, OsUtils.isWin32());
         } finally {
-            OsUtils.setWin32(null); // force re-detection
+            OsUtils.setOS(null); // force re-detection
         }
     }
 

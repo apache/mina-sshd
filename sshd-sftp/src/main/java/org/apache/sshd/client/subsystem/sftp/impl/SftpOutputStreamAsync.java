@@ -33,6 +33,8 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.OutputStreamWithChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements an output stream for a given remote file
@@ -40,6 +42,7 @@ import org.apache.sshd.common.util.io.OutputStreamWithChannel;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpOutputStreamAsync extends OutputStreamWithChannel {
+    protected final Logger log;
     protected final byte[] bb = new byte[1];
     protected final int bufferSize;
     protected Buffer buffer;
@@ -47,12 +50,13 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
     protected long offset;
     protected final Deque<SftpAckData> pendingWrites = new LinkedList<>();
 
-    private final AbstractSftpClient client;
+    private final AbstractSftpClient clientInstance;
     private final String path;
 
     public SftpOutputStreamAsync(AbstractSftpClient client, int bufferSize,
                                  String path, Collection<OpenMode> mode) throws IOException {
-        this.client = Objects.requireNonNull(client, "No SFTP client instance");
+        this.log = LoggerFactory.getLogger(getClass());
+        this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         this.handle = client.open(path, mode);
         this.bufferSize = bufferSize;
@@ -60,7 +64,8 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
 
     public SftpOutputStreamAsync(AbstractSftpClient client, int bufferSize,
                                  String path, CloseableHandle handle) throws IOException {
-        this.client = Objects.requireNonNull(client, "No SFTP client instance");
+        this.log = LoggerFactory.getLogger(getClass());
+        this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         this.handle = handle;
         this.bufferSize = bufferSize;
@@ -72,7 +77,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
      * @return {@link SftpClient} instance used to access the remote file
      */
     public final AbstractSftpClient getClient() {
-        return client;
+        return clientInstance;
     }
 
     public void setOffset(long offset) {
@@ -102,23 +107,39 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         byte[] id = handle.getIdentifier();
+        SftpClient client = getClient();
         Session session = client.getSession();
 
+        boolean traceEnabled = log.isTraceEnabled();
+        int writtenCount = 0;
+        int totalLen = len;
         do {
             if (buffer == null) {
+                if (traceEnabled) {
+                    log.trace("write({}) allocate buffer size={} after {}/{} bytes",
+                            this, bufferSize, writtenCount, totalLen);
+                }
+
                 buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA, bufferSize);
                 int hdr = 9 + 16 + 8 + id.length + buffer.wpos();
                 buffer.rpos(hdr);
                 buffer.wpos(hdr);
             }
+
             int max = bufferSize - (9 + 16 + id.length + 72);
             int nb = Math.min(len, max - (buffer.wpos() - buffer.rpos()));
             buffer.putRawBytes(b, off, nb);
-            if (buffer.available() == max) {
-                flush();
-            }
+
             off += nb;
             len -= nb;
+            writtenCount += nb;
+
+            if (buffer.available() == max) {
+                if (traceEnabled) {
+                    log.trace("write({}) flush after {}/{} bytes", this, writtenCount, totalLen);
+                }
+                flush();
+            }
         } while (len > 0);
     }
 
@@ -128,19 +149,43 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
             throw new IOException("flush(" + getPath() + ") stream is closed");
         }
 
-        for (;;) {
+        boolean debugEnabled = log.isDebugEnabled();
+        AbstractSftpClient client = getClient();
+        for (int ackIndex = 0;;) {
             SftpAckData ack = pendingWrites.peek();
-            if (ack != null) {
-                Buffer response = client.receive(ack.id, 0L);
-                if (response != null) {
-                    pendingWrites.removeFirst();
-                    client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
-                } else {
-                    break;
+            if (ack == null) {
+                if (debugEnabled) {
+                    log.debug("flush({}) processed {} pending writes", this, ackIndex);
                 }
-            } else {
                 break;
             }
+
+            ackIndex++;
+            if (debugEnabled) {
+                log.debug("flush({}) waiting for ack #{}: {}", this, ackIndex, ack);
+            }
+
+            Buffer response = client.receive(ack.id, 0L);
+            if (response == null) {
+                if (debugEnabled) {
+                    log.debug("flush({}) no response for ack #{}: {}", this, ackIndex, ack);
+                }
+                break;
+            }
+
+            if (debugEnabled) {
+                log.debug("flush({}) processing ack #{}: {}", this, ackIndex, ack);
+            }
+
+            ack = pendingWrites.removeFirst();
+            client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
+        }
+
+        if (buffer == null) {
+            if (debugEnabled) {
+                log.debug("flush({}) no pending buffer to flush", this);
+            }
+            return;
         }
 
         byte[] id = handle.getIdentifier();
@@ -163,7 +208,11 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         }
 
         int reqId = client.send(SftpConstants.SSH_FXP_WRITE, buf);
-        pendingWrites.add(new SftpAckData(reqId, offset, avail));
+        SftpAckData ack = new SftpAckData(reqId, offset, avail);
+        if (debugEnabled) {
+            log.debug("flush({}) enueue pending ack={}", this, ack);
+        }
+        pendingWrites.add(ack);
 
         offset += avail;
         buffer = null;
@@ -171,23 +220,51 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
 
     @Override
     public void close() throws IOException {
-        if (isOpen()) {
+        if (!isOpen()) {
+            return;
+        }
+
+        try {
+            boolean debugEnabled = log.isDebugEnabled();
+
             try {
-                try {
-                    if ((buffer != null) && (buffer.available() > 0)) {
-                        flush();
+                int pendingSize = (buffer == null) ? 0 : buffer.available();
+                if (pendingSize > 0) {
+                    if (debugEnabled) {
+                        log.debug("close({}) flushing {} pending bytes", this, pendingSize);
                     }
-                    while (!pendingWrites.isEmpty()) {
-                        SftpAckData ack = pendingWrites.removeFirst();
-                        Buffer response = client.receive(ack.id);
-                        client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
+                    flush();
+                }
+
+                AbstractSftpClient client = getClient();
+                for (int ackIndex = 1; !pendingWrites.isEmpty(); ackIndex++) {
+                    SftpAckData ack = pendingWrites.removeFirst();
+                    if (debugEnabled) {
+                        log.debug("close({}) processing ack #{}: {}", this, ackIndex, ack);
                     }
-                } finally {
-                    handle.close();
+
+                    Buffer response = client.receive(ack.id);
+                    if (debugEnabled) {
+                        log.debug("close({}) processing ack #{} response for {}", this, ackIndex, ack);
+                    }
+                    client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
                 }
             } finally {
-                handle = null;
+                if (debugEnabled) {
+                    log.debug("close({}) closing file handle", this);
+                }
+                handle.close();
             }
+        } finally {
+            handle = null;
         }
+    }
+
+    @Override
+    public String toString() {
+        SftpClient client = getClient();
+        return getClass().getSimpleName()
+               + "[" + client.getSession() + "]"
+               + "[" + getPath() + "]";
     }
 }

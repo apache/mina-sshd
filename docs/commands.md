@@ -14,10 +14,9 @@ file system where the logged-in user can access only the files under the specifi
     SshServer sshd = SshServer.setupDefaultServer();
     sshd.setFileSystemFactory(new VirtualFileSystemFactory() {
         @Override
-        protected Path computeRootDir(Session session) throws IOException  {
-            String username = session.getUsername(); // or any other session related parameter
-            Path path = resolveUserHome(username);
-            return path;
+        public Path getUserHomeDir(SessionContext session) throws IOException {
+            ...use whatever information ...
+            return somePath;
         }
     });
 
