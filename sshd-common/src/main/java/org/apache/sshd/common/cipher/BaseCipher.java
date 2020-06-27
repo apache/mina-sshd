@@ -123,6 +123,11 @@ public class BaseCipher implements Cipher {
         cipher.update(input, inputOffset, inputLen, input, inputOffset);
     }
 
+    @Override
+    public void updateAAD(byte[] data, int offset, int length) throws Exception {
+        throw new UnsupportedOperationException(getClass() + " does not support AAD operations");
+    }
+
     protected static byte[] resize(byte[] data, int size) {
         if (data.length > size) {
             byte[] tmp = new byte[size];

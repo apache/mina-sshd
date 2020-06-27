@@ -50,6 +50,11 @@ public class CipherNone implements Cipher {
     }
 
     @Override
+    public int getAuthenticationTagSize() {
+        return 0;
+    }
+
+    @Override
     public int getKdfSize() {
         return 16; // dummy - not zero in order to avoid some code that uses it as divisor
     }
@@ -61,6 +66,11 @@ public class CipherNone implements Cipher {
 
     @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
+        // ignored - always succeeds
+    }
+
+    @Override
+    public void updateAAD(byte[] data, int offset, int length) throws Exception {
         // ignored - always succeeds
     }
 

@@ -41,9 +41,7 @@ public interface CipherInformation extends AlgorithmNameProvider, KeySizeIndicat
     /**
      * @return Size of the authentication tag (AT) in bytes or 0 if this cipher does not support authentication
      */
-    default int getAuthenticationTagSize() {
-        return 0;
-    }
+    int getAuthenticationTagSize();
 
     /**
      * @return Size of block data used by the cipher (in bytes). For stream ciphers this value is (currently) used to

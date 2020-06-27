@@ -1324,8 +1324,11 @@ public abstract class AbstractSession extends SessionHelper {
                 int minBufLen = etmMode || authMode ? Integer.BYTES : inCipherSize;
                 // If we have received enough bytes, start processing those
                 if (decoderBuffer.available() > minBufLen) {
-                    // Decrypt the first bytes so we can extract the packet length
-                    if ((inCipher != null) && (!etmMode) && (!authMode)) {
+                    if (authMode) {
+                        // RFC 5647: packet length encoded in additional data
+                        inCipher.updateAAD(decoderBuffer.array(), 0, Integer.BYTES);
+                    } else if ((inCipher != null) && (!etmMode)) {
+                        // Decrypt the first bytes so we can extract the packet length
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
 
                         int blocksCount = inCipherSize / inCipher.getCipherBlockSize();
@@ -1360,8 +1363,8 @@ public abstract class AbstractSession extends SessionHelper {
                 if (decoderBuffer.available() >= (decoderLength + macSize + authSize)) {
                     byte[] data = decoderBuffer.array();
                     if (authMode) {
-                        // RFC 5647: packet length encoded in additional data and unencrypted
-                        inCipher.updateWithAAD(data, 0, Integer.BYTES, decoderLength);
+                        inCipher.update(data, Integer.BYTES /* packet length is handled by AAD */, decoderLength);
+
                         int blocksCount = decoderLength / inCipherSize;
                         inBlocksCount.addAndGet(Math.max(1, blocksCount));
                     } else if (etmMode) {

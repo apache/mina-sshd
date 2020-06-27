@@ -34,33 +34,33 @@ public abstract class BaseAuthenticatedCipherTest extends BaseCipherTest {
     protected void testAuthenticatedEncryptDecrypt(NamedFactory<Cipher> factory) throws Exception {
         String factoryName = factory.getName();
         Cipher enc = factory.create();
-        byte[] key = new byte[enc.getKeySize()];
+        byte[] key = new byte[enc.getKdfSize()];
         byte[] iv = new byte[enc.getIVSize()];
         enc.init(Cipher.Mode.Encrypt, key, iv);
 
         byte[] aad = getClass().getName().getBytes(StandardCharsets.UTF_8);
+        enc.updateAAD(aad);
         String plaintext = "[Secret authenticated message using " + factoryName + ']';
         byte[] ptBytes = plaintext.getBytes(StandardCharsets.UTF_8);
-        byte[] output = new byte[aad.length + ptBytes.length + enc.getAuthenticationTagSize()];
-        System.arraycopy(aad, 0, output, 0, aad.length);
-        System.arraycopy(ptBytes, 0, output, aad.length, ptBytes.length);
-        enc.updateWithAAD(output, 0, aad.length, ptBytes.length);
-        assertEquals("Additional authenticated data should not be modified",
-                getClass().getName(), new String(output, 0, aad.length, StandardCharsets.UTF_8));
+        byte[] output = new byte[ptBytes.length + enc.getAuthenticationTagSize()];
+        System.arraycopy(ptBytes, 0, output, 0, ptBytes.length);
+        enc.update(output, 0, ptBytes.length);
 
         Cipher dec = factory.create();
         dec.init(Cipher.Mode.Decrypt, key, iv);
+        dec.updateAAD(aad);
         byte[] input = output.clone();
-        dec.updateWithAAD(input, 0, aad.length, ptBytes.length);
-        assertEquals(getClass().getName(), new String(input, 0, aad.length, StandardCharsets.UTF_8));
-        assertEquals(plaintext, new String(input, aad.length, ptBytes.length, StandardCharsets.UTF_8));
+        dec.update(input, 0, ptBytes.length);
+        assertEquals(getClass().getName(), new String(aad, StandardCharsets.UTF_8));
+        assertEquals(plaintext, new String(input, 0, ptBytes.length, StandardCharsets.UTF_8));
 
         byte[] corrupted = output.clone();
         corrupted[corrupted.length - 1] += 1;
         Cipher failingDec = factory.create();
         failingDec.init(Cipher.Mode.Decrypt, key, iv);
         try {
-            failingDec.updateWithAAD(corrupted, 0, aad.length, ptBytes.length);
+            failingDec.updateAAD(aad.clone());
+            failingDec.update(corrupted, 0, ptBytes.length);
             fail("Modified authentication tag should not validate");
         } catch (AEADBadTagException e) {
             assertNotNull(e);

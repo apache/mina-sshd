@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class BaseGCMCipher extends BaseCipher {
 
     protected Mode mode;
+    protected boolean initialized;
     protected CounterGCMParameterSpec parameters;
     protected SecretKey secretKey;
 
@@ -47,24 +48,29 @@ public class BaseGCMCipher extends BaseCipher {
         return SecurityUtils.getCipher(getTransformation());
     }
 
-    @Override
-    public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
-        updateWithAAD(input, inputOffset, 0, inputLen);
+    protected Cipher getInitializedCipherInstance() throws Exception {
+        Cipher cipher = getCipherInstance();
+        if (!initialized) {
+            cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, parameters);
+            initialized = true;
+        }
+        return cipher;
     }
 
     @Override
-    public void updateWithAAD(byte[] input, int offset, int aadLen, int inputLen) throws Exception {
-        Cipher cipher = getCipherInstance();
-        cipher.init(mode == Mode.Encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, secretKey, parameters);
-        if (aadLen > 0) {
-            cipher.updateAAD(input, offset, aadLen);
-        }
-        int inputOffset = offset + aadLen;
+    public void updateAAD(byte[] data, int offset, int length) throws Exception {
+        getInitializedCipherInstance().updateAAD(data, offset, length);
+    }
+
+    @Override
+    public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
         if (mode == Mode.Decrypt) {
             inputLen += getAuthenticationTagSize();
         }
+        Cipher cipher = getInitializedCipherInstance();
         cipher.doFinal(input, inputOffset, inputLen, input, inputOffset);
         parameters.incrementCounter();
+        initialized = false;
     }
 
     /**

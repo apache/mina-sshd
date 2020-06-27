@@ -65,6 +65,26 @@ public interface Cipher extends CipherInformation {
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 
     /**
+     * Adds the provided input data as additional authenticated data during encryption or decryption.
+     *
+     * @param  data      The data to authenticate
+     * @throws Exception If failed to execute
+     */
+    default void updateAAD(byte[] data) throws Exception {
+        updateAAD(data, 0, NumberUtils.length(data));
+    }
+
+    /**
+     * Adds the provided input data as additional authenticated data during encryption or decryption.
+     *
+     * @param  data      The additional data to authenticate
+     * @param  offset    The offset of the additional data in the buffer
+     * @param  length    The number of bytes in the buffer to use for authentication
+     * @throws Exception If failed to execute
+     */
+    void updateAAD(byte[] data, int offset, int length) throws Exception;
+
+    /**
      * Performs in-place authenticated encryption or decryption with additional data (AEAD). Authentication tags are
      * implicitly appended after the output ciphertext or implicitly verified after the input ciphertext. Header data
      * indicated by the {@code aadLen} parameter are authenticated but not encrypted/decrypted, while payload data
@@ -77,7 +97,8 @@ public interface Cipher extends CipherInformation {
      * @throws Exception If failed to execute
      */
     default void updateWithAAD(byte[] input, int offset, int aadLen, int inputLen) throws Exception {
-        throw new UnsupportedOperationException(getClass() + " does not support additional authenticated data");
+        updateAAD(input, offset, aadLen);
+        update(input, offset + aadLen, inputLen);
     }
 
     /**
