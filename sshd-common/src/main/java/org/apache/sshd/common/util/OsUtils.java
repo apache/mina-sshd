@@ -104,7 +104,7 @@ public final class OsUtils {
     }
 
     /**
-     * @return The O/S type string value (lowercase)
+     * @return The resolved O/S type string if not already set (lowercase)
      */
     private static String getOS() {
         String typeValue;
@@ -113,10 +113,12 @@ public final class OsUtils {
             if (typeValue != null) { // is it the 1st time
                 return typeValue;
             }
+
             String value = System.getProperty(OS_TYPE_OVERRIDE_PROP, System.getProperty("os.name"));
             typeValue = GenericUtils.trimToEmpty(value).toLowerCase();
             OS_TYPE_HOLDER.set(typeValue);
         }
+
         return typeValue;
     }
 

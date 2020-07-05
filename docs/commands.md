@@ -24,7 +24,8 @@ file system where the logged-in user can access only the files under the specifi
 
 The usage of a `FileSystemFactory` is not limited though to the server only - the `ScpClient` implementation also uses
 it in order to retrieve the *local* path for upload/download-ing files/folders. This means that the client side can also
-be tailored to present different views for different clients
+be tailored to present different views for different clients. A special "empty" `NoneFileSystemFactory` is provided in case
+no files are expected to be accessed by the server.
 
 ## `ExecutorService`-s
 
