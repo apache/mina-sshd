@@ -78,6 +78,11 @@ public class GitSshdSessionFactory
     }
 
     @Override
+    public String getType() {
+        return "sshd-jgit";
+    }
+
+    @Override
     public RemoteSession getSession(
             URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
             throws TransportException {
