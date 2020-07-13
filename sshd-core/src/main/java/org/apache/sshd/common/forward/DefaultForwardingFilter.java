@@ -111,7 +111,7 @@ public class DefaultForwardingFilter
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
-    private IoAcceptor acceptor;
+    private IoAcceptor localAcceptor, dynamicAcceptor;
 
     public DefaultForwardingFilter(ConnectionService service) {
         this.service = Objects.requireNonNull(service, "No connection service");
@@ -200,7 +200,7 @@ public class DefaultForwardingFilter
         int port;
         signalEstablishingExplicitTunnel(local, remote, true);
         try {
-            bound = doBind(local, staticIoHandlerFactory);
+            bound = doBind(local, getDynamicIoAcceptor(staticIoHandlerFactory));
             port = bound.getPort();
             synchronized (localLock) {
                 SshdSocketAddress prevRemote = localToRemote.get(port);
@@ -261,7 +261,7 @@ public class DefaultForwardingFilter
     protected void unbindLocalForwarding(
             SshdSocketAddress local, SshdSocketAddress remote, InetSocketAddress bound)
             throws IOException {
-        if ((bound != null) && (acceptor != null)) {
+        if ((bound != null) && (localAcceptor != null)) {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding({} => {}) unbind {}", local, remote, bound);
             }
@@ -271,7 +271,7 @@ public class DefaultForwardingFilter
                 signalTearingDownExplicitTunnel(boundAddress, true, remote);
             } finally {
                 try {
-                    acceptor.unbind(bound);
+                    localAcceptor.unbind(bound);
                 } catch (RuntimeException e) {
                     signalTornDownExplicitTunnel(boundAddress, true, remote, e);
                     throw e;
@@ -282,7 +282,7 @@ public class DefaultForwardingFilter
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("unbindLocalForwarding({} => {}) no mapping({}) or acceptor({})",
-                        local, remote, bound, acceptor);
+                        local, remote, bound, localAcceptor);
             }
         }
     }
@@ -470,7 +470,7 @@ public class DefaultForwardingFilter
         int port;
         signalEstablishingDynamicTunnel(local);
         try {
-            bound = doBind(local, socksProxyIoHandlerFactory);
+            bound = doBind(local, getLocalIoAcceptor(socksProxyIoHandlerFactory));
             port = bound.getPort();
             synchronized (dynamicLock) {
                 SocksProxy prevProxy = dynamicLocal.get(port);
@@ -614,15 +614,15 @@ public class DefaultForwardingFilter
                             proxy.close(true);
                         }
                     } finally {
-                        if ((bound != null) && (acceptor != null)) {
+                        if ((bound != null) && (dynamicAcceptor != null)) {
                             if (debugEnabled) {
                                 log.debug("stopDynamicPortForwarding({}) unbind address={}", local, bound);
                             }
-                            acceptor.unbind(bound);
+                            dynamicAcceptor.unbind(bound);
                         } else {
                             if (debugEnabled) {
                                 log.debug("stopDynamicPortForwarding({}) no acceptor({}) or no binding({})",
-                                        local, acceptor, bound);
+                                        local, dynamicAcceptor, bound);
                             }
                         }
                     }
@@ -738,7 +738,7 @@ public class DefaultForwardingFilter
         signalEstablishingExplicitTunnel(local, null, true);
         SshdSocketAddress result;
         try {
-            InetSocketAddress bound = doBind(local, staticIoHandlerFactory);
+            InetSocketAddress bound = doBind(local, getLocalIoAcceptor(staticIoHandlerFactory));
             result = new SshdSocketAddress(bound.getHostString(), bound.getPort());
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingRequested(" + local + "): " + result);
@@ -782,14 +782,14 @@ public class DefaultForwardingFilter
             }
         }
 
-        if ((entry != null) && (acceptor != null)) {
+        if ((entry != null) && (localAcceptor != null)) {
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
             }
 
             signalTearingDownExplicitTunnel(entry, true, null);
             try {
-                acceptor.unbind(entry.toInetSocketAddress());
+                localAcceptor.unbind(entry.toInetSocketAddress());
             } catch (RuntimeException e) {
                 signalTornDownExplicitTunnel(entry, true, null, e);
                 throw e;
@@ -964,7 +964,7 @@ public class DefaultForwardingFilter
 
     @Override
     protected synchronized Closeable getInnerCloseable() {
-        return builder().parallel(toString(), dynamicLocal.values()).close(acceptor).build();
+        return builder().parallel(toString(), dynamicLocal.values()).close(dynamicAcceptor).build();
     }
 
     @Override
@@ -974,22 +974,36 @@ public class DefaultForwardingFilter
         super.preClose();
     }
 
+	private IoAcceptor createIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
+		Session session = getSession();
+		FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+		IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
+		IoHandler handler = handlerFactory.create();
+		return factory.createAcceptor(handler);
+	}
+
+	private IoAcceptor getLocalIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
+		if (localAcceptor == null) {
+			localAcceptor = createIoAcceptor(handlerFactory);
+		}
+		return localAcceptor;
+	}
+
+	private IoAcceptor getDynamicIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
+		if (dynamicAcceptor == null) {
+			dynamicAcceptor = createIoAcceptor(handlerFactory);
+		}
+		return dynamicAcceptor;
+	}
+    
     /**
      * @param  address        The request bind address
-     * @param  handlerFactory A {@link Factory} to create an {@link IoHandler} if necessary
+     * @param  acceptor       An {@link IoAcceptor} to bind addresses
      * @return                The {@link InetSocketAddress} to which the binding occurred
      * @throws IOException    If failed to bind
      */
-    private InetSocketAddress doBind(SshdSocketAddress address, Factory<? extends IoHandler> handlerFactory)
+    private InetSocketAddress doBind(SshdSocketAddress address, IoAcceptor acceptor)
             throws IOException {
-        if (acceptor == null) {
-            Session session = getSession();
-            FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-            IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
-            IoHandler handler = handlerFactory.create();
-            acceptor = factory.createAcceptor(handler);
-        }
-
         // TODO find a better way to determine the resulting bind address - what if multi-threaded calls...
         Set<SocketAddress> before = acceptor.getBoundAddresses();
         try {
