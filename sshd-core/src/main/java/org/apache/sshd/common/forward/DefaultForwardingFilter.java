@@ -111,7 +111,8 @@ public class DefaultForwardingFilter
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
-    private IoAcceptor localAcceptor, dynamicAcceptor;
+    private IoAcceptor localAcceptor;
+    private IoAcceptor dynamicAcceptor;
 
     public DefaultForwardingFilter(ConnectionService service) {
         this.service = Objects.requireNonNull(service, "No connection service");
