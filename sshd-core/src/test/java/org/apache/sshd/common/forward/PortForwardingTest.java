@@ -179,9 +179,9 @@ public class PortForwardingTest extends BaseTestSupport {
             REQUESTS_QUEUE.clear();
         }
 
-        ForwardingFilterFactory factory = Objects.requireNonNull(sshd.getForwarderFactory(), "No ForwarderFactory");
-        sshd.setForwarderFactory(new ForwardingFilterFactory() {
-            private final Class<?>[] interfaces = { ForwardingFilter.class };
+        ForwarderFactory factory = Objects.requireNonNull(sshd.getForwarderFactory(), "No ForwarderFactory");
+        sshd.setForwarderFactory(new ForwarderFactory() {
+            private final Class<?>[] interfaces = { Forwarder.class };
             private final Map<String, String> method2req
                     = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                             .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
@@ -189,13 +189,13 @@ public class PortForwardingTest extends BaseTestSupport {
                             .build();
 
             @Override
-            public ForwardingFilter create(ConnectionService service) {
+            public Forwarder create(ConnectionService service) {
                 Thread thread = Thread.currentThread();
                 ClassLoader cl = thread.getContextClassLoader();
 
-                ForwardingFilter forwarder = factory.create(service);
-                return (ForwardingFilter) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
-                    private final org.slf4j.Logger log = LoggerFactory.getLogger(ForwardingFilter.class);
+                Forwarder forwarder = factory.create(service);
+                return (Forwarder) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
+                    private final org.slf4j.Logger log = LoggerFactory.getLogger(Forwarder.class);
 
                     @SuppressWarnings("synthetic-access")
                     @Override

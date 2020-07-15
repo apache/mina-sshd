@@ -49,8 +49,8 @@ import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
-import org.apache.sshd.common.forward.ForwardingFilter;
-import org.apache.sshd.common.forward.ForwardingFilterFactory;
+import org.apache.sshd.common.forward.Forwarder;
+import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
@@ -109,7 +109,7 @@ public abstract class AbstractConnectionService
 
     private final AtomicReference<AgentForwardSupport> agentForwardHolder = new AtomicReference<>();
     private final AtomicReference<X11ForwardSupport> x11ForwardHolder = new AtomicReference<>();
-    private final AtomicReference<ForwardingFilter> forwarderHolder = new AtomicReference<>();
+    private final AtomicReference<Forwarder> forwarderHolder = new AtomicReference<>();
     private final AtomicBoolean allowMoreSessions = new AtomicBoolean(true);
     private final Collection<PortForwardingEventListener> listeners = new CopyOnWriteArraySet<>();
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
@@ -299,8 +299,8 @@ public abstract class AbstractConnectionService
     }
 
     @Override
-    public ForwardingFilter getForwardingFilter() {
-        ForwardingFilter forwarder;
+    public Forwarder getForwarder() {
+        Forwarder forwarder;
         Session session = getSession();
         synchronized (forwarderHolder) {
             forwarder = forwarderHolder.get();
@@ -327,10 +327,10 @@ public abstract class AbstractConnectionService
         super.preClose();
     }
 
-    protected ForwardingFilter createForwardingFilter(Session session) {
+    protected Forwarder createForwardingFilter(Session session) {
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        ForwardingFilterFactory factory = Objects.requireNonNull(manager.getForwarderFactory(), "No forwarder factory");
-        ForwardingFilter forwarder = factory.create(this);
+        ForwarderFactory factory = Objects.requireNonNull(manager.getForwarderFactory(), "No forwarder factory");
+        Forwarder forwarder = factory.create(this);
         forwarder.addPortForwardingEventListenerManager(this);
         return forwarder;
     }

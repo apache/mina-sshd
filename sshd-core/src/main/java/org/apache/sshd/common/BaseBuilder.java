@@ -32,7 +32,7 @@ import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultForwarderFactory;
-import org.apache.sshd.common.forward.ForwardingFilterFactory;
+import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
@@ -61,7 +61,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
 
-    public static final ForwardingFilterFactory DEFAULT_FORWARDER_FACTORY = DefaultForwarderFactory.INSTANCE;
+    public static final ForwarderFactory DEFAULT_FORWARDER_FACTORY = DefaultForwarderFactory.INSTANCE;
 
     /**
      * The default {@link BuiltinCiphers} setup in order of preference as specified by
@@ -132,7 +132,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected Factory<Random> randomFactory;
     protected List<ChannelFactory> channelFactories;
     protected FileSystemFactory fileSystemFactory;
-    protected ForwardingFilterFactory forwarderFactory;
+    protected ForwarderFactory forwarderFactory;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected ForwardingFilter forwardingFilter;
     protected ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
@@ -219,7 +219,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         return me();
     }
 
-    public S forwarderFactory(ForwardingFilterFactory forwarderFactory) {
+    public S forwarderFactory(ForwarderFactory forwarderFactory) {
         this.forwarderFactory = forwarderFactory;
         return me();
     }

@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.forward.ForwardingFilter;
+import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManagerHolder;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -59,9 +59,9 @@ public interface ConnectionService
     /**
      * Retrieve the forwarder instance
      *
-     * @return The {@link ForwardingFilter}
+     * @return The {@link Forwarder}
      */
-    ForwardingFilter getForwardingFilter();
+    Forwarder getForwarder();
 
     // TODO: remove from interface, it's server side only
     AgentForwardSupport getAgentForwardSupport();

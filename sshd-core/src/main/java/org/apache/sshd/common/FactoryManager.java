@@ -29,7 +29,7 @@ import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.forward.ForwardingFilterFactory;
+import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.IoServiceEventListenerManager;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -434,9 +434,9 @@ public interface FactoryManager
     /**
      * Retrieve the forwarder factory used to support forwarding.
      *
-     * @return The {@link ForwardingFilterFactory}
+     * @return The {@link ForwarderFactory}
      */
-    ForwardingFilterFactory getForwarderFactory();
+    ForwarderFactory getForwarderFactory();
 
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.

@@ -45,7 +45,7 @@ import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.forward.ForwardingFilterFactory;
+import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceEventListener;
@@ -76,7 +76,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
-    protected ForwardingFilterFactory forwarderFactory;
+    protected ForwarderFactory forwarderFactory;
     protected ForwardingFilter forwardingFilter;
     protected FileSystemFactory fileSystemFactory;
     protected List<ServiceFactory> serviceFactories;
@@ -257,11 +257,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public ForwardingFilterFactory getForwarderFactory() {
+    public ForwarderFactory getForwarderFactory() {
         return forwarderFactory;
     }
 
-    public void setForwarderFactory(ForwardingFilterFactory forwarderFactory) {
+    public void setForwarderFactory(ForwarderFactory forwarderFactory) {
         this.forwarderFactory = forwarderFactory;
     }
 

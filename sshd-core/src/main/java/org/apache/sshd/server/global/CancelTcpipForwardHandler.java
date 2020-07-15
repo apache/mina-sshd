@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.forward.ForwardingFilter;
+import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHandler;
@@ -64,7 +64,7 @@ public class CancelTcpipForwardHandler extends AbstractConnectionServiceRequestH
             log.debug("process({})[{}] {} reply={}", connectionService, request, socketAddress, wantReply);
         }
 
-        ForwardingFilter forwarder = Objects.requireNonNull(connectionService.getForwardingFilter(), "No TCP/IP forwarder");
+        Forwarder forwarder = Objects.requireNonNull(connectionService.getForwarder(), "No TCP/IP forwarder");
         forwarder.localPortForwardingCancelled(socketAddress);
 
         if (wantReply) {

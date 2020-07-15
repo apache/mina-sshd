@@ -36,6 +36,7 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
+import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -157,8 +158,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 address = new SshdSocketAddress(hostToConnect, portToConnect);
                 break;
             case Forwarded: {
-                org.apache.sshd.common.forward.ForwardingFilter ff = service.getForwardingFilter();
-                address = ff.getForwardedPort(portToConnect);
+                Forwarder forwarder = service.getForwarder();
+                address = forwarder.getForwardedPort(portToConnect);
                 break;
             }
             default:

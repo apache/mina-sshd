@@ -17,14 +17,10 @@
  * under the License.
  */
 
-package org.apache.sshd.common;
+package org.apache.sshd.server.forward;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
-import org.apache.sshd.server.forward.ForwardingFilter;
-import org.apache.sshd.server.forward.RejectAllForwardingFilter;
-import org.apache.sshd.server.forward.StaticDecisionForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
