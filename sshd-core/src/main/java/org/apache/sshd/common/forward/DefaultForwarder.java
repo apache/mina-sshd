@@ -73,9 +73,9 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultForwardingFilter
+public class DefaultForwarder
         extends AbstractInnerCloseable
-        implements ForwardingFilter, SessionHolder<Session>, PortForwardingEventListenerManager {
+        implements Forwarder, SessionHolder<Session>, PortForwardingEventListenerManager {
 
     /**
      * Used to configure the timeout (milliseconds) for receiving a response for the forwarding request
@@ -114,7 +114,7 @@ public class DefaultForwardingFilter
     private IoAcceptor localAcceptor;
     private IoAcceptor dynamicAcceptor;
 
-    public DefaultForwardingFilter(ConnectionService service) {
+    public DefaultForwarder(ConnectionService service) {
         this.service = Objects.requireNonNull(service, "No connection service");
         this.sessionInstance = Objects.requireNonNull(service.getSession(), "No session");
         this.listenerProxy = EventListenerUtils.proxyWrapper(PortForwardingEventListener.class, listeners);
@@ -1095,7 +1095,7 @@ public class DefaultForwardingFilter
                     if (debugEnabled) {
                         log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
                     }
-                    DefaultForwardingFilter.this.service.unregisterChannel(channel);
+                    DefaultForwarder.this.service.unregisterChannel(channel);
                     channel.close(false);
                 }
             });

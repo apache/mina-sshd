@@ -25,11 +25,11 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.EventListenerUtils;
 
 /**
- * The default {@link ForwardingFilterFactory} implementation.
+ * The default {@link ForwarderFactory} implementation.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultForwarderFactory implements ForwardingFilterFactory, PortForwardingEventListenerManager {
+public class DefaultForwarderFactory implements ForwarderFactory, PortForwardingEventListenerManager {
     public static final DefaultForwarderFactory INSTANCE = new DefaultForwarderFactory() {
         @Override
         public void addPortForwardingEventListener(PortForwardingEventListener listener) {
@@ -75,8 +75,8 @@ public class DefaultForwarderFactory implements ForwardingFilterFactory, PortFor
     }
 
     @Override
-    public ForwardingFilter create(ConnectionService service) {
-        ForwardingFilter forwarder = new DefaultForwardingFilter(service);
+    public Forwarder create(ConnectionService service) {
+        Forwarder forwarder = new DefaultForwarder(service);
         forwarder.addPortForwardingEventListenerManager(this);
         return forwarder;
     }

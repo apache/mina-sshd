@@ -26,13 +26,13 @@ import org.apache.sshd.common.session.ConnectionService;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
-public interface ForwardingFilterFactory {
+public interface ForwarderFactory {
 
     /**
      * Creates the forwarder to be used for TCP/IP port forwards for this session.
      *
      * @param  service the {@link ConnectionService} the connections are forwarded through
-     * @return         the {@link ForwardingFilter} that will listen for connections and set up forwarding
+     * @return         the {@link Forwarder} that will listen for connections and set up forwarding
      */
-    ForwardingFilter create(ConnectionService service);
+    Forwarder create(ConnectionService service);
 }

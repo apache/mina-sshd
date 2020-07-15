@@ -50,7 +50,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
 import org.apache.sshd.common.digest.Digest;
-import org.apache.sshd.common.forward.ForwardingFilter;
+import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -1274,57 +1274,57 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
     protected abstract ConnectionService getConnectionService();
 
-    protected ForwardingFilter getForwardingFilter() {
+    protected Forwarder getForwarder() {
         ConnectionService service = getConnectionService();
-        return (service == null) ? null : service.getForwardingFilter();
+        return (service == null) ? null : service.getForwarder();
     }
 
     @Override
     public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyList() : filter.getLocalForwardsBindings();
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? Collections.emptyList() : forwarder.getLocalForwardsBindings();
     }
 
     @Override
     public boolean isLocalPortForwardingStartedForPort(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter != null) && filter.isLocalPortForwardingStartedForPort(port);
+        Forwarder forwarder = getForwarder();
+        return (forwarder != null) && forwarder.isLocalPortForwardingStartedForPort(port);
     }
 
     @Override
     public NavigableSet<Integer> getStartedLocalPortForwards() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedLocalPortForwards();
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? Collections.emptyNavigableSet() : forwarder.getStartedLocalPortForwards();
     }
 
     @Override
     public SshdSocketAddress getBoundLocalPortForward(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? null : filter.getBoundLocalPortForward(port);
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? null : forwarder.getBoundLocalPortForward(port);
     }
 
     @Override
     public List<Map.Entry<Integer, SshdSocketAddress>> getRemoteForwardsBindings() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyList() : filter.getRemoteForwardsBindings();
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? Collections.emptyList() : forwarder.getRemoteForwardsBindings();
     }
 
     @Override
     public boolean isRemotePortForwardingStartedForPort(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter != null) && filter.isRemotePortForwardingStartedForPort(port);
+        Forwarder forwarder = getForwarder();
+        return (forwarder != null) && forwarder.isRemotePortForwardingStartedForPort(port);
     }
 
     @Override
     public NavigableSet<Integer> getStartedRemotePortForwards() {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? Collections.emptyNavigableSet() : filter.getStartedRemotePortForwards();
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? Collections.emptyNavigableSet() : forwarder.getStartedRemotePortForwards();
     }
 
     @Override
     public SshdSocketAddress getBoundRemotePortForward(int port) {
-        ForwardingFilter filter = getForwardingFilter();
-        return (filter == null) ? null : filter.getBoundRemotePortForward(port);
+        Forwarder forwarder = getForwarder();
+        return (forwarder == null) ? null : forwarder.getBoundRemotePortForward(port);
     }
 
     @Override
