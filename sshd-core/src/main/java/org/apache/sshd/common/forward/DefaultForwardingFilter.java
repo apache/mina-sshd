@@ -111,7 +111,7 @@ public class DefaultForwardingFilter
     private final Collection<PortForwardingEventListenerManager> managersHolder = new CopyOnWriteArraySet<>();
     private final PortForwardingEventListener listenerProxy;
 
-    private IoAcceptor localAcceptor; 
+    private IoAcceptor localAcceptor;
     private IoAcceptor dynamicAcceptor;
 
     public DefaultForwardingFilter(ConnectionService service) {
@@ -201,7 +201,7 @@ public class DefaultForwardingFilter
         int port;
         signalEstablishingExplicitTunnel(local, remote, true);
         try {
-            bound = doBind(local, getLocalIoAcceptor(staticIoHandlerFactory));
+            bound = doBind(local, getLocalIoAcceptor());
             port = bound.getPort();
             synchronized (localLock) {
                 SshdSocketAddress prevRemote = localToRemote.get(port);
@@ -471,7 +471,7 @@ public class DefaultForwardingFilter
         int port;
         signalEstablishingDynamicTunnel(local);
         try {
-            bound = doBind(local, getDynamicIoAcceptor(socksProxyIoHandlerFactory));
+            bound = doBind(local, getDynamicIoAcceptor());
             port = bound.getPort();
             synchronized (dynamicLock) {
                 SocksProxy prevProxy = dynamicLocal.get(port);
@@ -739,7 +739,7 @@ public class DefaultForwardingFilter
         signalEstablishingExplicitTunnel(local, null, true);
         SshdSocketAddress result;
         try {
-            InetSocketAddress bound = doBind(local, getLocalIoAcceptor(staticIoHandlerFactory));
+            InetSocketAddress bound = doBind(local, getLocalIoAcceptor());
             result = new SshdSocketAddress(bound.getHostString(), bound.getPort());
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingRequested(" + local + "): " + result);
@@ -965,7 +965,7 @@ public class DefaultForwardingFilter
 
     @Override
     protected synchronized Closeable getInnerCloseable() {
-		return builder().parallel(toString(), dynamicLocal.values())
+        return builder().parallel(toString(), dynamicLocal.values())
                 .close(localAcceptor).close(dynamicAcceptor).build();
     }
 
@@ -976,33 +976,33 @@ public class DefaultForwardingFilter
         super.preClose();
     }
 
-	protected IoAcceptor createIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
-		Session session = getSession();
-		FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-		IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
-		IoHandler handler = handlerFactory.create();
-		return factory.createAcceptor(handler);
-	}
+    protected IoAcceptor createIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
+        Session session = getSession();
+        FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
+        IoServiceFactory factory = Objects.requireNonNull(manager.getIoServiceFactory(), "No I/O service factory");
+        IoHandler handler = handlerFactory.create();
+        return factory.createAcceptor(handler);
+    }
 
-	protected IoAcceptor getLocalIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
-		if (localAcceptor == null) {
-			localAcceptor = createIoAcceptor(handlerFactory);
-		}
-		return localAcceptor;
-	}
+    protected IoAcceptor getLocalIoAcceptor() {
+        if (localAcceptor == null) {
+            localAcceptor = createIoAcceptor(staticIoHandlerFactory);
+        }
+        return localAcceptor;
+    }
 
-	protected IoAcceptor getDynamicIoAcceptor(Factory<? extends IoHandler> handlerFactory) {
-		if (dynamicAcceptor == null) {
-			dynamicAcceptor = createIoAcceptor(handlerFactory);
-		}
-		return dynamicAcceptor;
-	}
-    
+    protected IoAcceptor getDynamicIoAcceptor() {
+        if (dynamicAcceptor == null) {
+            dynamicAcceptor = createIoAcceptor(socksProxyIoHandlerFactory);
+        }
+        return dynamicAcceptor;
+    }
+
     /**
-     * @param  address        The request bind address
-     * @param  acceptor       An {@link IoAcceptor} to bind addresses
-     * @return                The {@link InetSocketAddress} to which the binding occurred
-     * @throws IOException    If failed to bind
+     * @param  address     The request bind address
+     * @param  acceptor    An {@link IoAcceptor} to bind addresses
+     * @return             The {@link InetSocketAddress} to which the binding occurred
+     * @throws IOException If failed to bind
      */
     protected InetSocketAddress doBind(SshdSocketAddress address, IoAcceptor acceptor)
             throws IOException {

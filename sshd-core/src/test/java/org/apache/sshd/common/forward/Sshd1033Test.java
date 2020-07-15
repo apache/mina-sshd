@@ -60,6 +60,10 @@ public class Sshd1033Test extends BaseTestSupport {
     private static SshServer sshd;
     private static int sshPort;
 
+    public Sshd1033Test() {
+        // Default constructor
+    }
+
     @BeforeClass
     public static void beforeClass() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(Sshd1033Test.class);
@@ -111,10 +115,12 @@ public class Sshd1033Test extends BaseTestSupport {
                     try (ExplicitPortForwardingTracker localTracker = session.createLocalPortForwardingTracker(
                             new SshdSocketAddress("localhost", 8082),
                             new SshdSocketAddress("test.javastack.org", 80))) {
-                        LOGGER.info("LocalPortForwarding: {} -> {}", localTracker.getLocalAddress(), localTracker.getRemoteAddress());
+                        LOGGER.info("LocalPortForwarding: {} -> {}", localTracker.getLocalAddress(),
+                                localTracker.getRemoteAddress());
                         SshdSocketAddress localSocketAddress = localTracker.getLocalAddress();
                         assertNotNull(localSocketAddress);
-                        Proxy proxy = new Proxy(Proxy.Type.HTTP,
+                        Proxy proxy = new Proxy(
+                                Proxy.Type.HTTP,
                                 new InetSocketAddress(localSocketAddress.getHostName(), localSocketAddress.getPort()));
                         testRemoteURL(proxy);
                     }
@@ -127,8 +133,10 @@ public class Sshd1033Test extends BaseTestSupport {
                         LOGGER.info("DynamicPortForwarding: {}", dynamicTracker.getLocalAddress());
                         SshdSocketAddress dynamicSocketAddress = dynamicTracker.getLocalAddress();
                         assertNotNull(dynamicSocketAddress);
-                        Proxy proxy = new Proxy(Proxy.Type.SOCKS,
-                                new InetSocketAddress(dynamicSocketAddress.getHostName(), //
+                        Proxy proxy = new Proxy(
+                                Proxy.Type.SOCKS,
+                                new InetSocketAddress(
+                                        dynamicSocketAddress.getHostName(), //
                                         dynamicSocketAddress.getPort()));
                         testRemoteURL(proxy);
                     }
