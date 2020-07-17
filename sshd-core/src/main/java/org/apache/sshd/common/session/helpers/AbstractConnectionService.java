@@ -19,6 +19,7 @@
 package org.apache.sshd.common.session.helpers;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,6 +66,7 @@ import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.x11.DefaultX11ForwardSupport;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -76,17 +78,6 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 public abstract class AbstractConnectionService
         extends AbstractInnerCloseable
         implements ConnectionService {
-    /**
-     * Property that can be used to configure max. allowed concurrent active channels
-     *
-     * @see #registerChannel(Channel)
-     */
-    public static final String MAX_CONCURRENT_CHANNELS_PROP = "max-sshd-channels";
-
-    /**
-     * Default value for {@link #MAX_CONCURRENT_CHANNELS_PROP} is none specified
-     */
-    public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
 
     /**
      * Default growth factor function used to resize response buffers
@@ -194,21 +185,21 @@ public abstract class AbstractConnectionService
         stopHeartBeat(); // make sure any existing heartbeat is stopped
 
         HeartbeatType heartbeatType = getSessionHeartbeatType();
-        long interval = getSessionHeartbeatInterval();
+        Duration interval = getSessionHeartbeatInterval();
         Session session = getSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("startHeartbeat({}) heartbeat type={}, interval={}", session, heartbeatType, interval);
         }
 
-        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (interval <= 0L)) {
+        if ((heartbeatType == null) || (heartbeatType == HeartbeatType.NONE) || (GenericUtils.isNegativeOrNull(interval))) {
             return null;
         }
 
         FactoryManager manager = session.getFactoryManager();
         ScheduledExecutorService service = manager.getScheduledExecutorService();
         return service.scheduleAtFixedRate(
-                this::sendHeartBeat, interval, interval, TimeUnit.MILLISECONDS);
+                this::sendHeartBeat, interval.toMillis(), interval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -218,7 +209,7 @@ public abstract class AbstractConnectionService
      */
     protected boolean sendHeartBeat() {
         HeartbeatType heartbeatType = getSessionHeartbeatType();
-        long interval = getSessionHeartbeatInterval();
+        Duration interval = getSessionHeartbeatInterval();
         Session session = getSession();
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
@@ -226,7 +217,7 @@ public abstract class AbstractConnectionService
                     session, heartbeatType, interval);
         }
 
-        if ((heartbeatType == null) || (interval <= 0L) || (heartBeat == null)) {
+        if ((heartbeatType == null) || (GenericUtils.isNegativeOrNull(interval)) || (heartBeat == null)) {
             return false;
         }
 
@@ -401,7 +392,7 @@ public abstract class AbstractConnectionService
     @Override
     public int registerChannel(Channel channel) throws IOException {
         Session session = getSession();
-        int maxChannels = this.getIntProperty(MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
+        int maxChannels = CoreModuleProperties.MAX_CONCURRENT_CHANNELS.getRequired(this);
         int curSize = channels.size();
         if (curSize > maxChannels) {
             throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);

@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
@@ -55,20 +54,6 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SftpClient extends SubsystemClient {
-    /**
-     * Used to indicate the {@link Charset} (or its name) for decoding referenced files/folders names - extracted from
-     * the client session when 1st initialized.
-     * 
-     * @see #DEFAULT_NAME_DECODING_CHARSET
-     * @see #getNameDecodingCharset()
-     * @see #setNameDecodingCharset(Charset)
-     */
-    String NAME_DECODING_CHARSET = "sftp-name-decoding-charset";
-
-    /**
-     * Default value of {@value #NAME_DECODING_CHARSET}
-     */
-    Charset DEFAULT_NAME_DECODING_CHARSET = StandardCharsets.UTF_8;
 
     enum OpenMode {
         Read,
@@ -540,14 +525,6 @@ public interface SftpClient extends SubsystemClient {
     int MIN_READ_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int MIN_WRITE_BUFFER_SIZE = MIN_BUFFER_SIZE;
     int IO_BUFFER_SIZE = 32 * 1024;
-    long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
-
-    /**
-     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager} to control the internal timeout
-     * used by the client to open a channel. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value is used
-     */
-    String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
-    long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
 
     /**
      * Default modes for opening a channel if no specific modes specified
@@ -566,7 +543,7 @@ public interface SftpClient extends SubsystemClient {
 
     /**
      * @return The (never {@code null}) {@link Charset} used to decode referenced files/folders names
-     * @see    #NAME_DECODING_CHARSET
+     * @see    SftpModuleProperties#NAME_DECODING_CHARSET
      */
     Charset getNameDecodingCharset();
 

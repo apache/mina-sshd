@@ -28,6 +28,7 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the
@@ -46,10 +47,10 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     public SshAgent createClient() throws IOException {
         try {
             Session session = this.service.getSession();
-            String channelType = session.getStringProperty(PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
+            String channelType = CoreModuleProperties.PROXY_CHANNEL_TYPE.getRequired(session);
             AgentForwardedChannel channel = new AgentForwardedChannel(channelType);
             this.service.registerChannel(channel);
-            channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+            channel.open().verify(CoreModuleProperties.CHANNEL_OPEN_TIMEOUT.getRequired(channel));
             return channel.getAgent();
         } catch (Throwable t) {
             if (log.isDebugEnabled()) {

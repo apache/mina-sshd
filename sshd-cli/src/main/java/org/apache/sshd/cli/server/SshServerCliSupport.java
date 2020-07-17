@@ -52,7 +52,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
@@ -160,7 +160,7 @@ public abstract class SshServerCliSupport extends CliSupport {
 
     public static Object setupServerBanner(ServerFactoryManager server, PropertyResolver options) {
         Object banner = SshServerConfigFileReader.resolveBanner(options);
-        PropertyResolverUtils.updateProperty(server, ServerAuthenticationManager.WELCOME_BANNER, banner);
+        CoreModuleProperties.WELCOME_BANNER.set(server, banner);
         return banner;
     }
 

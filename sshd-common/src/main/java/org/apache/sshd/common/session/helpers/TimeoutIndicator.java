@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.session.helpers;
 
+import java.time.Duration;
+
 /**
  * Used to convey information about an expired timeout
  *
@@ -34,18 +36,18 @@ public class TimeoutIndicator {
         IdleTimeout
     }
 
-    public static final TimeoutIndicator NONE = new TimeoutIndicator(TimeoutStatus.NoTimeout, 0L, 0L);
+    public static final TimeoutIndicator NONE = new TimeoutIndicator(TimeoutStatus.NoTimeout, Duration.ZERO, Duration.ZERO);
 
     private final TimeoutStatus status;
-    private final long thresholdValue;
-    private final long expiredValue;
+    private final Duration thresholdValue;
+    private final Duration expiredValue;
 
     /**
      * @param status         The expired timeout type (if any)
      * @param thresholdValue The configured timeout value
      * @param expiredValue   The actual value that cause the timeout
      */
-    public TimeoutIndicator(TimeoutStatus status, long thresholdValue, long expiredValue) {
+    public TimeoutIndicator(TimeoutStatus status, Duration thresholdValue, Duration expiredValue) {
         this.status = status;
         this.thresholdValue = thresholdValue;
         this.expiredValue = expiredValue;
@@ -55,11 +57,11 @@ public class TimeoutIndicator {
         return status;
     }
 
-    public long getThresholdValue() {
+    public Duration getThresholdValue() {
         return thresholdValue;
     }
 
-    public long getExpiredValue() {
+    public Duration getExpiredValue() {
         return expiredValue;
     }
 

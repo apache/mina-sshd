@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -44,6 +43,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Base class for DHG key exchange algorithms. Implementations will only have to configure the required data on the
@@ -142,9 +142,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             try {
                 verifyCertificate(session, openSshKey);
             } catch (SshException e) {
-                if (session.getBooleanProperty(
-                        ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
-                        ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE)) {
+                if (CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.getRequired(session)) {
                     throw e;
                 } else {
                     // ignore certificate

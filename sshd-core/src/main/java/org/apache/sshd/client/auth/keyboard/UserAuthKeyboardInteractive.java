@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -31,6 +30,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Manages a &quot;keyboard-interactive&quot; exchange according to
@@ -40,33 +40,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
-
-    public static final String INTERACTIVE_LANGUAGE_TAG = "kb-client-interactive-language-tag";
-
-    /*
-     * As per RFC-4256:
-     *
-     * The language tag is deprecated and SHOULD be the empty string. It may be removed in a future revision of this
-     * specification. Instead, the server SHOULD select the language to be used based on the tags communicated during
-     * key exchange
-     */
-    public static final String DEFAULT_INTERACTIVE_LANGUAGE_TAG = "";
-
-    public static final String INTERACTIVE_SUBMETHODS = "kb-client-interactive-sub-methods";
-
-    /*
-     * As per RFC-4256:
-     *
-     * The submethods field is included so the user can give a hint of which actual methods he wants to use. It is a
-     * comma-separated list of authentication submethods (software or hardware) that the user prefers. If the client has
-     * knowledge of the submethods preferred by the user, presumably through a configuration setting, it MAY use the
-     * submethods field to pass this information to the server. Otherwise, it MUST send the empty string.
-     *
-     * The actual names of the submethods is something the user and the server need to agree upon.
-     *
-     * Server interpretation of the submethods field is implementation- dependent.
-     */
-    public static final String DEFAULT_INTERACTIVE_SUBMETHODS = "";
 
     private final AtomicBoolean requestPending = new AtomicBoolean(false);
     private final AtomicInteger trialsCount = new AtomicInteger(0);
@@ -82,8 +55,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         passwords = ClientSession.passwordIteratorOf(session);
-        maxTrials = session.getIntProperty(
-                ClientAuthenticationManager.PASSWORD_PROMPTS, ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS);
+        maxTrials = CoreModuleProperties.PASSWORD_PROMPTS.getRequired(session);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
@@ -216,11 +188,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     }
 
     protected String getExchangeLanguageTag(ClientSession session) {
-        return session.getStringProperty(INTERACTIVE_LANGUAGE_TAG, DEFAULT_INTERACTIVE_LANGUAGE_TAG);
+        return CoreModuleProperties.INTERACTIVE_LANGUAGE_TAG.getRequired(session);
     }
 
     protected String getExchangeSubMethods(ClientSession session) {
-        return session.getStringProperty(INTERACTIVE_SUBMETHODS, DEFAULT_INTERACTIVE_SUBMETHODS);
+        return CoreModuleProperties.INTERACTIVE_SUBMETHODS.getRequired(session);
     }
 
     protected String getCurrentPasswordCandidate() {

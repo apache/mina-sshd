@@ -31,7 +31,6 @@ import java.util.Objects;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.DHFactory;
@@ -49,15 +48,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXServer extends AbstractDHServerKeyExchange {
-    public static final String PROP_DHGEX_SERVER_MIN_KEY = "dhgex-server-min";
-    public static final String PROP_DHGEX_SERVER_MAX_KEY = "dhgex-server-max";
 
     protected final DHFactory factory;
     protected DHG dh;
@@ -117,11 +114,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         if ((cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD)
                 && (expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)) {
             oldRequest = true;
-            min = PropertyResolverUtils.getIntProperty(
-                    session, PROP_DHGEX_SERVER_MIN_KEY, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+            min = CoreModuleProperties.PROP_DHGEX_SERVER_MIN_KEY.get(session).orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
             prf = buffer.getInt();
-            max = PropertyResolverUtils.getIntProperty(
-                    session, PROP_DHGEX_SERVER_MAX_KEY, SecurityUtils.getMaxDHGroupExchangeKeySize());
+            max = CoreModuleProperties.PROP_DHGEX_SERVER_MAX_KEY.get(session)
+                    .orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
 
             if ((max < min) || (prf < min) || (max < prf)) {
                 throw new SshException(
@@ -316,7 +312,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
         Session session = getServerSession();
-        String moduliStr = session.getString(ServerFactoryManager.MODULI_URL);
+        String moduliStr = CoreModuleProperties.MODULI_URL.getOrNull(session);
         List<Moduli.DhGroup> groups = null;
         if (!GenericUtils.isEmpty(moduliStr)) {
             try {

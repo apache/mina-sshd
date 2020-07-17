@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +36,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,8 +43,6 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -61,7 +60,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NullOutputStream;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -76,7 +77,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final AtomicBoolean closing = new AtomicBoolean(false);
     private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
-    private Charset nameDecodingCharset = DEFAULT_NAME_DECODING_CHARSET;
+    private Charset nameDecodingCharset;
 
     /**
      * @param  clientSession          The {@link ClientSession}
@@ -85,14 +86,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * @throws IOException            If failed to initialize
      */
     public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector) throws IOException {
-        this.nameDecodingCharset = PropertyResolverUtils.getCharset(
-                clientSession, NAME_DECODING_CHARSET, DEFAULT_NAME_DECODING_CHARSET);
+        this.nameDecodingCharset = SftpModuleProperties.NAME_DECODING_CHARSET.getRequired(clientSession);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = createSftpChannelSubsystem(clientSession);
         clientSession.getService(ConnectionService.class).registerChannel(channel);
 
-        long initializationTimeout = clientSession.getLongProperty(
-                SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        Duration initializationTimeout = SftpModuleProperties.SFTP_CHANNEL_OPEN_TIMEOUT.getRequired(clientSession);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
             synchronized (messages) {
@@ -297,36 +296,28 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public Buffer receive(int id) throws IOException {
         Session session = getClientSession();
-        long idleTimeout = PropertyResolverUtils.getLongProperty(
-                session, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
-        if (idleTimeout <= 0L) {
-            idleTimeout = FactoryManager.DEFAULT_IDLE_TIMEOUT;
+        Duration idleTimeout = CoreModuleProperties.IDLE_TIMEOUT.getRequired(session);
+        if (GenericUtils.isNegativeOrNull(idleTimeout)) {
+            idleTimeout = CoreModuleProperties.IDLE_TIMEOUT.getRequiredDefault();
         }
 
+        Instant now = Instant.now();
+        Instant waitEnd = now.plus(idleTimeout);
         boolean traceEnabled = log.isTraceEnabled();
         for (int count = 1;; count++) {
             if (isClosing() || (!isOpen())) {
                 throw new SshException("Channel is being closed");
             }
+            if (now.compareTo(waitEnd) > 0) {
+                throw new SshException("Timeout expired while waiting for id=" + id);
+            }
 
-            long rcvStart = System.nanoTime();
-            Buffer buffer = receive(id, idleTimeout);
-            long rcvEnd = System.nanoTime();
+            Buffer buffer = receive(id, Duration.between(now, waitEnd));
             if (buffer != null) {
                 return buffer;
             }
 
-            long rcvDuration = TimeUnit.NANOSECONDS.toMillis(rcvEnd - rcvStart);
-            if (rcvDuration <= 0L) {
-                idleTimeout--;
-            } else {
-                idleTimeout -= rcvDuration;
-            }
-
-            if (idleTimeout <= 0L) {
-                throw new SshException("Timeout expired while waiting for id=" + id);
-            }
-
+            now = Instant.now();
             if (traceEnabled) {
                 log.trace("receive({}) check iteration #{} for id={} remain time={}", this, count, id, idleTimeout);
             }
@@ -335,14 +326,19 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public Buffer receive(int id, long idleTimeout) throws IOException {
+        return receive(id, Duration.ofMillis(idleTimeout));
+    }
+
+    @Override
+    public Buffer receive(int id, Duration idleTimeout) throws IOException {
         synchronized (messages) {
             Buffer buffer = messages.remove(id);
             if (buffer != null) {
                 return buffer;
             }
-            if (idleTimeout > 0L) {
+            if (GenericUtils.isPositive(idleTimeout)) {
                 try {
-                    messages.wait(idleTimeout);
+                    messages.wait(idleTimeout.toMillis(), idleTimeout.getNano() % 1_000_000);
                 } catch (InterruptedException e) {
                     throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
                 }
@@ -351,7 +347,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         return null;
     }
 
-    protected void init(ClientSession session, SftpVersionSelector initialVersionSelector, long initializationTimeout)
+    protected void init(ClientSession session, SftpVersionSelector initialVersionSelector, Duration initializationTimeout)
             throws IOException {
         int initialVersion = (initialVersionSelector == null)
                 ? SftpConstants.SFTP_V6
@@ -431,8 +427,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
     }
 
-    protected Buffer waitForInitResponse(long initializationTimeout) throws IOException {
-        ValidateUtils.checkTrue(initializationTimeout > 0L, "Invalid initialization timeout: %d", initializationTimeout);
+    protected Buffer waitForInitResponse(Duration initializationTimeout) throws IOException {
+        ValidateUtils.checkTrue(GenericUtils.isPositive(initializationTimeout), "Invalid initialization timeout: %d",
+                initializationTimeout);
 
         synchronized (messages) {
             /*
@@ -441,22 +438,16 @@ public class DefaultSftpClient extends AbstractSftpClient {
              * its success or failure. Thus, the SFTP channel is created by the client, but there is no one on the other
              * side to reply - thus the need for the timeout
              */
-            for (long remainingTimeout = initializationTimeout;
-                 (remainingTimeout > 0L) && messages.isEmpty() && (!isClosing()) && isOpen();) {
+            Instant now = Instant.now();
+            Instant max = now.plus(initializationTimeout);
+            while ((now.compareTo(max) < 0) && messages.isEmpty() && (!isClosing()) && isOpen()) {
                 try {
-                    long sleepStart = System.nanoTime();
-                    messages.wait(remainingTimeout);
-                    long sleepEnd = System.nanoTime();
-                    long sleepDuration = sleepEnd - sleepStart;
-                    long sleepMillis = TimeUnit.NANOSECONDS.toMillis(sleepDuration);
-                    if (sleepMillis < 1L) {
-                        remainingTimeout--;
-                    } else {
-                        remainingTimeout -= sleepMillis;
-                    }
+                    Duration rem = Duration.between(now, max);
+                    messages.wait(rem.toMillis(), rem.getNano() % 1_000_000);
+                    now = Instant.now();
                 } catch (InterruptedException e) {
                     throw (IOException) new InterruptedIOException(
-                            "Interrupted init() while " + remainingTimeout + " msec. remaining").initCause(e);
+                            "Interrupted init() while " + Duration.between(now, max) + " remaining").initCause(e);
                 }
             }
 
@@ -548,8 +539,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         protected void doOpen() throws IOException {
             String systemName = getSubsystem();
             Session session = getSession();
-            boolean wantReply = this.getBooleanProperty(
-                    REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+            boolean wantReply = CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.getRequired(this);
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
                     Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
             buffer.putInt(getRecipient());

@@ -23,13 +23,14 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -50,16 +51,12 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class ThrottlingPacketWriter extends AbstractLoggingBean implements PacketWriter, SshFutureListener<IoWriteFuture> {
     /** Timeout (seconds) for throttling packet writer to wait for pending packets send */
-    public static final String WAIT_TIME_PROP = "packet-writer-wait-time";
-
-    /** Default value for {@value #WAIT_TIME_PROP} if none specified */
-    public static final long DEFAULT_MAX_WAIT_TIME = 30L;
+    public static final Property<Duration> WAIT_TIME
+            = Property.durationSec("packet-writer-wait-time", Duration.ofSeconds(30L));
 
     /** Max. pending packets count */
-    public static final String MAX_PEND_COUNT = "packet-writer-max-pend-count";
-
-    /** Default value for {@value #MAX_PEND_COUNT} if none specified */
-    public static final int DEFAULT_PEND_COUNT_MAX = 4096;
+    public static final Property<Integer> MAX_PEND_COUNT
+            = Property.integer("packet-writer-max-pend-count", 4096);
 
     private final boolean traceEnabled;
     private final PacketWriter delegate;
@@ -73,13 +70,15 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     }
 
     public ThrottlingPacketWriter(PacketWriter delegate, PropertyResolver resolver) {
-        this(delegate, PropertyResolverUtils.getIntProperty(resolver, MAX_PEND_COUNT, DEFAULT_PEND_COUNT_MAX),
-             TimeUnit.SECONDS, PropertyResolverUtils.getLongProperty(resolver, WAIT_TIME_PROP, DEFAULT_MAX_WAIT_TIME));
+        this(delegate, MAX_PEND_COUNT.getRequired(resolver), WAIT_TIME.getRequired(resolver));
     }
 
-    public ThrottlingPacketWriter(
-                                  PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
+    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
         this(delegate, maxPendingPackets, waitUnit.toMillis(waitCount));
+    }
+
+    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, Duration maxWait) {
+        this(delegate, maxPendingPackets, maxWait.toMillis());
     }
 
     public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, long maxWait) {

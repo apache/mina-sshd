@@ -20,10 +20,10 @@ package org.apache.sshd.server.auth;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+import java.time.Duration;
 
 import com.jcraft.jsch.JSchException;
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -49,14 +49,13 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
         startServer(null);
     }
 
-    public void startServer(Integer timeout) throws Exception {
+    public void startServer(Duration timeout) throws Exception {
         if (server != null) {
             fail("Server already started");
         }
         server = SshServer.setUpDefaultServer();
         if (timeout != null) {
-            Map<String, Object> props = server.getProperties();
-            props.put(FactoryManager.AUTH_TIMEOUT, timeout.toString());
+            CoreModuleProperties.AUTH_TIMEOUT.set(server, timeout);
         }
 
         Path tmpDir = Files.createDirectories(getTempTargetFolder());
@@ -107,7 +106,7 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
 
     @Test
     public void testAsyncAuthTimeout() throws Exception {
-        startServer(500);
+        startServer(Duration.ofMillis(500));
         authenticator = (username, x, sess) -> asyncTimeout();
         try {
             authenticate();
@@ -118,7 +117,7 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
 
     @Test
     public void testAsyncAuthSucceededAfterTimeout() throws Exception {
-        startServer(500);
+        startServer(Duration.ofMillis(500));
         authenticator = (username, x, sess) -> async(1000, true);
         try {
             authenticate();

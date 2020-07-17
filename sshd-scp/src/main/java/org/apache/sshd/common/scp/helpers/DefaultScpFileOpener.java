@@ -37,6 +37,7 @@ import org.apache.sshd.common.scp.ScpTargetStreamResolver;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.scp.ScpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -80,7 +81,7 @@ public class DefaultScpFileOpener extends AbstractLoggingBean implements ScpFile
     protected OpenOption[] resolveOpenOptions(
             Session session, Path file, long size, Set<PosixFilePermission> permissions, OpenOption... options)
             throws IOException {
-        if (!session.getBooleanProperty(PROP_AUTO_SYNC_FILE_ON_WRITE, DEFAULT_AUTO_SYNC_FILE_ON_WRITE)) {
+        if (!ScpModuleProperties.PROP_AUTO_SYNC_FILE_ON_WRITE.getRequired(session)) {
             return options;
         }
 

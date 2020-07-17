@@ -93,6 +93,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,14 +104,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpFileSystemProvider extends FileSystemProvider {
-    public static final String READ_BUFFER_PROP_NAME = "sftp-fs-read-buffer-size";
-    public static final String WRITE_BUFFER_PROP_NAME = "sftp-fs-write-buffer-size";
-    public static final String CONNECT_TIME_PROP_NAME = "sftp-fs-connect-time";
-    public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
-    public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
-    public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
-    public static final String NAME_DECORDER_CHARSET_PROP_NAME = "sftp-fs-name-decoder-charset";
-    public static final Charset DEFAULT_NAME_DECODER_CHARSET = SftpClient.DEFAULT_NAME_DECODING_CHARSET;
 
     /**
      * <P>
@@ -219,12 +212,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         Map<String, Object> params = resolveFileSystemParameters(env, parseURIParameters(uri));
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(params);
         context.setPropertyResolver(resolver);
-        context.setMaxConnectTime(resolver.getLongProperty(CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME));
-        context.setMaxAuthTime(resolver.getLongProperty(AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
+        context.setMaxConnectTime(SftpModuleProperties.CONNECT_TIME.getRequired(resolver));
+        context.setMaxAuthTime(SftpModuleProperties.AUTH_TIME.getRequired(resolver));
 
         SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
-        Charset decodingCharset = PropertyResolverUtils.getCharset(
-                resolver, NAME_DECORDER_CHARSET_PROP_NAME, DEFAULT_NAME_DECODER_CHARSET);
+        Charset decodingCharset = SftpModuleProperties.NAME_DECODER_CHARSET.getRequired(resolver);
 
         SftpFileSystemClientSessionInitializer initializer = getSftpFileSystemClientSessionInitializer();
         SftpFileSystem fileSystem;
@@ -251,7 +243,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         PropertyResolverUtils.updateProperty(session, key, value);
                     }
 
-                    PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, decodingCharset);
+                    SftpModuleProperties.NAME_DECODING_CHARSET.set(session, decodingCharset);
                 }
 
                 initializer.authenticateClientSession(this, context, session);
@@ -282,11 +274,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
 
-        Integer bs = resolver.getInteger(READ_BUFFER_PROP_NAME);
+        Integer bs = SftpModuleProperties.READ_BUFFER_SIZE.getOrNull(resolver);
         if (bs != null) {
             fileSystem.setReadBufferSize(bs);
         }
-        bs = resolver.getInteger(WRITE_BUFFER_PROP_NAME);
+        bs = SftpModuleProperties.WRITE_BUFFER_SIZE.getOrNull(resolver);
         if (bs != null) {
             fileSystem.setWriteBufferSize(bs);
         }
@@ -416,11 +408,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             fileSystems.put(id, fileSystem);
         }
 
-        Integer rbs = session.getInteger(READ_BUFFER_PROP_NAME);
+        Integer rbs = session.getInteger(SftpModuleProperties.READ_BUFFER_SIZE.getName());
         if (rbs != null) {
             fileSystem.setReadBufferSize(rbs);
         }
-        Integer wbs = session.getInteger(WRITE_BUFFER_PROP_NAME);
+        Integer wbs = session.getInteger(SftpModuleProperties.WRITE_BUFFER_SIZE.getName());
         if (wbs != null) {
             fileSystem.setWriteBufferSize(wbs);
         }

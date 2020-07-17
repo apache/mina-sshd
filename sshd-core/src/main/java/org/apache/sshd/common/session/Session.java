@@ -21,6 +21,7 @@ package org.apache.sshd.common.session;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -264,12 +265,12 @@ public interface Session
     /**
      * @return Timeout value in milliseconds for communication
      */
-    long getIdleTimeout();
+    Duration getIdleTimeout();
 
     /**
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
      */
-    long getIdleTimeoutStart();
+    Instant getIdleTimeoutStart();
 
     /**
      * Re-start idle timeout timer
@@ -277,17 +278,17 @@ public interface Session
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
      * @see    #getIdleTimeoutStart()
      */
-    long resetIdleTimeout();
+    Instant resetIdleTimeout();
 
     /**
      * @return Timeout value in milliseconds for authentication stage
      */
-    long getAuthTimeout();
+    Duration getAuthTimeout();
 
     /**
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
      */
-    long getAuthTimeoutStart();
+    Instant getAuthTimeoutStart();
 
     /**
      * Re-start the authentication timeout timer
@@ -295,7 +296,7 @@ public interface Session
      * @return The timestamp value (milliseconds since EPOCH) when timer was started
      * @see    #getAuthTimeoutStart()
      */
-    long resetAuthTimeout();
+    Instant resetAuthTimeout();
 
     void setAuthenticated() throws IOException;
 

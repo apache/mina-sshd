@@ -35,14 +35,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.Channel;
@@ -54,6 +52,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
@@ -274,7 +273,7 @@ public class ClientTest extends BaseTestSupport {
         Collection<ClientChannel> channels = new LinkedList<>();
         try (ClientSession session = createTestClientSession()) {
             // required since we do not use an SFTP subsystem
-            PropertyResolverUtils.updateProperty(session, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
+            CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.set(session, false);
             channels.add(session.createChannel(Channel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
@@ -310,7 +309,7 @@ public class ClientTest extends BaseTestSupport {
         addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
 
         // required since we do not use an SFTP subsystem
-        PropertyResolverUtils.updateProperty(client, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
+        CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.set(client, false);
         client.start();
         try (ClientSession session = createTestClientSession()) {
             addChannelListener(clientListeners, session, new TestChannelListener(session.getClass().getSimpleName()));

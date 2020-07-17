@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.SshConstants;
@@ -31,24 +31,21 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.slf4j.Logger;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
-    /**
-     * Configure max. wait time (millis) to wait for space to become available
-     */
-    public static final String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
-    public static final long DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     private final AbstractChannel channelInstance;
     private final PacketWriter packetWriter;
     private final Window remoteWindow;
-    private final long maxWaitTimeout;
+    private final Duration maxWaitTimeout;
     private final Logger log;
     private final byte cmd;
     private final boolean eofOnClose;
@@ -62,17 +59,27 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     public ChannelOutputStream(
                                AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
         this(channel, remoteWindow,
-             channel.getLongProperty(WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT),
+             CoreModuleProperties.WAIT_FOR_SPACE_TIMEOUT.getRequired(channel),
              log, cmd, eofOnClose);
     }
 
     public ChannelOutputStream(
                                AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd,
                                boolean eofOnClose) {
+        this(channel, remoteWindow,
+             Duration.ofMillis(maxWaitTimeout),
+             log, cmd, eofOnClose);
+    }
+
+    public ChannelOutputStream(
+                               AbstractChannel channel, Window remoteWindow, Duration maxWaitTimeout, Logger log, byte cmd,
+                               boolean eofOnClose) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
         this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
-        ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
+        Objects.requireNonNull(maxWaitTimeout, "No maxWaitTimeout");
+        ValidateUtils.checkTrue(GenericUtils.isPositive(maxWaitTimeout), "Non-positive max. wait time: %s",
+                maxWaitTimeout.toString());
         this.maxWaitTimeout = maxWaitTimeout;
         this.log = Objects.requireNonNull(log, "No logger");
         this.cmd = cmd;

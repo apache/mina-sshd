@@ -22,8 +22,8 @@ package org.apache.sshd.common.auth;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.sshd.common.CommonModuleProperties;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
@@ -53,22 +53,6 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      * Host-based authentication method
      */
     String HOST_BASED = "hostbased";
-
-    /**
-     * If set to {@code true} then {@link #isSecureAuthenticationTransport(SessionContext)} returns {@code true} even if
-     * transport is insecure.
-     */
-    String ALLOW_INSECURE_AUTH = "allow-insecure-auth";
-
-    boolean DEFAULT_ALLOW_INSECURE_AUTH = false;
-
-    /**
-     * If set to {@code true} then {@link #isDataIntegrityAuthenticationTransport(SessionContext)} returns {@code true}
-     * even if transport has no MAC(s) to verify message integrity
-     */
-    String ALLOW_NON_INTEGRITY_AUTH = "allow-non-integrity-auth";
-
-    boolean DEFAULT_ALLOW_NON_INTEGRITY_AUTH = false;
 
     /**
      * @param  session     The session for which authentication is required
@@ -111,7 +95,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      * @param  session The {@link SessionContext} being used for authentication
      * @return         {@code true} if the context is not {@code null} and the ciphers have been established to anything
      *                 other than &quot;none&quot;.
-     * @see            #ALLOW_INSECURE_AUTH
+     * @see            CommonModuleProperties#ALLOW_INSECURE_AUTH
      * @see            SessionContext#isSecureSessionTransport(SessionContext)
      */
     static boolean isSecureAuthenticationTransport(SessionContext session) {
@@ -119,8 +103,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
             return false;
         }
 
-        boolean allowInsecure = PropertyResolverUtils.getBooleanProperty(
-                session, ALLOW_INSECURE_AUTH, DEFAULT_ALLOW_INSECURE_AUTH);
+        boolean allowInsecure = CommonModuleProperties.ALLOW_INSECURE_AUTH.getRequired(session);
         if (allowInsecure) {
             return true;
         }
@@ -132,7 +115,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
      * @param  session The {@link SessionContext} being used for authentication
      * @return         {@code true} if the context is not {@code null} and the MAC(s) used to verify packet integrity
      *                 have been established.
-     * @see            #ALLOW_NON_INTEGRITY_AUTH
+     * @see            CommonModuleProperties#ALLOW_NON_INTEGRITY_AUTH
      * @see            SessionContext#isDataIntegrityTransport(SessionContext)
      */
     static boolean isDataIntegrityAuthenticationTransport(SessionContext session) {
@@ -140,8 +123,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
             return false;
         }
 
-        boolean allowNonValidated = PropertyResolverUtils.getBooleanProperty(
-                session, ALLOW_NON_INTEGRITY_AUTH, DEFAULT_ALLOW_NON_INTEGRITY_AUTH);
+        boolean allowNonValidated = CommonModuleProperties.ALLOW_NON_INTEGRITY_AUTH.getRequired(session);
         if (allowNonValidated) {
             return true;
         }

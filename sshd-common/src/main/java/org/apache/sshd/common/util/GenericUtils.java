@@ -22,6 +22,7 @@ package org.apache.sshd.common.util;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1034,5 +1035,25 @@ public final class GenericUtils {
             }
             return val;
         };
+    }
+
+    /**
+     * Check if a duration is positive
+     * 
+     * @param  d the duration
+     * @return   <code>true</code> if the duration is greater than zero
+     */
+    public static boolean isPositive(Duration d) {
+        return !isNegativeOrNull(d);
+    }
+
+    /**
+     * Check if a duration is negative or zero
+     * 
+     * @param  d the duration
+     * @return   <code>true</code> if the duration is negative or zero
+     */
+    public static boolean isNegativeOrNull(Duration d) {
+        return d.isNegative() || d.isZero();
     }
 }

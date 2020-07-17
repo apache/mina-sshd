@@ -49,8 +49,8 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -292,7 +292,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                      OutputStream sockOut = s.getOutputStream()) {
 
                     log.info("Iteration {} connected to {}", i, s.getRemoteSocketAddress());
-                    s.setSoTimeout((int) FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
+                    s.setSoTimeout((int) CoreModuleProperties.NIO2_MIN_WRITE_TIMEOUT.getRequiredDefault().toMillis());
 
                     sockOut.write(dataBytes);
                     sockOut.flush();

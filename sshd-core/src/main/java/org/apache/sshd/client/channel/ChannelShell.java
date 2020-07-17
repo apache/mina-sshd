@@ -27,6 +27,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Client channel to open a remote shell
@@ -34,13 +35,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelShell extends PtyCapableChannelSession {
-    /**
-     * Configure whether reply for the &quot;shell&quot; request is required
-     * 
-     * @see #DEFAULT_REQUEST_SHELL_REPLY
-     */
-    public static final String REQUEST_SHELL_REPLY = "channel-shell-want-reply";
-    public static final boolean DEFAULT_REQUEST_SHELL_REPLY = false;
 
     public ChannelShell(PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         super(true, configHolder, env);
@@ -55,7 +49,7 @@ public class ChannelShell extends PtyCapableChannelSession {
         }
 
         Session session = getSession();
-        boolean wantReply = this.getBooleanProperty(REQUEST_SHELL_REPLY, DEFAULT_REQUEST_SHELL_REPLY);
+        boolean wantReply = CoreModuleProperties.REQUEST_SHELL_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString(Channel.CHANNEL_SHELL);

@@ -26,7 +26,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -95,8 +95,8 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     @Test
     public void testWelcomeBannerPhase() throws Exception {
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER_PHASE, phase);
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.WELCOME_BANNER, phase.name());
+        CoreModuleProperties.WELCOME_BANNER_PHASE.set(sshd, phase);
+        CoreModuleProperties.WELCOME_BANNER.set(sshd, phase.name());
 
         AtomicReference<String> welcomeHolder = new AtomicReference<>(null);
         client.setUserInteraction(new UserInteraction() {

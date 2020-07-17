@@ -76,6 +76,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AsyncCommand;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 /**
  * SFTP subsystem
@@ -86,43 +87,6 @@ public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
         implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier,
         AsyncCommand, ChannelSessionAware, ChannelDataReceiver {
-
-    /**
-     * Properties key for the maximum of available open handles per session.
-     */
-    public static final String MAX_OPEN_HANDLES_PER_SESSION = "max-open-handles-per-session";
-    public static final int DEFAULT_MAX_OPEN_HANDLES = Integer.MAX_VALUE;
-
-    /**
-     * Size in bytes of the opaque handle value
-     *
-     * @see #DEFAULT_FILE_HANDLE_SIZE
-     */
-    public static final String FILE_HANDLE_SIZE = "sftp-handle-size";
-    public static final int MIN_FILE_HANDLE_SIZE = 4; // ~uint32
-    public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
-    public static final int MAX_FILE_HANDLE_SIZE = 64; // ~sha512
-
-    /**
-     * Max. rounds to attempt to create a unique file handle - if all handles already in use after these many rounds,
-     * then an exception is thrown
-     *
-     * @see #generateFileHandle(Path)
-     * @see #DEFAULT_FILE_HANDLE_ROUNDS
-     */
-    public static final String MAX_FILE_HANDLE_RAND_ROUNDS = "sftp-handle-rand-max-rounds";
-    public static final int MIN_FILE_HANDLE_ROUNDS = 1;
-    public static final int DEFAULT_FILE_HANDLE_ROUNDS = MIN_FILE_HANDLE_SIZE;
-    public static final int MAX_FILE_HANDLE_ROUNDS = MAX_FILE_HANDLE_SIZE;
-
-    /**
-     * Maximum amount of data allocated for listing the contents of a directory in any single invocation of
-     * {@link #doReadDir(Buffer, int)}
-     *
-     * @see #DEFAULT_MAX_READDIR_DATA_SIZE
-     */
-    public static final String MAX_READDIR_DATA_SIZE_PROP = "sftp-max-readdir-data-size";
-    public static final int DEFAULT_MAX_READDIR_DATA_SIZE = 16 * 1024;
 
     protected static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
@@ -138,10 +102,10 @@ public class SftpSubsystem
     protected IoOutputStream err;
     protected Environment env;
     protected Random randomizer;
-    protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
-    protected int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
+    protected int fileHandleSize = SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE;
+    protected int maxFileHandleRounds = SftpModuleProperties.DEFAULT_FILE_HANDLE_ROUNDS;
     protected Future<?> pendingFuture;
-    protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
+    protected byte[] workBuf = new byte[Math.max(SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE, Integer.BYTES)];
     protected FileSystem fileSystem = FileSystems.getDefault();
     protected Path defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();
     protected int version;
@@ -196,17 +160,8 @@ public class SftpSubsystem
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
-        this.fileHandleSize = session.getIntProperty(FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
-        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE,
-                "File handle size too small: %d", this.fileHandleSize);
-        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE,
-                "File handle size too big: %d", this.fileHandleSize);
-
-        this.maxFileHandleRounds = session.getIntProperty(MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
-        ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS,
-                "File handle rounds too small: %d", this.maxFileHandleRounds);
-        ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS,
-                "File handle rounds too big: %d", this.maxFileHandleRounds);
+        this.fileHandleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(session);
+        this.maxFileHandleRounds = SftpModuleProperties.MAX_FILE_HANDLE_RAND_ROUNDS.getRequired(session);
 
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
@@ -714,7 +669,7 @@ public class SftpSubsystem
                 int lenPos = reply.wpos();
                 reply.putInt(0);
 
-                int maxDataSize = session.getIntProperty(MAX_READDIR_DATA_SIZE_PROP, DEFAULT_MAX_READDIR_DATA_SIZE);
+                int maxDataSize = SftpModuleProperties.MAX_READDIR_DATA_SIZE.getRequired(session);
                 int count = doReadDir(id, handle, dh, reply, maxDataSize, IoUtils.getLinkOptions(false));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
@@ -896,8 +851,7 @@ public class SftpSubsystem
 
         Path file = resolveFile(path);
         int curHandleCount = handles.size();
-        int maxHandleCount = session.getIntProperty(
-                MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        int maxHandleCount = SftpModuleProperties.MAX_OPEN_HANDLES_PER_SESSION.getRequired(session);
         if (curHandleCount > maxHandleCount) {
             throw signalOpenFailure(id, path, file, false,
                     new SftpException(

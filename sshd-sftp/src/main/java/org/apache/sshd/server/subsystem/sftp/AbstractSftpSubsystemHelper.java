@@ -96,6 +96,7 @@ import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -104,27 +105,6 @@ import org.apache.sshd.server.session.ServerSession;
 public abstract class AbstractSftpSubsystemHelper
         extends AbstractLoggingBean
         implements SftpSubsystemProxy {
-    /**
-     * Whether to automatically follow symbolic links when resolving paths
-     *
-     * @see #DEFAULT_AUTO_FOLLOW_LINKS
-     */
-    public static final String AUTO_FOLLOW_LINKS = "sftp-auto-follow-links";
-
-    /**
-     * Default value of {@value #AUTO_FOLLOW_LINKS}
-     */
-    public static final boolean DEFAULT_AUTO_FOLLOW_LINKS = true;
-
-    /**
-     * Allows controlling reports of which client extensions are supported (and reported via &quot;support&quot; and
-     * &quot;support2&quot; server extensions) as a comma-separate list of names. <B>Note:</B> requires overriding the
-     * {@link #executeExtendedCommand(Buffer, int, String)} command accordingly. If empty string is set then no server
-     * extensions are reported
-     *
-     * @see #DEFAULT_SUPPORTED_CLIENT_EXTENSIONS
-     */
-    public static final String CLIENT_EXTENSIONS_PROP = "sftp-client-extensions";
 
     /**
      * The default reported supported client extensions (case <U>insensitive</U>)
@@ -144,12 +124,6 @@ public abstract class AbstractSftpSubsystemHelper
                     .put(SftpConstants.EXT_SPACE_AVAILABLE, OptionalFeature.TRUE)
                     .immutable();
 
-    /**
-     * Comma-separated list of which {@code OpenSSH} extensions are reported and what version is reported for each -
-     * format: {@code name=version}. If empty value set, then no such extensions are reported. Otherwise, the
-     * {@link #DEFAULT_OPEN_SSH_EXTENSIONS} are used
-     */
-    public static final String OPENSSH_EXTENSIONS_PROP = "sftp-openssh-extensions";
     public static final List<OpenSSHExtension> DEFAULT_OPEN_SSH_EXTENSIONS = Collections.unmodifiableList(
             Arrays.asList(
                     new OpenSSHExtension(FsyncExtensionParser.NAME, "1"),
@@ -159,11 +133,6 @@ public abstract class AbstractSftpSubsystemHelper
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES = Collections.unmodifiableList(
             NamedResource.getNameList(DEFAULT_OPEN_SSH_EXTENSIONS));
 
-    /**
-     * Comma separate list of {@code SSH_ACL_CAP_xxx} names - where name can be without the prefix. If not defined then
-     * {@link #DEFAULT_ACL_SUPPORTED_MASK} is used
-     */
-    public static final String ACL_SUPPORTED_MASK_PROP = "sftp-acl-supported-mask";
     public static final Set<Integer> DEFAULT_ACL_SUPPORTED_MASK = Collections.unmodifiableSet(
             new HashSet<>(
                     Arrays.asList(
@@ -171,19 +140,6 @@ public abstract class AbstractSftpSubsystemHelper
                             SftpConstants.SSH_ACL_CAP_DENY,
                             SftpConstants.SSH_ACL_CAP_AUDIT,
                             SftpConstants.SSH_ACL_CAP_ALARM)));
-
-    /**
-     * Property that can be used to set the reported NL value. If not set, then {@link IoUtils#EOL} is used
-     */
-    public static final String NEWLINE_VALUE = "sftp-newline";
-
-    /**
-     * Force the use of a max. packet length for {@link #doRead(Buffer, int)} protection against malicious packets
-     *
-     * @see #DEFAULT_MAX_READDATA_PACKET_LENGTH
-     */
-    public static final String MAX_READDATA_PACKET_LENGTH_PROP = "sftp-max-readdata-packet-length";
-    public static final int DEFAULT_MAX_READDATA_PACKET_LENGTH = 63 * 1024;
 
     private final UnsupportedAttributePolicy unsupportedAttributePolicy;
     private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
@@ -279,7 +235,7 @@ public abstract class AbstractSftpSubsystemHelper
 
     /**
      * Checks if a proposed version is within supported range. <B>Note:</B> if the user forced a specific value via the
-     * {@link SftpSubsystemEnvironment#SFTP_VERSION} property, then it is used to validate the proposed value
+     * {@link SftpModuleProperties#SFTP_VERSION} property, then it is used to validate the proposed value
      *
      * @param  buffer        The {@link Buffer} containing the request
      * @param  id            The SSH message ID to be used to send the failure message if required
@@ -298,7 +254,7 @@ public abstract class AbstractSftpSubsystemHelper
         String available = SftpSubsystemEnvironment.ALL_SFTP_IMPL;
         // check if user wants to use a specific version
         ServerSession session = getServerSession();
-        Integer sftpVersion = session.getInteger(SftpSubsystemEnvironment.SFTP_VERSION);
+        Integer sftpVersion = SftpModuleProperties.SFTP_VERSION.getOrNull(session);
         if (sftpVersion != null) {
             int forcedValue = sftpVersion;
             if ((forcedValue < SftpSubsystemEnvironment.LOWER_SFTP_IMPL)
@@ -564,8 +520,7 @@ public abstract class AbstractSftpSubsystemHelper
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
         ServerSession session = getServerSession();
-        int maxAllowed = session.getIntProperty(
-                MAX_READDATA_PACKET_LENGTH_PROP, DEFAULT_MAX_READDATA_PACKET_LENGTH);
+        int maxAllowed = SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.getRequired(session);
         int readLen = Math.min(requestedLength, maxAllowed);
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
@@ -1807,7 +1762,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected Collection<Integer> resolveAclSupportedCapabilities(ServerSession session) {
-        String override = session.getString(ACL_SUPPORTED_MASK_PROP);
+        String override = SftpModuleProperties.ACL_SUPPORTED_MASK.getOrNull(session);
         if (override == null) {
             return DEFAULT_ACL_SUPPORTED_MASK;
         }
@@ -1847,7 +1802,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
-        String value = session.getString(OPENSSH_EXTENSIONS_PROP);
+        String value = SftpModuleProperties.OPENSSH_EXTENSIONS.getOrNull(session);
         if (value == null) { // No override
             return DEFAULT_OPEN_SSH_EXTENSIONS;
         }
@@ -1885,7 +1840,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected Map<String, OptionalFeature> getSupportedClientExtensions(ServerSession session) {
-        String value = session.getString(CLIENT_EXTENSIONS_PROP);
+        String value = SftpModuleProperties.CLIENT_EXTENSIONS.getOrNull(session);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
         }
@@ -1959,12 +1914,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected String resolveNewlineValue(ServerSession session) {
-        String value = session.getString(NEWLINE_VALUE);
-        if (value == null) {
-            return IoUtils.EOL;
-        } else {
-            return value; // empty means disabled
-        }
+        return SftpModuleProperties.NEWLINE_VALUE.getRequired(session);
     }
 
     /**
@@ -2513,17 +2463,14 @@ public abstract class AbstractSftpSubsystemHelper
         listener.modifiedAttributes(session, file, attributes, null);
     }
 
-    protected LinkOption[] getPathResolutionLinkOption(int cmd, String extension, Path path)
-            throws IOException {
+    protected LinkOption[] getPathResolutionLinkOption(int cmd, String extension, Path path) throws IOException {
         boolean followLinks = resolvePathResolutionFollowLinks(cmd, extension, path);
         return IoUtils.getLinkOptions(followLinks);
     }
 
-    protected boolean resolvePathResolutionFollowLinks(int cmd, String extension, Path path)
-            throws IOException {
+    protected boolean resolvePathResolutionFollowLinks(int cmd, String extension, Path path) throws IOException {
         ServerSession session = getServerSession();
-        return PropertyResolverUtils.getBooleanProperty(
-                session, AUTO_FOLLOW_LINKS, DEFAULT_AUTO_FOLLOW_LINKS);
+        return SftpModuleProperties.AUTO_FOLLOW_LINKS.getRequired(session);
     }
 
     protected void setFileAttributes(

@@ -41,7 +41,6 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -53,23 +52,13 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
     public static final int INIT_COMMAND_SIZE = Byte.BYTES /* command */ + Integer.BYTES /* version */;
-
-    /**
-     * Property used to avoid large buffers when {@link #write(Handle, long, byte[], int, int)} is invoked with a large
-     * buffer size.
-     */
-    public static final String WRITE_CHUNK_SIZE = "sftp-client-write-chunk-size";
-
-    /**
-     * Default value for {@value #WRITE_CHUNK_SIZE}
-     */
-    public static final int DEFAULT_WRITE_CHUNK_SIZE = SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT - Long.SIZE;
 
     private final Attributes fileOpenAttributes = new Attributes();
     private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
@@ -892,7 +881,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
 
         boolean traceEnabled = log.isTraceEnabled();
         Channel clientChannel = getClientChannel();
-        int chunkSize = PropertyResolverUtils.getIntProperty(clientChannel, WRITE_CHUNK_SIZE, DEFAULT_WRITE_CHUNK_SIZE);
+        int chunkSize = SftpModuleProperties.WRITE_CHUNK_SIZE.getRequired(clientChannel);
         ValidateUtils.checkState(chunkSize > ByteArrayBuffer.DEFAULT_SIZE, "Write chunk size too small: %d", chunkSize);
 
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();

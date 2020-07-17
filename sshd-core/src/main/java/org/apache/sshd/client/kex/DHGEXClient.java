@@ -23,7 +23,6 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -38,14 +37,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DHGEXClient extends AbstractDHClientKeyExchange {
-    public static final String PROP_DHGEX_CLIENT_MIN_KEY = "dhgex-client-min";
-    public static final String PROP_DHGEX_CLIENT_MAX_KEY = "dhgex-client-max";
-    public static final String PROP_DHGEX_CLIENT_PRF_KEY = "dhgex-client-prf";
 
     protected final DHFactory factory;
     protected byte expected;
@@ -61,12 +58,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         this.factory = Objects.requireNonNull(factory, "No factory");
 
         // SSHD-941 give the user a chance to intervene in the choice
-        min = PropertyResolverUtils.getIntProperty(
-                session, PROP_DHGEX_CLIENT_MIN_KEY, SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        max = PropertyResolverUtils.getIntProperty(
-                session, PROP_DHGEX_CLIENT_MAX_KEY, SecurityUtils.getMaxDHGroupExchangeKeySize());
-        prf = PropertyResolverUtils.getIntProperty(
-                session, PROP_DHGEX_CLIENT_PRF_KEY, Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max));
+        min = CoreModuleProperties.PROP_DHGEX_CLIENT_MIN_KEY.get(session).orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        max = CoreModuleProperties.PROP_DHGEX_CLIENT_MAX_KEY.get(session).orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
+        prf = CoreModuleProperties.PROP_DHGEX_CLIENT_PRF_KEY.get(session)
+                .orElse(Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max));
     }
 
     @Override

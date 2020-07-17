@@ -71,6 +71,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Provides default implementations of {@link ClientSession} related methods
@@ -96,12 +97,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
 
-        sendImmediateClientIdentification = this.getBooleanProperty(
-                ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION,
-                ClientFactoryManager.DEFAULT_SEND_IMMEDIATE_IDENTIFICATION);
-        sendImmediateKexInit = this.getBooleanProperty(
-                ClientFactoryManager.SEND_IMMEDIATE_KEXINIT,
-                ClientFactoryManager.DEFAULT_SEND_KEXINIT);
+        sendImmediateClientIdentification = CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.getRequired(this);
+        sendImmediateKexInit = CoreModuleProperties.SEND_IMMEDIATE_KEXINIT.getRequired(this);
 
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
         connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
@@ -301,7 +298,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     protected IoWriteFuture sendClientIdentification() throws Exception {
-        clientVersion = resolveIdentificationString(ClientFactoryManager.CLIENT_IDENTIFICATION);
+        clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
         return sendIdentification(clientVersion);
     }
 

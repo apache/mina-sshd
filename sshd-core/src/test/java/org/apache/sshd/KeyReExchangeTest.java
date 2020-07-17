@@ -43,8 +43,6 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -53,8 +51,10 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
@@ -100,17 +100,17 @@ public class KeyReExchangeTest extends BaseTestSupport {
         }
     }
 
-    protected void setUp(long bytesLimit, long timeLimit, long packetsLimit) throws Exception {
+    protected void setUp(long bytesLimit, Duration timeLimit, long packetsLimit) throws Exception {
         sshd = setupTestServer();
         sshd.setSubsystemFactories(Collections.singletonList(new TestSubsystemFactory()));
         if (bytesLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
+            CoreModuleProperties.REKEY_BYTES_LIMIT.set(sshd, bytesLimit);
         }
-        if (timeLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_TIME_LIMIT, timeLimit);
+        if (GenericUtils.isPositive(timeLimit)) {
+            CoreModuleProperties.REKEY_TIME_LIMIT.set(sshd, timeLimit);
         }
         if (packetsLimit > 0L) {
-            PropertyResolverUtils.updateProperty(sshd, FactoryManager.REKEY_PACKETS_LIMIT, packetsLimit);
+            CoreModuleProperties.REKEY_PACKETS_LIMIT.set(sshd, packetsLimit);
         }
 
         sshd.start();
@@ -119,7 +119,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testSwitchToNoneCipher() throws Exception {
-        setUp(0L, 0L, 0L);
+        setUp(0L, Duration.ZERO, 0L);
 
         sshd.getCipherFactories().add(BuiltinCiphers.none);
         try (SshClient client = setupTestClient()) {
@@ -145,7 +145,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test // see SSHD-558
     public void testKexFutureExceptionPropagation() throws Exception {
-        setUp(0L, 0L, 0L);
+        setUp(0L, Duration.ZERO, 0L);
         sshd.getCipherFactories().add(BuiltinCiphers.none);
 
         try (SshClient client = setupTestClient()) {
@@ -217,7 +217,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     @Test
     public void testReExchangeFromJschClient() throws Exception {
         Assume.assumeTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
-        setUp(0L, 0L, 0L);
+        setUp(0L, Duration.ZERO, 0L);
 
         JSch.setConfig("kex", BuiltinDHFactories.Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1);
         JSch sch = new JSch();
@@ -255,7 +255,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromSshdClient() throws Exception {
-        setUp(0L, 0L, 0L);
+        setUp(0L, Duration.ZERO, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -342,7 +342,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     @Test
     public void testReExchangeFromServerBySize() throws Exception {
         final long bytesLImit = 10 * 1024L;
-        setUp(bytesLImit, 0L, 0L);
+        setUp(bytesLImit, Duration.ZERO, 0L);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -445,7 +445,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     @Test
     public void testReExchangeFromServerByTime() throws Exception {
-        final long timeLimit = TimeUnit.SECONDS.toMillis(2L);
+        final Duration timeLimit = Duration.ofSeconds(2L);
         setUp(0L, timeLimit, 0L);
 
         try (SshClient client = setupTestClient()) {
@@ -507,7 +507,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     });
 
                     byte[] data = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
-                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(3L * timeLimit);
+                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(3L * timeLimit.toMillis());
                     final long minWaitValue = 10L;
                     final long minWaitNanos = TimeUnit.MILLISECONDS.toNanos(minWaitValue);
                     for (long timePassed = 0L, sentSize = 0L; timePassed < maxWaitNanos; timePassed++) {
@@ -562,7 +562,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     @Test // see SSHD-601
     public void testReExchangeFromServerByPackets() throws Exception {
         final int packetsLimit = 135;
-        setUp(0L, 0L, packetsLimit);
+        setUp(0L, Duration.ZERO, packetsLimit);
 
         try (SshClient client = setupTestClient()) {
             client.start();

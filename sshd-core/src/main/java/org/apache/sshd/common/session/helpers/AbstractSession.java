@@ -24,11 +24,12 @@ import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -86,6 +87,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * <P>
@@ -182,11 +184,11 @@ public abstract class AbstractSession extends SessionHelper {
     protected final AtomicLong outBytesCount = new AtomicLong(0L);
     protected final AtomicLong inBlocksCount = new AtomicLong(0L);
     protected final AtomicLong outBlocksCount = new AtomicLong(0L);
-    protected final AtomicLong lastKeyTimeValue = new AtomicLong(0L);
+    protected final AtomicReference<Instant> lastKeyTimeValue = new AtomicReference(Instant.now());
     // we initialize them here in case super constructor calls some methods that use these values
-    protected long maxRekyPackets = FactoryManager.DEFAULT_REKEY_PACKETS_LIMIT;
-    protected long maxRekeyBytes = FactoryManager.DEFAULT_REKEY_BYTES_LIMIT;
-    protected long maxRekeyInterval = FactoryManager.DEFAULT_REKEY_TIME_LIMIT;
+    protected long maxRekyPackets;
+    protected long maxRekeyBytes;
+    protected Duration maxRekeyInterval;
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
@@ -195,12 +197,14 @@ public abstract class AbstractSession extends SessionHelper {
     protected final AtomicReference<String> pendingGlobalRequest = new AtomicReference<>();
 
     // SSH_MSG_IGNORE stream padding
-    protected int ignorePacketDataLength = FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE;
-    protected long ignorePacketsFrequency = FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY;
-    protected int ignorePacketsVariance = FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE;
+    protected int ignorePacketDataLength;
+    protected long ignorePacketsFrequency;
+    protected int ignorePacketsVariance;
 
-    protected final AtomicLong maxRekeyBlocks = new AtomicLong(FactoryManager.DEFAULT_REKEY_BYTES_LIMIT / 16);
-    protected final AtomicLong ignorePacketsCount = new AtomicLong(FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
+    protected final AtomicLong maxRekeyBlocks
+            = new AtomicLong(CoreModuleProperties.REKEY_BYTES_LIMIT.getRequiredDefault() / 16);
+    protected final AtomicLong ignorePacketsCount
+            = new AtomicLong(CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.getRequiredDefault());
 
     /**
      * Used to wait for global requests result synchronous wait
@@ -352,17 +356,14 @@ public abstract class AbstractSession extends SessionHelper {
     protected void refreshConfiguration() {
         synchronized (random) {
             // re-keying configuration
-            maxRekeyBytes = getLongProperty(FactoryManager.REKEY_BYTES_LIMIT, maxRekeyBytes);
-            maxRekeyInterval = getLongProperty(FactoryManager.REKEY_TIME_LIMIT, maxRekeyInterval);
-            maxRekyPackets = getLongProperty(FactoryManager.REKEY_PACKETS_LIMIT, maxRekyPackets);
+            maxRekeyBytes = CoreModuleProperties.REKEY_BYTES_LIMIT.getRequired(this);
+            maxRekeyInterval = CoreModuleProperties.REKEY_TIME_LIMIT.getRequired(this);
+            maxRekyPackets = CoreModuleProperties.REKEY_PACKETS_LIMIT.getRequired(this);
 
             // intermittent SSH_MSG_IGNORE stream padding
-            ignorePacketDataLength = getIntProperty(
-                    FactoryManager.IGNORE_MESSAGE_SIZE, FactoryManager.DEFAULT_IGNORE_MESSAGE_SIZE);
-            ignorePacketsFrequency = getLongProperty(
-                    FactoryManager.IGNORE_MESSAGE_FREQUENCY, FactoryManager.DEFAULT_IGNORE_MESSAGE_FREQUENCY);
-            ignorePacketsVariance = getIntProperty(
-                    FactoryManager.IGNORE_MESSAGE_VARIANCE, FactoryManager.DEFAULT_IGNORE_MESSAGE_VARIANCE);
+            ignorePacketDataLength = CoreModuleProperties.IGNORE_MESSAGE_SIZE.getRequired(this);
+            ignorePacketsFrequency = CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.getRequired(this);
+            ignorePacketsVariance = CoreModuleProperties.IGNORE_MESSAGE_VARIANCE.getRequired(this);
             if (ignorePacketsVariance >= ignorePacketsFrequency) {
                 ignorePacketsVariance = 0;
             }
@@ -1674,11 +1675,10 @@ public abstract class AbstractSession extends SessionHelper {
         // see https://tools.ietf.org/html/rfc4344#section-3.2
         // select the lowest cipher size
         int avgCipherBlockSize = Math.min(inCipherSize, outCipherSize);
-        long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4, 63); // in case
-                                                                                                   // (block-size / 4)
-                                                                                                   // > 63
-        long effectiveRekyBlocksCount = getLongProperty(FactoryManager.REKEY_BLOCKS_LIMIT, recommendedByteRekeyBlocks);
-        maxRekeyBlocks.set(effectiveRekyBlocksCount);
+        long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4,
+                63); // in case (block-size / 4) > 63
+        long effectiveRekeyBlocksCount = CoreModuleProperties.REKEY_BLOCKS_LIMIT.getRequired(this);
+        maxRekeyBlocks.set(effectiveRekeyBlocksCount > 0 ? effectiveRekeyBlocksCount : recommendedByteRekeyBlocks);
         if (debugEnabled) {
             log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
                     this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
@@ -1690,7 +1690,7 @@ public abstract class AbstractSession extends SessionHelper {
         outPacketsCount.set(0L);
         inBlocksCount.set(0L);
         outBlocksCount.set(0L);
-        lastKeyTimeValue.set(System.currentTimeMillis());
+        lastKeyTimeValue.set(Instant.now());
         firstKexPacketFollows = null;
     }
 
@@ -2108,17 +2108,17 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected boolean isRekeyTimeIntervalExceeded() {
-        if (maxRekeyInterval <= 0L) {
+        if (GenericUtils.isNegativeOrNull(maxRekeyInterval)) {
             return false; // disabled
         }
 
-        long now = System.currentTimeMillis();
-        long rekeyDiff = now - lastKeyTimeValue.get();
-        boolean rekey = rekeyDiff > maxRekeyInterval;
+        Instant now = Instant.now();
+        Duration rekeyDiff = Duration.between(lastKeyTimeValue.get(), now);
+        boolean rekey = rekeyDiff.compareTo(maxRekeyInterval) > 0;
         if (rekey) {
             if (log.isDebugEnabled()) {
                 log.debug("isRekeyTimeIntervalExceeded({}) re-keying: last={}, now={}, diff={}, max={}",
-                        this, new Date(lastKeyTimeValue.get()), new Date(now), rekeyDiff, maxRekeyInterval);
+                        this, lastKeyTimeValue.get(), now, rekeyDiff, maxRekeyInterval);
             }
         }
 

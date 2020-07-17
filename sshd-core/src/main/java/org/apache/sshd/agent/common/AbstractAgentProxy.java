@@ -29,7 +29,6 @@ import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
@@ -40,6 +39,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -47,7 +47,7 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceCarrier {
 
     private CloseableExecutorService executor;
-    private String channelType = FactoryManager.AGENT_FORWARDING_TYPE_OPENSSH;
+    private String channelType = CoreModuleProperties.AGENT_FORWARDING_TYPE_OPENSSH;
 
     protected AbstractAgentProxy(CloseableExecutorService executorService) {
         executor = executorService;
@@ -70,7 +70,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     public Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
         int okcmd = SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
-        if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
+        if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             cmd = SshAgentConstants.SSH_AGENT_LIST_KEYS;
             okcmd = SshAgentConstants.SSH_AGENT_KEY_LIST;
         }
@@ -106,13 +106,13 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
         int okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
-        if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
+        if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             cmd = SshAgentConstants.SSH_AGENT_PRIVATE_KEY_OP;
             okcmd = SshAgentConstants.SSH_AGENT_OPERATION_COMPLETE;
         }
 
         Buffer buffer = createBuffer((byte) cmd);
-        if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
+        if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             buffer.putString("sign");
         }
         buffer.putPublicKey(key);
@@ -127,7 +127,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
         byte[] signature = buffer.getBytes();
         boolean debugEnabled = log.isDebugEnabled();
-        if (FactoryManager.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
+        if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             if (debugEnabled) {
                 log.debug("sign({})[{}] : {}",
                         KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), BufferUtils.toHex(':', signature));

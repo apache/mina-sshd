@@ -33,12 +33,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
@@ -48,6 +46,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -165,7 +164,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                 throw new FileNotFoundException("Unknown location: " + location);
             }
         });
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
+        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.set(client, false);
 
         String host = getClass().getSimpleName();
         HostConfigEntry entry = new HostConfigEntry(host, TEST_LOCALHOST, port, user);
@@ -233,7 +232,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                 throw new FileNotFoundException("Unknown location: " + location);
             }
         });
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
+        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.set(client, false);
 
         Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
         KeyIdentityProvider provider = new AbstractKeyPairProvider() {

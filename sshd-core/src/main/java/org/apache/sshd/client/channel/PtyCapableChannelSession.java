@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
@@ -35,6 +34,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * <P>
@@ -254,8 +254,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
                 log.debug("doOpenPty({}) Send agent forwarding request", this);
             }
 
-            String channelType = session.getStringProperty(
-                    SshAgentFactory.PROXY_AUTH_CHANNEL_TYPE, SshAgentFactory.DEFAULT_PROXY_AUTH_CHANNEL_TYPE);
+            String channelType = CoreModuleProperties.PROXY_AUTH_CHANNEL_TYPE.getRequired(session);
             Buffer buffer = session.createBuffer(
                     SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(getRecipient());

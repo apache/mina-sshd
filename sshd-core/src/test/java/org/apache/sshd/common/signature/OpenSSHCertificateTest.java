@@ -25,15 +25,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -126,9 +125,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         sshd.setKeyPairProvider(keyPairProvider);
         sshd.setHostKeyCertificateProvider(certificateProvider);
 
-        PropertyResolverUtils.updateProperty(client,
-                ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE,
-                ClientFactoryManager.DEFAULT_ABORT_ON_INVALID_CERTIFICATE);
+        CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.remove(client);
 
         if (signatureFactory != null) {
             client.setSignatureFactories(signatureFactory);
@@ -150,7 +147,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @Test // invalid principal, but continue
     public void testContinueOnInvalidPrincipal() throws Exception {
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, false);
+        CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, false);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
                 .verify(CONNECT_TIMEOUT)
                 .getSession()) {
@@ -161,7 +158,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @Test // invalid principal, abort
     public void testAbortOnInvalidPrincipal() throws Exception {
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.ABORT_ON_INVALID_CERTIFICATE, true);
+        CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
                 .verify(CONNECT_TIMEOUT)
                 .getSession()) {

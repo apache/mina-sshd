@@ -29,11 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -69,7 +68,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.AUTH_METHODS, UserAuthPublicKeyFactory.NAME);
+        CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthPublicKeyFactory.NAME);
         sshd.setPublickeyAuthenticator((username, key, session) -> delegate.authenticate(username, key, session));
         sshd.start();
         port = sshd.getPort();

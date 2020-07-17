@@ -33,7 +33,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.UserAuthFactory;
-import org.apache.sshd.server.auth.WelcomeBannerPhase;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
@@ -53,91 +52,6 @@ import org.apache.sshd.server.session.ServerSession;
 public interface ServerAuthenticationManager
         extends UserAuthFactoriesManager<ServerSession, UserAuth, UserAuthFactory>,
         KeyPairProviderHolder {
-    /**
-     * Key used to retrieve the value in the configuration properties map of the maximum number of failed authentication
-     * requests before the server closes the connection.
-     * 
-     * @see #DEFAULT_MAX_AUTH_REQUESTS
-     */
-    String MAX_AUTH_REQUESTS = "max-auth-requests";
-
-    /**
-     * Default value for {@link #MAX_AUTH_REQUESTS} if none configured
-     */
-    int DEFAULT_MAX_AUTH_REQUESTS = 20;
-
-    /**
-     * Key used to retrieve the value of welcome banner that will be displayed when a user connects to the server. If
-     * {@code null}/empty then no banner will be sent. The value can be one of the following:
-     * <UL>
-     * <P>
-     * <LI>A {@link java.io.File} or {@link java.nio.file.Path}, in which case its contents will be transmitted.
-     * <B>Note:</B> if the file is empty or does not exits, no banner will be transmitted.</LI>
-     * </P>
-     *
-     * <P>
-     * <LI>A {@link java.net.URI} or a string starting with &quot;file:/&quot;, in which case it will be converted to a
-     * {@link java.nio.file.Path} and handled accordingly.</LI>
-     * </P>
-     *
-     * <P>
-     * <LI>A string containing a special value indicator - e.g., {@link #AUTO_WELCOME_BANNER_VALUE}, in which case the
-     * relevant banner content will be generated.</LI>
-     * </P>
-     *
-     * <P>
-     * <LI>Any other object whose {@code toString()} value yields a non empty string will be used as the banner
-     * contents.</LI>
-     * </P>
-     * </UL>
-     * 
-     * @see <A HREF="https://tools.ietf.org/html/rfc4252#section-5.4">RFC-4252 section 5.4</A>
-     */
-    String WELCOME_BANNER = "welcome-banner";
-
-    /**
-     * Special value that can be set for the {@link #WELCOME_BANNER} property indicating that the server should generate
-     * a banner consisting of the random art of the server's keys (if any are provided). If no server keys are
-     * available, then no banner will be sent
-     */
-    String AUTO_WELCOME_BANNER_VALUE = "#auto-welcome-banner";
-
-    /**
-     * Key used to denote the language code for the welcome banner (if such a banner is configured). If not set, then
-     * {@link ServerAuthenticationManager#DEFAULT_WELCOME_BANNER_LANGUAGE} is used
-     */
-    String WELCOME_BANNER_LANGUAGE = "welcome-banner-language";
-
-    /**
-     * Default value for {@link #WELCOME_BANNER_LANGUAGE} is not overwritten
-     */
-    String DEFAULT_WELCOME_BANNER_LANGUAGE = "en";
-
-    /**
-     * The {@link WelcomeBannerPhase} value - either as an enum or a string
-     */
-    String WELCOME_BANNER_PHASE = "welcome-banner-phase";
-
-    /**
-     * Default value for {@link #WELCOME_BANNER_PHASE} if none specified
-     */
-    WelcomeBannerPhase DEFAULT_BANNER_PHASE = WelcomeBannerPhase.IMMEDIATE;
-
-    /**
-     * The charset to use if the configured welcome banner points to a file - if not specified (either as a string or a
-     * {@link java.nio.charset.Charset} then the local default is used.
-     */
-    String WELCOME_BANNER_CHARSET = "welcome-banner-charset";
-
-    /**
-     * This key is used when configuring multi-step authentications. The value needs to be a blank separated list of
-     * comma separated list of authentication method names. For example, an argument of
-     * <code>publickey,password publickey,keyboard-interactive</code> would require the user to complete public key
-     * authentication, followed by either password or keyboard interactive authentication. Only methods that are next in
-     * one or more lists are offered at each stage, so for this example, it would not be possible to attempt password or
-     * keyboard-interactive authentication before public key.
-     */
-    String AUTH_METHODS = "auth-methods";
 
     UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY = UserAuthPublicKeyFactory.INSTANCE;
 

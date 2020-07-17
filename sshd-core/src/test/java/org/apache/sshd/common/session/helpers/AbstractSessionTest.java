@@ -24,6 +24,7 @@ import java.io.StreamCorruptedException;
 import java.io.WriteAbortedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -32,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.IoWriteFutureImpl;
 import org.apache.sshd.common.future.CloseFuture;
@@ -49,6 +49,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.After;
@@ -146,10 +147,10 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = StreamCorruptedException.class)
     public void testReadIdentLongHeader() throws IOException {
-        StringBuilder sb = new StringBuilder(FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE + Integer.SIZE);
+        StringBuilder sb = new StringBuilder(CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault() + Integer.SIZE);
         do {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
-        } while (sb.length() < FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
+        } while (sb.length() < CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault());
         sb.append("SSH-2.0-software\r\n");
 
         Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
@@ -160,9 +161,9 @@ public class AbstractSessionTest extends BaseTestSupport {
     @Test // see SSHD-619
     public void testMsgIgnorePadding() throws Exception {
         final long frequency = Byte.SIZE;
-        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_SIZE, Short.SIZE);
-        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_FREQUENCY, frequency);
-        PropertyResolverUtils.updateProperty(session, FactoryManager.IGNORE_MESSAGE_VARIANCE, 0);
+        CoreModuleProperties.IGNORE_MESSAGE_SIZE.set(session, Short.SIZE);
+        CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.set(session, frequency);
+        CoreModuleProperties.IGNORE_MESSAGE_VARIANCE.set(session, 0);
         session.refreshConfiguration();
 
         Buffer msg = session.createBuffer(SshConstants.SSH_MSG_DEBUG, Long.SIZE);
@@ -477,13 +478,13 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public long resetIdleTimeout() {
-            return 0L; // ignored
+        public Instant resetIdleTimeout() {
+            return null; // ignored
         }
 
         @Override
-        public long resetAuthTimeout() {
-            return 0L; // ignored
+        public Instant resetAuthTimeout() {
+            return null; // ignored
         }
 
         @Override

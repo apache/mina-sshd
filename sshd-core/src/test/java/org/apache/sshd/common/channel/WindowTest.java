@@ -35,8 +35,6 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.io.IoInputStream;
@@ -46,6 +44,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
@@ -148,8 +147,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithInvertedStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -202,8 +201,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithDirectStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
 
         client.start();
 
@@ -263,8 +262,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithAsyncStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
 
         client.start();
 

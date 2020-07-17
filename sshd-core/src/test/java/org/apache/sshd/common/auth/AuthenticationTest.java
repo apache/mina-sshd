@@ -45,7 +45,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -66,7 +65,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -180,7 +179,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 if (attemptsCount.incrementAndGet() == 1) {
                     throw new PasswordChangeRequiredException(
                             attemptsCount.toString(),
-                            getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                            getCurrentTestName(), CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault());
                 }
 
                 return delegate.authenticate(username, password, session);
@@ -198,8 +197,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
             }
         });
-        PropertyResolverUtils.updateProperty(sshd,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger updatesCount = new AtomicInteger(0);
@@ -219,7 +217,8 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
                     assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language", ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Mismatched language",
+                            CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang);
                     assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
                     return getCurrentTestName();
                 }
@@ -248,8 +247,7 @@ public class AuthenticationTest extends BaseTestSupport {
                             };
                         }
                     }));
-            PropertyResolverUtils.updateProperty(client,
-                    ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            CoreModuleProperties.AUTH_METHODS.set(client, UserAuthPasswordFactory.NAME);
 
             client.start();
 
@@ -342,16 +340,10 @@ public class AuthenticationTest extends BaseTestSupport {
                         ServerSession session, String username, String lang, String subMethods)
                         throws Exception {
                     assertEquals("Mismatched user language",
-                            PropertyResolverUtils.getStringProperty(
-                                    client,
-                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
-                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
+                            CoreModuleProperties.INTERACTIVE_LANGUAGE_TAG.getRequired(client),
                             lang);
                     assertEquals("Mismatched client sub-methods",
-                            PropertyResolverUtils.getStringProperty(
-                                    client,
-                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
-                                    org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
+                            CoreModuleProperties.INTERACTIVE_SUBMETHODS.getRequired(client),
                             subMethods);
 
                     InteractiveChallenge challenge = super.generateChallenge(session, username, lang, subMethods);
@@ -426,8 +418,7 @@ public class AuthenticationTest extends BaseTestSupport {
             challenge.addPrompt(prompt, (GenericUtils.size(challenge.getPrompts()) & 0x1) != 0);
         }
 
-        PropertyResolverUtils.updateProperty(sshd,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthKeyboardInteractiveFactory.NAME);
         AtomicInteger genCount = new AtomicInteger(0);
         AtomicInteger authCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
@@ -458,8 +449,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 return true;
             }
         });
-        PropertyResolverUtils.updateProperty(sshd,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthKeyboardInteractiveFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger interactiveCount = new AtomicInteger(0);
@@ -498,8 +488,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     throw new UnsupportedOperationException("Unexpected call");
                 }
             });
-            PropertyResolverUtils.updateProperty(client,
-                    ServerAuthenticationManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+            CoreModuleProperties.AUTH_METHODS.set(client, UserAuthKeyboardInteractiveFactory.NAME);
 
             client.start();
 
@@ -524,13 +513,12 @@ public class AuthenticationTest extends BaseTestSupport {
             if (attemptsCount.incrementAndGet() == 1) {
                 throw new PasswordChangeRequiredException(
                         attemptsCount.toString(),
-                        getCurrentTestName(), ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                        getCurrentTestName(), CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault());
             }
 
             return delegate.authenticate(username, password, session);
         });
-        PropertyResolverUtils.updateProperty(sshd,
-                ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             AtomicInteger updatesCount = new AtomicInteger(0);
@@ -550,13 +538,13 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
                     assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language", ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Mismatched language",
+                            CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang);
                     assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
                     return getCurrentTestName();
                 }
             });
-            PropertyResolverUtils.updateProperty(client,
-                    ServerAuthenticationManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            CoreModuleProperties.AUTH_METHODS.set(client, UserAuthPasswordFactory.NAME);
 
             client.start();
 

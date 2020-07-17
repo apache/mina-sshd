@@ -426,6 +426,11 @@ public final class PropertyResolverUtils {
         return resolvePropertyValue(resolver, name);
     }
 
+    public static Object getObject(PropertyResolver resolver, String name, Object defaultValue) {
+        Object value = resolvePropertyValue(resolver, name);
+        return value != null ? value : defaultValue;
+    }
+
     // for symmetrical reasons...
     public static Object getObject(Map<String, ?> props, String name) {
         return resolvePropertyValue(props, name);

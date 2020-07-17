@@ -34,6 +34,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -107,7 +108,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
             String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
             for (long totalWritten = 0L;
-                 totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
+                 totalWritten <= SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault();
                  totalWritten += seed.length()) {
                 output.append(seed).append(System.lineSeparator());
             }
@@ -168,7 +169,8 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                  FileChannel dstChannel = FileChannel.open(dstFile,
                          StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
                 // SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
-                long numXfered = srcChannel.transferTo(0L, SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE, dstChannel);
+                long numXfered
+                        = srcChannel.transferTo(0L, SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault(), dstChannel);
                 assertEquals("Mismatched reported transfer count", expected.length, numXfered);
             }
         }
@@ -190,7 +192,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
             String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
             for (long totalWritten = 0L;
-                 totalWritten <= SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE;
+                 totalWritten <= SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault();
                  totalWritten += seed.length()) {
                 output.append(seed).append(System.lineSeparator());
             }

@@ -20,6 +20,7 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,6 +61,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -83,17 +85,6 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ChannelSession extends AbstractServerChannel {
     public static final List<ChannelRequestHandler> DEFAULT_HANDLERS = Collections.singletonList(PuttyRequestHandler.INSTANCE);
-
-    /**
-     * Maximum amount of extended (a.k.a. STDERR) data allowed to be accumulated until a {@link ChannelDataReceiver} for
-     * the data is registered
-     */
-    public static final String MAX_EXTDATA_BUFSIZE = "channel-session-max-extdata-bufsize";
-
-    /**
-     * Default value of {@value #MAX_EXTDATA_BUFSIZE}
-     */
-    public static final int DEFAULT_MAX_EXTDATA_BUFSIZE = 0;
 
     protected String type;
     protected ChannelAsyncOutputStream asyncOut;
@@ -188,9 +179,7 @@ public class ChannelSession extends AbstractServerChannel {
                 };
 
                 ChannelSession channel = ChannelSession.this;
-                long timeout = PropertyResolverUtils.getLongProperty(channel,
-                        ServerFactoryManager.COMMAND_EXIT_TIMEOUT,
-                        ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
+                Duration timeout = CoreModuleProperties.COMMAND_EXIT_TIMEOUT.getRequired(channel);
                 if (debugEnabled) {
                     log.debug("Wait {} ms for shell to exit cleanly on {}", timeout, channel);
                 }
@@ -199,7 +188,7 @@ public class ChannelSession extends AbstractServerChannel {
                 FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
                 ScheduledExecutorService scheduler
                         = Objects.requireNonNull(manager.getScheduledExecutorService(), "No scheduling service");
-                scheduler.schedule(task, timeout, TimeUnit.MILLISECONDS);
+                scheduler.schedule(task, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(future -> task.cancel());
             }
             return commandExitFuture;
@@ -296,7 +285,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         int reqSize = (int) len;
-        int maxBufSize = this.getIntProperty(MAX_EXTDATA_BUFSIZE, DEFAULT_MAX_EXTDATA_BUFSIZE);
+        int maxBufSize = CoreModuleProperties.MAX_EXTDATA_BUFSIZE.getRequired(this);
         int curBufSize = (extendedDataBuffer == null) ? 0 : extendedDataBuffer.available();
         int totalSize = curBufSize + reqSize;
         if (totalSize > maxBufSize) {
@@ -843,8 +832,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleAgentForwardingParsed(String requestType) throws IOException {
         ServerSession session = getServerSession();
-        PropertyResolverUtils.updateProperty(
-                session, FactoryManager.AGENT_FORWARDING_TYPE, requestType);
+        PropertyResolverUtils.updateProperty(session, CoreModuleProperties.AGENT_FORWARDING_TYPE, requestType);
 
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No session factory manager");
         AgentForwardingFilter filter = manager.getAgentForwardingFilter();
@@ -853,8 +841,8 @@ public class ChannelSession extends AbstractServerChannel {
         try {
             if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session, requestType))) {
                 if (debugEnabled) {
-                    log.debug("handleAgentForwarding(" + this + ")[haveFactory=" + (factory != null)
-                              + ",haveFilter=" + (filter != null) + "] filtered out request=" + requestType);
+                    log.debug("handleAgentForwarding({})[haveFactory={},haveFilter={}] filtered out request={}",
+                            this, factory != null, filter != null, requestType);
                 }
                 return RequestHandler.Result.ReplyFailure;
             }
@@ -862,7 +850,7 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (debugEnabled) {
-                log.debug("handleAgentForwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
+                log.debug("handleAgentForwarding({})[{}] filter consultation failure details", this, requestType, e);
             }
             throw new RuntimeSshException(e);
         }
@@ -870,7 +858,7 @@ public class ChannelSession extends AbstractServerChannel {
         AgentForwardSupport agentForward = service.getAgentForwardSupport();
         if (agentForward == null) {
             if (debugEnabled) {
-                log.debug("handleAgentForwarding() no agent forward support", this);
+                log.debug("handleAgentForwarding({}) no agent forward support", this);
             }
             return RequestHandler.Result.ReplyFailure;
         }
@@ -912,7 +900,7 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
                     this, e.getClass().getSimpleName(), requestType, e.getMessage());
             if (debugEnabled) {
-                log.debug("handleX11Forwarding(" + this + ")[" + requestType + "] filter consultation failure details", e);
+                log.debug("handleX11Forwarding({})[{}] filter consultation failure details", this, requestType, e);
             }
             throw new RuntimeSshException(e);
         }

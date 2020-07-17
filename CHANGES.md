@@ -13,6 +13,7 @@
 ## Major code re-factoring
 
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename {{org.apache.sshd.common.ForwardingFilter}} to {{Forwarder}}.
+* [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 
 ## Minor code helpers
 

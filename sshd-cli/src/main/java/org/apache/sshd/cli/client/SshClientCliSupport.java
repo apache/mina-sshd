@@ -57,7 +57,6 @@ import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
@@ -86,6 +85,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * TODO Add javadoc
@@ -269,7 +269,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 if (GenericUtils.length(password) > 0) {
                     session.addPasswordIdentity(password);
                 }
-                session.auth().verify(FactoryManager.DEFAULT_AUTH_TIMEOUT); // TODO use a configurable wait time
+                session.auth().verify(CoreModuleProperties.AUTH_TIMEOUT.getRequired(session));
                 return session;
             } catch (Exception e) {
                 session.close(true);

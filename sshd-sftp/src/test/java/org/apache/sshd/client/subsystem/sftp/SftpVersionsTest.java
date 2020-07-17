@@ -63,6 +63,7 @@ import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.Before;
@@ -102,7 +103,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
-        Object forced = props.remove(SftpSubsystemEnvironment.SFTP_VERSION);
+        Object forced = props.remove(SftpModuleProperties.SFTP_VERSION);
         if (forced != null) {
             outputDebugMessage("Removed forced version=%s", forced);
         }

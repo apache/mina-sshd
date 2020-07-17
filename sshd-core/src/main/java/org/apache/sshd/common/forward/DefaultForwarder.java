@@ -21,6 +21,7 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +36,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -66,6 +66,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.TcpForwardingFilter;
 
 /**
@@ -76,18 +77,6 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
 public class DefaultForwarder
         extends AbstractInnerCloseable
         implements Forwarder, SessionHolder<Session>, PortForwardingEventListenerManager {
-
-    /**
-     * Used to configure the timeout (milliseconds) for receiving a response for the forwarding request
-     *
-     * @see #DEFAULT_FORWARD_REQUEST_TIMEOUT
-     */
-    public static final String FORWARD_REQUEST_TIMEOUT = "tcpip-forward-request-timeout";
-
-    /**
-     * Default value for {@value #FORWARD_REQUEST_TIMEOUT} if none specified
-     */
-    public static final long DEFAULT_FORWARD_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS
             = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
@@ -303,12 +292,12 @@ public class DefaultForwarder
         buffer.putString(remoteHost);
         buffer.putInt(remotePort);
 
-        long timeout = session.getLongProperty(FORWARD_REQUEST_TIMEOUT, DEFAULT_FORWARD_REQUEST_TIMEOUT);
+        Duration timeout = CoreModuleProperties.FORWARD_REQUEST_TIMEOUT.getRequired(session);
         Buffer result;
         int port;
         signalEstablishingExplicitTunnel(local, remote, false);
         try {
-            result = session.request("tcpip-forward", buffer, timeout, TimeUnit.MILLISECONDS);
+            result = session.request("tcpip-forward", buffer, timeout);
             if (result == null) {
                 throw new SshException("Tcpip forwarding request denied by server");
             }

@@ -19,6 +19,8 @@
 
 package org.apache.sshd.client.session;
 
+import org.apache.sshd.core.CoreModuleProperties;
+
 /**
  * Provides a way to implement proxied connections where some metadata about the client is sent <U>before</U> the actual
  * SSH protocol is executed - e.g., the <A HREF=@http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt">PROXY
@@ -37,8 +39,7 @@ public interface ClientProxyConnector {
      * @param  session   The {@link ClientSession} instance - <B>Note:</B> at this stage the client's identification
      *                   line is not set yet.
      * @throws Exception If failed to initialize the proxy - which will also terminate the session
-     * @see              org.apache.sshd.client.ClientFactoryManager#SEND_IMMEDIATE_IDENTIFICATION
-     *                   SEND_IMMEDIATE_IDENTIFICATION
+     * @see              CoreModuleProperties#SEND_IMMEDIATE_IDENTIFICATION SEND_IMMEDIATE_IDENTIFICATION
      */
     void sendClientProxyMetadata(ClientSession session) throws Exception;
 }

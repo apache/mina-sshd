@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.common.CommonModuleProperties;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -42,7 +43,7 @@ public class LoggingFilterOutputStream extends FilterOutputStream {
     private final AtomicInteger writeCount = new AtomicInteger(0);
 
     public LoggingFilterOutputStream(OutputStream out, String msg, Logger log, PropertyResolver resolver) {
-        this(out, msg, log, resolver.getIntProperty(BufferUtils.HEXDUMP_CHUNK_SIZE, BufferUtils.DEFAULT_HEXDUMP_CHUNK_SIZE));
+        this(out, msg, log, CommonModuleProperties.HEXDUMP_CHUNK_SIZE.getRequired(resolver));
     }
 
     public LoggingFilterOutputStream(OutputStream out, String msg, Logger log, int chunkSize) {

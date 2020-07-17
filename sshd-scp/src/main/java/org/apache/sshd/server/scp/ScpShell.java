@@ -50,7 +50,6 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpException;
 import org.apache.sshd.common.scp.ScpFileOpener;
@@ -61,6 +60,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
+import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
@@ -71,18 +71,6 @@ import org.apache.sshd.server.command.AbstractFileSystemCommand;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpShell extends AbstractFileSystemCommand {
-    /**
-     * Used to indicate the {@link Charset} (or its name) for encoding referenced files/folders names - extracted from
-     * the client channel session when 1st initialized.
-     *
-     * @see #DEFAULT_NAME_ENCODING_CHARSET
-     */
-    public static final String NAME_ENCODING_CHARSET = "scp-shell-name-encoding-charset";
-
-    /**
-     * Default value of {@value #NAME_ENCODING_CHARSET}
-     */
-    public static final Charset DEFAULT_NAME_ENCODING_CHARSET = StandardCharsets.UTF_8;
 
     public static final String STATUS = "status";
 
@@ -114,8 +102,7 @@ public class ScpShell extends AbstractFileSystemCommand {
         super(null, executorService);
         this.channel = channel;
 
-        nameEncodingCharset = PropertyResolverUtils.getCharset(
-                channel, NAME_ENCODING_CHARSET, DEFAULT_NAME_ENCODING_CHARSET);
+        nameEncodingCharset = ScpModuleProperties.NAME_ENCODING_CHARSET.getRequired(channel);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException(

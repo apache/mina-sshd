@@ -35,10 +35,12 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -159,48 +161,48 @@ public abstract class MinaService extends AbstractCloseable
     }
 
     protected void configure(SocketSessionConfig config) {
-        Boolean boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE);
+        Boolean boolVal = getBoolean(CoreModuleProperties.SOCKET_KEEPALIVE);
         if (boolVal != null) {
             try {
                 config.setKeepAlive(boolVal);
             } catch (RuntimeIoException t) {
-                handleConfigurationError(config, FactoryManager.SOCKET_KEEPALIVE, boolVal, t);
+                handleConfigurationError(config, CoreModuleProperties.SOCKET_KEEPALIVE, boolVal, t);
             }
         }
 
-        Integer intVal = getInteger(FactoryManager.SOCKET_SNDBUF);
+        Integer intVal = getInteger(CoreModuleProperties.SOCKET_SNDBUF);
         if (intVal != null) {
             try {
                 config.setSendBufferSize(intVal);
             } catch (RuntimeIoException t) {
-                handleConfigurationError(config, FactoryManager.SOCKET_SNDBUF, intVal, t);
+                handleConfigurationError(config, CoreModuleProperties.SOCKET_SNDBUF, intVal, t);
             }
         }
 
-        intVal = getInteger(FactoryManager.SOCKET_RCVBUF);
+        intVal = getInteger(CoreModuleProperties.SOCKET_RCVBUF);
         if (intVal != null) {
             try {
                 config.setReceiveBufferSize(intVal);
             } catch (RuntimeIoException t) {
-                handleConfigurationError(config, FactoryManager.SOCKET_RCVBUF, intVal, t);
+                handleConfigurationError(config, CoreModuleProperties.SOCKET_RCVBUF, intVal, t);
             }
         }
 
-        intVal = getInteger(FactoryManager.SOCKET_LINGER);
+        intVal = getInteger(CoreModuleProperties.SOCKET_LINGER);
         if (intVal != null) {
             try {
                 config.setSoLinger(intVal);
             } catch (RuntimeIoException t) {
-                handleConfigurationError(config, FactoryManager.SOCKET_LINGER, intVal, t);
+                handleConfigurationError(config, CoreModuleProperties.SOCKET_LINGER, intVal, t);
             }
         }
 
-        boolVal = getBoolean(FactoryManager.TCP_NODELAY);
+        boolVal = getBoolean(CoreModuleProperties.TCP_NODELAY);
         if (boolVal != null) {
             try {
                 config.setTcpNoDelay(boolVal);
             } catch (RuntimeIoException t) {
-                handleConfigurationError(config, FactoryManager.TCP_NODELAY, boolVal, t);
+                handleConfigurationError(config, CoreModuleProperties.TCP_NODELAY, boolVal, t);
             }
         }
 
@@ -210,17 +212,17 @@ public abstract class MinaService extends AbstractCloseable
     }
 
     protected void handleConfigurationError(
-            SocketSessionConfig config, String propName, Object propValue, RuntimeIoException t) {
+            SocketSessionConfig config, Property property, Object propValue, RuntimeIoException t) {
         Throwable e = GenericUtils.resolveExceptionCause(t);
         log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
-                propName, propValue, e.getClass().getSimpleName(), e.getMessage());
+                property.getName(), propValue, e.getClass().getSimpleName(), e.getMessage());
     }
 
-    protected Integer getInteger(String property) {
-        return manager.getInteger(property);
+    protected Integer getInteger(Property<Integer> property) {
+        return property.getOrNull(manager);
     }
 
-    protected Boolean getBoolean(String property) {
-        return manager.getBoolean(property);
+    protected Boolean getBoolean(Property<Boolean> property) {
+        return property.getOrNull(manager);
     }
 }

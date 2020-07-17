@@ -42,17 +42,18 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
-    private int backlog = DEFAULT_BACKLOG;
+    private int backlog;
 
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
-        backlog = manager.getIntProperty(FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
+        backlog = CoreModuleProperties.SOCKET_BACKLOG.getRequired(manager);
     }
 
     @Override

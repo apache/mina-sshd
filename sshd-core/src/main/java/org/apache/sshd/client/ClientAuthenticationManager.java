@@ -46,25 +46,6 @@ public interface ClientAuthenticationManager
         KeyIdentityProviderHolder {
 
     /**
-     * Ordered comma separated list of authentications methods. Authentications methods accepted by the server will be
-     * tried in the given order. If not configured or {@code null}/empty, then the session's
-     * {@link #getUserAuthFactories()} is used as-is
-     */
-    String PREFERRED_AUTHS = "preferred-auths";
-
-    /**
-     * Specifies the number of interactive prompts before giving up. The argument to this keyword must be an integer.
-     * 
-     * @see #DEFAULT_PASSWORD_PROMPTS
-     */
-    String PASSWORD_PROMPTS = "password-prompts";
-
-    /**
-     * Default value for {@link #PASSWORD_PROMPTS} if none configured
-     */
-    int DEFAULT_PASSWORD_PROMPTS = 3;
-
-    /**
      * @return The {@link AuthenticationIdentitiesProvider} to be used for attempting password or public key
      *         authentication
      */
