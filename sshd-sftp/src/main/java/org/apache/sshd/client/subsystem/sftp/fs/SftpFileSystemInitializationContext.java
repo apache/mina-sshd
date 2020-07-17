@@ -20,6 +20,7 @@
 package org.apache.sshd.client.subsystem.sftp.fs;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
 
 import org.apache.sshd.common.PropertyResolver;
@@ -36,8 +37,8 @@ public class SftpFileSystemInitializationContext {
     private int port;
     private BasicCredentialsProvider credentials;
     private PropertyResolver propertyResolver;
-    private long maxConnectTime;
-    private long maxAuthTime;
+    private Duration maxConnectTime;
+    private Duration maxAuthTime;
 
     /**
      * @param id  The unique identifier assigned to the file-system being created
@@ -115,22 +116,22 @@ public class SftpFileSystemInitializationContext {
     /**
      * @return The <U>resolved</U> max. connect timeout (msec.)
      */
-    public long getMaxConnectTime() {
+    public Duration getMaxConnectTime() {
         return maxConnectTime;
     }
 
-    public void setMaxConnectTime(long maxConnectTime) {
+    public void setMaxConnectTime(Duration maxConnectTime) {
         this.maxConnectTime = maxConnectTime;
     }
 
     /**
      * @return The <U>resolved</U> max. authentication timeout (msec.)
      */
-    public long getMaxAuthTime() {
+    public Duration getMaxAuthTime() {
         return maxAuthTime;
     }
 
-    public void setMaxAuthTime(long maxAuthTime) {
+    public void setMaxAuthTime(Duration maxAuthTime) {
         this.maxAuthTime = maxAuthTime;
     }
 

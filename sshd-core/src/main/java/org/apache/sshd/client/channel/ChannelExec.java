@@ -28,6 +28,7 @@ import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Client channel to run a remote command
@@ -35,13 +36,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelExec extends PtyCapableChannelSession {
-    /**
-     * Configure whether reply for the &quot;exec&quot; request is required
-     * 
-     * @see #DEFAULT_REQUEST_EXEC_REPLY
-     */
-    public static final String REQUEST_EXEC_REPLY = "channel-exec-want-reply";
-    public static final boolean DEFAULT_REQUEST_EXEC_REPLY = false;
 
     private final String command;
 
@@ -59,7 +53,7 @@ public class ChannelExec extends PtyCapableChannelSession {
         }
 
         Session session = getSession();
-        boolean wantReply = this.getBooleanProperty(REQUEST_EXEC_REPLY, DEFAULT_REQUEST_EXEC_REPLY);
+        boolean wantReply = CoreModuleProperties.REQUEST_EXEC_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, command.length() + Integer.SIZE);
         buffer.putInt(getRecipient());
         buffer.putString(Channel.CHANNEL_EXEC);

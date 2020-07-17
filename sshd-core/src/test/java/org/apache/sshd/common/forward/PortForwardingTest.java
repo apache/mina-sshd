@@ -52,12 +52,11 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
@@ -168,8 +167,8 @@ public class PortForwardingTest extends BaseTestSupport {
     public static void setUpTestEnvironment() throws Exception {
         JSchLogger.init();
         sshd = CoreTestSupportUtils.setupTestServer(PortForwardingTest.class);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 2048L);
+        CoreModuleProperties.MAX_PACKET_SIZE.set(sshd, 256L);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(SERVER_SIDE_LISTENER);
         sshd.start();
@@ -843,8 +842,8 @@ public class PortForwardingTest extends BaseTestSupport {
     }
 
     protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
-        PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 2048L);
+        CoreModuleProperties.MAX_PACKET_SIZE.set(client, 256L);
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         if (listener != null) {
             client.addPortForwardingEventListener(listener);

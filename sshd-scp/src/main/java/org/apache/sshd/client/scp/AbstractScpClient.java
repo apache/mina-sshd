@@ -24,12 +24,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -45,6 +45,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
+import org.apache.sshd.scp.ScpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -168,7 +170,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     /**
      * Invoked by the various <code>upload/download</code> methods after having successfully completed the remote copy
      * command and (optionally) having received an exit status from the remote server. If no exit status received within
-     * {@link FactoryManager#CHANNEL_CLOSE_TIMEOUT} the no further action is taken. Otherwise, the exit status is
+     * {@link CoreModuleProperties#CHANNEL_CLOSE_TIMEOUT} the no further action is taken. Otherwise, the exit status is
      * examined to ensure it is either OK or WARNING - if not, an {@link ScpException} is thrown
      *
      * @param  cmd         The attempted remote copy command
@@ -179,8 +181,8 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      */
     protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
         // give a chance for the exit status to be received
-        long timeout = channel.getLongProperty(SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT, DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT);
-        if (timeout <= 0L) {
+        Duration timeout = ScpModuleProperties.SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT.getRequired(channel);
+        if (GenericUtils.isNegativeOrNull(timeout)) {
             handleCommandExitStatus(cmd, (Integer) null);
             return;
         }
@@ -243,7 +245,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected ChannelExec openCommandChannel(ClientSession session, String cmd) throws IOException {
-        long waitTimeout = session.getLongProperty(SCP_EXEC_CHANNEL_OPEN_TIMEOUT, DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT);
+        Duration waitTimeout = ScpModuleProperties.SCP_EXEC_CHANNEL_OPEN_TIMEOUT.getRequired(session);
         ChannelExec channel = session.createExecChannel(cmd);
 
         long startTime = System.nanoTime();
@@ -254,7 +256,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             if (log.isTraceEnabled()) {
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
                           + " completed after " + nanosWait
-                          + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout));
+                          + " nanos out of " + waitTimeout.toNanos());
             }
 
             return channel;
@@ -265,7 +267,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
                           + " failed (" + e.getClass().getSimpleName() + ")"
                           + " to complete after " + nanosWait
-                          + " nanos out of " + TimeUnit.MILLISECONDS.toNanos(waitTimeout)
+                          + " nanos out of " + waitTimeout.toNanos()
                           + ": " + e.getMessage());
             }
 

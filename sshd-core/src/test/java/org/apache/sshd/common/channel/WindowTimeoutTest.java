@@ -21,12 +21,13 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.After;
@@ -43,7 +44,7 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 public class WindowTimeoutTest extends BaseTestSupport {
-    public static final long MAX_WAIT_TIME = TimeUnit.SECONDS.toMillis(2L);
+    public static final Duration MAX_WAIT_TIME = Duration.ofSeconds(2L);
 
     private AbstractChannel channel;
 
@@ -91,7 +92,9 @@ public class WindowTimeoutTest extends BaseTestSupport {
     @Test
     public void testWindowWaitForSpaceTimeout() throws Exception {
         try (Window window = channel.getLocalWindow()) {
-            window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, PropertyResolver.EMPTY);
+            window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
+                    CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
+                    PropertyResolver.EMPTY);
             window.consume(window.getSize());
             assertEquals("Window not empty", 0, window.getSize());
 
@@ -103,7 +106,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
                 long waitEnd = System.nanoTime();
                 long waitDuration = TimeUnit.NANOSECONDS.toMillis(waitEnd - waitStart);
                 // we allow ~100 millis variance to compensate for O/S wait time granularity
-                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME - 100L));
+                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L));
             }
 
             window.close();
@@ -120,7 +123,9 @@ public class WindowTimeoutTest extends BaseTestSupport {
     @Test
     public void testWindowWaitAndConsumeTimeout() throws Exception {
         try (Window window = channel.getLocalWindow()) {
-            window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, PropertyResolver.EMPTY);
+            window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
+                    CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
+                    PropertyResolver.EMPTY);
 
             long waitStart = System.nanoTime();
             try {
@@ -130,7 +135,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
                 long waitEnd = System.nanoTime();
                 long waitDuration = TimeUnit.NANOSECONDS.toMillis(waitEnd - waitStart);
                 // we allow ~100 millis variance to compensate for O/S wait time granularity
-                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME - 100L));
+                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L));
             }
 
             window.close();

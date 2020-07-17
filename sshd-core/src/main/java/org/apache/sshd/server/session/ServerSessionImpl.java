@@ -20,6 +20,7 @@ package org.apache.sshd.server.session;
 
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
@@ -32,9 +33,8 @@ public class ServerSessionImpl extends AbstractServerSession {
         super(server, ioSession);
         signalSessionCreated(ioSession);
 
-        String headerConfig = this.getString(ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES);
-        String[] headers = GenericUtils.split(
-                headerConfig, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+        String headerConfig = CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.getOrNull(this);
+        String[] headers = GenericUtils.split(headerConfig, CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
         sendServerIdentification(headers);
     }
 }

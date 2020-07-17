@@ -21,6 +21,7 @@ package org.apache.sshd.server.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -28,9 +29,9 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
@@ -47,27 +48,10 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class InvertedShellWrapper extends AbstractLoggingBean implements Command, SessionAware {
 
-    /**
-     * Default buffer size for the I/O pumps.
-     */
-    public static final int DEFAULT_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
-
-    /**
-     * Value used to control the &quot;busy-wait&quot; sleep time (millis) on the pumping loop if nothing was pumped -
-     * must be <U>positive</U>
-     * 
-     * @see #DEFAULT_PUMP_SLEEP_TIME
-     */
-    public static final String PUMP_SLEEP_TIME = "inverted-shell-wrapper-pump-sleep";
-
-    /**
-     * Default value for {@link #PUMP_SLEEP_TIME} if none set
-     */
-    public static final long DEFAULT_PUMP_SLEEP_TIME = 1L;
-
     private final InvertedShell shell;
     private final Executor executor;
-    private final int bufferSize;
+    private int bufferSize;
+    private Duration pumpSleepTime;
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
@@ -76,17 +60,16 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
     private InputStream shellErr;
     private ExitCallback callback;
     private boolean shutdownExecutor;
-    private long pumpSleepTime = DEFAULT_PUMP_SLEEP_TIME;
 
     /**
-     * Auto-allocates an {@link Executor} in order to create the streams pump thread and uses the
-     * {@link #DEFAULT_BUFFER_SIZE}
+     * Auto-allocates an {@link Executor} in order to create the streams pump thread and uses the default
+     * {@link CoreModuleProperties#BUFFER_SIZE}
      *
      * @param shell The {@link InvertedShell}
      * @see         #InvertedShellWrapper(InvertedShell, int)
      */
     public InvertedShellWrapper(InvertedShell shell) {
-        this(shell, DEFAULT_BUFFER_SIZE);
+        this(shell, CoreModuleProperties.BUFFER_SIZE.getRequiredDefault());
     }
 
     /**
@@ -114,6 +97,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
         ValidateUtils.checkTrue(bufferSize > Byte.SIZE, "Copy buffer size too small: %d", bufferSize);
         this.bufferSize = bufferSize;
+        this.pumpSleepTime = CoreModuleProperties.PUMP_SLEEP_TIME.getRequiredDefault();
         this.shutdownExecutor = (executor == null) || shutdownExecutor;
     }
 
@@ -139,8 +123,10 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     @Override
     public void setSession(ServerSession session) {
-        pumpSleepTime = session.getLongProperty(PUMP_SLEEP_TIME, DEFAULT_PUMP_SLEEP_TIME);
-        ValidateUtils.checkTrue(pumpSleepTime > 0L, "Invalid " + PUMP_SLEEP_TIME + ": %d", pumpSleepTime);
+        bufferSize = CoreModuleProperties.BUFFER_SIZE.getRequired(session);
+        pumpSleepTime = CoreModuleProperties.PUMP_SLEEP_TIME.getRequired(session);
+        ValidateUtils.checkTrue(GenericUtils.isPositive(pumpSleepTime),
+                "Invalid " + CoreModuleProperties.PUMP_SLEEP_TIME + ": %d", pumpSleepTime);
         shell.setSession(session);
     }
 
@@ -219,7 +205,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
                 // Sleep a bit. This is not very good, as it consumes CPU, but the
                 // input streams are not selectable for nio, and any other blocking
                 // method would consume at least two threads
-                Thread.sleep(pumpSleepTime);
+                Thread.sleep(pumpSleepTime.toMillis());
             }
         } catch (Throwable e) {
             boolean debugEnabled = log.isDebugEnabled();

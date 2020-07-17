@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
@@ -38,6 +37,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Client side channel session
@@ -45,17 +45,6 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractClientChannel {
-    /**
-     * On some platforms, a call to {@ode System.in.read(new byte[65536], 0, 32768)} always throws an
-     * {@link IOException}. So we need to protect against that and chunk the call into smaller calls. This problem was
-     * found on Windows, JDK 1.6.0_03-b05.
-     */
-    public static final String INPUT_STREAM_PUMP_CHUNK_SIZE = "stdin-pump-chunk-size";
-
-    /**
-     * Default (and also <U>minimum</U>) value of {@value #INPUT_STREAM_PUMP_CHUNK_SIZE}
-     */
-    public static final int DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE = 1024;
 
     private CloseableExecutorService pumperService;
     private Future<?> pumper;
@@ -178,9 +167,8 @@ public class ChannelSession extends AbstractClientChannel {
             ValidateUtils.checkTrue((packetSize > 0) && (packetSize < Integer.MAX_VALUE),
                     "Invalid remote packet size int boundary: %d", packetSize);
             byte[] buffer = new byte[(int) packetSize];
-            int maxChunkSize = PropertyResolverUtils.getIntProperty(
-                    session, INPUT_STREAM_PUMP_CHUNK_SIZE, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
-            maxChunkSize = Math.max(maxChunkSize, DEFAULT_INPUT_STREAM_PUMP_CHUNK_SIZE);
+            int maxChunkSize = CoreModuleProperties.INPUT_STREAM_PUMP_CHUNK_SIZE.getRequired(session);
+            maxChunkSize = Math.max(maxChunkSize, CoreModuleProperties.INPUT_STREAM_PUMP_CHUNK_SIZE.getRequiredDefault());
 
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, maxChunkSize, buffer, 0, buffer.length);

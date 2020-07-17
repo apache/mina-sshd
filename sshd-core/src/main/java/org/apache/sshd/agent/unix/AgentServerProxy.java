@@ -34,6 +34,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -44,12 +45,6 @@ import org.apache.tomcat.jni.Status;
  * client side.
  */
 public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
-    /**
-     * Property that can be set on the {@link Session} in order to control the authentication timeout (millis). If not
-     * specified then {@link #DEFAULT_AUTH_SOCKET_TIMEOUT} is used
-     */
-    public static final String AUTH_SOCKET_TIMEOUT = "ssh-agent-server-proxy-auth-socket-timeout";
-    public static final int DEFAULT_AUTH_SOCKET_TIMEOUT = 10000000;
 
     // used to wake the Local.listen() JNI call
     private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0] };
@@ -103,12 +98,11 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
                             Session session = AgentServerProxy.this.service.getSession();
                             Socket.timeoutSet(clientSock,
-                                    session.getIntProperty(AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
-                            String channelType = session.getStringProperty(PROXY_CHANNEL_TYPE, DEFAULT_PROXY_CHANNEL_TYPE);
+                                    CoreModuleProperties.AUTH_SOCKET_TIMEOUT.getRequired(session).toMillis() * 1000);
+                            String channelType = CoreModuleProperties.PROXY_CHANNEL_TYPE.getRequired(session);
                             AgentForwardedChannel channel = new AgentForwardedChannel(clientSock, channelType);
                             AgentServerProxy.this.service.registerChannel(channel);
-                            channel.open()
-                                    .verify(session.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+                            channel.open().verify(CoreModuleProperties.CHANNEL_OPEN_TIMEOUT.getRequired(session));
                         } catch (Exception e) {
                             if (debugEnabled) {
                                 log.debug("run(open={}) {} while authentication forwarding: {}",

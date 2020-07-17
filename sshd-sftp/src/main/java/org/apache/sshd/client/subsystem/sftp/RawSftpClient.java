@@ -20,6 +20,7 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
+import java.time.Duration;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -49,4 +50,12 @@ public interface RawSftpClient {
      * @throws IOException If connection closed or interrupted
      */
     Buffer receive(int id, long timeout) throws IOException;
+
+    /**
+     * @param  id          The expected request id
+     * @param  timeout     The amount of time to wait for the response
+     * @return             The received response {@link Buffer} containing the request id
+     * @throws IOException If connection closed or interrupted
+     */
+    Buffer receive(int id, Duration timeout) throws IOException;
 }

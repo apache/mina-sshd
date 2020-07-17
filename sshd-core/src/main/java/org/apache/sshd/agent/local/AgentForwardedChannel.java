@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -39,6 +38,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 public class AgentForwardedChannel extends AbstractClientChannel {
     /**
@@ -88,7 +88,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
         };
 
         String chType = PropertyResolverUtils.getString(
-                getSession(), FactoryManager.AGENT_FORWARDING_TYPE);
+                getSession(), CoreModuleProperties.AGENT_FORWARDING_TYPE);
         rtn.setChannelType(chType);
         return rtn;
     }

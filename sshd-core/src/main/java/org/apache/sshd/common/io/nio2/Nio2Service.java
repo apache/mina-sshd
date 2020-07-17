@@ -24,6 +24,7 @@ import java.net.SocketTimeoutException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.NetworkChannel;
+import java.time.Duration;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerHolder;
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
@@ -43,23 +45,24 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
     // Note: order may be important so that's why we use a LinkedHashMap
-    public static final Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
+    public static final Map<Property, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
 
     static {
-        Map<String, SimpleImmutableEntry<SocketOption<?>, Object>> map = new LinkedHashMap<>();
-        map.put(FactoryManager.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
-        map.put(FactoryManager.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
-        map.put(FactoryManager.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
-        map.put(FactoryManager.SOCKET_REUSEADDR,
+        Map<Property, SimpleImmutableEntry<SocketOption<?>, Object>> map = new LinkedHashMap<>();
+        map.put(CoreModuleProperties.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
+        map.put(CoreModuleProperties.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
+        map.put(CoreModuleProperties.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
+        map.put(CoreModuleProperties.SOCKET_REUSEADDR,
                 new SimpleImmutableEntry<>(StandardSocketOptions.SO_REUSEADDR, DEFAULT_REUSE_ADDRESS));
-        map.put(FactoryManager.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
-        map.put(FactoryManager.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
+        map.put(CoreModuleProperties.SOCKET_SNDBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_SNDBUF, null));
+        map.put(CoreModuleProperties.TCP_NODELAY, new SimpleImmutableEntry<>(StandardSocketOptions.TCP_NODELAY, null));
         CONFIGURABLE_OPTIONS = Collections.unmodifiableMap(map);
     }
 
@@ -109,10 +112,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
                 log.warn("dispose({}) already disposing", this);
             }
 
-            long maxWait = Closeable.getMaxCloseWaitTime(getFactoryManager());
+            Duration maxWait = Closeable.getMaxCloseWaitTime(getFactoryManager());
             boolean successful = close(true).await(maxWait);
             if (!successful) {
-                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait);
             }
         } catch (IOException e) {
             log.warn("dispose({}) {} while stopping service: {}",
@@ -156,8 +159,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             return socket;
         }
 
-        for (Map.Entry<String, ? extends Map.Entry<SocketOption<?>, ?>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
-            String property = ce.getKey();
+        for (Map.Entry<Property, ? extends Map.Entry<SocketOption<?>, ?>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
+            Property property = ce.getKey();
             Map.Entry<SocketOption<?>, ?> defConfig = ce.getValue();
             @SuppressWarnings("rawtypes")
             SocketOption option = defConfig.getKey();
@@ -168,10 +171,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     }
 
     protected <T> boolean setOption(
-            NetworkChannel socket, String property, SocketOption<T> option, T defaultValue)
+            NetworkChannel socket, Property property, SocketOption<T> option, T defaultValue)
             throws IOException {
         PropertyResolver manager = getFactoryManager();
-        String valStr = manager.getString(property);
+        String valStr = manager.getString(property.getName());
         T val = defaultValue;
         if (!GenericUtils.isEmpty(valStr)) {
             Class<T> type = option.type();

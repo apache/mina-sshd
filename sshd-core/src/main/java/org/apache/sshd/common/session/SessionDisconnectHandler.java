@@ -26,7 +26,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Invoked when the internal session code decides it should disconnect a session due to some consideration. Usually
@@ -65,7 +65,7 @@ public interface SessionDisconnectHandler {
      * @throws IOException         If failed to handle the event, <B>Note:</B> choosing to ignore this disconnect reason
      *                             does not reset the current concurrent sessions counter in any way - i.e., the handler
      *                             will be re-invoked every time the threshold is exceeded.
-     * @see                        ServerFactoryManager#MAX_CONCURRENT_SESSIONS
+     * @see                        CoreModuleProperties#MAX_CONCURRENT_SESSIONS
      */
     default boolean handleSessionsCountDisconnectReason(
             Session session, Service service, String username, int currentSessionCount, int maxSessionCount)

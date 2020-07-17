@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
@@ -45,18 +46,6 @@ import org.apache.tomcat.jni.Status;
  * The client side channel that will receive requests forwards by the SSH server.
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
-    /**
-     * Property that can be set on the factory manager in order to control the buffer size used to forward data from the
-     * established channel
-     *
-     * @see #MIN_FORWARDER_BUF_SIZE
-     * @see #MAX_FORWARDER_BUF_SIZE
-     * @see #DEFAULT_FORWARDER_BUF_SIZE
-     */
-    public static final String FORWARDER_BUFFER_SIZE = "channel-agent-fwd-buf-size";
-    public static final int MIN_FORWARDER_BUF_SIZE = Byte.MAX_VALUE;
-    public static final int DEFAULT_FORWARDER_BUF_SIZE = 1024;
-    public static final int MAX_FORWARDER_BUF_SIZE = Short.MAX_VALUE;
 
     private String authSocket;
     private long pool;
@@ -87,10 +76,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                     ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]")
                     : ThreadUtils.noClose(service);
 
-            int copyBufSize = this.getIntProperty(FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
-            ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE,
+            int copyBufSize = CoreModuleProperties.FORWARDER_BUFFER_SIZE.getRequired(this);
+            ValidateUtils.checkTrue(copyBufSize >= CoreModuleProperties.MIN_FORWARDER_BUF_SIZE,
                     "Copy buf size below min.: %d", copyBufSize);
-            ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE,
+            ValidateUtils.checkTrue(copyBufSize <= CoreModuleProperties.MAX_FORWARDER_BUF_SIZE,
                     "Copy buf size above max.: %d", copyBufSize);
 
             forwarder = forwardService.submit(() -> {

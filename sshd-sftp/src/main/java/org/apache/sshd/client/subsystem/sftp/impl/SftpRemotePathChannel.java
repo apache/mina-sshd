@@ -48,7 +48,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.SftpException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +56,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpRemotePathChannel extends FileChannel {
-    /** Internal allocate buffer size when copying data to/from the channel */
-    public static final String COPY_BUFSIZE_PROP = "sftp-channel-copy-buf-size";
-    /** Default value for {@value #COPY_BUFSIZE_PROP} setting */
-    public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
     public static final Set<OpenMode> READ_MODES = Collections.unmodifiableSet(EnumSet.of(OpenMode.Read));
 
@@ -126,7 +122,7 @@ public class SftpRemotePathChannel extends FileChannel {
         ensureOpen(READ_MODES);
 
         ClientSession clientSession = sftp.getClientSession();
-        int copySize = clientSession.getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("doRead({})[position={}] fill {} buffers using copySize={}",
@@ -231,8 +227,7 @@ public class SftpRemotePathChannel extends FileChannel {
         ensureOpen(WRITE_MODES);
 
         ClientSession clientSession = sftp.getClientSession();
-        int copySize = clientSession.getIntProperty(
-                COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("doWrite({})[position={}] write {} buffers using copySize={}",
@@ -334,8 +329,7 @@ public class SftpRemotePathChannel extends FileChannel {
         ensureOpen(READ_MODES);
 
         ClientSession clientSession = sftp.getClientSession();
-        int copySize = clientSession.getIntProperty(
-                COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("transferTo({})[position={}, count={}] use copySize={} for target={}",
@@ -381,7 +375,7 @@ public class SftpRemotePathChannel extends FileChannel {
         ensureOpen(WRITE_MODES);
 
         ClientSession clientSession = sftp.getClientSession();
-        int copySize = clientSession.getIntProperty(COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("transferFrom({})[position={}, count={}] use copySize={} for source={}",

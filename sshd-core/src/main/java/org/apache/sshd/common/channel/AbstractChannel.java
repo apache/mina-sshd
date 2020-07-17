@@ -20,6 +20,7 @@ package org.apache.sshd.common.channel;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -30,7 +31,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -62,6 +62,7 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Provides common client/server channel functionality
@@ -624,9 +625,8 @@ public abstract class AbstractChannel
                 buffer.putInt(getRecipient());
 
                 try {
-                    long timeout = channel.getLongProperty(
-                            FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
-                    s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(future -> {
+                    Duration timeout = CoreModuleProperties.CHANNEL_CLOSE_TIMEOUT.getRequired(channel);
+                    s.writePacket(buffer, timeout).addListener(future -> {
                         if (future.isWritten()) {
                             handleClosePacketWritten(channel, immediately);
                         } else {

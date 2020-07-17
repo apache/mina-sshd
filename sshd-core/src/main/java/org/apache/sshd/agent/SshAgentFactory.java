@@ -29,16 +29,6 @@ import org.apache.sshd.common.session.ConnectionService;
  * The <code>SshAgentFactory</code> is used to communicate with an SshAgent.
  */
 public interface SshAgentFactory {
-    /**
-     * Value that can be set in order to control the type of authentication channel being requested when forwarding a
-     * PTY session. If not defined then {@link #DEFAULT_PROXY_AUTH_CHANNEL_TYPE} is used
-     */
-    String PROXY_AUTH_CHANNEL_TYPE = "ssh-agent-factory-proxy-auth-channel-type";
-    // see also https://tools.ietf.org/html/draft-ietf-secsh-agent-02
-    String DEFAULT_PROXY_AUTH_CHANNEL_TYPE = "auth-agent-req@openssh.com";
-
-    // See ProxyAgentFactory#getChannelForwardingFactories
-    String PREFER_UNIX_AGENT = "ssh-prefer-unix-agent";
 
     /**
      * The channels are requested by the ssh server when forwarding a client request. The channel will receive agent

@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.CommonModuleProperties;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -53,39 +53,24 @@ public interface SessionHeartbeatController extends PropertyResolver {
         }
     }
 
-    /**
-     * Property used to register the {@link HeartbeatType} - if non-existent or {@code NONE} then disabled. Same if some
-     * unknown string value is set as the property value.
-     */
-    String SESSION_HEARTBEAT_TYPE = "session-connection-heartbeat-type";
-
-    /** Property used to register the interval for the heartbeat - if not set or non-positive then disabled */
-    String SESSION_HEARTBEAT_INTERVAL = "session-connection-heartbeat-interval";
-
-    /** Default value for {@value #SESSION_HEARTBEAT_INTERVAL} if none set */
-    long DEFAULT_CONNECTION_HEARTBEAT_INTERVAL = 0L;
-
     default HeartbeatType getSessionHeartbeatType() {
-        Object value = getObject(SESSION_HEARTBEAT_TYPE);
-        return PropertyResolverUtils.toEnum(HeartbeatType.class, value, false, HeartbeatType.VALUES);
+        return CommonModuleProperties.SESSION_HEARTBEAT_TYPE.getRequired(this);
     }
 
-    default long getSessionHeartbeatInterval() {
-        return getLongProperty(SESSION_HEARTBEAT_INTERVAL, DEFAULT_CONNECTION_HEARTBEAT_INTERVAL);
+    default Duration getSessionHeartbeatInterval() {
+        return CommonModuleProperties.SESSION_HEARTBEAT_INTERVAL.getRequired(this);
     }
 
     /**
      * Disables the session heartbeat feature - <B>Note:</B> if heartbeat already in progress then it may be ignored.
      */
     default void disableSessionHeartbeat() {
-        setSessionHeartbeat(HeartbeatType.NONE, TimeUnit.MILLISECONDS, 0L);
+        setSessionHeartbeat(HeartbeatType.NONE, Duration.ZERO);
     }
 
     default void setSessionHeartbeat(HeartbeatType type, TimeUnit unit, long count) {
-        Objects.requireNonNull(type, "No heartbeat type specified");
         Objects.requireNonNull(unit, "No heartbeat time unit provided");
-        PropertyResolverUtils.updateProperty(this, SESSION_HEARTBEAT_TYPE, type);
-        PropertyResolverUtils.updateProperty(this, SESSION_HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS.convert(count, unit));
+        setSessionHeartbeat(type, Duration.ofMillis(TimeUnit.MILLISECONDS.convert(count, unit)));
     }
 
     /**
@@ -95,7 +80,9 @@ public interface SessionHeartbeatController extends PropertyResolver {
      * @param interval The (never {@code null}) heartbeat interval - its milliseconds value is used
      */
     default void setSessionHeartbeat(HeartbeatType type, Duration interval) {
-        Objects.requireNonNull(interval, "No interval specified");
-        setSessionHeartbeat(type, TimeUnit.MILLISECONDS, interval.toMillis());
+        Objects.requireNonNull(type, "No heartbeat type specified");
+        Objects.requireNonNull(interval, "No heartbeat time interval provided");
+        CommonModuleProperties.SESSION_HEARTBEAT_TYPE.set(this, type);
+        CommonModuleProperties.SESSION_HEARTBEAT_INTERVAL.set(this, interval);
     }
 }

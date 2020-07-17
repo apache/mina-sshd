@@ -19,13 +19,13 @@
 package org.apache.sshd.git.transport;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.git.GitModuleProperties;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteSession;
@@ -36,27 +36,6 @@ import org.eclipse.jgit.util.FS;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitSshdSession extends AbstractLoggingBean implements RemoteSession {
-    /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
-     * (millis) to connect to the remote SSH server. If not specified then {@link #DEFAULT_CONNECT_TIMEOUT} is used.
-     */
-    public static final String CONNECT_TIMEOUT_PROP = "git-ssh-connect-timeout";
-    public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
-
-    /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
-     * (millis) to authenticate with the remote SSH server. If not specified then {@link #DEFAULT_AUTH_TIMEOUT} is used.
-     */
-    public static final String AUTH_TIMEOUT_PROP = "git-ssh-connect-timeout";
-    public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
-
-    /**
-     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the default timeout
-     * (millis) to open a channel to the remote SSH server. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT}
-     * is used.
-     */
-    public static final String CHANNEL_OPEN_TIMEOUT_PROPT = "git-ssh-channel-open-timeout";
-    public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(7L);
 
     private final SshClient client;
     private final ClientSession session;
@@ -104,7 +83,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         }
 
         ClientSession s = clientInstance.connect(username, host, port)
-                .verify(clientInstance.getLongProperty(CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
+                .verify(GitModuleProperties.CONNECT_TIMEOUT.getRequired(clientInstance))
                 .getSession();
 
         if (debugEnabled) {
@@ -127,7 +106,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
                 log.debug("Authenticating: {}", s);
             }
 
-            s.auth().verify(s.getLongProperty(AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
+            s.auth().verify(GitModuleProperties.AUTH_TIMEOUT.getRequired(s));
 
             if (debugEnabled) {
                 log.debug("Authenticated: {}", s);
@@ -156,7 +135,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         }
 
         try {
-            channel.open().verify(channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+            channel.open().verify(GitModuleProperties.CHANNEL_OPEN_TIMEOUT.getRequired(channel));
             if (traceEnabled) {
                 log.trace("exec({}) session={} - channel open", commandName, session);
             }

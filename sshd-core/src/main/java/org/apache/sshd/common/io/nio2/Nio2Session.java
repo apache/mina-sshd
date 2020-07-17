@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +44,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -304,7 +306,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     public void startReading() {
-        startReading(manager.getIntProperty(FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
+        startReading(CoreModuleProperties.NIO2_READ_BUFFER_SIZE.getRequired(manager));
     }
 
     public void startReading(int bufSize) {
@@ -395,11 +397,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        long readTimeout = manager.getLongProperty(
-                FactoryManager.NIO2_READ_TIMEOUT, FactoryManager.DEFAULT_NIO2_READ_TIMEOUT);
+        Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(manager);
         readCyclesCounter.incrementAndGet();
         lastReadCycleStart.set(System.nanoTime());
-        socket.read(buffer, readTimeout, TimeUnit.MILLISECONDS, null, completion);
+        socket.read(buffer, readTimeout.toMillis(), TimeUnit.MILLISECONDS, null, completion);
     }
 
     protected void startWriting() {
@@ -432,11 +433,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doWriteCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        long writeTimeout = manager.getLongProperty(
-                FactoryManager.NIO2_MIN_WRITE_TIMEOUT, FactoryManager.DEFAULT_NIO2_MIN_WRITE_TIMEOUT);
+        Duration writeTimeout = CoreModuleProperties.NIO2_MIN_WRITE_TIMEOUT.getRequired(manager);
         writeCyclesCounter.incrementAndGet();
         lastWriteCycleStart.set(System.nanoTime());
-        socket.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, null, completion);
+        socket.write(buffer, writeTimeout.toMillis(), TimeUnit.MILLISECONDS, null, completion);
     }
 
     protected Nio2CompletionHandler<Integer, Object> createWriteCycleCompletionHandler(

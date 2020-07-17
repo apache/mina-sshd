@@ -58,7 +58,6 @@ import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
@@ -66,7 +65,6 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
@@ -94,6 +92,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -507,10 +506,10 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testAsyncClient() throws Exception {
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -1266,7 +1265,7 @@ public class ClientTest extends BaseTestSupport {
         });
 
         final int maxPrompts = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
+        CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
 
         client.start();
 
@@ -1288,7 +1287,7 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final int maxPrompts = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
+        CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
 
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
@@ -1343,7 +1342,7 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final int maxPrompts = 3;
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PASSWORD_PROMPTS, maxPrompts);
+        CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
@@ -1462,7 +1461,7 @@ public class ClientTest extends BaseTestSupport {
         Collection<ClientChannel> channels = new LinkedList<>();
         try (ClientSession session = createTestClientSession()) {
             // required since we do not use an SFTP subsystem
-            PropertyResolverUtils.updateProperty(session, ChannelSubsystem.REQUEST_SUBSYSTEM_REPLY, false);
+            CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.set(session, false);
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 

@@ -21,6 +21,7 @@ package org.apache.sshd.client.subsystem.sftp.extensions.helpers;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -96,6 +97,11 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     @Override
     public Buffer receive(int id, long timeout) throws IOException {
+        return raw.receive(id, timeout);
+    }
+
+    @Override
+    public Buffer receive(int id, Duration timeout) throws IOException {
         return raw.receive(id, timeout);
     }
 

@@ -19,9 +19,10 @@
 package org.apache.sshd.server.config;
 
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
@@ -30,7 +31,7 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
@@ -48,24 +49,19 @@ import org.apache.sshd.server.forward.X11ForwardingFilter;
  */
 public final class SshServerConfigFileReader {
     // Some well known configuration properties names and values
-    public static final String ALLOW_TCP_FORWARDING_CONFIG_PROP = "AllowTcpForwarding";
-    public static final String DEFAULT_TCP_FORWARDING = "yes";
+    public static final Property<String> ALLOW_TCP_FORWARDING_CONFIG_PROP = Property.string("AllowTcpForwarding", "yes");
 
-    public static final String ALLOW_AGENT_FORWARDING_CONFIG_PROP = "AllowAgentForwarding";
-    public static final String DEFAULT_AGENT_FORWARDING = "yes";
+    public static final Property<String> ALLOW_AGENT_FORWARDING_CONFIG_PROP = Property.string("AllowAgentForwarding", "yes");
 
-    public static final String ALLOW_X11_FORWARDING_CONFIG_PROP = "X11Forwarding";
-    public static final String DEFAULT_X11_FORWARDING = "no";
+    public static final Property<String> ALLOW_X11_FORWARDING_CONFIG_PROP = Property.string("X11Forwarding", "no");
 
-    public static final String BANNER_CONFIG_PROP = "Banner";
+    public static final Property<String> BANNER_CONFIG_PROP = Property.string("Banner");
 
-    public static final String VISUAL_HOST_KEY = "VisualHostKey";
-    public static final String DEFAULT_VISUAL_HOST_KEY = "no";
+    public static final Property<String> VISUAL_HOST_KEY = Property.string("VisualHostKey", "no");
 
-    public static final String SERVER_ALIVE_INTERVAL_PROP = "ServerAliveInterval";
-    public static final long DEFAULT_ALIVE_INTERVAL = 0L;
+    public static final Property<Duration> SERVER_ALIVE_INTERVAL_PROP = Property.duration("ServerAliveInterval");
 
-    public static final String SFTP_FORCED_VERSION_PROP = "sftp-version";
+    public static final Property<Integer> SFTP_FORCED_VERSION_PROP = Property.integer("sftp-version");
 
     private SshServerConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -76,13 +72,12 @@ public final class SshServerConfigFileReader {
             return server;
         }
 
-        long interval = PropertyResolverUtils.getLongProperty(
-                props, SERVER_ALIVE_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
-        if (interval <= 0L) {
+        Duration interval = SERVER_ALIVE_INTERVAL_PROP.getOrNull(props);
+        if (interval == null || GenericUtils.isNegativeOrNull(interval)) {
             return server;
         }
 
-        server.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+        server.setSessionHeartbeat(HeartbeatType.IGNORE, interval);
         return server;
     }
 
@@ -99,9 +94,9 @@ public final class SshServerConfigFileReader {
             return server;
         }
 
-        Integer version = PropertyResolverUtils.getInteger(props, SFTP_FORCED_VERSION_PROP);
-        if (version != null) {
-            PropertyResolverUtils.updateProperty(server, SFTP_FORCED_VERSION_PROP, version);
+        Integer version = SFTP_FORCED_VERSION_PROP.getOrNull(props);
+        if (version != null && version >= 0) {
+            SFTP_FORCED_VERSION_PROP.set(server, version);
         }
 
         return server;
@@ -127,32 +122,28 @@ public final class SshServerConfigFileReader {
     }
 
     public static AgentForwardingFilter resolveAgentForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options,
-                ALLOW_AGENT_FORWARDING_CONFIG_PROP, DEFAULT_AGENT_FORWARDING);
+        String value = ALLOW_AGENT_FORWARDING_CONFIG_PROP.getRequired(options);
         return AgentForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
     public static TcpForwardingFilter resolveTcpForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options,
-                ALLOW_TCP_FORWARDING_CONFIG_PROP, DEFAULT_TCP_FORWARDING);
+        String value = ALLOW_TCP_FORWARDING_CONFIG_PROP.getRequired(options);
         TcpForwardingFilter filter = AllowTcpForwardingValue.fromString(value);
         ValidateUtils.checkNotNull(filter, "Unknown %s value: %s", ALLOW_TCP_FORWARDING_CONFIG_PROP, value);
         return filter;
     }
 
     public static X11ForwardingFilter resolveX11ForwardingFilter(PropertyResolver options) {
-        String value = PropertyResolverUtils.getStringProperty(options,
-                ALLOW_X11_FORWARDING_CONFIG_PROP, DEFAULT_X11_FORWARDING);
+        String value = ALLOW_X11_FORWARDING_CONFIG_PROP.getRequired(options);
         return X11ForwardingFilter.of(ConfigFileReaderSupport.parseBooleanValue(value));
     }
 
     public static Object resolveBanner(PropertyResolver options) {
-        String bannerOption = PropertyResolverUtils.getString(options, BANNER_CONFIG_PROP);
+        String bannerOption = BANNER_CONFIG_PROP.getOrNull(options);
         if (GenericUtils.isEmpty(bannerOption)) {
-            bannerOption = PropertyResolverUtils.getStringProperty(options,
-                    VISUAL_HOST_KEY, DEFAULT_VISUAL_HOST_KEY);
+            bannerOption = VISUAL_HOST_KEY.getRequired(options);
             if (ConfigFileReaderSupport.parseBooleanValue(bannerOption)) {
-                bannerOption = ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE;
+                bannerOption = CoreModuleProperties.AUTO_WELCOME_BANNER_VALUE;
             } else {
                 bannerOption = null;
             }
@@ -162,10 +153,12 @@ public final class SshServerConfigFileReader {
             return "Welcome to SSHD\n";
         } else if (PropertyResolverUtils.isNoneValue(bannerOption)) {
             return null;
-        } else if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
+        } else if (CoreModuleProperties.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(bannerOption)) {
             return bannerOption;
-        } else {
+        } else if (bannerOption != null) {
             return Paths.get(bannerOption);
+        } else {
+            return null;
         }
     }
 }

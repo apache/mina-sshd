@@ -28,6 +28,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -53,12 +54,11 @@ import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 public class SftpFileSystem
         extends BaseFileSystem<SftpPath>
         implements SessionHolder<ClientSession>, ClientSessionHolder {
-    public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
-    public static final int DEFAULT_POOL_SIZE = 8;
 
     public static final NavigableSet<String> UNIVERSAL_SUPPORTED_VIEWS = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "basic", "posix", "owner"));
@@ -84,7 +84,7 @@ public class SftpFileSystem
         this.factory = factory != null ? factory : SftpClientFactory.instance();
         this.selector = selector;
         this.stores = Collections.unmodifiableList(Collections.<FileStore> singletonList(new SftpFileStore(id, this)));
-        this.pool = new LinkedBlockingQueue<>(session.getIntProperty(POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
+        this.pool = new LinkedBlockingQueue<>(SftpModuleProperties.POOL_SIZE.getRequired(session));
         try (SftpClient client = getClient()) {
             version = client.getVersion();
             defaultDir = getPath(client.canonicalPath("."));
@@ -558,6 +558,21 @@ public class SftpFileSystem
 
         @Override
         public Buffer receive(int id, long timeout) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("receive(id=" + id + ", timeout=" + timeout + ") client is closed");
+            }
+
+            if (delegate instanceof RawSftpClient) {
+                return ((RawSftpClient) delegate).receive(id, timeout);
+            } else {
+                throw new StreamCorruptedException(
+                        "receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
+                                                   + RawSftpClient.class.getSimpleName());
+            }
+        }
+
+        @Override
+        public Buffer receive(int id, Duration timeout) throws IOException {
             if (!isOpen()) {
                 throw new IOException("receive(id=" + id + ", timeout=" + timeout + ") client is closed");
             }

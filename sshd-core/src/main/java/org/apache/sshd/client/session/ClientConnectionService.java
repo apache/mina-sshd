@@ -19,12 +19,12 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -33,6 +33,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -44,20 +45,17 @@ public class ClientConnectionService
         extends AbstractConnectionService
         implements ClientSessionHolder {
     protected final String heartbeatRequest;
-    protected final long heartbeatInterval;
-    protected final long heartbeatReplyMaxWait;
+    protected final Duration heartbeatInterval;
+    protected final Duration heartbeatReplyMaxWait;
     /** Non-null only if using the &quot;keep-alive&quot; request mechanism */
     protected ScheduledFuture<?> clientHeartbeat;
 
     public ClientConnectionService(AbstractClientSession s) throws SshException {
         super(s);
 
-        heartbeatRequest = getStringProperty(
-                ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
-        heartbeatInterval = getLongProperty(
-                ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
-        heartbeatReplyMaxWait = getLongProperty(
-                ClientFactoryManager.HEARTBEAT_REPLY_WAIT, ClientFactoryManager.DEFAULT_HEARTBEAT_REPLY_WAIT);
+        heartbeatRequest = CoreModuleProperties.HEARTBEAT_REQUEST.getRequired(this);
+        heartbeatInterval = CoreModuleProperties.HEARTBEAT_INTERVAL.getRequired(this);
+        heartbeatReplyMaxWait = CoreModuleProperties.HEARTBEAT_REPLY_WAIT.getRequired(this);
     }
 
     @Override
@@ -81,14 +79,14 @@ public class ClientConnectionService
 
     @Override
     protected synchronized ScheduledFuture<?> startHeartBeat() {
-        if ((heartbeatInterval > 0L) && GenericUtils.isNotEmpty(heartbeatRequest)) {
+        if (!GenericUtils.isNegativeOrNull(heartbeatInterval) && GenericUtils.isNotEmpty(heartbeatRequest)) {
             stopHeartBeat();
 
             ClientSession session = getClientSession();
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
             clientHeartbeat = service.scheduleAtFixedRate(
-                    this::sendHeartBeat, heartbeatInterval, heartbeatInterval, TimeUnit.MILLISECONDS);
+                    this::sendHeartBeat, heartbeatInterval.toMillis(), heartbeatInterval.toMillis(), TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled()) {
                 log.debug("startHeartbeat({}) - started at interval={} with request={}",
                         session, heartbeatInterval, heartbeatRequest);
@@ -120,14 +118,14 @@ public class ClientConnectionService
 
         Session session = getSession();
         try {
-            boolean withReply = heartbeatReplyMaxWait > 0L;
+            boolean withReply = !GenericUtils.isNegativeOrNull(heartbeatReplyMaxWait);
             Buffer buf = session.createBuffer(
                     SshConstants.SSH_MSG_GLOBAL_REQUEST, heartbeatRequest.length() + Byte.SIZE);
             buf.putString(heartbeatRequest);
             buf.putBoolean(withReply);
 
             if (withReply) {
-                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait, TimeUnit.MILLISECONDS);
+                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait.toMillis(), TimeUnit.MILLISECONDS);
                 if (reply != null) {
                     if (log.isTraceEnabled()) {
                         log.trace("sendHeartBeat({}) received reply size={} for request={}",

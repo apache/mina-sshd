@@ -31,13 +31,12 @@ import org.apache.sshd.agent.unix.AprLibrary;
 import org.apache.sshd.agent.unix.UnixAgentFactory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -105,7 +104,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
     }
 
     public static boolean isPreferredUnixAgent(PropertyResolver resolver) {
-        if (PropertyResolverUtils.getBooleanProperty(resolver, PREFER_UNIX_AGENT, OsUtils.isUNIX())) {
+        if (CoreModuleProperties.PREFER_UNIX_AGENT.getRequired(resolver)) {
             try {
                 if (AprLibrary.getInstance() != null) {
                     return true;

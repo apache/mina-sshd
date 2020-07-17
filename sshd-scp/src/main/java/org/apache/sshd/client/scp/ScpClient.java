@@ -26,7 +26,6 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
@@ -45,23 +44,6 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
         PreserveAttributes,
         TargetIsDirectory
     }
-
-    /**
-     * Configurable value of the {@link org.apache.sshd.common.FactoryManager} for controlling the wait timeout for
-     * opening a channel for an SCP command in milliseconds. If not specified, then
-     * {@link #DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT} value is used
-     */
-    String SCP_EXEC_CHANNEL_OPEN_TIMEOUT = "scp-exec-channel-open-timeout";
-    long DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
-
-    /**
-     * Configurable value of the {@link org.apache.sshd.common.FactoryManager} for controlling the wait timeout for
-     * waiting on a channel exit status' for an SCP command in milliseconds. If not specified, then
-     * {@link #DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT} value is used. If non-positive, then no wait is performed and
-     * the command is assumed to have completed successfully.
-     */
-    String SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = "scp-exec-channel-exit-status-timeout";
-    long DEFAULT_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     @Override
     default ClientSession getSession() {

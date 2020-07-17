@@ -21,7 +21,7 @@ package org.apache.sshd.common;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.Channel;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -34,18 +34,6 @@ import org.apache.sshd.common.future.SshFutureListener;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Closeable extends Channel {
-
-    /**
-     * Timeout (milliseconds) for waiting on a {@link CloseFuture} to successfully complete its action.
-     * 
-     * @see #DEFAULT_CLOSE_WAIT_TIMEOUT
-     */
-    String CLOSE_WAIT_TIMEOUT = "sshd-close-wait-time";
-
-    /**
-     * Default value for {@link #CLOSE_WAIT_TIMEOUT} if none specified
-     */
-    long DEFAULT_CLOSE_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     /**
      * Close this resource asynchronously and return a future. Resources support two closing modes: a graceful mode
@@ -98,10 +86,8 @@ public interface Closeable extends Channel {
         Closeable.close(this);
     }
 
-    static long getMaxCloseWaitTime(PropertyResolver resolver) {
-        return (resolver == null)
-                ? DEFAULT_CLOSE_WAIT_TIMEOUT
-                : resolver.getLongProperty(CLOSE_WAIT_TIMEOUT, DEFAULT_CLOSE_WAIT_TIMEOUT);
+    static Duration getMaxCloseWaitTime(PropertyResolver resolver) {
+        return CommonModuleProperties.CLOSE_WAIT_TIMEOUT.getRequired(resolver);
     }
 
     static void close(Closeable closeable) throws IOException {
@@ -111,9 +97,9 @@ public interface Closeable extends Channel {
 
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
             CloseFuture future = closeable.close(true);
-            long maxWait = (closeable instanceof PropertyResolver)
+            Duration maxWait = (closeable instanceof PropertyResolver)
                     ? getMaxCloseWaitTime((PropertyResolver) closeable)
-                    : DEFAULT_CLOSE_WAIT_TIMEOUT;
+                    : CommonModuleProperties.CLOSE_WAIT_TIMEOUT.getRequiredDefault();
             boolean successful = future.await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

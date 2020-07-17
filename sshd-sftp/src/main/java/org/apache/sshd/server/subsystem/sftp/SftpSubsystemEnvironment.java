@@ -28,7 +28,6 @@ import java.util.stream.IntStream;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
@@ -36,10 +35,6 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, ServerSessionHolder {
-    /**
-     * Force the use of a given sftp version
-     */
-    String SFTP_VERSION = SshServerConfigFileReader.SFTP_FORCED_VERSION_PROP;
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
 

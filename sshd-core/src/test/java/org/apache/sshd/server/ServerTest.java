@@ -26,6 +26,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,8 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.ClientAuthenticationManager;
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -50,8 +49,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
@@ -70,6 +67,7 @@ import org.apache.sshd.common.session.helpers.TimeoutIndicator.TimeoutStatus;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -139,7 +137,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
         final int maxAllowedAuths = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, maxAllowedAuths);
+        CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
 
         sshd.start();
         client.setServiceFactories(Arrays.asList(
@@ -169,7 +167,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
         final int maxAllowedAuths = 10;
-        PropertyResolverUtils.updateProperty(sshd, ServerAuthenticationManager.MAX_AUTH_REQUESTS, maxAllowedAuths);
+        CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
 
         sshd.start();
 
@@ -201,8 +199,8 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        final long testAuthTimeout = TimeUnit.SECONDS.toMillis(4L);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, testAuthTimeout);
+        Duration testAuthTimeout = Duration.ofSeconds(4L);
+        CoreModuleProperties.AUTH_TIMEOUT.set(sshd, testAuthTimeout);
 
         AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
         sshd.setSessionDisconnectHandler(new SessionDisconnectHandler() {
@@ -231,7 +229,7 @@ public class ServerTest extends BaseTestSupport {
                 .verify(CONNECT_TIMEOUT).getSession()) {
             long waitStart = System.currentTimeMillis();
             Collection<ClientSession.ClientSessionEvent> res
-                    = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testAuthTimeout);
+                    = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), testAuthTimeout.multipliedBy(3L));
             long waitEnd = System.currentTimeMillis();
             assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
                     res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH)));
@@ -247,7 +245,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testIdleTimeout() throws Exception {
         final long testIdleTimeout = 2500L;
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, testIdleTimeout);
+        CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofMillis(testIdleTimeout));
         AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
         CountDownLatch latch = new CountDownLatch(1);
         TestEchoShell.latch = new CountDownLatch(1);
@@ -352,12 +350,10 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testServerIdleTimeoutWithForce() throws Exception {
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
-        PropertyResolverUtils.updateProperty(
-                sshd, FactoryManager.IDLE_TIMEOUT, idleTimeoutValue);
+        CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofMillis(idleTimeoutValue));
 
         final long disconnectTimeoutValue = TimeUnit.SECONDS.toMillis(2L);
-        PropertyResolverUtils.updateProperty(
-                sshd, FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutValue);
+        CoreModuleProperties.DISCONNECT_TIMEOUT.set(sshd, Duration.ofMillis(disconnectTimeoutValue));
 
         CountDownLatch latch = new CountDownLatch(1);
         sshd.setCommandFactory((channel, command) -> new StreamCommand(command));
@@ -814,7 +810,7 @@ public class ServerTest extends BaseTestSupport {
                 Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY,
                         UserAuthMethodFactory.PUBLIC_KEY),
                 ',');
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
+        CoreModuleProperties.PREFERRED_AUTHS.set(client, authMethods);
 
         client.start();
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
@@ -864,7 +860,7 @@ public class ServerTest extends BaseTestSupport {
                 Arrays.asList(UserAuthMethodFactory.KB_INTERACTIVE, UserAuthMethodFactory.PUBLIC_KEY,
                         UserAuthMethodFactory.PUBLIC_KEY),
                 ',');
-        PropertyResolverUtils.updateProperty(client, ClientAuthenticationManager.PREFERRED_AUTHS, authMethods);
+        CoreModuleProperties.PREFERRED_AUTHS.set(client, authMethods);
         AtomicInteger clientCount = new AtomicInteger(0);
         String[] replies = { getCurrentTestName() };
         client.setUserInteraction(new UserInteraction() {
@@ -894,9 +890,9 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
             assertFalse("Unexpected authentication success", auth.isSuccess());
             assertEquals("Mismatched interactive server challenge calls",
-                    ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, serverCount.get());
+                    CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), serverCount.get());
             assertEquals("Mismatched interactive client challenge calls",
-                    ClientAuthenticationManager.DEFAULT_PASSWORD_PROMPTS, clientCount.get());
+                    CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), clientCount.get());
         } finally {
             client.stop();
         }
@@ -905,10 +901,10 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testIdentificationStringsOverrides() throws Exception {
         String clientIdent = getCurrentTestName() + "-client";
-        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.CLIENT_IDENTIFICATION, clientIdent);
+        CoreModuleProperties.CLIENT_IDENTIFICATION.set(client, clientIdent);
         String expClientIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
         String serverIdent = getCurrentTestName() + "-server";
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_IDENTIFICATION, serverIdent);
+        CoreModuleProperties.SERVER_IDENTIFICATION.set(sshd, serverIdent);
         String expServerIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + serverIdent;
         SessionListener listener = new SessionListener() {
             @Override
@@ -960,8 +956,8 @@ public class ServerTest extends BaseTestSupport {
                 getClass().getPackage().getName(),
                 getClass().getSimpleName(),
                 getCurrentTestName());
-        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.SERVER_EXTRA_IDENTIFICATION_LINES,
-                GenericUtils.join(expected, ServerFactoryManager.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
+        CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd,
+                GenericUtils.join(expected, CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR));
         sshd.start();
 
         AtomicReference<List<String>> actualHolder = new AtomicReference<>();
@@ -1006,8 +1002,7 @@ public class ServerTest extends BaseTestSupport {
     public void testDelayClientIdentification() throws Exception {
         sshd.start();
 
-        PropertyResolverUtils.updateProperty(
-                client, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION, false);
+        CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.set(client, false);
         AtomicReference<String> peerVersion = new AtomicReference<>();
         client.addSessionListener(new SessionListener() {
             @Override

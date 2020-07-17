@@ -27,7 +27,6 @@ import java.util.Set;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface IoAcceptor extends IoService {
-    int DEFAULT_BACKLOG = 0;
 
     void bind(Collection<? extends SocketAddress> addresses) throws IOException;
 

@@ -25,6 +25,7 @@ import java.io.StreamCorruptedException;
 import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
 
+import org.apache.sshd.common.CommonModuleProperties;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -42,8 +43,6 @@ public final class BufferUtils {
     public static final char EMPTY_HEX_SEPARATOR = '\0';
     public static final String HEX_DIGITS = "0123456789abcdef";
 
-    public static final String HEXDUMP_CHUNK_SIZE = "sshd-hexdump-chunk-size";
-    public static final int DEFAULT_HEXDUMP_CHUNK_SIZE = 64;
     public static final Level DEFAULT_HEXDUMP_LEVEL = Level.FINEST;
 
     public static final IntUnaryOperator DEFAULT_BUFFER_GROWTH_FACTOR = BufferUtils::getNextPowerOf2;
@@ -74,7 +73,7 @@ public final class BufferUtils {
             SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver,
             char sep, byte[] data, int offset, int len) {
         dumpHex(logger, level, prefix, sep,
-                resolver.getIntProperty(HEXDUMP_CHUNK_SIZE, DEFAULT_HEXDUMP_CHUNK_SIZE),
+                CommonModuleProperties.HEXDUMP_CHUNK_SIZE.getRequired(resolver),
                 data, offset, len);
     }
 

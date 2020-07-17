@@ -32,10 +32,11 @@ import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
@@ -56,15 +57,15 @@ public class Nio2ServiceTest extends BaseTestSupport {
     @Test // see SSHD-554, SSHD-722
     public void testSetSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
-            Map<String, Object> expectedOptions = new LinkedHashMap<String, Object>();
-            expectedOptions.put(FactoryManager.SOCKET_KEEPALIVE, true);
-            expectedOptions.put(FactoryManager.SOCKET_LINGER, 5);
-            expectedOptions.put(FactoryManager.SOCKET_RCVBUF, 1024);
-            expectedOptions.put(FactoryManager.SOCKET_REUSEADDR, true);
-            expectedOptions.put(FactoryManager.SOCKET_SNDBUF, 1024);
-            expectedOptions.put(FactoryManager.TCP_NODELAY, true);
-            for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
-                PropertyResolverUtils.updateProperty(sshd, oe.getKey(), oe.getValue());
+            Map<Property, Object> expectedOptions = new LinkedHashMap<>();
+            expectedOptions.put(CoreModuleProperties.SOCKET_KEEPALIVE, true);
+            expectedOptions.put(CoreModuleProperties.SOCKET_LINGER, 5);
+            expectedOptions.put(CoreModuleProperties.SOCKET_RCVBUF, 1024);
+            expectedOptions.put(CoreModuleProperties.SOCKET_REUSEADDR, true);
+            expectedOptions.put(CoreModuleProperties.SOCKET_SNDBUF, 1024);
+            expectedOptions.put(CoreModuleProperties.TCP_NODELAY, true);
+            for (Map.Entry<Property, ?> oe : expectedOptions.entrySet()) {
+                PropertyResolverUtils.updateProperty(sshd, oe.getKey().getName(), oe.getValue());
             }
 
             Semaphore sigSem = new Semaphore(0, true);
@@ -88,10 +89,10 @@ public class Nio2ServiceTest extends BaseTestSupport {
                         return;
                     }
 
-                    for (Map.Entry<String, ?> oe : expectedOptions.entrySet()) {
-                        String propName = oe.getKey();
+                    for (Map.Entry<Property, ?> oe : expectedOptions.entrySet()) {
+                        Property prop = oe.getKey();
                         Object expValue = oe.getValue();
-                        Map.Entry<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(propName);
+                        Map.Entry<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(prop);
                         SocketOption<?> option = optionEntry.getKey();
                         if (!supported.contains(option)) {
                             continue;

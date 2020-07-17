@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,6 +85,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * <P>
@@ -421,7 +423,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         try {
-            long maxWait = this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME);
+            Duration maxWait = CoreModuleProperties.STOP_WAIT_TIME.getRequired(this);
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException(
@@ -557,7 +559,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 : ClientIdentityLoader.asKeyIdentityProvider(
                         Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
                         locations, getFilePasswordProvider(),
-                        this.getBooleanProperty(IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES));
+                        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.getRequired(this));
     }
 
     protected ConnectFuture doConnect(

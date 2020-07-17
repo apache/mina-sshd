@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -40,6 +41,7 @@ import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -91,10 +93,10 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             acceptor = factory.createAcceptor(this);
         }
 
-        int minDisplayNumber = session.getIntProperty(X11_DISPLAY_OFFSET, DEFAULT_X11_DISPLAY_OFFSET);
-        int maxDisplayNumber = session.getIntProperty(X11_MAX_DISPLAYS, DEFAULT_X11_MAX_DISPLAYS);
-        int basePort = session.getIntProperty(X11_BASE_PORT, DEFAULT_X11_BASE_PORT);
-        String bindHost = session.getStringProperty(X11_BIND_HOST, DEFAULT_X11_BIND_HOST);
+        int minDisplayNumber = CoreModuleProperties.X11_DISPLAY_OFFSET.getRequired(session);
+        int maxDisplayNumber = CoreModuleProperties.X11_MAX_DISPLAYS.getRequired(session);
+        int basePort = CoreModuleProperties.X11_BASE_PORT.getRequired(session);
+        String bindHost = CoreModuleProperties.X11_BIND_HOST.getRequired(session);
         InetSocketAddress addr = null;
 
         // try until bind successful or max is reached
@@ -182,7 +184,7 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
             log.debug("sessionCreated({}) channel{}", session, channel);
         }
         this.service.registerChannel(channel);
-        long openTimeout = channel.getLongProperty(CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT);
+        Duration openTimeout = CoreModuleProperties.X11_OPEN_TIMEOUT.getRequired(channel);
         channel.open().verify(openTimeout);
     }
 

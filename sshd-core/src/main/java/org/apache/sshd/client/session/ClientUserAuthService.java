@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -45,6 +44,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Client side <code>ssh-auth</code> service.
@@ -75,7 +75,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
 
-        String prefs = s.getString(ClientAuthenticationManager.PREFERRED_AUTHS);
+        String prefs = CoreModuleProperties.PREFERRED_AUTHS.getOrNull(s);
         boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(prefs)) {
             for (UserAuthFactory factory : authFactories) {

@@ -64,22 +64,12 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.subsystem.sftp.DefaultGroupPrincipal;
 import org.apache.sshd.server.subsystem.sftp.InvalidHandleException;
 import org.apache.sshd.server.subsystem.sftp.UnixDateFormat;
+import org.apache.sshd.sftp.SftpModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SftpHelper {
-    /**
-     * Used to control whether to append the end-of-list indicator for SSH_FXP_NAME responses via
-     * {@link #indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)} call, as indicated by
-     * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
-     */
-    public static final String APPEND_END_OF_LIST_INDICATOR = "sftp-append-eol-indicator";
-
-    /**
-     * Default value for {@link #APPEND_END_OF_LIST_INDICATOR} if none configured
-     */
-    public static final boolean DEFAULT_APPEND_END_OF_LIST_INDICATOR = true;
 
     public static final Map<Integer, String> DEFAULT_SUBSTATUS_MESSAGE;
 
@@ -178,8 +168,7 @@ public final class SftpHelper {
      * @return                The actual indicator value used - {@code null} if none appended
      * @see                   <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 -
      *                        section 9.4</A>
-     * @see                   #APPEND_END_OF_LIST_INDICATOR
-     * @see                   #DEFAULT_APPEND_END_OF_LIST_INDICATOR
+     * @see                   SftpModuleProperties#APPEND_END_OF_LIST_INDICATOR
      */
     public static Boolean indicateEndOfNamesList(
             Buffer buffer, int version, PropertyResolver resolver, boolean indicatorValue) {
@@ -187,7 +176,7 @@ public final class SftpHelper {
             return null;
         }
 
-        if (!resolver.getBooleanProperty(APPEND_END_OF_LIST_INDICATOR, DEFAULT_APPEND_END_OF_LIST_INDICATOR)) {
+        if (!SftpModuleProperties.APPEND_END_OF_LIST_INDICATOR.getRequired(resolver)) {
             return null;
         }
 

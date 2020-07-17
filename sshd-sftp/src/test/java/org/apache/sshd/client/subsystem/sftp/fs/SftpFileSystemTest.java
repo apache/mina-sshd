@@ -76,6 +76,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -128,8 +129,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public void testFileSystem() throws Exception {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 MapBuilder.<String, Object> builder()
-                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
-                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
                         .build())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
@@ -172,8 +173,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 MapBuilder.<String, Object> builder()
-                        .put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, SftpClient.MIN_READ_BUFFER_SIZE)
-                        .put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, SftpClient.MIN_WRITE_BUFFER_SIZE)
+                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), SftpClient.MIN_READ_BUFFER_SIZE)
+                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), SftpClient.MIN_WRITE_BUFFER_SIZE)
                         .build())) {
 
             Path parentPath = targetPath.getParent();

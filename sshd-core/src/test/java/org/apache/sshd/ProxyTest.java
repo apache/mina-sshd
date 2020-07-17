@@ -37,10 +37,9 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -140,8 +139,8 @@ public class ProxyTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
-        PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, "256");
+        CoreModuleProperties.WINDOW_SIZE.set(sshd, 2048L);
+        CoreModuleProperties.MAX_PACKET_SIZE.set(sshd, 256L);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(serverSideListener);
         sshd.start();
@@ -313,8 +312,8 @@ public class ProxyTest extends BaseTestSupport {
 
     protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {
         client = setupTestClient();
-        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
-        PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
+        CoreModuleProperties.WINDOW_SIZE.set(client, 2048L);
+        CoreModuleProperties.MAX_PACKET_SIZE.set(client, 256L);
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         if (listener != null) {
             client.addPortForwardingEventListener(listener);

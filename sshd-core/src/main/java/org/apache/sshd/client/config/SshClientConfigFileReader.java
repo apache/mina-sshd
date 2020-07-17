@@ -18,18 +18,20 @@
  */
 package org.apache.sshd.client.config;
 
+import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.ClientBuilder;
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.CommonModuleProperties;
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -39,13 +41,13 @@ public final class SshClientConfigFileReader {
     public static final String SENDENV_PROP = "SendEnv";
     public static final String REQUEST_TTY_OPTION = "RequestTTY";
 
-    public static final String CLIENT_LIVECHECK_INTERVAL_PROP = "ClientAliveInterval";
-    public static final long DEFAULT_ALIVE_INTERVAL = 0L;
+    public static final Property<Duration> CLIENT_LIVECHECK_INTERVAL_PROP
+            = Property.duration("ClientAliveInterval", Duration.ZERO);
 
-    public static final String CLIENT_LIVECHECK_USE_NULLS = "ClientAliveUseNullPackets";
-    public static final boolean DEFAULT_LIVECHECK_USE_NULLS = false;
+    public static final Property<Boolean> CLIENT_LIVECHECK_USE_NULLS = Property.bool("ClientAliveUseNullPackets", false);
 
-    public static final String CLIENT_LIVECHECK_REPLIES_WAIT = "ClientAliveReplyWait";
+    public static final Property<Duration> CLIENT_LIVECHECK_REPLIES_WAIT
+            = Property.duration("ClientAliveReplyWait", Duration.ZERO);
     public static final long DEFAULT_LIVECHECK_REPLY_WAIT = 0L;
 
     private SshClientConfigFileReader() {
@@ -57,24 +59,20 @@ public final class SshClientConfigFileReader {
             return client;
         }
 
-        long interval = PropertyResolverUtils.getLongProperty(
-                props, CLIENT_LIVECHECK_INTERVAL_PROP, DEFAULT_ALIVE_INTERVAL);
-        if (interval <= 0L) {
+        Duration interval = CLIENT_LIVECHECK_INTERVAL_PROP.getRequired(props);
+        if (GenericUtils.isNegativeOrNull(interval)) {
             return client;
         }
 
-        if (PropertyResolverUtils.getBooleanProperty(
-                props, CLIENT_LIVECHECK_USE_NULLS, DEFAULT_LIVECHECK_USE_NULLS)) {
-            client.setSessionHeartbeat(HeartbeatType.IGNORE, TimeUnit.SECONDS, interval);
+        if (CLIENT_LIVECHECK_USE_NULLS.getRequired(props)) {
+            CommonModuleProperties.SESSION_HEARTBEAT_TYPE.set(client, HeartbeatType.IGNORE);
+            CommonModuleProperties.SESSION_HEARTBEAT_INTERVAL.set(client, interval);
         } else {
-            PropertyResolverUtils.updateProperty(
-                    client, ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(interval));
+            CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, interval);
 
-            interval = PropertyResolverUtils.getLongProperty(
-                    props, CLIENT_LIVECHECK_REPLIES_WAIT, DEFAULT_LIVECHECK_REPLY_WAIT);
-            if (interval > 0L) {
-                PropertyResolverUtils.updateProperty(
-                        client, ClientFactoryManager.HEARTBEAT_REPLY_WAIT, TimeUnit.SECONDS.toMillis(interval));
+            interval = CLIENT_LIVECHECK_REPLIES_WAIT.getRequired(props);
+            if (!GenericUtils.isNegativeOrNull(interval)) {
+                CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, interval);
             }
         }
 

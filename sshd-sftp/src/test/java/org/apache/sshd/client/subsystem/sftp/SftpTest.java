@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,13 +66,11 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.DirEntry;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
-import org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient;
 import org.apache.sshd.client.subsystem.sftp.impl.DefaultCloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.impl.SftpOutputStreamAsync;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
@@ -107,6 +106,7 @@ import org.apache.sshd.server.subsystem.sftp.SftpFileSystemAccessor;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemEnvironment;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemProxy;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
@@ -136,7 +136,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
-        Object forced = props.remove(SftpSubsystemEnvironment.SFTP_VERSION);
+        Object forced = props.remove(SftpModuleProperties.SFTP_VERSION);
         if (forced != null) {
             outputDebugMessage("Removed forced version=%s", forced);
         }
@@ -229,8 +229,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 byte[] actual = new byte[expected.length];
                 int maxAllowed = actual.length / 4;
                 // allow less than actual
-                PropertyResolverUtils.updateProperty(
-                        sshd, AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP, maxAllowed);
+                SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.set(sshd, maxAllowed);
                 try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                     int readLen = sftp.read(handle, 0L, actual);
                     assertEquals("Mismatched read len", maxAllowed, readLen);
@@ -245,9 +244,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         }
                     }
                 } finally {
-                    PropertyResolverUtils.updateProperty(sshd,
-                            AbstractSftpSubsystemHelper.MAX_READDATA_PACKET_LENGTH_PROP,
-                            AbstractSftpSubsystemHelper.DEFAULT_MAX_READDATA_PACKET_LENGTH);
+                    SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.remove(sshd);
                 }
             }
         }
@@ -974,9 +971,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 // Make sure sizes should invoke our internal chunking mechanism
                 ClientChannel clientChannel = sftp.getClientChannel();
-                PropertyResolverUtils.updateProperty(clientChannel, AbstractSftpClient.WRITE_CHUNK_SIZE,
-                        Math.min(SftpClient.IO_BUFFER_SIZE, AbstractSftpClient.DEFAULT_WRITE_CHUNK_SIZE)
-                                                                                                         - Byte.MAX_VALUE);
+                SftpModuleProperties.WRITE_CHUNK_SIZE.set(clientChannel,
+                        Math.min(SftpClient.IO_BUFFER_SIZE, SftpModuleProperties.WRITE_CHUNK_SIZE.getRequiredDefault())
+                                                                         - Byte.MAX_VALUE);
 
                 uploadAndVerifyFile(sftp, clientFolder, dir,
                         SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
@@ -1377,14 +1374,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
-            PropertyResolverUtils.updateProperty(session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, TimeUnit.SECONDS.toMillis(7L));
+            SftpModuleProperties.SFTP_CHANNEL_OPEN_TIMEOUT.set(session, Duration.ofSeconds(7L));
             try (SftpClient sftp = createSftpClient(session)) {
                 fail("Unexpected SFTP client creation success");
             } catch (SocketTimeoutException | EOFException | WindowClosedException | SshChannelClosedException e) {
                 // expected - ignored
             } finally {
-                PropertyResolverUtils.updateProperty(
-                        session, SftpClient.SFTP_CHANNEL_OPEN_TIMEOUT, SftpClient.DEFAULT_CHANNEL_OPEN_TIMEOUT);
+                SftpModuleProperties.SFTP_CHANNEL_OPEN_TIMEOUT.remove(session);
             }
         } finally {
             sshd.setSubsystemFactories(factories);
@@ -1577,7 +1573,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-903
     public void testForcedVersionNegotiation() throws Exception {
-        PropertyResolverUtils.updateProperty(sshd, SftpSubsystemEnvironment.SFTP_VERSION, SftpConstants.SFTP_V3);
+        SftpModuleProperties.SFTP_VERSION.set(sshd, SftpConstants.SFTP_V3);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());

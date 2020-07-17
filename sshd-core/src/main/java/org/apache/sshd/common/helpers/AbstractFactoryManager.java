@@ -63,6 +63,7 @@ import org.apache.sshd.common.session.helpers.SessionTimeoutListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
 /**
@@ -203,7 +204,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     public String getVersion() {
         String version = PropertyResolverUtils.getStringProperty(
                 VersionProperties.getVersionProperties(),
-                VersionProperties.REPORTED_VERSION, DEFAULT_VERSION);
+                VersionProperties.REPORTED_VERSION, FactoryManager.DEFAULT_VERSION);
         return version.toUpperCase();
     }
 
@@ -217,20 +218,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     public int getNioWorkers() {
-        int nb = this.getIntProperty(NIO_WORKERS, DEFAULT_NIO_WORKERS);
-        if (nb > 0) {
-            return nb;
-        } else { // it may have been configured to a negative value
-            return DEFAULT_NIO_WORKERS;
-        }
+        return CoreModuleProperties.NIO_WORKERS.getRequired(this);
     }
 
     public void setNioWorkers(int nioWorkers) {
-        if (nioWorkers > 0) {
-            PropertyResolverUtils.updateProperty(this, NIO_WORKERS, nioWorkers);
-        } else {
-            PropertyResolverUtils.updateProperty(this, NIO_WORKERS, null);
-        }
+        CoreModuleProperties.NIO_WORKERS.set(this, nioWorkers);
     }
 
     @Override

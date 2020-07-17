@@ -440,8 +440,8 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 * `statvfs@openssh.com`
 * `lsetstat@openssh.com`
 
-On the server side, the reported standard extensions are configured via the `SftpSubsystem.CLIENT_EXTENSIONS_PROP` configuration
-key, and the _OpenSSH_ ones via the `SftpSubsystem.OPENSSH_EXTENSIONS_PROP`.
+On the server side, the reported standard extensions are configured via the `SftpModuleProperties.CLIENT_EXTENSIONS` configuration
+key, and the _OpenSSH_ ones via the `SftpModuleProperties.OPENSSH_EXTENSIONS`.
 
 On the client side, all the supported extensions are classes that implement `SftpClientExtension`. These classes can be used
 to query the client whether the remote server supports the specific extension and then obtain a parser for its contents. Users

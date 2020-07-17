@@ -23,10 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -85,12 +85,15 @@ public class WindowInitTest extends BaseTestSupport {
     @Parameters(name = "initial-size={0}, packet-size={1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
-        params.add(new Object[] { Byte.MIN_VALUE, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
-        params.add(new Object[] { BufferUtils.MAX_UINT32_VALUE + 1L, FactoryManager.DEFAULT_MAX_PACKET_SIZE });
-        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, 0L });
-        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, Byte.MIN_VALUE });
-        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, BufferUtils.MAX_UINT32_VALUE + 1L });
-        params.add(new Object[] { FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_LIMIT_PACKET_SIZE + 1L });
+        params.add(new Object[] { -128L, CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault() });
+        params.add(
+                new Object[] { BufferUtils.MAX_UINT32_VALUE + 1L, CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault() });
+        params.add(new Object[] { CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(), 0L });
+        params.add(new Object[] { CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(), Byte.MIN_VALUE });
+        params.add(new Object[] { CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(), BufferUtils.MAX_UINT32_VALUE + 1L });
+        params.add(new Object[] {
+                CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
+                CoreModuleProperties.LIMIT_PACKET_SIZE.getRequiredDefault() + 1L });
         return params;
     }
 

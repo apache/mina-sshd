@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +45,6 @@ import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -72,6 +73,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Contains split code in order to make {@link AbstractSession} class smaller
@@ -81,8 +83,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     protected final Object sessionLock = new Object();
 
     // Session timeout measurements
-    protected long authNanoStart = System.nanoTime();
-    protected long idleNanoStart = System.nanoTime();
+    protected Instant authStart = Instant.now();
+    protected Instant idleStart = Instant.now();
 
     /** Client or server side */
     private final boolean serverSession;
@@ -97,8 +99,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     private final Map<AttributeRepository.AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout measurements
-    private long authTimeoutStart = System.currentTimeMillis();
-    private long idleTimeoutStart = System.currentTimeMillis();
     private final AtomicReference<TimeoutIndicator> timeoutStatus = new AtomicReference<>(TimeoutIndicator.NONE);
 
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
@@ -223,8 +223,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      *
      * @return             An indication whether timeout has been detected
      * @throws IOException If failed to check
-     * @see                #checkAuthenticationTimeout(long, long, long)
-     * @see                #checkIdleTimeout(long, long, long)
+     * @see                #checkAuthenticationTimeout(Instant, Duration)
+     * @see                #checkIdleTimeout(Instant, Duration)
      */
     protected TimeoutIndicator checkForTimeouts() throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
@@ -245,11 +245,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return result;
         }
 
-        long now = System.currentTimeMillis();
-        long nanoTime = System.nanoTime();
-        result = checkAuthenticationTimeout(now, nanoTime, getAuthTimeout());
+        Instant now = Instant.now();
+        result = checkAuthenticationTimeout(now, getAuthTimeout());
         if (result == null) {
-            result = checkIdleTimeout(now, nanoTime, getIdleTimeout());
+            result = checkIdleTimeout(now, getIdleTimeout());
         }
 
         status = (result == null) ? TimeoutStatus.NoTimeout : result.getStatus();
@@ -302,70 +301,62 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public long getAuthTimeoutStart() {
-        return authTimeoutStart;
+    public Instant getAuthTimeoutStart() {
+        return authStart;
     }
 
     @Override
-    public long resetAuthTimeout() {
-        long value = getAuthTimeoutStart();
-        this.authTimeoutStart = System.currentTimeMillis();
-        this.authNanoStart = System.nanoTime();
+    public Instant resetAuthTimeout() {
+        Instant value = getAuthTimeoutStart();
+        this.authStart = Instant.now();
         return value;
     }
 
     /**
      * Checks if authentication timeout expired
      *
-     * @param  now           The current time in millis
-     * @param  nanoTime      {@link System#nanoTime()} value
-     * @param  authTimeoutMs The configured timeout in millis - if non-positive then no timeout
-     * @return               A {@link TimeoutIndicator} specifying the timeout status and disconnect reason message if
-     *                       timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
-     * @see                  #getAuthTimeout()
+     * @param  now         The current time in millis
+     * @param  authTimeout The configured timeout - if non-positive then no timeout
+     * @return             A {@link TimeoutIndicator} specifying the timeout status and disconnect reason message if
+     *                     timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
+     * @see                #getAuthTimeout()
      */
-    protected TimeoutIndicator checkAuthenticationTimeout(
-            long now, long nanoTime, long authTimeoutMs) {
-        long authDiffNano = nanoTime - authNanoStart;
-        long authDiffMs = TimeUnit.NANOSECONDS.toMillis(authDiffNano);
-        if ((!isAuthenticated()) && (authTimeoutMs > 0L) && (authDiffMs > authTimeoutMs)) {
-            return new TimeoutIndicator(TimeoutStatus.AuthTimeout, authTimeoutMs, authDiffMs);
+    protected TimeoutIndicator checkAuthenticationTimeout(Instant now, Duration authTimeout) {
+        Duration d = Duration.between(authStart, now);
+        if ((!isAuthenticated()) && GenericUtils.isPositive(authTimeout) && (d.compareTo(authTimeout) > 0)) {
+            return new TimeoutIndicator(TimeoutStatus.AuthTimeout, authTimeout, d);
         } else {
             return null;
         }
     }
 
     @Override
-    public long getIdleTimeoutStart() {
-        return idleTimeoutStart;
+    public Instant getIdleTimeoutStart() {
+        return idleStart;
     }
 
     /**
      * Checks if idle timeout expired
      *
-     * @param  now           The current time in millis
-     * @param  nanoTime      {@link System#nanoTime()} value
-     * @param  idleTimeoutMs The configured timeout in millis - if non-positive then no timeout
-     * @return               A {@link TimeoutIndicator} specifying the timeout status and disconnect reason message if
-     *                       timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
-     * @see                  #getIdleTimeout()
+     * @param  now         The current time in millis
+     * @param  idleTimeout The configured timeout - if non-positive then no timeout
+     * @return             A {@link TimeoutIndicator} specifying the timeout status and disconnect reason message if
+     *                     timeout expired, {@code null} or {@code NoTimeout} if no timeout occurred
+     * @see                #getIdleTimeout()
      */
-    protected TimeoutIndicator checkIdleTimeout(
-            long now, long nanoTime, long idleTimeoutMs) {
-        long idleDiffNano = nanoTime - idleNanoStart;
-        long idleDiffMs = TimeUnit.NANOSECONDS.toMillis(idleDiffNano);
-        if ((idleTimeoutMs > 0L) && (idleDiffMs > idleTimeoutMs)) {
-            return new TimeoutIndicator(TimeoutStatus.IdleTimeout, idleTimeoutMs, idleDiffMs);
+    protected TimeoutIndicator checkIdleTimeout(Instant now, Duration idleTimeout) {
+        Duration d = Duration.between(idleStart, now);
+        if (isAuthenticated() && GenericUtils.isPositive(idleTimeout) && (d.compareTo(idleTimeout) > 0)) {
+            return new TimeoutIndicator(TimeoutStatus.IdleTimeout, idleTimeout, d);
         } else {
             return null;
         }
     }
 
     @Override
-    public long resetIdleTimeout() {
-        long value = getIdleTimeoutStart();
-        this.idleTimeoutStart = System.currentTimeMillis();
-        this.idleNanoStart = System.nanoTime();
+    public Instant resetIdleTimeout() {
+        Instant value = getIdleTimeoutStart();
+        this.idleStart = Instant.now();
         return value;
     }
 
@@ -833,8 +824,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * @throws IOException if malformed identification found
      */
     protected List<String> doReadIdentification(Buffer buffer, boolean server) throws IOException {
-        int maxIdentSize = PropertyResolverUtils.getIntProperty(this,
-                FactoryManager.MAX_IDENTIFICATION_SIZE, FactoryManager.DEFAULT_MAX_IDENTIFICATION_SIZE);
+        int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequired(this);
         List<String> ident = null;
         int rpos = buffer.rpos();
         boolean debugEnabled = log.isDebugEnabled();
@@ -1068,9 +1058,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
-        long disconnectTimeoutMs = this.getLongProperty(
-                FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
-        IoWriteFuture packetFuture = writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS);
+        Duration disconnectTimeout = CoreModuleProperties.DISCONNECT_TIMEOUT.getRequired(this);
+        IoWriteFuture packetFuture = writePacket(buffer, disconnectTimeout);
         packetFuture.addListener(future -> {
             Throwable t = future.getException();
             boolean debugEnabled = log.isDebugEnabled();
@@ -1328,13 +1317,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public long getAuthTimeout() {
-        return this.getLongProperty(FactoryManager.AUTH_TIMEOUT, FactoryManager.DEFAULT_AUTH_TIMEOUT);
+    public Duration getAuthTimeout() {
+        return CoreModuleProperties.AUTH_TIMEOUT.getRequired(this);
     }
 
     @Override
-    public long getIdleTimeout() {
-        return this.getLongProperty(FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
+    public Duration getIdleTimeout() {
+        return CoreModuleProperties.IDLE_TIMEOUT.getRequired(this);
     }
 
     @Override

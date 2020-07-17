@@ -26,6 +26,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Client channel to run a subsystem
@@ -33,23 +34,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSubsystem extends ChannelSession {
-    /**
-     * Configure whether reply for the &quot;subsystem&quoot; request is required
-     * 
-     * @see #DEFAULT_REQUEST_SUBSYSTEM_REPLY
-     */
-    public static final String REQUEST_SUBSYSTEM_REPLY = "channel-subsystem-want-reply";
-
-    /**
-     * <P>
-     * Default value for {@link #REQUEST_SUBSYSTEM_REPLY} - according to
-     * <A HREF="https://tools.ietf.org/html/rfc4254#section-6.5">RFC4254 section 6.5:</A>
-     * </P>
-     * <P>
-     * It is RECOMMENDED that the reply to these messages be requested and checked.
-     * </P>
-     */
-    public static final boolean DEFAULT_REQUEST_SUBSYSTEM_REPLY = true;
 
     private final String subsystem;
 
@@ -77,8 +61,7 @@ public class ChannelSubsystem extends ChannelSession {
         }
 
         Session session = getSession();
-        boolean wantReply = this.getBooleanProperty(
-                REQUEST_SUBSYSTEM_REPLY, DEFAULT_REQUEST_SUBSYSTEM_REPLY);
+        boolean wantReply = CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
                 Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
         buffer.putInt(getRecipient());

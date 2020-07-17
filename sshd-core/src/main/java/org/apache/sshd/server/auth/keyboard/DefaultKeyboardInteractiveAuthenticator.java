@@ -25,6 +25,7 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -36,17 +37,6 @@ import org.apache.sshd.server.session.ServerSession;
 public class DefaultKeyboardInteractiveAuthenticator
         extends AbstractLoggingBean
         implements KeyboardInteractiveAuthenticator {
-    // configuration parameters on the FactoryManager to configure the message values
-    public static final String KB_INTERACTIVE_NAME_PROP = "kb-server-interactive-name";
-    public static final String DEFAULT_KB_INTERACTIVE_NAME = "Password authentication";
-    public static final String KB_INTERACTIVE_INSTRUCTION_PROP = "kb-server-interactive-instruction";
-    public static final String DEFAULT_KB_INTERACTIVE_INSTRUCTION = "";
-    public static final String KB_INTERACTIVE_LANG_PROP = "kb-server-interactive-language";
-    public static final String DEFAULT_KB_INTERACTIVE_LANG = "en-US";
-    public static final String KB_INTERACTIVE_PROMPT_PROP = "kb-server-interactive-prompt";
-    public static final String DEFAULT_KB_INTERACTIVE_PROMPT = "Password: ";
-    public static final String KB_INTERACTIVE_ECHO_PROMPT_PROP = "kb-server-interactive-echo-prompt";
-    public static final boolean DEFAULT_KB_INTERACTIVE_ECHO_PROMPT = false;
 
     public static final DefaultKeyboardInteractiveAuthenticator INSTANCE = new DefaultKeyboardInteractiveAuthenticator();
 
@@ -103,22 +93,22 @@ public class DefaultKeyboardInteractiveAuthenticator
     }
 
     protected String getInteractionName(ServerSession session) {
-        return session.getStringProperty(KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
+        return CoreModuleProperties.KB_SERVER_INTERACTIVE_NAME.getRequired(session);
     }
 
     protected String getInteractionInstruction(ServerSession session) {
-        return session.getStringProperty(KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
+        return CoreModuleProperties.KB_SERVER_INTERACTIVE_INSTRUCTION.getRequired(session);
     }
 
     protected String getInteractionLanguage(ServerSession session) {
-        return session.getStringProperty(KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
+        return CoreModuleProperties.KB_SERVER_INTERACTIVE_LANG.getRequired(session);
     }
 
     protected String getInteractionPrompt(ServerSession session) {
-        return session.getStringProperty(KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
+        return CoreModuleProperties.KB_SERVER_INTERACTIVE_PROMPT.getRequired(session);
     }
 
     protected boolean isInteractionPromptEchoEnabled(ServerSession session) {
-        return session.getBooleanProperty(KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
+        return CoreModuleProperties.KB_SERVER_INTERACTIVE_ECHO_PROMPT.getRequired(session);
     }
 }

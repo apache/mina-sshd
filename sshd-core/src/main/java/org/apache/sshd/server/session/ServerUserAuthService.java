@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -55,7 +54,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.ServerAuthenticationManager;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.UserAuth;
@@ -89,11 +88,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             throw new SshException("Session already authenticated");
         }
 
-        Object phase = this.getObject(ServerAuthenticationManager.WELCOME_BANNER_PHASE);
-        phase = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, phase, false, WelcomeBannerPhase.VALUES);
-        welcomePhase = (phase == null) ? ServerAuthenticationManager.DEFAULT_BANNER_PHASE : (WelcomeBannerPhase) phase;
-        maxAuthRequests = this.getIntProperty(
-                ServerAuthenticationManager.MAX_AUTH_REQUESTS, ServerAuthenticationManager.DEFAULT_MAX_AUTH_REQUESTS);
+        welcomePhase = CoreModuleProperties.WELCOME_BANNER_PHASE.getRequired(this);
+        maxAuthRequests = CoreModuleProperties.MAX_AUTH_REQUESTS.getRequired(this);
 
         List<UserAuthFactory> factories = ValidateUtils.checkNotNullAndNotEmpty(
                 serverSession.getUserAuthFactories(), "No user auth factories for %s", s);
@@ -101,7 +97,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         // Get authentication methods
         authMethods = new ArrayList<>();
 
-        String mths = this.getString(ServerAuthenticationManager.AUTH_METHODS);
+        String mths = CoreModuleProperties.AUTH_METHODS.getOrNull(this);
         if (GenericUtils.isEmpty(mths)) {
             for (UserAuthFactory uaf : factories) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -404,7 +400,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (success) {
-            Integer maxSessionCount = session.getInteger(ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+            Integer maxSessionCount = CoreModuleProperties.MAX_CONCURRENT_SESSIONS.getOrNull(session);
             if (maxSessionCount != null) {
                 int currentSessionCount = session.getActiveSessionCountForUser(username);
                 if (currentSessionCount >= maxSessionCount) {
@@ -533,9 +529,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return null;
         }
 
-        String lang = this.getStringProperty(
-                ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE,
-                ServerAuthenticationManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+        String lang = CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER,
                 welcomeBanner.length() + GenericUtils.length(lang) + Long.SIZE);
         buffer.putString(welcomeBanner);
@@ -549,7 +543,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected String resolveWelcomeBanner(ServerSession session) throws IOException {
-        Object bannerValue = this.getObject(ServerAuthenticationManager.WELCOME_BANNER);
+        Object bannerValue = CoreModuleProperties.WELCOME_BANNER.getOrNull(this);
         if (bannerValue == null) {
             return null;
         }
@@ -560,7 +554,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 return null;
             }
 
-            if (ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(message)) {
+            if (CoreModuleProperties.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(message)) {
                 try {
                     return KeyRandomArt.combine(session, ' ', session.getKeyPairProvider());
                 } catch (Exception e) {
@@ -597,7 +591,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             Path path = (Path) bannerValue;
             if ((!Files.exists(path)) || (Files.size(path) <= 0L)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("resolveWelcomeBanner({}) file is empty/does not exist", session, path);
+                    log.debug("resolveWelcomeBanner({}) file is empty/does not exist {}", session, path);
                 }
                 return null;
             }
@@ -609,8 +603,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (bannerValue instanceof URL) {
-            Charset cs = this.getCharset(
-                    ServerAuthenticationManager.WELCOME_BANNER_CHARSET, Charset.defaultCharset());
+            Charset cs = CoreModuleProperties.WELCOME_BANNER_CHARSET.getRequired(this);
             return loadWelcomeBanner(session, (URL) bannerValue, cs);
         }
 

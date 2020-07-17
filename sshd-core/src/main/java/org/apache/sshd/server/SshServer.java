@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
@@ -361,9 +363,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         try {
-            long maxWait = immediately
-                    ? this.getLongProperty(STOP_WAIT_TIME, DEFAULT_STOP_WAIT_TIME)
-                    : Long.MAX_VALUE;
+            Duration maxWait
+                    = immediately ? CoreModuleProperties.STOP_WAIT_TIME.getRequired(this) : Duration.ofMillis(Long.MAX_VALUE);
             boolean successful = close(immediately).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");

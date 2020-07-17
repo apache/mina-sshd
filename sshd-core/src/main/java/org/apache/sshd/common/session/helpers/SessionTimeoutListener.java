@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -43,7 +44,7 @@ public class SessionTimeoutListener
     @Override
     public void sessionCreated(Session session) {
         if ((session instanceof SessionHelper)
-                && ((session.getAuthTimeout() > 0L) || (session.getIdleTimeout() > 0L))) {
+                && (GenericUtils.isPositive(session.getAuthTimeout()) || GenericUtils.isPositive(session.getIdleTimeout()))) {
             sessions.add((SessionHelper) session);
             if (log.isDebugEnabled()) {
                 log.debug("sessionCreated({}) tracking", session);

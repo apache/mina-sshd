@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,10 +30,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * TODO Add javadoc
@@ -59,7 +60,11 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private long timeout;
 
     public ChannelPipedInputStream(PropertyResolver resolver, Window localWindow) {
-        this(localWindow, resolver.getLongProperty(FactoryManager.WINDOW_TIMEOUT, FactoryManager.DEFAULT_WINDOW_TIMEOUT));
+        this(localWindow, CoreModuleProperties.WINDOW_TIMEOUT.getRequired(resolver));
+    }
+
+    public ChannelPipedInputStream(Window localWindow, Duration windowTimeout) {
+        this(localWindow, Objects.requireNonNull(windowTimeout, "No window timeout provided").toMillis());
     }
 
     public ChannelPipedInputStream(Window localWindow, long windowTimeout) {
