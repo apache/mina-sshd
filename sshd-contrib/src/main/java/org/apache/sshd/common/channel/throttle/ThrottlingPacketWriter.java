@@ -24,7 +24,6 @@ import java.io.InterruptedIOException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,7 +35,6 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.PacketWriter;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -63,7 +61,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     private final boolean traceEnabled;
     private final PacketWriter delegate;
     private final int maxPendingPackets;
-    private final Duration maxWait;
+    private final long maxWait;
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final AtomicInteger availableCount;
 
@@ -76,19 +74,19 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     }
 
     public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
-        this(delegate, maxPendingPackets, Duration.ofMillis(waitUnit.toMillis(waitCount)));
-    }
-
-    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, long maxWait) {
-        this(delegate, maxPendingPackets, Duration.ofMillis(maxWait));
+        this(delegate, maxPendingPackets, waitUnit.toMillis(waitCount));
     }
 
     public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, Duration maxWait) {
+        this(delegate, maxPendingPackets, maxWait.toMillis());
+    }
+
+    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, long maxWait) {
         this.delegate = Objects.requireNonNull(delegate, "No delegate provided");
         ValidateUtils.checkTrue(maxPendingPackets > 0, "Invalid pending packets limit: %d", maxPendingPackets);
         this.maxPendingPackets = maxPendingPackets;
         this.availableCount = new AtomicInteger(maxPendingPackets);
-        ValidateUtils.checkTrue(GenericUtils.isPositive(maxWait), "Invalid max. pending wait time: %d", maxWait);
+        ValidateUtils.checkTrue(maxWait > 0L, "Invalid max. pending wait time: %d", maxWait);
         this.maxWait = maxWait;
         this.traceEnabled = log.isTraceEnabled();
     }
@@ -105,7 +103,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
         return availableCount.get();
     }
 
-    public Duration getMaxWait() {
+    public long getMaxWait() {
         return maxWait;
     }
 
@@ -120,30 +118,32 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
             throw new ClosedSelectorException();
         }
 
-        Instant now = Instant.now();
-        Instant max = now.plus(getMaxWait());
+        long remainWait = getMaxWait();
         int available;
         synchronized (availableCount) {
             while (availableCount.get() == 0) {
-                Duration rem = Duration.between(now, max);
-                if (rem.isNegative()) {
-                    throw new InterruptedByTimeoutException();
-                }
+                long waitStart = System.currentTimeMillis();
                 try {
-                    availableCount.wait(rem.toMillis(), rem.getNano() % 1_000_000);
+                    availableCount.wait(remainWait);
                 } catch (InterruptedException e) {
                     throw new InterruptedIOException(
-                            "Interrupted after " + Duration.between(now, Instant.now()));
+                            "Interrupted after " + (System.currentTimeMillis() - waitStart) + " msec.");
                 }
-                now = Instant.now();
+                long waitDuration = System.currentTimeMillis() - waitStart;
+                if (waitDuration <= 0L) {
+                    waitDuration = 1L;
+                }
+                remainWait -= waitDuration;
+                if (remainWait <= 0L) {
+                    throw new InterruptedByTimeoutException();
+                }
             }
 
             available = availableCount.decrementAndGet();
         }
 
         if (traceEnabled) {
-            log.trace("writePacket({}) available={} after {} msec.", this, available,
-                    getMaxWait().minus(Duration.between(now, max)));
+            log.trace("writePacket({}) available={} after {} msec.", this, available, getMaxWait() - remainWait);
         }
         if (available < 0) {
             throw new EOFException("Negative available packets count: " + available);

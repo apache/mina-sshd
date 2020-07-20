@@ -50,7 +50,7 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
         super();
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void testThrottlerWaitsUntilPacketSendSignalled() throws IOException {
         try (ThrottlingPacketWriter throttler
                 = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
@@ -84,7 +84,7 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
         }
     }
 
-    @Test(expected = ClosedSelectorException.class)
+    @Test(expected = ClosedSelectorException.class, timeout = 10_000)
     public void testThrottlerDoesNotSendIfClosed() throws IOException {
         try (PacketWriter throttler
                 = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
@@ -97,7 +97,7 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
         }
     }
 
-    @Test(expected = ClosedSelectorException.class)
+    @Test(expected = ClosedSelectorException.class, timeout = 10_000)
     public void testThrottlerStopsSendingIfExceptionSignaledOnFutureOperationCompletion() throws IOException {
         try (PacketWriter throttler
                 = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
