@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
@@ -31,6 +30,10 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
+import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.common.SftpHelper;
+import org.apache.sshd.sftp.server.AbstractSftpSubsystemHelper;
+import org.apache.sshd.sftp.server.SftpSubsystem;
 
 /**
  * Configurable properties for sshd-sftp.
@@ -57,44 +60,44 @@ public final class SftpModuleProperties {
             = Property.duration("sftp-channel-open-timeout", Duration.ofSeconds(15L));
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystem}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystem}.
      */
     public static final Property<Integer> POOL_SIZE
             = Property.integer("sftp-fs-pool-size", 8);
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.
      */
     public static final Property<Integer> READ_BUFFER_SIZE
             = Property.integer("sftp-fs-read-buffer-size");
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.
      */
     public static final Property<Integer> WRITE_BUFFER_SIZE
             = Property.integer("sftp-fs-write-buffer-size");
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.
      */
     public static final Property<Duration> CONNECT_TIME
             = Property.duration("sftp-fs-connect-time", Duration.ofSeconds(15L));
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.
      */
     public static final Property<Duration> AUTH_TIME
             = Property.duration("sftp-fs-auth-time", Duration.ofSeconds(15L));
 
     /**
-     * See {@link org.apache.sshd.client.subsystem.sftp.fs.SftpFileSystemProvider}.
+     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.
      */
     public static final Property<Charset> NAME_DECODER_CHARSET
             = Property.charset("sftp-fs-name-decoder-charset", StandardCharsets.UTF_8);
     /**
      * Property used to avoid large buffers when
-     * {@link org.apache.sshd.client.subsystem.sftp.impl.AbstractSftpClient#write(SftpClient.Handle, long, byte[], int, int)}
-     * is invoked with a large buffer size.
+     * {@link org.apache.sshd.sftp.client.impl.AbstractSftpClient#write(SftpClient.Handle, long, byte[], int, int)} is
+     * invoked with a large buffer size.
      */
     public static final Property<Integer> WRITE_CHUNK_SIZE
             = Property.integer("sftp-client-write-chunk-size",
@@ -108,9 +111,8 @@ public final class SftpModuleProperties {
 
     /**
      * Used to control whether to append the end-of-list indicator for SSH_FXP_NAME responses via
-     * {@link org.apache.sshd.common.subsystem.sftp.SftpHelper#indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)}
-     * call, as indicated by <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 -
-     * section 9.4</A>
+     * {@link SftpHelper#indicateEndOfNamesList(Buffer, int, PropertyResolver, boolean)} call, as indicated by
+     * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.4">SFTP v6 - section 9.4</A>
      */
     public static final Property<Boolean> APPEND_END_OF_LIST_INDICATOR
             = Property.bool("sftp-append-eol-indicator", true);
@@ -124,10 +126,10 @@ public final class SftpModuleProperties {
     /**
      * Allows controlling reports of which client extensions are supported (and reported via &quot;support&quot; and
      * &quot;support2&quot; server extensions) as a comma-separate list of names. <B>Note:</B> requires overriding the
-     * {@link org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper#executeExtendedCommand(Buffer, int, String)}
-     * command accordingly. If empty string is set then no server extensions are reported
+     * {@link AbstractSftpSubsystemHelper#executeExtendedCommand(Buffer, int, String)} command accordingly. If empty
+     * string is set then no server extensions are reported
      *
-     * @see org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper#DEFAULT_SUPPORTED_CLIENT_EXTENSIONS
+     * @see AbstractSftpSubsystemHelper#DEFAULT_SUPPORTED_CLIENT_EXTENSIONS
      */
     public static final Property<String> CLIENT_EXTENSIONS
             = Property.string("sftp-client-extensions");
@@ -135,14 +137,14 @@ public final class SftpModuleProperties {
     /**
      * Comma-separated list of which {@code OpenSSH} extensions are reported and what version is reported for each -
      * format: {@code name=version}. If empty value set, then no such extensions are reported. Otherwise, the
-     * {@link org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper#DEFAULT_OPEN_SSH_EXTENSIONS} are used
+     * {@link AbstractSftpSubsystemHelper#DEFAULT_OPEN_SSH_EXTENSIONS} are used
      */
     public static final Property<String> OPENSSH_EXTENSIONS
             = Property.string("sftp-openssh-extensions");
 
     /**
      * Comma separate list of {@code SSH_ACL_CAP_xxx} names - where name can be without the prefix. If not defined then
-     * {@link org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper#DEFAULT_ACL_SUPPORTED_MASK} is used
+     * {@link AbstractSftpSubsystemHelper#DEFAULT_ACL_SUPPORTED_MASK} is used
      */
     public static final Property<String> ACL_SUPPORTED_MASK
             = Property.string("sftp-acl-supported-mask");
@@ -154,9 +156,8 @@ public final class SftpModuleProperties {
             = Property.string("sftp-newline", IoUtils.EOL);
 
     /**
-     * Force the use of a max. packet length for
-     * {@link org.apache.sshd.server.subsystem.sftp.AbstractSftpSubsystemHelper#doRead(Buffer, int)} protection against
-     * malicious packets
+     * Force the use of a max. packet length for {@link AbstractSftpSubsystemHelper#doRead(Buffer, int)} protection
+     * against malicious packets
      */
     public static final Property<Integer> MAX_READDATA_PACKET_LENGTH
             = Property.integer("sftp-max-readdata-packet-length", 63 * 1024);
@@ -189,7 +190,7 @@ public final class SftpModuleProperties {
      * Max. rounds to attempt to create a unique file handle - if all handles already in use after these many rounds,
      * then an exception is thrown
      *
-     * @see org.apache.sshd.server.subsystem.sftp.SftpSubsystem#generateFileHandle(Path)
+     * @see SftpSubsystem#generateFileHandle(Path)
      * @see #DEFAULT_FILE_HANDLE_ROUNDS
      */
     public static final Property<Integer> MAX_FILE_HANDLE_RAND_ROUNDS
@@ -202,7 +203,7 @@ public final class SftpModuleProperties {
 
     /**
      * Maximum amount of data allocated for listing the contents of a directory in any single invocation of
-     * {@link org.apache.sshd.server.subsystem.sftp.SftpSubsystem#doReadDir(Buffer, int)}
+     * {@link SftpSubsystem#doReadDir(Buffer, int)}
      */
     public static final Property<Integer> MAX_READDIR_DATA_SIZE
             = Property.integer("sftp-max-readdir-data-size", 16 * 1024);

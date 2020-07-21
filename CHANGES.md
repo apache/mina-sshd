@@ -14,6 +14,7 @@
 
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename {{org.apache.sshd.common.ForwardingFilter}} to {{Forwarder}}.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
+* [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1035) Refactor packages from a module into a cleaner hierarchy.
 
 ## Minor code helpers
 

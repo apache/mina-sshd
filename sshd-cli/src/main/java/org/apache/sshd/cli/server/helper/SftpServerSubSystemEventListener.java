@@ -25,9 +25,9 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
+import org.apache.sshd.sftp.common.SftpConstants;
+import org.apache.sshd.sftp.server.SftpEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
