@@ -375,6 +375,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                     log.debug("handleReadCycleCompletion({}) Socket has been disconnected (result={}), closing IoSession now",
                             this, result);
                 }
+                close(true);
             }
         } catch (Throwable exc) {
             completionHandler.failed(exc, attachment);
