@@ -27,7 +27,6 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -104,7 +103,7 @@ public final class SshServerConfigFileReader {
 
     public static <S extends SshServer> S configure(
             S server, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
-        SshConfigFileReader.configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
+        SshConfigFileReader.configure(server, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
         setupServerHeartbeat(server, props);
         return server;

@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -71,6 +70,7 @@ import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.config.CompressionConfigValue;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
+import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -176,13 +176,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 Path idFile = resolveIdentityFile(argVal);
                 identities.add(idFile);
             } else if ("-C".equals(argName)) {
-                compressions = setupCompressions(argName,
-                        GenericUtils.join(
-                                Arrays.asList(
-                                        BuiltinCompressions.Constants.ZLIB,
-                                        BuiltinCompressions.Constants.DELAYED_ZLIB),
-                                ','),
-                        compressions, stderr);
+                compressions = setupCompressions(argName, argVal, compressions, stderr);
                 if (GenericUtils.isEmpty(compressions)) {
                     error = true;
                     break;
@@ -392,6 +386,8 @@ public abstract class SshClientCliSupport extends CliSupport {
             PrintStream stdout, PrintStream stderr, String... args) {
         SshClient client = setupIoServiceFactory(
                 SshClient.setUpDefaultClient(), resolver, level, stdout, stderr, args);
+        SshConfigFileReader.configureKeyExchanges(client, resolver, true, ClientBuilder.DH2KEX, true);
+        SshConfigFileReader.configureSignatures(client, resolver, true, true);
         SshClientConfigFileReader.setupClientHeartbeat(client, resolver);
         return client;
     }

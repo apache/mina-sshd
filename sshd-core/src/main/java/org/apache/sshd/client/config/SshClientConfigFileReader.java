@@ -28,7 +28,6 @@ import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -89,7 +88,7 @@ public final class SshClientConfigFileReader {
 
     public static <C extends SshClient> C configure(
             C client, PropertyResolver props, boolean lenient, boolean ignoreUnsupported) {
-        SshConfigFileReader.configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
+        SshConfigFileReader.configure(client, props, lenient, ignoreUnsupported);
         SshConfigFileReader.configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
         setupClientHeartbeat(client, props);
         return client;
