@@ -30,6 +30,10 @@ import java.util.Map;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.sftp.server.AbstractSftpEventListenerAdapter;
+import org.apache.sshd.sftp.server.DirectoryHandle;
+import org.apache.sshd.sftp.server.FileHandle;
+import org.apache.sshd.sftp.server.Handle;
 
 /**
  * Provides a simple access control by making a distinction between methods that provide information - including reading

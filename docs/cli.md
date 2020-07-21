@@ -31,7 +31,7 @@ This can be overridden as follows:
 1. Provide a `-o SftpClientFactory=XXX` command line argument where the option specifies the fully-qualified name of
 the class that implements this interface.
 
-2. Add a `META-INF\services\org.apache.sshd.client.subsystem.sftp.SftpClientFactory` file containing the fully-qualified name of
+2. Add a `META-INF\services\org.apache.sshd.sftp.client.SftpClientFactory` file containing the fully-qualified name of
 the class that implements this interface. **Note:** if more than one such instance is detected an exception is thrown.
 
 **Note:** The specified class(es) must be public and contain a public no-args constructor.
