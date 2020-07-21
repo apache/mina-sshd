@@ -275,7 +275,7 @@ public final class CoreModuleProperties {
      * Key used to retrieve the value of the socket read timeout for NIO2 session implementation - in milliseconds.
      */
     public static final Property<Duration> NIO2_READ_TIMEOUT
-            = Property.duration("nio2-read-timeout", IDLE_TIMEOUT.getRequiredDefault().plus(Duration.ofSeconds(15L)));
+            = Property.duration("nio2-read-timeout", Duration.ZERO);
 
     /**
      * Minimum NIO2 write wait timeout for a single outgoing packet - in milliseconds
