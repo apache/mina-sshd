@@ -33,7 +33,6 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
-import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.HostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -179,7 +178,7 @@ public class SshServerMain extends SshServerCliSupport {
         Map<String, Object> props = sshd.getProperties();
         props.putAll(options);
 
-        SshServerConfigFileReader.setupServerHeartbeat(sshd, resolver);
+        SshServerConfigFileReader.configure(sshd, resolver, true, true);
         KeyPairProvider hostKeyProvider = resolveServerKeys(System.err, hostKeyType, hostKeySize, keyFiles);
         sshd.setKeyPairProvider(hostKeyProvider);
         if (GenericUtils.isNotEmpty(certFiles)) {
@@ -190,11 +189,6 @@ public class SshServerMain extends SshServerCliSupport {
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
         sshd.setPort(port);
-
-        String macsOverride = resolver.getString(ConfigFileReaderSupport.MACS_CONFIG_PROP);
-        if (GenericUtils.isNotEmpty(macsOverride)) {
-            SshConfigFileReader.configureMacs(sshd, macsOverride, true, true);
-        }
 
         ShellFactory shellFactory = resolveShellFactory(System.err, resolver);
         if (shellFactory != null) {

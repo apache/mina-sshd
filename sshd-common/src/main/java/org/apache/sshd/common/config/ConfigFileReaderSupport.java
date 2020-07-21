@@ -30,15 +30,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.auth.UserAuthMethodFactory;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
@@ -70,12 +65,6 @@ public final class ConfigFileReaderSupport {
     public static final boolean DEFAULT_KBD_INTERACTIVE_AUTH_VALUE = parseBooleanValue(DEFAULT_KBD_INTERACTIVE_AUTH);
 
     public static final String PREFERRED_AUTHS_CONFIG_PROP = "PreferredAuthentications";
-    public static final List<String> DEFAULT_PREFERRED_AUTHS = Collections.unmodifiableList(
-            Arrays.asList(
-                    UserAuthMethodFactory.PUBLIC_KEY,
-                    UserAuthMethodFactory.KB_INTERACTIVE,
-                    UserAuthMethodFactory.PASSWORD));
-    public static final String DEFAULT_PREFERRED_AUTHS_VALUE = GenericUtils.join(DEFAULT_PREFERRED_AUTHS, ',');
 
     public static final String LISTEN_ADDRESS_CONFIG_PROP = "ListenAddress";
     public static final String DEFAULT_BIND_ADDRESS = SshdSocketAddress.IPV4_ANYADDR;
@@ -96,27 +85,12 @@ public final class ConfigFileReaderSupport {
     public static final long DEFAULT_REKEY_TIME_LIMIT = TimeUnit.HOURS.toMillis(1L);
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String CIPHERS_CONFIG_PROP = "Ciphers";
-    public static final String DEFAULT_CIPHERS = "aes128-ctr,aes192-ctr,aes256-ctr,arcfour256,arcfour128,aes128-cbc,3des-cbc"
-                                                 + ",blowfish-cbc,cast128-cbc,aes192-cbc,aes256-cbc,arcfour";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String MACS_CONFIG_PROP = "MACs";
-    public static final String DEFAULT_MACS = "hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160,hmac-sha1-96"
-                                              + ",hmac-md5-96,hmac-sha2-256,hmac-sha2-256-96,hmac-sha2-512,hmac-sha2-512-96";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String KEX_ALGORITHMS_CONFIG_PROP = "KexAlgorithms";
-    public static final String DEFAULT_KEX_ALGORITHMS = "ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521"
-                                                        + ","
-                                                        + "diffie-hellman-group-exchange-sha256,diffie-hellman-group-exchange-sha1"
-                                                        // RFC-8268 groups
-                                                        + "," + "diffie-hellman-group18-sha512,diffie-hellman-group17-sha512"
-                                                        + "," + "diffie-hellman-group16-sha512,diffie-hellman-group15-sha512"
-                                                        + "," + "diffie-hellman-group14-sha256"
-                                                        // Legacy groups
-                                                        + "," + "diffie-hellman-group14-sha1,diffie-hellman-group1-sha1";
     // see http://linux.die.net/man/5/ssh_config
     public static final String HOST_KEY_ALGORITHMS_CONFIG_PROP = "HostKeyAlgorithms";
-    // see https://tools.ietf.org/html/rfc5656
-    public static final String DEFAULT_HOST_KEY_ALGORITHMS = KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS;
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String LOG_LEVEL_CONFIG_PROP = "LogLevel";
     public static final LogLevelValue DEFAULT_LOG_LEVEL = LogLevelValue.INFO;
