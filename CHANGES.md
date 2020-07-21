@@ -19,5 +19,6 @@
 
 ## Behavioral changes and enhancements
 
+* [SSHD-1032](https://issues.apache.org/jira/browse/SSHD-1032) Fix possible ArrayIndexOutOfBoundsException in ChannelAsyncOutputStream.
 * [SSHD-1033](https://issues.apache.org/jira/browse/SSHD-1033) Fix simultaneous usage of dynamic and local port forwarding.
 * [SSHD-1039](https://issues.apache.org/jira/browse/SSHD-1039) Fix support for some basic options in ssh/sshd cli.
