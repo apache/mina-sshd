@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.auth.pubkey;
+package org.apache.sshd.ldap;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -36,7 +36,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.server.auth.LdapAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.auth;
+package org.apache.sshd.ldap;
 
 import java.util.Comparator;
 import java.util.Map;

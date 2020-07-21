@@ -17,9 +17,8 @@
  * under the License.
  */
 
-package org.apache.sshd.server.auth;
+package org.apache.sshd.ldap;
 
-import org.apache.sshd.common.util.net.LdapNetworkConnector;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
