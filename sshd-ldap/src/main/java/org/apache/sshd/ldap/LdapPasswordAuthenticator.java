@@ -17,13 +17,14 @@
  * under the License.
  */
 
-package org.apache.sshd.server.auth.password;
+package org.apache.sshd.ldap;
 
 import java.util.Map;
 
 import javax.naming.NamingException;
 
-import org.apache.sshd.server.auth.LdapAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

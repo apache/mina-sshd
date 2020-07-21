@@ -17,14 +17,9 @@
  * under the License.
  */
 
-package org.apache.sshd.server.auth.pubkey;
+package org.apache.sshd.ldap;
 
-import java.security.PublicKey;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
@@ -32,11 +27,7 @@ import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.CreateLdapServerRule;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.auth.BaseAuthenticatorTest;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
@@ -53,47 +44,33 @@ import org.mockito.Mockito;
 @CreateLdapServer(allowAnonymousAccess = true,
                   transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
 @ApplyLdifFiles({ "auth-users.ldif" })
-public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
+public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
     @ClassRule
     public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
 
-    private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
-    // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
-    private static final String TEST_ATTR_NAME = "description";
+    private static Map<String, String> usersMap;
 
-    public LdapPublickeyAuthenticatorTest() {
+    public LdapPasswordAuthenticatorTest() {
         super();
     }
 
-    @Test
-    public void testPublicKeyComparison() throws Exception {
-        Map<String, String> credentials = populateUsers(serverRule.getLdapServer().getDirectoryService(),
-                LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
-        assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
+    @Test // the user's password is compared with the LDAP stored one
+    public void testPasswordComparison() throws Exception {
+        usersMap = populateUsers(serverRule.getLdapServer().getDirectoryService(),
+                LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
+        assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
 
-        // Cannot use forEach because of the potential GeneraSecurityException being thrown
-        for (Map.Entry<String, String> ce : credentials.entrySet()) {
-            String username = ce.getKey();
-            AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(ce.getValue());
-            PublicKey key = Objects.requireNonNull(entry, "No key extracted")
-                    .resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
-            KEYS_MAP.put(username, key);
-        }
-
-        LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
+        LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
         auth.setHost(getHost(serverRule.getLdapServer()));
         auth.setPort(getPort(serverRule.getLdapServer()));
         auth.setBaseDN(BASE_DN_TEST);
-        auth.setKeyAttributeName(TEST_ATTR_NAME);
-        auth.setRetrievedAttributes(TEST_ATTR_NAME);
 
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
-        KEYS_MAP.forEach((username, key) -> {
-            outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",
-                    username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-            assertTrue("Failed to authenticate user=" + username, auth.authenticate(username, key, session));
+        usersMap.forEach((username, password) -> {
+            outputDebugMessage("Authenticate: user=%s, password=%s", username, password);
+            assertTrue("Failed to authenticate " + username, auth.authenticate(username, password, session));
         });
     }
 }

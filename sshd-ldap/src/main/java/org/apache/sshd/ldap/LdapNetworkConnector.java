@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.net;
+package org.apache.sshd.ldap;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -44,6 +44,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.net.NetworkConnector;
 
 /**
  * Uses the <A HREF="http://docs.oracle.com/javase/7/docs/technotes/guides/jndi/jndi-ldap.html"> LDAP Naming Service
