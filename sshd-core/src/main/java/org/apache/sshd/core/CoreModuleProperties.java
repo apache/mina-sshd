@@ -144,7 +144,7 @@ public final class CoreModuleProperties {
      * for the reply. If non-positive then no reply is expected (nor requested).
      */
     public static final Property<Duration> HEARTBEAT_REPLY_WAIT
-            = Property.durationSec("heartbeat-reply-wait", Duration.ZERO);
+            = Property.durationSec("heartbeat-reply-wait", Duration.ofMinutes(5));
 
     /**
      * Whether to ignore invalid identities files when pre-initializing the client session
