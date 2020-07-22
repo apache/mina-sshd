@@ -108,11 +108,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             Channel channel = getChannel();
             Window remoteWindow = channel.getRemoteWindow();
             long length;
-            if (total > remoteWindow.getSize()) {
+            long remoteWindowSize = remoteWindow.getSize();
+            long packetSize = remoteWindow.getPacketSize();
+            if (total > remoteWindowSize) {
                 // if we have a big message and there is enough space, send the next chunk
-                if (remoteWindow.getSize() >= remoteWindow.getPacketSize()) {
+                if (remoteWindowSize >= packetSize) {
                     // send the first chunk as we have enough space in the window
-                    length = remoteWindow.getPacketSize();
+                    length = packetSize;
                 } else {
                     // do not chunk when the window is smaller than the packet size
                     length = 0;
@@ -122,16 +124,16 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     pendingWrite.set(f);
                     if (log.isTraceEnabled()) {
                         log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
-                                this, resume, remoteWindow.getSize());
+                                this, resume, remoteWindowSize);
                     }
                 }
-            } else if (total > remoteWindow.getPacketSize()) {
+            } else if (total > packetSize) {
                 if (buffer.rpos() > 0) {
                     // do a defensive copy in case the user reuses the buffer
                     IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
                     f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
                     pendingWrite.set(f);
-                    length = remoteWindow.getPacketSize();
+                    length = packetSize;
                     if (log.isTraceEnabled()) {
                         log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}",
                                 this, resume, length, total);
@@ -139,7 +141,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     doWriteIfPossible(resume);
                     return;
                 } else {
-                    length = remoteWindow.getPacketSize();
+                    length = packetSize;
                 }
             } else {
                 length = total;
