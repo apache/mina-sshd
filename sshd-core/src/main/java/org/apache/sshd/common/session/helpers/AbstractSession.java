@@ -184,7 +184,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected final AtomicLong outBytesCount = new AtomicLong(0L);
     protected final AtomicLong inBlocksCount = new AtomicLong(0L);
     protected final AtomicLong outBlocksCount = new AtomicLong(0L);
-    protected final AtomicReference<Instant> lastKeyTimeValue = new AtomicReference(Instant.now());
+    protected final AtomicReference<Instant> lastKeyTimeValue = new AtomicReference<>(Instant.now());
     // we initialize them here in case super constructor calls some methods that use these values
     protected long maxRekyPackets;
     protected long maxRekeyBytes;

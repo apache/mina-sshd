@@ -20,8 +20,10 @@
 package org.apache.sshd.client.kex;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Objects;
 
+import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -58,8 +60,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         this.factory = Objects.requireNonNull(factory, "No factory");
 
         // SSHD-941 give the user a chance to intervene in the choice
-        min = CoreModuleProperties.PROP_DHGEX_CLIENT_MIN_KEY.get(session).orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        max = CoreModuleProperties.PROP_DHGEX_CLIENT_MAX_KEY.get(session).orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
+        min = CoreModuleProperties.PROP_DHGEX_CLIENT_MIN_KEY.get(session)
+                .orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        max = CoreModuleProperties.PROP_DHGEX_CLIENT_MAX_KEY.get(session)
+                .orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
         prf = CoreModuleProperties.PROP_DHGEX_CLIENT_PRF_KEY.get(session)
                 .orElse(Math.min(SecurityUtils.PREFERRED_DHGEX_KEY_SIZE, max));
     }
@@ -117,7 +121,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public boolean next(int cmd, Buffer buffer) throws Exception {
-        Session session = getSession();
+        AbstractClientSession session = getClientSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("next({})[{}] process command={} (expected={})",
@@ -166,7 +170,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             k = dh.getK();
 
             buffer = new ByteArrayBuffer(k_s);
-            serverKey = buffer.getRawPublicKey();
+            PublicKey serverKey = buffer.getRawPublicKey();
 
             String keyAlg = KeyUtils.getKeyType(serverKey);
             if (GenericUtils.isEmpty(keyAlg)) {
@@ -202,6 +206,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
                         SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange signature verification failed for key type=" + keyAlg);
             }
+            session.setServerKey(serverKey);
             return true;
         }
 

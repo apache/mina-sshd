@@ -18,6 +18,8 @@
 
 ## Minor code helpers
 
+* [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
+
 ## Behavioral changes and enhancements
 
 * [SSHD-1028](https://issues.apache.org/jira/browse/SSHD-1028) Fix SSH_MSG_DISCONNECT: Too many concurrent connections.
