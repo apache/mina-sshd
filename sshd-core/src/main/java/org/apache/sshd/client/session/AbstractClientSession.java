@@ -86,6 +86,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private final AuthenticationIdentitiesProvider identitiesProvider;
     private final AttributeRepository connectionContext;
 
+    private PublicKey serverKey;
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
@@ -121,6 +122,20 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     public void setConnectAddress(SocketAddress connectAddress) {
         this.connectAddress = connectAddress;
+    }
+
+    @Override
+    public PublicKey getServerKey() {
+        return serverKey;
+    }
+
+    public void setServerKey(PublicKey serverKey) {
+        if (log.isDebugEnabled()) {
+            log.debug("setServerKey({}) keyType={}, digest={}",
+                    this, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
+        }
+
+        this.serverKey = serverKey;
     }
 
     @Override
@@ -544,7 +559,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
         IoSession networkSession = getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
-        PublicKey serverKey = kex.getServerKey();
+        PublicKey serverKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
 
         boolean verified = false;
         if (serverKey instanceof OpenSshCertificate) {

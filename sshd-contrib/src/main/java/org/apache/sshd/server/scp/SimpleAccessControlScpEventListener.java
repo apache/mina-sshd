@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
-import org.apache.sshd.common.scp.AbstractScpTransferEventListenerAdapter;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.scp.common.AbstractScpTransferEventListenerAdapter;
 
 /**
  * Provides a simple access control by making a distinction between methods that upload data and ones that download it

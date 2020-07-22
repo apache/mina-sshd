@@ -118,25 +118,6 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
     }
 
-    private static void testKnownDefaultFactoriesList(
-            String factories, Function<? super String, ? extends NamedResource> resolver) {
-        testKnownDefaultFactoriesList(factories, resolver, Collections.emptySet());
-    }
-
-    private static void testKnownDefaultFactoriesList(
-            String factories, Function<? super String, ? extends NamedResource> resolver, Collection<String> excludedNames) {
-        String[] names = GenericUtils.split(factories, ',');
-        assertTrue("No default names", GenericUtils.length(names) > 0);
-        for (String n : names) {
-            NamedResource facInstance = resolver.apply(n);
-            if (excludedNames.contains(n)) {
-                assertNull("Unexpected excluded factory instance: " + n, facInstance);
-            } else {
-                assertNotNull("Unknown factory: " + n, facInstance);
-            }
-        }
-    }
-
     @Test
     public void testGetCompression() {
         Properties props = new Properties();

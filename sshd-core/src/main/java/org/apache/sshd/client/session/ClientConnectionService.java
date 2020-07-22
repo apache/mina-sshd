@@ -125,7 +125,7 @@ public class ClientConnectionService
             buf.putBoolean(withReply);
 
             if (withReply) {
-                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait.toMillis(), TimeUnit.MILLISECONDS);
+                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait);
                 if (reply != null) {
                     if (log.isTraceEnabled()) {
                         log.trace("sendHeartBeat({}) received reply size={} for request={}",

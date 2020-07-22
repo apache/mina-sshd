@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.kex;
 
-import java.security.PublicKey;
 import java.util.Collections;
 import java.util.NavigableMap;
 
@@ -84,13 +83,6 @@ public interface KeyExchange extends NamedResource, SessionHolder<Session> {
      * @return The {@code k} parameter
      */
     byte[] getK();
-
-    /**
-     * Retrieves the server's key
-     *
-     * @return The server's {@link PublicKey}
-     */
-    PublicKey getServerKey();
 
     static String getGroupKexOpcodeName(int cmd) {
         String name = GROUP_KEX_OPCODES_MAP.get(cmd);

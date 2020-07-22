@@ -26,13 +26,14 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
-import org.apache.sshd.common.scp.ScpException;
-import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.scp.client.ScpClient;
+import org.apache.sshd.scp.client.ScpClientCreator;
+import org.apache.sshd.scp.common.ScpException;
+import org.apache.sshd.scp.common.ScpHelper;
+import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;

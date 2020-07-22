@@ -91,7 +91,7 @@ public final class OsUtils {
 
     /**
      * Can be used to enforce Win32 or Linux report from {@link #isWin32()}, {@link #isOSX()} or {@link #isUNIX()}
-     * 
+     *
      * @param os The value to set - if {@code null} then O/S type is auto-detected
      * @see      #isWin32()
      * @see      #isOSX()
@@ -104,7 +104,7 @@ public final class OsUtils {
     }
 
     /**
-     * Retrieve the OS
+     * @return The O/S type string value (lowercase)
      */
     private static String getOS() {
         String typeValue;
@@ -213,7 +213,7 @@ public final class OsUtils {
 
     /**
      * Can be used to programmatically set the username reported by {@link #getCurrentUser()}
-     * 
+     *
      * @param username The username to set - if {@code null} then {@link #CURRENT_USER_OVERRIDE_PROP} will be consulted
      */
     public static void setCurrentUser(String username) {
@@ -225,7 +225,7 @@ public final class OsUtils {
     /**
      * Resolves the reported Java version by consulting {@link #JAVA_VERSION_OVERRIDE_PROP}. If not set, then
      * &quot;java.version&quot; property is used
-     * 
+     *
      * @return The resolved {@link VersionInfo} - never {@code null}
      * @see    #setJavaVersion(VersionInfo)
      */
@@ -260,7 +260,7 @@ public final class OsUtils {
 
     /**
      * Set programmatically the reported Java version
-     * 
+     *
      * @param version The version - if {@code null} then it will be automatically resolved
      */
     public static void setJavaVersion(VersionInfo version) {

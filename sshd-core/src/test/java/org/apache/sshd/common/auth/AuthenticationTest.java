@@ -51,6 +51,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
@@ -942,6 +943,41 @@ public class AuthenticationTest extends BaseTestSupport {
                 client.stop();
             }
         }
+    }
+
+    @Test   // see SSHD-1040
+    public void testServerKeyAvailableAfterAuth() throws Exception {
+        KeyPairProvider keyPairProvider = sshd.getKeyPairProvider();
+        Iterable<KeyPair> availableKeys = keyPairProvider.loadKeys(null);
+        PublicKey actualKey = null;
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(AUTH_TIMEOUT);
+
+                KeyExchange kex = session.getKex();
+                assertNull("KEX no nullified after completion", kex);
+
+                actualKey = session.getServerKey();
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertNotNull("No server key extracted", actualKey);
+
+        for (KeyPair kp : availableKeys) {
+            PublicKey expectedKey = kp.getPublic();
+            if (KeyUtils.compareKeys(expectedKey, actualKey)) {
+                return;
+            }
+        }
+
+        fail("No matching server key found for " + actualKey);
     }
 
     private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {

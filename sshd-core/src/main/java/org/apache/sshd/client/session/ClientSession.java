@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -120,6 +121,13 @@ public interface ClientSession
      * @see                #addPublicKeyIdentity(java.security.KeyPair)
      */
     AuthFuture auth() throws IOException;
+
+    /**
+     * Retrieves the server's key
+     *
+     * @return The server's {@link PublicKey} - {@code null} if KEX not started or not completed
+     */
+    PublicKey getServerKey();
 
     /**
      * Create a channel of the given type. Same as calling <code>createChannel(type, null)</code>.

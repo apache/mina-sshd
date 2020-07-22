@@ -528,6 +528,10 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public KeyPair getHostKey() {
         String proposedKey = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         String keyType = KeyUtils.getCanonicalKeyType(proposedKey);
+        if (GenericUtils.isEmpty(keyType)) {
+            return null;    // OK if not negotiated yet
+        }
+
         KeyPairProvider provider = Objects.requireNonNull(getKeyPairProvider(), "No host keys provider");
         try {
             HostKeyCertificateProvider hostKeyCertificateProvider = getHostKeyCertificateProvider();

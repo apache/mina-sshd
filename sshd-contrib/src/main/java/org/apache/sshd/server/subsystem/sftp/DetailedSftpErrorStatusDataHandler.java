@@ -22,7 +22,9 @@ package org.apache.sshd.server.subsystem.sftp;
 import java.nio.file.FileSystemException;
 import java.util.Objects;
 
-import org.apache.sshd.common.subsystem.sftp.SftpException;
+import org.apache.sshd.sftp.common.SftpException;
+import org.apache.sshd.sftp.server.SftpErrorStatusDataHandler;
+import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 
 /**
  * An {@link SftpErrorStatusDataHandler} implementation that returns an elaborate message string for the thrown

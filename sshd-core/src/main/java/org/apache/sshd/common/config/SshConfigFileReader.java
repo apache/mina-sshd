@@ -248,7 +248,6 @@ public final class SshConfigFileReader {
      *                           thrown
      * @return                   The configured manager
      * @see                      ConfigFileReaderSupport#KEX_ALGORITHMS_CONFIG_PROP KEX_ALGORITHMS_CONFIG_PROP
-     * @see                      ConfigFileReaderSupport#DEFAULT_KEX_ALGORITHMS DEFAULT_KEX_ALGORITHMS
      */
     public static <M extends AbstractFactoryManager> M configureKeyExchanges(
             M manager, PropertyResolver props, boolean lenient,

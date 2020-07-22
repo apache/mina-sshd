@@ -34,16 +34,16 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import org.apache.sshd.cli.CliSupport;
-import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.scp.ScpClient.Option;
-import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.scp.ScpLocation;
-import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.scp.client.ScpClient;
+import org.apache.sshd.scp.client.ScpClient.Option;
+import org.apache.sshd.scp.client.ScpClientCreator;
+import org.apache.sshd.scp.common.ScpLocation;
+import org.apache.sshd.scp.common.ScpTransferEventListener;
 
 /**
  * TODO Add javadoc

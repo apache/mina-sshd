@@ -61,7 +61,7 @@ public class Ed25519PEMResourceKeyParser extends AbstractPEMResourceKeyPairParse
     public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
 
     /**
-     * @see <A HREF="https://tools.ietf.org/html/rfc8410#section-3>RFC8412 section 3</A>
+     * @see <A HREF="https://tools.ietf.org/html/rfc8410#section-3">RFC8412 section 3</A>
      */
     public static final String ED25519_OID = "1.3.101.112";
 
