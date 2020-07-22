@@ -103,7 +103,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
-        Object forced = props.remove(SftpModuleProperties.SFTP_VERSION);
+        Object forced = props.remove(SftpModuleProperties.SFTP_VERSION.getName());
         if (forced != null) {
             outputDebugMessage("Removed forced version=%s", forced);
         }

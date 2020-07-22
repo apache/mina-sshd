@@ -28,7 +28,8 @@ import java.util.function.Consumer;
 /**
  * Property definition.
  *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @param  <T> The generic property type
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Property<T> {
 
