@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -113,7 +114,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     @Override
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     public boolean next(int cmd, Buffer buffer) throws Exception {
-        Session session = getSession();
+        AbstractClientSession session = getClientSession();
         if (log.isDebugEnabled()) {
             log.debug("next({})[{}] process command={}",
                     this, session, KeyExchange.getSimpleKexOpcodeName(cmd));
@@ -132,7 +133,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         k = dh.getK();
 
         buffer = new ByteArrayBuffer(k_s);
-        serverKey = buffer.getRawPublicKey();
+        PublicKey serverKey = buffer.getRawPublicKey();
         PublicKey serverPublicHostKey = serverKey;
 
         if (serverKey instanceof OpenSshCertificate) {
@@ -182,6 +183,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     "KeyExchange signature verification failed for key type=" + keyAlg);
         }
 
+        session.setServerKey(serverKey);
         return true;
     }
 

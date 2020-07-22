@@ -19,10 +19,6 @@
 
 package org.apache.sshd.server.kex;
 
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.util.Objects;
-
 import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -43,13 +39,5 @@ public abstract class AbstractDHServerKeyExchange
     @Override
     public final ServerSession getServerSession() {
         return (ServerSession) getSession();
-    }
-
-    @Override
-    public PublicKey getServerKey() {
-        ServerSession session = getServerSession();
-        KeyPair kpHost = Objects.requireNonNull(
-                session.getHostKey(), "No server key pair available");
-        return kpHost.getPublic();
     }
 }

@@ -57,14 +57,14 @@ public class Nio2ServiceTest extends BaseTestSupport {
     @Test // see SSHD-554, SSHD-722
     public void testSetSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
-            Map<Property, Object> expectedOptions = new LinkedHashMap<>();
+            Map<Property<?>, Object> expectedOptions = new LinkedHashMap<>();
             expectedOptions.put(CoreModuleProperties.SOCKET_KEEPALIVE, true);
             expectedOptions.put(CoreModuleProperties.SOCKET_LINGER, 5);
             expectedOptions.put(CoreModuleProperties.SOCKET_RCVBUF, 1024);
             expectedOptions.put(CoreModuleProperties.SOCKET_REUSEADDR, true);
             expectedOptions.put(CoreModuleProperties.SOCKET_SNDBUF, 1024);
             expectedOptions.put(CoreModuleProperties.TCP_NODELAY, true);
-            for (Map.Entry<Property, ?> oe : expectedOptions.entrySet()) {
+            for (Map.Entry<Property<?>, ?> oe : expectedOptions.entrySet()) {
                 PropertyResolverUtils.updateProperty(sshd, oe.getKey().getName(), oe.getValue());
             }
 
@@ -89,8 +89,8 @@ public class Nio2ServiceTest extends BaseTestSupport {
                         return;
                     }
 
-                    for (Map.Entry<Property, ?> oe : expectedOptions.entrySet()) {
-                        Property prop = oe.getKey();
+                    for (Map.Entry<Property<?>, ?> oe : expectedOptions.entrySet()) {
+                        Property<?> prop = oe.getKey();
                         Object expValue = oe.getValue();
                         Map.Entry<SocketOption<?>, ?> optionEntry = Nio2Service.CONFIGURABLE_OPTIONS.get(prop);
                         SocketOption<?> option = optionEntry.getKey();

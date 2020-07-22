@@ -46,6 +46,7 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpHelper;

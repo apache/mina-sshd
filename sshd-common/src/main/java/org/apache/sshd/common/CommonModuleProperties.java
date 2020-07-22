@@ -48,8 +48,8 @@ public final class CommonModuleProperties {
             = Property.bool("allow-non-integrity-auth", false);
 
     /**
-     * Property used to register the {@link SessionHeartbeatController.HeartbeatType} - if non-existent or {@code NONE}
-     * then disabled. Same if some unknown string value is set as the property value.
+     * Property used to register the {@link org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType} -
+     * if non-existent or {@code NONE} then disabled. Same if some unknown string value is set as the property value.
      */
     public static final Property<SessionHeartbeatController.HeartbeatType> SESSION_HEARTBEAT_TYPE
             = Property.enum_("session-connection-heartbeat-type", SessionHeartbeatController.HeartbeatType.class,

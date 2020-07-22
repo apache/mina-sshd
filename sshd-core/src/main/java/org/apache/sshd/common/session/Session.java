@@ -88,7 +88,7 @@ public interface Session
 
     /**
      * Prepare a new &quot;clean&quot; buffer while reserving the needed space (5 bytes) for the packet header.
-     * 
+     *
      * @param  cmd    The SSH command to initialize the buffer with
      * @param  buffer The {@link Buffer} instance to initialize
      * @return        The initialized buffer
@@ -300,6 +300,9 @@ public interface Session
 
     void setAuthenticated() throws IOException;
 
+    /**
+     * @return The current {@link KeyExchange} in progress - {@code null} if KEX not started or successfully completed
+     */
     KeyExchange getKex();
 
     /**

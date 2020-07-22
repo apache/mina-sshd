@@ -212,7 +212,7 @@ public abstract class MinaService extends AbstractCloseable
     }
 
     protected void handleConfigurationError(
-            SocketSessionConfig config, Property property, Object propValue, RuntimeIoException t) {
+            SocketSessionConfig config, Property<?> property, Object propValue, RuntimeIoException t) {
         Throwable e = GenericUtils.resolveExceptionCause(t);
         log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
                 property.getName(), propValue, e.getClass().getSimpleName(), e.getMessage());

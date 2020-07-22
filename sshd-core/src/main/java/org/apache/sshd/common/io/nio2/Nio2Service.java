@@ -52,10 +52,10 @@ import org.apache.sshd.core.CoreModuleProperties;
  */
 public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
     // Note: order may be important so that's why we use a LinkedHashMap
-    public static final Map<Property, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
+    public static final Map<Property<?>, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
 
     static {
-        Map<Property, SimpleImmutableEntry<SocketOption<?>, Object>> map = new LinkedHashMap<>();
+        Map<Property<?>, SimpleImmutableEntry<SocketOption<?>, Object>> map = new LinkedHashMap<>();
         map.put(CoreModuleProperties.SOCKET_KEEPALIVE, new SimpleImmutableEntry<>(StandardSocketOptions.SO_KEEPALIVE, null));
         map.put(CoreModuleProperties.SOCKET_LINGER, new SimpleImmutableEntry<>(StandardSocketOptions.SO_LINGER, null));
         map.put(CoreModuleProperties.SOCKET_RCVBUF, new SimpleImmutableEntry<>(StandardSocketOptions.SO_RCVBUF, null));
@@ -159,8 +159,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             return socket;
         }
 
-        for (Map.Entry<Property, ? extends Map.Entry<SocketOption<?>, ?>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
-            Property property = ce.getKey();
+        for (Map.Entry<Property<?>, ? extends Map.Entry<SocketOption<?>, ?>> ce : CONFIGURABLE_OPTIONS.entrySet()) {
+            Property<?> property = ce.getKey();
             Map.Entry<SocketOption<?>, ?> defConfig = ce.getValue();
             @SuppressWarnings("rawtypes")
             SocketOption option = defConfig.getKey();
@@ -171,7 +171,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     }
 
     protected <T> boolean setOption(
-            NetworkChannel socket, Property property, SocketOption<T> option, T defaultValue)
+            NetworkChannel socket, Property<?> property, SocketOption<T> option, T defaultValue)
             throws IOException {
         PropertyResolver manager = getFactoryManager();
         String valStr = manager.getString(property.getName());
