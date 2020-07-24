@@ -40,6 +40,10 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ProxyTest extends BaseTestSupport {
 
+    public ProxyTest() {
+        super();
+    }
+
     @Test
     public void testProxy() throws Exception {
         try (SshServer server = setupTestServer();
@@ -65,7 +69,12 @@ public class ProxyTest extends BaseTestSupport {
         }
     }
 
-    protected ClientSession createSession(SshClient client, String host, int port, String user, String password, String proxyHost, int proxyPort, String proxyUser, String proxyPassword) throws java.io.IOException {
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    protected ClientSession createSession(
+            SshClient client,
+            String host, int port, String user, String password,
+            String proxyHost, int proxyPort, String proxyUser, String proxyPassword)
+            throws java.io.IOException {
         ClientSession session;
         if (proxyHost != null) {
             ClientSession proxySession = client.connect(proxyUser, proxyHost, proxyPort)
@@ -87,6 +96,7 @@ public class ProxyTest extends BaseTestSupport {
         return session;
     }
 
+    @Override
     protected SshServer setupTestServer() {
         SshServer sshd = super.setupTestServer();
         // setup forwarding filter to allow the local port forwarding
