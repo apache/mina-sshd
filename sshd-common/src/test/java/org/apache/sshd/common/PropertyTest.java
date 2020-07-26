@@ -21,7 +21,9 @@ package org.apache.sshd.common;
 
 import java.lang.reflect.Constructor;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
@@ -90,29 +92,74 @@ public class PropertyTest<T> extends JUnitTestSupport {
     }
 
     @Test
-    public void testGetOrNull() {
-        T actual = prop.getOrNull(null);
-        assertSame(defaultValue, actual);
+    public void testGetOrNullIfNoValueResolved() {
+        T actual = prop.getOrNull(PropertyResolver.EMPTY);
+        assertNull(actual);
     }
 
     @Test
-    public void testGetOrCustomDefault() {
-        Object customValue;
+    public void testGetOrNullIfNoValueExists() {
+        T expected = getNonDefaultValue();
+        T actual = prop.getOrNull(asPropertyResolver(expected));
+        assertSame(expected, actual);
+    }
+
+    @Test
+    public void testGetOrCustomDefaultIfNoValueResolved() {
+        T expected = getCustomValue();
+        T actual = prop.getOrCustomDefault(PropertyResolver.EMPTY, expected);
+        assertSame(expected, actual);
+    }
+
+    @Test
+    public void testGetOrCustomDefaultIfValueExists() {
+        T expected = getNonDefaultValue();
+        T actual = prop.getOrCustomDefault(asPropertyResolver(expected), getCustomValue());
+        assertSame(expected, actual);
+    }
+
+    private T getCustomValue() {
         if (propType == Integer.class) {
-            customValue = 33;
+            return propType.cast(33);
         } else if (propType == Long.class) {
-            customValue = 33L;
+            return propType.cast(33L);
         } else if (propType == String.class) {
-            customValue = getCurrentTestName();
+            return propType.cast(getCurrentTestName());
         } else if (propType == Boolean.class) {
-            customValue = false;
+            return propType.cast(false);
         } else {
             throw new UnsupportedOperationException("Unsupported property type: " + propType.getSimpleName());
         }
+    }
 
-        T customDefault = propType.cast(customValue);
-        T expected = (defaultValue == null) ? customDefault : defaultValue;
-        T actual = prop.getOrCustomDefault(null, customDefault);
-        assertSame(expected, actual);
+    private T getNonDefaultValue() {
+        if (propType == Integer.class) {
+            return propType.cast(44);
+        } else if (propType == Long.class) {
+            return propType.cast(44L);
+        } else if (propType == String.class) {
+            return propType.cast(getClass().getSimpleName());
+        } else if (propType == Boolean.class) {
+            return propType.cast(false);
+        } else {
+            throw new UnsupportedOperationException("Unsupported property type: " + propType.getSimpleName());
+        }
+    }
+
+    private PropertyResolver asPropertyResolver(Object value) {
+        return new PropertyResolver() {
+            @SuppressWarnings("synthetic-access")
+            private final Map<String, Object> props = Collections.singletonMap(prop.getName(), value);
+
+            @Override
+            public Map<String, Object> getProperties() {
+                return props;
+            }
+
+            @Override
+            public PropertyResolver getParentPropertyResolver() {
+                return null;
+            }
+        };
     }
 }

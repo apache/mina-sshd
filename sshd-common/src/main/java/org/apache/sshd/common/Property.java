@@ -150,6 +150,12 @@ public interface Property<T> {
         }
 
         @Override
+        public T getOrCustomDefault(PropertyResolver resolver, T defaultValue) {
+            Object propValue = PropertyResolverUtils.resolvePropertyValue(resolver, getName());
+            return (propValue != null) ? fromStorage(propValue) : defaultValue;
+        }
+
+        @Override
         public void set(PropertyResolver resolver, T value) {
             PropertyResolverUtils.updateProperty(resolver, getName(), toStorage(value));
         }
@@ -358,6 +364,13 @@ public interface Property<T> {
         }
 
         @Override
+        public T getOrCustomDefault(PropertyResolver resolver, T defaultValue) {
+            T value = delegate.getOrCustomDefault(resolver, defaultValue);
+            validator.accept(value);
+            return value;
+        }
+
+        @Override
         public void set(PropertyResolver resolver, T value) {
             validator.accept(value);
             delegate.set(resolver, value);
@@ -385,13 +398,22 @@ public interface Property<T> {
         return get(resolver).get();
     }
 
+    /**
+     * @param  resolver The {@link PropertyResolver} to query for the property value.
+     * @return          The resolver's value or {@code null} if no specific value found in the resolver - regardless of
+     *                  whether there is a default value
+     */
     default T getOrNull(PropertyResolver resolver) {
         return getOrCustomDefault(resolver, null);
     }
 
-    default T getOrCustomDefault(PropertyResolver resolver, T defaultValue) {
-        return get(resolver).orElse(defaultValue);
-    }
+    /**
+     * @param  resolver     The {@link PropertyResolver} to query for the property value.
+     * @param  defaultValue The default value to return if no specific value found in resolver
+     * @return              The resolver's value or specified default if no specific value found in the resolver -
+     *                      regardless of whether there is a default value
+     */
+    T getOrCustomDefault(PropertyResolver resolver, T defaultValue);
 
     void set(PropertyResolver resolver, T value);
 
