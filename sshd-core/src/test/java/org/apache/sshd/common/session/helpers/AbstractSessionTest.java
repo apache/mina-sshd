@@ -147,10 +147,11 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test(expected = StreamCorruptedException.class)
     public void testReadIdentLongHeader() throws IOException {
-        StringBuilder sb = new StringBuilder(CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault() + Integer.SIZE);
+        int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault();
+        StringBuilder sb = new StringBuilder(maxIdentSize + Integer.SIZE);
         do {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
-        } while (sb.length() < CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault());
+        } while (sb.length() < maxIdentSize);
         sb.append("SSH-2.0-software\r\n");
 
         Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));

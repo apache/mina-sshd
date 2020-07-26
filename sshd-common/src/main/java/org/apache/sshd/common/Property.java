@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
  * Property definition.
  *
@@ -34,7 +36,7 @@ import java.util.function.Consumer;
 public interface Property<T> {
 
     static Property<String> string(String name) {
-        return new StringProperty(name);
+        return string(name, null);
     }
 
     static Property<String> string(String name, String def) {
@@ -50,11 +52,11 @@ public interface Property<T> {
     }
 
     static Property<Integer> integer(String name) {
-        return new IntProperty(name);
+        return new IntegerProperty(name);
     }
 
     static Property<Integer> integer(String name, int def) {
-        return new IntProperty(name, def);
+        return new IntegerProperty(name, def);
     }
 
     // CHECKSTYLE:OFF
@@ -67,7 +69,7 @@ public interface Property<T> {
     }
 
     static <T extends Enum<T>> Property<T> enum_(String name, Class<T> type) {
-        return new EnumProperty<>(name, type);
+        return enum_(name, type, null);
     }
 
     static <T extends Enum<T>> Property<T> enum_(String name, Class<T> type, T def) {
@@ -76,7 +78,7 @@ public interface Property<T> {
     // CHECKSTYLE:ON
 
     static Property<Duration> duration(String name) {
-        return new DurationProperty(name);
+        return duration(name, null);
     }
 
     static Property<Duration> duration(String name, Duration def) {
@@ -84,7 +86,7 @@ public interface Property<T> {
     }
 
     static Property<Duration> durationSec(String name) {
-        return new DurationInSecondsProperty(name);
+        return durationSec(name, null);
     }
 
     static Property<Duration> durationSec(String name, Duration def) {
@@ -92,7 +94,7 @@ public interface Property<T> {
     }
 
     static Property<Charset> charset(String name) {
-        return new CharsetProperty(name);
+        return charset(name, null);
     }
 
     static Property<Charset> charset(String name, Charset def) {
@@ -100,29 +102,30 @@ public interface Property<T> {
     }
 
     static Property<Object> object(String name) {
-        return new ObjectProperty(name);
+        return object(name, null);
     }
 
     static Property<Object> object(String name, Object def) {
         return new ObjectProperty(name, def);
     }
 
-    static <T> Property<T> validating(Property<T> prop, Consumer<T> validator) {
+    static <T> Property<T> validating(Property<T> prop, Consumer<? super T> validator) {
         return new Validating<>(prop, validator);
     }
 
     abstract class BaseProperty<T> implements Property<T> {
-
         private final String name;
-        private final T defaultValue;
+        private final Class<T> type;
+        private final Optional<T> defaultValue;
 
-        public BaseProperty(String name) {
-            this(name, null);
+        protected BaseProperty(String name, Class<T> type) {
+            this(name, type, null);
         }
 
-        public BaseProperty(String name, T defaultValue) {
-            this.name = Objects.requireNonNull(name, "No name provided");
-            this.defaultValue = defaultValue;
+        protected BaseProperty(String name, Class<T> type, T defaultValue) {
+            this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name provided");
+            this.type = Objects.requireNonNull(type, "Type must be provided");
+            this.defaultValue = Optional.ofNullable(defaultValue);
         }
 
         @Override
@@ -131,39 +134,24 @@ public interface Property<T> {
         }
 
         @Override
-        public Optional<T> getDefault() {
-            return Optional.ofNullable(defaultValue);
+        public Class<T> getType() {
+            return type;
         }
 
         @Override
-        public T getRequiredDefault() {
-            return getDefault().get();
+        public Optional<T> getDefault() {
+            return defaultValue;
         }
 
         @Override
         public Optional<T> get(PropertyResolver resolver) {
-            Object propValue = PropertyResolverUtils.resolvePropertyValue(resolver, name);
-            return propValue != null ? Optional.of(fromStorage(propValue)) : getDefault();
-        }
-
-        @Override
-        public T getRequired(PropertyResolver resolver) {
-            return get(resolver).get();
-        }
-
-        @Override
-        public T getOrNull(PropertyResolver resolver) {
-            return get(resolver).orElse(null);
+            Object propValue = PropertyResolverUtils.resolvePropertyValue(resolver, getName());
+            return (propValue != null) ? Optional.of(fromStorage(propValue)) : getDefault();
         }
 
         @Override
         public void set(PropertyResolver resolver, T value) {
-            PropertyResolverUtils.updateProperty(resolver, name, toStorage(value));
-        }
-
-        @Override
-        public void remove(PropertyResolver resolver) {
-            PropertyResolverUtils.updateProperty(resolver, name, null);
+            PropertyResolverUtils.updateProperty(resolver, getName(), toStorage(value));
         }
 
         protected Object toStorage(T value) {
@@ -174,35 +162,35 @@ public interface Property<T> {
 
         @Override
         public String toString() {
-            return "Property[" + name + "]";
+            return "Property[" + getName() + "](" + getType().getSimpleName() + "]";
         }
     }
 
     class DurationProperty extends BaseProperty<Duration> {
 
         public DurationProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public DurationProperty(String name, Duration def) {
-            super(name, def);
+            super(name, Duration.class, def);
         }
 
         @Override
         protected Object toStorage(Duration value) {
-            return value != null ? value.toMillis() : null;
+            return (value != null) ? value.toMillis() : null;
         }
 
         @Override
         protected Duration fromStorage(Object value) {
             Long val = PropertyResolverUtils.toLong(value);
-            return val != null ? Duration.ofMillis(val) : null;
+            return (val != null) ? Duration.ofMillis(val) : null;
         }
     }
 
     class DurationInSecondsProperty extends DurationProperty {
         public DurationInSecondsProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public DurationInSecondsProperty(String name, Duration def) {
@@ -211,7 +199,7 @@ public interface Property<T> {
 
         @Override
         protected Object toStorage(Duration value) {
-            return value != null ? value.toMillis() / 1_000 : null;
+            return (value != null) ? (value.toMillis() / 1_000L) : null;
         }
 
         @Override
@@ -224,44 +212,43 @@ public interface Property<T> {
     class StringProperty extends BaseProperty<String> {
 
         public StringProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public StringProperty(String name, String def) {
-            super(name, def);
+            super(name, String.class, def);
         }
 
         @Override
         protected String fromStorage(Object value) {
-            return value != null ? value.toString() : null;
+            return (value != null) ? value.toString() : null;
         }
     }
 
     class BooleanProperty extends BaseProperty<Boolean> {
 
         public BooleanProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public BooleanProperty(String name, Boolean defaultValue) {
-            super(name, defaultValue);
+            super(name, Boolean.class, defaultValue);
         }
 
         @Override
         protected Boolean fromStorage(Object value) {
             return PropertyResolverUtils.toBoolean(value);
         }
-
     }
 
     class LongProperty extends BaseProperty<Long> {
 
         public LongProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public LongProperty(String name, Long defaultValue) {
-            super(name, defaultValue);
+            super(name, Long.class, defaultValue);
         }
 
         @Override
@@ -270,14 +257,14 @@ public interface Property<T> {
         }
     }
 
-    class IntProperty extends BaseProperty<Integer> {
+    class IntegerProperty extends BaseProperty<Integer> {
 
-        public IntProperty(String name) {
-            super(name);
+        public IntegerProperty(String name) {
+            this(name, null);
         }
 
-        public IntProperty(String name, Integer defaultValue) {
-            super(name, defaultValue);
+        public IntegerProperty(String name, Integer defaultValue) {
+            super(name, Integer.class, defaultValue);
         }
 
         @Override
@@ -289,11 +276,11 @@ public interface Property<T> {
     class CharsetProperty extends BaseProperty<Charset> {
 
         public CharsetProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public CharsetProperty(String name, Charset defaultValue) {
-            super(name, defaultValue);
+            super(name, Charset.class, defaultValue);
         }
 
         @Override
@@ -305,11 +292,11 @@ public interface Property<T> {
     class ObjectProperty extends BaseProperty<Object> {
 
         public ObjectProperty(String name) {
-            super(name);
+            this(name, null);
         }
 
         public ObjectProperty(String name, Object defaultValue) {
-            super(name, defaultValue);
+            super(name, Object.class, defaultValue);
         }
 
         @Override
@@ -319,30 +306,26 @@ public interface Property<T> {
     }
 
     class EnumProperty<T extends Enum<T>> extends BaseProperty<T> {
-
-        private final Class<T> type;
-
         public EnumProperty(String name, Class<T> type) {
-            super(name);
-            this.type = Objects.requireNonNull(type, "type is required");
+            this(name, type, null);
         }
 
         public EnumProperty(String name, Class<T> type, T def) {
-            super(name, def);
-            this.type = Objects.requireNonNull(type, "type is required");
+            super(name, type, def);
         }
 
         @Override
         protected T fromStorage(Object value) {
+            Class<T> type = getType();
             return PropertyResolverUtils.toEnum(type, value, false, Arrays.asList(type.getEnumConstants()));
         }
     }
 
     class Validating<T> implements Property<T> {
         private final Property<T> delegate;
-        private final Consumer<T> validator;
+        private final Consumer<? super T> validator;
 
-        public Validating(Property<T> delegate, Consumer<T> validator) {
+        public Validating(Property<T> delegate, Consumer<? super T> validator) {
             this.delegate = delegate;
             this.validator = validator;
         }
@@ -350,6 +333,11 @@ public interface Property<T> {
         @Override
         public String getName() {
             return delegate.getName();
+        }
+
+        @Override
+        public Class<T> getType() {
+            return delegate.getType();
         }
 
         @Override
@@ -370,16 +358,6 @@ public interface Property<T> {
         }
 
         @Override
-        public T getRequired(PropertyResolver resolver) {
-            return get(resolver).get();
-        }
-
-        @Override
-        public T getOrNull(PropertyResolver resolver) {
-            return get(resolver).orElse(null);
-        }
-
-        @Override
         public void set(PropertyResolver resolver, T value) {
             validator.accept(value);
             delegate.set(resolver, value);
@@ -393,17 +371,31 @@ public interface Property<T> {
 
     String getName();
 
+    Class<T> getType();
+
     Optional<T> getDefault();
 
-    T getRequiredDefault();
+    default T getRequiredDefault() {
+        return getDefault().get();
+    }
 
     Optional<T> get(PropertyResolver resolver);
 
-    T getRequired(PropertyResolver resolver);
+    default T getRequired(PropertyResolver resolver) {
+        return get(resolver).get();
+    }
 
-    T getOrNull(PropertyResolver resolver);
+    default T getOrNull(PropertyResolver resolver) {
+        return getOrCustomDefault(resolver, null);
+    }
+
+    default T getOrCustomDefault(PropertyResolver resolver, T defaultValue) {
+        return get(resolver).orElse(defaultValue);
+    }
 
     void set(PropertyResolver resolver, T value);
 
-    void remove(PropertyResolver resolver);
+    default void remove(PropertyResolver resolver) {
+        PropertyResolverUtils.updateProperty(resolver, getName(), null);
+    }
 }
