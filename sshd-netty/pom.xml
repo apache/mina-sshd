@@ -154,13 +154,13 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-netty</reportsDirectory>
                     <excludes>
-                            <!-- These tests use NIO and/or MINA explicitly -->
+                        <!-- These tests use NIO and/or MINA explicitly -->
                         <exclude>**/*LoadTest.java</exclude>
                         <exclude>**/PortForwarding*Test.java</exclude>
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
 
-                            <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
+                        <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
                         <exclude>**/ClientDeadlockTest.java</exclude>
                         <exclude>**/AsyncAuthInteractiveTest.java</exclude>
                         <exclude>**/ApacheServer*Test.java</exclude>
