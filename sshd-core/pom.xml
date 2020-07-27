@@ -59,14 +59,14 @@
             <optional>true</optional>
         </dependency>
 
-            <!-- For ed25519 support -->
+        <!-- For ed25519 support -->
         <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
             <optional>true</optional>
         </dependency>
 
-            <!-- test dependencies -->
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-common</artifactId>
@@ -153,6 +153,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>small-test-jar</id>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
@@ -160,6 +161,25 @@
                             <includes>
                                 <include>org/apache/sshd/util/test/**/*</include>
                             </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>big-test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>reusable-tests</classifier>
+                            <finalName>${project.build.finalName}-reusable</finalName>
+                            <excludes>
+                                <exclude>org/apache/sshd/util/test/**/*</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

@@ -137,40 +137,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build-helper-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>add-test-source</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${projectRoot}/sshd-core/src/test/java</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>add-test-resource</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>add-test-resource</goal>
-                        </goals>
-                        <configuration>
-                            <resources>
-                                <resource>
-                                    <directory>${projectRoot}/sshd-core/src/test/resources</directory>
-                                    <targetPath>${project.build.testOutputDirectory}</targetPath>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -207,6 +173,10 @@
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
+                    <!-- Tests are located in the sshd-core reusable test jar -->
+                    <dependenciesToScan>
+                        <dependency>org.apache.sshd:sshd-core</dependency>
+                    </dependenciesToScan>
                 </configuration>
             </plugin>
             <plugin>

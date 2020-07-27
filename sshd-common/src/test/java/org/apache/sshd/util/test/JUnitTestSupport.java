@@ -22,12 +22,9 @@ package org.apache.sshd.util.test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.interfaces.DSAParams;
@@ -201,12 +198,9 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     protected Path getTestResourcesFolder() {
-        try {
-            URL url = getClass().getResource(getClass().getSimpleName() + ".class");
-            return Paths.get(url.toURI()).getParent();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        Path target = detectTargetFolder();
+        String pkgFolder = getClass().getPackage().getName().replace('.', File.separatorChar);
+        return target.resolve("test-classes").resolve(pkgFolder);
     }
 
     protected Path getClassResourcesFolder(String resType /* test or main */) {

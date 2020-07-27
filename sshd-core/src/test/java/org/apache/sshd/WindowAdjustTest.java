@@ -21,8 +21,6 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -42,6 +40,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -85,8 +84,7 @@ public class WindowAdjustTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshServer = setupTestServer();
 
-        byte[] msg = Files.readAllBytes(
-                Paths.get(getClass().getResource("/big-msg.txt").toURI()));
+        byte[] msg = IoUtils.toByteArray(getClass().getResourceAsStream("/big-msg.txt"));
         sshServer.setShellFactory(
                 channel -> new FloodingAsyncCommand(msg, BIG_MSG_SEND_COUNT, END_FILE));
 

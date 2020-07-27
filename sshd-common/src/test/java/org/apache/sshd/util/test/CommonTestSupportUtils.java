@@ -314,7 +314,12 @@ public final class CommonTestSupportUtils {
      * @see           #detectTargetFolder(Path)
      */
     public static Path detectTargetFolder(Class<?> anchor) {
-        return detectTargetFolder(getClassContainerLocationPath(anchor));
+        Path path = detectTargetFolder(getClassContainerLocationPath(anchor));
+        if (path == null) {
+            String basedir = System.getProperty("basedir");
+            path = detectTargetFolder(Paths.get(basedir, "target"));
+        }
+        return path;
     }
 
     /**
