@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.util.SshdEventListener;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.sftp.common.SftpConstants;
 
 /**
  * Can be used register for SFTP events. <B>Note:</B> it does not expose the entire set of available SFTP commands and
@@ -35,6 +36,32 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SftpEventListener extends SshdEventListener {
+
+    /**
+     * Called when a SFTP request has been received before it is processed.
+     *
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  type        The request type; one of the {@code SSH_FXP_*} constants from {@link SftpConstants}
+     * @param  id          The id received with the request
+     * @throws IOException If the request shall generate an error response. Throwing an exception for
+     *                     {@code type = }{@link SftpConstants#SSH_FXP_INIT} closes the session.
+     */
+    default void received(ServerSession session, int type, int id) throws IOException {
+        // empty
+    }
+
+    /**
+     * Called when a SFTP extension request {@link SftpConstants#SSH_FXP_EXTENDED} has been received before it is processed.
+     *
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  extension   The extension request received; one of the {@code SSH_EXT_*} constants from {@link SftpConstants}
+     * @param  id          The id received with the request
+     * @throws IOException If the request shall generate an error response.
+     */
+    default void receivedExtension(ServerSession session, String extension, int id) throws IOException {
+        // empty
+    }
+
     /**
      * Called when the SFTP protocol has been initialized
      *
