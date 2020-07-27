@@ -40,6 +40,8 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ProxyTest extends BaseTestSupport {
 
+    private ClientSession proxySession;
+
     public ProxyTest() {
         super();
     }
@@ -50,8 +52,21 @@ public class ProxyTest extends BaseTestSupport {
              SshServer proxy = setupTestServer();
              SshClient client = setupTestClient()) {
 
+            // setup server with an echo command
+            server.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+                @Override
+                protected boolean handleCommandLine(String command) throws Exception {
+                    OutputStream stdout = getOutputStream();
+                    stdout.write(command.getBytes(StandardCharsets.US_ASCII));
+                    stdout.flush();
+                    return false;
+                }
+            });
             server.start();
+            // setup proxy with a forwarding filter to allow the local port forwarding
+            proxy.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             proxy.start();
+            // setup client
             client.start();
 
             String command = "ls -la";
@@ -66,6 +81,8 @@ public class ProxyTest extends BaseTestSupport {
                 result = out.toString();
             }
             assertEquals(command, result);
+            // make sure the proxy session is closed / closing
+            assertTrue(proxySession == null || proxySession.isClosing() || proxySession.isClosed());
         }
     }
 
@@ -77,7 +94,7 @@ public class ProxyTest extends BaseTestSupport {
             throws java.io.IOException {
         ClientSession session;
         if (proxyHost != null) {
-            ClientSession proxySession = client.connect(proxyUser, proxyHost, proxyPort)
+            proxySession = client.connect(proxyUser, proxyHost, proxyPort)
                     .verify(CONNECT_TIMEOUT).getSession();
             proxySession.addPasswordIdentity(proxyPassword);
             proxySession.auth().verify(AUTH_TIMEOUT);
@@ -87,31 +104,13 @@ public class ProxyTest extends BaseTestSupport {
             SshdSocketAddress bound = tracker.getBoundAddress();
             session = client.connect(user, bound.getHostName(), bound.getPort())
                     .verify(CONNECT_TIMEOUT).getSession();
-            session.addCloseFutureListener(f -> IoUtils.closeQuietly(tracker));
+            session.addCloseFutureListener(f -> IoUtils.closeQuietly(tracker, proxySession));
         } else {
             session = client.connect(user, host, port).verify(CONNECT_TIMEOUT).getSession();
         }
         session.addPasswordIdentity(password);
         session.auth().verify(AUTH_TIMEOUT);
         return session;
-    }
-
-    @Override
-    protected SshServer setupTestServer() {
-        SshServer sshd = super.setupTestServer();
-        // setup forwarding filter to allow the local port forwarding
-        sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
-        // setup an echo command
-        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
-            @Override
-            protected boolean handleCommandLine(String command) throws Exception {
-                OutputStream stdout = getOutputStream();
-                stdout.write(command.getBytes(StandardCharsets.US_ASCII));
-                stdout.flush();
-                return false;
-            }
-        });
-        return sshd;
     }
 
 }
