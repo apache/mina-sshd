@@ -657,6 +657,9 @@ public class SftpSubsystem
                 throw new AccessDeniedException(file.toString(), file.toString(), "Not readable");
             }
 
+            SftpEventListener listener = getSftpEventListenerProxy();
+            listener.readingEntries(session, handle, dh);
+
             if (dh.isSendDot() || dh.isSendDotDot() || dh.hasNext()) {
                 // There is at least one file in the directory or we need to send the "..".
                 // Send only a few files at a time to not create packets of a too

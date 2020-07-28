@@ -814,7 +814,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             @Override
-            public void read(
+            public void readEntries(
                     ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
                 int numEntries = GenericUtils.size(entries);
                 entriesCount.addAndGet(numEntries);

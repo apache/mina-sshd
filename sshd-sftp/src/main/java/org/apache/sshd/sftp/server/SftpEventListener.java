@@ -140,6 +140,22 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
+     * About to read entries from a directory - <B>Note:</B> might not be the 1st time it is called for the directory in
+     * case several iterations are required in order to go through all the entries in the directory
+     *
+     * @param  session      The {@link ServerSession} through which the request was handled
+     * @param  remoteHandle The (opaque) assigned handle for the directory
+     * @param  localHandle  The associated {@link DirectoryHandle}
+     * @throws IOException  If failed to handle the call
+     * @see                 #readEntries(ServerSession, String, DirectoryHandle, Map) readEntries
+     */
+    default void readingEntries(
+            ServerSession session, String remoteHandle, DirectoryHandle localHandle)
+            throws IOException {
+        // ignored
+    }
+
+    /**
      * Result of reading entries from a directory - <B>Note:</B> it may be a <U>partial</U> result if the directory
      * contains more entries than can be accommodated in the response
      *
@@ -150,7 +166,7 @@ public interface SftpEventListener extends SshdEventListener {
      *                      sub-entry
      * @throws IOException  If failed to handle the call
      */
-    default void read(
+    default void readEntries(
             ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
             throws IOException {
         // ignored

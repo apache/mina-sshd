@@ -83,9 +83,9 @@ public abstract class SimpleAccessControlSftpEventListener extends AbstractSftpE
     }
 
     @Override
-    public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
+    public void readEntries(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
             throws IOException {
-        super.read(session, remoteHandle, localHandle, entries);
+        super.readEntries(session, remoteHandle, localHandle, entries);
         if (!isAccessAllowed(session, remoteHandle, localHandle)) {
             throw new AccessDeniedException(remoteHandle);
         }

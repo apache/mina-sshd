@@ -12,7 +12,7 @@
 
 ## Major code re-factoring
 
-* [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename {{org.apache.sshd.common.ForwardingFilter}} to {{Forwarder}}.
+* [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1035) Refactor packages from a module into a cleaner hierarchy.
 
@@ -20,6 +20,7 @@
 
 * [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
 * [SSHD-1030](https://issues.apache.org/jira/browse/SSHD-1030) Added a NoneFileSystemFactory implementation
+* [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1030) Added more callbacks to SftpEventListener
 
 ## Behavioral changes and enhancements
 

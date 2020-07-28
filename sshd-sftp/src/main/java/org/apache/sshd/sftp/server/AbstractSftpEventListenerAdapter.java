@@ -74,7 +74,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
+    public void readEntries(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
             throws IOException {
         int numEntries = GenericUtils.size(entries);
         if (log.isDebugEnabled()) {

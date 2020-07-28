@@ -2143,7 +2143,7 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();
-        listener.read(getServerSession(), handle, dir, entries);
+        listener.readEntries(getServerSession(), handle, dir, entries);
         return nb;
     }
 
