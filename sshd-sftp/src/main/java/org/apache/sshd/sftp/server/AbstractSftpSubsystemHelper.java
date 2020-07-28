@@ -310,6 +310,17 @@ public abstract class AbstractSftpSubsystemHelper
             log.debug("process({})[length={}, type={}, id={}] processing",
                     getServerSession(), length, SftpConstants.getCommandMessageName(type), id);
         }
+        try {
+            SftpEventListener listener = getSftpEventListenerProxy();
+            ServerSession session = getServerSession();
+            listener.received(session, type, id);
+        } catch (IOException | RuntimeException e) {
+            if (type == SftpConstants.SSH_FXP_INIT) {
+                throw e;
+            }
+            sendStatus(prepareReply(buffer), id, e, type);
+            return;
+        }
         doProcess(buffer, length, type, id);
     }
 
@@ -1650,7 +1661,16 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doExtended(Buffer buffer, int id) throws IOException {
-        executeExtendedCommand(buffer, id, buffer.getString());
+        String extension = buffer.getString();
+        try {
+            SftpEventListener listener = getSftpEventListenerProxy();
+            ServerSession session = getServerSession();
+            listener.receivedExtension(session, extension, id);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_EXTENDED, extension);
+            return;
+        }
+        executeExtendedCommand(buffer, id, extension);
     }
 
     /**
