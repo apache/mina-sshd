@@ -92,12 +92,6 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      *
      * <LI>
      * <P>
-     * If the result is an {@link IOException} then re-throw it
-     * </P>
-     * </LI>
-     *
-     * <LI>
-     * <P>
      * If the result is a {@link Throwable} then throw an {@link IOException} whose cause is the original exception
      * </P>
      * </LI>
@@ -131,15 +125,6 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
 
         if (Throwable.class.isAssignableFrom(actualType)) {
             Throwable t = GenericUtils.peelException((Throwable) value);
-            if (t != value) {
-                value = t;
-                actualType = value.getClass();
-            }
-
-            if (IOException.class.isAssignableFrom(actualType)) {
-                throw (IOException) value;
-            }
-
             Throwable cause = GenericUtils.resolveExceptionCause(t);
             throw formatExceptionMessage(
                     msg -> new SshException(msg, cause),
