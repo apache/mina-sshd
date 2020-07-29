@@ -169,18 +169,19 @@ public final class SshConfigFileReader {
     public static <M extends AbstractFactoryManager> M configureCiphers(
             M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
-
-        if (!GenericUtils.isEmpty(value)) {
-            BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(value);
-            Collection<String> unsupported = result.getUnsupportedFactories();
-            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
-                    "Unsupported cipher(s) (%s) in %s", unsupported, value);
-
-            List<NamedFactory<Cipher>> factories
-                    = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-            manager.setCipherFactories(
-                    ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
         }
+
+        BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(value);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+                "Unsupported cipher(s) (%s) in %s", unsupported, value);
+
+        List<NamedFactory<Cipher>> factories
+                = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setCipherFactories(
+                ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
         return manager;
     }
 
@@ -195,18 +196,19 @@ public final class SshConfigFileReader {
     public static <M extends AbstractFactoryManager> M configureSignatures(
             M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
-
-        if (!GenericUtils.isEmpty(value)) {
-            BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(value);
-            Collection<String> unsupported = result.getUnsupportedFactories();
-            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
-                    "Unsupported signatures (%s) in %s", unsupported, value);
-
-            List<NamedFactory<Signature>> factories
-                    = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-            manager.setSignatureFactories(
-                    ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
         }
+
+        BuiltinSignatures.ParseResult result = BuiltinSignatures.parseSignatureList(value);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+                "Unsupported signatures (%s) in %s", unsupported, value);
+
+        List<NamedFactory<Signature>> factories
+                = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setSignatureFactories(
+                ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
         return manager;
     }
 
@@ -221,17 +223,18 @@ public final class SshConfigFileReader {
     public static <M extends AbstractFactoryManager> M configureMacs(
             M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
-
-        if (!GenericUtils.isEmpty(value)) {
-            BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(value);
-            Collection<String> unsupported = result.getUnsupportedFactories();
-            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
-                    "Unsupported MAC(s) (%s) in %s", unsupported, value);
-
-            List<NamedFactory<Mac>> factories = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-            manager.setMacFactories(
-                    ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
         }
+
+        BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(value);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+                "Unsupported MAC(s) (%s) in %s", unsupported, value);
+
+        List<NamedFactory<Mac>> factories = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+        manager.setMacFactories(
+                ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
         return manager;
     }
 
@@ -263,18 +266,19 @@ public final class SshConfigFileReader {
             Function<? super DHFactory, ? extends KeyExchangeFactory> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
         Objects.requireNonNull(xformer, "No DHFactory transformer");
-
-        if (!GenericUtils.isEmpty(value)) {
-            BuiltinDHFactories.ParseResult result = BuiltinDHFactories.parseDHFactoriesList(value);
-            Collection<String> unsupported = result.getUnsupportedFactories();
-            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
-                    "Unsupported KEX(s) (%s) in %s", unsupported, value);
-
-            List<KeyExchangeFactory> factories
-                    = NamedFactory.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
-            manager.setKeyExchangeFactories(
-                    ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
         }
+
+        BuiltinDHFactories.ParseResult result = BuiltinDHFactories.parseDHFactoriesList(value);
+        Collection<String> unsupported = result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported),
+                "Unsupported KEX(s) (%s) in %s", unsupported, value);
+
+        List<KeyExchangeFactory> factories
+                = NamedFactory.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
+        manager.setKeyExchangeFactories(
+                ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
         return manager;
     }
 
@@ -295,13 +299,16 @@ public final class SshConfigFileReader {
         Objects.requireNonNull(props, "No properties to configure");
 
         String value = props.getString(ConfigFileReaderSupport.COMPRESSION_PROP);
-        if (!GenericUtils.isEmpty(value)) {
-            CompressionFactory factory = CompressionConfigValue.fromName(value);
-            ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
-            if ((factory != null) && factory.isSupported()) {
-                manager.setCompressionFactories(Collections.singletonList(factory));
-            }
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
         }
+
+        CompressionFactory factory = CompressionConfigValue.fromName(value);
+        ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
+        if ((factory != null) && factory.isSupported()) {
+            manager.setCompressionFactories(Collections.singletonList(factory));
+        }
+
         return manager;
     }
 
@@ -309,28 +316,30 @@ public final class SshConfigFileReader {
     public static <M extends AbstractFactoryManager> M configureCompression(
             M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         Objects.requireNonNull(manager, "No manager to configure");
+        if (GenericUtils.isEmpty(value)) {
+            return manager;
+        }
 
-        if (!GenericUtils.isEmpty(value)) {
-            CompressionFactory factory = CompressionConfigValue.fromName(value);
-            if (factory != null) {
-                // SSH can work without compression
-                if (ignoreUnsupported || factory.isSupported()) {
-                    manager.setCompressionFactories(Collections.singletonList(factory));
-                }
-            } else {
-                BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(value);
-                Collection<String> unsupported = result.getUnsupportedFactories();
-                ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported compressions(s) (%s) in %s",
-                        unsupported, value);
+        CompressionFactory factory = CompressionConfigValue.fromName(value);
+        if (factory != null) {
+            // SSH can work without compression
+            if (ignoreUnsupported || factory.isSupported()) {
+                manager.setCompressionFactories(Collections.singletonList(factory));
+            }
+        } else {
+            BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(value);
+            Collection<String> unsupported = result.getUnsupportedFactories();
+            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported compressions(s) (%s) in %s",
+                    unsupported, value);
 
-                List<NamedFactory<Compression>> factories
-                        = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
-                // SSH can work without compression
-                if (GenericUtils.size(factories) > 0) {
-                    manager.setCompressionFactories(factories);
-                }
+            List<NamedFactory<Compression>> factories
+                    = BuiltinFactory.setUpFactories(ignoreUnsupported, result.getParsedFactories());
+            // SSH can work without compression
+            if (GenericUtils.size(factories) > 0) {
+                manager.setCompressionFactories(factories);
             }
         }
+
         return manager;
     }
 }

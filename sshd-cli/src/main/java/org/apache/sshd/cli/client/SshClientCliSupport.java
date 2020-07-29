@@ -57,18 +57,14 @@ import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.channel.PtyChannelConfigurationMutator;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
-import org.apache.sshd.common.config.CompressionConfigValue;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
@@ -78,7 +74,6 @@ import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -654,108 +649,6 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
 
         return stderr;
-    }
-
-    public static List<NamedFactory<Compression>> setupCompressions(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(
-                options, ConfigFileReaderSupport.COMPRESSION_PROP);
-        if (GenericUtils.isEmpty(argVal)) {
-            return Collections.emptyList();
-        }
-
-        NamedFactory<Compression> value = CompressionConfigValue.fromName(argVal);
-        if (value == null) {
-            showError(stderr, "Unknown compression configuration value: " + argVal);
-            return null;
-        }
-
-        return Collections.singletonList(value);
-    }
-
-    public static List<NamedFactory<Compression>> setupCompressions(
-            String argName, String argVal, List<NamedFactory<Compression>> current, PrintStream stderr) {
-        if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
-            return null;
-        }
-
-        BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(argVal);
-        Collection<? extends NamedFactory<Compression>> available = result.getParsedFactories();
-        if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "No known compressions in " + argVal);
-            return null;
-        }
-
-        Collection<String> unsupported = result.getUnsupportedFactories();
-        if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported compressions: ")
-                    .println(GenericUtils.join(unsupported, ','));
-        }
-
-        return new ArrayList<>(available);
-    }
-
-    public static List<NamedFactory<Mac>> setupMacs(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(
-                options, ConfigFileReaderSupport.MACS_CONFIG_PROP);
-        return GenericUtils.isEmpty(argVal)
-                ? Collections.emptyList()
-                : setupMacs(ConfigFileReaderSupport.MACS_CONFIG_PROP, argVal, null, stderr);
-    }
-
-    public static List<NamedFactory<Mac>> setupMacs(
-            String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
-        if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
-            return null;
-        }
-
-        BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(argVal);
-        Collection<? extends NamedFactory<Mac>> available = result.getParsedFactories();
-        if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "No known MACs in " + argVal);
-            return null;
-        }
-
-        Collection<String> unsupported = result.getUnsupportedFactories();
-        if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported MACs: ")
-                    .println(GenericUtils.join(unsupported, ','));
-        }
-
-        return new ArrayList<>(available);
-    }
-
-    public static List<NamedFactory<Cipher>> setupCiphers(PropertyResolver options, PrintStream stderr) {
-        String argVal = PropertyResolverUtils.getString(
-                options, ConfigFileReaderSupport.CIPHERS_CONFIG_PROP);
-        return GenericUtils.isEmpty(argVal)
-                ? Collections.emptyList()
-                : setupCiphers(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, argVal, null, stderr);
-    }
-
-    // returns null - e.g., re-specified or no supported cipher found
-    public static List<NamedFactory<Cipher>> setupCiphers(
-            String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
-        if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
-            return null;
-        }
-
-        BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(argVal);
-        Collection<? extends NamedFactory<Cipher>> available = result.getParsedFactories();
-        if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "WARNING: No known ciphers in " + argVal);
-            return null;
-        }
-
-        Collection<String> unsupported = result.getUnsupportedFactories();
-        if (GenericUtils.size(unsupported) > 0) {
-            stderr.append("WARNING: Ignored unsupported ciphers: ")
-                    .println(GenericUtils.join(unsupported, ','));
-        }
-
-        return new ArrayList<>(available);
     }
 
     public static Handler setupLogging(

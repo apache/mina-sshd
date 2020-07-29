@@ -173,6 +173,7 @@ public class SshServerMain extends SshServerCliSupport {
             System.err.println(
                     "usage: sshd [-p port] [-io mina|nio2|netty] [-key-type RSA|DSA|EC] [-key-size NNNN] [-key-file <path>] [-o option=value]");
             System.exit(-1);
+            return; // just in case...
         }
 
         Map<String, Object> props = sshd.getProperties();
