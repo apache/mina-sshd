@@ -36,7 +36,8 @@ public interface HostConfigEntryResolver {
     HostConfigEntryResolver EMPTY = new HostConfigEntryResolver() {
         @Override
         public HostConfigEntry resolveEffectiveHost(
-                String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
+                String host, int port, SocketAddress localAddress, String username, String proxyJump,
+                AttributeRepository context)
                 throws IOException {
             return null;
         }
@@ -54,6 +55,7 @@ public interface HostConfigEntryResolver {
      * @param  port         The requested port
      * @param  localAddress Optional binding endpoint for the local peer
      * @param  username     The requested username
+     * @param  proxyJump    The requested proxyJump
      * @param  context      An optional &quot;context&quot; provided during the connection request (to be attached to
      *                      the established session if successfully connected)
      * @return              A {@link HostConfigEntry} for the actual target - {@code null} if use original parameters.
@@ -63,6 +65,6 @@ public interface HostConfigEntryResolver {
      * @throws IOException  If failed to resolve the configuration
      */
     HostConfigEntry resolveEffectiveHost(
-            String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
+            String host, int port, SocketAddress localAddress, String username, String proxyJump, AttributeRepository context)
             throws IOException;
 }

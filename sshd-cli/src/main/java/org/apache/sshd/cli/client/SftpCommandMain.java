@@ -329,7 +329,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                     : setupClientSession(SFTP_PORT_OPTION, stdin, level, stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
-                                   + " [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
+                                   + " [-J proxyJump] [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
                                    + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
                 return;

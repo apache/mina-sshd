@@ -92,7 +92,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     @Test
     public void testEffectiveHostConfigResolution() throws Exception {
         HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
-        client.setHostConfigEntryResolver((host, portValue, lclAddress, username, context) -> entry);
+        client.setHostConfigEntryResolver((host, portValue, lclAddress, username, proxy, context) -> entry);
         client.start();
 
         try (ClientSession session = client.connect(
@@ -169,7 +169,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         String host = getClass().getSimpleName();
         HostConfigEntry entry = new HostConfigEntry(host, TEST_LOCALHOST, port, user);
         entry.addIdentity(clientIdentity);
-        client.setHostConfigEntryResolver((host1, portValue, lclAddress, username, context) -> entry);
+        client.setHostConfigEntryResolver((host1, portValue, lclAddress, username, proxy, context) -> entry);
 
         client.start();
         try (ClientSession session = client.connect(

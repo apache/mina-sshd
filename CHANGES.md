@@ -13,16 +13,17 @@
 ## Major code re-factoring
 
 * [SSHD-506](https://issues.apache.org/jira/browse/SSHD-506) Added support for AES-GCM ciphers.
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
-* [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1035) Refactor packages from a module into a cleaner hierarchy.
-* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1035) Deprecate DES, RC4 and Blowfish ciphers from default setup.
+* [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.
+* [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 
 ## Minor code helpers
 
-* [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
 * [SSHD-1030](https://issues.apache.org/jira/browse/SSHD-1030) Added a NoneFileSystemFactory implementation
-* [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1030) Added more callbacks to SftpEventListener
+* [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1042) Added more callbacks to SftpEventListener
+* [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
 
 ## Behavioral changes and enhancements
 

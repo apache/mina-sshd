@@ -135,7 +135,7 @@ public class SshClientMain extends SshClientCliSupport {
 
             if (error) {
                 System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-E logoutputfile] [-D socksPort]"
-                                   + " [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
+                                   + " [-J proxyJump] [-l login] [" + SSH_CLIENT_PORT_OPTION + " port] [-o option=value]"
                                    + " [-w password] [-c cipherslist] [-m maclist] [-C]"
                                    + " hostname/user@host [command]");
                 System.exit(-1);

@@ -77,6 +77,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final String HOST_NAME_CONFIG_PROP = "HostName";
     public static final String PORT_CONFIG_PROP = ConfigFileReaderSupport.PORT_CONFIG_PROP;
     public static final String USER_CONFIG_PROP = "User";
+    public static final String PROXY_JUMP_CONFIG_PROP = "ProxyJump";
     public static final String IDENTITY_FILE_CONFIG_PROP = "IdentityFile";
     /**
      * Use only the identities specified in the host entry (if any)
@@ -116,6 +117,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     private String hostName;
     private int port;
     private String username;
+    private String proxyJump;
     private Boolean exclusiveIdentites;
     private Collection<String> identities = Collections.emptyList();
     private Map<String, String> properties = Collections.emptyMap();
@@ -125,10 +127,15 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     public HostConfigEntry(String pattern, String host, int port, String username) {
+        this(pattern, host, port, username, null);
+    }
+
+    public HostConfigEntry(String pattern, String host, int port, String username, String proxyJump) {
         setHost(pattern);
         setHostName(host);
         setPort(port);
         setUsername(username);
+        setProxyJump(proxyJump);
     }
 
     /**
@@ -208,6 +215,29 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public String resolveUsername(String originalUser) {
         return resolveUsername(originalUser, getUsername());
+    }
+
+    /**
+     * @return the host to use as a proxy
+     */
+    public String getProxyJump() {
+        return proxyJump;
+    }
+
+    public void setProxyJump(String proxyJump) {
+        this.proxyJump = proxyJump;
+    }
+
+    /**
+     * Resolves the effective proxyJump
+     *
+     * @param  originalProxyJump The original requested proxyJump
+     * @return                   If the configured host entry proxyJump is not {@code null}/empty then it is used,
+     *                           otherwise the original one.
+     * @see                      #resolveUsername(String)
+     */
+    public String resolveProxyJump(String originalProxyJump) {
+        return resolveProxyJump(originalProxyJump, getProxyJump());
     }
 
     /**
@@ -472,6 +502,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             setIdentitiesOnly(
                     ConfigFileReaderSupport.parseBooleanValue(
                             ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
+        } else if (PROXY_JUMP_CONFIG_PROP.equalsIgnoreCase(key)) {
+            String curValue = getProxyJump();
+            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
+                    key, curValue);
+            setProxyJump(joinedValue);
         }
     }
 
@@ -659,7 +694,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(entries)) {
             return HostConfigEntryResolver.EMPTY;
         } else {
-            return (host1, port1, lclAddress, username1, ctx) -> {
+            return (host1, port1, lclAddress, username1, proxyJump1, ctx) -> {
                 List<HostConfigEntry> matches = findMatchingEntries(host1, entries);
                 int numMatches = GenericUtils.size(matches);
                 if (numMatches <= 0) {
@@ -672,7 +707,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             host1, port1, numMatches);
                 }
 
-                return normalizeEntry(match, host1, port1, username1);
+                return normalizeEntry(match, host1, port1, username1, proxyJump1);
             };
         }
     }
@@ -691,7 +726,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @see                #resolveIdentityFilePath(String, String, int, String)
      */
     public static HostConfigEntry normalizeEntry(
-            HostConfigEntry entry, String host, int port, String username)
+            HostConfigEntry entry, String host, int port, String username, String proxyJump)
             throws IOException {
         if (entry == null) {
             return null;
@@ -702,6 +737,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         normal.setHostName(entry.resolveHostName(host));
         normal.setPort(entry.resolvePort(port));
         normal.setUsername(entry.resolveUsername(username));
+        normal.setProxyJump(entry.resolveProxyJump(proxyJump));
 
         Map<String, String> props = entry.getProperties();
         if (GenericUtils.size(props) > 0) {
@@ -769,6 +805,22 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             return originalPort;
         } else {
             return entryPort;
+        }
+    }
+
+    /**
+     * Resolves the effective proxyJump
+     *
+     * @param  originalProxyJump The original requested proxyJump
+     * @param  entryProxyJump    The configured host entry proxyJump
+     * @return                   If the configured host entry proxyJump is not {@code null}/empty then it is used,
+     *                           otherwise the original one.
+     */
+    public static String resolveProxyJump(String originalProxyJump, String entryProxyJump) {
+        if (GenericUtils.isEmpty(entryProxyJump)) {
+            return originalProxyJump;
+        } else {
+            return entryProxyJump;
         }
     }
 

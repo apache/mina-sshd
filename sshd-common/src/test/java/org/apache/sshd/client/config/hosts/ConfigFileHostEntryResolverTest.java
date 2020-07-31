@@ -53,10 +53,11 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
         ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(
                 assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".config.txt")) {
             @Override
-            protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
+            protected List<HostConfigEntry> reloadHostConfigEntries(
+                    Path path, String host, int port, String username, String proxyJump)
                     throws IOException {
                 reloadCount.incrementAndGet();
-                return super.reloadHostConfigEntries(path, host, port, username);
+                return super.reloadHostConfigEntries(path, host, port, username, proxyJump);
             }
         };
         Path path = resolver.getPath();
@@ -116,7 +117,8 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
 
         for (int index = 1; index < Byte.SIZE; index++) {
             HostConfigEntry actual
-                    = resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), null, query.getUsername(), null);
+                    = resolver.resolveEffectiveHost(query.getHostName(), query.getPort(), null, query.getUsername(), null,
+                            null);
 
             if (entries == null) {
                 assertEquals(phase + "[" + index + "]: mismatched reload count", 0, reloadCount.get());

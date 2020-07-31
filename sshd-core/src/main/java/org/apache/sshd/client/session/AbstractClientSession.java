@@ -560,6 +560,10 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         IoSession networkSession = getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
+        SshdSocketAddress targetServerAddress = getAttribute(ClientSessionCreator.TARGET_SERVER);
+        if (targetServerAddress != null) {
+            remoteAddress = targetServerAddress.toInetSocketAddress();
+        }
 
         boolean verified = false;
         if (serverKey instanceof OpenSshCertificate) {

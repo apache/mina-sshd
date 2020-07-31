@@ -82,6 +82,16 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
         return loginSession(connect(username, target), identity);
     }
 
+    @Override
+    public ClientSession sessionLogin(String uri, String password) throws IOException {
+        return loginSession(connect(uri), password);
+    }
+
+    @Override
+    public ClientSession sessionLogin(String uri, KeyPair identity) throws IOException {
+        return loginSession(connect(uri), identity);
+    }
+
     protected ClientSession loginSession(ConnectFuture future, String password) throws IOException {
         return authSession(future.verify(getConnectTimeout()), password);
     }
@@ -142,6 +152,11 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
         Objects.requireNonNull(creator, "No sessions creator");
         Objects.requireNonNull(channel, "No channel");
         return new AbstractSimpleClientSessionCreator() {
+            @Override
+            public ConnectFuture connect(String uri) throws IOException {
+                return creator.connect(uri);
+            }
+
             @Override
             public ConnectFuture connect(String username, String host, int port) throws IOException {
                 return creator.connect(username, host, port);
