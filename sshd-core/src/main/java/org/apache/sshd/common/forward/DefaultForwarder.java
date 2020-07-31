@@ -452,7 +452,7 @@ public class DefaultForwarder
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
         if (isClosed() || isClosing()) {
-            throw new IllegalStateException("TcpipForwarder is closed or closing: " + state);
+            throw new IllegalStateException("DefaultForwarder is closed or closing: " + state);
         }
 
         SocksProxy proxy = null;
