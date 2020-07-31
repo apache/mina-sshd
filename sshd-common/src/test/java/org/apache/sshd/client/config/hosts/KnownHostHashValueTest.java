@@ -55,7 +55,7 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
         this.hash = KnownHostHashValue.parse(hashValue);
     }
 
-    @Parameters(name = "host={0}, hash={1}")
+    @Parameters(name = "host={0}, port={1}, hash={2}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(
                 // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
