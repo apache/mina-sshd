@@ -156,7 +156,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = setupTestServer();
+        sshd = setupTestFullSupportServer();
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(serverSideListener);
         sshd.start();

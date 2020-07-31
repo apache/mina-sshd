@@ -110,12 +110,12 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = CoreTestSupportUtils.setupTestServer(ApacheSshdSftpSessionFactoryTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(ApacheSshdSftpSessionFactoryTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
         port = sshd.getPort();
 
-        client = CoreTestSupportUtils.setupTestClient(ApacheSshdSftpSessionFactoryTest.class);
+        client = CoreTestSupportUtils.setupTestFullSupportClient(ApacheSshdSftpSessionFactoryTest.class);
         client.start();
     }
 

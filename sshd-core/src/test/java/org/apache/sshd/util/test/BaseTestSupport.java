@@ -125,8 +125,16 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         return CoreTestSupportUtils.setupTestServer(getClass());
     }
 
+    protected SshServer setupTestFullSupportServer() {
+        return CoreTestSupportUtils.setupTestFullSupportServer(setupTestServer());
+    }
+
     protected SshClient setupTestClient() {
         return CoreTestSupportUtils.setupTestClient(getClass());
+    }
+
+    protected SshClient setupTestFullSupportClient() {
+        return CoreTestSupportUtils.setupTestFullSupportClient(setupTestClient());
     }
 
     protected void assumeNotIoServiceProvider(

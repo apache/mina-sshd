@@ -28,6 +28,7 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.After;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
 
     private PasswordAuthenticator authenticator;
 
-    public AsyncAuthTestBase() {
+    protected AsyncAuthTestBase() {
         super();
     }
 
@@ -53,7 +54,7 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
         if (server != null) {
             fail("Server already started");
         }
-        server = SshServer.setUpDefaultServer();
+        server = CoreTestSupportUtils.setupTestFullSupportServer(SshServer.setUpDefaultServer());
         if (timeout != null) {
             CoreModuleProperties.AUTH_TIMEOUT.set(server, timeout);
         }

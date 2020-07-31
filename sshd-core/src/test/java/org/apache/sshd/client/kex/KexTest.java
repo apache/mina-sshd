@@ -81,11 +81,11 @@ public class KexTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = CoreTestSupportUtils.setupTestServer(KexTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(KexTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = CoreTestSupportUtils.setupTestClient(KexTest.class);
+        client = CoreTestSupportUtils.setupTestFullSupportClient(KexTest.class);
         client.start();
     }
 

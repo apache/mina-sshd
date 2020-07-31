@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.GenericUtils;
@@ -62,14 +61,6 @@ public class SshBuilderTest extends BaseTestSupport {
     @Test
     public void testAllBuiltinSignaturesListed() {
         testAllInstancesListed(BuiltinSignatures.VALUES, ServerBuilder.DEFAULT_SIGNATURE_PREFERENCE);
-    }
-
-    /**
-     * Make sure that all values in {@link BuiltinDHFactories} are listed in {@link BaseBuilder#DEFAULT_KEX_PREFERENCE}
-     */
-    @Test
-    public void testAllBuiltinDHFactoriesListed() {
-        testAllInstancesListed(BuiltinDHFactories.VALUES, BaseBuilder.DEFAULT_KEX_PREFERENCE);
     }
 
     private static <

@@ -22,10 +22,14 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
+import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.shell.UnknownCommandFactory;
@@ -51,6 +55,17 @@ public final class CoreTestSupportUtils {
         return client;
     }
 
+    public static SshClient setupTestFullSupportClient(Class<?> anchor) {
+        SshClient client = setupTestClient(anchor);
+        return setupTestFullSupportClient(client);
+    }
+
+    public static SshClient setupTestFullSupportClient(SshClient client) {
+        client.setKeyExchangeFactories(
+                NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ClientBuilder.DH2KEX));
+        return client;
+    }
+
     public static SshServer setupTestServer(Class<?> anchor) {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(anchor));
@@ -58,6 +73,18 @@ public final class CoreTestSupportUtils {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setShellFactory(EchoShellFactory.INSTANCE);
         sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
+        return sshd;
+    }
+
+    // Adds deprecated / insecure settings
+    public static SshServer setupTestFullSupportServer(Class<?> anchor) {
+        SshServer sshd = setupTestServer(anchor);
+        return setupTestFullSupportServer(sshd);
+    }
+
+    public static SshServer setupTestFullSupportServer(SshServer sshd) {
+        sshd.setKeyExchangeFactories(
+                NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ServerBuilder.DH2KEX));
         return sshd;
     }
 }

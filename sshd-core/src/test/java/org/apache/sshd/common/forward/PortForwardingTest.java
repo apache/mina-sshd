@@ -166,7 +166,7 @@ public class PortForwardingTest extends BaseTestSupport {
     @BeforeClass
     public static void setUpTestEnvironment() throws Exception {
         JSchLogger.init();
-        sshd = CoreTestSupportUtils.setupTestServer(PortForwardingTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(PortForwardingTest.class);
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 2048L);
         CoreModuleProperties.MAX_PACKET_SIZE.set(sshd, 256L);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);

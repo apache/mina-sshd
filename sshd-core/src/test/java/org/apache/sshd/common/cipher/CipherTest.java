@@ -110,7 +110,7 @@ public class CipherTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = CoreTestSupportUtils.setupTestServer(CipherTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(CipherTest.class);
         sshd.start();
         port = sshd.getPort();
     }

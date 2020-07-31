@@ -62,7 +62,7 @@ import org.apache.sshd.common.util.io.NoCloseReader;
 /**
  * Represents an entry in the client's configuration file as defined by the
  * <A HREF="https://linux.die.net/man/5/ssh_config">ssh_config</A> configuration file format
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/">OpenSSH Config File
  *         Examples</A>
@@ -717,6 +717,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param  host        The original host name / address
      * @param  port        The original port
      * @param  username    The original user name
+     * @param  proxyJump   And optional proxy jump setting
      * @return             A <U>cloned</U> entry whose values are resolved - including expanding macros in the
      *                     identities files
      * @throws IOException If failed to normalize the entry

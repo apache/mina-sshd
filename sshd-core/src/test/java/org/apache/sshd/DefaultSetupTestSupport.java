@@ -31,6 +31,8 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -53,30 +55,59 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
 
     @Test
     public void testDefaultCiphersList() {
-        assertNamedFactoriesList(Cipher.class.getSimpleName(), BaseBuilder.DEFAULT_CIPHERS_PREFERENCE,
+        assertSameNamedFactoriesListInstances(Cipher.class.getSimpleName(), BaseBuilder.DEFAULT_CIPHERS_PREFERENCE,
                 factory.getCipherFactories());
     }
 
     @Test   // SSHD-1004
     public void testNoDeprecatedCiphers() {
-        assertNoDeprecatedSettings(Cipher.class.getSimpleName(),
+        assertNoDeprecatedFactoryInstanceNames(Cipher.class.getSimpleName(),
                 EnumSet.of(BuiltinCiphers.arcfour128, BuiltinCiphers.arcfour256, BuiltinCiphers.tripledescbc,
                         BuiltinCiphers.blowfishcbc),
                 factory.getCipherFactories());
     }
 
-    protected static <T, F extends NamedFactory<T>> void assertNoDeprecatedSettings(
-            String hint, Collection<? extends F> unexpected, Collection<? extends F> actual) {
+    @Test
+    public void testDefaultKeyExchangeList() {
+        assertSameNamedResourceListNames(KeyExchange.class.getSimpleName(),
+                BaseBuilder.DEFAULT_KEX_PREFERENCE, factory.getKeyExchangeFactories());
+    }
+
+    @Test   // SSHD-1004
+    public void testNoDeprecatedKeyExchanges() {
+        Collection<? extends NamedResource> disallowed = BuiltinDHFactories.VALUES.stream()
+                .filter(f -> f.getName().endsWith("sha-1"))
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(BuiltinDHFactories.class)));
+        assertNoDeprecatedFactoryInstanceNames(
+                KeyExchange.class.getSimpleName(), disallowed, factory.getKeyExchangeFactories());
+    }
+
+    protected static void assertSameNamedResourceListNames(
+            String hint, List<? extends NamedResource> expected, List<? extends NamedResource> actual) {
+        int len = GenericUtils.size(expected);
+        assertEquals(hint + "[size]", len, GenericUtils.size(actual));
+
+        for (int index = 0; index < len; index++) {
+            NamedResource expRes = expected.get(index);
+            String expName = expRes.getName();
+            NamedResource actRes = actual.get(index);
+            String actName = actRes.getName();
+            assertSame(hint + "[" + index + "]", expName, actName);
+        }
+    }
+
+    protected static void assertNoDeprecatedFactoryInstanceNames(
+            String hint, Collection<? extends NamedResource> unexpected, Collection<? extends NamedResource> actual) {
         Collection<String> disallowedNames = unexpected.stream()
                 .map(NamedResource::getName)
                 .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER)));
-        for (F namedFactory : actual) {
+        for (NamedResource namedFactory : actual) {
             String name = namedFactory.getName();
             assertFalse(hint + " - disallowed: " + name, disallowedNames.contains(name));
         }
     }
 
-    protected static <T, F extends NamedFactory<T>> void assertNamedFactoriesList(
+    protected static <T, F extends NamedFactory<T>> void assertSameNamedFactoriesListInstances(
             String hint, List<? extends F> expected, List<? extends F> actual) {
         int len = GenericUtils.size(expected);
         assertEquals(hint + "[size]", len, GenericUtils.size(actual));

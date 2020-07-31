@@ -55,7 +55,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = CoreTestSupportUtils.setupTestServer(AbstractSftpClientTestSupport.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(AbstractSftpClientTestSupport.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         sshd.start();
         port = sshd.getPort();

@@ -101,7 +101,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     protected void setUp(long bytesLimit, Duration timeLimit, long packetsLimit) throws Exception {
-        sshd = setupTestServer();
+        sshd = setupTestFullSupportServer();
         sshd.setSubsystemFactories(Collections.singletonList(new TestSubsystemFactory()));
         if (bytesLimit > 0L) {
             CoreModuleProperties.REKEY_BYTES_LIMIT.set(sshd, bytesLimit);

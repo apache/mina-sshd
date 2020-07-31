@@ -76,6 +76,7 @@ the unsafe settings must do so **explicitly**. The following settings have been 
 * [RFC 8429 - Deprecate Triple-DES (3DES) and RC4 in Kerberos](https://tools.ietf.org/html/rfc8429)
     * While it refers to Kerberos, it mentions weaknesses in DES as well.
 * [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
+* SHA-1 based key exchanges and signatures
 
 # [Release notes](./CHANGES.md)
 

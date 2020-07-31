@@ -26,6 +26,8 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.util.test.JSchLogger;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -36,6 +38,11 @@ import org.junit.runners.MethodSorters;
 public class AsyncAuthTest extends AsyncAuthTestBase {
     public AsyncAuthTest() {
         super();
+    }
+
+    @BeforeClass
+    public static void jschInit() {
+        JSchLogger.init();
     }
 
     @Override

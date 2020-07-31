@@ -14,6 +14,7 @@
 
 * [SSHD-506](https://issues.apache.org/jira/browse/SSHD-506) Added support for AES-GCM ciphers.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate SHA-1 based key exchanges and signatures.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.

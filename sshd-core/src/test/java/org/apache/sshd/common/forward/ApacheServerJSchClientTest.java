@@ -27,6 +27,7 @@ import com.jcraft.jsch.Session;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
@@ -67,7 +68,7 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     @BeforeClass
     public static void startSshServer() throws IOException {
         LOG.info("Starting SSHD...");
-        server = SshServer.setUpDefaultServer();
+        server = CoreTestSupportUtils.setupTestFullSupportServer(SshServer.setUpDefaultServer());
         server.setPasswordAuthenticator((u, p, s) -> true);
         server.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());

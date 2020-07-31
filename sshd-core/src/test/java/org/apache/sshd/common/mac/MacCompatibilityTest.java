@@ -119,7 +119,7 @@ public class MacCompatibilityTest extends BaseTestSupport {
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = CoreTestSupportUtils.setupTestServer(MacCompatibilityTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(MacCompatibilityTest.class);
         sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
         sshd.start();
         port = sshd.getPort();

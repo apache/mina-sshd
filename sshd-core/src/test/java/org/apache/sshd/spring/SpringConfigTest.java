@@ -27,6 +27,7 @@ import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
@@ -73,7 +74,7 @@ public class SpringConfigTest extends BaseTestSupport {
 
     @Test
     public void testSpringConfig() throws Exception {
-        SshServer server = context.getBean(SshServer.class);
+        SshServer server = CoreTestSupportUtils.setupTestFullSupportServer(context.getBean(SshServer.class));
         int port = server.getPort();
 
         JSch sch = new JSch();
