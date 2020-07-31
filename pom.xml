@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>15</version>
+        <version>23</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
@@ -81,6 +81,7 @@
     <properties>
         <projectRoot>${project.basedir}</projectRoot>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.outputTimestamp>2020-01-01T00:00:00Z</project.build.outputTimestamp>
 
         <!-- NOTE: actual value updated by groovy-maven-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
@@ -121,11 +122,7 @@
 
         <surefire.plugin.version>2.22.2</surefire.plugin.version>
         <maven.archiver.version>3.5.0</maven.archiver.version>
-        <!--
-            NOTE: upgrading beyond this version causes
-            exceptions in the javadoc plugin
-        -->
-        <plexus.archiver.version>4.1.0</plexus.archiver.version>
+        <plexus.archiver.version>4.2.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.25.0</pmd.version>
 
@@ -1293,6 +1290,7 @@
                                 <addLicense>true</addLicense>
                                 <addArtifact>true</addArtifact>
                             </properties>
+                            <outputTimestamp>${project.build.outputTimestamp}</outputTimestamp> <!-- 01/01/2020 -->
                         </configuration>
                     </execution>
                 </executions>
