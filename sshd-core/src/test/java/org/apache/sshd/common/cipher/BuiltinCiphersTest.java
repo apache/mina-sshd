@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -31,14 +30,11 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -154,37 +150,6 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 assertFalse("Mismatched support report for " + c, c.isSupported());
             }
         }
-    }
-
-    @Test
-    public void testSshClientSupportedCiphersConfiguration() throws Exception {
-        try (SshClient client = setupTestClient()) {
-            testSupportedCiphersConfiguration(client);
-        }
-    }
-
-    @Test
-    public void testSshSercerSupportedCiphersConfiguration() throws Exception {
-        try (SshServer server = setupTestServer()) {
-            testSupportedCiphersConfiguration(server);
-        }
-    }
-
-    private static <M extends FactoryManager> M testSupportedCiphersConfiguration(M manager) {
-        Collection<? extends NamedResource> factories = manager.getCipherFactories();
-        List<String> names = NamedResource.getNameList(factories);
-        for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
-            if (BuiltinCiphers.none.equals(c)) {
-                continue; // not always included by default + it is a dummy cipher
-            }
-
-            // for now, all key sizes below 128 are supported in JVM(s)
-            if (c.getKeySize() <= 128) {
-                assertTrue("Supported cipher not configured by default: " + c, names.contains(c.getName()));
-            }
-        }
-
-        return manager;
     }
 
     private static void testCipherEncryption(Random rnd, Cipher cipher) throws Exception {

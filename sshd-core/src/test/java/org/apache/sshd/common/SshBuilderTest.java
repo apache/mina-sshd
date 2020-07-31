@@ -20,7 +20,6 @@
 package org.apache.sshd.common;
 
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -46,17 +45,6 @@ import org.junit.runners.MethodSorters;
 public class SshBuilderTest extends BaseTestSupport {
     public SshBuilderTest() {
         super();
-    }
-
-    /**
-     * Make sure that all values in {@link BuiltinCiphers} are listed in {@link BaseBuilder#DEFAULT_CIPHERS_PREFERENCE}
-     */
-    @Test
-    public void testAllBuiltinCiphersListed() {
-        Set<BuiltinCiphers> all = EnumSet.allOf(BuiltinCiphers.class);
-        // The 'none' cipher is not listed as preferred - it is implied
-        assertTrue("Missing " + BuiltinCiphers.Constants.NONE + " cipher in all values", all.remove(BuiltinCiphers.none));
-        testAllInstancesListed(all, BaseBuilder.DEFAULT_CIPHERS_PREFERENCE);
     }
 
     /**

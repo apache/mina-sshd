@@ -68,6 +68,15 @@ aes128-gcm@openssh.com, aes256-gcm@openssh.com
 , ssh-rsa-cert-v01@openssh.com, ssh-dss-cert-v01@openssh.com, ssh-ed25519-cert-v01@openssh.com
 , ecdsa-sha2-nistp256-cert-v01@openssh.com, ecdsa-sha2-nistp384-cert-v01@openssh.com, ecdsa-sha2-nistp521-cert-v01@openssh.com
 
+**Note:** The above list contains all the supported security settings in the code. However, in accordance with the latest recommendations
+the default client/server setup includes only the security settings that are currently considered safe to use. Users who wish to include
+the unsafe settings must do so **explicitly**. The following settings have been deprecated and are no longer included in the default setup:
+
+* [RFC 8758 - Deprecating RC4 in Secure Shell (SSH)](https://tools.ietf.org/html/rfc8758)
+* [RFC 8429 - Deprecate Triple-DES (3DES) and RC4 in Kerberos](https://tools.ietf.org/html/rfc8429)
+    * While it refers to Kerberos, it mentions weaknesses in DES as well.
+* [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
+
 # [Release notes](./CHANGES.md)
 
 # Core requirements

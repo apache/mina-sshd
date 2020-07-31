@@ -74,16 +74,9 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
                     BuiltinCiphers.aes256ctr,
                     BuiltinCiphers.aes128gcm,
                     BuiltinCiphers.aes256gcm,
-                    BuiltinCiphers.arcfour256,
-                    BuiltinCiphers.arcfour128,
                     BuiltinCiphers.aes128cbc,
-                    BuiltinCiphers.tripledescbc,
-                    BuiltinCiphers.blowfishcbc,
-                    // TODO add support for cast128-cbc cipher
                     BuiltinCiphers.aes192cbc,
-                    BuiltinCiphers.aes256cbc
-            // TODO add support for arcfour cipher
-            ));
+                    BuiltinCiphers.aes256cbc));
 
     /**
      * The default {@link BuiltinDHFactories} setup in order of preference as specified by
