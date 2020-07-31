@@ -190,12 +190,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                     Path idFile = resolveIdentityFile(optValue);
                     identities.add(idFile);
                 } else {
-                    Object prev = options.get(optName);
-                    if (prev == null) {
-                        options.put(optName, optValue);
-                    } else {
-                        options.put(optName, Objects.toString(prev) + "," + optValue);
-                    }
+                    options.merge(optName, optValue, (a, b) -> a + "," + b);
                 }
             } else if ("-l".equals(argName)) {
                 if (login != null) {
