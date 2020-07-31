@@ -125,6 +125,11 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
 
         if (Throwable.class.isAssignableFrom(actualType)) {
             Throwable t = GenericUtils.peelException((Throwable) value);
+
+            if (t instanceof SshException) {
+                throw new SshException(((SshException) t).getDisconnectCode(), t.getMessage(), t);
+            }
+
             Throwable cause = GenericUtils.resolveExceptionCause(t);
             throw formatExceptionMessage(
                     msg -> new SshException(msg, cause),
