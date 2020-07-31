@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,8 +33,10 @@ import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.ConnectionInfo;
 import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -118,9 +121,21 @@ public class MacCompatibilityTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
+        setupClientAndServer(MacCompatibilityTest.class);
+    }
 
-        sshd = CoreTestSupportUtils.setupTestFullSupportServer(MacCompatibilityTest.class);
-        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
+    private static void setupClientAndServer(Class<?> anchor) throws Exception {
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(anchor);
+
+        // Need to use RSA since Ganymede does not support EC
+        SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
+        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
+        provider.setKeySize(1024);
+
+        Path targetDir = CommonTestSupportUtils.detectTargetFolder(anchor);
+        provider.setPath(targetDir.resolve(anchor.getSimpleName() + "-key"));
+
+        sshd.setKeyPairProvider(provider);
         sshd.start();
         port = sshd.getPort();
     }

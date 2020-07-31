@@ -43,6 +43,7 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.session.helpers.DefaultUnknownChannelReferenceHandler;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -111,6 +112,28 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
                     BuiltinMacs.hmacmd5,
                     BuiltinMacs.hmacsha196,
                     BuiltinMacs.hmacmd596));
+
+    /**
+     * Preferred {@link BuiltinSignatures} according to
+     * <A HREF="http://man7.org/linux/man-pages/man5/sshd_config.5.html">sshd_config(5) - HostKeyAlgorithms</A>
+     * {@code HostKeyAlgorithms} recommendation
+     */
+    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE = Collections.unmodifiableList(
+            Arrays.asList(
+                    BuiltinSignatures.nistp256_cert,
+                    BuiltinSignatures.nistp384_cert,
+                    BuiltinSignatures.nistp521_cert,
+                    BuiltinSignatures.ed25519_cert,
+                    BuiltinSignatures.rsaSHA512_cert,
+                    BuiltinSignatures.rsaSHA256_cert,
+                    BuiltinSignatures.nistp256,
+                    BuiltinSignatures.nistp384,
+                    BuiltinSignatures.nistp521,
+                    BuiltinSignatures.sk_ecdsa_sha2_nistp256,
+                    BuiltinSignatures.ed25519,
+                    BuiltinSignatures.sk_ssh_ed25519,
+                    BuiltinSignatures.rsaSHA512,
+                    BuiltinSignatures.rsaSHA256));
 
     public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER
             = DefaultUnknownChannelReferenceHandler.INSTANCE;

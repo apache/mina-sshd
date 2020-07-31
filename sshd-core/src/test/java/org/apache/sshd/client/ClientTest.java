@@ -74,7 +74,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -92,6 +91,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -108,11 +108,14 @@ import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.util.test.AsyncEchoShellFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -168,6 +171,11 @@ public class ClientTest extends BaseTestSupport {
 
     public ClientTest() {
         super();
+    }
+
+    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
+    public static void ensureBouncycastleRegistered() {
+        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
     }
 
     @Before
@@ -1038,7 +1046,7 @@ public class ClientTest extends BaseTestSupport {
                 .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             KeyPairProvider keys = createTestHostKeyProvider();
-            session.addPublicKeyIdentity(keys.loadKey(session, KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(keys.loadKey(session, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE));
             session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
@@ -1049,10 +1057,11 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
-        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
+        provider.setAlgorithm(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
+        provider.setKeySize(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
 
         KeyPairProvider keys = createTestHostKeyProvider();
-        KeyPair pair = keys.loadKey(null, KeyPairProvider.SSH_RSA);
+        KeyPair pair = keys.loadKey(null, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
         sshd.setPublickeyAuthenticator((username, key, session) -> key.equals(pair.getPublic()));
         client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
@@ -1060,7 +1069,7 @@ public class ClientTest extends BaseTestSupport {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
-            session.addPublicKeyIdentity(provider.loadKey(session, KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(provider.loadKey(session, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(AUTH_TIMEOUT);
         } finally {

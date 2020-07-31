@@ -64,7 +64,7 @@ aes128-gcm@openssh.com, aes256-gcm@openssh.com
 , ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521
 * **Compressions**: none, zlib, zlib@openssh.com
 * **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
-, ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
+, ssh-ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
 , ssh-rsa-cert-v01@openssh.com, ssh-dss-cert-v01@openssh.com, ssh-ed25519-cert-v01@openssh.com
 , ecdsa-sha2-nistp256-cert-v01@openssh.com, ecdsa-sha2-nistp384-cert-v01@openssh.com, ecdsa-sha2-nistp521-cert-v01@openssh.com
 
@@ -77,6 +77,19 @@ the unsafe settings must do so **explicitly**. The following settings have been 
     * While it refers to Kerberos, it mentions weaknesses in DES as well.
 * [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
 * SHA-1 based key exchanges and signatures
+
+**Caveat:**: According to [RFC 8332 - section 3.31](https://tools.ietf.org/html/rfc8332#section-3.3)
+>>
+>> Implementation experience has shown that there are servers that apply authentication penalties to clients
+>> attempting public key algorithms that the SSH server does not support.
+>>
+>> When authenticating with an RSA key against a server that does not implement the "server-sig-algs" extension,
+>> clients MAY default to an "ssh-rsa" signature to avoid authentication penalties. When the new rsa-sha2-*
+>> algorithms have been sufficiently widely adopted to warrant disabling "ssh-rsa", clients MAY default to one of
+>> the new algorithms.
+
+This means that users that encounter this problem must modify the supported security settings **explicitly** in
+order to avoid the issue.
 
 # [Release notes](./CHANGES.md)
 

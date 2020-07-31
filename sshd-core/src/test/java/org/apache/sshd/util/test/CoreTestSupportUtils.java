@@ -21,14 +21,17 @@ package org.apache.sshd.util.test;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
@@ -63,6 +66,7 @@ public final class CoreTestSupportUtils {
     public static SshClient setupTestFullSupportClient(SshClient client) {
         client.setKeyExchangeFactories(
                 NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ClientBuilder.DH2KEX));
+        setupFullSignaturesSupport(client);
         return client;
     }
 
@@ -85,6 +89,12 @@ public final class CoreTestSupportUtils {
     public static SshServer setupTestFullSupportServer(SshServer sshd) {
         sshd.setKeyExchangeFactories(
                 NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ServerBuilder.DH2KEX));
+        setupFullSignaturesSupport(sshd);
         return sshd;
+    }
+
+    public static <M extends AbstractFactoryManager> M setupFullSignaturesSupport(M manager) {
+        manager.setSignatureFactories(new ArrayList<>(BuiltinSignatures.VALUES));
+        return manager;
     }
 }

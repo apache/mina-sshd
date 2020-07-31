@@ -120,7 +120,10 @@ public final class CommonTestSupportUtils {
                             "target" /* Maven */,
                             "build" /* Gradle */));
 
-    public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.RSA_ALGORITHM;
+    public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = KeyUtils.EC_ALGORITHM;
+    public static final int DEFAULT_TEST_HOST_KEY_SIZE = 256;
+    public static final String DEFAULT_TEST_HOST_KEY_TYPE = ECCurves.fromCurveSize(DEFAULT_TEST_HOST_KEY_SIZE).getKeyType();
+
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
     private static final AtomicReference<KeyPairProvider> KEYPAIR_PROVIDER_HOLDER = new AtomicReference<>();
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
@@ -452,6 +455,7 @@ public final class CommonTestSupportUtils {
         SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
         keyProvider.setPath(Objects.requireNonNull(path, "No path"));
         keyProvider.setAlgorithm(DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
+        keyProvider.setKeySize(DEFAULT_TEST_HOST_KEY_SIZE);
         return validateKeyPairProvider(keyProvider);
     }
 

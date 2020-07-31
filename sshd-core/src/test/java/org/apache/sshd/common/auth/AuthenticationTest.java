@@ -85,6 +85,7 @@ import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -310,7 +311,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
-                KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
+                KeyPair pair = provider.loadKey(s, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY,
                             authPublicKey(s, getCurrentTestName(), pair), false);
@@ -382,7 +383,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPairProvider provider = createTestHostKeyProvider();
-                KeyPair pair = provider.loadKey(s, KeyPairProvider.SSH_RSA);
+                KeyPair pair = provider.loadKey(s, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
                 try {
                     assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY,
                             authPublicKey(s, getCurrentTestName(), pair), false);
@@ -656,8 +657,10 @@ public class AuthenticationTest extends BaseTestSupport {
             return true;
         });
 
+        // since we need to use RSA
+        CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
         try (SshClient client = setupTestClient()) {
-            // force server to use only the RSA key
+            // force server to use only RSA
             NamedFactory<Signature> kexSignature = BuiltinSignatures.rsa;
             client.setSignatureFactories(Collections.singletonList(kexSignature));
             client.setServerKeyVerifier((sshClientSession, remoteAddress, serverKey) -> {
@@ -738,7 +741,9 @@ public class AuthenticationTest extends BaseTestSupport {
                 }));
 
         try (SshClient client = setupTestClient()) {
-            KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+            KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(
+                    CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM,
+                    CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
             client.start();
 
             try {
@@ -767,7 +772,9 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testHostBasedAuthentication() throws Exception {
         String hostClienUser = getClass().getSimpleName();
         String hostClientName = SshdSocketAddress.toAddressString(SshdSocketAddress.getFirstExternalNetwork4Address());
-        KeyPair hostClientKey = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        KeyPair hostClientKey = CommonTestSupportUtils.generateKeyPair(
+                CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM,
+                CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
         AtomicInteger invocationCount = new AtomicInteger(0);
         sshd.setHostBasedAuthenticator((session, username, clientHostKey, clientHostName, clientUsername, certificates) -> {
             invocationCount.incrementAndGet();
@@ -827,8 +834,11 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
 
         try (SshClient client = setupTestClient()) {
-            KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+            KeyPair kp = CommonTestSupportUtils.generateKeyPair(
+                    CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM,
+                    CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
             client.start();
+
             try {
                 for (int index = 1; index < 3; index++) {
                     try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -894,7 +904,7 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT)
                     .getSession()) {
-                String keyLocation = "super-secret-passphrase-RSA-AES-128-key";
+                String keyLocation = "super-secret-passphrase-ec256-key";
                 FilePasswordProvider passwordProvider = new FilePasswordProvider() {
                     @Override
                     @SuppressWarnings("synthetic-access")

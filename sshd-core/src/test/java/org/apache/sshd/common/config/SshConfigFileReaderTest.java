@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
 
-import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
@@ -102,7 +101,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testParseSignaturesList() {
-        List<? extends NamedResource> expected = ClientBuilder.DEFAULT_SIGNATURE_PREFERENCE;
+        List<? extends NamedResource> expected = BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinSignatures.ParseResult result
                 = SshConfigFileReader.getSignatures(PropertyResolverUtils.toPropertyResolver(props));

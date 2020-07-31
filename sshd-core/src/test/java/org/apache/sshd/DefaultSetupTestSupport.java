@@ -33,6 +33,8 @@ import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -80,6 +82,21 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(BuiltinDHFactories.class)));
         assertNoDeprecatedFactoryInstanceNames(
                 KeyExchange.class.getSimpleName(), disallowed, factory.getKeyExchangeFactories());
+    }
+
+    @Test
+    public void testDefaultSignaturesList() {
+        assertSameNamedFactoriesListInstances(
+                Signature.class.getSimpleName(), BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE, factory.getSignatureFactories());
+    }
+
+    @Test   // SSHD-1004
+    public void testNoDeprecatedSignatures() {
+        assertNoDeprecatedFactoryInstanceNames(Cipher.class.getSimpleName(),
+                EnumSet.of(BuiltinSignatures.rsa, BuiltinSignatures.rsa_cert, BuiltinSignatures.dsa,
+                        BuiltinSignatures.dsa_cert),
+                factory.getSignatureFactories());
+
     }
 
     protected static void assertSameNamedResourceListNames(

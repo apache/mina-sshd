@@ -50,6 +50,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
@@ -70,6 +71,7 @@ import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -148,14 +150,27 @@ public class ScpTest extends BaseTestSupport {
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
-        sshd = CoreTestSupportUtils.setupTestFullSupportServer(ScpTest.class);
+        setupClientAndServer(ScpTest.class);
+    }
+
+    protected static void setupClientAndServer(Class<?> anchor) throws Exception {
+        // Need to use RSA since Ganymede does not support EC
+        SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
+        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
+        provider.setKeySize(1024);
+
+        Path targetDir = CommonTestSupportUtils.detectTargetFolder(anchor);
+        provider.setPath(targetDir.resolve(anchor.getSimpleName() + "-key"));
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(anchor);
+        sshd.setKeyPairProvider(provider);
+
         ScpCommandFactory factory = new ScpCommandFactory();
         sshd.setCommandFactory(factory);
         sshd.setShellFactory(factory);
         sshd.start();
         port = sshd.getPort();
 
-        client = CoreTestSupportUtils.setupTestFullSupportClient(ScpTest.class);
+        client = CoreTestSupportUtils.setupTestFullSupportClient(anchor);
         client.start();
     }
 

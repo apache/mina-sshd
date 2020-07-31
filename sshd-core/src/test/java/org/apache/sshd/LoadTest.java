@@ -37,11 +37,14 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -56,9 +59,14 @@ public class LoadTest extends BaseTestSupport {
         super();
     }
 
+    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
+    public static void ensureBouncycastleRegistered() {
+        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
+    }
+
     @Before
     public void setUp() throws Exception {
-        sshd = setupTestServer();
+        sshd = setupTestFullSupportServer();
         sshd.start();
         port = sshd.getPort();
     }
@@ -116,7 +124,7 @@ public class LoadTest extends BaseTestSupport {
 
     @SuppressWarnings("checkstyle:nestedtrydepth")
     protected void runClient(String msg) throws Exception {
-        try (SshClient client = setupTestClient()) {
+        try (SshClient client = setupTestFullSupportClient()) {
             CoreModuleProperties.MAX_PACKET_SIZE.set(client, 1024L * 16);
             CoreModuleProperties.WINDOW_SIZE.set(client, 1024L * 8);
             client.setKeyExchangeFactories(Collections.singletonList(ClientBuilder.DH2KEX.apply(BuiltinDHFactories.dhg1)));

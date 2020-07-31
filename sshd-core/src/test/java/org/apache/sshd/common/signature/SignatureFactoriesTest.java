@@ -121,11 +121,11 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = CoreTestSupportUtils.setupTestServer(SignatureFactoriesTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(SignatureFactoriesTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = CoreTestSupportUtils.setupTestClient(SignatureFactoriesTest.class);
+        client = CoreTestSupportUtils.setupTestFullSupportClient(SignatureFactoriesTest.class);
         client.start();
     }
 

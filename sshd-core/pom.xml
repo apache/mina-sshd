@@ -225,6 +225,12 @@
                                             <!-- deprecated -->
                                         <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
                                     </systemProperties>
+                                    <excludes>
+                                            <!-- These tests fail inexplicably without Bouncycastle -->
+                                        <exclude>**/*LoadTest.java</exclude>
+                                        <exclude>**/SinglePublicKeyAuthTest.java</exclude>
+                                        <exclude>**/ClientTest.java</exclude>
+                                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>

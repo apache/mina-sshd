@@ -38,6 +38,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -70,11 +71,11 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
-        sshd = CoreTestSupportUtils.setupTestServer(OpenSSHCertificateTest.class);
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(OpenSSHCertificateTest.class);
         sshd.start();
         port = sshd.getPort();
 
-        client = CoreTestSupportUtils.setupTestClient(OpenSSHCertificateTest.class);
+        client = CoreTestSupportUtils.setupTestFullSupportClient(OpenSSHCertificateTest.class);
         client.start();
         defaultSignatureFactories = client.getSignatureFactories();
     }
@@ -158,6 +159,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @Test // invalid principal, abort
     public void testAbortOnInvalidPrincipal() throws Exception {
+        Assume.assumeTrue("Have signature factory", signatureFactory != null);
+
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
                 .verify(CONNECT_TIMEOUT)

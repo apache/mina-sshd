@@ -32,6 +32,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.CachingPublicKeyAuthenticator;
@@ -40,8 +41,11 @@ import org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -53,21 +57,29 @@ import org.junit.runners.MethodSorters;
 public class SinglePublicKeyAuthTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
-    private final KeyPair pairRsaGood;
-    private KeyPair pairRsaBad;
+    private final KeyPair kpGood;
+    private final KeyPair kpBad;
     private PublickeyAuthenticator delegate;
 
     public SinglePublicKeyAuthTest() throws IOException, GeneralSecurityException {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
-        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
-        pairRsaBad = provider.loadKey(null, KeyPairProvider.SSH_RSA);
+        provider.setAlgorithm(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
+        provider.setKeySize(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
+        provider.setPath(detectTargetFolder().resolve(getClass().getSimpleName() + "-key"));
+
+        kpBad = provider.loadKey(null, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
         KeyPairProvider badKeys = createTestHostKeyProvider();
-        pairRsaGood = badKeys.loadKey(null, KeyPairProvider.SSH_RSA);
+        kpGood = badKeys.loadKey(null, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
+    }
+
+    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
+    public static void ensureBouncycastleRegistered() {
+        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
     }
 
     @Before
     public void setUp() throws Exception {
-        sshd = setupTestServer();
+        sshd = setupTestFullSupportServer();
         CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthPublicKeyFactory.NAME);
         sshd.setPublickeyAuthenticator((username, key, session) -> delegate.authenticate(username, key, session));
         sshd.start();
@@ -88,7 +100,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             String fp = KeyUtils.getFingerPrint(key);
             AtomicInteger counter = count.computeIfAbsent(fp, k -> new AtomicInteger());
             counter.incrementAndGet();
-            return key.equals(pairRsaGood.getPublic());
+            return key.equals(kpGood.getPublic());
         });
         delegate = auth;
 
@@ -97,8 +109,8 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
             try (ClientSession session
                     = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
-                session.addPublicKeyIdentity(pairRsaBad);
-                session.addPublicKeyIdentity(pairRsaGood);
+                session.addPublicKeyIdentity(kpBad);
+                session.addPublicKeyIdentity(kpGood);
                 session.auth().verify(AUTH_TIMEOUT);
 
                 assertEquals("Mismatched authentication invocations count", 2, count.size());
@@ -106,12 +118,12 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 Map<Session, Map<PublicKey, Boolean>> cache = auth.getCache();
                 assertEquals("Mismatched cache size", 1, cache.size());
 
-                String fpBad = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
+                String fpBad = KeyUtils.getFingerPrint(kpBad.getPublic());
                 AtomicInteger badCounter = count.get(fpBad);
                 assertNotNull("Missing bad public key", badCounter);
                 assertEquals("Mismatched bad key authentication attempts", 1, badCounter.get());
 
-                String fpGood = KeyUtils.getFingerPrint(pairRsaGood.getPublic());
+                String fpGood = KeyUtils.getFingerPrint(kpGood.getPublic());
                 AtomicInteger goodCounter = count.get(fpGood);
                 assertNotNull("Missing good public key", goodCounter);
                 assertEquals("Mismatched good key authentication attempts", 1, goodCounter.get());
@@ -128,7 +140,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             String fp = KeyUtils.getFingerPrint(key);
             AtomicInteger counter = count.computeIfAbsent(fp, k -> new AtomicInteger());
             counter.incrementAndGet();
-            return key.equals(pairRsaGood.getPublic());
+            return key.equals(kpGood.getPublic());
         };
 
         try (SshClient client = setupTestClient()) {
@@ -136,8 +148,8 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
             try (ClientSession session
                     = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
-                session.addPublicKeyIdentity(pairRsaBad);
-                session.addPublicKeyIdentity(pairRsaGood);
+                session.addPublicKeyIdentity(kpBad);
+                session.addPublicKeyIdentity(kpGood);
 
                 AuthFuture auth = session.auth();
                 assertTrue("Failed to authenticate on time", auth.await(AUTH_TIMEOUT));
@@ -149,14 +161,14 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
         assertEquals("Mismatched attempted keys count", 2, count.size());
 
-        String badFingerPrint = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
+        String badFingerPrint = KeyUtils.getFingerPrint(kpBad.getPublic());
         Number badIndex = count.get(badFingerPrint);
-        assertNotNull("Missing bad RSA key", badIndex);
+        assertNotNull("Missing bad key", badIndex);
         assertEquals("Mismatched attempt index for bad key", 1, badIndex.intValue());
 
-        String goodFingerPrint = KeyUtils.getFingerPrint(pairRsaGood.getPublic());
+        String goodFingerPrint = KeyUtils.getFingerPrint(kpGood.getPublic());
         Number goodIndex = count.get(goodFingerPrint);
-        assertNotNull("Missing good RSA key", goodIndex);
+        assertNotNull("Missing good key", goodIndex);
         assertEquals("Mismatched attempt index for good key", 2, goodIndex.intValue());
     }
 

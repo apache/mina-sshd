@@ -26,6 +26,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
@@ -303,14 +304,23 @@ public abstract class AbstractGeneratorHostKeyProvider
         if (keySpec != null) {
             generator.initialize(keySpec);
             log.info("generateKeyPair(" + algorithm + ") generating host key - spec=" + keySpec.getClass().getSimpleName());
+        } else if (KeyUtils.EC_ALGORITHM.equals(algorithm)) {
+            ECCurves curve;
+            // If left to our own devices choose the biggest key size possible
+            if (keySize == 0) {
+                int numCurves = ECCurves.SORTED_KEY_SIZE.size();
+                curve = ECCurves.SORTED_KEY_SIZE.get(numCurves - 1);
+            } else {
+                curve = ECCurves.fromCurveSize(keySize);
+                if (curve == null) {
+                    throw new InvalidKeyException("No match found for curve with key size=" + keySize);
+                }
+            }
+            generator.initialize(curve.getParameters());
+            log.info("generateKeyPair(" + algorithm + ") generating host key=" + curve);
         } else if (keySize != 0) {
             generator.initialize(keySize);
             log.info("generateKeyPair(" + algorithm + ") generating host key - size=" + keySize);
-        } else if (KeyUtils.EC_ALGORITHM.equals(algorithm)) {
-            // If left to our own devices choose the biggest key size possible
-            int numCurves = ECCurves.SORTED_KEY_SIZE.size();
-            ECCurves curve = ECCurves.SORTED_KEY_SIZE.get(numCurves - 1);
-            generator.initialize(curve.getParameters());
         }
 
         return generator.generateKeyPair();
