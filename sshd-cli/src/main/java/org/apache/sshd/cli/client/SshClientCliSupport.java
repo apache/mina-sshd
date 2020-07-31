@@ -51,6 +51,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.config.SshClientConfigFileReader;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
+import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
@@ -79,6 +80,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 
@@ -106,10 +108,12 @@ public abstract class SshClientCliSupport extends CliSupport {
                 || "-w".equals(argName)
                 || "-c".equals(argName)
                 || "-m".equals(argName)
-                || "-E".equals(argName);
+                || "-E".equals(argName)
+                || "-J".equals(argName);
     }
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
+    // CHECKSTYLE:OFF
     public static ClientSession setupClientSession(
             String portOption, BufferedReader stdin, Level level,
             PrintStream stdout, PrintStream stderr, String... args)
@@ -117,6 +121,7 @@ public abstract class SshClientCliSupport extends CliSupport {
         int port = -1;
         String host = null;
         String login = null;
+        String proxyJump = null;
         String password = null;
         boolean error = false;
         List<Path> identities = new ArrayList<>();
@@ -149,6 +154,12 @@ public abstract class SshClientCliSupport extends CliSupport {
                     error = showError(stderr, "Bad option value for " + argName + ": " + port);
                     break;
                 }
+            } else if ("-J".equals(argName)) {
+                if (proxyJump != null) {
+                    error = showError(stderr, argName + " option value re-specified: " + proxyJump);
+                    break;
+                }
+                proxyJump = argVal;
             } else if ("-w".equals(argName)) {
                 if (GenericUtils.length(password) > 0) {
                     error = showError(stderr, argName + " option value re-specified: " + password);
@@ -250,8 +261,9 @@ public abstract class SshClientCliSupport extends CliSupport {
                 port = SshConstants.DEFAULT_PORT;
             }
 
+            HostConfigEntry entry = resolveHost(client, login, host, port, proxyJump);
             // TODO use a configurable wait time
-            ClientSession session = client.connect(login, host, port)
+            ClientSession session = client.connect(entry, null, null)
                     .verify()
                     .getSession();
             try {
@@ -268,6 +280,23 @@ public abstract class SshClientCliSupport extends CliSupport {
             client.close();
             throw e;
         }
+    }
+    // CHECKSTYLE:ON
+
+    public static HostConfigEntry resolveHost(SshClient client, String username, String host, int port, String proxyJump)
+            throws IOException {
+        HostConfigEntryResolver resolver = client.getHostConfigEntryResolver();
+        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, null, username, proxyJump, null);
+        if (entry == null) {
+            // IPv6 addresses have a format which means they need special treatment, separate from pattern validation
+            if (SshdSocketAddress.isIPv6Address(host)) {
+                // Not using a pattern as the host name passed in was a valid IPv6 address
+                entry = new HostConfigEntry("", host, port, username, null);
+            } else {
+                entry = new HostConfigEntry(host, host, port, username, proxyJump);
+            }
+        }
+        return entry;
     }
 
     public static Path resolveIdentityFile(String id) throws IOException {

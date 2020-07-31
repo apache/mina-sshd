@@ -52,21 +52,21 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
     @Override
     public HostConfigEntry resolveEffectiveHost(
-            String host, int port, SocketAddress localAddress, String username, AttributeRepository context)
+            String host, int port, SocketAddress localAddress, String username, String proxyJump, AttributeRepository context)
             throws IOException {
         try {
             HostConfigEntryResolver delegate
-                    = Objects.requireNonNull(resolveEffectiveResolver(host, port, username), "No delegate");
-            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, localAddress, username, context);
+                    = Objects.requireNonNull(resolveEffectiveResolver(host, port, username, proxyJump), "No delegate");
+            HostConfigEntry entry = delegate.resolveEffectiveHost(host, port, localAddress, username, proxyJump, context);
             if (log.isDebugEnabled()) {
-                log.debug("resolveEffectiveHost({}@{}:{}) => {}", username, host, port, entry);
+                log.debug("resolveEffectiveHost({}@{}:{}/{}) => {}", username, host, port, proxyJump, entry);
             }
 
             return entry;
         } catch (Throwable e) {
             if (log.isDebugEnabled()) {
-                log.debug("resolveEffectiveHost({}@{}:{}) failed ({}) to resolve: {}",
-                        username, host, port, e.getClass().getSimpleName(), e.getMessage());
+                log.debug("resolveEffectiveHost({}@{}:{}/{}) failed ({}) to resolve: {}",
+                        username, host, port, proxyJump, e.getClass().getSimpleName(), e.getMessage());
             }
 
             if (log.isTraceEnabled()) {
@@ -80,18 +80,20 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
         }
     }
 
-    protected HostConfigEntryResolver resolveEffectiveResolver(String host, int port, String username) throws IOException {
+    protected HostConfigEntryResolver resolveEffectiveResolver(String host, int port, String username, String proxyJump)
+            throws IOException {
         if (checkReloadRequired()) {
             delegateHolder.set(HostConfigEntryResolver.EMPTY); // start fresh
 
             Path path = getPath();
             if (exists()) {
-                Collection<HostConfigEntry> entries = reloadHostConfigEntries(path, host, port, username);
+                Collection<HostConfigEntry> entries = reloadHostConfigEntries(path, host, port, username, proxyJump);
                 if (GenericUtils.size(entries) > 0) {
                     delegateHolder.set(HostConfigEntry.toHostConfigEntryResolver(entries));
                 }
             } else {
-                log.info("resolveEffectiveResolver({}@{}:{}) no configuration file at {}", username, host, port, path);
+                log.info("resolveEffectiveResolver({}@{}:{}/{}) no configuration file at {}", username, host, port, proxyJump,
+                        path);
             }
         }
 
@@ -99,7 +101,7 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
     }
 
     protected List<HostConfigEntry> reloadHostConfigEntries(
-            Path path, String host, int port, String username)
+            Path path, String host, int port, String username, String proxyJump)
             throws IOException {
         List<HostConfigEntry> entries = HostConfigEntry.readHostConfigEntries(path);
         log.info("resolveEffectiveResolver({}@{}:{}) loaded {} entries from {}", username, host, port,

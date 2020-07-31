@@ -184,7 +184,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             if (session == null) {
                 stderr.println("usage: scp [" + SCP_PORT_OPTION + " port] [-i identity] [-io nio2|mina|netty]"
                                + " [-v[v][v]] [-E logoutput] [-r] [-p] [-q] [-o option=value] [-o creator=class name]"
-                               + " [-c cipherlist] [-m maclist] [-w password] [-C] <source> <target>");
+                               + " [-c cipherlist] [-m maclist] [-J proxyJump] [-w password] [-C] <source> <target>");
                 stderr.println();
                 stderr.println("Where <source> or <target> are either 'user@host:file' or a local file path");
                 stderr.println("NOTE: exactly ONE of the source or target must be remote and the other one local");

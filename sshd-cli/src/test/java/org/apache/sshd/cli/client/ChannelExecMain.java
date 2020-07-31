@@ -82,7 +82,7 @@ public class ChannelExecMain extends BaseTestSupport {
                     CliSupport.resolveLoggingVerbosity(args), stdout, stderr, args);
             if (session == null) {
                 System.err.println("usage: channelExec [-i identity] [-l login] [-P port] [-o option=value]"
-                                   + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
+                                   + " [-J proxyJump] [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
                 return;
             }

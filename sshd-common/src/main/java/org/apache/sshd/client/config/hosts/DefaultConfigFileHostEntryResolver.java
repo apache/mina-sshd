@@ -64,22 +64,23 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
     }
 
     @Override
-    protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
+    protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username, String proxyJump)
             throws IOException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
-                log.debug("reloadHostConfigEntries({}@{}:{}) check permissions of {}", username, host, port, path);
+                log.debug("reloadHostConfigEntries({}@{}:{}/{}) check permissions of {}", username, host, port, proxyJump,
+                        path);
             }
 
             Map.Entry<String, ?> violation = validateStrictConfigFilePermissions(path);
             if (violation != null) {
-                log.warn("reloadHostConfigEntries({}@{}:{}) invalid file={} permissions: {}",
-                        username, host, port, path, violation.getKey());
+                log.warn("reloadHostConfigEntries({}@{}:{}/{}) invalid file={} permissions: {}",
+                        username, host, port, proxyJump, path, violation.getKey());
                 updateReloadAttributes();
                 return Collections.emptyList();
             }
         }
 
-        return super.reloadHostConfigEntries(path, host, port, username);
+        return super.reloadHostConfigEntries(path, host, port, username, proxyJump);
     }
 }

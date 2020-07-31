@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.nio.channels.UnsupportedAddressTypeException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,6 +54,7 @@ import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -62,6 +65,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
+import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.client.simple.AbstractSimpleClientSessionCreator;
 import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.common.AttributeRepository;
@@ -467,103 +471,110 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     @Override
     public ConnectFuture connect(
-            String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
+            String username, SocketAddress targetAddress,
+            AttributeRepository context, SocketAddress localAddress)
             throws IOException {
-        HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
-        if (entry == null) {
-            // generate a synthetic entry
-            if (log.isDebugEnabled()) {
-                log.debug("connect({}@{}:{}) no overrides", username, host, port);
-            }
-
-            // IPv6 addresses have a format which means they need special treatment, separate from pattern validation
-            if (SshdSocketAddress.isIPv6Address(host)) {
-                // Not using a pattern as the host name passed in was a valid IPv6 address
-                entry = new HostConfigEntry("", host, port, username);
-            } else {
-                entry = new HostConfigEntry(host, host, port, username);
-            }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
-            }
+        Objects.requireNonNull(targetAddress, "No target address");
+        if (!(targetAddress instanceof InetSocketAddress)) {
+            throw new UnsupportedAddressTypeException();
         }
-
-        return connect(entry, context, localAddress);
+        InetSocketAddress inetAddress = (InetSocketAddress) targetAddress;
+        String host = ValidateUtils.checkNotNullAndNotEmpty(inetAddress.getHostString(), "No host");
+        int port = inetAddress.getPort();
+        ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
+        return connect(username, host, port, context, localAddress);
     }
 
     @Override
     public ConnectFuture connect(
-            String username, SocketAddress targetAddress, AttributeRepository context, SocketAddress localAddress)
+            String username, String host, int port,
+            AttributeRepository context, SocketAddress localAddress)
             throws IOException {
-        Objects.requireNonNull(targetAddress, "No target address");
-        if (targetAddress instanceof InetSocketAddress) {
-            InetSocketAddress inetAddress = (InetSocketAddress) targetAddress;
-            String host = ValidateUtils.checkNotNullAndNotEmpty(inetAddress.getHostString(), "No host");
-            int port = inetAddress.getPort();
-            ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
-
-            HostConfigEntryResolver resolver = getHostConfigEntryResolver();
-            HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, context);
-            if (entry == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("connect({}@{}:{}) no overrides", username, host, port);
-                }
-
-                return doConnect(
-                        username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
-                }
-
-                return connect(entry, context, localAddress);
-            }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("connect({}@{}) not an InetSocketAddress: {}",
-                        username, targetAddress, targetAddress.getClass().getName());
-            }
-            return doConnect(
-                    username, targetAddress, context, localAddress, KeyIdentityProvider.EMPTY_KEYS_PROVIDER, true);
-        }
+        HostConfigEntry entry = resolveHost(username, host, port, context, localAddress);
+        return connect(entry, context, localAddress);
     }
 
     @Override
     public ConnectFuture connect(
             HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
             throws IOException {
+        List<HostConfigEntry> jumps = parseProxyJumps(hostConfig.getProxyJump(), context);
+        return doConnect(hostConfig, jumps, context, localAddress);
+    }
+
+    protected ConnectFuture doConnect(
+            HostConfigEntry hostConfig, List<HostConfigEntry> jumps,
+            AttributeRepository context, SocketAddress localAddress)
+            throws IOException {
         Objects.requireNonNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
-
         Collection<String> hostIds = hostConfig.getIdentities();
-        Collection<PathResource> idFiles = GenericUtils.isEmpty(hostIds)
-                ? Collections.emptyList()
-                : hostIds.stream()
-                        .map(Paths::get)
-                        .map(PathResource::new)
-                        .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
+        Collection<PathResource> idFiles = GenericUtils.stream(hostIds)
+                .map(Paths::get)
+                .map(PathResource::new)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
         KeyIdentityProvider keys = preloadClientIdentities(idFiles);
-        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
-                context, localAddress, keys, !hostConfig.isIdentitiesOnly());
-    }
-
-    protected KeyIdentityProvider preloadClientIdentities(
-            Collection<? extends NamedResource> locations)
-            throws IOException {
-        return GenericUtils.isEmpty(locations)
-                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-                : ClientIdentityLoader.asKeyIdentityProvider(
-                        Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
-                        locations, getFilePasswordProvider(),
-                        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.getRequired(this));
+        String username = hostConfig.getUsername();
+        InetSocketAddress targetAddress = new InetSocketAddress(hostConfig.getHostName(), hostConfig.getPort());
+        if (GenericUtils.isNotEmpty(jumps)) {
+            ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
+            HostConfigEntry jump = jumps.remove(0);
+            ConnectFuture f1 = doConnect(jump, jumps, context, null);
+            f1.addListener(f2 -> {
+                if (f2.isConnected()) {
+                    ClientSession proxySession = f2.getClientSession();
+                    try {
+                        AuthFuture auth = proxySession.auth();
+                        auth.addListener(f3 -> {
+                            if (f3.isSuccess()) {
+                                try {
+                                    SshdSocketAddress address
+                                            = new SshdSocketAddress(hostConfig.getHostName(), hostConfig.getPort());
+                                    ExplicitPortForwardingTracker tracker = proxySession
+                                            .createLocalPortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, address);
+                                    SshdSocketAddress bound = tracker.getBoundAddress();
+                                    ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(), address,
+                                            context, localAddress, keys, !hostConfig.isIdentitiesOnly());
+                                    f4.addListener(f5 -> {
+                                        if (f5.isConnected()) {
+                                            ClientSession clientSession = f5.getClientSession();
+                                            clientSession.setAttribute(TARGET_SERVER, address);
+                                            connectFuture.setSession(clientSession);
+                                            proxySession.addCloseFutureListener(f6 -> clientSession.close(true));
+                                            clientSession.addCloseFutureListener(f6 -> proxySession.close(true));
+                                        } else {
+                                            proxySession.close(true);
+                                            connectFuture.setException(f5.getException());
+                                        }
+                                    });
+                                } catch (IOException e) {
+                                    proxySession.close(true);
+                                    connectFuture.setException(e);
+                                }
+                            } else {
+                                proxySession.close(true);
+                                connectFuture.setException(f3.getException());
+                            }
+                        });
+                    } catch (IOException e) {
+                        proxySession.close(true);
+                        connectFuture.setException(e);
+                    }
+                } else {
+                    connectFuture.setException(f2.getException());
+                }
+            });
+            return connectFuture;
+        } else {
+            return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), null,
+                    context, localAddress, keys, !hostConfig.isIdentitiesOnly());
+        }
     }
 
     protected ConnectFuture doConnect(
-            String username, SocketAddress targetAddress,
+            String username, SocketAddress targetAddress, SshdSocketAddress proxiedServer,
             AttributeRepository context, SocketAddress localAddress,
             KeyIdentityProvider identities, boolean useDefaultIdentities)
             throws IOException {
@@ -578,6 +589,60 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
         connectingFuture.addListener(listener);
         return connectFuture;
+    }
+
+    protected List<HostConfigEntry> parseProxyJumps(String proxyJump, AttributeRepository context) throws IOException {
+        List<HostConfigEntry> jumps = new ArrayList<>();
+        for (String jump : GenericUtils.split(proxyJump, ',')) {
+            String j = jump.trim();
+            URI uri = URI.create(j.contains("//") ? j : "ssh://" + j);
+            if (GenericUtils.isNotEmpty(uri.getScheme()) && !"ssh".equals(uri.getScheme())) {
+                throw new IllegalArgumentException("Unsupported scheme for proxy jump: " + jump);
+            }
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String userInfo = uri.getUserInfo();
+            HostConfigEntry entry = resolveHost(userInfo, host, port, context, null);
+            jumps.add(entry);
+        }
+        return jumps;
+    }
+
+    protected HostConfigEntry resolveHost(
+            String username, String host, int port, AttributeRepository context, SocketAddress localAddress)
+            throws IOException {
+        HostConfigEntryResolver resolver = getHostConfigEntryResolver();
+        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, null, context);
+        if (entry == null) {
+            // generate a synthetic entry
+            if (log.isDebugEnabled()) {
+                log.debug("connect({}@{}:{}) no overrides", username, host, port);
+            }
+
+            // IPv6 addresses have a format which means they need special treatment, separate from pattern validation
+            if (SshdSocketAddress.isIPv6Address(host)) {
+                // Not using a pattern as the host name passed in was a valid IPv6 address
+                entry = new HostConfigEntry("", host, port, username, null);
+            } else {
+                entry = new HostConfigEntry(host, host, port, username, null);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
+            }
+        }
+        return entry;
+    }
+
+    protected KeyIdentityProvider preloadClientIdentities(
+            Collection<? extends NamedResource> locations)
+            throws IOException {
+        return GenericUtils.isEmpty(locations)
+                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+                : ClientIdentityLoader.asKeyIdentityProvider(
+                        Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
+                        locations, getFilePasswordProvider(),
+                        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.getRequired(this));
     }
 
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(

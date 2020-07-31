@@ -24,11 +24,15 @@ import java.net.SocketAddress;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.common.AttributeRepository;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientSessionCreator {
+
+    AttributeRepository.AttributeKey<SshdSocketAddress> TARGET_SERVER = new AttributeRepository.AttributeKey<>();
+
     /**
      * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
      *
