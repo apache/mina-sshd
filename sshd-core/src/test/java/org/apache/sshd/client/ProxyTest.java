@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.RemoteException;
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
@@ -93,10 +94,11 @@ public class ProxyTest extends BaseTestSupport {
             logger.info("Proxy: " + proxy.getPort() + ", server: " + server.getPort());
 
             // Connect through to the proxy.
+            client.addPasswordIdentity("user2");
             try (ClientSession session = createSession(
                     client,
                     "localhost", server.getPort(), "user1", "user1",
-                    "localhost", proxy.getPort(), "user2", "user2")) {
+                    "user2@localhost:" + proxy.getPort())) {
                 assertTrue(session.isOpen());
                 doTestCommand(session, "ls -al");
             }
@@ -121,9 +123,7 @@ public class ProxyTest extends BaseTestSupport {
 
             // Connect to the server directly to verify the knownhosts setup.
             try (ClientSession session = createSession(
-                    client,
-                    "localhost", server.getPort(), "user1", "user1",
-                    null, -1, null, null)) {
+                    client, "localhost", server.getPort(), "user1", "user1", null)) {
                 assertTrue(session.isOpen());
                 doTestCommand(session, "ls -al");
             }
@@ -131,9 +131,7 @@ public class ProxyTest extends BaseTestSupport {
 
             // Connect through to the proxy.
             try (ClientSession session = createSession(
-                    client,
-                    "localhost", proxy.getPort(), "user2", "user2",
-                    null, -1, null, null)) {
+                    client, "localhost", proxy.getPort(), "user2", "user2", null)) {
                 assertTrue(session.isOpen());
                 assertThrows(RemoteException.class,
                         () -> doTestCommand(session, "ls -al"));
@@ -157,10 +155,42 @@ public class ProxyTest extends BaseTestSupport {
             logger.info("Proxy: " + proxy.getPort() + ", server: " + server.getPort());
 
             // Connect via the proxy
+            client.addPasswordIdentity("user2");
             try (ClientSession session = createSession(
-                    client,
-                    "localhost", server.getPort(), "user1", "user1",
-                    "localhost", proxy.getPort(), "user2", "user2")) {
+                    client, "localhost", server.getPort(), "user1", "user1",
+                    "user2@localhost:" + proxy.getPort())) {
+
+                assertTrue(session.isOpen());
+                doTestCommand(session, "ls -la");
+            }
+            // make sure the proxy session is closed / closing
+            assertTrue(proxySession == null || proxySession.isClosing() || proxySession.isClosed());
+        }
+    }
+
+    @Test
+    public void testProxyWithHostKeyVerificationAndCustomConfig() throws Exception {
+        try (SshServer server = setupTestServer();
+             SshServer proxy = setupTestServer();
+             SshClient client = setupTestClient()) {
+
+            File knownHosts = prepareHostKeySetup(server, proxy);
+            // Setup client with a standard ServerKeyVerifier
+            client.setServerKeyVerifier(
+                    new KnownHostsServerKeyVerifier(RejectAllServerKeyVerifier.INSTANCE, knownHosts.toPath()));
+            client.start();
+            client.setHostConfigEntryResolver(HostConfigEntry.toHostConfigEntryResolver(Arrays.asList(
+                    new HostConfigEntry("server", "localhost", server.getPort(), "user1", "proxy"),
+                    new HostConfigEntry("proxy", "localhost", proxy.getPort(), "user2"))));
+
+            logger.info("Proxy: " + proxy.getPort() + ", server: " + server.getPort());
+
+            // Connect via the proxy
+            client.addPasswordIdentity("user1");
+            client.addPasswordIdentity("user2");
+            try (ClientSession session = client.connect("server")
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.auth().verify(AUTH_TIMEOUT);
 
                 assertTrue(session.isOpen());
                 doTestCommand(session, "ls -la");
@@ -242,18 +272,12 @@ public class ProxyTest extends BaseTestSupport {
     protected ClientSession createSession(
             SshClient client,
             String host, int port, String user, String password,
-            String proxyHost, int proxyPort, String proxyUser, String proxyPassword)
+            String proxyJump)
             throws IOException {
-        ClientSession session;
-        if (proxyHost != null) {
-            client.addPasswordIdentity(proxyPassword);
-            session = client.connect(new HostConfigEntry(
-                    "", host, port, user,
-                    proxyUser + "@" + proxyHost + ":" + proxyPort))
-                    .verify(CONNECT_TIMEOUT).getSession();
-        } else {
-            session = client.connect(user, host, port).verify(CONNECT_TIMEOUT).getSession();
-        }
+        ClientSession session = client.connect(new HostConfigEntry(
+                "", host, port, user,
+                proxyJump))
+                .verify(CONNECT_TIMEOUT).getSession();
         session.addPasswordIdentity(password);
         session.auth().verify(AUTH_TIMEOUT);
         return session;

@@ -167,4 +167,24 @@ public interface SimpleSessionClient extends SimpleClientConfigurator, Channel {
      * @throws IOException If failed to login or authenticate
      */
     ClientSession sessionLogin(SocketAddress target, String username, KeyPair identity) throws IOException;
+
+    /**
+     * Creates a session and logs in using the provided credentials
+     *
+     * @param  uri         The target uri
+     * @param  password    Password
+     * @return             Created {@link ClientSession}
+     * @throws IOException If failed to login or authenticate
+     */
+    ClientSession sessionLogin(String uri, String password) throws IOException;
+
+    /**
+     * Creates a session and logs in using the provided credentials
+     *
+     * @param  uri         The target uri
+     * @param  identity    The {@link KeyPair} identity
+     * @return             Created {@link ClientSession}
+     * @throws IOException If failed to login or authenticate
+     */
+    ClientSession sessionLogin(String uri, KeyPair identity) throws IOException;
 }

@@ -36,6 +36,16 @@ public interface ClientSessionCreator {
     /**
      * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
      *
+     * @param  uri         The server uri to connect to
+     * @return             A {@link ConnectFuture}
+     * @throws IOException If failed to resolve the effective target or connect to it
+     * @see                #connect(HostConfigEntry)
+     */
+    ConnectFuture connect(String uri) throws IOException;
+
+    /**
+     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
+     *
      * @param  username    The intended username
      * @param  host        The target host name/address - never {@code null}/empty
      * @param  port        The target port

@@ -470,6 +470,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
+    public ConnectFuture connect(String uriStr) throws IOException {
+        Objects.requireNonNull(uriStr, "No uri address");
+        URI uri = URI.create(uriStr.contains("//") ? uriStr : "ssh://" + uriStr);
+        if (GenericUtils.isNotEmpty(uri.getScheme()) && !"ssh".equals(uri.getScheme())) {
+            throw new IllegalArgumentException("Unsupported scheme for uri: " + uri);
+        }
+        String host = uri.getHost();
+        int port = uri.getPort();
+        String userInfo = uri.getUserInfo();
+        return connect(userInfo, host, port);
+    }
+
+    @Override
     public ConnectFuture connect(
             String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress)
@@ -535,7 +548,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                     ExplicitPortForwardingTracker tracker = proxySession
                                             .createLocalPortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, address);
                                     SshdSocketAddress bound = tracker.getBoundAddress();
-                                    ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(), address,
+                                    ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(),
                                             context, localAddress, keys, !hostConfig.isIdentitiesOnly());
                                     f4.addListener(f5 -> {
                                         if (f5.isConnected()) {
@@ -568,13 +581,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             });
             return connectFuture;
         } else {
-            return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), null,
+            return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
                     context, localAddress, keys, !hostConfig.isIdentitiesOnly());
         }
     }
 
     protected ConnectFuture doConnect(
-            String username, SocketAddress targetAddress, SshdSocketAddress proxiedServer,
+            String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress,
             KeyIdentityProvider identities, boolean useDefaultIdentities)
             throws IOException {

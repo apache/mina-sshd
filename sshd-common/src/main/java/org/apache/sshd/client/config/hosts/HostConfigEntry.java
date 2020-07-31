@@ -812,7 +812,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * Resolves the effective proxyJump
      *
      * @param  originalProxyJump The original requested proxyJump
-     * @param  proxyJump         The configured host entry proxyJump
+     * @param  entryProxyJump    The configured host entry proxyJump
      * @return                   If the configured host entry proxyJump is not {@code null}/empty then it is used,
      *                           otherwise the original one.
      */
