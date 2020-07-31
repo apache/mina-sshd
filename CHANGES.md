@@ -12,13 +12,9 @@
 
 ## Major code re-factoring
 
-* [SSHD-506](https://issues.apache.org/jira/browse/SSHD-506) Added support for AES-GCM ciphers.
-* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
-* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate SHA-1 based key exchanges and signatures.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.
-* [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 
 ## Minor code helpers
 
@@ -28,10 +24,15 @@
 
 ## Behavioral changes and enhancements
 
+* [SSHD-506](https://issues.apache.org/jira/browse/SSHD-506) Added support for AES-GCM ciphers.
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate SHA-1 based key exchanges and signatures from default setup.
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate MD5-based and truncated HMAC algorithms from default setup.
 * [SSHD-1020](https://issues.apache.org/jira/browse/SSHD-1020) SSH connections getting closed abruptly with timeout exceptions.
 * [SSHD-1026](https://issues.apache.org/jira/browse/SSHD-1026) Improve build reproductibility.
 * [SSHD-1028](https://issues.apache.org/jira/browse/SSHD-1028) Fix SSH_MSG_DISCONNECT: Too many concurrent connections.
 * [SSHD-1032](https://issues.apache.org/jira/browse/SSHD-1032) Fix possible ArrayIndexOutOfBoundsException in ChannelAsyncOutputStream.
 * [SSHD-1033](https://issues.apache.org/jira/browse/SSHD-1033) Fix simultaneous usage of dynamic and local port forwarding.
 * [SSHD-1039](https://issues.apache.org/jira/browse/SSHD-1039) Fix support for some basic options in ssh/sshd cli.
+* [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 * [SSHD-1048](https://issues.apache.org/jira/browse/SSHD-1048) Wrap instead of rethrow IOException in Future.

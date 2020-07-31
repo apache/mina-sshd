@@ -77,6 +77,7 @@ the unsafe settings must do so **explicitly**. The following settings have been 
     * While it refers to Kerberos, it mentions weaknesses in DES as well.
 * [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
 * SHA-1 based key exchanges and signatures
+* MD5-based and truncated HMAC algorithms
 
 **Caveat:**: According to [RFC 8332 - section 3.31](https://tools.ietf.org/html/rfc8332#section-3.3)
 >>
@@ -88,8 +89,8 @@ the unsafe settings must do so **explicitly**. The following settings have been 
 >> algorithms have been sufficiently widely adopted to warrant disabling "ssh-rsa", clients MAY default to one of
 >> the new algorithms.
 
-This means that users that encounter this problem must modify the supported security settings **explicitly** in
-order to avoid the issue.
+This means that users that encounter this (and related) problems must modify the supported security settings
+**explicitly** in order to avoid the issue.
 
 # [Release notes](./CHANGES.md)
 

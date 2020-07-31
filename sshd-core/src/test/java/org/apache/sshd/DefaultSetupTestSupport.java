@@ -33,6 +33,8 @@ import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -97,6 +99,19 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
                         BuiltinSignatures.dsa_cert),
                 factory.getSignatureFactories());
 
+    }
+
+    @Test
+    public void testDefaultMacsList() {
+        assertSameNamedFactoriesListInstances(
+                Mac.class.getSimpleName(), BaseBuilder.DEFAULT_MAC_PREFERENCE, factory.getMacFactories());
+    }
+
+    @Test
+    public void testNoDeprecatedMacs() {
+        assertNoDeprecatedFactoryInstanceNames(
+                Mac.class.getSimpleName(), EnumSet.of(BuiltinMacs.hmacmd5, BuiltinMacs.hmacmd596, BuiltinMacs.hmacsha196),
+                factory.getMacFactories());
     }
 
     protected static void assertSameNamedResourceListNames(

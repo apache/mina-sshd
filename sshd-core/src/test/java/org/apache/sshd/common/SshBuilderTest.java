@@ -19,13 +19,10 @@
 
 package org.apache.sshd.common;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -42,22 +39,6 @@ import org.junit.runners.MethodSorters;
 public class SshBuilderTest extends BaseTestSupport {
     public SshBuilderTest() {
         super();
-    }
-
-    /**
-     * Make sure that all values in {@link BuiltinMacs} are listed in {@link BaseBuilder#DEFAULT_MAC_PREFERENCE}
-     */
-    @Test
-    public void testAllBuiltinMacsListed() {
-        testAllInstancesListed(BuiltinMacs.VALUES, BaseBuilder.DEFAULT_MAC_PREFERENCE);
-    }
-
-    private static <
-            E extends Enum<E>> void testAllInstancesListed(Set<? extends E> expValues, Collection<? extends E> actValues) {
-        assertEquals("Mismatched actual values size", expValues.size(), actValues.size());
-        for (E expected : expValues) {
-            assertTrue(expected.name() + " not found in actual values", actValues.contains(expected));
-        }
     }
 
     /**

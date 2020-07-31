@@ -108,10 +108,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
                     BuiltinMacs.hmacsha1etm,
                     BuiltinMacs.hmacsha256,
                     BuiltinMacs.hmacsha512,
-                    BuiltinMacs.hmacsha1,
-                    BuiltinMacs.hmacmd5,
-                    BuiltinMacs.hmacsha196,
-                    BuiltinMacs.hmacmd596));
+                    BuiltinMacs.hmacsha1));
 
     /**
      * Preferred {@link BuiltinSignatures} according to
