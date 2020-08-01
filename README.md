@@ -92,6 +92,10 @@ the unsafe settings must do so **explicitly**. The following settings have been 
 This means that users that encounter this (and related) problems must modify the supported security settings
 **explicitly** in order to avoid the issue.
 
+**Special notice:** `ssh-rsa` was left in as part of the default setup since there are still a lot of systems / users
+using it. However, in future version it will be removed from the default. We therefore strongly encourage users to migrate
+to other keys (e.g. ECDSA, ED25519) as soon as possible.
+
 # [Release notes](./CHANGES.md)
 
 # Core requirements

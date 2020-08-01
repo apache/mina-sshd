@@ -95,8 +95,7 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
     @Test   // SSHD-1004
     public void testNoDeprecatedSignatures() {
         assertNoDeprecatedFactoryInstanceNames(Cipher.class.getSimpleName(),
-                EnumSet.of(BuiltinSignatures.rsa, BuiltinSignatures.rsa_cert, BuiltinSignatures.dsa,
-                        BuiltinSignatures.dsa_cert),
+                EnumSet.of(BuiltinSignatures.dsa, BuiltinSignatures.rsa_cert, BuiltinSignatures.dsa_cert),
                 factory.getSignatureFactories());
 
     }

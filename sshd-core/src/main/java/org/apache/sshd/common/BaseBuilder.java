@@ -117,20 +117,21 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      */
     public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
+                    BuiltinSignatures.rsaSHA512,
+                    BuiltinSignatures.rsaSHA256,
+                    BuiltinSignatures.nistp256,
+                    BuiltinSignatures.nistp384,
+                    BuiltinSignatures.nistp521,
+                    BuiltinSignatures.ed25519,
+                    BuiltinSignatures.rsa,
+                    BuiltinSignatures.rsaSHA512_cert,
+                    BuiltinSignatures.rsaSHA256_cert,
                     BuiltinSignatures.nistp256_cert,
                     BuiltinSignatures.nistp384_cert,
                     BuiltinSignatures.nistp521_cert,
                     BuiltinSignatures.ed25519_cert,
-                    BuiltinSignatures.rsaSHA512_cert,
-                    BuiltinSignatures.rsaSHA256_cert,
-                    BuiltinSignatures.nistp256,
-                    BuiltinSignatures.nistp384,
-                    BuiltinSignatures.nistp521,
                     BuiltinSignatures.sk_ecdsa_sha2_nistp256,
-                    BuiltinSignatures.ed25519,
-                    BuiltinSignatures.sk_ssh_ed25519,
-                    BuiltinSignatures.rsaSHA512,
-                    BuiltinSignatures.rsaSHA256));
+                    BuiltinSignatures.sk_ssh_ed25519));
 
     public static final UnknownChannelReferenceHandler DEFAULT_UNKNOWN_CHANNEL_REFERENCE_HANDLER
             = DefaultUnknownChannelReferenceHandler.INSTANCE;
