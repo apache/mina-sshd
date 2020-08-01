@@ -63,6 +63,7 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
+import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpEventListener;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 
@@ -196,6 +197,13 @@ public abstract class SshServerCliSupport extends CliSupport {
             return Collections.emptyList();
         }
 
+        if (SftpConstants.SFTP_SUBSYSTEM_NAME.equalsIgnoreCase(nameList)) {
+            SubsystemFactory factory = registerSubsystemFactoryListeners(
+                    server, level, stdout, stderr, options, new SftpSubsystemFactory());
+            stdout.println("Using built-in SFTP subsystem");
+            return Collections.singletonList(factory);
+        }
+
         boolean havePreferences = GenericUtils.isNotEmpty(nameList);
         Collection<String> preferredNames = (!havePreferences)
                 ? Collections.emptySet()
@@ -245,7 +253,7 @@ public abstract class SshServerCliSupport extends CliSupport {
      * <LI>Otherwise, assumes this is a fully qualified class path of a {@link ShellFactory} implementation and attempts
      * to load and instantiate it using a public no-args constructor</LI>
      * </UL>
-     * 
+     *
      * @param  stderr    The STDERR stream for errors
      * @param  options   The available options - assuming defaults if {@code null}
      * @return           The resolved {@link ShellFactory}
