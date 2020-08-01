@@ -39,6 +39,7 @@ based applications requiring SSH support.
 * [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
     * **Note:** the server side supports these keys by default. The client side requires specific initialization
 * [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
+* [SSH proxy jumps](./docs/internals.md#ssh-jumps)
 * SFTP version 3-6 + extensions
     * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
     * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)
