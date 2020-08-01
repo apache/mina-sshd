@@ -64,7 +64,6 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
         private final AtomicInteger writes = new AtomicInteger(0);
 
         private TestProvider(Path file) {
-            setKeySize(512);
             setPath(file);
         }
 

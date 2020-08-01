@@ -12,6 +12,8 @@
 
 ## Major code re-factoring
 
+* `SshServerMain` uses by default an ECDSA key instead of an RSA one. This can be overridden either by `-key-type / -key-size`
+or `-key-file` command line option.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.
