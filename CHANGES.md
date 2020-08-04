@@ -38,3 +38,4 @@ or `-key-file` command line option.
 * [SSHD-1039](https://issues.apache.org/jira/browse/SSHD-1039) Fix support for some basic options in ssh/sshd cli.
 * [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 * [SSHD-1048](https://issues.apache.org/jira/browse/SSHD-1048) Wrap instead of rethrow IOException in Future.
+* [SSHD-1050](https://issues.apache.org/jira/browse/SSHD-1050) Fixed race condition in AuthFuture if exception caught before authentication started
