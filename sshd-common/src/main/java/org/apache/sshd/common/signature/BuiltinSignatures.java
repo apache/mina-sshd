@@ -51,12 +51,22 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinSignatures implements SignatureFactory {
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     dsa(KeyPairProvider.SSH_DSS) {
         @Override
         public Signature create() {
             return new SignatureDSA();
         }
     },
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     dsa_cert(KeyPairProvider.SSH_DSS_CERT) {
         @Override
         public Signature create() {
@@ -69,6 +79,11 @@ public enum BuiltinSignatures implements SignatureFactory {
             return new SignatureRSASHA1();
         }
     },
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     rsa_cert(KeyPairProvider.SSH_RSA_CERT) {
         @Override
         public Signature create() {

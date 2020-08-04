@@ -44,6 +44,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinDHFactories implements DHFactory {
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     dhg1(Constants.DIFFIE_HELLMAN_GROUP1_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
@@ -58,6 +63,11 @@ public enum BuiltinDHFactories implements DHFactory {
             return SecurityUtils.isDHOakelyGroupSupported(1024) && BuiltinDigests.sha1.isSupported();
         }
     },
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     dhg14(Constants.DIFFIE_HELLMAN_GROUP14_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
@@ -142,6 +152,11 @@ public enum BuiltinDHFactories implements DHFactory {
             return SecurityUtils.isDHOakelyGroupSupported(8192) && BuiltinDigests.sha512.isSupported();
         }
     },
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     dhgex(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {

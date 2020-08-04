@@ -43,7 +43,17 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinMacs implements MacFactory {
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     hmacmd5(Constants.HMAC_MD5, "HmacMD5", 16, 16),
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     hmacmd596(Constants.HMAC_MD5_96, "HmacMD5", 12, 16),
     hmacsha1(Constants.HMAC_SHA1, "HmacSHA1", 20, 20),
     hmacsha1etm(Constants.ETM_HMAC_SHA1, "HmacSHA1", 20, 20) {
@@ -52,6 +62,11 @@ public enum BuiltinMacs implements MacFactory {
             return true;
         }
     },
+    /**
+     * @deprecated
+     * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
+     */
+    @Deprecated
     hmacsha196(Constants.HMAC_SHA1_96, "HmacSHA1", 12, 20),
     /** See <A HREF="https://tools.ietf.org/html/rfc6668">RFC 6668</A> */
     hmacsha256(Constants.HMAC_SHA2_256, "HmacSHA256", 32, 32),
