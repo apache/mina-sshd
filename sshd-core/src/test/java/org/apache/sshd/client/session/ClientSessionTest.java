@@ -26,15 +26,21 @@ import java.rmi.ServerException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.BogusPasswordAuthenticator;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -83,10 +89,17 @@ public class ClientSessionTest extends BaseTestSupport {
         }
     }
 
+    @Before
+    public void setUp() {
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+    }
+
     @Test
     public void testDefaultExecuteCommandMethod() throws Exception {
-        final String expectedCommand = getCurrentTestName() + "-CMD";
-        final String expectedResponse = getCurrentTestName() + "-RSP";
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedResponse = getCurrentTestName() + "-RSP";
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
@@ -116,8 +129,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
     @Test
     public void testExceptionThrownIfRemoteStderrWrittenTo() throws Exception {
-        final String expectedCommand = getCurrentTestName() + "-CMD";
-        final String expectedErrorMessage = getCurrentTestName() + "-ERR";
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedErrorMessage = getCurrentTestName() + "-ERR";
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
@@ -161,8 +174,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
     @Test
     public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
-        final String expectedCommand = getCurrentTestName() + "-CMD";
-        final int expectedErrorCode = 7365;
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        int expectedErrorCode = 7365;
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             private boolean cmdProcessed;
 
@@ -235,6 +248,40 @@ public class ClientSessionTest extends BaseTestSupport {
             }
         } finally {
             client.removeSessionListener(listener);
+        }
+    }
+
+    @Test // SSHD-1050
+    public void testAuthGetsNotifiedOnLongPreamble() throws Exception {
+        int limit = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequired(sshd);
+        String line = getClass().getCanonicalName() + "#" + getCurrentTestName();
+        StringBuilder sb = new StringBuilder(limit + line.length());
+        while (sb.length() <= limit) {
+            if (sb.length() > 0) {
+                sb.append(CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+            }
+            sb.append(line);
+        }
+        CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd, sb.toString());
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            // Give time to the client to signal the overflow in server identification
+            Thread.sleep(AUTH_TIMEOUT.toMillis() / 2L);
+
+            AuthFuture future = session.auth();
+            assertTrue("Auth not completed on time", future.await(AUTH_TIMEOUT));
+            assertTrue("No auth result", future.isDone());
+            assertFalse("Unexpected auth success", future.isSuccess());
+            assertTrue("Auth not marked as failed", future.isFailure());
+
+            Throwable exception = future.getException();
+            String message = exception.getLocalizedMessage();
+            assertTrue("Invalid exception message: " + message, message.contains("too many header lines"));
+        } finally {
+            CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd, null);
         }
     }
 }
