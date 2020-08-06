@@ -252,7 +252,16 @@ public class ClientSessionTest extends BaseTestSupport {
     }
 
     @Test // SSHD-1050
-    public void testAuthGetsNotifiedOnLongPreamble() throws Exception {
+    public void testAuthGetsNotifiedIfErrorBeforeFirstAuth() throws Exception {
+        testEarlyErrorAuthAttempts(1);
+    }
+
+    @Test // SSHD-1050
+    public void testSecondAuthNotifiedAfterEarlyError() throws Exception {
+        testEarlyErrorAuthAttempts(3);
+    }
+
+    private void testEarlyErrorAuthAttempts(int maxAttempts) throws Exception {
         int limit = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequired(sshd);
         String line = getClass().getCanonicalName() + "#" + getCurrentTestName();
         StringBuilder sb = new StringBuilder(limit + line.length());
@@ -271,15 +280,20 @@ public class ClientSessionTest extends BaseTestSupport {
             // Give time to the client to signal the overflow in server identification
             Thread.sleep(AUTH_TIMEOUT.toMillis() / 2L);
 
-            AuthFuture future = session.auth();
-            assertTrue("Auth not completed on time", future.await(AUTH_TIMEOUT));
-            assertTrue("No auth result", future.isDone());
-            assertFalse("Unexpected auth success", future.isSuccess());
-            assertTrue("Auth not marked as failed", future.isFailure());
+            for (int index = 1; index <= maxAttempts; index++) {
+                String authId = "Auth " + index + "/" + maxAttempts;
+                outputDebugMessage("%s(%s)", getCurrentTestName(), authId);
 
-            Throwable exception = future.getException();
-            String message = exception.getLocalizedMessage();
-            assertTrue("Invalid exception message: " + message, message.contains("too many header lines"));
+                AuthFuture future = session.auth();
+                assertTrue(authId + " not completed on time", future.await(AUTH_TIMEOUT));
+                assertTrue(authId + " has no result", future.isDone());
+                assertFalse(authId + " unexpected success", future.isSuccess());
+                assertTrue(authId + " not marked as failed", future.isFailure());
+
+                Throwable exception = future.getException();
+                String message = exception.getMessage();
+                assertTrue(authId + " invalid exception message: " + message, message.contains("too many header lines"));
+            }
         } finally {
             CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd, null);
         }
