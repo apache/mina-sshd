@@ -522,6 +522,14 @@ public final class BufferUtils {
         return Long.BYTES;
     }
 
+    /**
+     * Compares the contents of 2 arrays of bytes - <B>Note:</B> do not use it to execute security related comparisons
+     * (e.g. MACs) since the method leaks timing information. Use {@code Mac#equals} method instead.
+     *
+     * @param  a1 1st array
+     * @param  a2 2nd array
+     * @return    {@code true} if all bytes in the compared arrays are equal
+     */
     public static boolean equals(byte[] a1, byte[] a2) {
         int len1 = NumberUtils.length(a1);
         int len2 = NumberUtils.length(a2);
@@ -532,6 +540,18 @@ public final class BufferUtils {
         }
     }
 
+    /**
+     * Compares the contents of 2 arrays of bytes - <B>Note:</B> do not use it to execute security related comparisons
+     * (e.g. MACs) since the method leaks timing information. Use {@code Mac#equals} method instead.
+     *
+     * @param  a1       1st array
+     * @param  a1Offset Offset to start comparing in 1st array
+     * @param  a2       2nd array
+     * @param  a2Offset Offset to start comparing in 2nd array
+     * @param  length   Number of bytes to compare
+     * @return          {@code true} if all bytes in the compared arrays are equal when compared from the specified
+     *                  offsets and up to specified length
+     */
     @SuppressWarnings("PMD.AssignmentInOperand")
     public static boolean equals(byte[] a1, int a1Offset, byte[] a2, int a2Offset, int length) {
         int len1 = NumberUtils.length(a1);
