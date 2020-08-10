@@ -1456,7 +1456,7 @@ public abstract class AbstractSession extends SessionHelper {
         inMac.doFinal(inMacResult, 0);
 
         // Check the computed result with the received mac (just after the packet data)
-        if (!BufferUtils.equals(inMacResult, 0, data, offset + len, inMacSize)) {
+        if (!Mac.equals(inMacResult, 0, data, offset + len, inMacSize)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC Error");
         }
     }

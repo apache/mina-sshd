@@ -20,6 +20,7 @@ or `-key-file` command line option.
 
 ## Minor code helpers
 
+* [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Using a more constant time MAC validation to minimize timing side channel information leak.
 * [SSHD-1030](https://issues.apache.org/jira/browse/SSHD-1030) Added a NoneFileSystemFactory implementation
 * [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1042) Added more callbacks to SftpEventListener
 * [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
