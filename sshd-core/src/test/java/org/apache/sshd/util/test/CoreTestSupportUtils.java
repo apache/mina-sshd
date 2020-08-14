@@ -21,6 +21,7 @@ package org.apache.sshd.util.test;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.time.Duration;
 import java.util.ArrayList;
 
 import org.apache.sshd.client.ClientBuilder;
@@ -32,12 +33,16 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerBuilder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.shell.UnknownCommandFactory;
 
 public final class CoreTestSupportUtils {
+    public static final Duration READ_TIMEOUT = getTimeout("read.nio2", Duration.ofSeconds(60));
+
     private CoreTestSupportUtils() {
         throw new UnsupportedOperationException("No instance");
     }
@@ -55,6 +60,7 @@ public final class CoreTestSupportUtils {
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
         client.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
+        CoreModuleProperties.NIO2_READ_TIMEOUT.set(client, READ_TIMEOUT);
         return client;
     }
 
@@ -77,6 +83,7 @@ public final class CoreTestSupportUtils {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setShellFactory(EchoShellFactory.INSTANCE);
         sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
+        CoreModuleProperties.NIO2_READ_TIMEOUT.set(sshd, READ_TIMEOUT);
         return sshd;
     }
 
@@ -96,5 +103,28 @@ public final class CoreTestSupportUtils {
     public static <M extends AbstractFactoryManager> M setupFullSignaturesSupport(M manager) {
         manager.setSignatureFactories(new ArrayList<>(BuiltinSignatures.VALUES));
         return manager;
+    }
+
+    public static Duration getTimeout(String property, Duration defaultValue) {
+        // Do we have a specific timeout value ?
+        String str = System.getProperty("org.apache.sshd.test.timeout." + property);
+        if (GenericUtils.isNotEmpty(str)) {
+            return Duration.ofMillis(Long.parseLong(str));
+        }
+
+        // Do we have a specific factor ?
+        str = System.getProperty("org.apache.sshd.test.timeout.factor." + property);
+        if (GenericUtils.isEmpty(str)) {
+            // Do we have a global factor ?
+            str = System.getProperty("org.apache.sshd.test.timeout.factor");
+        }
+
+        if (GenericUtils.isNotEmpty(str)) {
+            double factor = Double.parseDouble(str);
+            long dur = Math.round(defaultValue.toMillis() * factor);
+            return Duration.ofMillis(dur);
+        }
+
+        return defaultValue;
     }
 }
