@@ -19,21 +19,43 @@
 
 package org.apache.sshd.scp.common;
 
+import java.nio.file.attribute.FileTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
 
 /**
  * Represents an SCP timestamp definition
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpTimestamp {
+public class ScpTimestamp extends AbstractScpCommandDetails {
+    public static final char COMMAND_NAME = 'T';
+
     private final long lastModifiedTime;
     private final long lastAccessTime;
 
+    public ScpTimestamp(String header) {
+        super(COMMAND_NAME);
+
+        if (header.charAt(0) != COMMAND_NAME) {
+            throw new IllegalArgumentException("Expected a '" + COMMAND_NAME + "' but got '" + header + "'");
+        }
+
+        String[] numbers = GenericUtils.split(header.substring(1), ' ');
+        lastModifiedTime = TimeUnit.SECONDS.toMillis(Long.parseLong(numbers[0]));
+        lastAccessTime = TimeUnit.SECONDS.toMillis(Long.parseLong(numbers[2]));
+    }
+
+    public ScpTimestamp(FileTime modTime, FileTime accTime) {
+        this(modTime.to(TimeUnit.MILLISECONDS), accTime.to(TimeUnit.MILLISECONDS));
+    }
+
     public ScpTimestamp(long modTime, long accTime) {
+        super(COMMAND_NAME);
+
         lastModifiedTime = modTime;
         lastAccessTime = accTime;
     }
@@ -47,6 +69,12 @@ public class ScpTimestamp {
     }
 
     @Override
+    public String toHeader() {
+        return Character.toString(getCommand()) + TimeUnit.MILLISECONDS.toSeconds(getLastModifiedTime())
+               + " 0 " + TimeUnit.MILLISECONDS.toSeconds(getLastAccessTime()) + "0";
+    }
+
+    @Override
     public String toString() {
         return "modified=" + new Date(lastModifiedTime)
                + ";accessed=" + new Date(lastAccessTime);
@@ -55,16 +83,13 @@ public class ScpTimestamp {
     /**
      * @param  line                  The time specification - format:
      *                               {@code T<mtime-sec> <mtime-micros> <atime-sec> <atime-micros>} where specified
-     *                               times are in seconds since UTC
+     *                               times are in seconds since UTC - ignored if {@code null}
      * @return                       The {@link ScpTimestamp} value with the timestamps converted to <U>milliseconds</U>
-     * @throws NumberFormatException if bad numerical values - <B>Note:</B> does not check if 1st character is 'T'.
+     * @throws NumberFormatException if bad numerical values - <B>Note:</B> validates that 1st character is 'T'.
      * @see                          <A HREF="https://blogs.oracle.com/janp/entry/how_the_scp_protocol_works">How the
      *                               SCP protocol works</A>
      */
     public static ScpTimestamp parseTime(String line) throws NumberFormatException {
-        String[] numbers = GenericUtils.split(line.substring(1), ' ');
-        return new ScpTimestamp(
-                TimeUnit.SECONDS.toMillis(Long.parseLong(numbers[0])),
-                TimeUnit.SECONDS.toMillis(Long.parseLong(numbers[2])));
+        return GenericUtils.isEmpty(line) ? null : new ScpTimestamp(line);
     }
 }

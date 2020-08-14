@@ -50,6 +50,10 @@ public class DefaultScpClient extends AbstractScpClient {
     protected final ScpTransferEventListener listener;
     private final ClientSession clientSession;
 
+    public DefaultScpClient(ClientSession clientSession) {
+        this(clientSession, DefaultScpFileOpener.INSTANCE, ScpTransferEventListener.EMPTY);
+    }
+
     public DefaultScpClient(
                             ClientSession clientSession, ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");

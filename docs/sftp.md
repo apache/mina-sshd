@@ -514,3 +514,7 @@ for sending and receiving the newly added extension.
 
 See how other extensions are implemented and follow their example
 
+## References
+
+* [SFTP drafts for the various versions](https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/)
+

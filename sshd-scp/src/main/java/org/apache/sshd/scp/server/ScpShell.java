@@ -61,6 +61,7 @@ import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpHelper;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
+import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
@@ -475,13 +476,13 @@ public class ScpShell extends AbstractFileSystemCommand {
             variables.put(STATUS, 0);
         } catch (IOException e) {
             Integer statusCode = e instanceof ScpException ? ((ScpException) e).getExitStatus() : null;
-            int exitValue = (statusCode == null) ? ScpHelper.ERROR : statusCode;
+            int exitValue = (statusCode == null) ? ScpIoUtils.ERROR : statusCode;
             // this is an exception so status cannot be OK/WARNING
-            if ((exitValue == ScpHelper.OK) || (exitValue == ScpHelper.WARNING)) {
-                exitValue = ScpHelper.ERROR;
+            if ((exitValue == ScpIoUtils.OK) || (exitValue == ScpIoUtils.WARNING)) {
+                exitValue = ScpIoUtils.ERROR;
             }
             String exitMessage = GenericUtils.trimToEmpty(e.getMessage());
-            ScpHelper.sendResponseMessage(getOutputStream(), exitValue, exitMessage);
+            ScpIoUtils.sendResponseMessage(getOutputStream(), exitValue, exitMessage);
             variables.put(STATUS, exitValue);
         }
     }
