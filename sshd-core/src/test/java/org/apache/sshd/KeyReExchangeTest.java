@@ -62,6 +62,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.OutputCountTrackingOutputStream;
 import org.apache.sshd.util.test.SimpleUserInfo;
@@ -654,7 +655,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    Duration timeout = getTimeout("KeyReExchangeTest", Duration.ofSeconds(15));
+                    Duration timeout = CoreTestSupportUtils.getTimeout("KeyReExchangeTest", Duration.ofSeconds(15));
 
                     Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), timeout);
                     assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));

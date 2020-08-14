@@ -45,11 +45,11 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     public static final String TEST_LOCALHOST
             = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
 
-    public static final Duration CONNECT_TIMEOUT = getTimeout("connect", Duration.ofSeconds(7));
-    public static final Duration AUTH_TIMEOUT = getTimeout("auth", Duration.ofSeconds(5));
-    public static final Duration OPEN_TIMEOUT = getTimeout("open", Duration.ofSeconds(9));
-    public static final Duration DEFAULT_TIMEOUT = getTimeout("default", Duration.ofSeconds(5));
-    public static final Duration CLOSE_TIMEOUT = getTimeout("close", Duration.ofSeconds(15));
+    public static final Duration CONNECT_TIMEOUT = CoreTestSupportUtils.getTimeout("connect", Duration.ofSeconds(7));
+    public static final Duration AUTH_TIMEOUT = CoreTestSupportUtils.getTimeout("auth", Duration.ofSeconds(5));
+    public static final Duration OPEN_TIMEOUT = CoreTestSupportUtils.getTimeout("open", Duration.ofSeconds(9));
+    public static final Duration DEFAULT_TIMEOUT = CoreTestSupportUtils.getTimeout("default", Duration.ofSeconds(5));
+    public static final Duration CLOSE_TIMEOUT = CoreTestSupportUtils.getTimeout("close", Duration.ofSeconds(15));
 
     @Rule
     public final TestWatcher rule = new TestWatcher() {
@@ -96,29 +96,6 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
                 levelName.toUpperCase(), org.apache.log4j.Level.INFO);
         org.apache.log4j.Logger logger = org.apache.log4j.Logger.getRootLogger();
         logger.setLevel(level);
-    }
-
-    public static Duration getTimeout(String property, Duration defaultValue) {
-        // Do we have a specific timeout value ?
-        String str = System.getProperty("org.apache.sshd.test.timeout." + property);
-        if (GenericUtils.isNotEmpty(str)) {
-            return Duration.ofMillis(Long.parseLong(str));
-        }
-
-        // Do we have a specific factor ?
-        str = System.getProperty("org.apache.sshd.test.timeout.factor." + property);
-        if (GenericUtils.isEmpty(str)) {
-            // Do we have a global factor ?
-            str = System.getProperty("org.apache.sshd.test.timeout.factor");
-        }
-
-        if (GenericUtils.isNotEmpty(str)) {
-            double factor = Double.parseDouble(str);
-            long dur = Math.round(defaultValue.toMillis() * factor);
-            return Duration.ofMillis(dur);
-        }
-
-        return defaultValue;
     }
 
     protected SshServer setupTestServer() {
