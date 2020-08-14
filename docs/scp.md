@@ -172,6 +172,21 @@ is likely to require. For this purpose, the `ScpCommandFactory` also implements 
 
 **Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
 
+## Remote-to-remote transfer
+
+The code provides an `ScpTransferHelper` class that enables copying files between 2 remote accounts without going through
+the local file system.
+
+```java
+    ClientSession src = ...;
+    ClientSession dst = ...;
+    // Can also provide a listener in the constructor in order to be informed of the actual transfer progress
+    ScpRemote2RemoteTransferHelper helper = new ScpRemote2RemoteTransferHelper(src, dst);
+    // can be repeated for as many files as necessary using the same helper
+    helper.transferFile("remote/src/path/file1", "remote/dst/path/file2");
+    
+```
+
 ## References
 
 * [How the SCP protocol works](https://chuacw.ath.cx/development/b/chuacw/archive/2019/02/04/how-the-scp-protocol-works.aspx)

@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.scp.client;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,12 +39,15 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.SshClient;
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import ch.ethz.ssh2.SCPClient;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.random.Random;
@@ -67,29 +69,15 @@ import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.server.ScpCommand;
 import org.apache.sshd.scp.server.ScpCommandFactory;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
-import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.ConnectionInfo;
-import ch.ethz.ssh2.SCPClient;
 
 /**
  * Test for SCP support.
@@ -97,112 +85,15 @@ import ch.ethz.ssh2.SCPClient;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class ScpTest extends BaseTestSupport {
-    private static final ScpTransferEventListener DEBUG_LISTENER = new ScpTransferEventListener() {
-        @Override
-        public void startFolderEvent(
-                Session s, FileOperation op, Path file, Set<PosixFilePermission> perms) {
-            logEvent("starFolderEvent", s, op, file, false, -1L, perms, null);
-        }
-
-        @Override
-        public void startFileEvent(
-                Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-            logEvent("startFileEvent", s, op, file, true, length, perms, null);
-        }
-
-        @Override
-        public void endFolderEvent(
-                Session s, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-            logEvent("endFolderEvent", s, op, file, false, -1L, perms, thrown);
-        }
-
-        @Override
-        public void endFileEvent(
-                Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-            logEvent("endFileEvent", s, op, file, true, length, perms, thrown);
-        }
-
-        private void logEvent(
-                String type, Session s, FileOperation op, Path path, boolean isFile,
-                long length, Collection<PosixFilePermission> perms, Throwable t) {
-            if (!OUTPUT_DEBUG_MESSAGES) {
-                return; // just in case
-            }
-            StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
-            sb.append("    ").append(type)
-                    .append('[').append(s).append(']')
-                    .append('[').append(op).append(']')
-                    .append(' ').append(isFile ? "File" : "Directory").append('=').append(path)
-                    .append(' ').append("length=").append(length)
-                    .append(' ').append("perms=").append(perms);
-            if (t != null) {
-                sb.append(' ').append("ERROR=").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
-            }
-            outputDebugMessage(sb.toString());
-        }
-    };
-
-    private static SshServer sshd;
-    private static int port;
-    private static SshClient client;
-    private final FileSystemFactory fileSystemFactory;
-
+public class ScpTest extends AbstractScpTestSupport {
     public ScpTest() throws IOException {
-        Path targetPath = detectTargetFolder();
-        Path parentPath = targetPath.getParent();
-        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
+        super();
     }
 
     @BeforeClass
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         setupClientAndServer(ScpTest.class);
-    }
-
-    protected static void setupClientAndServer(Class<?> anchor) throws Exception {
-        // Need to use RSA since Ganymede does not support EC
-        SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
-        provider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
-        provider.setKeySize(1024);
-
-        Path targetDir = CommonTestSupportUtils.detectTargetFolder(anchor);
-        provider.setPath(targetDir.resolve(anchor.getSimpleName() + "-key"));
-        sshd = CoreTestSupportUtils.setupTestFullSupportServer(anchor);
-        sshd.setKeyPairProvider(provider);
-
-        ScpCommandFactory factory = new ScpCommandFactory();
-        sshd.setCommandFactory(factory);
-        sshd.setShellFactory(factory);
-        sshd.start();
-        port = sshd.getPort();
-
-        client = CoreTestSupportUtils.setupTestFullSupportClient(anchor);
-        client.start();
-    }
-
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
-        if (sshd != null) {
-            try {
-                sshd.stop(true);
-            } finally {
-                sshd = null;
-            }
-        }
-
-        if (client != null) {
-            try {
-                client.stop();
-            } finally {
-                client = null;
-            }
-        }
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        sshd.setFileSystemFactory(fileSystemFactory);
     }
 
     @Test
@@ -1144,7 +1035,7 @@ public class ScpTest extends BaseTestSupport {
             os.write(0);
             os.flush();
 
-            String header = readLine(is);
+            String header = ScpIoUtils.readLine(is, false);
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
@@ -1176,38 +1067,33 @@ public class ScpTest extends BaseTestSupport {
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
-            String header = readLine(is);
+            String header = ScpIoUtils.readLine(is, false);
             String expPrefix = ScpReceiveDirCommandDetails.COMMAND_NAME
                                + ScpReceiveDirCommandDetails.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
             assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
-            header = readLine(is);
+            header = ScpIoUtils.readLine(is, false);
             String fileName = Objects.toString(target.getFileName(), null);
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
             byte[] buffer = new byte[length];
             length = is.read(buffer, 0, buffer.length);
             assertEquals("Mismatched read buffer size for " + path, length, buffer.length);
             assertAckReceived(is, "Read date of " + path);
 
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
-            header = readLine(is);
+            header = ScpIoUtils.readLine(is, false);
             assertEquals("Mismatched end value for " + path, "E", header);
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
             return new String(buffer, StandardCharsets.UTF_8);
         } finally {
@@ -1224,9 +1110,8 @@ public class ScpTest extends BaseTestSupport {
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
 
-            os.write(0);
-            os.flush();
-            assertEquals("Mismatched response for command: " + command, 2, is.read());
+            ScpIoUtils.ack(os);
+            assertEquals("Mismatched response for command: " + command, ScpIoUtils.ERROR, is.read());
         } finally {
             c.disconnect();
         }
@@ -1254,8 +1139,7 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
             assertAckReceived(is, "Sent data (length=" + data.length() + ") for " + path + "[" + name + "]");
 
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
 
             Thread.sleep(100);
         } finally {
@@ -1264,8 +1148,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void assertAckReceived(OutputStream os, InputStream is, String command) throws IOException {
-        os.write((command + "\n").getBytes(StandardCharsets.UTF_8));
-        os.flush();
+        ScpIoUtils.writeLine(os, command);
         assertAckReceived(is, command);
     }
 
@@ -1285,9 +1168,8 @@ public class ScpTest extends BaseTestSupport {
             assertAckReceived(is, command);
 
             command = "C7777 " + data.length() + " " + name;
-            os.write((command + "\n").getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            assertEquals("Mismatched response for command=" + command, 2, is.read());
+            ScpIoUtils.writeLine(os, command);
+            assertEquals("Mismatched response for command=" + command, ScpIoUtils.ERROR, is.read());
         } finally {
             c.disconnect();
         }
@@ -1313,35 +1195,9 @@ public class ScpTest extends BaseTestSupport {
 
             ScpIoUtils.ack(os);
             ScpIoUtils.writeLine(os, ScpDirEndCommandDetails.HEADER);
-
             assertAckReceived(is, "Signal end of " + path);
         } finally {
             c.disconnect();
         }
-    }
-
-    private static String readLine(InputStream in) throws IOException {
-        try (OutputStream baos = new ByteArrayOutputStream()) {
-            for (;;) {
-                int c = in.read();
-                if (c == '\n') {
-                    return baos.toString();
-                } else if (c == -1) {
-                    throw new IOException("End of stream");
-                } else {
-                    baos.write(c);
-                }
-            }
-        }
-    }
-
-    private static ScpClient createScpClient(ClientSession session) {
-        ScpClientCreator creator = ScpClientCreator.instance();
-        ScpTransferEventListener listener = getScpTransferEventListener(session);
-        return creator.createScpClient(session, listener);
-    }
-
-    private static ScpTransferEventListener getScpTransferEventListener(ClientSession session) {
-        return OUTPUT_DEBUG_MESSAGES ? DEBUG_LISTENER : ScpTransferEventListener.EMPTY;
     }
 }

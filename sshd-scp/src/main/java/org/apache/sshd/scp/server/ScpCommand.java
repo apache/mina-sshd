@@ -190,7 +190,7 @@ public class ScpCommand extends AbstractFileSystemCommand {
                 writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
                 log.error("run({})[{}] Failed ({}) to send error response: {}",
-                        session, command, e.getClass().getSimpleName(), e.getMessage());
+                        session, command, e2.getClass().getSimpleName(), e2.getMessage());
                 if (debugEnabled) {
                     log.error("run(" + session + ")[" + command + "] error response failure details", e2);
                 }

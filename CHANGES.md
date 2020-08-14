@@ -31,6 +31,7 @@ or `-key-file` command line option.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate SHA-1 based key exchanges and signatures from default setup.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate MD5-based and truncated HMAC algorithms from default setup.
+* [SSHD-1005](https://issues.apache.org/jira/browse/SSHD-1005) Added support for SCP remote-to-remote file transfer
 * [SSHD-1020](https://issues.apache.org/jira/browse/SSHD-1020) SSH connections getting closed abruptly with timeout exceptions.
 * [SSHD-1026](https://issues.apache.org/jira/browse/SSHD-1026) Improve build reproductibility.
 * [SSHD-1028](https://issues.apache.org/jira/browse/SSHD-1028) Fix SSH_MSG_DISCONNECT: Too many concurrent connections.
