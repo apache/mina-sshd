@@ -80,6 +80,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -140,6 +141,13 @@ public final class KeyUtils {
     public static final String RSA_SHA512_KEY_TYPE_ALIAS = "rsa-sha2-512";
     public static final String RSA_SHA256_CERT_TYPE_ALIAS = "rsa-sha2-256-cert-v01@openssh.com";
     public static final String RSA_SHA512_CERT_TYPE_ALIAS = "rsa-sha2-512-cert-v01@openssh.com";
+
+    private static final Map<String, String> CERT_TYPE_SIGN_HASH_ALGORITHM_MAP
+            = Collections.unmodifiableMap(MapBuilder.<String, String> builder()
+                    .put(RSA_SHA256_CERT_TYPE_ALIAS, RSA_SHA256_KEY_TYPE_ALIAS)
+                    .put(RSA_SHA512_CERT_TYPE_ALIAS, RSA_SHA512_KEY_TYPE_ALIAS)
+                    .put(KeyPairProvider.SSH_RSA_CERT, KeyPairProvider.SSH_RSA)
+                    .build());
 
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
@@ -1195,5 +1203,9 @@ public final class KeyUtils {
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
                     && SecurityUtils.compareEDDSAPPublicKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
+    }
+
+    public static String getSignHashAlgorithmType(String keyType) {
+        return CERT_TYPE_SIGN_HASH_ALGORITHM_MAP.getOrDefault(keyType, keyType);
     }
 }

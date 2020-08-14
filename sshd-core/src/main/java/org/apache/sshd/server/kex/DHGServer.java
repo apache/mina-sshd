@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -104,11 +105,12 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         k = dh.getK();
 
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
-        String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        String keyAlgo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        String signHashAlgo = KeyUtils.getSignHashAlgorithmType(keyAlgo);
 
         Signature sig = ValidateUtils.checkNotNull(
-                NamedFactory.create(session.getSignatureFactories(), algo),
-                "Unknown negotiated server keys: %s", algo);
+                NamedFactory.create(session.getSignatureFactories(), signHashAlgo),
+                "Unknown negotiated server keys: %s", signHashAlgo);
         sig.initSigner(session, kp.getPrivate());
 
         buffer = new ByteArrayBuffer();
@@ -129,7 +131,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         sig.update(session, h);
 
         buffer.clear();
-        buffer.putString(algo);
+        buffer.putString(signHashAlgo);
         byte[] sigBytes = sig.sign(session);
         buffer.putBytes(sigBytes);
 
