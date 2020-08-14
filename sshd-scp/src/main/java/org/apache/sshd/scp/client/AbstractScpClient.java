@@ -24,16 +24,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Set;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshException;
@@ -44,17 +40,14 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.core.CoreModuleProperties;
-import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.scp.common.ScpHelper;
+import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpClient extends AbstractLoggingBean implements ScpClient {
-    public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS
-            = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
-
     protected AbstractScpClient() {
         super();
     }
@@ -180,26 +173,8 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      * @see                #handleCommandExitStatus(String, Integer)
      */
     protected void handleCommandExitStatus(String cmd, ClientChannel channel) throws IOException {
-        // give a chance for the exit status to be received
-        Duration timeout = ScpModuleProperties.SCP_EXEC_CHANNEL_EXIT_STATUS_TIMEOUT.getRequired(channel);
-        if (GenericUtils.isNegativeOrNull(timeout)) {
-            handleCommandExitStatus(cmd, (Integer) null);
-            return;
-        }
-
-        long waitStart = System.nanoTime();
-        Collection<ClientChannelEvent> events = channel.waitFor(COMMAND_WAIT_EVENTS, timeout);
-        long waitEnd = System.nanoTime();
-        if (log.isDebugEnabled()) {
-            log.debug("handleCommandExitStatus({}) cmd='{}', waited={} nanos, events={}",
-                    getClientSession(), cmd, waitEnd - waitStart, events);
-        }
-
-        /*
-         * There are sometimes race conditions in the order in which channels are closed and exit-status sent by the
-         * remote peer (if at all), thus there is no guarantee that we will have an exit status here
-         */
-        handleCommandExitStatus(cmd, channel.getExitStatus());
+        ScpIoUtils.handleCommandExitStatus(
+                getClientSession(), cmd, channel, (session, command, status) -> handleCommandExitStatus(command, status), log);
     }
 
     /**
@@ -208,30 +183,10 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
      *
      * @param  cmd         The attempted remote copy command
      * @param  exitStatus  The exit status - if {@code null} then no status was reported
-     * @throws IOException If failed the command
+     * @throws IOException If received non-OK exit status
      */
     protected void handleCommandExitStatus(String cmd, Integer exitStatus) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("handleCommandExitStatus({}) cmd='{}', exit-status={}",
-                    getClientSession(), cmd, ScpHelper.getExitStatusName(exitStatus));
-        }
-
-        if (exitStatus == null) {
-            return;
-        }
-
-        int statusCode = exitStatus;
-        switch (statusCode) {
-            case ScpHelper.OK: // do nothing
-                break;
-            case ScpHelper.WARNING:
-                log.warn("handleCommandExitStatus({}) cmd='{}' may have terminated with some problems", getClientSession(),
-                        cmd);
-                break;
-            default:
-                throw new ScpException(
-                        "Failed to run command='" + cmd + "': " + ScpHelper.getExitStatusName(exitStatus), exitStatus);
-        }
+        ScpIoUtils.handleCommandExitStatus(getClientSession(), cmd, exitStatus, log);
     }
 
     protected Collection<Option> addTargetIsDirectory(Collection<Option> options) {
@@ -245,35 +200,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected ChannelExec openCommandChannel(ClientSession session, String cmd) throws IOException {
-        Duration waitTimeout = ScpModuleProperties.SCP_EXEC_CHANNEL_OPEN_TIMEOUT.getRequired(session);
-        ChannelExec channel = session.createExecChannel(cmd);
-
-        long startTime = System.nanoTime();
-        try {
-            channel.open().verify(waitTimeout);
-            long endTime = System.nanoTime();
-            long nanosWait = endTime - startTime;
-            if (log.isTraceEnabled()) {
-                log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                          + " completed after " + nanosWait
-                          + " nanos out of " + waitTimeout.toNanos());
-            }
-
-            return channel;
-        } catch (IOException | RuntimeException e) {
-            long endTime = System.nanoTime();
-            long nanosWait = endTime - startTime;
-            if (log.isTraceEnabled()) {
-                log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                          + " failed (" + e.getClass().getSimpleName() + ")"
-                          + " to complete after " + nanosWait
-                          + " nanos out of " + waitTimeout.toNanos()
-                          + ": " + e.getMessage());
-            }
-
-            channel.close(false);
-            throw e;
-        }
+        return ScpIoUtils.openCommandChannel(session, cmd, log);
     }
 
     @FunctionalInterface

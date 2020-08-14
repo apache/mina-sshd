@@ -1,4 +1,4 @@
-## SCP
+# SCP
 
 Both client-side and server-side SCP are supported. Starting from version 2.0, the SCP related code is located in the `sshd-scp` module, so you need
 to add this additional dependency to your maven project:
@@ -13,7 +13,7 @@ to add this additional dependency to your maven project:
 
 ```
 
-### `ScpTransferEventListener`
+## `ScpTransferEventListener`
 
 Callback to inform about SCP related events. `ScpTransferEventListener`(s) can be registered on *both* client and server side:
 
@@ -38,7 +38,7 @@ Callback to inform about SCP related events. `ScpTransferEventListener`(s) can b
     }
 ```
 
-### Client-side SCP
+## Client-side SCP
 
 In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
 
@@ -66,7 +66,7 @@ ScpClient client2 = creator.createScpClient(session, new SomeOtherListener());  
 
 ```
 
-#### ScpFileOpener(s)
+## ScpFileOpener(s)
 
 As part of the `ScpClientCreator`, the SCP module also uses a `ScpFileOpener` instance in order to access
 the local files. The default implementation simply opens an [InputStream](https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html)
@@ -126,7 +126,7 @@ different sensitivity via `DirectoryScanner#setCaseSensitive` call (or executes 
     * `Windows` - case insensitive
     * `Unix` - case sensitive
 
-### Server-side SCP
+## Server-side SCP
 
 Setting up SCP support on the server side is straightforward - simply initialize a `ScpCommandFactory` and
 set it as the **primary** command factory. If support for commands other than SCP is also required then provide
@@ -147,7 +147,7 @@ The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTra
 monitoring and intervention on the accessed local files. Furthermore, the factory can also be configured with a custom executor service for
 executing the requested copy commands as well as controlling the internal buffer sizes used to copy files.
 
-### The SCP "shell"
+## The SCP "shell"
 
 Some SCP clients (e.g. [WinSCP](https://winscp.net/)) open a shell connection even if configured to use pure SCP in order to retrieve information
 about the remote server's files and potentially navigate through them. In other words, SCP is only used as the **transfer** protocol, but
@@ -171,3 +171,8 @@ is likely to require. For this purpose, the `ScpCommandFactory` also implements 
 ```
 
 **Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
+
+## References
+
+* [How the SCP protocol works](https://chuacw.ath.cx/development/b/chuacw/archive/2019/02/04/how-the-scp-protocol-works.aspx)
+* [scp.c](https://github.com/cloudsigma/illumos-omnios/blob/master/usr/src/cmd/ssh/scp/scp.c)

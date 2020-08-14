@@ -40,12 +40,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.ConnectionInfo;
-import ch.ethz.ssh2.SCPClient;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
@@ -66,6 +60,11 @@ import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpHelper;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
+import org.apache.sshd.scp.common.helpers.ScpDirEndCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpIoUtils;
+import org.apache.sshd.scp.common.helpers.ScpPathCommandDetailsSupport;
+import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.server.ScpCommand;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
@@ -83,6 +82,14 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import ch.ethz.ssh2.SCPClient;
 
 /**
  * Test for SCP support.
@@ -922,7 +929,7 @@ public class ScpTest extends BaseTestSupport {
             @Override
             protected void onExit(int exitValue, String exitMessage) {
                 outputDebugMessage("onExit(%s) status=%d", this, exitValue);
-                super.onExit((exitValue == ScpHelper.OK) ? testExitValue : exitValue, exitMessage);
+                super.onExit((exitValue == ScpIoUtils.OK) ? testExitValue : exitValue, exitMessage);
             }
         }
 
@@ -1086,7 +1093,7 @@ public class ScpTest extends BaseTestSupport {
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteDir);
         String fileName = "file.txt";
         Path remoteFile = remoteDir.resolve(fileName);
-        String mode = ScpHelper.getOctalPermissions(EnumSet.of(
+        String mode = ScpPathCommandDetailsSupport.getOctalPermissions(EnumSet.of(
                 PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,
                 PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE,
                 PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
@@ -1138,7 +1145,9 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + Files.size(target) + " " + fileName;
+            String expHeader
+                    = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
+                      + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched header for " + path, expHeader, header);
 
             String lenValue = header.substring(6, header.indexOf(' ', 6));
@@ -1171,14 +1180,17 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
 
             String header = readLine(is);
-            String expPrefix = "D" + ScpHelper.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
+            String expPrefix = ScpReceiveDirCommandDetails.COMMAND_NAME
+                               + ScpReceiveDirCommandDetails.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
             assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
             os.write(0);
             os.flush();
 
             header = readLine(is);
             String fileName = Objects.toString(target.getFileName(), null);
-            String expHeader = "C" + ScpHelper.DEFAULT_FILE_OCTAL_PERMISSIONS + " " + Files.size(target) + " " + fileName;
+            String expHeader
+                    = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
+                      + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             os.write(0);
@@ -1233,9 +1245,10 @@ public class ScpTest extends BaseTestSupport {
 
             Path parent = target.getParent();
             Collection<PosixFilePermission> perms = IoUtils.getPermissions(parent);
-            String octalPerms = ScpHelper.getOctalPermissions(perms);
+            String octalPerms = ScpPathCommandDetailsSupport.getOctalPermissions(perms);
             String name = Objects.toString(target.getFileName(), null);
-            assertAckReceived(os, is, "C" + octalPerms + " " + data.length() + " " + name);
+            assertAckReceived(os, is,
+                    ScpReceiveFileCommandDetails.COMMAND_NAME + octalPerms + " " + data.length() + " " + name);
 
             os.write(data.getBytes(StandardCharsets.UTF_8));
             os.flush();
@@ -1298,11 +1311,9 @@ public class ScpTest extends BaseTestSupport {
             os.flush();
             assertAckReceived(is, "Send data of " + path);
 
-            os.write(0);
-            os.flush();
+            ScpIoUtils.ack(os);
+            ScpIoUtils.writeLine(os, ScpDirEndCommandDetails.HEADER);
 
-            os.write("E\n".getBytes(StandardCharsets.UTF_8));
-            os.flush();
             assertAckReceived(is, "Signal end of " + path);
         } finally {
             c.disconnect();

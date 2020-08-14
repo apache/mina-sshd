@@ -22,6 +22,8 @@ package org.apache.sshd.scp.common;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.sshd.scp.common.helpers.ScpIoUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -34,7 +36,7 @@ public class ScpException extends IOException {
     }
 
     public ScpException(Integer exitStatus) {
-        this("Exit status=" + ScpHelper.getExitStatusName(Objects.requireNonNull(exitStatus, "No exit status")), exitStatus);
+        this("Exit status=" + ScpIoUtils.getExitStatusName(Objects.requireNonNull(exitStatus, "No exit status")), exitStatus);
     }
 
     public ScpException(String message, Integer exitStatus) {
