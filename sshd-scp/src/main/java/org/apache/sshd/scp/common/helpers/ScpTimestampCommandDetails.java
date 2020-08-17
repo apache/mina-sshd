@@ -17,27 +17,26 @@
  * under the License.
  */
 
-package org.apache.sshd.scp.common;
+package org.apache.sshd.scp.common.helpers;
 
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
 
 /**
  * Represents an SCP timestamp definition
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpTimestamp extends AbstractScpCommandDetails {
+public class ScpTimestampCommandDetails extends AbstractScpCommandDetails {
     public static final char COMMAND_NAME = 'T';
 
     private final long lastModifiedTime;
     private final long lastAccessTime;
 
-    public ScpTimestamp(String header) {
+    public ScpTimestampCommandDetails(String header) {
         super(COMMAND_NAME);
 
         if (header.charAt(0) != COMMAND_NAME) {
@@ -49,11 +48,11 @@ public class ScpTimestamp extends AbstractScpCommandDetails {
         lastAccessTime = TimeUnit.SECONDS.toMillis(Long.parseLong(numbers[2]));
     }
 
-    public ScpTimestamp(FileTime modTime, FileTime accTime) {
+    public ScpTimestampCommandDetails(FileTime modTime, FileTime accTime) {
         this(modTime.to(TimeUnit.MILLISECONDS), accTime.to(TimeUnit.MILLISECONDS));
     }
 
-    public ScpTimestamp(long modTime, long accTime) {
+    public ScpTimestampCommandDetails(long modTime, long accTime) {
         super(COMMAND_NAME);
 
         lastModifiedTime = modTime;
@@ -71,7 +70,29 @@ public class ScpTimestamp extends AbstractScpCommandDetails {
     @Override
     public String toHeader() {
         return Character.toString(getCommand()) + TimeUnit.MILLISECONDS.toSeconds(getLastModifiedTime())
-               + " 0 " + TimeUnit.MILLISECONDS.toSeconds(getLastAccessTime()) + "0";
+               + " 0 " + TimeUnit.MILLISECONDS.toSeconds(getLastAccessTime()) + " 0";
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(getLastModifiedTime()) + 31 * Long.hashCode(getLastAccessTime());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        ScpTimestampCommandDetails other = (ScpTimestampCommandDetails) obj;
+        return (getLastModifiedTime() == other.getLastModifiedTime())
+                && (getLastAccessTime() == other.getLastAccessTime());
     }
 
     @Override
@@ -84,12 +105,13 @@ public class ScpTimestamp extends AbstractScpCommandDetails {
      * @param  line                  The time specification - format:
      *                               {@code T<mtime-sec> <mtime-micros> <atime-sec> <atime-micros>} where specified
      *                               times are in seconds since UTC - ignored if {@code null}
-     * @return                       The {@link ScpTimestamp} value with the timestamps converted to <U>milliseconds</U>
+     * @return                       The {@link ScpTimestampCommandDetails} value with the timestamps converted to
+     *                               <U>milliseconds</U>
      * @throws NumberFormatException if bad numerical values - <B>Note:</B> validates that 1st character is 'T'.
      * @see                          <A HREF="https://blogs.oracle.com/janp/entry/how_the_scp_protocol_works">How the
      *                               SCP protocol works</A>
      */
-    public static ScpTimestamp parseTime(String line) throws NumberFormatException {
-        return GenericUtils.isEmpty(line) ? null : new ScpTimestamp(line);
+    public static ScpTimestampCommandDetails parseTime(String line) throws NumberFormatException {
+        return GenericUtils.isEmpty(line) ? null : new ScpTimestampCommandDetails(line);
     }
 }

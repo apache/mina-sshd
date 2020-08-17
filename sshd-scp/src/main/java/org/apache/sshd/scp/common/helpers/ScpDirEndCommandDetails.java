@@ -32,8 +32,36 @@ public class ScpDirEndCommandDetails extends AbstractScpCommandDetails {
         super(COMMAND_NAME);
     }
 
+    public ScpDirEndCommandDetails(String header) {
+        super(COMMAND_NAME);
+        if (!HEADER.equals(header)) {
+            throw new IllegalArgumentException("Mismatched header - expected '" + HEADER + "' but got '" + header + "'");
+        }
+    }
+
     @Override
     public String toHeader() {
         return HEADER;
+    }
+
+    @Override
+    public int hashCode() {
+        return HEADER.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // All ScpDirEndCommandDetails are equal to each other
+        return true;
     }
 }

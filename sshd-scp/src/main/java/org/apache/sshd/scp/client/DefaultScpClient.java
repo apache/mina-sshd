@@ -38,9 +38,9 @@ import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpHelper;
-import org.apache.sshd.scp.common.ScpTimestamp;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -102,7 +102,8 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     @Override
-    public void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time)
+    public void upload(
+            InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException {
         int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
         String name = (namePos < 0)

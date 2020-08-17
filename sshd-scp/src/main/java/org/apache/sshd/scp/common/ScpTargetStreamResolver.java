@@ -27,6 +27,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -83,6 +84,6 @@ public interface ScpTargetStreamResolver {
      * @throws IOException If failed to post-process the incoming data
      */
     void postProcessReceivedData(
-            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
+            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException;
 }

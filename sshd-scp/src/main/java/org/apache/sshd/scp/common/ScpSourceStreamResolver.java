@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -51,11 +52,11 @@ public interface ScpSourceStreamResolver {
     Collection<PosixFilePermission> getPermissions() throws IOException;
 
     /**
-     * @return             The {@link ScpTimestamp} to use for uploading the file if {@code null} then no need to send
-     *                     this information
+     * @return             The {@link ScpTimestampCommandDetails} to use for uploading the file if {@code null} then no
+     *                     need to send this information
      * @throws IOException If failed to generate the required data
      */
-    ScpTimestamp getTimestamp() throws IOException;
+    ScpTimestampCommandDetails getTimestamp() throws IOException;
 
     /**
      * @return             An estimated size of the expected number of bytes to be uploaded. If non-positive then

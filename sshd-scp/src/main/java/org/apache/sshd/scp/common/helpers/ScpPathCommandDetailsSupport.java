@@ -22,9 +22,11 @@ package org.apache.sshd.scp.common.helpers;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -76,6 +78,10 @@ public abstract class ScpPathCommandDetailsSupport extends AbstractScpCommandDet
         return length;
     }
 
+    protected long getEffectiveLength() {
+        return getLength();
+    }
+
     public void setLength(long length) {
         this.length = length;
     }
@@ -91,7 +97,34 @@ public abstract class ScpPathCommandDetailsSupport extends AbstractScpCommandDet
 
     @Override
     public String toHeader() {
-        return getCommand() + getOctalPermissions(getPermissions()) + " " + getLength() + " " + getName();
+        return getCommand() + getOctalPermissions(getPermissions()) + " " + getEffectiveLength() + " " + getName();
+    }
+
+    @Override
+    public int hashCode() {
+        return Character.hashCode(getCommand())
+               + 31 * Objects.hashCode(getName())
+               + 37 * Long.hashCode(getEffectiveLength())
+               + 41 * GenericUtils.size(getPermissions());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        ScpPathCommandDetailsSupport other = (ScpPathCommandDetailsSupport) obj;
+        return (getCommand() == other.getCommand())
+                && (getEffectiveLength() == other.getEffectiveLength())
+                && Objects.equals(getName(), other.getName())
+                && GenericUtils.equals(getPermissions(), other.getPermissions());
     }
 
     @Override
