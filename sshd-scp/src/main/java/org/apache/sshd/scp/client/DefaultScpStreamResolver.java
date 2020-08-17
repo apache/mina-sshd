@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.scp.common.ScpSourceStreamResolver;
-import org.apache.sshd.scp.common.ScpTimestamp;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -37,14 +37,14 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     private final String name;
     private final Path mockPath;
     private final Collection<PosixFilePermission> perms;
-    private final ScpTimestamp time;
+    private final ScpTimestampCommandDetails time;
     private final long size;
     private final InputStream local;
     private final String cmd;
 
     public DefaultScpStreamResolver(
                                     String name, Path mockPath, Collection<PosixFilePermission> perms,
-                                    ScpTimestamp time, long size, InputStream local, String cmd) {
+                                    ScpTimestampCommandDetails time, long size, InputStream local, String cmd) {
         this.name = name;
         this.mockPath = mockPath;
         this.perms = perms;
@@ -70,7 +70,7 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     }
 
     @Override
-    public ScpTimestamp getTimestamp() throws IOException {
+    public ScpTimestampCommandDetails getTimestamp() throws IOException {
         return time;
     }
 

@@ -22,6 +22,7 @@ package org.apache.sshd.scp.common;
 import java.io.IOException;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -32,8 +33,8 @@ public interface ScpReceiveLineHandler {
      * @param  session     The client/server {@link Session} through which the transfer is being executed
      * @param  line        Received SCP input line
      * @param  isDir       Does the input line refer to a directory
-     * @param  time        The received {@link ScpTimestamp} - may be {@code null}
+     * @param  time        The received {@link ScpTimestampCommandDetails} - may be {@code null}
      * @throws IOException If failed to process the line
      */
-    void process(Session session, String line, boolean isDir, ScpTimestamp time) throws IOException;
+    void process(Session session, String line, boolean isDir, ScpTimestampCommandDetails time) throws IOException;
 }

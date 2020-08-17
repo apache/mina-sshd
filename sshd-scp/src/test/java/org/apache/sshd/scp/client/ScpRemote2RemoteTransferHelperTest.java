@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.scp.common.ScpHelper;
-import org.apache.sshd.scp.common.ScpTimestamp;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -76,7 +76,7 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
                         public void startDirectFileTransfer(
                                 ClientSession srcSession, String source,
                                 ClientSession dstSession, String destination,
-                                ScpTimestamp timestamp, ScpReceiveFileCommandDetails details)
+                                ScpTimestampCommandDetails timestamp, ScpReceiveFileCommandDetails details)
                                 throws IOException {
                             assertEquals("Mismatched start xfer source path", srcPath, source);
                             assertEquals("Mismatched start xfer destination path", dstPath, destination);
@@ -86,7 +86,7 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
                         public void endDirectFileTransfer(
                                 ClientSession srcSession, String source,
                                 ClientSession dstSession, String destination,
-                                ScpTimestamp timestamp, ScpReceiveFileCommandDetails details,
+                                ScpTimestampCommandDetails timestamp, ScpReceiveFileCommandDetails details,
                                 long xferSize, Throwable thrown)
                                 throws IOException {
                             assertEquals("Mismatched end xfer source path", srcPath, source);

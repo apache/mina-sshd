@@ -298,6 +298,30 @@ public final class GenericUtils {
         return !isEmpty(c);
     }
 
+    /**
+     *
+     * @param  <T> Generic element type
+     * @param  c1  First collection
+     * @param  c2  Second collection
+     * @return     {@code true} if the following holds:
+     *             <UL>
+     *             <LI>Same size - <B>Note:</B> {@code null} collections are consider equal to empty ones</LI>
+     *
+     *             <LI>First collection contains all elements of second one and vice versa</LI>
+     *             </UL>
+     */
+    public static <T> boolean equals(Collection<T> c1, Collection<T> c2) {
+        if (isEmpty(c1)) {
+            return isEmpty(c2);
+        } else if (isEmpty(c2)) {
+            return false;
+        }
+
+        return (c1.size() == c2.size())
+                && c1.containsAll(c2)
+                && c2.containsAll(c1);
+    }
+
     public static int size(Map<?, ?> m) {
         return (m == null) ? 0 : m.size();
     }
@@ -1039,7 +1063,7 @@ public final class GenericUtils {
 
     /**
      * Check if a duration is positive
-     * 
+     *
      * @param  d the duration
      * @return   <code>true</code> if the duration is greater than zero
      */
@@ -1049,7 +1073,7 @@ public final class GenericUtils {
 
     /**
      * Check if a duration is negative or zero
-     * 
+     *
      * @param  d the duration
      * @return   <code>true</code> if the duration is negative or zero
      */

@@ -22,8 +22,8 @@ package org.apache.sshd.scp.client;
 import java.io.IOException;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.scp.common.ScpTimestamp;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,14 +36,14 @@ public interface ScpRemote2RemoteTransferListener {
      * @param  source      The source path
      * @param  dstSession  The destination {@link ClientSession}
      * @param  destination The destination path
-     * @param  timestamp   The {@link ScpTimestamp timestamp} of the file - may be {@code null}
+     * @param  timestamp   The {@link ScpTimestampCommandDetails timestamp} of the file - may be {@code null}
      * @param  details     The {@link ScpReceiveFileCommandDetails details} of the attempted file transfer
      * @throws IOException If failed to handle the callback
      */
     void startDirectFileTransfer(
             ClientSession srcSession, String source,
             ClientSession dstSession, String destination,
-            ScpTimestamp timestamp, ScpReceiveFileCommandDetails details)
+            ScpTimestampCommandDetails timestamp, ScpReceiveFileCommandDetails details)
             throws IOException;
 
     /**
@@ -53,7 +53,7 @@ public interface ScpRemote2RemoteTransferListener {
      * @param  source      The source path
      * @param  dstSession  The destination {@link ClientSession}
      * @param  destination The destination path
-     * @param  timestamp   The {@link ScpTimestamp timestamp} of the file - may be {@code null}
+     * @param  timestamp   The {@link ScpTimestampCommandDetails timestamp} of the file - may be {@code null}
      * @param  details     The {@link ScpReceiveFileCommandDetails details} of the attempted file transfer
      * @param  xferSize    Number of successfully transfered bytes - zero if <tt>thrown</tt> not {@code null}
      * @param  thrown      Error thrown during transfer attempt - {@code null} if successful
@@ -62,7 +62,7 @@ public interface ScpRemote2RemoteTransferListener {
     void endDirectFileTransfer(
             ClientSession srcSession, String source,
             ClientSession dstSession, String destination,
-            ScpTimestamp timestamp, ScpReceiveFileCommandDetails details,
+            ScpTimestampCommandDetails timestamp, ScpReceiveFileCommandDetails details,
             long xferSize, Throwable thrown)
             throws IOException;
 }

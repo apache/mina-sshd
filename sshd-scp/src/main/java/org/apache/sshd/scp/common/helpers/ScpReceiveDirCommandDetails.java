@@ -23,7 +23,7 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Holds the details of a &quot;Dmmmm <length> <directory>&quot; command - e.g., &quot;D0755 0 dirname&quot;
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpReceiveDirCommandDetails extends ScpPathCommandDetailsSupport {
@@ -36,6 +36,11 @@ public class ScpReceiveDirCommandDetails extends ScpPathCommandDetailsSupport {
 
     public ScpReceiveDirCommandDetails(String header) {
         super(COMMAND_NAME, header);
+    }
+
+    @Override   // length is irrelevant for 'D' commands
+    protected long getEffectiveLength() {
+        return 0L;
     }
 
     public static ScpReceiveDirCommandDetails parse(String header) {

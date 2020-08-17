@@ -36,7 +36,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpSourceStreamResolver;
-import org.apache.sshd.scp.common.ScpTimestamp;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -47,7 +46,7 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     protected final Path name;
     protected final Set<PosixFilePermission> perms;
     protected final long size;
-    protected final ScpTimestamp time;
+    protected final ScpTimestampCommandDetails time;
 
     public LocalFileScpSourceStreamResolver(Path path, ScpFileOpener opener) throws IOException {
         this.path = Objects.requireNonNull(path, "No path specified");
@@ -58,7 +57,7 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
         BasicFileAttributeView view = Files.getFileAttributeView(path, BasicFileAttributeView.class);
         BasicFileAttributes basic = view.readAttributes();
         this.size = basic.size();
-        this.time = new ScpTimestamp(basic.lastModifiedTime().toMillis(), basic.lastAccessTime().toMillis());
+        this.time = new ScpTimestampCommandDetails(basic.lastModifiedTime().toMillis(), basic.lastAccessTime().toMillis());
     }
 
     @Override
@@ -72,7 +71,7 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     }
 
     @Override
-    public ScpTimestamp getTimestamp() throws IOException {
+    public ScpTimestampCommandDetails getTimestamp() throws IOException {
         return time;
     }
 

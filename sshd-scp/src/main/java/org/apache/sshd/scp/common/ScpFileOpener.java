@@ -43,6 +43,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * Plug-in mechanism for users to intervene in the SCP process - e.g., apply some kind of traffic shaping mechanism,
@@ -60,14 +61,14 @@ public interface ScpFileOpener {
      * @param  name        The target file name
      * @param  preserve    Whether requested to preserve the permissions and timestamp
      * @param  permissions The requested file permissions
-     * @param  time        The requested {@link ScpTimestamp} - may be {@code null} if nothing to update
+     * @param  time        The requested {@link ScpTimestampCommandDetails} - may be {@code null} if nothing to update
      * @return             The actual target file path for the incoming file/directory
      * @throws IOException If failed to resolve the file path
-     * @see                #updateFileProperties(Path, Set, ScpTimestamp) updateFileProperties
+     * @see                #updateFileProperties(Path, Set, ScpTimestampCommandDetails) updateFileProperties
      */
     default Path resolveIncomingFilePath(
             Session session, Path localPath, String name, boolean preserve, Set<PosixFilePermission> permissions,
-            ScpTimestamp time)
+            ScpTimestampCommandDetails time)
             throws IOException {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Boolean status = IoUtils.checkFileExists(localPath, options);
@@ -331,7 +332,8 @@ public interface ScpFileOpener {
 
     ScpTargetStreamResolver createScpTargetStreamResolver(Session session, Path path) throws IOException;
 
-    static void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+    static void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestampCommandDetails time)
+            throws IOException {
         IoUtils.setPermissions(file, perms);
 
         if (time != null) {

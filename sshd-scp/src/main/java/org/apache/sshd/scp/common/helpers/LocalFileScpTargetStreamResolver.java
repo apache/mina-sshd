@@ -39,7 +39,6 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpTargetStreamResolver;
-import org.apache.sshd.scp.common.ScpTimestamp;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -137,7 +136,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
 
     @Override
     public void postProcessReceivedData(
-            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time)
+            String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException {
         if (file == null) {
             throw new StreamCorruptedException(
@@ -150,7 +149,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
     }
 
     protected void updateFileProperties(
-            String name, Path path, Set<PosixFilePermission> perms, ScpTimestamp time)
+            String name, Path path, Set<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {

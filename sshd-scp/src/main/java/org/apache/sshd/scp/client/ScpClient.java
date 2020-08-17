@@ -33,7 +33,7 @@ import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.scp.common.ScpHelper;
-import org.apache.sshd.scp.common.ScpTimestamp;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -116,20 +116,22 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
 
     // NOTE: due to SCP command limitations, the amount of data to be uploaded must be known a-priori
     // To upload a dynamic amount of data use SFTP
-    default void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time)
+    default void upload(byte[] data, String remote, Collection<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException {
         upload(data, 0, data.length, remote, perms, time);
     }
 
     default void upload(
-            byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time)
+            byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms,
+            ScpTimestampCommandDetails time)
             throws IOException {
         try (InputStream local = new ByteArrayInputStream(data, offset, len)) {
             upload(local, remote, len, perms, time);
         }
     }
 
-    void upload(InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestamp time)
+    void upload(
+            InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException;
 
     static String createSendCommand(String remote, Collection<Option> options) {

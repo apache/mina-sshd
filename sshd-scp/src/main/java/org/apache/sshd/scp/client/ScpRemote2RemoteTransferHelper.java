@@ -35,10 +35,10 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.client.ScpClient.Option;
-import org.apache.sshd.scp.common.ScpTimestamp;
 import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * Helps transfer files between 2 servers rather than between server and local file system by using 2
@@ -133,10 +133,10 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         }
 
         char cmdName = header.charAt(0);
-        ScpTimestamp time = null;
-        if (cmdName == ScpTimestamp.COMMAND_NAME) {
+        ScpTimestampCommandDetails time = null;
+        if (cmdName == ScpTimestampCommandDetails.COMMAND_NAME) {
             // Pass along the "T<mtime> 0 <atime> 0" and wait for response
-            time = ScpTimestamp.parseTime(header);
+            time = ScpTimestampCommandDetails.parseTime(header);
             signalReceivedCommand(time);
 
             ScpIoUtils.writeLine(dstOut, header);
@@ -203,7 +203,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     protected long transferFileData(
             String source, InputStream srcIn, OutputStream srcOut,
             String destination, InputStream dstIn, OutputStream dstOut,
-            ScpTimestamp time, ScpReceiveFileCommandDetails details)
+            ScpTimestampCommandDetails time, ScpReceiveFileCommandDetails details)
             throws IOException {
         long length = details.getLength();
         if (length < 0L) { // TODO consider throwing an exception...

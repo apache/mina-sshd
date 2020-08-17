@@ -51,6 +51,7 @@ import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 import org.apache.sshd.scp.common.helpers.ScpPathCommandDetailsSupport;
 import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -130,7 +131,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                                                      // https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
                 public void postProcessReceivedData(
                         String name, boolean preserve, Set<PosixFilePermission> perms,
-                        ScpTimestamp time)
+                        ScpTimestampCommandDetails time)
                         throws IOException {
                     if (log.isDebugEnabled()) {
                         log.debug("postProcessReceivedData({}) name={}, perms={}, preserve={} time={}", ScpHelper.this,
@@ -163,7 +164,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         ScpIoUtils.receive(getSession(), in, out, log, this, handler);
     }
 
-    public void receiveDir(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize)
+    public void receiveDir(String header, Path local, ScpTimestampCommandDetails time, boolean preserve, int bufferSize)
             throws IOException {
         Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         boolean debugEnabled = log.isDebugEnabled();
@@ -205,8 +206,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 } else if (cmdChar == ScpDirEndCommandDetails.COMMAND_NAME) {
                     ack();
                     break;
-                } else if (cmdChar == ScpTimestamp.COMMAND_NAME) {
-                    time = ScpTimestamp.parseTime(header);
+                } else if (cmdChar == ScpTimestampCommandDetails.COMMAND_NAME) {
+                    time = ScpTimestampCommandDetails.parseTime(header);
                     ack();
                 } else {
                     throw new IOException("Unexpected message: '" + header + "'");
@@ -219,7 +220,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         listener.endFolderEvent(session, FileOperation.RECEIVE, path, perms, null);
     }
 
-    public void receiveFile(String header, Path local, ScpTimestamp time, boolean preserve, int bufferSize)
+    public void receiveFile(String header, Path local, ScpTimestampCommandDetails time, boolean preserve, int bufferSize)
             throws IOException {
         Path path = Objects.requireNonNull(local, "No local path").normalize().toAbsolutePath();
         if (log.isDebugEnabled()) {
@@ -232,7 +233,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void receiveStream(
-            String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve,
+            String header, ScpTargetStreamResolver resolver, ScpTimestampCommandDetails time, boolean preserve,
             int bufferSize)
             throws IOException {
         if (bufferSize < MIN_RECEIVE_BUFFER_SIZE) {
@@ -451,7 +452,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
-        ScpTimestamp time = resolver.getTimestamp();
+        ScpTimestampCommandDetails time = resolver.getTimestamp();
         if (preserve && (time != null)) {
             int readyCode = ScpIoUtils.sendTimeCommand(in, out, time, log, this);
             String cmd = time.toHeader();
@@ -530,7 +531,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             BasicFileAttributes basic = opener.getLocalBasicFileAttributes(session, path, options);
             FileTime lastModified = basic.lastModifiedTime();
             FileTime lastAccess = basic.lastAccessTime();
-            ScpTimestamp time = new ScpTimestamp(lastModified, lastAccess);
+            ScpTimestampCommandDetails time = new ScpTimestampCommandDetails(lastModified, lastAccess);
             String cmd = time.toHeader();
             if (debugEnabled) {
                 log.debug("sendDir({})[{}] send last-modified={}, last-access={} command: {}", this, path, lastModified,

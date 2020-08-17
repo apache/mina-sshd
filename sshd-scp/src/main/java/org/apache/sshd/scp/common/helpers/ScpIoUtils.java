@@ -41,7 +41,6 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.scp.common.ScpReceiveLineHandler;
-import org.apache.sshd.scp.common.ScpTimestamp;
 import org.slf4j.Logger;
 
 /**
@@ -93,14 +92,14 @@ public final class ScpIoUtils {
      *
      * @param  in          The {@link InputStream} to read from
      * @param  out         The target {@link OutputStream}
-     * @param  time        The {@link ScpTimestamp} value to send
+     * @param  time        The {@link ScpTimestampCommandDetails} value to send
      * @param  log         An optional {@link Logger} to use for issuing log messages - ignored if {@code null}
      * @param  logHint     An optional hint to be used in the logged messages to identifier the caller's context
      * @return             The read ACK value
      * @throws IOException If failed to complete the read/write cyle
      */
     public static int sendTimeCommand(
-            InputStream in, OutputStream out, ScpTimestamp time, Logger log, Object logHint)
+            InputStream in, OutputStream out, ScpTimestampCommandDetails time, Logger log, Object logHint)
             throws IOException {
         String cmd = time.toHeader();
         if ((log != null) && log.isDebugEnabled()) {
@@ -201,7 +200,7 @@ public final class ScpIoUtils {
         ack(out);
 
         boolean debugEnabled = (log != null) && log.isDebugEnabled();
-        for (ScpTimestamp time = null;;) {
+        for (ScpTimestampCommandDetails time = null;;) {
             String line;
             boolean isDir = false;
             int c = readAck(in, true, log, logHint);
@@ -223,13 +222,13 @@ public final class ScpIoUtils {
                         log.debug("receive({}) - Received 'C' header: {}", logHint, line);
                     }
                     break;
-                case ScpTimestamp.COMMAND_NAME:
+                case ScpTimestampCommandDetails.COMMAND_NAME:
                     line = readLine(in);
                     line = Character.toString((char) c) + line;
                     if (debugEnabled) {
                         log.debug("receive({}) - Received 'T' header: {}", logHint, line);
                     }
-                    time = ScpTimestamp.parseTime(line);
+                    time = ScpTimestampCommandDetails.parseTime(line);
                     ack(out);
                     continue;
                 case ScpDirEndCommandDetails.COMMAND_NAME:
