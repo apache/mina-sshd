@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.cli.CliSupport;
+import org.apache.sshd.cli.server.helper.ScpCommandTransferEventListener;
 import org.apache.sshd.cli.server.helper.ServerPortForwardingEventListener;
 import org.apache.sshd.cli.server.helper.SftpServerSubSystemEventListener;
 import org.apache.sshd.common.PropertyResolver;
@@ -254,12 +255,16 @@ public abstract class SshServerCliSupport extends CliSupport {
      * to load and instantiate it using a public no-args constructor</LI>
      * </UL>
      *
+     * @param  level     The verbosity {@link Level}
+     * @param  stdout    The STDOUT stream for logging
      * @param  stderr    The STDERR stream for errors
      * @param  options   The available options - assuming defaults if {@code null}
      * @return           The resolved {@link ShellFactory}
      * @throws Exception If failed to resolve
      */
-    public static ShellFactory resolveShellFactory(PrintStream stderr, PropertyResolver options) throws Exception {
+    public static ShellFactory resolveShellFactory(
+            Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options)
+            throws Exception {
         String factory = (options == null) ? null : options.getString(SHELL_FACTORY_OPTION);
         if (GenericUtils.isEmpty(factory)) {
             return DEFAULT_SHELL_FACTORY;
@@ -270,7 +275,12 @@ public abstract class SshServerCliSupport extends CliSupport {
         }
 
         if (ScpCommandFactory.SCP_FACTORY_NAME.equalsIgnoreCase(factory)) {
-            return new ScpCommandFactory();
+            ScpCommandFactory shell = new ScpCommandFactory();
+            if (isEnabledVerbosityLogging(level)) {
+                shell.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
+            }
+
+            return shell;
         }
 
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ShellFactory.class);

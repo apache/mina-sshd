@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.common.PropertyResolver;
@@ -299,11 +300,11 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
+        Level level = resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
                 ? null : setupIoServiceFactory(
                         CoreTestSupportUtils.setupTestServer(SshFsMounter.class), resolver,
-                        resolveLoggingVerbosity(resolver, args),
-                        System.out, System.err, args);
+                        level, System.out, System.err, args);
         if (sshd == null) {
             error = true;
         }
@@ -325,7 +326,7 @@ public final class SshFsMounter extends SshServerCliSupport {
         // Should come AFTER key pair provider setup so auto-welcome can be generated if needed
         setupServerBanner(sshd, resolver);
 
-        ShellFactory shellFactory = resolveShellFactory(System.err, resolver);
+        ShellFactory shellFactory = resolveShellFactory(level, System.out, System.err, resolver);
         if (shellFactory != null) {
             System.out.append("Using shell=").println(shellFactory.getClass().getName());
             sshd.setShellFactory(shellFactory);
