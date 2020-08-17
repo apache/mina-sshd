@@ -40,7 +40,8 @@ public class KeepAliveHandler extends AbstractConnectionServiceRequestHandler {
     public Result process(
             ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
             throws Exception {
-        if (!request.startsWith("keepalive@")) {
+        // some clients use different strings - e.g., keep-alive@bitvise.com, keepalive@putty.projects.tartarus.org
+        if ((!request.startsWith("keepalive@")) && (!request.startsWith("keep-alive@"))) {
             return super.process(connectionService, request, wantReply, buffer);
         }
 
