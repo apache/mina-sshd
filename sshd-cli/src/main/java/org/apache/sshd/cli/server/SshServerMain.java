@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.apache.sshd.cli.server.helper.ScpCommandTransferEventListener;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -191,7 +192,7 @@ public class SshServerMain extends SshServerCliSupport {
         setupServerBanner(sshd, resolver);
         sshd.setPort(port);
 
-        ShellFactory shellFactory = resolveShellFactory(System.err, resolver);
+        ShellFactory shellFactory = resolveShellFactory(level, System.out, System.err, resolver);
         if (shellFactory != null) {
             System.out.append("Using shell=").println(shellFactory.getClass().getName());
             sshd.setShellFactory(shellFactory);
@@ -201,7 +202,7 @@ public class SshServerMain extends SshServerCliSupport {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         setupUserAuthFactories(sshd, resolver);
         setupServerForwarding(sshd, level, System.out, System.err, resolver);
-        setupCommandFactory(sshd, shellFactory);
+        setupCommandFactory(sshd, level, System.out, System.err, shellFactory);
 
         List<SubsystemFactory> subsystems = resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
@@ -215,14 +216,18 @@ public class SshServerMain extends SshServerCliSupport {
         System.err.println("Exiting after a very (very very) long time");
     }
 
-    private static CommandFactory setupCommandFactory(SshServer sshd, ShellFactory shellFactory) {
+    private static CommandFactory setupCommandFactory(
+            SshServer sshd, Level level, Appendable stdout, Appendable stderr, ShellFactory shellFactory) {
         ScpCommandFactory scpFactory;
         if (shellFactory instanceof ScpCommandFactory) {
             scpFactory = (ScpCommandFactory) shellFactory;
         } else {
-            scpFactory = new ScpCommandFactory.Builder()
-                    .withDelegate(ProcessShellCommandFactory.INSTANCE)
-                    .build();
+            ScpCommandFactory.Builder builder = new ScpCommandFactory.Builder()
+                    .withDelegate(ProcessShellCommandFactory.INSTANCE);
+            if (isEnabledVerbosityLogging(level)) {
+                builder = builder.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
+            }
+            scpFactory = builder.build();
         }
         sshd.setCommandFactory(scpFactory);
         return scpFactory;
