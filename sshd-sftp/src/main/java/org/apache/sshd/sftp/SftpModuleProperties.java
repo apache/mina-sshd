@@ -94,6 +94,7 @@ public final class SftpModuleProperties {
      */
     public static final Property<Charset> NAME_DECODER_CHARSET
             = Property.charset("sftp-fs-name-decoder-charset", StandardCharsets.UTF_8);
+
     /**
      * Property used to avoid large buffers when
      * {@link org.apache.sshd.sftp.client.impl.AbstractSftpClient#write(SftpClient.Handle, long, byte[], int, int)} is
@@ -171,6 +172,7 @@ public final class SftpModuleProperties {
     public static final int MIN_FILE_HANDLE_SIZE = 4; // ~uint32
     public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
     public static final int MAX_FILE_HANDLE_SIZE = 64; // ~sha512
+
     /**
      * Size in bytes of the opaque handle value
      *
@@ -186,6 +188,7 @@ public final class SftpModuleProperties {
     public static final int MIN_FILE_HANDLE_ROUNDS = 1;
     public static final int DEFAULT_FILE_HANDLE_ROUNDS = MIN_FILE_HANDLE_SIZE;
     public static final int MAX_FILE_HANDLE_ROUNDS = MAX_FILE_HANDLE_SIZE;
+
     /**
      * Max. rounds to attempt to create a unique file handle - if all handles already in use after these many rounds,
      * then an exception is thrown

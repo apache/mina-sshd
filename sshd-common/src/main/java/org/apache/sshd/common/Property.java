@@ -20,7 +20,10 @@ package org.apache.sshd.common;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -173,7 +176,6 @@ public interface Property<T> {
     }
 
     class DurationProperty extends BaseProperty<Duration> {
-
         public DurationProperty(String name) {
             this(name, null);
         }
@@ -216,7 +218,6 @@ public interface Property<T> {
     }
 
     class StringProperty extends BaseProperty<String> {
-
         public StringProperty(String name) {
             this(name, null);
         }
@@ -232,7 +233,6 @@ public interface Property<T> {
     }
 
     class BooleanProperty extends BaseProperty<Boolean> {
-
         public BooleanProperty(String name) {
             this(name, null);
         }
@@ -248,7 +248,6 @@ public interface Property<T> {
     }
 
     class LongProperty extends BaseProperty<Long> {
-
         public LongProperty(String name) {
             this(name, null);
         }
@@ -264,7 +263,6 @@ public interface Property<T> {
     }
 
     class IntegerProperty extends BaseProperty<Integer> {
-
         public IntegerProperty(String name) {
             this(name, null);
         }
@@ -280,7 +278,6 @@ public interface Property<T> {
     }
 
     class CharsetProperty extends BaseProperty<Charset> {
-
         public CharsetProperty(String name) {
             this(name, null);
         }
@@ -296,7 +293,6 @@ public interface Property<T> {
     }
 
     class ObjectProperty extends BaseProperty<Object> {
-
         public ObjectProperty(String name) {
             this(name, null);
         }
@@ -312,24 +308,27 @@ public interface Property<T> {
     }
 
     class EnumProperty<T extends Enum<T>> extends BaseProperty<T> {
+        protected final Collection<T> values;
+
         public EnumProperty(String name, Class<T> type) {
             this(name, type, null);
         }
 
         public EnumProperty(String name, Class<T> type, T def) {
             super(name, type, def);
+            values = Collections.unmodifiableSet(EnumSet.allOf(type));
         }
 
         @Override
         protected T fromStorage(Object value) {
             Class<T> type = getType();
-            return PropertyResolverUtils.toEnum(type, value, false, Arrays.asList(type.getEnumConstants()));
+            return PropertyResolverUtils.toEnum(type, value, false, values);
         }
     }
 
     class Validating<T> implements Property<T> {
-        private final Property<T> delegate;
-        private final Consumer<? super T> validator;
+        protected final Property<T> delegate;
+        protected final Consumer<? super T> validator;
 
         public Validating(Property<T> delegate, Consumer<? super T> validator) {
             this.delegate = delegate;
@@ -382,18 +381,37 @@ public interface Property<T> {
         }
     }
 
+    /**
+     * @return Property name
+     */
     String getName();
 
+    /**
+     * @return Property type - <B>Note:</B> for primitive types the wrapper equivalent is returned
+     */
     Class<T> getType();
 
+    /**
+     * @return The {@link Optional} pre-defined default value
+     */
     Optional<T> getDefault();
 
     default T getRequiredDefault() {
         return getDefault().get();
     }
 
+    /**
+     * @param  resolver The {@link PropertyResolver} to query for the property value.
+     * @return          The {@link Optional} result - if resolver contains a value then the resolver's value, otherwise
+     *                  the pre-defined {@link #getDefault() default}
+     */
     Optional<T> get(PropertyResolver resolver);
 
+    /**
+     * @param  resolver               The {@link PropertyResolver} to query for the property value.
+     * @return                        The resolved value
+     * @throws NoSuchElementException if resolver contains no value and no {@link #getDefault()} defined
+     */
     default T getRequired(PropertyResolver resolver) {
         return get(resolver).get();
     }
@@ -415,8 +433,15 @@ public interface Property<T> {
      */
     T getOrCustomDefault(PropertyResolver resolver, T defaultValue);
 
+    /**
+     * @param resolver The {@link PropertyResolver} to update with the property value.
+     * @param value    The value to set
+     */
     void set(PropertyResolver resolver, T value);
 
+    /**
+     * @param resolver The {@link PropertyResolver} to remove the property from
+     */
     default void remove(PropertyResolver resolver) {
         PropertyResolverUtils.updateProperty(resolver, getName(), null);
     }

@@ -302,6 +302,6 @@ The idea is that one can register either a `ClientProxyConnector` or `ServerProx
 the 1st packet being sent/received (respectively) **before** it reaches the SSHD code. This gives the programmer
 the capability to write a front-end that routes outgoing/incoming packets:
 
-* `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being sent to the server
+* `SshClient/ClientSesssion#setClientProxyConnector` - sets a proxy that intercepts the 1st packet before being relayed to the server
 
-* `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercept the 1st incoming packet before being processed by the server
+* `SshServer/ServerSession#setServerProxyAcceptor` - sets a proxy that intercepts the 1st incoming packet before being processed by the server

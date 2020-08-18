@@ -87,6 +87,7 @@ public final class CoreModuleProperties {
      */
     public static final Property<Integer> FORWARDER_BUFFER_SIZE
             = Property.integer("channel-agent-fwd-buf-size", DEFAULT_FORWARDER_BUF_SIZE);
+
     /**
      * Ordered comma separated list of authentications methods. Authentications methods accepted by the server will be
      * tried in the given order. If not configured or {@code null}/empty, then the session's
@@ -118,6 +119,7 @@ public final class CoreModuleProperties {
      */
     public static final Property<Boolean> SEND_IMMEDIATE_IDENTIFICATION
             = Property.bool("send-immediate-identification", true);
+
     /**
      * Whether to send {@code SSH_MSG_KEXINIT} immediately after sending the client identification string or wait until
      * the severer's one has been received.
@@ -227,6 +229,7 @@ public final class CoreModuleProperties {
 
     public static final Property<Integer> PROP_DHGEX_CLIENT_PRF_KEY
             = Property.integer("dhgex-client-prf");
+
     /**
      * Key used to retrieve the value of the channel window size in the configuration properties map.
      */
@@ -258,6 +261,7 @@ public final class CoreModuleProperties {
     public static final Property<Integer> NIO_WORKERS
             = Property.validating(Property.integer("nio-workers", Runtime.getRuntime().availableProcessors() + 1),
                     w -> ValidateUtils.checkTrue(w > 0, "Number of NIO workers must be positive: %d", w));
+
     /**
      * Key used to retrieve the value of the timeout after which it will close the connection if the other side has not
      * been authenticated - in milliseconds.

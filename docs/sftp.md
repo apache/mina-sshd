@@ -355,7 +355,7 @@ the (default) password-based one:
              */
             KeyPair kp = ... obtain a registered key-pair...
             session.addPublicKeyIdentity(kp);
-            return sesssion.auth().verify(context.getMaxAuthTime());
+            sesssion.auth().verify(context.getMaxAuthTime());
         }
     });
 
