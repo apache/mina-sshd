@@ -163,12 +163,6 @@
                             </includes>
                         </configuration>
                     </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
                     <execution>
                         <id>big-test-jar</id>
                         <goals>
