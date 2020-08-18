@@ -148,13 +148,8 @@ public class PGPAuthorizedEntriesTracker
                         continue; // debug breakpoint
                     }
                 } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                    log.error("loadMatchingKeyFingerprints({}) failed ({}) to convert {} from {} to public key: {}",
-                            session, e.getClass().getSimpleName(), sk, resourceKey, e.getMessage());
-                    if (debugEnabled) {
-                        log.debug("loadMatchingKeyFingerprints(" + session + ")[" + resourceKey + "][" + sk
-                                  + "] conversion failure details",
-                                e);
-                    }
+                    error("loadMatchingKeyFingerprints({}) failed ({}) to convert {} from {} to public key: {}",
+                            session, e.getClass().getSimpleName(), sk, resourceKey, e.getMessage(), e);
                     throw e;
                 }
 

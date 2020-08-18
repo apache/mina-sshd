@@ -146,11 +146,8 @@ public class ChannelSession extends AbstractClientChannel {
                 pumperService.shutdownNow();
             } catch (Exception e) {
                 // we log it as WARN since it is relatively harmless
-                log.warn("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.warn("doCloseImmediately(" + this + ") stream pumper shutdown error details", e);
-                }
+                warn("doCloseImmediately({}) failed {} to shutdown stream pumper: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
             } finally {
                 pumper = null;
                 pumperService = null;
@@ -192,11 +189,8 @@ public class ChannelSession extends AbstractClientChannel {
             }
         } catch (Exception e) {
             if (!isClosing()) {
-                log.error("pumpInputStream({}) Caught {} : {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.error("pumpInputStream(" + this + ") caught exception details", e);
-                }
+                error("pumpInputStream({}) Caught {} : {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
                 close(false);
             }
         }

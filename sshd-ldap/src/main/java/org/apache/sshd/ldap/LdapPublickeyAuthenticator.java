@@ -77,13 +77,8 @@ public class LdapPublickeyAuthenticator extends LdapAuthenticator implements Pub
             Map<String, ?> attrs = resolveAttributes(username, null, session);
             return authenticate(username, key, session, attrs);
         } catch (NamingException | GeneralSecurityException | IOException | RuntimeException e) {
-            log.warn("authenticate({}@{}) failed ({}) to query: {}",
-                    username, session, e.getClass().getSimpleName(), e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.debug("authenticate(" + username + "@" + session + ") query failure details", e);
-            }
-
+            warn("authenticate({}@{}) failed ({}) to query: {}",
+                    username, session, e.getClass().getSimpleName(), e.getMessage(), e);
             return false;
         }
     }

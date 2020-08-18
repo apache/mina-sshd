@@ -84,6 +84,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
@@ -255,12 +256,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     try {
                         session.close();
                     } catch (IOException t) {
-                        if (log.isDebugEnabled()) {
-                            log.warn("Failed (" + t.getClass().getSimpleName() + ")"
-                                     + " to close session for new file system on " + host + ":" + port
-                                     + " due to " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]"
-                                     + ": " + t.getMessage());
-                        }
+                        e.addSuppressed(t);
+                        LoggingUtils.debug(log,
+                                "Failed ({}) to close session for new file system on {}}:{} due to {}[{}]: {}",
+                                t.getClass().getSimpleName(), host, port, e.getClass().getSimpleName(), e.getMessage(),
+                                t.getMessage(),
+                                t);
                     }
                 }
 

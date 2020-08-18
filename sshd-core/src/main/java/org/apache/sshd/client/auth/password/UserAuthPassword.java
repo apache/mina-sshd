@@ -120,13 +120,8 @@ public class UserAuthPassword extends AbstractUserAuth {
             interactive = (ui != null) && ui.isInteractionAllowed(session);
             password = interactive ? ui.getUpdatedPassword(session, prompt, lang) : null;
         } catch (Error e) {
-            log.warn("processAuthDataRequest({})[{}] failed ({}) to consult interaction: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("processAuthDataRequest(" + session + ")[" + service + "] interaction consultation failure details",
-                        e);
-            }
-
+            warn("processAuthDataRequest({})[{}] failed ({}) to consult interaction: {}",
+                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

@@ -201,11 +201,8 @@ public class ChannelSession extends AbstractServerChannel {
             try {
                 commandInstance.destroy(this);
             } catch (Throwable e) {
-                log.warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.debug("doCloseImmediately(" + this + ") command destruction failure details", e);
-                }
+                warn("doCloseImmediately({}) failed ({}) to destroy command: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
             } finally {
                 commandInstance = null;
             }
@@ -213,21 +210,8 @@ public class ChannelSession extends AbstractServerChannel {
 
         IOException e = IoUtils.closeQuietly(getRemoteWindow(), out, err, receiver, extendedDataWriter);
         if (e != null) {
-            if (debugEnabled) {
-                log.debug("doCloseImmediately({}) failed ({}) to close resources: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable t : suppressed) {
-                        log.trace("Suppressed " + t.getClass().getSimpleName() + ")"
-                                  + " while close immediately resource(s) of " + this
-                                  + ": " + t.getMessage());
-                    }
-                }
-            }
+            debug("doCloseImmediately({}) failed ({}) to close resources: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 
@@ -237,14 +221,8 @@ public class ChannelSession extends AbstractServerChannel {
 
         IOException e = IoUtils.closeQuietly(receiver, extendedDataWriter);
         if (e != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleEof({}) failed ({}) to close receiver(s): {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace("handleEof(" + this + ") receiver close failure details", e);
-            }
+            debug("handleEof({}) failed ({}) to close receiver(s): {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 
@@ -568,11 +546,8 @@ public class ChannelSession extends AbstractServerChannel {
         try {
             commandInstance = factory.createShell(this);
         } catch (RuntimeException | IOException | Error e) {
-            log.warn("handleShell({}) Failed ({}) to create shell: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("handleShell(" + this + ") shell creation failure details", e);
-            }
+            warn("handleShell({}) Failed ({}) to create shell: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
             return RequestHandler.Result.ReplyFailure;
         }
 
@@ -617,12 +592,8 @@ public class ChannelSession extends AbstractServerChannel {
         try {
             commandInstance = factory.createCommand(this, commandLine);
         } catch (RuntimeException | IOException | Error e) {
-            log.warn("handleExec({}) Failed ({}) to create command for {}: {}",
-                    this, e.getClass().getSimpleName(), commandLine, e.getMessage());
-            if (debugEnabled) {
-                log.debug("handleExec(" + this + ") command=" + commandLine + " creation failure details", e);
-            }
-
+            warn("handleExec({}) Failed ({}) to create command for {}: {}",
+                    this, e.getClass().getSimpleName(), commandLine, e.getMessage(), e);
             return RequestHandler.Result.ReplyFailure;
         }
 
@@ -657,11 +628,8 @@ public class ChannelSession extends AbstractServerChannel {
         try {
             commandInstance = SubsystemFactory.createSubsystem(this, factories, subsystem);
         } catch (IOException | RuntimeException | Error e) {
-            log.warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
-                    this, e.getClass().getSimpleName(), subsystem, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("handleSubsystem(" + this + ") subsystem=" + subsystem + " creation failure details", e);
-            }
+            warn("handleSubsystem({}) Failed ({}) to create command for subsystem={}: {}",
+                    this, e.getClass().getSimpleName(), subsystem, e.getMessage(), e);
             return RequestHandler.Result.ReplyFailure;
         }
 
@@ -847,11 +815,8 @@ public class ChannelSession extends AbstractServerChannel {
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
-            log.warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
-                    this, e.getClass().getSimpleName(), requestType, e.getMessage());
-            if (debugEnabled) {
-                log.debug("handleAgentForwarding({})[{}] filter consultation failure details", this, requestType, e);
-            }
+            warn("handleAgentForwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
+                    this, e.getClass().getSimpleName(), requestType, e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -897,11 +862,8 @@ public class ChannelSession extends AbstractServerChannel {
                 return RequestHandler.Result.ReplyFailure;
             }
         } catch (Error e) {
-            log.warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
-                    this, e.getClass().getSimpleName(), requestType, e.getMessage());
-            if (debugEnabled) {
-                log.debug("handleX11Forwarding({})[{}] filter consultation failure details", this, requestType, e);
-            }
+            warn("handleX11Forwarding({}) failed ({}) to consult forwarding filter for '{}': {}",
+                    this, e.getClass().getSimpleName(), requestType, e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

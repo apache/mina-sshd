@@ -434,11 +434,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         "Failed to receive closure confirmation within " + maxWait + " millis");
             }
         } catch (IOException e) {
-            log.warn(e.getClass().getSimpleName() + " while stopping client: " + e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.warn("Stop exception details", e);
-            }
+            warn("{} while stopping client: {}", e.getClass().getSimpleName(), e.getMessage(), e);
         } finally {
             // clear the attributes since we close stop the client
             clearAttributes();
@@ -683,13 +679,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         onConnectOperationComplete(ioSession, connectFuture, username, address, identities,
                                 useDefaultIdentities);
                     } catch (RuntimeException e) {
-                        log.warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
-                                username, address, e.getClass().getSimpleName(), ioSession, e.getMessage());
-                        if (log.isDebugEnabled()) {
-                            log.debug("operationComplete(" + username + "@" + address + ") session=" + ioSession
-                                      + " completion signal failure details",
-                                    e);
-                        }
+                        warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
+                                username, address, e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
                         connectFuture.setException(e);
 
                         ioSession.close(true);

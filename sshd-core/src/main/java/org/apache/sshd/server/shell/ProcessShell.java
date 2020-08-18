@@ -105,11 +105,8 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
                 Map<String, String> procEnv = builder.environment();
                 procEnv.putAll(varsMap);
             } catch (Exception e) {
-                log.warn("start({}) - Failed ({}) to set environment for command={}: {}",
-                        channel, e.getClass().getSimpleName(), cmdValue, e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("start(" + channel + ")[" + cmdValue + "] failure details", e);
-                }
+                warn("start({}) - Failed ({}) to set environment for command={}: {}",
+                        channel, e.getClass().getSimpleName(), cmdValue, e.getMessage(), e);
             }
         }
 
@@ -185,20 +182,8 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
 
         IOException e = IoUtils.closeQuietly(getInputStream(), getOutputStream(), getErrorStream());
         if (e != null) {
-            if (debugEnabled) {
-                log.debug("destroy({}) {} while destroy streams of '{}': {}",
-                        channel, e.getClass().getSimpleName(), this, e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable t : suppressed) {
-                        log.trace("destroy({}) Suppressed {} while destroy streams of '{}': {}",
-                                channel, t.getClass().getSimpleName(), this, t.getMessage());
-                    }
-                }
-            }
+            debug("destroy({}) {} while destroy streams of '{}': {}",
+                    channel, e.getClass().getSimpleName(), this, e.getMessage(), e);
         }
     }
 

@@ -1408,11 +1408,8 @@ public abstract class AbstractSftpSubsystemHelper
                             try {
                                 attrs = getAttributes(p, options);
                             } catch (IOException e) {
-                                log.warn("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
-                                        session, e.getClass().getSimpleName(), p, e.getMessage());
-                                if (log.isDebugEnabled()) {
-                                    log.warn("doRealPath(" + session + ")[" + p + "] attributes retrieval failure details", e);
-                                }
+                                debug("doRealPath({}) - failed ({}) to retrieve attributes of {}: {}",
+                                        session, e.getClass().getSimpleName(), p, e.getMessage(), e);
                             }
                         } else {
                             if (debugEnabled) {
@@ -2373,13 +2370,8 @@ public abstract class AbstractSftpSubsystemHelper
                             session, file, name, value, resolved);
                 }
             } catch (IOException e) {
-                log.warn("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
-                        session, file, name, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.warn("resolveMissingFileAttributes(" + session + ")"
-                             + "[" + file + "[" + name + "]] missing value resolution failure details",
-                            e);
-                }
+                warn("resolveMissingFileAttributes({})[{}[{}]] failed ({}) to resolve missing value: {}",
+                        session, file, name, e.getClass().getSimpleName(), e.getMessage(), e);
             }
         }
 
@@ -2572,14 +2564,8 @@ public abstract class AbstractSftpSubsystemHelper
             }
             unsupported.add(attribute);
         } else {
-            log.warn("handleSetFileAttributeFailure({})[{}] {}:{}={} - failed ({}) to set: {}",
-                    getServerSession(), file, view, attribute, value, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("handleSetFileAttributeFailure(" + getServerSession() + ")"
-                          + "[" + file + "] " + view + ":" + attribute + "=" + value
-                          + " failure details",
-                        e);
-            }
+            warn("handleSetFileAttributeFailure({})[{}] {}:{}={} - failed ({}) to set: {}",
+                    getServerSession(), file, view, attribute, value, e.getClass().getSimpleName(), e.getMessage(), e);
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else {

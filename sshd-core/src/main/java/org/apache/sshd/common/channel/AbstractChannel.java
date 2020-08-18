@@ -274,14 +274,9 @@ public abstract class AbstractChannel
             try {
                 result = handler.process(this, req, wantReply, buffer);
             } catch (Throwable e) {
-                log.warn("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
+                debug("handleRequest({}) {} while {}#process({})[want-reply={}]: {}",
                         this, e.getClass().getSimpleName(), handler.getClass().getSimpleName(),
-                        req, wantReply, e.getMessage());
-                if (debugEnabled) {
-                    log.warn("handleRequest(" + this + ") request=" + req
-                             + "[want-reply=" + wantReply + "] processing failure details",
-                            e);
-                }
+                        req, wantReply, e.getMessage(), e);
                 result = RequestHandler.Result.ReplyFailure;
             }
 
@@ -445,18 +440,8 @@ public abstract class AbstractChannel
             });
         } catch (Throwable err) {
             Throwable ignored = GenericUtils.peelException(err);
-            log.warn("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
-                    this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("doInit(" + this + ") inform listener open failure details", ignored);
-
-                Throwable[] suppressed = ignored.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.warn("signalChannelOpenFailure(" + this + ") suppressed channel open failure signalling", s);
-                    }
-                }
-            }
+            debug("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
+                    this, ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage(), ignored);
         }
     }
 
@@ -476,11 +461,8 @@ public abstract class AbstractChannel
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("notifyStateChanged({})[{}] {} while signal channel state change: {}",
-                    this, hint, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("notifyStateChanged(" + this + ")[" + hint + "] channel state signalling failure details", e);
-            }
+            debug("notifyStateChanged({})[{}] {} while signal channel state change: {}",
+                    this, hint, e.getClass().getSimpleName(), e.getMessage(), e);
         } finally {
             synchronized (futureLock) {
                 futureLock.notifyAll();
@@ -634,12 +616,8 @@ public abstract class AbstractChannel
                         }
                     });
                 } catch (IOException e) {
-                    log.warn("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
-                            channel, immediately, e.getClass().getSimpleName(), e.getMessage());
-
-                    if (log.isDebugEnabled()) {
-                        log.warn("close(" + channel + ")[immediately=" + immediately + "] packet write failure details", e);
-                    }
+                    debug("close({})[immediately={}] {} while writing SSH_MSG_CHANNEL_CLOSE packet on channel: {}",
+                            channel, immediately, e.getClass().getSimpleName(), e.getMessage(), e);
                     channel.close(true);
                 }
             }
@@ -671,14 +649,8 @@ public abstract class AbstractChannel
         }
 
         protected void handleClosePacketWriteFailure(Channel channel, boolean immediately, Throwable t) {
-            if (log.isDebugEnabled()) {
-                log.debug(
-                        "handleClosePacketWriteFailure({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
-                        this, immediately, t.getClass().getSimpleName(), t.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("handleClosePacketWriteFailure(" + channel + ") SSH_MSG_CHANNEL_CLOSE failure details", t);
-            }
+            debug("handleClosePacketWriteFailure({})[immediately={}] failed ({}) to write SSH_MSG_CHANNEL_CLOSE on channel: {}",
+                    this, immediately, t.getClass().getSimpleName(), t.getMessage(), t);
             channel.close(true);
         }
 
@@ -703,20 +675,8 @@ public abstract class AbstractChannel
 
         IOException err = IoUtils.closeQuietly(getLocalWindow(), getRemoteWindow());
         if (err != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("Failed (" + err.getClass().getSimpleName() + ") to pre-close window(s) of " + this + ": "
-                          + err.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                Throwable[] suppressed = err.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable t : suppressed) {
-                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while pre-close window(s) of " + this + ": "
-                                  + t.getMessage());
-                    }
-                }
-            }
+            debug("Failed ({}) to pre-close window(s) of {}: {}",
+                    err.getClass().getSimpleName(), this, err.getMessage(), err);
         }
 
         super.preClose();
@@ -730,18 +690,8 @@ public abstract class AbstractChannel
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(),
-                    e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("signalChannelClosed(" + this + ") channel closed signalling failure details", e);
-
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.warn("signalChannelClosed(" + this + ") suppressed closed channel signalling failure", s);
-                    }
-                }
-            }
+            debug("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(),
+                    e.getMessage(), e);
         }
     }
 

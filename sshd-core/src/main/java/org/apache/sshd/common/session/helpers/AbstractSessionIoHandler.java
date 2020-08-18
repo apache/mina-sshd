@@ -63,11 +63,8 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
         try {
             session.messageReceived(message);
         } catch (Error e) {
-            log.error("messageReceived({}) failed {} to handle message: {}",
-                    ioSession, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("messageReceived(" + ioSession + ") message handling error details", e);
-            }
+            log.debug("messageReceived({}) failed {} to handle message: {}",
+                    ioSession, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }

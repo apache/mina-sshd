@@ -190,11 +190,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 return f;
             }
         } catch (Error e) {
-            log.warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
-                    session, channelType, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("doInit(" + this + ")[" + type + "] filter consultation failure details", e);
-            }
+            warn("doInit({})[{}] failed ({}) to consult forwarding filter: {}",
+                    session, channelType, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -374,24 +371,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     }
 
     protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
-        boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
-                    this, SshConstants.getCommandMessageName(cmd & 0xFF),
-                    t.getClass().getSimpleName(), len, t.getMessage());
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("handleWriteDataFailure(" + this + ")"
-                      + "[" + SshConstants.getCommandMessageName(cmd & 0xFF) + "]"
-                      + " len=" + len + " write failure details",
-                    t);
-        }
+        debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
+                this, SshConstants.getCommandMessageName(cmd & 0xFF),
+                t.getClass().getSimpleName(), len, t.getMessage(), t);
 
         if (ioSession.isOpen()) {
             // SSHD-795 IOException (Broken pipe) on a socket local forwarding channel causes SSH client-server
             // connection down
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("handleWriteDataFailure({})[{}] closing session={}",
                         this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
             }
@@ -399,7 +386,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         } else {
             // In case remote entity has closed the socket (the ioSession), data coming from the SSH channel should be
             // simply discarded
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
             }
         }

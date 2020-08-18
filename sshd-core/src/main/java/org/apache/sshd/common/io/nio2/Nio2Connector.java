@@ -70,13 +70,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             socket.connect(address, null, completionHandler);
         } catch (Throwable exc) {
             Throwable t = GenericUtils.peelException(exc);
-            if (debugEnabled) {
-                log.debug("connect({}) failed ({}) to schedule connection: {}",
-                        address, t.getClass().getSimpleName(), t.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("connect(" + address + ") connection failure details", t);
-            }
+            debug("connect({}) failed ({}) to schedule connection: {}",
+                    address, t.getClass().getSimpleName(), t.getMessage(), t);
 
             try {
                 if (socket != null) {
@@ -181,13 +176,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     }
                 }
 
-                if (debugEnabled) {
-                    log.debug("onCompleted - failed {} to start session: {}",
-                            t.getClass().getSimpleName(), t.getMessage());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("onCompleted - session creation failure details", t);
-                }
+                debug("onCompleted - failed {} to start session: {}",
+                        t.getClass().getSimpleName(), t.getMessage(), t);
 
                 try {
                     socket.close();

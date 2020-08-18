@@ -99,11 +99,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                                     address, local);
                     socket.accept(local, handler);
                 } catch (IOException | RuntimeException e) {
-                    log.error("bind({}) - failed ({}) to bind: {}",
-                            address, e.getClass().getSimpleName(), e.getMessage());
-                    if (debugEnabled) {
-                        log.debug("bind(" + address + ") failure details", e);
-                    }
+                    error("bind({}) - failed ({}) to bind: {}",
+                            address, e.getClass().getSimpleName(), e.getMessage(), e);
                     throw e;
                 }
             }
@@ -197,11 +194,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                     }
                     channel.close();
                 } catch (IOException e) {
-                    log.warn("unbind({}) {} while unbinding channel: {}",
-                            address, e.getClass().getSimpleName(), e.getMessage());
-                    if (debugEnabled) {
-                        log.debug("unbind(" + address + ") failure details", e);
-                    }
+                    warn("unbind({}) {} while unbinding channel: {}",
+                            address, e.getClass().getSimpleName(), e.getMessage(), e);
                 }
             } else {
                 if (traceEnabled) {
@@ -397,13 +391,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 return false;
             }
 
-            if (debugEnabled) {
-                log.debug("Caught {} while accepting incoming connection from {}: {}",
-                        exc.getClass().getSimpleName(), address, exc.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("Incoming connection from " + address + " failure details", exc);
-            }
+            debug("Caught {} while accepting incoming connection from {}: {}",
+                    exc.getClass().getSimpleName(), address, exc.getMessage(), exc);
             return true;
         }
     }

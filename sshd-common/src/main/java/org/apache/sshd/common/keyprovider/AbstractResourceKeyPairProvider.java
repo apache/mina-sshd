@@ -238,11 +238,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                     currentIdentities = (ids == null) ? null : ids.iterator();
                     nextKeyPair = KeyIdentityProvider.exhaustCurrentIdentities(currentIdentities);
                 } catch (Throwable e) {
-                    log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                             + " to load key resource=" + r + ": " + e.getMessage());
-                    if (debugEnabled) {
-                        log.debug("Key resource=" + r + " load failure details", e);
-                    }
+                    warn("Failed ({}) to load key resource={}: {}", e.getClass().getSimpleName(), r, e.getMessage(), e);
                     nextKeyPair = null;
                     continue;
                 }

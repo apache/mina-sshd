@@ -195,11 +195,8 @@ public final class SshFsMounter extends SshServerCliSupport {
                     stdin.close();
                     log.info("destroy(" + username + ")[" + command + "] stdin closed");
                 } catch (IOException e) {
-                    log.warn("destroy(" + username + ")[" + command + "] failed (" + e.getClass().getSimpleName()
-                             + ") to close stdin: " + e.getMessage());
-                    if (log.isDebugEnabled()) {
-                        log.debug("destroy(" + username + ")[" + command + "] failure details", e);
-                    }
+                    warn("destroy({})[{}] failed ({}) to close stdin: {}",
+                            username, command, e.getClass().getSimpleName(), e.getMessage(), e);
                 } finally {
                     stdin = null;
                 }

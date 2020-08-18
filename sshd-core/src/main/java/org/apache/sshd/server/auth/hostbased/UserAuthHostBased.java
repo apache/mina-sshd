@@ -130,13 +130,9 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             authed = authenticator.authenticate(
                     session, username, clientKey, clientHostName, clientUsername, certs);
         } catch (Error e) {
-            log.warn("doAuth({}@{}) failed ({}) to consult authenticator for {} key={}: {}",
+            warn("doAuth({}@{}) failed ({}) to consult authenticator for {} key={}: {}",
                     username, session, e.getClass().getSimpleName(),
-                    keyType, KeyUtils.getFingerPrint(clientKey), e.getMessage());
-            if (debugEnabled) {
-                log.debug("doAuth(" + username + "@" + session + ") delegate consultation failure details", e);
-            }
-
+                    keyType, KeyUtils.getFingerPrint(clientKey), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

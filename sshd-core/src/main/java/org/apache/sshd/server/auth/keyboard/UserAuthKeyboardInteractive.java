@@ -73,11 +73,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         try {
             challenge = auth.generateChallenge(session, username, lang, subMethods);
         } catch (Error e) {
-            log.warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
-                    username, session, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("doAuth(" + username + "@" + session + ") authenticator challenge failure details", e);
-            }
+            warn("doAuth({}@{}) failed ({}) to generate authenticator challenge: {}",
+                    username, session, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -141,11 +138,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         try {
             authed = auth.authenticate(session, username, responses);
         } catch (Error e) {
-            log.warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
-                    username, session, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("doAuth(" + username + "@" + session + ") authenticator consultation failure details", e);
-            }
+            warn("doAuth({}@{}) failed ({}) to consult authenticator: {}",
+                    username, session, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

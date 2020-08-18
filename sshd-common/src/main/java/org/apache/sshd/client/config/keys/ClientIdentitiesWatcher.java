@@ -89,12 +89,8 @@ public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements 
 
             return kp;
         } catch (Throwable e) {
-            log.warn("loadKeys({}) failed ({}) to load key: {}",
-                    p, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("loadKeys(" + p + ") key load failure details", e);
-            }
-
+            warn("loadKeys({}) failed ({}) to load key: {}",
+                    p, e.getClass().getSimpleName(), e.getMessage(), e);
             return null;
         }
     }

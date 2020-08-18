@@ -167,12 +167,8 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
             channel = null;
             return returnValue;
         } catch (InterruptedException e) {
-            log.error("bindInternal({}) interrupted ({}): {}",
-                    address, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("bindInternal(" + address + ") failure details", e);
-            }
-
+            error("bindInternal({}) interrupted ({}): {}",
+                    address, e.getClass().getSimpleName(), e.getMessage(), e);
             throw (InterruptedIOException) new InterruptedIOException(e.getMessage()).initCause(e);
         } finally {
             closeChannel(channel);

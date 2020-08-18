@@ -246,12 +246,8 @@ public abstract class AbstractConnectionService
 
         } catch (Throwable e) {
             session.exceptionCaught(e);
-            log.warn("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
-                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatType, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("sendHeartBeat(" + session + ") exception details", e);
-            }
-
+            warn("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
+                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatType, e.getMessage(), e);
             return false;
         }
     }
@@ -803,11 +799,8 @@ public abstract class AbstractConnectionService
                     sendChannelOpenFailure(buf, sender, reasonCode, message, "");
                 }
             } catch (IOException e) {
-                log.warn("operationComplete({}) {}: {}",
-                        AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.warn("operationComplete(" + AbstractConnectionService.this + ") exception details", e);
-                }
+                warn("operationComplete({}) {}: {}",
+                        AbstractConnectionService.this, e.getClass().getSimpleName(), e.getMessage(), e);
                 session.exceptionCaught(e);
             }
         });
@@ -858,11 +851,8 @@ public abstract class AbstractConnectionService
                 try {
                     result = handler.process(this, req, wantReply, buffer);
                 } catch (Throwable e) {
-                    log.warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
-                            this, req, wantReply, e.getClass().getSimpleName(), e.getMessage());
-                    if (debugEnabled) {
-                        log.warn("globalRequest(" + this + ")[" + req + ", want-reply=" + wantReply + "] failure details", e);
-                    }
+                    warn("globalRequest({})[{}, want-reply={}] failed ({}) to process: {}",
+                            this, req, wantReply, e.getClass().getSimpleName(), e.getMessage(), e);
                     result = RequestHandler.Result.ReplyFailure;
                 }
 

@@ -298,11 +298,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 log.debug("initializeProxyConnector({}) proxy={} initialized", this, proxyConnector);
             }
         } catch (Throwable t) {
-            log.warn("initializeProxyConnector({}) failed ({}) to send proxy metadata: {}",
-                    this, t.getClass().getSimpleName(), t.getMessage());
-            if (debugEnabled) {
-                log.debug("initializeProxyConnector(" + this + ") proxy metadata send failure details", t);
-            }
+            warn("initializeProxyConnector({}) failed ({}) to send proxy metadata: {}",
+                    this, t.getClass().getSimpleName(), t.getMessage(), t);
 
             if (t instanceof Exception) {
                 throw (Exception) t;
@@ -507,14 +504,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 ui.serverVersionInfo(this, lines);
             }
         } catch (Error e) {
-            log.warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}",
-                    this, version, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("signalExtraServerVersionInfo(" + this + ")[" + version
-                          + "] interaction consultation failure details",
-                        e);
-            }
-
+            warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}",
+                    this, version, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }

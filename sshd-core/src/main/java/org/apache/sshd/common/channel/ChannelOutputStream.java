@@ -34,6 +34,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.slf4j.Logger;
 
@@ -147,8 +148,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                             log.trace("write({}) len={} - available={}", this, l, available);
                         }
                     } catch (IOException e) {
-                        log.error("write({}) failed ({}) to wait for space of len={}: {}",
-                                this, e.getClass().getSimpleName(), l, e.getMessage());
+                        LoggingUtils.debug(log, "write({}) failed ({}) to wait for space of len={}: {}",
+                                this, e.getClass().getSimpleName(), l, e.getMessage(), e);
 
                         if ((e instanceof WindowClosedException) && (!closedState.getAndSet(true))) {
                             if (debugEnabled) {
@@ -206,11 +207,8 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                         log.trace("flush({}) len={}, available={}", this, total, available);
                     }
                 } catch (IOException e) {
-                    log.error("flush({}) failed ({}) to wait for space of len={}: {}",
-                            this, e.getClass().getSimpleName(), total, e.getMessage());
-                    if (log.isDebugEnabled()) {
-                        log.error("flush(" + this + ") wait for space len=" + total + " exception details", e);
-                    }
+                    LoggingUtils.debug(log, "flush({}) failed ({}) to wait for space of len={}: {}",
+                            this, e.getClass().getSimpleName(), total, e.getMessage(), e);
                     throw e;
                 }
 

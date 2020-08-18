@@ -44,10 +44,7 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
         try {
             group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.noClose(getExecutorService()));
         } catch (IOException e) {
-            log.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("Start async. channel group failure details", e);
-            }
+            warn("Failed ({}) to start async. channel group: {}", e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }

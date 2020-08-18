@@ -140,12 +140,8 @@ public class ClientConnectionService
             return true;
         } catch (IOException | RuntimeException | Error e) {
             session.exceptionCaught(e);
-            log.warn("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
-                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatRequest, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("sendHeartBeat(" + session + ") exception details", e);
-            }
-
+            warn("sendHeartBeat({}) failed ({}) to send heartbeat #{} request={}: {}",
+                    session, e.getClass().getSimpleName(), heartbeatCount, heartbeatRequest, e.getMessage(), e);
             return false;
         }
     }

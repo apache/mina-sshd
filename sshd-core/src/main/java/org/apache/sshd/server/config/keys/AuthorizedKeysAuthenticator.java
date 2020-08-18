@@ -96,14 +96,8 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
             return accepted;
         } catch (Throwable e) {
-            if (debugEnabled) {
-                log.debug("authenticate({})[{}] failed ({}) to authenticate {} key from {}: {}",
-                        username, session, e.getClass().getSimpleName(), key.getAlgorithm(), getPath(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace("authenticate(" + username + ")[" + session + "][" + getPath() + "] failure details", e);
-            }
+            debug("authenticate({})[{}] failed ({}) to authenticate {} key from {}: {}",
+                    username, session, e.getClass().getSimpleName(), key.getAlgorithm(), getPath(), e.getMessage(), e);
             return false;
         }
     }

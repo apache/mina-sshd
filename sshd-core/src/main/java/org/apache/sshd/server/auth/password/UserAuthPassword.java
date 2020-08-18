@@ -96,12 +96,8 @@ public class UserAuthPassword extends AbstractUserAuth {
             try {
                 authed = auth.authenticate(username, password, session);
             } catch (Error e) {
-                log.warn("checkPassword({}) failed ({}) to consult authenticator: {}",
-                        session, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.debug("checkPassword(" + session + ") authenticator failure details", e);
-                }
-
+                warn("checkPassword({}) failed ({}) to consult authenticator: {}",
+                        session, e.getClass().getSimpleName(), e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
 

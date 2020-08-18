@@ -117,12 +117,8 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
             try {
                 kp = ValidateUtils.checkNotNull(kpp.loadKey(session, keyType), "No key of type=%s available", keyType);
             } catch (Error e) {
-                log.warn("handleHostKeys({}) failed ({}) to load key of type={}: {}",
-                        session, e.getClass().getSimpleName(), keyType, e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("handleHostKey(" + session + ") " + keyType + " key load failure details", e);
-                }
-
+                warn("handleHostKeys({}) failed ({}) to load key of type={}: {}",
+                        session, e.getClass().getSimpleName(), keyType, e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
             verifier.initSigner(session, kp.getPrivate());

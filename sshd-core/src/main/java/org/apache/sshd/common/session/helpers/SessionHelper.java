@@ -262,11 +262,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             resetTimeout = (handler != null) && handler.handleTimeoutDisconnectReason(this, result);
         } catch (RuntimeException | IOException e) {
             // If disconnect handler throws an exception continue with the disconnect
-            log.warn("checkForTimeouts({}) failed ({}) to invoke disconnect handler to handle {}: {}",
-                    this, e.getClass().getSimpleName(), result, e.getMessage());
-            if (debugEnabled) {
-                log.warn("checkForTimeouts(" + this + ") disconnect handler exception details", e);
-            }
+            warn("checkForTimeouts({}) failed ({}) to invoke disconnect handler to handle {}: {}",
+                    this, e.getClass().getSimpleName(), result, e.getMessage(), e);
         }
 
         if (resetTimeout) {
@@ -571,11 +568,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.error("Failed ({}) to announce session={} established: {}",
-                    e.getClass().getSimpleName(), ioSession, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("Session=" + ioSession + " establish failure details", e);
-            }
+            debug("Failed ({}) to announce session={} established: {}",
+                    e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
             if (e instanceof Exception) {
                 throw (Exception) e;
             } else {
@@ -599,11 +593,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.error("Failed ({}) to announce session={} created: {}",
-                    e.getClass().getSimpleName(), ioSession, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("Session=" + ioSession + " creation failure details", e);
-            }
+            debug("Failed ({}) to announce session={} created: {}",
+                    e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
             if (e instanceof Exception) {
                 throw (Exception) e;
             } else {
@@ -627,11 +618,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.error("signalPeerIdentificationReceived({}) Failed ({}) to announce peer={}: {}",
-                    this, e.getClass().getSimpleName(), version, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("signalPeerIdentificationReceived(" + this + ")[" + version + "] failure details", e);
-            }
+            debug("signalPeerIdentificationReceived({}) Failed ({}) to announce peer={}: {}",
+                    this, e.getClass().getSimpleName(), version, e.getMessage(), e);
             if (e instanceof Exception) {
                 throw (Exception) e;
             } else {
@@ -663,11 +651,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable t = GenericUtils.peelException(err);
-            log.error("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
-                    this, event, t.getClass().getSimpleName(), t.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("sendSessionEvent(" + this + ")[" + event + "] listener inform details", t);
-            }
+            debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
+                    this, event, t.getClass().getSimpleName(), t.getMessage(), t);
             if (t instanceof IOException) {
                 throw (IOException) t;
             } else if (t instanceof RuntimeException) {
@@ -1069,14 +1054,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                             SessionHelper.this, SshConstants.getDisconnectReasonName(reason), msg);
                 }
             } else {
-                log.warn("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
-                        SessionHelper.this, t.getClass().getSimpleName(),
-                        SshConstants.getDisconnectReasonName(reason), msg, t.getMessage());
-
                 if (debugEnabled) {
-                    log.warn("disconnect(" + SessionHelper.this + ")"
-                             + " reason=" + SshConstants.getDisconnectReasonName(reason) + " failure details",
-                            t);
+                    debug("disconnect({}) operation failed ({}) for reason={} [{}]: {}",
+                            SessionHelper.this, t.getClass().getSimpleName(),
+                            SshConstants.getDisconnectReasonName(reason), msg, t.getMessage(), t);
                 }
             }
 
@@ -1116,16 +1097,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("signalDisconnect(" + this + ") signal session disconnect details", e);
-
-            if (log.isDebugEnabled()) {
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.warn("signalDisconnect(" + this + ") suppressed session disconnect signalling", s);
-                    }
-                }
-            }
+            debug("signalDisconnect({}) {}: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 
@@ -1148,33 +1121,14 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     public void exceptionCaught(Throwable t) {
         State curState = state.get();
         // Ignore exceptions that happen while closing immediately
-        boolean debugEnabled = log.isDebugEnabled();
         if ((!State.Opened.equals(curState)) && (!State.Graceful.equals(curState))) {
-            log.warn("exceptionCaught({}) ignore {} due to state={}, message='{}'",
-                    this, t.getClass().getSimpleName(), curState, t.getMessage());
-            if (debugEnabled) {
-                log.warn("exceptionCaught(" + this + ")[state=" + curState + "] ignored exception details", t);
-            }
+            debug("exceptionCaught({}) ignore {} due to state={}, message='{}'",
+                    this, t.getClass().getSimpleName(), curState, t.getMessage(), t);
             return;
         }
 
-        log.warn("exceptionCaught({})[state={}] {}: {}",
-                this, curState, t.getClass().getSimpleName(), t.getMessage());
-        Throwable cause = t.getCause();
-        if ((cause != null) && GenericUtils.isSameReference(t, cause)) {
-            cause = null;
-        }
-        if (cause != null) {
-            log.warn("exceptionCaught({})[state={}] caused by {}: {}",
-                    this, curState, cause.getClass().getSimpleName(), cause.getMessage());
-        }
-
-        if (debugEnabled) {
-            log.warn("exceptionCaught(" + this + ")[state=" + curState + "] details", t);
-            if (cause != null) {
-                log.warn("exceptionCaught(" + this + ")[state=" + curState + "] cause", cause);
-            }
-        }
+        warn("exceptionCaught({})[state={}] {}: {}",
+                this, curState, t.getClass().getSimpleName(), t.getMessage(), t);
 
         signalExceptionCaught(t);
 
@@ -1184,13 +1138,9 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 try {
                     disconnect(code, t.getMessage());
                 } catch (Throwable t2) {
-                    log.warn("exceptionCaught({}) {} while disconnect with code={}: {}",
-                            this, t2.getClass().getSimpleName(), SshConstants.getDisconnectReasonName(code), t2.getMessage());
-                    if (debugEnabled) {
-                        log.warn("exceptionCaught(" + this + ")[code=" + SshConstants.getDisconnectReasonName(code)
-                                 + "] disconnect exception details",
-                                t2);
-                    }
+                    debug("exceptionCaught({}) {} while disconnect with code={}: {}",
+                            this, t2.getClass().getSimpleName(), SshConstants.getDisconnectReasonName(code), t2.getMessage(),
+                            t2);
                 }
                 return;
             }
@@ -1207,18 +1157,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("signalExceptionCaught({}) {}: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("signalExceptionCaught(" + this + ") signal session exception details", e);
-
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.warn("signalExceptionCaught(" + this + ") suppressed session exception signalling", s);
-                    }
-                }
-            }
+            debug("signalExceptionCaught({}) {}: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 
@@ -1238,18 +1178,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             });
         } catch (Throwable err) {
             Throwable e = GenericUtils.peelException(err);
-            log.warn("signalSessionClosed({}) {} while signal session closed: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("signalSessionClosed(" + this + ") signal session closed exception details", e);
-
-                Throwable[] suppressed = e.getSuppressed();
-                if (GenericUtils.length(suppressed) > 0) {
-                    for (Throwable s : suppressed) {
-                        log.warn("signalSessionClosed(" + this + ") suppressed session closed signalling", s);
-                    }
-                }
-            }
+            debug("signalSessionClosed({}) {} while signal session closed: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 

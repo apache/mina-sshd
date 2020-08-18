@@ -717,11 +717,8 @@ public class DefaultForwarder
                 return null;
             }
         } catch (Error e) {
-            log.warn("localPortForwardingRequested({})[{}] failed ({}) to consult forwarding filter: {}",
-                    session, local, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("localPortForwardingRequested(" + session + ")[" + local + "] filter consultation failure details", e);
-            }
+            warn("localPortForwardingRequested({})[{}] failed ({}) to consult forwarding filter: {}",
+                    session, local, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -1030,8 +1027,6 @@ public class DefaultForwarder
     @SuppressWarnings("synthetic-access")
     class StaticIoHandler implements IoHandler {
         private final AtomicLong messagesCounter = new AtomicLong(0L);
-        private final boolean debugEnabled = log.isDebugEnabled();
-        private final boolean traceEnabled = log.isTraceEnabled();
 
         StaticIoHandler() {
             super();
@@ -1060,7 +1055,7 @@ public class DefaultForwarder
                 }
 
                 if (localEntry != null) {
-                    if (debugEnabled) {
+                    if (log.isDebugEnabled()) {
                         log.debug("sessionCreated({})[local={}, remote={}, accepted={}] localEntry={}",
                                 session, local, remote, accepted, localEntry);
                     }
@@ -1070,7 +1065,7 @@ public class DefaultForwarder
                             session, local, remote, accepted);
                 }
             } else {
-                if (debugEnabled) {
+                if (log.isDebugEnabled()) {
                     log.debug("sessionCreated({}) local={}, remote={}", session, local, remote);
                 }
             }
@@ -1079,11 +1074,8 @@ public class DefaultForwarder
             channel.open().addListener(future -> {
                 Throwable t = future.getException();
                 if (t != null) {
-                    log.warn("Failed ({}) to open channel for session={}: {}",
-                            t.getClass().getSimpleName(), session, t.getMessage());
-                    if (debugEnabled) {
-                        log.debug("sessionCreated(" + session + ") channel=" + channel + " open failure details", t);
-                    }
+                    warn("Failed ({}) to open channel for session={}: {}",
+                            t.getClass().getSimpleName(), session, t.getMessage(), t);
                     DefaultForwarder.this.service.unregisterChannel(channel);
                     channel.close(false);
                 }
@@ -1094,7 +1086,7 @@ public class DefaultForwarder
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.removeAttribute(TcpipClientChannel.class);
             Throwable cause = (Throwable) session.removeAttribute(TcpipForwardingExceptionMarker.class);
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
                         session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
             }
@@ -1136,6 +1128,7 @@ public class DefaultForwarder
             Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
             buffer.putBuffer(message);
 
+            boolean traceEnabled = log.isTraceEnabled();
             if (traceEnabled) {
                 log.trace("messageReceived({}) channel={}, count={}, handle len={}",
                         session, channel, totalMessages, message.available());
@@ -1147,9 +1140,9 @@ public class DefaultForwarder
                 try {
                     exceptionCaught(session, e);
                 } catch (Exception err) {
-                    log.warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
+                    warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
                             session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
-                            e.getMessage(), channel, err.getMessage());
+                            e.getMessage(), channel, err.getMessage(), err);
                 }
             };
 
@@ -1163,10 +1156,7 @@ public class DefaultForwarder
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             session.setAttribute(TcpipForwardingExceptionMarker.class, cause);
-            log.warn("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage());
-            if (debugEnabled) {
-                log.warn("exceptionCaught(" + session + ") caught exception details", cause);
-            }
+            warn("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage(), cause);
             session.close(true);
         }
     }

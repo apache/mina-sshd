@@ -280,11 +280,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                     return;
                 }
             } catch (IOException | RuntimeException e) {
-                log.warn("startService({})[{}] failed ({}) to invoke disconnect handler: {}",
-                        this, name, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.warn("startService(" + this + ")[" + name + "] disconnect handler invocation exception details", e);
-                }
+                warn("startService({})[{}] failed ({}) to invoke disconnect handler: {}",
+                        this, name, e.getClass().getSimpleName(), e.getMessage(), e);
             }
 
             throw new SshException(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unknown service: " + name);
@@ -351,11 +348,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 return;
             }
         } catch (IOException | RuntimeException e) {
-            log.warn("handleServiceAccept({}) failed ({}) to invoke disconnect handler of unknown service={}: {}",
-                    this, e.getClass().getSimpleName(), serviceName, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("handleServiceAccept(" + this + ")[" + serviceName + "] handler invocation exception details", e);
-            }
+            warn("handleServiceAccept({}) failed ({}) to invoke disconnect handler of unknown service={}: {}",
+                    this, e.getClass().getSimpleName(), serviceName, e.getMessage(), e);
         }
 
         // TODO: can services be initiated by the server-side ?
@@ -407,11 +401,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 }
             }
         } catch (Error e) {
-            log.warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.warn("resolveAvailableSignaturesProposal(" + this + ") fetch key types failure details", e);
-            }
+            warn("resolveAvailableSignaturesProposal({}) failed ({}) to get key types: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
 
             throw new RuntimeSshException(e);
         }
@@ -459,11 +450,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                     return false; // more data required
                 }
             } catch (Throwable t) {
-                log.warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
-                        this, t.getClass().getSimpleName(), t.getMessage());
-                if (debugEnabled) {
-                    log.warn("readIdentification(" + this + ") proxy metadata acceptance failure details", t);
-                }
+                warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
+                        this, t.getClass().getSimpleName(), t.getMessage(), t);
 
                 if (t instanceof IOException) {
                     throw (IOException) t;
@@ -553,11 +541,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
             return provider.loadKey(this, keyType);
         } catch (IOException | GeneralSecurityException | Error e) {
-            log.warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
-                    this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("getHostKey(" + this + ") " + proposedKey + "[" + keyType + "] key load failure details", e);
-            }
+            warn("getHostKey({}) failed ({}) to load key of type={}[{}]: {}",
+                    this, e.getClass().getSimpleName(), proposedKey, keyType, e.getMessage(), e);
 
             throw new RuntimeSshException(e);
         }

@@ -77,11 +77,8 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             try {
                 packetWriter.close();
             } catch (IOException e) {
-                log.error("preClose({}) Failed ({}) to pre-close packet writer: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error("preClose(" + this + ") packet writer close exception details", e);
-                }
+                error("preClose({}) Failed ({}) to pre-close packet writer: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
             }
         }
 
@@ -204,13 +201,8 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
         } else {
             Throwable reason = f.getException();
-            if (log.isDebugEnabled()) {
-                log.debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
-                        this, reason.getClass().getSimpleName(), length, total, reason.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("onWritten(" + this + ") write failure details", reason);
-            }
+            debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
+                    this, reason.getClass().getSimpleName(), length, total, reason.getMessage(), reason);
             boolean nullified = pendingWrite.compareAndSet(future, null);
             if (log.isTraceEnabled()) {
                 log.trace("onWritten({}) failed write len={}, more={}",

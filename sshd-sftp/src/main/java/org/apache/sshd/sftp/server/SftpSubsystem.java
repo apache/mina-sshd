@@ -276,11 +276,8 @@ public class SftpSubsystem
         } catch (Throwable t) {
             if (!closed.get()) { // Ignore
                 Session session = getServerSession();
-                log.error("run({}) {} caught in SFTP subsystem: {}",
-                        session, t.getClass().getSimpleName(), t.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.error("run(" + session + ") caught exception details", t);
-                }
+                error("run({}) {} caught in SFTP subsystem: {}",
+                        session, t.getClass().getSimpleName(), t.getMessage(), t);
             }
         } finally {
             closeAllHandles();
@@ -965,11 +962,8 @@ public class SftpSubsystem
             SftpEventListener listener = getSftpEventListenerProxy();
             listener.destroying(session);
         } catch (Exception e) {
-            log.warn("destroy({}) Failed ({}) to announce destruction event: {}",
-                    session, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.warn("destroy(" + session + ") destruction announcement failure details", e);
-            }
+            warn("destroy({}) Failed ({}) to announce destruction event: {}",
+                    session, e.getClass().getSimpleName(), e.getMessage(), e);
         }
 
         // if thread has not completed, cancel it

@@ -105,10 +105,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
         Assert.assertTrue("Same channel instance re-failed: " + channel, failedChannels.add(channel));
         failedChannelsCounter.release();
         modificationsCounter.release();
-        log.warn("channelOpenFailure({}) {} : {}", channel, reason.getClass().getSimpleName(), reason.getMessage());
-        if (log.isDebugEnabled()) {
-            log.debug("channelOpenFailure(" + channel + ") details", reason);
-        }
+        warn("channelOpenFailure({}) {} : {}", channel, reason.getClass().getSimpleName(), reason.getMessage(), reason);
     }
 
     public boolean waitForFailedChannelsChange(long timeout, TimeUnit unit) throws InterruptedException {

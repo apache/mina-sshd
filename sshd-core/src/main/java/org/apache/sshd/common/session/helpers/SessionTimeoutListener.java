@@ -58,13 +58,8 @@ public class SessionTimeoutListener
 
     @Override
     public void sessionException(Session session, Throwable t) {
-        if (log.isDebugEnabled()) {
-            log.debug("sessionException({}) {}: {}",
-                    session, t.getClass().getSimpleName(), t.getMessage());
-        }
-        if (log.isTraceEnabled()) {
-            log.trace("sessionException(" + session + ") details", t);
-        }
+        debug("sessionException({}) {}: {}",
+                session, t.getClass().getSimpleName(), t.getMessage(), t);
         sessionClosed(session);
     }
 
@@ -84,17 +79,12 @@ public class SessionTimeoutListener
 
     @Override
     public void run() {
-        boolean debugEnabled = log.isDebugEnabled();
         for (SessionHelper session : sessions) {
             try {
                 session.checkForTimeouts();
             } catch (Exception e) {
-                log.warn(e.getClass().getSimpleName() + " while checking"
-                         + " session=" + session + " timeouts: " + e.getMessage(),
+                warn("run({}) {} while checking timeouts: {}", session, e.getClass().getSimpleName(), e.getMessage(),
                         e);
-                if (debugEnabled) {
-                    log.warn("Session " + session + " timeouts check exception details", e);
-                }
             }
         }
     }
