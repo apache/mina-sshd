@@ -657,6 +657,8 @@
                             <exclude>src/test/resources/**</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
+                            <!-- formatter plugin cache folder -->
+                            <exclude>**/.cache/**</exclude>
                             <exclude>*checkstyle*</exclude>
                             <exclude>*findbugs*</exclude>
                             <exclude>*suppressions*</exclude>
@@ -1039,8 +1041,12 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.11.0</version>
+                    <version>2.12.1</version>
                     <configuration>
+                        <skipXmlFormatting>true</skipXmlFormatting>
+                        <skipHtmlFormatting>true</skipHtmlFormatting>
+                        <skipJsonFormatting>true</skipJsonFormatting>	
+                        <cachedir>${project.build.outputDirectory}${file.separator}.cache</cachedir>
                         <configFile>${workspace.root.dir}${file.separator}sshd-eclipse-formatter-config.xml</configFile>
                         <lineEnding>LF</lineEnding>
                     </configuration>

@@ -19,6 +19,10 @@ RemoteSystemsTempFiles/
 .springBeans
 .externalToolBuilders
 
+# Maven formatter plugin
+*/.cache/
+.cache/
+
 # Pre-release temporary files
 *.releaseBackup
 release.properties
