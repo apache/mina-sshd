@@ -144,4 +144,12 @@ public class SelectorUtilsTest extends JUnitTestSupport {
         }
     }
 
+    @Test
+    public void testConcatPathsOneEmptyOrNull() {
+        String path = getCurrentTestName();
+        assertSame("Null 1st", path, SelectorUtils.concatPaths(null, path, File.separatorChar));
+        assertSame("Empty 1st", path, SelectorUtils.concatPaths("", path, File.separatorChar));
+        assertSame("Null 2nd", path, SelectorUtils.concatPaths(path, null, File.separatorChar));
+        assertSame("Empty 2nd", path, SelectorUtils.concatPaths(path, "", File.separatorChar));
+    }
 }

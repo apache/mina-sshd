@@ -111,7 +111,7 @@ public class ScpTimestampCommandDetails extends AbstractScpCommandDetails {
      * @see                          <A HREF="https://blogs.oracle.com/janp/entry/how_the_scp_protocol_works">How the
      *                               SCP protocol works</A>
      */
-    public static ScpTimestampCommandDetails parseTime(String line) throws NumberFormatException {
+    public static ScpTimestampCommandDetails parse(String line) throws NumberFormatException {
         return GenericUtils.isEmpty(line) ? null : new ScpTimestampCommandDetails(line);
     }
 }

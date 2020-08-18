@@ -22,6 +22,7 @@ package org.apache.sshd.scp.client;
 import java.io.IOException;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
@@ -64,5 +65,41 @@ public interface ScpRemote2RemoteTransferListener {
             ClientSession dstSession, String destination,
             ScpTimestampCommandDetails timestamp, ScpReceiveFileCommandDetails details,
             long xferSize, Throwable thrown)
+            throws IOException;
+
+    /**
+     * Indicates start of direct directory transfer
+     *
+     * @param  srcSession  The source {@link ClientSession}
+     * @param  source      The source path
+     * @param  dstSession  The destination {@link ClientSession}
+     * @param  destination The destination path
+     * @param  timestamp   The {@link ScpTimestampCommandDetails timestamp} of the directory - may be {@code null}
+     * @param  details     The {@link ScpReceiveDirCommandDetails details} of the attempted directory transfer
+     * @throws IOException If failed to handle the callback
+     */
+    void startDirectDirectoryTransfer(
+            ClientSession srcSession, String source,
+            ClientSession dstSession, String destination,
+            ScpTimestampCommandDetails timestamp, ScpReceiveDirCommandDetails details)
+            throws IOException;
+
+    /**
+     * Indicates end of direct file transfer
+     *
+     * @param  srcSession  The source {@link ClientSession}
+     * @param  source      The source path
+     * @param  dstSession  The destination {@link ClientSession}
+     * @param  destination The destination path
+     * @param  timestamp   The {@link ScpTimestampCommandDetails timestamp} of the directory - may be {@code null}
+     * @param  details     The {@link ScpReceiveDirCommandDetails details} of the attempted directory transfer
+     * @param  thrown      Error thrown during transfer attempt - {@code null} if successful
+     * @throws IOException If failed to handle the callback
+     */
+    void endDirectDirectoryTransfer(
+            ClientSession srcSession, String source,
+            ClientSession dstSession, String destination,
+            ScpTimestampCommandDetails timestamp, ScpReceiveDirCommandDetails details,
+            Throwable thrown)
             throws IOException;
 }

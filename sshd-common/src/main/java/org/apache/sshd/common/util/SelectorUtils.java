@@ -477,7 +477,7 @@ public final class SelectorUtils {
 
     /**
      * Tests whether two characters are equal.
-     * 
+     *
      * @param  c1              1st character
      * @param  c2              2nd character
      * @param  isCaseSensitive Whether to compare case sensitive
@@ -520,7 +520,7 @@ public final class SelectorUtils {
      * /** Converts a path to one matching the target file system by applying the &quot;slashification&quot; rules,
      * converting it to a local path and then translating its separator to the target file system one (if different than
      * local one)
-     * 
+     *
      * @param  path          The input path
      * @param  pathSeparator The separator used to build the input path
      * @param  fs            The target {@link FileSystem} - may not be {@code null}
@@ -536,7 +536,7 @@ public final class SelectorUtils {
      * Converts a path to one matching the target file system by applying the &quot;slashification&quot; rules,
      * converting it to a local path and then translating its separator to the target file system one (if different than
      * local one)
-     * 
+     *
      * @param  path          The input path
      * @param  pathSeparator The separator used to build the input path
      * @param  fsSeparator   The target file system separator
@@ -559,7 +559,7 @@ public final class SelectorUtils {
      * Specification version 3, section 3.266</A> and
      * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11">section 4.11 -
      * Pathname resolution</A>
-     * 
+     *
      * @param  path    The original path - ignored if {@code null}/empty or does not contain any slashes
      * @param  sepChar The &quot;slash&quot; character
      * @return         The effective path - may be same as input if no changes required
@@ -693,7 +693,7 @@ public final class SelectorUtils {
 
     /**
      * Converts a path containing a specific separator to one using the specified file-system one
-     * 
+     *
      * @param  path          The input path - ignored if {@code null}/empty
      * @param  pathSeparator The separator used to build the input path - may not be {@code null}/empty
      * @param  fs            The target {@link FileSystem} - may not be {@code null}
@@ -709,7 +709,7 @@ public final class SelectorUtils {
 
     /**
      * Converts a path containing a specific separator to one using the specified file-system one
-     * 
+     *
      * @param  path                     The input path - ignored if {@code null}/empty
      * @param  pathSeparator            The separator used to build the input path - may not be {@code null}/empty
      * @param  fsSeparator              The target file system separator - may not be {@code null}/empty
@@ -738,6 +738,33 @@ public final class SelectorUtils {
             return path.replace(pathSeparator.charAt(0), fsSeparator.charAt(0));
         } else {
             return path.replace(pathSeparator, fsSeparator);
+        }
+    }
+
+    /**
+     * Creates a single path by concatenating 2 parts and taking care not to create FS separator duplication in the
+     * process
+     *
+     * @param  p1          prefix part - ignored if {@code null}/empty
+     * @param  p2          suffix part - ignored if {@code null}/empty
+     * @param  fsSeparator The expected file-system separator
+     * @return             Concatenation result
+     */
+    public static String concatPaths(String p1, String p2, char fsSeparator) {
+        if (GenericUtils.isEmpty(p1)) {
+            return p2;
+        } else if (GenericUtils.isEmpty(p2)) {
+            return p1;
+        } else if (p1.charAt(p1.length() - 1) == fsSeparator) {
+            if (p2.charAt(0) == fsSeparator) {
+                return (p2.length() == 1) ? p1 : p1 + p2.substring(1); // a/b/c/  + /d/e/f
+            } else {
+                return p1 + p2;     // a/b/c/ + d/e/f
+            }
+        } else if (p2.charAt(0) == fsSeparator) {
+            return (p2.length() == 1) ? p1 : p1 + p2; // /a/b/c + /d/e/f
+        } else {
+            return p1 + Character.toString(fsSeparator) + p2;    // /a/b/c + d/e/f
         }
     }
 

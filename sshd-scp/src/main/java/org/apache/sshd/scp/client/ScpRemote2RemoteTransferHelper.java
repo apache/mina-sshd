@@ -28,15 +28,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.client.ScpClient.Option;
 import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpDirEndCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpIoUtils;
+import org.apache.sshd.scp.common.helpers.ScpPathCommandDetailsSupport;
+import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
@@ -88,8 +93,27 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     public void transferFile(String source, String destination, boolean preserveAttributes) throws IOException {
         Collection<Option> options = preserveAttributes
                 ? Collections.unmodifiableSet(EnumSet.of(Option.PreserveAttributes))
-                : Collections.emptySet()
-                ;
+                : Collections.emptySet();
+        executeTransfer(source, options, destination, options);
+    }
+
+    /**
+     * Transfers a directory
+     *
+     * @param  source             Source path in the source session
+     * @param  destination        Destination path in the destination session
+     * @param  preserveAttributes Whether to preserve the attributes of the transferred file (e.g., permissions, file
+     *                            associated timestamps, etc.)
+     * @throws IOException        If failed to transfer
+     */
+    public void transferDirectory(String source, String destination, boolean preserveAttributes)
+            throws IOException {
+        Set<Option> options = EnumSet.of(Option.TargetIsDirectory, Option.Recursive);
+        if (preserveAttributes) {
+            options.add(Option.PreserveAttributes);
+        }
+
+        options = Collections.unmodifiableSet(options);
         executeTransfer(source, options, destination, options);
     }
 
@@ -100,6 +124,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         String srcCmd = ScpClient.createReceiveCommand(source, srcOptions);
         ClientSession srcSession = getSourceSession();
         ClientSession dstSession = getDestinationSession();
+
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("executeTransfer({})[srcCmd='{}']) {} => {}",
@@ -120,77 +145,254 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
                  OutputStream dstOut = dstChannel.getInvertedIn()) {
                 int statusCode = transferStatusCode("XFER-CMD", dstIn, srcOut);
                 ScpIoUtils.validateCommandStatusCode("XFER-CMD", "executeTransfer", statusCode, false);
-                redirectReceivedFile(source, srcIn, srcOut, destination, dstIn, dstOut);
+
+                if (srcOptions.contains(Option.TargetIsDirectory) || dstOptions.contains(Option.TargetIsDirectory)) {
+                    redirectDirectoryTransfer(source, srcIn, srcOut, destination, dstIn, dstOut, 0);
+                } else {
+                    redirectFileTransfer(source, srcIn, srcOut, destination, dstIn, dstOut);
+                }
             } finally {
                 dstChannel.close(false);
             }
         } finally {
             srcChannel.close(false);
         }
-
     }
 
-    protected long redirectReceivedFile(
+    protected long redirectFileTransfer(
             String source, InputStream srcIn, OutputStream srcOut,
             String destination, InputStream dstIn, OutputStream dstOut)
             throws IOException {
         boolean debugEnabled = log.isDebugEnabled();
         String header = ScpIoUtils.readLine(srcIn, false);
         if (debugEnabled) {
-            log.debug("redirectReceivedFile({}) header={}", this, header);
+            log.debug("redirectFileTransfer({}) {} => {}: header={}", this, source, destination, header);
         }
 
-        char cmdName = header.charAt(0);
         ScpTimestampCommandDetails time = null;
-        if (cmdName == ScpTimestampCommandDetails.COMMAND_NAME) {
+        if (header.charAt(0) == ScpTimestampCommandDetails.COMMAND_NAME) {
             // Pass along the "T<mtime> 0 <atime> 0" and wait for response
-            time = ScpTimestampCommandDetails.parseTime(header);
-            // Read the next command - which must be a 'C' command
-            header = transferTimestampCommand(source, srcIn, srcOut, destination, dstIn, dstOut, time);
-            cmdName = header.charAt(0);
+            time = new ScpTimestampCommandDetails(header);
+            signalReceivedCommand(time);
+
+            header = transferTimestampCommand(source, srcIn, srcOut, destination, dstIn, dstOut, header);
+            if (debugEnabled) {
+                log.debug("redirectFileTransfer({}) {} => {}: header={}", this, source, destination, header);
+            }
         }
 
-        if (cmdName != ScpReceiveFileCommandDetails.COMMAND_NAME) {
-            throw new StreamCorruptedException("Unexpected file command: " + header);
+        return handleFileTransferRequest(source, srcIn, srcOut, destination, dstIn, dstOut, time, header);
+    }
+
+    protected long handleFileTransferRequest(
+            String source, InputStream srcIn, OutputStream srcOut,
+            String destination, InputStream dstIn, OutputStream dstOut,
+            ScpTimestampCommandDetails fileTime, String header)
+            throws IOException {
+        if (header.charAt(0) != ScpReceiveFileCommandDetails.COMMAND_NAME) {
+            throw new IllegalArgumentException("Invalid file transfer request: " + header);
         }
 
-        ScpReceiveFileCommandDetails details = new ScpReceiveFileCommandDetails(header);
-        signalReceivedCommand(details);
-
-        // Pass along the "Cmmmm <length> <filename" command and wait for ACK
         ScpIoUtils.writeLine(dstOut, header);
         int statusCode = transferStatusCode(header, dstIn, srcOut);
-        ScpIoUtils.validateCommandStatusCode("[DST] " + header, "redirectReceivedFile", statusCode, false);
-        // Wait with ACK ready for transfer until ready to transfer data
-        long xferCount = transferFileData(source, srcIn, srcOut, destination, dstIn, dstOut, time, details);
+        ScpIoUtils.validateCommandStatusCode("[DST] " + header, "handleFileTransferRequest", statusCode, false);
+
+        ScpReceiveFileCommandDetails fileDetails = new ScpReceiveFileCommandDetails(header);
+        signalReceivedCommand(fileDetails);
+
+        ClientSession srcSession = getSourceSession();
+        ClientSession dstSession = getDestinationSession();
+        if (listener != null) {
+            listener.startDirectFileTransfer(srcSession, source, dstSession, destination, fileTime, fileDetails);
+        }
+
+        long xferCount;
+        try {
+            xferCount = transferSimpleFile(source, srcIn, srcOut, destination, dstIn, dstOut, header, fileDetails.getLength());
+        } catch (IOException | RuntimeException | Error e) {
+            if (listener != null) {
+                listener.endDirectFileTransfer(srcSession, source, dstSession, destination, fileTime, fileDetails, 0L, e);
+            }
+            throw e;
+        }
+
+        if (listener != null) {
+            listener.endDirectFileTransfer(srcSession, source, dstSession, destination, fileTime, fileDetails, xferCount, null);
+        }
+
+        return xferCount;
+    }
+
+    protected void redirectDirectoryTransfer(
+            String source, InputStream srcIn, OutputStream srcOut,
+            String destination, InputStream dstIn, OutputStream dstOut,
+            int depth)
+            throws IOException {
+        boolean debugEnabled = log.isDebugEnabled();
+        String header = ScpIoUtils.readLine(srcIn, false);
+        if (debugEnabled) {
+            log.debug("redirectDirectoryTransfer({})[depth={}] {} => {}: header={}",
+                    this, depth, source, destination, header);
+        }
+
+        ScpTimestampCommandDetails time = null;
+        if (header.charAt(0) == ScpTimestampCommandDetails.COMMAND_NAME) {
+            // Pass along the "T<mtime> 0 <atime> 0" and wait for response
+            time = new ScpTimestampCommandDetails(header);
+            signalReceivedCommand(time);
+
+            header = transferTimestampCommand(source, srcIn, srcOut, destination, dstIn, dstOut, header);
+            if (debugEnabled) {
+                log.debug("redirectDirectoryTransfer({})[depth={}] {} => {}: header={}",
+                        this, depth, source, destination, header);
+            }
+        }
+
+        handleDirectoryTransferRequest(source, srcIn, srcOut, destination, dstIn, dstOut, depth, time, header);
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    protected void handleDirectoryTransferRequest(
+            String srcPath, InputStream srcIn, OutputStream srcOut,
+            String dstPath, InputStream dstIn, OutputStream dstOut,
+            int depth, ScpTimestampCommandDetails dirTime, String header)
+            throws IOException {
+        if (header.charAt(0) != ScpReceiveDirCommandDetails.COMMAND_NAME) {
+            throw new IllegalArgumentException("Invalid file transfer request: " + header);
+        }
+
+        ScpIoUtils.writeLine(dstOut, header);
+        int statusCode = transferStatusCode(header, dstIn, srcOut);
+        ScpIoUtils.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest", statusCode,
+                false);
+
+        ScpReceiveDirCommandDetails dirDetails = new ScpReceiveDirCommandDetails(header);
+        signalReceivedCommand(dirDetails);
+
+        String dirName = dirDetails.getName();
+        // 1st command refers to the first path component of the original source/destination
+        String source = (depth == 0) ? srcPath : SelectorUtils.concatPaths(srcPath, dirName, '/');
+        String destination = (depth == 0) ? dstPath : SelectorUtils.concatPaths(dstPath, dirName, '/');
+
+        ClientSession srcSession = getSourceSession();
+        ClientSession dstSession = getDestinationSession();
+        if (listener != null) {
+            listener.startDirectDirectoryTransfer(srcSession, source, dstSession, destination, dirTime, dirDetails);
+        }
+
+        try {
+            for (boolean debugEnabled = log.isDebugEnabled(), dirEndSignal = false;
+                 !dirEndSignal;
+                 debugEnabled = log.isDebugEnabled()) {
+                header = ScpIoUtils.readLine(srcIn, false);
+                if (debugEnabled) {
+                    log.debug("handleDirectoryTransferRequest({})[depth={}] {} => {}: header={}",
+                            this, depth, source, destination, header);
+                }
+
+                ScpTimestampCommandDetails time = null;
+                char cmdName = header.charAt(0);
+                if (cmdName == ScpTimestampCommandDetails.COMMAND_NAME) {
+                    // Pass along the "T<mtime> 0 <atime> 0" and wait for response
+                    time = new ScpTimestampCommandDetails(header);
+                    signalReceivedCommand(time);
+
+                    header = transferTimestampCommand(source, srcIn, srcOut, destination, dstIn, dstOut, header);
+                    if (debugEnabled) {
+                        log.debug("handleDirectoryTransferRequest({})[depth={}] {} => {}: header={}",
+                                this, depth, source, destination, header);
+                    }
+                    cmdName = header.charAt(0);
+                }
+
+                switch (cmdName) {
+                    case ScpReceiveFileCommandDetails.COMMAND_NAME:
+                    case ScpReceiveDirCommandDetails.COMMAND_NAME: {
+                        ScpPathCommandDetailsSupport subPathDetails = (cmdName == ScpReceiveFileCommandDetails.COMMAND_NAME)
+                                ? new ScpReceiveFileCommandDetails(header)
+                                : new ScpReceiveDirCommandDetails(header);
+                        String name = subPathDetails.getName();
+                        String srcSubPath = SelectorUtils.concatPaths(source, name, '/');
+                        String dstSubPath = SelectorUtils.concatPaths(destination, name, '/');
+                        if (cmdName == ScpReceiveFileCommandDetails.COMMAND_NAME) {
+                            handleFileTransferRequest(srcSubPath, srcIn, srcOut, dstSubPath, dstIn, dstOut, time, header);
+                        } else {
+                            handleDirectoryTransferRequest(srcSubPath, srcIn, srcOut, dstSubPath, dstIn, dstOut, depth + 1,
+                                    time, header);
+                        }
+                        break;
+                    }
+
+                    case ScpDirEndCommandDetails.COMMAND_NAME: {
+                        ScpIoUtils.writeLine(dstOut, header);
+                        statusCode = transferStatusCode(header, dstIn, srcOut);
+                        ScpIoUtils.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest",
+                                statusCode, false);
+
+                        ScpDirEndCommandDetails details = ScpDirEndCommandDetails.parse(header);
+                        signalReceivedCommand(details);
+                        dirEndSignal = true;
+                        break;
+                    }
+
+                    default:
+                        throw new StreamCorruptedException("Unexpected file command: " + header);
+                }
+            }
+        } catch (IOException | RuntimeException | Error e) {
+            if (listener != null) {
+                listener.endDirectDirectoryTransfer(srcSession, source, dstSession, destination, dirTime, dirDetails, e);
+            }
+            throw e;
+        }
+
+        if (listener != null) {
+            listener.endDirectDirectoryTransfer(srcSession, source, dstSession, destination, dirTime, dirDetails, null);
+        }
+    }
+
+    protected long transferSimpleFile(
+            String source, InputStream srcIn, OutputStream srcOut,
+            String destination, InputStream dstIn, OutputStream dstOut,
+            String header, long length)
+            throws IOException {
+        if (length < 0L) { // TODO consider throwing an exception...
+            log.warn("transferSimpleFile({})[{} => {}] bad length in header: {}",
+                    this, source, destination, header);
+        }
+
+        long xferCount;
+        try (InputStream inputStream = new LimitInputStream(srcIn, length)) {
+            ScpIoUtils.ack(srcOut); // ready to receive the data from source
+            xferCount = IoUtils.copy(inputStream, dstOut);
+            dstOut.flush(); // make sure all data sent to destination
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("transferSimpleFile({})[{} => {}] xfer {}/{}",
+                    this, source, destination, xferCount, length);
+        }
 
         // wait for source to signal data finished and pass it along
-        statusCode = transferStatusCode("SRC-EOF", srcIn, dstOut);
-        ScpIoUtils.validateCommandStatusCode("[SRC-EOF] " + header, "redirectReceivedFile", statusCode, false);
+        int statusCode = transferStatusCode("SRC-EOF", srcIn, dstOut);
+        ScpIoUtils.validateCommandStatusCode("[SRC-EOF] " + header, "transferSimpleFile", statusCode, false);
 
         // wait for destination to signal data received
         statusCode = ScpIoUtils.readAck(dstIn, false, log, "DST-EOF");
-        ScpIoUtils.validateCommandStatusCode("[DST-EOF] " + header, "redirectReceivedFile", statusCode, false);
+        ScpIoUtils.validateCommandStatusCode("[DST-EOF] " + header, "transferSimpleFile", statusCode, false);
         return xferCount;
     }
 
     protected String transferTimestampCommand(
             String source, InputStream srcIn, OutputStream srcOut,
             String destination, InputStream dstIn, OutputStream dstOut,
-            ScpTimestampCommandDetails time)
+            String header)
             throws IOException {
-        signalReceivedCommand(time);
-
-        String header = time.toHeader();
         ScpIoUtils.writeLine(dstOut, header);
         int statusCode = transferStatusCode(header, dstIn, srcOut);
         ScpIoUtils.validateCommandStatusCode("[DST] " + header, "transferTimestampCommand", statusCode, false);
 
         header = ScpIoUtils.readLine(srcIn, false);
-        if (log.isDebugEnabled()) {
-            log.debug("transferTimestampCommand({}) header={}", this, header);
-        }
-
         return header;
     }
 
@@ -216,46 +418,6 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         }
 
         return statusCode;
-    }
-
-    protected long transferFileData(
-            String source, InputStream srcIn, OutputStream srcOut,
-            String destination, InputStream dstIn, OutputStream dstOut,
-            ScpTimestampCommandDetails time, ScpReceiveFileCommandDetails details)
-            throws IOException {
-        long length = details.getLength();
-        if (length < 0L) { // TODO consider throwing an exception...
-            log.warn("transferFileData({})[{} => {}] bad length in header: {}",
-                    this, source, destination, details.toHeader());
-        }
-
-        ClientSession srcSession = getSourceSession();
-        ClientSession dstSession = getDestinationSession();
-        if (listener != null) {
-            listener.startDirectFileTransfer(srcSession, source, dstSession, destination, time, details);
-        }
-
-        long xferCount;
-        try (InputStream inputStream = new LimitInputStream(srcIn, length)) {
-            ScpIoUtils.ack(srcOut); // ready to receive the data from source
-            xferCount = IoUtils.copy(inputStream, dstOut);
-            dstOut.flush(); // make sure all data sent to destination
-        } catch (IOException | RuntimeException | Error e) {
-            if (listener != null) {
-                listener.endDirectFileTransfer(srcSession, source, dstSession, destination, time, details, 0L, e);
-            }
-            throw e;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("transferFileData({})[{} => {}] xfer {}/{} for {}",
-                    this, source, destination, xferCount, length, details.getName());
-        }
-        if (listener != null) {
-            listener.endDirectFileTransfer(srcSession, source, dstSession, destination, time, details, xferCount, null);
-        }
-
-        return xferCount;
     }
 
     // Useful "hook" for implementors

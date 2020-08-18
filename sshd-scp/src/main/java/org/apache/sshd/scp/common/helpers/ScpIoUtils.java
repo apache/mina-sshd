@@ -35,12 +35,10 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
-import org.apache.sshd.scp.common.ScpReceiveLineHandler;
 import org.slf4j.Logger;
 
 /**
@@ -181,75 +179,6 @@ public final class ScpIoUtils {
     public static void ack(OutputStream out) throws IOException {
         out.write(OK);
         out.flush();
-    }
-
-    /**
-     * Reads command line(s) and invokes the handler until EOF or and &quot;E&quot; command is received
-     *
-     * @param  session     The associated {@link Session}
-     * @param  in          The {@link InputStream} to read from
-     * @param  out         The {@link OutputStream} to write ACKs to
-     * @param  log         An optional {@link Logger} to use for issuing log messages - ignored if {@code null}
-     * @param  logHint     An optional hint to be used in the logged messages to identifier the caller's context
-     * @param  handler     The {@link ScpReceiveLineHandler} to invoke when a command has been read
-     * @throws IOException If failed to read/write
-     */
-    public static void receive(
-            Session session, InputStream in, OutputStream out, Logger log, Object logHint, ScpReceiveLineHandler handler)
-            throws IOException {
-        ack(out);
-
-        boolean debugEnabled = (log != null) && log.isDebugEnabled();
-        for (ScpTimestampCommandDetails time = null;;) {
-            String line;
-            boolean isDir = false;
-            int c = readAck(in, true, log, logHint);
-            switch (c) {
-                case -1:
-                    return;
-                case ScpReceiveDirCommandDetails.COMMAND_NAME:
-                    line = readLine(in);
-                    line = Character.toString((char) c) + line;
-                    isDir = true;
-                    if (debugEnabled) {
-                        log.debug("receive({}) - Received 'D' header: {}", logHint, line);
-                    }
-                    break;
-                case ScpReceiveFileCommandDetails.COMMAND_NAME:
-                    line = readLine(in);
-                    line = Character.toString((char) c) + line;
-                    if (debugEnabled) {
-                        log.debug("receive({}) - Received 'C' header: {}", logHint, line);
-                    }
-                    break;
-                case ScpTimestampCommandDetails.COMMAND_NAME:
-                    line = readLine(in);
-                    line = Character.toString((char) c) + line;
-                    if (debugEnabled) {
-                        log.debug("receive({}) - Received 'T' header: {}", logHint, line);
-                    }
-                    time = ScpTimestampCommandDetails.parseTime(line);
-                    ack(out);
-                    continue;
-                case ScpDirEndCommandDetails.COMMAND_NAME:
-                    line = readLine(in);
-                    line = Character.toString((char) c) + line;
-                    if (debugEnabled) {
-                        log.debug("receive({}) - Received 'E' header: {}", logHint, line);
-                    }
-                    ack(out);
-                    return;
-                default:
-                    // a real ack that has been acted upon already
-                    continue;
-            }
-
-            try {
-                handler.process(session, line, isDir, time);
-            } finally {
-                time = null;
-            }
-        }
     }
 
     public static <O extends OutputStream> O sendWarning(O out, String message) throws IOException {

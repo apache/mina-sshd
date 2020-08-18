@@ -19,6 +19,8 @@
 
 package org.apache.sshd.scp.common.helpers;
 
+import org.apache.sshd.common.util.GenericUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -63,5 +65,17 @@ public class ScpDirEndCommandDetails extends AbstractScpCommandDetails {
 
         // All ScpDirEndCommandDetails are equal to each other
         return true;
+    }
+
+    public static ScpDirEndCommandDetails parse(String header) {
+        if (GenericUtils.isEmpty(header)) {
+            return null;
+        }
+
+        if (HEADER.equals(header)) {
+            return INSTANCE;
+        }
+
+        throw new IllegalArgumentException("Invalid header: " + header);
     }
 }

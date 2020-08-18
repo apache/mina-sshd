@@ -160,8 +160,67 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         });
     }
 
+    /**
+     * Reads command line(s) and invokes the handler until EOF or and &quot;E&quot; command is received
+     *
+     * @param  handler     The {@link ScpReceiveLineHandler} to invoke when a command has been read
+     * @throws IOException If failed to read/write
+     */
     protected void receive(ScpReceiveLineHandler handler) throws IOException {
-        ScpIoUtils.receive(getSession(), in, out, log, this, handler);
+        ack();
+
+        boolean debugEnabled = log.isDebugEnabled();
+        Session session = getSession();
+        for (ScpTimestampCommandDetails time = null;; debugEnabled = log.isDebugEnabled()) {
+            String line;
+            boolean isDir = false;
+            int c = readAck(true);
+            switch (c) {
+                case -1:
+                    return;
+                case ScpReceiveDirCommandDetails.COMMAND_NAME:
+                    line = ScpIoUtils.readLine(in);
+                    line = Character.toString((char) c) + line;
+                    isDir = true;
+                    if (debugEnabled) {
+                        log.debug("receive({}) - Received 'D' header: {}", this, line);
+                    }
+                    break;
+                case ScpReceiveFileCommandDetails.COMMAND_NAME:
+                    line = ScpIoUtils.readLine(in);
+                    line = Character.toString((char) c) + line;
+                    if (debugEnabled) {
+                        log.debug("receive({}) - Received 'C' header: {}", this, line);
+                    }
+                    break;
+                case ScpTimestampCommandDetails.COMMAND_NAME:
+                    line = ScpIoUtils.readLine(in);
+                    line = Character.toString((char) c) + line;
+                    if (debugEnabled) {
+                        log.debug("receive({}) - Received 'T' header: {}", this, line);
+                    }
+                    time = ScpTimestampCommandDetails.parse(line);
+                    ack();
+                    continue;
+                case ScpDirEndCommandDetails.COMMAND_NAME:
+                    line = ScpIoUtils.readLine(in);
+                    line = Character.toString((char) c) + line;
+                    if (debugEnabled) {
+                        log.debug("receive({}) - Received 'E' header: {}", this, line);
+                    }
+                    ack();
+                    return;
+                default:
+                    // a real ack that has been acted upon already
+                    continue;
+            }
+
+            try {
+                handler.process(session, line, isDir, time);
+            } finally {
+                time = null;
+            }
+        }
     }
 
     public void receiveDir(String header, Path local, ScpTimestampCommandDetails time, boolean preserve, int bufferSize)
@@ -176,7 +235,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         ScpReceiveDirCommandDetails details = new ScpReceiveDirCommandDetails(header);
         String name = details.getName();
         long length = details.getLength();
-        if (length != 0) {
+        if (length != 0L) {
             throw new IOException("Expected 0 length for directory=" + name + " but got " + length);
         }
 
@@ -207,7 +266,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     ack();
                     break;
                 } else if (cmdChar == ScpTimestampCommandDetails.COMMAND_NAME) {
-                    time = ScpTimestampCommandDetails.parseTime(header);
+                    time = ScpTimestampCommandDetails.parse(header);
                     ack();
                 } else {
                     throw new IOException("Unexpected message: '" + header + "'");
