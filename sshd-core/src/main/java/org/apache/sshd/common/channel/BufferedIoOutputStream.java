@@ -91,11 +91,8 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         try {
             startWriting();
         } catch (IOException e) {
-            log.error("finishWrite({}) failed ({}) re-start writing: {}",
-                    out, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.error("finishWrite(" + out + ") exception details", e);
-            }
+            error("finishWrite({}) failed ({}) re-start writing: {}",
+                    out, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 

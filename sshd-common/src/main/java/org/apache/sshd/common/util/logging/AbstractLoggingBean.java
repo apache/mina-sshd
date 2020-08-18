@@ -50,7 +50,7 @@ public abstract class AbstractLoggingBean {
      */
     protected AbstractLoggingBean(String discriminator) {
         String name = getClass().getName();
-        if (GenericUtils.length(discriminator) > 0) {
+        if (GenericUtils.isNotEmpty(discriminator)) {
             name += "[" + discriminator + "]";
         }
         log = LoggerFactory.getLogger(name);
@@ -66,5 +66,93 @@ public abstract class AbstractLoggingBean {
         }
 
         return logger;
+    }
+
+    protected void debug(String message, Object o1, Object o2, Throwable t) {
+        LoggingUtils.debug(log, message, o1, o2, t);
+    }
+
+    protected void debug(String message, Object o1, Object o2, Object o3, Throwable t) {
+        LoggingUtils.debug(log, message, o1, o2, o3, t);
+    }
+
+    protected void debug(String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
+        LoggingUtils.debug(log, message, o1, o2, o3, o4, t);
+    }
+
+    protected void debug(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
+        LoggingUtils.debug(log, message, o1, o2, o3, o4, o5, t);
+    }
+
+    protected void debug(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
+        LoggingUtils.debug(log, message, o1, o2, o3, o4, o5, o6, t);
+    }
+
+    protected void info(String message, Object o1, Object o2, Throwable t) {
+        LoggingUtils.info(log, message, o1, o2, t);
+    }
+
+    protected void info(String message, Object o1, Object o2, Object o3, Throwable t) {
+        LoggingUtils.info(log, message, o1, o2, o3, t);
+    }
+
+    protected void warn(String message, Object o1, Object o2, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, t);
+    }
+
+    protected void warn(String message, Object o1, Object o2, Object o3, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, t);
+    }
+
+    protected void warn(String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, t);
+    }
+
+    protected void warn(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, o5, t);
+    }
+
+    protected void warn(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, o5, o6, t);
+    }
+
+    @SuppressWarnings("all")
+    protected void warn(
+            String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7, Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, o5, o6, o7, t);
+    }
+
+    @SuppressWarnings("all")
+    protected void warn(
+            String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7, Object o8,
+            Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, o5, o6, o7, o8, t);
+    }
+
+    @SuppressWarnings("all")
+    protected void warn(
+            String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7, Object o8, Object o9,
+            Throwable t) {
+        LoggingUtils.warn(log, message, o1, o2, o3, o4, o5, o6, o7, o8, o9, t);
+    }
+
+    protected void error(String message, Object o1, Object o2, Throwable t) {
+        LoggingUtils.error(log, message, o1, o2, t);
+    }
+
+    protected void error(String message, Object o1, Object o2, Object o3, Throwable t) {
+        LoggingUtils.error(log, message, o1, o2, o3, t);
+    }
+
+    protected void error(String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
+        LoggingUtils.error(log, message, o1, o2, o3, o4, t);
+    }
+
+    protected void error(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
+        LoggingUtils.error(log, message, o1, o2, o3, o4, o5, t);
+    }
+
+    protected void error(String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
+        LoggingUtils.error(log, message, o1, o2, o3, o4, o5, o6, t);
     }
 }

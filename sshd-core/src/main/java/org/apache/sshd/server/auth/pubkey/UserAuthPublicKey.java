@@ -120,12 +120,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             authed = authenticator.authenticate(username, key, session);
         } catch (Error e) {
-            log.warn("doAuth({}@{}) failed ({}) to consult delegate for {} key={}: {}",
-                    username, session, e.getClass().getSimpleName(), alg, KeyUtils.getFingerPrint(key), e.getMessage());
-            if (debugEnabled) {
-                log.debug("doAuth(" + username + "@" + session + ") delegate failure details", e);
-            }
-
+            warn("doAuth({}@{}) failed ({}) to consult delegate for {} key={}: {}",
+                    username, session, e.getClass().getSimpleName(), alg, KeyUtils.getFingerPrint(key), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

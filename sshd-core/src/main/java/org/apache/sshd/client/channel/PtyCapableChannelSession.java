@@ -118,13 +118,8 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         try {
             PtyChannelConfigurationMutator.setupSensitiveDefaultPtyConfiguration(this);
         } catch (Throwable t) {
-            if (log.isDebugEnabled()) {
-                log.debug("setupSensibleDefaultPty({}) Failed ({}) to setup: {}",
-                        this, t.getClass().getSimpleName(), t.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("setupSensibleDefaultPty(" + this + ") failure details", t);
-            }
+            debug("setupSensibleDefaultPty({}) Failed ({}) to setup: {}",
+                    this, t.getClass().getSimpleName(), t.getMessage(), t);
         }
     }
 

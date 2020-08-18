@@ -105,14 +105,8 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
             try {
                 session.close();
             } catch (Exception t) {
-                if (log.isDebugEnabled()) {
-                    log.debug("createScpClient({}) failed ({}) to close session: {}",
-                            session, t.getClass().getSimpleName(), t.getMessage());
-                }
-
-                if (log.isTraceEnabled()) {
-                    log.trace("createScpClient(" + session + ") session close failure details", t);
-                }
+                debug("createScpClient({}) failed ({}) to close session: {}",
+                        session, t.getClass().getSimpleName(), t.getMessage(), t);
                 e.addSuppressed(t);
             }
 

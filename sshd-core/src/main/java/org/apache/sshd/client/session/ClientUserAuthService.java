@@ -198,12 +198,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                     ui.welcome(session, welcome, lang);
                 }
             } catch (Error e) {
-                log.warn("process({}) failed ({}) to consult interaction: {}",
-                        session, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.debug("process(" + session + ") interaction consultation failure details", e);
-                }
-
+                warn("process({}) failed ({}) to consult interaction: {}",
+                        session, e.getClass().getSimpleName(), e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
         } else {

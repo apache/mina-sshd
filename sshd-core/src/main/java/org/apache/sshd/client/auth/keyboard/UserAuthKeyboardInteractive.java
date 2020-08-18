@@ -262,12 +262,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 return ui.interactive(session, name, instruction, lang, prompt, echo);
             }
         } catch (Error e) {
-            log.warn("getUserResponses({}) failed ({}) to consult interaction: {}",
-                    session, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("getUserResponses(" + session + ") interaction consultation failure details", e);
-            }
-
+            warn("getUserResponses({}) failed ({}) to consult interaction: {}",
+                    session, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

@@ -147,11 +147,8 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         try {
             shell.destroy(channel);
         } catch (Throwable e) {
-            log.warn("destroy({}) failed ({}) to destroy shell: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("destroy(" + this + ") shell destruction failure details", e);
-            }
+            warn("destroy({}) failed ({}) to destroy shell: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
             err = GenericUtils.accumulateException(err, e);
         }
 
@@ -159,11 +156,8 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             try {
                 ((ExecutorService) executor).shutdown();
             } catch (Exception e) {
-                log.warn("destroy({}) failed ({}) to shut down executor: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.debug("destroy(" + this + ") executor shutdown failure details", e);
-                }
+                warn("destroy({}) failed ({}) to shut down executor: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
                 err = GenericUtils.accumulateException(err, e);
             }
         }
@@ -212,11 +206,8 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             try {
                 shell.destroy(shell.getChannelSession());
             } catch (Throwable err) {
-                log.warn("pumpStreams({}) failed ({}) to destroy shell: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (debugEnabled) {
-                    log.debug("pumpStreams(" + this + ") shell destruction failure details", err);
-                }
+                warn("pumpStreams({}) failed ({}) to destroy shell: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
             }
 
             int exitValue = shell.exitValue();

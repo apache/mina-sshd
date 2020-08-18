@@ -162,11 +162,8 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         try {
             l.operationComplete(asT());
         } catch (Throwable t) {
-            log.warn("notifyListener({}) failed ({}) to invoke {}: {}",
-                    this, t.getClass().getSimpleName(), l, t.getMessage());
-            if (debugEnabled) {
-                log.debug("notifyListener(" + this + ")[" + l + "] invocation failure details", t);
-            }
+            warn("notifyListener({}) failed ({}) to invoke {}: {}",
+                    this, t.getClass().getSimpleName(), l, t.getMessage(), t);
         }
     }
 

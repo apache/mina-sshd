@@ -118,12 +118,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait);
             }
         } catch (IOException e) {
-            log.warn("dispose({}) {} while stopping service: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-
-            if (log.isDebugEnabled()) {
-                log.warn("dispose(" + this + ") Stop exception details", e);
-            }
+            warn("dispose({}) {} while stopping service: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
     }
 

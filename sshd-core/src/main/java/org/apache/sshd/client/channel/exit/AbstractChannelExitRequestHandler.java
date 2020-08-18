@@ -101,13 +101,8 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
                 log.debug("notifyStateChanged({})[{}] event={}", channel, request, event);
             }
         } catch (Exception e) {
-            log.warn("notifyStateChanged({})[{}] Failed ({}) to notify event={}: {}",
-                    channel, request, e.getClass().getSimpleName(), event, e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("notifyStateChanged(" + channel + ")[" + request + "]"
-                          + " event=" + event + " notification failure details",
-                        e);
-            }
+            warn("notifyStateChanged({})[{}] Failed ({}) to notify event={}: {}",
+                    channel, request, e.getClass().getSimpleName(), event, e.getMessage(), e);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {

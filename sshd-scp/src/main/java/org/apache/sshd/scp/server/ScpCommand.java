@@ -189,18 +189,12 @@ public class ScpCommand extends AbstractFileSystemCommand {
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 writeCommandResponseMessage(command, exitValue, exitMessage);
             } catch (IOException e2) {
-                log.error("run({})[{}] Failed ({}) to send error response: {}",
-                        session, command, e2.getClass().getSimpleName(), e2.getMessage());
-                if (debugEnabled) {
-                    log.error("run(" + session + ")[" + command + "] error response failure details", e2);
-                }
+                error("run({})[{}] Failed ({}) to send error response: {}",
+                        session, command, e.getClass().getSimpleName(), e.getMessage(), e2);
             }
 
-            log.error("run({})[{}] Failed ({}) to run command: {}",
-                    session, command, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.error("run(" + session + ")[" + command + "] command execution failure details", e);
-            }
+            error("run({})[{}] Failed ({}) to run command: {}",
+                    session, command, e.getClass().getSimpleName(), e.getMessage(), e);
         } finally {
             ExitCallback callback = getExitCallback();
             if (callback != null) {

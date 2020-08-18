@@ -223,11 +223,8 @@ public class KnownHostsServerKeyVerifier
                     keys.add(new HostEntryPair(entry, key));
                 }
             } catch (Throwable t) {
-                log.warn("reloadKnownHosts({}) failed ({}) to load key of {}: {}",
-                        file, t.getClass().getSimpleName(), entry, t.getMessage());
-                if (debugEnabled) {
-                    log.debug("reloadKnownHosts(" + file + ") key=" + entry + " load failure details", t);
-                }
+                warn("reloadKnownHosts({}) failed ({}) to load key of {}: {}",
+                        file, t.getClass().getSimpleName(), entry, t.getMessage(), t);
             }
         }
 
@@ -287,13 +284,8 @@ public class KnownHostsServerKeyVerifier
                 return false;
             }
         } catch (Throwable t) {
-            log.warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
-                    clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("acceptKnownHostEntries(" + clientSession + ")[" + remoteAddress + "]"
-                          + " modified server key acceptance failure details",
-                        t);
-            }
+            warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
+                    clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage(), t);
             return false;
         }
 
@@ -464,13 +456,8 @@ public class KnownHostsServerKeyVerifier
             ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match,
             PublicKey serverKey, Path file, Collection<HostEntryPair> knownHosts, Throwable reason) {
         // NOTE !!! this may mean the file is corrupted, but it can be recovered from the known hosts
-        log.warn("acceptKnownHostEntries({})[{}] failed ({}) to update modified server key of {}: {}",
-                clientSession, remoteAddress, reason.getClass().getSimpleName(), match, reason.getMessage());
-        if (log.isDebugEnabled()) {
-            log.debug("acceptKnownHostEntries(" + clientSession + ")[" + remoteAddress + "]"
-                      + " modified key update failure details",
-                    reason);
-        }
+        warn("acceptKnownHostEntries({})[{}] failed ({}) to update modified server key of {}: {}",
+                clientSession, remoteAddress, reason.getClass().getSimpleName(), match, reason.getMessage(), reason);
     }
 
     /**
@@ -533,14 +520,9 @@ public class KnownHostsServerKeyVerifier
                         return match;
                     }
                 } catch (RuntimeException | Error e) {
-                    log.warn("findKnownHostEntry({})[{}] failed ({}) to check host={} for entry={}: {}",
+                    warn("findKnownHostEntry({})[{}] failed ({}) to check host={} for entry={}: {}",
                             clientSession, remoteAddress, e.getClass().getSimpleName(),
-                            host, entry.getConfigLine(), e.getMessage());
-                    if (debugEnabled) {
-                        log.debug("findKnownHostEntry(" + clientSession + ") host=" + host + ", entry=" + entry
-                                  + " match failure details",
-                                e);
-                    }
+                            host, entry.getConfigLine(), e.getMessage(), e);
                 }
             }
         }
@@ -561,11 +543,8 @@ public class KnownHostsServerKeyVerifier
      */
     protected boolean acceptIncompleteHostKeys(
             ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Throwable reason) {
-        log.warn("Failed ({}) to reload server keys from {}: {}",
-                reason.getClass().getSimpleName(), getPath(), reason.getMessage());
-        if (log.isDebugEnabled()) {
-            log.debug(getPath() + " reload failure details", reason);
-        }
+        warn("Failed ({}) to reload server keys from {}: {}",
+                reason.getClass().getSimpleName(), getPath(), reason.getMessage(), reason);
         return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
     }
 
@@ -618,15 +597,10 @@ public class KnownHostsServerKeyVerifier
     protected void handleKnownHostsFileUpdateFailure(
             ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
             Path file, Collection<HostEntryPair> knownHosts, Throwable reason) {
-        log.warn("handleKnownHostsFileUpdateFailure({})[{}] failed ({}) to update key={}-{} in {}: {}",
+        warn("handleKnownHostsFileUpdateFailure({})[{}] failed ({}) to update key={}-{} in {}: {}",
                 clientSession, remoteAddress, reason.getClass().getSimpleName(),
                 KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey),
-                file, reason.getMessage());
-        if (log.isDebugEnabled()) {
-            log.debug("handleKnownHostsFileUpdateFailure(" + clientSession + ")[" + remoteAddress + "]"
-                      + " file update failure details",
-                    reason);
-        }
+                file, reason.getMessage(), reason);
     }
 
     /**

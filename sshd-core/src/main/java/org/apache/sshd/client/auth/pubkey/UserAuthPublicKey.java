@@ -77,12 +77,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             keys = new UserAuthPublicKeyIterator(session, this);
         } catch (Error e) {
-            log.warn("init({})[{}] failed ({}) to initialize session keys: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("init(" + session + ")[" + service + "] session keys initialization failure details", e);
-            }
-
+            warn("init({})[{}] failed ({}) to initialize session keys: {}",
+                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }
@@ -101,12 +97,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
             current = keys.next();
         } catch (Error e) {
-            log.warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("sendAuthDataRequest(" + session + ")[" + service + "] next key fetch failure details", e);
-            }
-
+            warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
+                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -118,12 +110,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             key = current.getPublicKey();
         } catch (Error e) {
-            log.warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve public key: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("sendAuthDataRequest(" + session + ")[" + service + "] public key retrieval failure details", e);
-            }
-
+            warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve public key: {}",
+                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -163,14 +151,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             key = current.getPublicKey();
         } catch (Error e) {
-            log.warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve public key: {}",
-                    session, service, name, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.debug("processAuthDataRequest(" + session + ")[" + service + "][" + name
-                          + "] public key retrieval failure details",
-                        e);
-            }
-
+            warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve public key: {}",
+                    session, service, name, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
@@ -235,12 +217,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             sig = current.sign(session, contents);
         } catch (Error e) {
-            log.warn("appendSignature({})[{}][{}] failed ({}) to sign contents: {}",
-                    session, service, name, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("appendSignature(" + session + ")[" + service + "][" + name + "] signing failure details", e);
-            }
-
+            warn("appendSignature({})[{}][{}] failed ({}) to sign contents: {}",
+                    session, service, name, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

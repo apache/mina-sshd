@@ -82,12 +82,8 @@ public class DefaultKeyboardInteractiveAuthenticator
         try {
             return auth.authenticate(username, responses.get(0), session);
         } catch (Error e) {
-            log.warn("authenticate({})[{}] failed ({}) to consult password authenticator: {}",
-                    session, username, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.debug("authenticate(" + session + ")[" + username + "] authenticator failure details", e);
-            }
-
+            warn("authenticate({})[{}] failed ({}) to consult password authenticator: {}",
+                    session, username, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }

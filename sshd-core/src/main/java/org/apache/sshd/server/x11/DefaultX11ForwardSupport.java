@@ -167,11 +167,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
 
             return bindHost + ":" + displayNumber + "." + screen;
         } catch (Throwable e) {
-            log.warn("createDisplay({}) failed ({}) run xauth: {}",
-                    authDisplay, e.getClass().getSimpleName(), e.getMessage());
-            if (debugEnabled) {
-                log.warn("createDisplay(" + authDisplay + ") xauth failure details", e);
-            }
+            warn("createDisplay({}) failed ({}) run xauth: {}",
+                    authDisplay, e.getClass().getSimpleName(), e.getMessage(), e);
             return null;
         }
     }
@@ -219,12 +216,8 @@ public class DefaultX11ForwardSupport extends AbstractInnerCloseable implements 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         session.setAttribute(X11ForwardingExceptionMarker.class, cause);
-        log.error("exceptionCaught({}) {}: {}",
-                session, cause.getClass().getSimpleName(), cause.getMessage());
-
-        if (log.isDebugEnabled()) {
-            log.error("exceptionCaught(" + session + ") caught exception details", cause);
-        }
+        log.debug("exceptionCaught({}) {}: {}",
+                session, cause.getClass().getSimpleName(), cause.getMessage(), cause);
         session.close(true);
     }
 

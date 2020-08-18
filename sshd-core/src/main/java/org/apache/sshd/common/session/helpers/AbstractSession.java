@@ -617,12 +617,8 @@ public abstract class AbstractSession extends SessionHelper {
         try {
             startService(serviceName, buffer);
         } catch (Throwable e) {
-            log.warn("handleServiceRequest({}) Service {} rejected: {} = {}",
-                    this, serviceName, e.getClass().getSimpleName(), e.getMessage());
-
-            if (debugEnabled) {
-                log.warn("handleServiceRequest(" + this + ") service=" + serviceName + " rejection details", e);
-            }
+            debug("handleServiceRequest({}) Service {} rejected: {} = {}",
+                    this, serviceName, e.getClass().getSimpleName(), e.getMessage(), e);
             disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + serviceName);
             return false;
         }
@@ -855,11 +851,8 @@ public abstract class AbstractSession extends SessionHelper {
             try {
                 checkRekey();
             } catch (GeneralSecurityException e) {
-                log.warn("writePacket({}) failed ({}) to check re-key: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.warn("writePacket(" + this + ") rekey security exception details", e);
-                }
+                debug("writePacket({}) failed ({}) to check re-key: {}",
+                        this, e.getClass().getSimpleName(), e.getMessage(), e);
                 throw ValidateUtils.initializeExceptionCause(
                         new ProtocolException(
                                 "Failed (" + e.getClass().getSimpleName() + ")"
@@ -1826,11 +1819,8 @@ public abstract class AbstractSession extends SessionHelper {
                     }
                 } catch (IOException | RuntimeException e) {
                     // If disconnect handler throws an exception continue with the disconnect
-                    log.warn("negotiate({}) failed ({}) to invoke disconnect handler due to mismatched KEX option={}: {}",
-                            this, e.getClass().getSimpleName(), paramType, e.getMessage());
-                    if (debugEnabled) {
-                        log.warn("negotiate(" + this + ") handler invocation exception details", e);
-                    }
+                    debug("negotiate({}) failed ({}) to invoke disconnect handler due to mismatched KEX option={}: {}",
+                            this, e.getClass().getSimpleName(), paramType, e.getMessage(), e);
                 }
 
                 String message = "Unable to negotiate key exchange for " + paramType.getDescription()
@@ -2068,11 +2058,8 @@ public abstract class AbstractSession extends SessionHelper {
         try {
             requestNewKeysExchange();
         } catch (GeneralSecurityException e) {
-            log.warn("reExchangeKeys({}) failed ({}) to request new keys: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            if (log.isDebugEnabled()) {
-                log.warn("reExchangeKeys(" + this + ") security exception details", e);
-            }
+            debug("reExchangeKeys({}) failed ({}) to request new keys: {}",
+                    this, e.getClass().getSimpleName(), e.getMessage(), e);
             throw ValidateUtils.initializeExceptionCause(
                     new ProtocolException(
                             "Failed (" + e.getClass().getSimpleName() + ")"

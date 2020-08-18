@@ -57,13 +57,9 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
             try {
                 result = authenticator.authenticate(username, key, session);
             } catch (Error e) {
-                log.warn("authenticate({}@{}) failed ({}) to consult delegate for {} key={}: {}",
+                warn("authenticate({}@{}) failed ({}) to consult delegate for {} key={}: {}",
                         username, session, e.getClass().getSimpleName(),
-                        KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("authenticate(" + username + "@" + session + ") delegate failure details", e);
-                }
-
+                        KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
             if (log.isDebugEnabled()) {

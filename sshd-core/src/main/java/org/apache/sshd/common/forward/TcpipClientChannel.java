@@ -173,13 +173,8 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     protected void preClose() {
         IOException err = IoUtils.closeQuietly(getPendingMessagesQueue());
         if (err != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("preClose({}) Failed ({}) to close pending messages queue: {}",
-                        this, err.getClass().getSimpleName(), err.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("preClose(" + this + ") pending messages queue close failure details", err);
-            }
+            debug("preClose({}) Failed ({}) to close pending messages queue: {}",
+                    this, err.getClass().getSimpleName(), err.getMessage(), err);
         }
 
         super.preClose();

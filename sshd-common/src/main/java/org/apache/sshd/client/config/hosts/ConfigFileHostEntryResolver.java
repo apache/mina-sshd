@@ -64,14 +64,8 @@ public class ConfigFileHostEntryResolver extends ModifiableFileWatcher implement
 
             return entry;
         } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
-                log.debug("resolveEffectiveHost({}@{}:{}/{}) failed ({}) to resolve: {}",
-                        username, host, port, proxyJump, e.getClass().getSimpleName(), e.getMessage());
-            }
-
-            if (log.isTraceEnabled()) {
-                log.trace("resolveEffectiveHost(" + username + "@" + host + ":" + port + ") resolution failure details", e);
-            }
+            debug("resolveEffectiveHost({}@{}:{}/{}) failed ({}) to resolve: {}",
+                    username, host, port, proxyJump, e.getClass().getSimpleName(), e.getMessage(), e);
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else {

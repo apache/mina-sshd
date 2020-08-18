@@ -80,13 +80,8 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             cmd = req.getUByte();
             process(cmd, req, rep);
         } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Failed ({}) to handle command={}: {}",
-                        e.getClass().getSimpleName(), cmd, e.getMessage());
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("Received command=" + cmd + " handling failure details", e);
-            }
+            debug("Failed ({}) to handle command={}: {}",
+                    e.getClass().getSimpleName(), cmd, e.getMessage(), e);
             rep.clear();
             rep.putInt(0);
             rep.rpos(rep.wpos());

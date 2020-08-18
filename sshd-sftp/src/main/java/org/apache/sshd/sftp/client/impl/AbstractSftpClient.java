@@ -298,7 +298,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributesResponse()[id={}] {} - status: {} [{}] {}",
+                log.trace("checkAttributesResponse({})[id={}] {} - status: {} [{}] {}",
                         getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
                         SftpConstants.getStatusName(substatus), lang, msg);
             }
