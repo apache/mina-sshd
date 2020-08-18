@@ -88,28 +88,38 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     public void transferFile(String source, String destination, boolean preserveAttributes) throws IOException {
         Collection<Option> options = preserveAttributes
                 ? Collections.unmodifiableSet(EnumSet.of(Option.PreserveAttributes))
-                : Collections.emptySet();
-        String srcCmd = ScpClient.createReceiveCommand(source, options);
+                : Collections.emptySet()
+                ;
+        executeTransfer(source, options, destination, options);
+    }
+
+    protected void executeTransfer(
+            String source, Collection<Option> srcOptions,
+            String destination, Collection<Option> dstOptions)
+            throws IOException {
+        String srcCmd = ScpClient.createReceiveCommand(source, srcOptions);
         ClientSession srcSession = getSourceSession();
         ClientSession dstSession = getDestinationSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("transferFile({})[srcCmd='{}']) {} => {}",
+            log.debug("executeTransfer({})[srcCmd='{}']) {} => {}",
                     this, srcCmd, source, destination);
         }
 
         ChannelExec srcChannel = ScpIoUtils.openCommandChannel(srcSession, srcCmd, log);
         try (InputStream srcIn = srcChannel.getInvertedOut();
              OutputStream srcOut = srcChannel.getInvertedIn()) {
-            String dstCmd = ScpClient.createSendCommand(destination, options);
+            String dstCmd = ScpClient.createSendCommand(destination, dstOptions);
             if (debugEnabled) {
-                log.debug("transferFile({})[dstCmd='{}'} {} => {}",
+                log.debug("executeTransfer({})[dstCmd='{}'} {} => {}",
                         this, dstCmd, source, destination);
             }
 
             ChannelExec dstChannel = ScpIoUtils.openCommandChannel(dstSession, dstCmd, log);
             try (InputStream dstIn = dstChannel.getInvertedOut();
                  OutputStream dstOut = dstChannel.getInvertedIn()) {
+                int statusCode = transferStatusCode("XFER-CMD", dstIn, srcOut);
+                ScpIoUtils.validateCommandStatusCode("XFER-CMD", "executeTransfer", statusCode, false);
                 redirectReceivedFile(source, srcIn, srcOut, destination, dstIn, dstOut);
             } finally {
                 dstChannel.close(false);
@@ -117,15 +127,13 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         } finally {
             srcChannel.close(false);
         }
+
     }
 
     protected long redirectReceivedFile(
             String source, InputStream srcIn, OutputStream srcOut,
             String destination, InputStream dstIn, OutputStream dstOut)
             throws IOException {
-        int statusCode = transferStatusCode("XFER-FILE", dstIn, srcOut);
-        ScpIoUtils.validateCommandStatusCode("XFER-FILE", "redirectReceivedFile", statusCode, false);
-
         boolean debugEnabled = log.isDebugEnabled();
         String header = ScpIoUtils.readLine(srcIn, false);
         if (debugEnabled) {
@@ -137,18 +145,8 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         if (cmdName == ScpTimestampCommandDetails.COMMAND_NAME) {
             // Pass along the "T<mtime> 0 <atime> 0" and wait for response
             time = ScpTimestampCommandDetails.parseTime(header);
-            signalReceivedCommand(time);
-
-            ScpIoUtils.writeLine(dstOut, header);
-            statusCode = transferStatusCode(header, dstIn, srcOut);
-            ScpIoUtils.validateCommandStatusCode("[DST] " + header, "redirectReceivedFile", statusCode, false);
-
             // Read the next command - which must be a 'C' command
-            header = ScpIoUtils.readLine(srcIn, false);
-            if (debugEnabled) {
-                log.debug("redirectReceivedFile({}) header={}", this, header);
-            }
-
+            header = transferTimestampCommand(source, srcIn, srcOut, destination, dstIn, dstOut, time);
             cmdName = header.charAt(0);
         }
 
@@ -161,7 +159,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
 
         // Pass along the "Cmmmm <length> <filename" command and wait for ACK
         ScpIoUtils.writeLine(dstOut, header);
-        statusCode = transferStatusCode(header, dstIn, srcOut);
+        int statusCode = transferStatusCode(header, dstIn, srcOut);
         ScpIoUtils.validateCommandStatusCode("[DST] " + header, "redirectReceivedFile", statusCode, false);
         // Wait with ACK ready for transfer until ready to transfer data
         long xferCount = transferFileData(source, srcIn, srcOut, destination, dstIn, dstOut, time, details);
@@ -174,6 +172,26 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         statusCode = ScpIoUtils.readAck(dstIn, false, log, "DST-EOF");
         ScpIoUtils.validateCommandStatusCode("[DST-EOF] " + header, "redirectReceivedFile", statusCode, false);
         return xferCount;
+    }
+
+    protected String transferTimestampCommand(
+            String source, InputStream srcIn, OutputStream srcOut,
+            String destination, InputStream dstIn, OutputStream dstOut,
+            ScpTimestampCommandDetails time)
+            throws IOException {
+        signalReceivedCommand(time);
+
+        String header = time.toHeader();
+        ScpIoUtils.writeLine(dstOut, header);
+        int statusCode = transferStatusCode(header, dstIn, srcOut);
+        ScpIoUtils.validateCommandStatusCode("[DST] " + header, "transferTimestampCommand", statusCode, false);
+
+        header = ScpIoUtils.readLine(srcIn, false);
+        if (log.isDebugEnabled()) {
+            log.debug("transferTimestampCommand({}) header={}", this, header);
+        }
+
+        return header;
     }
 
     protected int transferStatusCode(Object logHint, InputStream in, OutputStream out) throws IOException {
