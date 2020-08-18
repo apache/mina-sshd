@@ -56,6 +56,7 @@ import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
@@ -204,7 +205,7 @@ public abstract class AbstractConnectionService
 
     /**
      * Sends a heartbeat message/packet
-     * 
+     *
      * @return {@code true} if heartbeat successfully sent
      */
     protected boolean sendHeartBeat() {
@@ -218,6 +219,17 @@ public abstract class AbstractConnectionService
         }
 
         if ((heartbeatType == null) || (GenericUtils.isNegativeOrNull(interval)) || (heartBeat == null)) {
+            return false;
+        }
+
+        // SSHD-1059
+        KexState kexState = session.getKexState();
+        if ((heartbeatType != HeartbeatType.NONE)
+                && (kexState != KexState.DONE)) {
+            if (traceEnabled) {
+                log.trace("sendHeartbeat({}) heartbeat type={}, interval={} - skip due to KEX state={}",
+                        session, heartbeatType, interval, kexState);
+            }
             return false;
         }
 
