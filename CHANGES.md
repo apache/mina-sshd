@@ -42,3 +42,4 @@ or `-key-file` command line option.
 * [SSHD-1048](https://issues.apache.org/jira/browse/SSHD-1048) Wrap instead of rethrow IOException in Future.
 * [SSHD-1050](https://issues.apache.org/jira/browse/SSHD-1050) Fixed race condition in AuthFuture if exception caught before authentication started.
 * [SSHD-1058](https://issues.apache.org/jira/browse/SSHD-1058) Improve exception logging strategy.
+* [SSHD-1060](https://issues.apache.org/jira/browse/SSHD-1060) Do not store logger level in fields.

@@ -170,7 +170,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             long startTime = System.nanoTime();
             Number result = verifyResult(Number.class, timeoutMillis);
             long endTime = System.nanoTime();
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("Read " + result + " bytes after " + (endTime - startTime) + " nanos");
             }
 

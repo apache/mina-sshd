@@ -38,8 +38,6 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected static final Object CANCELED = new Object();
 
-    protected final boolean debugEnabled;
-    protected final boolean traceEnabled;
     private final Object id;
 
     /**
@@ -47,8 +45,6 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      */
     protected AbstractSshFuture(Object id) {
         this.id = id;
-        this.debugEnabled = log.isDebugEnabled();
-        this.traceEnabled = log.isTraceEnabled();
     }
 
     @Override

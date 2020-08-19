@@ -58,7 +58,6 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     public static final Property<Integer> MAX_PEND_COUNT
             = Property.integer("packet-writer-max-pend-count", 4096);
 
-    private final boolean traceEnabled;
     private final PacketWriter delegate;
     private final int maxPendingPackets;
     private final long maxWait;
@@ -88,7 +87,6 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
         this.availableCount = new AtomicInteger(maxPendingPackets);
         ValidateUtils.checkTrue(maxWait > 0L, "Invalid max. pending wait time: %d", maxWait);
         this.maxWait = maxWait;
-        this.traceEnabled = log.isTraceEnabled();
     }
 
     public PacketWriter getDelegate() {
@@ -142,7 +140,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
             available = availableCount.decrementAndGet();
         }
 
-        if (traceEnabled) {
+        if (log.isTraceEnabled()) {
             log.trace("writePacket({}) available={} after {} msec.", this, available, getMaxWait() - remainWait);
         }
         if (available < 0) {
@@ -164,7 +162,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
                 }
 
                 if (available > 0) {
-                    if (traceEnabled) {
+                    if (log.isTraceEnabled()) {
                         log.trace("operationComplete({}) available={}", this, available);
                     }
                     return;
