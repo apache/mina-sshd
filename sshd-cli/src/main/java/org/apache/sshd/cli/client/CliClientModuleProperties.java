@@ -28,19 +28,18 @@ import org.apache.sshd.common.Property;
  */
 public final class CliClientModuleProperties {
     /**
-     * Key used to retrieve the value of the timeout after which it will abort the connection if the connection
-     * has not been established - in milliseconds.
+     * Key used to retrieve the value of the timeout after which it will abort the connection if the connection has not
+     * been established - in milliseconds.
      */
     public static final Property<Duration> CONECT_TIMEOUT
-        = Property.duration("cli-connect-timeout", Duration.ofMinutes(2));
+            = Property.duration("cli-connect-timeout", Duration.ofMinutes(2));
 
     /**
      * Key used to retrieve the value of the timeout after which it will close the connection if the other side has not
      * been authenticated - in milliseconds.
      */
     public static final Property<Duration> AUTH_TIMEOUT
-        = Property.duration("cli-auth-timeout", Duration.ofMinutes(2));
-
+            = Property.duration("cli-auth-timeout", Duration.ofMinutes(2));
 
     private CliClientModuleProperties() {
         throw new UnsupportedOperationException("No instance");

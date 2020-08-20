@@ -45,11 +45,6 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ScpIoUtils {
-    // ACK status codes
-    public static final int OK = 0;
-    public static final int WARNING = 1;
-    public static final int ERROR = 2;
-
     public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS
             = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
 
@@ -80,137 +75,21 @@ public final class ScpIoUtils {
     }
 
     public static void writeLine(OutputStream out, String cmd) throws IOException {
-        out.write(cmd.getBytes(StandardCharsets.UTF_8));
+        if (cmd != null) {
+            out.write(cmd.getBytes(StandardCharsets.UTF_8));
+        }
         out.write('\n');
         out.flush();
     }
 
-    /**
-     * Sends the &quot;T...&quot; command and waits for ACK
-     *
-     * @param  in          The {@link InputStream} to read from
-     * @param  out         The target {@link OutputStream}
-     * @param  time        The {@link ScpTimestampCommandDetails} value to send
-     * @param  log         An optional {@link Logger} to use for issuing log messages - ignored if {@code null}
-     * @param  logHint     An optional hint to be used in the logged messages to identifier the caller's context
-     * @return             The read ACK value
-     * @throws IOException If failed to complete the read/write cyle
-     */
-    public static int sendTimeCommand(
-            InputStream in, OutputStream out, ScpTimestampCommandDetails time, Logger log, Object logHint)
+    public static ScpAckInfo sendAcknowledgedCommand(AbstractScpCommandDetails cmd, InputStream in, OutputStream out)
             throws IOException {
-        String cmd = time.toHeader();
-        if ((log != null) && log.isDebugEnabled()) {
-            log.debug("sendTimeCommand({}) send timestamp={} command: {}", logHint, time, cmd);
-        }
+        return sendAcknowledgedCommand(cmd.toHeader(), in, out);
+    }
+
+    public static ScpAckInfo sendAcknowledgedCommand(String cmd, InputStream in, OutputStream out) throws IOException {
         writeLine(out, cmd);
-
-        return readAck(in, false, log, logHint);
-    }
-
-    /**
-     * Reads a single ACK from the input
-     *
-     * @param  in          The {@link InputStream} to read from
-     * @param  canEof      If {@code true} then OK if EOF is received before full ACK received
-     * @param  log         An optional {@link Logger} to use for issuing log messages - ignored if {@code null}
-     * @param  logHint     An optional hint to be used in the logged messages to identifier the caller's context
-     * @return             The read ACK value
-     * @throws IOException If failed to complete the read
-     */
-    public static int readAck(InputStream in, boolean canEof, Logger log, Object logHint) throws IOException {
-        int c = in.read();
-        boolean debugEnabled = (log != null) && log.isDebugEnabled();
-        switch (c) {
-            case -1:
-                if (debugEnabled) {
-                    log.debug("readAck({})[EOF={}] received EOF", logHint, canEof);
-                }
-                if (!canEof) {
-                    throw new EOFException("readAck - EOF before ACK");
-                }
-                break;
-            case OK:
-                if (debugEnabled) {
-                    log.debug("readAck({})[EOF={}] read OK", logHint, canEof);
-                }
-                break;
-            case WARNING: {
-                if (debugEnabled) {
-                    log.debug("readAck({})[EOF={}] read warning message", logHint, canEof);
-                }
-
-                String line = readLine(in);
-                if (log != null) {
-                    log.warn("readAck({})[EOF={}] - Received warning: {}", logHint, canEof, line);
-                }
-                break;
-            }
-            case ERROR: {
-                if (debugEnabled) {
-                    log.debug("readAck({})[EOF={}] read error message", logHint, canEof);
-                }
-                String line = readLine(in);
-                if (debugEnabled) {
-                    log.debug("readAck({})[EOF={}] received error: {}", logHint, canEof, line);
-                }
-                throw new ScpException("Received nack: " + line, c);
-            }
-            default:
-                break;
-        }
-
-        return c;
-    }
-
-    public static int sendAcknowledgedCommand(
-            String cmd, InputStream in, OutputStream out, Logger log)
-            throws IOException {
-        writeLine(out, cmd);
-        return readAck(in, false, log, cmd);
-    }
-
-    /**
-     * Sends {@link #OK} ACK code
-     *
-     * @param  out         The target {@link OutputStream}
-     * @throws IOException If failed to send the ACK code
-     */
-    public static void ack(OutputStream out) throws IOException {
-        out.write(OK);
-        out.flush();
-    }
-
-    public static <O extends OutputStream> O sendWarning(O out, String message) throws IOException {
-        return sendResponseMessage(out, WARNING, message);
-    }
-
-    public static <O extends OutputStream> O sendError(O out, String message) throws IOException {
-        return sendResponseMessage(out, ERROR, message);
-    }
-
-    public static <O extends OutputStream> O sendResponseMessage(O out, int level, String message) throws IOException {
-        out.write(level);
-        writeLine(out, message);
-        return out;
-    }
-
-    public static void validateCommandStatusCode(String command, Object location, int statusCode, boolean eofAllowed)
-            throws IOException {
-        switch (statusCode) {
-            case -1:
-                if (!eofAllowed) {
-                    throw new EOFException("Unexpected EOF for command='" + command + "' on " + location);
-                }
-                break;
-            case OK:
-                break;
-            case WARNING:
-                break;
-            default:
-                throw new ScpException(
-                        "Bad reply code (" + statusCode + ") for command='" + command + "' on " + location, statusCode);
-        }
+        return ScpAckInfo.readAck(in, false);
     }
 
     public static String getExitStatusName(Integer exitStatus) {
@@ -219,11 +98,11 @@ public final class ScpIoUtils {
         }
 
         switch (exitStatus) {
-            case OK:
+            case ScpAckInfo.OK:
                 return "OK";
-            case WARNING:
+            case ScpAckInfo.WARNING:
                 return "WARNING";
-            case ERROR:
+            case ScpAckInfo.ERROR:
                 return "ERROR";
             default:
                 return exitStatus.toString();
@@ -335,9 +214,9 @@ public final class ScpIoUtils {
 
         int statusCode = exitStatus;
         switch (statusCode) {
-            case OK: // do nothing
+            case ScpAckInfo.OK: // do nothing
                 break;
-            case WARNING:
+            case ScpAckInfo.WARNING:
                 if (log != null) {
                     log.warn("handleCommandExitStatus({}) cmd='{}' may have terminated with some problems", session, cmd);
                 }

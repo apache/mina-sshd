@@ -24,6 +24,7 @@ or `-key-file` command line option.
 * [SSHD-1030](https://issues.apache.org/jira/browse/SSHD-1030) Added a NoneFileSystemFactory implementation
 * [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1042) Added more callbacks to SftpEventListener
 * [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
+* [SSHD-1060](https://issues.apache.org/jira/browse/SSHD-1060) Do not store logger level in fields.
 
 ## Behavioral changes and enhancements
 
@@ -41,5 +42,5 @@ or `-key-file` command line option.
 * [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 * [SSHD-1048](https://issues.apache.org/jira/browse/SSHD-1048) Wrap instead of rethrow IOException in Future.
 * [SSHD-1050](https://issues.apache.org/jira/browse/SSHD-1050) Fixed race condition in AuthFuture if exception caught before authentication started.
+* [SSHD-1056](https://issues.apache.org/jira/browse/SSHD-1005) Added support for SCP remote-to-remote directory transfer - including '-3' option of SCP command CLI.
 * [SSHD-1058](https://issues.apache.org/jira/browse/SSHD-1058) Improve exception logging strategy.
-* [SSHD-1060](https://issues.apache.org/jira/browse/SSHD-1060) Do not store logger level in fields.

@@ -279,9 +279,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     protected void tryNext(int cmd) throws Exception {
         ClientSession session = getClientSession();
-        boolean debugEnabled = log.isDebugEnabled();
         // Loop until we find something to try
-        while (true) {
+        for (boolean debugEnabled = log.isDebugEnabled();; debugEnabled = log.isDebugEnabled()) {
             if (userAuth == null) {
                 if (debugEnabled) {
                     log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",

@@ -40,9 +40,23 @@ import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
  */
 public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHolder {
     enum Option {
-        Recursive,
-        PreserveAttributes,
-        TargetIsDirectory
+        Recursive("-r"),
+        PreserveAttributes("-p"),
+        TargetIsDirectory("-d"),
+        ;
+
+        private final String optionValue;
+
+        Option(String optionValue) {
+            this.optionValue = optionValue;
+        }
+
+        /**
+         * @return The option value to use in the issued SCP command
+         */
+        public String getOptionValue() {
+            return optionValue;
+        }
     }
 
     @Override
@@ -136,15 +150,9 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
 
     static String createSendCommand(String remote, Collection<Option> options) {
         StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
-        if (options.contains(Option.Recursive)) {
-            sb.append(" -r");
-        }
-        if (options.contains(Option.TargetIsDirectory)) {
-            sb.append(" -d");
-        }
-        if (options.contains(Option.PreserveAttributes)) {
-            sb.append(" -p");
-        }
+        appendCommandOption(sb, options, Option.TargetIsDirectory);
+        appendCommandOption(sb, options, Option.Recursive);
+        appendCommandOption(sb, options, Option.PreserveAttributes);
 
         sb.append(" -t").append(" --").append(' ').append(remote);
         return sb.toString();
@@ -153,14 +161,26 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     static String createReceiveCommand(String remote, Collection<Option> options) {
         ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified");
         StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
-        if (options.contains(Option.Recursive)) {
-            sb.append(" -r");
-        }
-        if (options.contains(Option.PreserveAttributes)) {
-            sb.append(" -p");
-        }
+        appendCommandOption(sb, options, Option.Recursive);
+        appendCommandOption(sb, options, Option.PreserveAttributes);
 
         sb.append(" -f").append(" --").append(' ').append(remote);
         return sb.toString();
+    }
+
+    /**
+     * Appends the specified option command value if appears in provided options collection
+     *
+     * @param  sb      The {@link StringBuilder} target
+     * @param  options The command options - ignored if {@code null}
+     * @param  opt     The required option
+     * @return         The updated builder
+     */
+    static StringBuilder appendCommandOption(StringBuilder sb, Collection<Option> options, Option opt) {
+        if (GenericUtils.isNotEmpty(options) && options.contains(opt)) {
+            sb.append(' ').append(opt.getOptionValue());
+        }
+
+        return sb;
     }
 }

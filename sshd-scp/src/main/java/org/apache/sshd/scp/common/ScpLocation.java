@@ -22,18 +22,21 @@ package org.apache.sshd.scp.common;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Represents a local or remote SCP location in the format {@code user@host:path} for a remote path and a simple path
- * for a local one. If user is omitted for a remote path then current user is used.
- * 
+ * Represents a local or remote SCP location in the format &quot;user@host:path&quot; or
+ * &quot;scp://[user@]host[:port][/path]&quot; for a remote path and a simple path for a local one. If user is omitted
+ * for a remote path then current user is used.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
+    public static final String SCHEME = "scp://";
     public static final char HOST_PART_SEPARATOR = ':';
     public static final char USERNAME_PART_SEPARATOR = '@';
 
@@ -42,6 +45,7 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     private String host;
     private String username;
     private String path;
+    private int port;
 
     public ScpLocation() {
         this(null);
@@ -56,6 +60,17 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
         update(locSpec, this);
     }
 
+    public ScpLocation(String username, String host, String path) {
+        this(username, host, 0, path);
+    }
+
+    public ScpLocation(String username, String host, int port, String path) {
+        this.username = username;
+        this.host = host;
+        this.port = port;
+        this.path = path;
+    }
+
     public String getHost() {
         return host;
     }
@@ -66,6 +81,19 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
 
     public boolean isLocal() {
         return GenericUtils.isEmpty(getHost());
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public int resolvePort() {
+        int portValue = getPort();
+        return (portValue <= 0) ? SshConstants.DEFAULT_PORT : portValue;
     }
 
     @Override
@@ -104,7 +132,10 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getHost(), resolveUsername(), OsUtils.getComparablePath(getPath()));
+        return isLocal()
+                ? Objects.hashCode(OsUtils.getComparablePath(getPath()))
+                : Objects.hash(getHost(), resolveUsername(), OsUtils.getComparablePath(getPath()))
+                  + 31 * Integer.hashCode(resolvePort());
     }
 
     @Override
@@ -120,7 +151,8 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
         }
 
         ScpLocation other = (ScpLocation) obj;
-        if (this.isLocal() != other.isLocal()) {
+        boolean thisLocal = this.isLocal();
+        if (thisLocal != other.isLocal()) {
             return false;
         }
 
@@ -130,13 +162,14 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
             return false;
         }
 
-        if (isLocal()) {
+        if (thisLocal) {
             return true;
         }
 
         // we know other is also remote or we would not have reached this point
         return Objects.equals(resolveUsername(), other.resolveUsername())
-                && Objects.equals(getHost(), other.getHost());
+                && Objects.equals(getHost(), other.getHost())
+                && (resolvePort() == other.resolvePort());
     }
 
     @Override
@@ -155,15 +188,25 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
             return p;
         }
 
-        return resolveUsername()
-               + Character.toString(USERNAME_PART_SEPARATOR)
-               + getHost()
-               + Character.toString(HOST_PART_SEPARATOR)
-               + p;
+        int portValue = resolvePort();
+        String userValue = resolveUsername();
+        StringBuilder sb = new StringBuilder();
+        if (portValue != SshConstants.DEFAULT_PORT) {
+            sb.append(SCHEME);
+        }
+        sb.append(userValue).append(USERNAME_PART_SEPARATOR).append(getHost());
+        sb.append(HOST_PART_SEPARATOR);
+        if (portValue != SshConstants.DEFAULT_PORT) {
+            sb.append(portValue);
+        }
+        sb.append(p);
+
+        return sb.toString();
     }
 
     /**
-     * Parses a local or remote SCP location in the format {@code user@host:path}
+     * Parses a local or remote SCP location in the format &quot;user@host:path&quot; or
+     * &quot;scp://[user@]host[:port][/path]&quot;
      *
      * @param  locSpec                  The location specification - ignored if {@code null}/empty
      * @return                          The {@link ScpLocation} or {@code null} if no specification provider
@@ -175,52 +218,72 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     }
 
     /**
-     * Parses a local or remote SCP location in the format {@code user@host:path}
+     * Parses a local or remote SCP location in the format &quot;user@host:path&quot; or
+     * &quot;scp://[user@]host[:port][/path]&quot;
      *
      * @param  <L>                      Type of {@link ScpLocation} being updated
-     * @param  locSpec                  The location specification - ignored if {@code null}/empty
+     * @param  spec                     The location specification - ignored if {@code null}/empty
      * @param  location                 The {@link ScpLocation} to update - never {@code null}
      * @return                          The updated location (unless no specification)
      * @throws IllegalArgumentException if invalid specification
      */
-    public static <L extends ScpLocation> L update(String locSpec, L location) {
+    public static <L extends ScpLocation> L update(String spec, L location) {
         Objects.requireNonNull(location, "No location to update");
-        if (GenericUtils.isEmpty(locSpec)) {
+        if (GenericUtils.isEmpty(spec)) {
             return location;
         }
 
         location.setHost(null);
         location.setUsername(null);
+        location.setPort(0);
 
-        int pos = locSpec.indexOf(HOST_PART_SEPARATOR);
-        if (pos < 0) { // assume a local path
-            location.setPath(locSpec);
-            return location;
-        }
+        String login;
+        if (spec.startsWith(SCHEME)) {
+            int pos = spec.indexOf('/', SCHEME.length());
+            ValidateUtils.checkTrue(pos > 0, "Invalid remote specification (missing path specification): %s", spec);
 
-        /*
-         * NOTE !!! in such a case there may be confusion with a host named 'a', but there is a limit to how smart we
-         * can be...
-         */
-        if ((pos == 1) && OsUtils.isWin32()) {
-            char drive = locSpec.charAt(0);
-            if (((drive >= 'a') && (drive <= 'z')) || ((drive >= 'A') && (drive <= 'Z'))) {
-                location.setPath(locSpec);
+            login = spec.substring(SCHEME.length(), pos);
+            location.setPath(spec.substring(pos));
+
+            pos = login.indexOf(HOST_PART_SEPARATOR);
+            ValidateUtils.checkTrue(pos != 0, "Invalid remote specification (malformed port specification): %s", spec);
+            if (pos > 0) {
+                ValidateUtils.checkTrue(pos < (login.length() - 1), "Invalid remote specification (no port specification): %s",
+                        spec);
+                location.setPort(Integer.parseInt(login.substring(pos + 1)));
+                login = login.substring(0, pos);
+            }
+        } else {
+            int pos = spec.indexOf(HOST_PART_SEPARATOR);
+            if (pos < 0) { // assume a local path
+                location.setPath(spec);
                 return location;
             }
+
+            /*
+             * NOTE !!! in such a case there may be confusion with a host named 'a', but there is a limit to how smart we
+             * can be...
+             */
+            if ((pos == 1) && OsUtils.isWin32()) {
+                char drive = spec.charAt(0);
+                if (((drive >= 'a') && (drive <= 'z')) || ((drive >= 'A') && (drive <= 'Z'))) {
+                    location.setPath(spec);
+                    return location;
+                }
+            }
+
+            login = spec.substring(0, pos);
+            ValidateUtils.checkTrue(pos < (spec.length() - 1), "Invalid remote specification (missing path): %s", spec);
+            location.setPath(spec.substring(pos + 1));
         }
 
-        String login = locSpec.substring(0, pos);
-        ValidateUtils.checkTrue(pos < (locSpec.length() - 1), "Invalid remote specification (missing path): %s", locSpec);
-        location.setPath(locSpec.substring(pos + 1));
-
-        pos = login.indexOf(USERNAME_PART_SEPARATOR);
-        ValidateUtils.checkTrue(pos != 0, "Invalid remote specification (missing username): %s", locSpec);
+        int pos = login.indexOf(USERNAME_PART_SEPARATOR);
+        ValidateUtils.checkTrue(pos != 0, "Invalid remote specification (missing username): %s", spec);
         if (pos < 0) {
             location.setHost(login);
         } else {
             location.setUsername(login.substring(0, pos));
-            ValidateUtils.checkTrue(pos < (login.length() - 1), "Invalid remote specification (missing host): %s", locSpec);
+            ValidateUtils.checkTrue(pos < (login.length() - 1), "Invalid remote specification (missing host): %s", spec);
             location.setHost(login.substring(pos + 1));
         }
 

@@ -29,7 +29,7 @@ import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpHelper;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
-import org.apache.sshd.scp.common.helpers.ScpIoUtils;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -157,7 +157,7 @@ public class ScpCommand extends AbstractFileSystemCommand {
 
     @Override
     public void run() {
-        int exitValue = ScpIoUtils.OK;
+        int exitValue = ScpAckInfo.OK;
         String exitMessage = null;
         ServerSession session = getServerSession();
         String command = getCommand();
@@ -178,13 +178,13 @@ public class ScpCommand extends AbstractFileSystemCommand {
                 if (e instanceof ScpException) {
                     statusCode = ((ScpException) e).getExitStatus();
                 }
-                exitValue = (statusCode == null) ? ScpIoUtils.ERROR : statusCode;
+                exitValue = (statusCode == null) ? ScpAckInfo.ERROR : statusCode;
                 // this is an exception so status cannot be OK/WARNING
-                if ((exitValue == ScpIoUtils.OK) || (exitValue == ScpIoUtils.WARNING)) {
+                if ((exitValue == ScpAckInfo.OK) || (exitValue == ScpAckInfo.WARNING)) {
                     if (debugEnabled) {
                         log.debug("run({})[{}] normalize status code={}", session, command, exitValue);
                     }
-                    exitValue = ScpIoUtils.ERROR;
+                    exitValue = ScpAckInfo.ERROR;
                 }
                 exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 writeCommandResponseMessage(command, exitValue, exitMessage);
@@ -208,7 +208,7 @@ public class ScpCommand extends AbstractFileSystemCommand {
             log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
                     getServerSession(), command, exitValue, exitMessage);
         }
-        ScpIoUtils.sendResponseMessage(getOutputStream(), exitValue, exitMessage);
+        ScpAckInfo.sendAck(getOutputStream(), exitValue, exitMessage);
     }
 
     @Override

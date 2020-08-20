@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.scp.common;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,7 @@ import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.common.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.common.helpers.ScpDirEndCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 import org.apache.sshd.scp.common.helpers.ScpPathCommandDetailsSupport;
@@ -167,14 +169,15 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
      * @throws IOException If failed to read/write
      */
     protected void receive(ScpReceiveLineHandler handler) throws IOException {
-        ack();
+        sendOk();
 
         boolean debugEnabled = log.isDebugEnabled();
         Session session = getSession();
         for (ScpTimestampCommandDetails time = null;; debugEnabled = log.isDebugEnabled()) {
             String line;
             boolean isDir = false;
-            int c = readAck(true);
+
+            int c = receiveNextCmd();
             switch (c) {
                 case -1:
                     return;
@@ -200,7 +203,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                         log.debug("receive({}) - Received 'T' header: {}", this, line);
                     }
                     time = ScpTimestampCommandDetails.parse(line);
-                    ack();
+                    sendOk();
                     continue;
                 case ScpDirEndCommandDetails.COMMAND_NAME:
                     line = ScpIoUtils.readLine(in);
@@ -208,7 +211,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     if (debugEnabled) {
                         log.debug("receive({}) - Received 'E' header: {}", this, line);
                     }
-                    ack();
+                    sendOk();
                     return;
                 default:
                     // a real ack that has been acted upon already
@@ -221,6 +224,27 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                 time = null;
             }
         }
+    }
+
+    // NOTE: we rely on the fact that an SCP command does not start with an ACK code
+    protected int receiveNextCmd() throws IOException {
+        int c = in.read();
+        if (c == -1) {
+            return c;
+        }
+
+        if (c == ScpAckInfo.OK) {
+            return c;
+        }
+
+        if ((c == ScpAckInfo.WARNING) || (c == ScpAckInfo.ERROR)) {
+            String line = ScpIoUtils.readLine(in, true);
+            if (log.isDebugEnabled()) {
+                log.debug("receiveNextCmd - ACK={}", new ScpAckInfo(c, line));
+            }
+        }
+
+        return c;
     }
 
     public void receiveDir(String header, Path local, ScpTimestampCommandDetails time, boolean preserve, int bufferSize)
@@ -243,7 +267,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         Set<PosixFilePermission> perms = details.getPermissions();
         Path file = opener.resolveIncomingFilePath(session, path, name, preserve, perms, time);
 
-        ack();
+        sendOk();
 
         time = null;
 
@@ -263,11 +287,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                     receiveDir(header, file, time, preserve, bufferSize);
                     time = null;
                 } else if (cmdChar == ScpDirEndCommandDetails.COMMAND_NAME) {
-                    ack();
+                    sendOk();
                     break;
                 } else if (cmdChar == ScpTimestampCommandDetails.COMMAND_NAME) {
                     time = ScpTimestampCommandDetails.parse(header);
-                    ack();
+                    sendOk();
                 } else {
                     throw new IOException("Unexpected message: '" + header + "'");
                 }
@@ -333,7 +357,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         try (InputStream is = new LimitInputStream(this.in, length);
              OutputStream os = resolver.resolveTargetStream(session, name, length, perms,
                      IoUtils.EMPTY_OPEN_OPTIONS)) {
-            ack();
+            sendOk();
 
             Path file = resolver.getEventListenerFilePath();
             listener.startFileEvent(session, FileOperation.RECEIVE, file, length, perms);
@@ -349,13 +373,13 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         resolver.postProcessReceivedData(name, preserve, perms, time);
 
-        ack();
+        sendOk();
 
-        int replyCode = readAck(false);
+        ScpAckInfo ackInfo = readAck(false);
         if (debugEnabled) {
-            log.debug("receiveStream({})[{}] ack reply code={}", this, resolver, replyCode);
+            log.debug("receiveStream({})[{}] ACK={}", this, resolver, ackInfo);
         }
-        validateAckReplyCode("receiveStream", resolver, replyCode, false);
+        validateAckReplyCode("receiveStream", resolver, ackInfo);
     }
 
     public String readLine() throws IOException {
@@ -367,12 +391,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
-        int readyCode = readAck(false);
+        ScpAckInfo ackInfo = readAck(false);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("send({}) ready code={}", paths, readyCode);
+            log.debug("send({}) ACK={}", paths, ackInfo);
         }
-        validateOperationReadyCode("send", "Paths", readyCode, false);
+        validateOperationReadyCode("send", "Paths", ackInfo);
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         for (String pattern : paths) {
@@ -420,11 +444,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     public void sendPaths(Collection<? extends Path> paths, boolean recursive, boolean preserve, int bufferSize)
             throws IOException {
-        int readyCode = readAck(false);
+        ScpAckInfo ackInfo = readAck(false);
         if (log.isDebugEnabled()) {
-            log.debug("sendPaths({}) ready code={}", paths, readyCode);
+            log.debug("sendPaths({}) ACK={}", paths, ackInfo);
         }
-        validateOperationReadyCode("sendPaths", "Paths", readyCode, false);
+        validateOperationReadyCode("sendPaths", "Paths", ackInfo);
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         for (Path file : paths) {
@@ -513,13 +537,13 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
         ScpTimestampCommandDetails time = resolver.getTimestamp();
         if (preserve && (time != null)) {
-            int readyCode = ScpIoUtils.sendTimeCommand(in, out, time, log, this);
+            ScpAckInfo ackInfo = ScpIoUtils.sendAcknowledgedCommand(time, in, out);
             String cmd = time.toHeader();
             if (debugEnabled) {
-                log.debug("sendStream({})[{}] command='{}' ready code={}", this, resolver, cmd, readyCode);
+                log.debug("sendStream({})[{}] command='{}' ACK={}", this, resolver, cmd, ackInfo);
             }
 
-            validateAckReplyCode(cmd, resolver, readyCode, false);
+            validateAckReplyCode(cmd, resolver, ackInfo);
         }
 
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
@@ -532,12 +556,12 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendStream({})[{}] send 'C' command: {}", this, resolver, cmd);
         }
 
-        int readyCode = sendAcknowledgedCommand(cmd);
+        ScpAckInfo ackInfo = sendAcknowledgedCommand(cmd);
         if (debugEnabled) {
-            log.debug("sendStream({})[{}] command='{}' ready code={}", this, resolver,
-                    cmd.substring(0, cmd.length() - 1), readyCode);
+            log.debug("sendStream({})[{}] command='{}' ACK={}", this, resolver,
+                    cmd.substring(0, cmd.length() - 1), ackInfo);
         }
-        validateAckReplyCode(cmd, resolver, readyCode, false);
+        validateAckReplyCode(cmd, resolver, ackInfo);
 
         Session session = getSession();
         try (InputStream in = resolver.resolveSourceStream(session, fileSize, perms, IoUtils.EMPTY_OPEN_OPTIONS)) {
@@ -552,28 +576,50 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             listener.endFileEvent(session, FileOperation.SEND, path, fileSize, perms, null);
             resolver.closeSourceStream(session, fileSize, perms, in);
         }
-        ack();
+        sendOk();
 
-        readyCode = readAck(false);
+        ackInfo = readAck(false);
         if (debugEnabled) {
-            log.debug("sendStream({})[{}] command='{}' reply code={}", this, resolver, cmd, readyCode);
+            log.debug("sendStream({})[{}] command='{}' ACK={}", this, resolver, cmd, ackInfo);
         }
-        validateAckReplyCode("sendStream", resolver, readyCode, false);
+        validateAckReplyCode("sendStream", resolver, ackInfo);
     }
 
-    protected void validateOperationReadyCode(String command, Object location, int readyCode, boolean eofAllowed)
+    protected void validateOperationReadyCode(String command, Object location, ScpAckInfo ackInfo)
             throws IOException {
-        validateCommandStatusCode(command, location, readyCode, eofAllowed);
+        validateCommandStatusCode(command, location, ackInfo, false);
     }
 
-    protected void validateAckReplyCode(String command, Object location, int replyCode, boolean eofAllowed)
+    protected void validateAckReplyCode(String command, Object location, ScpAckInfo ackInfo)
             throws IOException {
-        validateCommandStatusCode(command, location, replyCode, eofAllowed);
+        validateCommandStatusCode(command, location, ackInfo, false);
     }
 
-    protected void validateCommandStatusCode(String command, Object location, int statusCode, boolean eofAllowed)
+    protected void validateCommandStatusCode(String command, Object location, ScpAckInfo ackInfo, boolean eofAllowed)
             throws IOException {
-        ScpIoUtils.validateCommandStatusCode(command, location, statusCode, eofAllowed);
+        if (ackInfo == null) {
+            if (eofAllowed) {
+                return;
+            }
+
+            log.error("validateCommandStatusCode({})[{}] unexpected EOF while waiting on ACK for command={}",
+                    this, location, command);
+            throw new EOFException("EOF while waiting on ACK for command=" + command + " at " + location);
+        }
+
+        int statusCode = ackInfo.getStatusCode();
+        switch (statusCode) {
+            case ScpAckInfo.OK:
+                break;
+            case ScpAckInfo.WARNING:
+                log.warn("validateCommandStatusCode({})[{}] advisory ACK={} for command={}",
+                        this, location, ackInfo, command);
+                break;
+            default:
+                log.error("validateCommandStatusCode({})[{}] bad ACK={} for command={}",
+                        this, location, ackInfo, command);
+                ackInfo.validateCommandStatusCode(command, location);   // this actually throws an SCPException
+        }
     }
 
     public void sendDir(Path local, boolean preserve, int bufferSize) throws IOException {
@@ -597,13 +643,13 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
                         lastAccess, cmd);
             }
 
-            int readyCode = sendAcknowledgedCommand(cmd);
+            ScpAckInfo ackInfo = sendAcknowledgedCommand(cmd);
             if (debugEnabled) {
                 if (debugEnabled) {
-                    log.debug("sendDir({})[{}] command='{}' ready code={}", this, path, cmd, readyCode);
+                    log.debug("sendDir({})[{}] command='{}' ACK={}", this, path, cmd, ackInfo);
                 }
             }
-            validateAckReplyCode(cmd, path, readyCode, false);
+            validateAckReplyCode(cmd, path, ackInfo);
         }
 
         Set<PosixFilePermission> perms = opener.getLocalFilePermissions(session, path, options);
@@ -616,11 +662,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendDir({})[{}] send 'D' command: {}", this, path, cmd);
         }
 
-        int readyCode = sendAcknowledgedCommand(cmd);
+        ScpAckInfo ackInfo = sendAcknowledgedCommand(cmd);
         if (debugEnabled) {
-            log.debug("sendDir({})[{}] command='{}' ready code={}", this, path, cmd, readyCode);
+            log.debug("sendDir({})[{}] command='{}' ACK={}", this, path, cmd, ackInfo);
         }
-        validateAckReplyCode(cmd, path, readyCode, false);
+        validateAckReplyCode(cmd, path, ackInfo);
 
         try (DirectoryStream<Path> children = opener.getLocalFolderChildren(session, path)) {
             listener.startFolderEvent(session, FileOperation.SEND, path, perms);
@@ -645,35 +691,35 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             log.debug("sendDir({})[{}] send 'E' command", this, path);
         }
 
-        readyCode = sendAcknowledgedCommand(ScpDirEndCommandDetails.HEADER);
+        ackInfo = sendAcknowledgedCommand(ScpDirEndCommandDetails.HEADER);
         if (debugEnabled) {
-            log.debug("sendDir({})[{}] 'E' command reply code=", this, path, readyCode);
+            log.debug("sendDir({})[{}] 'E' command ACK={}", this, path, ackInfo);
         }
-        validateAckReplyCode(ScpDirEndCommandDetails.HEADER, path, readyCode, false);
+        validateAckReplyCode(ScpDirEndCommandDetails.HEADER, path, ackInfo);
     }
 
-    protected int sendAcknowledgedCommand(String cmd) throws IOException {
-        return ScpIoUtils.sendAcknowledgedCommand(cmd, in, out, log);
+    protected ScpAckInfo sendAcknowledgedCommand(String cmd) throws IOException {
+        return ScpIoUtils.sendAcknowledgedCommand(cmd, in, out);
+    }
+
+    public void sendOk() throws IOException {
+        sendResponseMessage(ScpAckInfo.OK, null /* ignored */);
     }
 
     protected void sendWarning(String message) throws IOException {
-        sendResponseMessage(ScpIoUtils.WARNING, message);
+        sendResponseMessage(ScpAckInfo.WARNING, message);
     }
 
     protected void sendError(String message) throws IOException {
-        sendResponseMessage(ScpIoUtils.ERROR, message);
+        sendResponseMessage(ScpAckInfo.ERROR, message);
     }
 
     protected void sendResponseMessage(int level, String message) throws IOException {
-        ScpIoUtils.sendResponseMessage(out, level, message);
+        ScpAckInfo.sendAck(out, level, message);
     }
 
-    public void ack() throws IOException {
-        ScpIoUtils.ack(out);
-    }
-
-    public int readAck(boolean canEof) throws IOException {
-        return ScpIoUtils.readAck(in, canEof, log, this);
+    public ScpAckInfo readAck(boolean canEof) throws IOException {
+        return ScpAckInfo.readAck(in, canEof);
     }
 
     @Override

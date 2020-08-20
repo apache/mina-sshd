@@ -97,7 +97,26 @@ to **disable** an option one must use `-o PtyMode=WHATEVER=0`.
 
 ### `ScpCommandMain`
 
-Reminiscent of the [scp(1)](https://linux.die.net/man/1/scp) CLI client.
+Reminiscent of the [scp(1)](https://man7.org/linux/man-pages/man1/scp.1.html) CLI client - including support for "3-way" copy
+(a.k.a. remote-to-remote) option:
+
+```
+scp -p -r -3 user1@server1:source user2@server2:destination
+```
+
+In this context, it is worth mentioning that the CLI also supports URI locations having the format `scp://[user@]host[:port][/path]`
+
+```
+# If port is omitted then 22 is assumed
+scp -p scp://user1@server1:2222/source/file /home/user2/destination
+
+# Note: same effect can be achieved with -P option
+
+scp -p -P 2222 user1@server1:source/file /home/user2/destination
+
+# the URI is better suited for remote-to-remote transfers
+scp -p -r -3 scp://user1@server1:2222/source scp://user2@server2:3333/destination
+```
 
 ### `SshServerMain`
 
@@ -122,3 +141,6 @@ provided when subsystems are auto-detected and/or filtered.
 * **Shell** - unless otherwise instructed, the default SSH server uses an internal shell (see `InteractiveProcessShellFactory`). The shell can be overridden
 or disabled by specifying a `-o ShellFactory=XXX` option where the value can either be `none` to specify that no shell is to be used, or the fully-qualified
 name of a class that implements the `ShellFactory` interface. The implementation must be public and have a public no-args constructor for instantiating it.
+
+**Note:** A special value of `scp` can be used to use the built-in `ScpShell` instead of the interactive one (reminder: the SCP "shell" is a limited shell that provides
+a good enough functionality for *WinScp*).

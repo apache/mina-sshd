@@ -38,6 +38,7 @@ import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.client.ScpClient.Option;
 import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.common.helpers.ScpDirEndCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpIoUtils;
 import org.apache.sshd.scp.common.helpers.ScpPathCommandDetailsSupport;
@@ -143,8 +144,8 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             ChannelExec dstChannel = ScpIoUtils.openCommandChannel(dstSession, dstCmd, log);
             try (InputStream dstIn = dstChannel.getInvertedOut();
                  OutputStream dstOut = dstChannel.getInvertedIn()) {
-                int statusCode = transferStatusCode("XFER-CMD", dstIn, srcOut);
-                ScpIoUtils.validateCommandStatusCode("XFER-CMD", "executeTransfer", statusCode, false);
+                ScpAckInfo ackInfo = transferStatusCode("XFER-CMD", dstIn, srcOut);
+                ackInfo.validateCommandStatusCode("XFER-CMD", "executeTransfer");
 
                 if (srcOptions.contains(Option.TargetIsDirectory) || dstOptions.contains(Option.TargetIsDirectory)) {
                     redirectDirectoryTransfer(source, srcIn, srcOut, destination, dstIn, dstOut, 0);
@@ -163,8 +164,13 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             String source, InputStream srcIn, OutputStream srcOut,
             String destination, InputStream dstIn, OutputStream dstOut)
             throws IOException {
+        Object data = receiveNextCmd("redirectFileTransfer", srcIn);
+        if (data instanceof ScpAckInfo) {
+            throw new StreamCorruptedException("Unexpected ACK instead of header: " + data);
+        }
+
         boolean debugEnabled = log.isDebugEnabled();
-        String header = ScpIoUtils.readLine(srcIn, false);
+        String header = (String) data;
         if (debugEnabled) {
             log.debug("redirectFileTransfer({}) {} => {}: header={}", this, source, destination, header);
         }
@@ -194,8 +200,8 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         }
 
         ScpIoUtils.writeLine(dstOut, header);
-        int statusCode = transferStatusCode(header, dstIn, srcOut);
-        ScpIoUtils.validateCommandStatusCode("[DST] " + header, "handleFileTransferRequest", statusCode, false);
+        ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
+        ackInfo.validateCommandStatusCode("[DST] " + header, "handleFileTransferRequest");
 
         ScpReceiveFileCommandDetails fileDetails = new ScpReceiveFileCommandDetails(header);
         signalReceivedCommand(fileDetails);
@@ -228,8 +234,13 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             String destination, InputStream dstIn, OutputStream dstOut,
             int depth)
             throws IOException {
+        Object data = receiveNextCmd("redirectDirectoryTransfer", srcIn);
+        if (data instanceof ScpAckInfo) {
+            throw new StreamCorruptedException("Unexpected ACK instead of header: " + data);
+        }
+
+        String header = (String) data;
         boolean debugEnabled = log.isDebugEnabled();
-        String header = ScpIoUtils.readLine(srcIn, false);
         if (debugEnabled) {
             log.debug("redirectDirectoryTransfer({})[depth={}] {} => {}: header={}",
                     this, depth, source, destination, header);
@@ -262,9 +273,8 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         }
 
         ScpIoUtils.writeLine(dstOut, header);
-        int statusCode = transferStatusCode(header, dstIn, srcOut);
-        ScpIoUtils.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest", statusCode,
-                false);
+        ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
+        ackInfo.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest");
 
         ScpReceiveDirCommandDetails dirDetails = new ScpReceiveDirCommandDetails(header);
         signalReceivedCommand(dirDetails);
@@ -284,7 +294,12 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             for (boolean debugEnabled = log.isDebugEnabled(), dirEndSignal = false;
                  !dirEndSignal;
                  debugEnabled = log.isDebugEnabled()) {
-                header = ScpIoUtils.readLine(srcIn, false);
+                Object data = receiveNextCmd("handleDirectoryTransferRequest", srcIn);
+                if (data instanceof ScpAckInfo) {
+                    throw new StreamCorruptedException("Unexpected ACK instead of header: " + data);
+                }
+
+                header = (String) data;
                 if (debugEnabled) {
                     log.debug("handleDirectoryTransferRequest({})[depth={}] {} => {}: header={}",
                             this, depth, source, destination, header);
@@ -325,9 +340,8 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
 
                     case ScpDirEndCommandDetails.COMMAND_NAME: {
                         ScpIoUtils.writeLine(dstOut, header);
-                        statusCode = transferStatusCode(header, dstIn, srcOut);
-                        ScpIoUtils.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest",
-                                statusCode, false);
+                        ackInfo = transferStatusCode(header, dstIn, srcOut);
+                        ackInfo.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest");
 
                         ScpDirEndCommandDetails details = ScpDirEndCommandDetails.parse(header);
                         signalReceivedCommand(details);
@@ -363,7 +377,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
 
         long xferCount;
         try (InputStream inputStream = new LimitInputStream(srcIn, length)) {
-            ScpIoUtils.ack(srcOut); // ready to receive the data from source
+            ScpAckInfo.sendOk(srcOut); // ready to receive the data from source
             xferCount = IoUtils.copy(inputStream, dstOut);
             dstOut.flush(); // make sure all data sent to destination
         }
@@ -374,12 +388,12 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         }
 
         // wait for source to signal data finished and pass it along
-        int statusCode = transferStatusCode("SRC-EOF", srcIn, dstOut);
-        ScpIoUtils.validateCommandStatusCode("[SRC-EOF] " + header, "transferSimpleFile", statusCode, false);
+        ScpAckInfo ackInfo = transferStatusCode("SRC-EOF", srcIn, dstOut);
+        ackInfo.validateCommandStatusCode("[SRC-EOF] " + header, "transferSimpleFile");
 
         // wait for destination to signal data received
-        statusCode = ScpIoUtils.readAck(dstIn, false, log, "DST-EOF");
-        ScpIoUtils.validateCommandStatusCode("[DST-EOF] " + header, "transferSimpleFile", statusCode, false);
+        ackInfo = ScpAckInfo.readAck(dstIn, false);
+        ackInfo.validateCommandStatusCode("[DST-EOF] " + header, "transferSimpleFile");
         return xferCount;
     }
 
@@ -389,35 +403,48 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             String header)
             throws IOException {
         ScpIoUtils.writeLine(dstOut, header);
-        int statusCode = transferStatusCode(header, dstIn, srcOut);
-        ScpIoUtils.validateCommandStatusCode("[DST] " + header, "transferTimestampCommand", statusCode, false);
+        ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
+        ackInfo.validateCommandStatusCode("[DST] " + header, "transferTimestampCommand");
 
-        header = ScpIoUtils.readLine(srcIn, false);
-        return header;
+        Object data = receiveNextCmd("transferTimestampCommand", srcIn);
+        if (data instanceof ScpAckInfo) {
+            throw new StreamCorruptedException("Unexpected ACK instead of header: " + data);
+        }
+        return (String) data;
     }
 
-    protected int transferStatusCode(Object logHint, InputStream in, OutputStream out) throws IOException {
-        int statusCode = in.read();
-        if (statusCode == -1) {
-            throw new EOFException("readAck(" + logHint + ") - EOF before ACK");
+    protected ScpAckInfo transferStatusCode(Object logHint, InputStream in, OutputStream out) throws IOException {
+        ScpAckInfo ackInfo = ScpAckInfo.readAck(in, false);
+        if (log.isDebugEnabled()) {
+            log.debug("transferStatusCode({})[{}] {}", this, logHint, ackInfo);
+        }
+        ackInfo.send(out);
+        return ackInfo;
+    }
+
+    // NOTE: we rely on the fact that an SCP command does not start with an ACK code
+    protected Object receiveNextCmd(Object logHint, InputStream in) throws IOException {
+        int c = in.read();
+        if (c == -1) {
+            throw new EOFException(logHint + " - premature EOF while waiting for next command");
         }
 
-        if (statusCode != ScpIoUtils.OK) {
-            String line = ScpIoUtils.readLine(in);
+        if (c == ScpAckInfo.OK) {
             if (log.isDebugEnabled()) {
-                log.debug("transferStatusCode({})[{}] status={}, line='{}'", this, logHint, statusCode, line);
+                log.debug("receiveNextCmd({})[{}] - ACK={}", this, logHint, c);
             }
-            out.write(statusCode);
-            ScpIoUtils.writeLine(out, line);
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("transferStatusCode({})[{}] status={}", this, logHint, statusCode);
-            }
-            out.write(statusCode);
-            out.flush();
+            return new ScpAckInfo(c);
         }
 
-        return statusCode;
+        String line = ScpIoUtils.readLine(in, false);
+        if ((c == ScpAckInfo.WARNING) || (c == ScpAckInfo.ERROR)) {
+            if (log.isDebugEnabled()) {
+                log.debug("receiveNextCmd({})[{}] - ACK={}", this, logHint, new ScpAckInfo(c, line));
+            }
+            return new ScpAckInfo(c, line);
+        }
+
+        return Character.toString((char) c) + line;
     }
 
     // Useful "hook" for implementors
