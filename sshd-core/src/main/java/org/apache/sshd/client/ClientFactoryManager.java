@@ -21,6 +21,7 @@ package org.apache.sshd.client;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoaderManager;
 import org.apache.sshd.client.session.ClientProxyConnectorHolder;
+import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 
@@ -32,6 +33,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
  */
 public interface ClientFactoryManager
         extends FactoryManager,
+        ClientSessionCreator,
         ClientProxyConnectorHolder,
         FilePasswordProviderManager,
         ClientIdentityLoaderManager,

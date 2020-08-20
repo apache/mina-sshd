@@ -278,7 +278,8 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
     // CHECKSTYLE:ON
 
-    public static HostConfigEntry resolveHost(SshClient client, String username, String host, int port, String proxyJump)
+    public static HostConfigEntry resolveHost(
+            ClientFactoryManager client, String username, String host, int port, String proxyJump)
             throws IOException {
         HostConfigEntryResolver resolver = client.getHostConfigEntryResolver();
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, null, username, proxyJump, null);

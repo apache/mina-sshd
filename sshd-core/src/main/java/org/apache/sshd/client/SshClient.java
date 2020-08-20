@@ -62,7 +62,6 @@ import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientProxyConnector;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
@@ -148,15 +147,15 @@ import org.apache.sshd.core.CoreModuleProperties;
  * one instance of {@code SshClient} for the application and then use throughout - including for multi-threading. As
  * long as the {@code SshClient} is not re-configured it should be multi-thread safe regardless of the target session
  * being created.
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
+public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
     public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = SshClient::new;
 
     /**
      * Default user authentication preferences if not set
-     * 
+     *
      * @see <A HREF="http://linux.die.net/man/5/ssh_config">ssh_config(5) - PreferredAuthentications</A>
      */
     public static final List<UserAuthFactory> DEFAULT_USER_AUTH_FACTORIES = Collections.unmodifiableList(
