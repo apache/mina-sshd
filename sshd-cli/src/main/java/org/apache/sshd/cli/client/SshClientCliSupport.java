@@ -82,7 +82,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * TODO Add javadoc
@@ -259,13 +258,13 @@ public abstract class SshClientCliSupport extends CliSupport {
             HostConfigEntry entry = resolveHost(client, login, host, port, proxyJump);
             // TODO use a configurable wait time
             ClientSession session = client.connect(entry, null, null)
-                    .verify()
+                    .verify(CliClientModuleProperties.CONECT_TIMEOUT.getRequired(client))
                     .getSession();
             try {
                 if (GenericUtils.length(password) > 0) {
                     session.addPasswordIdentity(password);
                 }
-                session.auth().verify(CoreModuleProperties.AUTH_TIMEOUT.getRequired(session));
+                session.auth().verify(CliClientModuleProperties.AUTH_TIMEOUT.getRequired(session));
                 return session;
             } catch (Exception e) {
                 session.close(true);

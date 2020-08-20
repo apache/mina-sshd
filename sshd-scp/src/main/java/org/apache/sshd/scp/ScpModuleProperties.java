@@ -60,6 +60,6 @@ public final class ScpModuleProperties {
             = Property.charset("scp-shell-name-encoding-charset", StandardCharsets.UTF_8);
 
     private ScpModuleProperties() {
-        // private
+        throw new UnsupportedOperationException("No instance");
     }
 }

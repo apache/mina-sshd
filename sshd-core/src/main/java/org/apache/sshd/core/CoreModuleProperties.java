@@ -679,7 +679,6 @@ public final class CoreModuleProperties {
             = Property.string("x11-fwd-bind-host", SshdSocketAddress.LOCALHOST_IPV4);
 
     private CoreModuleProperties() {
-        // private
+        throw new UnsupportedOperationException("No instance");
     }
-
 }

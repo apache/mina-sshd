@@ -218,7 +218,7 @@ public final class SftpModuleProperties {
             = SshServerConfigFileReader.SFTP_FORCED_VERSION_PROP;
 
     private SftpModuleProperties() {
-        // private
+        throw new UnsupportedOperationException("No instance");
     }
 
 }

@@ -69,7 +69,6 @@ public final class CommonModuleProperties {
             = Property.duration("sshd-close-wait-time", Duration.ofSeconds(15L));
 
     private CommonModuleProperties() {
-        // private
+        throw new UnsupportedOperationException("No instance");
     }
-
 }
