@@ -142,7 +142,6 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
 
     @Override
     public synchronized void destroy(ChannelSession channel) throws Exception {
-        boolean debugEnabled = log.isDebugEnabled();
         Throwable err = null;
         try {
             shell.destroy(channel);

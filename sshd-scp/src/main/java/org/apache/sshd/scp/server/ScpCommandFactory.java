@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Supplier;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
@@ -36,7 +37,9 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
+import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ShellFactory;
+import org.apache.sshd.server.shell.ShellFactorySelector;
 
 /**
  * This <code>CommandFactory</code> can be used as a standalone command factory or can be used to augment another
@@ -48,7 +51,7 @@ import org.apache.sshd.server.shell.ShellFactory;
  */
 public class ScpCommandFactory
         extends AbstractDelegatingCommandFactory
-        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable, ShellFactory {
+        implements ManagedExecutorServiceSupplier, ScpFileOpenerHolder, Cloneable, ShellFactory, ShellFactorySelector {
 
     public static final String SCP_FACTORY_NAME = "scp";
 
@@ -98,6 +101,11 @@ public class ScpCommandFactory
             return this;
         }
 
+        public Builder withDelegateShellFactory(ShellFactory shellFactory) {
+            factory.setDelegateShellFactory(shellFactory);
+            return this;
+        }
+
         @Override
         public ScpCommandFactory build() {
             return factory.clone();
@@ -106,6 +114,7 @@ public class ScpCommandFactory
 
     private Supplier<? extends CloseableExecutorService> executorsProvider;
     private ScpFileOpener fileOpener;
+    private ShellFactory delegateShellFactory = InteractiveProcessShellFactory.INSTANCE;
     private int sendBufferSize = ScpHelper.DEFAULT_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE;
     private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
@@ -219,13 +228,49 @@ public class ScpCommandFactory
                 getScpFileOpener(), listenerProxy);
     }
 
+    /**
+     * @return The delegate {@link ShellFactory} to use if {@link #selectShellFactory(ChannelSession)} decides not to
+     *         use itself as the {@link ShellFactory} - default={@link InteractiveProcessShellFactory}.
+     * @see    #setDelegateShellFactory(ShellFactory)
+     */
+    public ShellFactory getDelegateShellFactory() {
+        return delegateShellFactory;
+    }
+
+    /**
+     * @param delegateShellFactory The {@link ShellFactory} to use if {@link #selectShellFactory(ChannelSession)}
+     *                             decides not to use itself as the {@link ShellFactory}. If {@code null} then it will
+     *                             always decide to use itself regardless of the {@link ChannelSession}
+     * @see                        #selectShellFactory(ChannelSession)
+     */
+    public void setDelegateShellFactory(ShellFactory delegateShellFactory) {
+        this.delegateShellFactory = delegateShellFactory;
+    }
+
+    @Override
+    public ShellFactory selectShellFactory(ChannelSession channelSession) throws IOException {
+        SessionContext session = channelSession.getSessionContext();
+        String clientVersion = session.getClientVersion();
+        // SSHD-1009
+        if (clientVersion.contains("WinSCP")) {
+            return this;
+        }
+
+        return delegateShellFactory;
+    }
+
     @Override
     public Command createShell(ChannelSession channel) throws IOException {
-        return new ScpShell(
-                channel,
-                resolveExecutorService(),
-                getSendBufferSize(), getReceiveBufferSize(),
-                getScpFileOpener(), listenerProxy);
+        ShellFactory factory = selectShellFactory(channel);
+        if ((factory == this) || (factory == null)) {
+            return new ScpShell(
+                    channel,
+                    resolveExecutorService(),
+                    getSendBufferSize(), getReceiveBufferSize(),
+                    getScpFileOpener(), listenerProxy);
+        } else {
+            return factory.createShell(channel);
+        }
     }
 
     protected CloseableExecutorService resolveExecutorService(String command) {

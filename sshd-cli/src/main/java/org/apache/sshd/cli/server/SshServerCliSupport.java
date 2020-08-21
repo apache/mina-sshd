@@ -62,6 +62,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
+import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -274,20 +275,30 @@ public abstract class SshServerCliSupport extends CliSupport {
             return null;
         }
 
+        // Only SCP
         if (ScpCommandFactory.SCP_FACTORY_NAME.equalsIgnoreCase(factory)) {
-            ScpCommandFactory shell = new ScpCommandFactory();
-            if (isEnabledVerbosityLogging(level)) {
-                shell.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
-            }
+            return createScpCommandFactory(level, stdout, stderr, null);
+        }
 
-            return shell;
+        // SCP + DEFAULT SHELL
+        if (("+" + ScpCommandFactory.SCP_FACTORY_NAME).equalsIgnoreCase(factory)) {
+            return createScpCommandFactory(level, stdout, stderr, DEFAULT_SHELL_FACTORY);
+        }
+
+        boolean useScp = false;
+        // SCP + CUSTOM SHELL
+        if (factory.startsWith(ScpCommandFactory.SCP_FACTORY_NAME + "+")) {
+            factory = factory.substring(ScpCommandFactory.SCP_FACTORY_NAME.length() + 1);
+            ValidateUtils.checkNotNullAndNotEmpty(factory, "No extra custom shell factory class specified");
+            useScp = true;
         }
 
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ShellFactory.class);
         try {
             Class<?> clazz = cl.loadClass(factory);
             Object instance = clazz.newInstance();
-            return ShellFactory.class.cast(instance);
+            ShellFactory shellFactory = ShellFactory.class.cast(instance);
+            return useScp ? createScpCommandFactory(level, stdout, stderr, shellFactory) : shellFactory;
         } catch (Exception e) {
             stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')
                     .append(" to instantiate shell factory=").append(factory)
@@ -295,5 +306,17 @@ public abstract class SshServerCliSupport extends CliSupport {
             stderr.flush();
             throw e;
         }
+    }
+
+    public static ScpCommandFactory createScpCommandFactory(
+            Level level, Appendable stdout, Appendable stderr, ShellFactory delegateShellFactory) {
+        ScpCommandFactory.Builder scp = new ScpCommandFactory.Builder()
+                .withDelegate(ProcessShellCommandFactory.INSTANCE)
+                .withDelegateShellFactory(delegateShellFactory);
+        if (isEnabledVerbosityLogging(level)) {
+            scp.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
+        }
+
+        return scp.build();
     }
 }

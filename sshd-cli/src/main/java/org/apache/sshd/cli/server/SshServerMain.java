@@ -29,7 +29,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-import org.apache.sshd.cli.server.helper.ScpCommandTransferEventListener;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -45,7 +44,6 @@ import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
-import org.apache.sshd.server.shell.ProcessShellCommandFactory;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
@@ -222,12 +220,7 @@ public class SshServerMain extends SshServerCliSupport {
         if (shellFactory instanceof ScpCommandFactory) {
             scpFactory = (ScpCommandFactory) shellFactory;
         } else {
-            ScpCommandFactory.Builder builder = new ScpCommandFactory.Builder()
-                    .withDelegate(ProcessShellCommandFactory.INSTANCE);
-            if (isEnabledVerbosityLogging(level)) {
-                builder = builder.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
-            }
-            scpFactory = builder.build();
+            scpFactory = createScpCommandFactory(level, stdout, stderr, null);
         }
         sshd.setCommandFactory(scpFactory);
         return scpFactory;

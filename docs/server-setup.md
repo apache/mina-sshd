@@ -54,6 +54,11 @@ so it's mostly useful to launch the OS native shell. E.g.,
 There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note
 that the `ShellFactory` is not required. If none is configured, any request for an interactive shell will be denied to clients.
 
+Furthermore, one can select a specific factory based on the current session by using an `AggregateShellFactory` that
+wraps a group of `ShellFactorySelector` - each one tailored for a specific set of criteria. The simplest use-case is
+one the detects the client and provides a specially tailored shell for it - e.g.,
+[the way we do for "WinSCP"](https://issues.apache.org/jira/browse/SSHD-1009) based on the peer client version string.
+
 * `CommandFactory` - The `CommandFactory` provides the ability to run a **single** direct command at a time instead
 of an interactive session (it also uses a **different** channel type than shells). It can be used **in addition** to the `ShellFactory`.
 
