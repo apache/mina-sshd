@@ -136,7 +136,7 @@ public class KnownHostHashValue {
     }
 
     public static String createHostPattern(String host, int port) {
-        if ((port <= 0) || (port == SshConstants.DEFAULT_PORT)) {
+        if (SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port) == SshConstants.DEFAULT_PORT) {
             return host;
         }
 
@@ -151,7 +151,7 @@ public class KnownHostHashValue {
     }
 
     public static <A extends Appendable> A appendHostPattern(A sb, String host, int port) throws IOException {
-        boolean nonDefaultPort = (port > 0) && (port != SshConstants.DEFAULT_PORT);
+        boolean nonDefaultPort = SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port) != SshConstants.DEFAULT_PORT;
         if (nonDefaultPort) {
             sb.append(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM);
         }

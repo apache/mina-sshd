@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -186,6 +187,10 @@ public abstract class HostPatternsHolder {
                 continue;
             }
 
+            if (!isPortMatch(port, pv.getPort())) {
+                continue;
+            }
+
             /*
              * According to https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5:
              *
@@ -196,15 +201,19 @@ public abstract class HostPatternsHolder {
                 return false;
             }
 
-            int pvPort = pv.getPort();
-            if ((pvPort != 0) && (port != 0) && (pvPort != port)) {
-                continue;
-            }
-
             matchFound = true;
         }
 
         return matchFound;
+    }
+
+    /**
+     * @param  port1 1st port value - if non-positive the assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
+     * @param  port2 2nd port value - if non-positive the assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
+     * @return       {@code true} if ports are effectively equal
+     */
+    public static boolean isPortMatch(int port1, int port2) {
+        return SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port1) == SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port2);
     }
 
     /**

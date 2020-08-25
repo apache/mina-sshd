@@ -251,9 +251,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 login = OsUtils.getCurrentUser();
             }
 
-            if (port <= 0) {
-                port = SshConstants.DEFAULT_PORT;
-            }
+            port = SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port);
 
             HostConfigEntry entry = resolveHost(client, login, host, port, proxyJump);
             // TODO use a configurable wait time
