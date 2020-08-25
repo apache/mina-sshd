@@ -211,8 +211,7 @@ public interface ClientSession
         try (ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
             String response = executeRemoteCommand(command, stderr, StandardCharsets.US_ASCII);
             if (stderr.size() > 0) {
-                byte[] error = stderr.toByteArray();
-                String errorMessage = new String(error, StandardCharsets.US_ASCII);
+                String errorMessage = stderr.toString(StandardCharsets.US_ASCII.name());
                 throw new RemoteException("Error reported from remote command='" + command, new ServerException(errorMessage));
             }
 
