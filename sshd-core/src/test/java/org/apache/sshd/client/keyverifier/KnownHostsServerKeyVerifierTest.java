@@ -41,6 +41,7 @@ import org.apache.sshd.client.config.hosts.KnownHostHashValue;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.HostEntryPair;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -266,8 +267,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     @Test
     public void testRejectModifiedServerKey() throws Exception {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
-        final PublicKey modifiedKey = kp.getPublic();
-        final AtomicInteger acceptCount = new AtomicInteger(0);
+        PublicKey modifiedKey = kp.getPublic();
+        AtomicInteger acceptCount = new AtomicInteger(0);
         ServerKeyVerifier verifier
                 = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
                     @Override
@@ -296,7 +297,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     @Test
     public void testAcceptModifiedServerKeyUpdatesFile() throws Exception {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
-        final PublicKey modifiedKey = kp.getPublic();
+        PublicKey modifiedKey = kp.getPublic();
         Path path = createKnownHostsCopy();
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {
             @Override
@@ -338,6 +339,62 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         assertTrue("Unexpected extra updated entries: " + updatedKeys, updatedKeys.isEmpty());
     }
 
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2PortsStdFirstSameKey() throws Exception {
+        testUpdateSameHostWithDifferentPorts(SshConstants.DEFAULT_PORT, 2020, true);
+    }
+
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2PortsStdLastSameKey() throws Exception {
+        testUpdateSameHostWithDifferentPorts(2020, SshConstants.DEFAULT_PORT, true);
+    }
+
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2NonStdPortsSameKey() throws Exception {
+        testUpdateSameHostWithDifferentPorts(2020, 2222, true);
+    }
+
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2PortsStdFirstDiffKeys() throws Exception {
+        testUpdateSameHostWithDifferentPorts(SshConstants.DEFAULT_PORT, 2020, false);
+    }
+
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2PortsStdLastDiffKeys() throws Exception {
+        testUpdateSameHostWithDifferentPorts(2020, SshConstants.DEFAULT_PORT, false);
+    }
+
+    @Test   // SSHD-1063
+    public void testUpdateSameHost2NonStdPortsDiffKeys() throws Exception {
+        testUpdateSameHostWithDifferentPorts(2020, 2222, false);
+    }
+
+    private void testUpdateSameHostWithDifferentPorts(int port1, int port2, boolean useSameKey) throws Exception {
+        Path path = getKnownHostCopyPath();
+        Files.write(path, Collections.singletonList(""));   // start empty
+        // accept all unknown entries
+        KnownHostsServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path);
+        // Reject modified entries
+        verifier.setModifiedServerKeyAcceptor((clientSession, remoteAddress, entry, expected, actual) -> false);
+
+        KeyPair kp1 = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        PublicKey serverKey1 = kp1.getPublic();
+
+        SocketAddress address1 = new SshdSocketAddress(HASHED_HOST, port1);
+        boolean accepted1 = invokeVerifier(verifier, address1, serverKey1);
+        assertTrue("Accepted on port=" + port1 + " ?", accepted1);
+
+        KeyPair kp2 = useSameKey ? kp1 : CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
+        PublicKey serverKey2 = kp2.getPublic();
+
+        SocketAddress address2 = new SshdSocketAddress(HASHED_HOST, port2);
+        boolean accepted2 = invokeVerifier(verifier, address2, serverKey2);
+        assertTrue("Accepted on port=" + port2 + " ?", accepted2);
+
+        Map<SshdSocketAddress, KnownHostEntry> updatedKeys = loadEntries(path);
+        assertEquals("Mismatched total entries count", 2, GenericUtils.size(updatedKeys));
+    }
+
     private Path createKnownHostsCopy() throws IOException {
         Path file = getKnownHostCopyPath();
         Files.copy(entriesFile, file, StandardCopyOption.REPLACE_EXISTING);
@@ -350,7 +407,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         return file;
     }
 
-    private boolean invokeVerifier(ServerKeyVerifier verifier, SshdSocketAddress hostIdentity, PublicKey serverKey) {
+    private boolean invokeVerifier(ServerKeyVerifier verifier, SocketAddress hostIdentity, PublicKey serverKey) {
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getConnectAddress()).thenReturn(hostIdentity);
         Mockito.when(session.toString()).thenReturn(getCurrentTestName() + "[" + hostIdentity + "]");

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -34,6 +35,9 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  */
 public final class SshConstants {
     public static final int DEFAULT_PORT = 22;
+
+    /** Converts non-positive port value to {@value #DEFAULT_PORT} */
+    public static final IntUnaryOperator TO_EFFECTIVE_PORT = port -> (port > 0) ? port : DEFAULT_PORT;
 
     //
     // SSH message identifiers

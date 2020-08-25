@@ -1328,7 +1328,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static String getFileSystemIdentifier(String host, int port, String username) {
         return GenericUtils.trimToEmpty(host) + ':'
-               + ((port <= 0) ? SshConstants.DEFAULT_PORT : port) + ':'
+               + SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port) + ':'
                + GenericUtils.trimToEmpty(username);
     }
 

@@ -47,3 +47,5 @@ or `-key-file` command line option.
 * [SSHD-1057](https://issues.apache.org/jira/browse/SSHD-1057) Added capability to select a ShellFactory based on the current session + use it for "WinSCP"
 * [SSHD-1058](https://issues.apache.org/jira/browse/SSHD-1058) Improve exception logging strategy.
 * [SSHD-1059](https://issues.apache.org/jira/browse/SSHD-1059) Do not send heartbeat if KEX state not DONE
+* [SSHD-1063](https://issues.apache.org/jira/browse/SSHD-1063) Fixed known-hosts file server key verifier matching of same host with different ports
+

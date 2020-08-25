@@ -92,8 +92,7 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
     }
 
     public int resolvePort() {
-        int portValue = getPort();
-        return (portValue <= 0) ? SshConstants.DEFAULT_PORT : portValue;
+        return SshConstants.TO_EFFECTIVE_PORT.applyAsInt(getPort());
     }
 
     @Override
