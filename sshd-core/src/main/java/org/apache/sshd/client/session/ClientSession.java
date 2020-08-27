@@ -209,13 +209,15 @@ public interface ClientSession
      */
     default String executeRemoteCommand(String command) throws IOException {
         try (ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
-            String response = executeRemoteCommand(command, stderr, StandardCharsets.US_ASCII);
-            if (stderr.size() > 0) {
-                String errorMessage = stderr.toString(StandardCharsets.US_ASCII.name());
-                throw new RemoteException("Error reported from remote command='" + command, new ServerException(errorMessage));
+            try {
+                return executeRemoteCommand(command, stderr, StandardCharsets.US_ASCII);
+            } finally {
+                if (stderr.size() > 0) {
+                    String errorMessage = stderr.toString(StandardCharsets.US_ASCII.name());
+                    throw new RemoteException(
+                            "Error reported from remote command=" + command, new ServerException(errorMessage));
+                }
             }
-
-            return response;
         }
     }
 

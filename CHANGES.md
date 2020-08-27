@@ -25,6 +25,7 @@ or `-key-file` command line option.
 * [SSHD-1042](https://issues.apache.org/jira/browse/SSHD-1042) Added more callbacks to SftpEventListener
 * [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
 * [SSHD-1060](https://issues.apache.org/jira/browse/SSHD-1060) Do not store logger level in fields.
+* [SSHD-1064](https://issues.apache.org/jira/browse/SSHD-1064) Fixed `ClientSession#executeRemoteCommand` handling of STDERR in case of exception to behave according to its documentation
 
 ## Behavioral changes and enhancements
 
