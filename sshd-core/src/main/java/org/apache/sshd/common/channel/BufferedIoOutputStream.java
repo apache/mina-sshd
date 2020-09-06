@@ -20,8 +20,8 @@ package org.apache.sshd.common.channel;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
  */
 public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
     protected final IoOutputStream out;
-    protected final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<>();
+    protected final BlockingQueue<IoWriteFutureImpl> writes = new LinkedBlockingQueue<>(10);
     protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<>();
     protected final Object id;
 
@@ -56,7 +56,12 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(getId(), buffer);
-        writes.add(future);
+        try {
+            writes.put(future);
+        } catch (InterruptedException e) {
+            Thread.interrupted();
+            throw new IOException(e);
+        }
         startWriting();
         return future;
     }
