@@ -93,4 +93,12 @@ public interface Signature extends AlgorithmNameProvider {
      * @throws Exception If failed to calculate the signature
      */
     byte[] sign(SessionContext session) throws Exception;
+
+    /**
+     * @param algo - the negotiated value
+     * @return The original ssh name of the signature algorithm
+     */
+    default String getSshAlgorithmName(String algo) {
+        return algo;
+    }
 }

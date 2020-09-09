@@ -52,8 +52,17 @@ public abstract class SignatureRSA extends AbstractSignature {
 
     private int verifierSignatureSize = -1;
 
-    protected SignatureRSA(String algorithm) {
+    private final String sshAlgorithmName;
+
+    protected SignatureRSA(String algorithm, String sshAlgorithmName) {
         super(algorithm);
+        this.sshAlgorithmName = ValidateUtils.checkNotNullAndNotEmpty(sshAlgorithmName,
+            "Missing protocol name of the signature algorithm.");
+    }
+
+    @Override
+    public String getSshAlgorithmName(String algo) {
+        return sshAlgorithmName;
     }
 
     /**
