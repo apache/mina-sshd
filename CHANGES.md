@@ -45,6 +45,7 @@ or `-key-file` command line option.
 * [SSHD-1047](https://issues.apache.org/jira/browse/SSHD-1047) Support for SSH jumps.
 * [SSHD-1048](https://issues.apache.org/jira/browse/SSHD-1048) Wrap instead of rethrow IOException in Future.
 * [SSHD-1050](https://issues.apache.org/jira/browse/SSHD-1050) Fixed race condition in AuthFuture if exception caught before authentication started.
+* [SSHD-1053](https://issues.apache.org/jira/browse/SSHD-1053) Fixed handling of certified keys authentication.
 * [SSHD-1056](https://issues.apache.org/jira/browse/SSHD-1056) Added support for SCP remote-to-remote directory transfer - including '-3' option of SCP command CLI.
 * [SSHD-1057](https://issues.apache.org/jira/browse/SSHD-1057) Added capability to select a ShellFactory based on the current session + use it for "WinSCP"
 * [SSHD-1058](https://issues.apache.org/jira/browse/SSHD-1058) Improve exception logging strategy.

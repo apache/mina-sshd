@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.signature;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -26,6 +28,6 @@ public class SignatureRSASHA512 extends SignatureRSA {
     public static final String ALGORITHM = "SHA512withRSA";
 
     public SignatureRSASHA512() {
-        super(ALGORITHM);
+        super(ALGORITHM, KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS);
     }
 }

@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.signature;
 
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -26,6 +28,6 @@ public class SignatureRSASHA1 extends SignatureRSA {
     public static final String ALGORITHM = "SHA1withRSA";
 
     public SignatureRSASHA1() {
-        super(ALGORITHM);
+        super(ALGORITHM, KeyPairProvider.SSH_RSA);
     }
 }

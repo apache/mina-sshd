@@ -129,7 +129,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         sig.update(session, h);
 
         buffer.clear();
-        buffer.putString(algo);
+        buffer.putString(sig.getSshAlgorithmName(algo));
         byte[] sigBytes = sig.sign(session);
         buffer.putBytes(sigBytes);
 
