@@ -26,6 +26,7 @@ or `-key-file` command line option.
 * [SSHD-1040](https://issues.apache.org/jira/browse/SSHD-1040) Make server key available after KEX completed.
 * [SSHD-1060](https://issues.apache.org/jira/browse/SSHD-1060) Do not store logger level in fields.
 * [SSHD-1064](https://issues.apache.org/jira/browse/SSHD-1064) Fixed `ClientSession#executeRemoteCommand` handling of STDERR in case of exception to behave according to its documentation
+* [SSHD-1076](https://issues.apache.org/jira/browse/SSHD-1076) Break down `ClientUserAuthService#auth` method into several to allow for flexible override
 
 ## Behavioral changes and enhancements
 
