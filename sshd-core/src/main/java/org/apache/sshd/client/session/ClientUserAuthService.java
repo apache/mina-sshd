@@ -39,6 +39,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -56,15 +57,15 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
      * The AuthFuture that is being used by the current auth request. This encodes the state. isSuccess ->
      * authenticated, else if isDone -> server waiting for user auth, else authenticating.
      */
-    private final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();
+    protected final AtomicReference<AuthFuture> authFutureHolder = new AtomicReference<>();
+    protected final ClientSessionImpl clientSession;
+    protected final List<UserAuthFactory> authFactories;
+    protected final List<String> clientMethods;
+    protected List<String> serverMethods;
+
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
-    private final ClientSessionImpl clientSession;
-    private final List<String> clientMethods;
-    private final List<UserAuthFactory> authFactories;
-
     private String service;
-    private List<String> serverMethods;
     private UserAuth userAuth;
     private int currentMethod;
 
@@ -125,24 +126,15 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         // ignored
     }
 
+    public String getCurrentServiceName() {
+        return service;
+    }
+
     public AuthFuture auth(String service) throws IOException {
         this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service name");
 
         ClientSession session = getClientSession();
-        // check if any previous future in use
-        AuthFuture authFuture = new DefaultAuthFuture(service, clientSession.getFutureLock());
-        AuthFuture currentFuture = authFutureHolder.getAndSet(authFuture);
-        boolean debugEnabled = log.isDebugEnabled();
-        if (currentFuture != null) {
-            if (currentFuture.isDone()) {
-                if (debugEnabled) {
-                    log.debug("auth({})[{}] request new authentication", session, service);
-                }
-            } else {
-                currentFuture.setException(
-                        new InterruptedIOException("New authentication started before previous completed"));
-            }
-        }
+        AuthFuture authFuture = updateCurrentAuthFuture(session, service);
 
         // start from scratch
         serverMethods = null;
@@ -155,7 +147,34 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             }
         }
 
-        if (debugEnabled) {
+        sendInitialAuthRequest(session, service);
+        return authFuture;
+    }
+
+    protected AuthFuture updateCurrentAuthFuture(ClientSession session, String service) throws IOException {
+        // check if any previous future in use
+        AuthFuture authFuture = createAuthFuture(session, service);
+        AuthFuture currentFuture = authFutureHolder.getAndSet(authFuture);
+        if (currentFuture != null) {
+            if (currentFuture.isDone()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("updateCurrentAuthFuture({})[{}] request new authentication", session, service);
+                }
+            } else {
+                currentFuture.setException(
+                        new InterruptedIOException("New authentication started before previous completed"));
+            }
+        }
+
+        return authFuture;
+    }
+
+    protected AuthFuture createAuthFuture(ClientSession session, String service) throws IOException {
+        return new DefaultAuthFuture(service, clientSession.getFutureLock());
+    }
+
+    protected IoWriteFuture sendInitialAuthRequest(ClientSession session, String service) throws IOException {
+        if (log.isDebugEnabled()) {
             log.debug("auth({})[{}] send SSH_MSG_USERAUTH_REQUEST for 'none'", session, service);
         }
 
@@ -165,9 +184,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString("none");
-        session.writePacket(buffer);
-
-        return authFuture;
+        return session.writePacket(buffer);
     }
 
     @Override
