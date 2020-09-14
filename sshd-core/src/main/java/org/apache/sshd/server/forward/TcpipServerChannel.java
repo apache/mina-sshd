@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -39,12 +40,15 @@ import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
@@ -58,6 +62,8 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
+
+import static org.apache.sshd.core.CoreModuleProperties.MAX_TCPIP_SERVER_CHANNEL_BUFFER_SIZE;
 
 /**
  * TODO Add javadoc
@@ -102,6 +108,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress tunnelExit;
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
+    private final AtomicLong inFlightDataSize = new AtomicLong();
 
     public TcpipServerChannel(ForwardingFilter.Type type, CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
@@ -208,6 +215,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                         return super.doCloseGracefully();
                     }
                 });
+        long maxBufferSize = MAX_TCPIP_SERVER_CHANNEL_BUFFER_SIZE.getRequired(TcpipServerChannel.this);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -217,9 +225,23 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                         log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
                     }
                 } else {
-                    Buffer buffer = new ByteArrayBuffer(message.available(), false);
+                    int length = message.available();
+                    Buffer buffer = new ByteArrayBuffer(length, false);
                     buffer.putBuffer(message);
-                    out.writePacket(buffer);
+                    long total = inFlightDataSize.addAndGet(length);
+                    if (total > maxBufferSize) {
+                        session.suspendRead();
+                    }
+                    IoWriteFuture ioWriteFuture = out.writePacket(buffer);
+                    ioWriteFuture.addListener(new SshFutureListener<IoWriteFuture>() {
+                        @Override
+                        public void operationComplete(IoWriteFuture future) {
+                            long total = inFlightDataSize.addAndGet(-length);
+                            if (total <= maxBufferSize) {
+                                session.resumeRead();
+                            }
+                        }
+                    });
                 }
             }
 

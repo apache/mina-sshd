@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,6 +71,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final AtomicLong lastReadCycleStart = new AtomicLong();
     private final AtomicLong writeCyclesCounter = new AtomicLong();
     private final AtomicLong lastWriteCycleStart = new AtomicLong();
+    private final AtomicBoolean suspendRead = new AtomicBoolean(false);
+    private final AtomicReference<Runnable> readRunnable = new AtomicReference<>(null);
 
     public Nio2Session(
                        Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket,
@@ -382,7 +385,36 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         exceptionCaught(exc);
     }
 
+    @Override
+    public void suspendRead() {
+        log.debug("suspendRead({})", this);
+        suspendRead.set(true);
+    }
+
+    @Override
+    public void resumeRead() {
+        Runnable runnable = readRunnable.getAndSet(null);
+        if (runnable != null) {
+            log.debug("resumeReadCycle({})", this);
+            suspendRead.set(false);
+            runnable.run();
+        }
+    }
+
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
+        if (suspendRead.get()) {
+            log.debug("doReadCycle({}) suspending read cycle", this);
+            if (!readRunnable.compareAndSet(null, () -> doReadCycle(buffer, completion))) {
+                throw new IllegalStateException();
+            }
+            return;
+        } else {
+            Runnable runnable = readRunnable.get();
+            if (runnable != null) {
+                throw new IllegalStateException();
+            }
+        }
+
         AsynchronousSocketChannel socket = getSocket();
         Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(manager);
         readCyclesCounter.incrementAndGet();

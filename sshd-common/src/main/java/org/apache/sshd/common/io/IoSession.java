@@ -93,4 +93,19 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
      * @throws IOException If failed to shutdown the stream
      */
     void shutdownOutputStream() throws IOException;
+
+    /**
+     * Suspend read operations on this session. May do nothing if not supported by the session implementation.
+     */
+    default void suspendRead() {
+        // Do nothing by default, but can be overriden by implementations
+    }
+
+    /**
+     * Resume read operations on this session. May do nothing if not supported by the session implementation.
+     */
+    default void resumeRead() {
+        // Do nothing by default, but can be overriden by implementations
+    }
+
 }

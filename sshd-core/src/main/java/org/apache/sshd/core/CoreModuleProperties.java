@@ -678,6 +678,12 @@ public final class CoreModuleProperties {
     public static final Property<String> X11_BIND_HOST
             = Property.string("x11-fwd-bind-host", SshdSocketAddress.LOCALHOST_IPV4);
 
+    /**
+     * TODO
+     */
+    public static final Property<Long> MAX_TCPIP_SERVER_CHANNEL_BUFFER_SIZE
+            = Property.long_("max-tcpip-server-channel-buffer-size", 1024 * 1024);
+
     private CoreModuleProperties() {
         // private
     }
