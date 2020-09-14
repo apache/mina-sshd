@@ -387,32 +387,28 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     public void suspendRead() {
-        log.debug("suspendRead({})", this);
-        suspendRead.set(true);
+        log.trace("suspendRead({})", this);
+        if (suspendRead.compareAndSet(false, true)) {
+            log.debug("suspendRead({}) requesting read suspension", this);
+        }
     }
 
     @Override
     public void resumeRead() {
+        log.trace("resumeRead({})", this);
         Runnable runnable = readRunnable.getAndSet(null);
+        suspendRead.set(false);
         if (runnable != null) {
-            log.debug("resumeRead({})", this);
-            suspendRead.set(false);
+            log.debug("resumeRead({}) resuming read", this);
             runnable.run();
         }
     }
 
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         if (suspendRead.get()) {
-            log.debug("doReadCycle({}) suspending read cycle", this);
-            if (!readRunnable.compareAndSet(null, () -> doReadCycle(buffer, completion))) {
-                throw new IllegalStateException();
-            }
+            log.debug("doReadCycle({}) suspending reading", this);
+            readRunnable.set(() -> doReadCycle(buffer, completion));
             return;
-        } else {
-            Runnable runnable = readRunnable.get();
-            if (runnable != null) {
-                throw new IllegalStateException();
-            }
         }
 
         AsynchronousSocketChannel socket = getSocket();
