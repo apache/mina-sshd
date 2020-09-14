@@ -395,7 +395,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     public void resumeRead() {
         Runnable runnable = readRunnable.getAndSet(null);
         if (runnable != null) {
-            log.debug("resumeReadCycle({})", this);
+            log.debug("resumeRead({})", this);
             suspendRead.set(false);
             runnable.run();
         }

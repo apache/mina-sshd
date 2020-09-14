@@ -48,7 +48,6 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
@@ -63,7 +62,8 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
 
-import static org.apache.sshd.core.CoreModuleProperties.MAX_TCPIP_SERVER_CHANNEL_BUFFER_SIZE;
+import static org.apache.sshd.core.CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH;
+import static org.apache.sshd.core.CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW;
 
 /**
  * TODO Add javadoc
@@ -215,7 +215,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                         return super.doCloseGracefully();
                     }
                 });
-        long maxBufferSize = MAX_TCPIP_SERVER_CHANNEL_BUFFER_SIZE.getRequired(TcpipServerChannel.this);
+        long thresholdHigh = TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
+        long thresholdLow = TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -229,7 +230,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                     Buffer buffer = new ByteArrayBuffer(length, false);
                     buffer.putBuffer(message);
                     long total = inFlightDataSize.addAndGet(length);
-                    if (total > maxBufferSize) {
+                    if (total > thresholdHigh) {
                         session.suspendRead();
                     }
                     IoWriteFuture ioWriteFuture = out.writePacket(buffer);
@@ -237,7 +238,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                         @Override
                         public void operationComplete(IoWriteFuture future) {
                             long total = inFlightDataSize.addAndGet(-length);
-                            if (total <= maxBufferSize) {
+                            if (total <= thresholdLow) {
                                 session.resumeRead();
                             }
                         }
