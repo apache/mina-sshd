@@ -96,6 +96,10 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
 
     /**
      * Suspend read operations on this session. May do nothing if not supported by the session implementation.
+     *
+     * If the session usage includes a graceful shutdown with messages being exchanged, the caller needs to
+     * take care of resuming reading the input in order to actually be able to carry on the conversation with
+     * the peer.
      */
     default void suspendRead() {
         // Do nothing by default, but can be overriden by implementations
