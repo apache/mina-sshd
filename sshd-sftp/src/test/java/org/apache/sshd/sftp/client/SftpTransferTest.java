@@ -74,8 +74,10 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
         try (ClientSession session = createClientSession();
              SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
-            fs.setReadBufferSize(bufferSize);
-            fs.setWriteBufferSize(bufferSize);
+            if (bufferSize > 0) {
+                fs.setReadBufferSize(bufferSize);
+                fs.setWriteBufferSize(bufferSize);
+            }
 
             Path remoteRoot = fs.getDefaultDir().resolve("target/sftp");
             Path remote0 = remoteRoot.resolve("files-1.txt");
