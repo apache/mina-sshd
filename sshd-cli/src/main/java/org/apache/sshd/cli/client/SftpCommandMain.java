@@ -65,10 +65,13 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.client.SftpVersionSelector;
+import org.apache.sshd.sftp.client.SftpVersionSelector.NamedVersionSelector;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.sftp.client.fs.SftpFileSystemProvider;
@@ -268,34 +271,21 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         return sb;
     }
 
-    public static SftpClientFactory resolveSftpClientFactory(String... args) {
-        int numArgs = GenericUtils.length(args);
+    /* -------------------------------------------------------------------- */
+
+    public static SftpClientFactory resolveSftpClientFactory(ClientSession session) {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(SftpClientFactory.class);
-        for (int index = 0; index < numArgs; index++) {
-            String argVal = args[index];
-            if ("-o".equals(argVal)) {
-                index++;
-
-                String opt = args[index];
-                int idx = opt.indexOf('=');
-                ValidateUtils.checkTrue(idx > 0, "bad syntax for option: %s %s", argVal, opt);
-
-                String optName = opt.substring(0, idx);
-                String optValue = opt.substring(idx + 1);
-                if (!Objects.equals(SftpClientFactory.class.getSimpleName(), optName)) {
-                    continue;
-                }
-
-                try {
-                    Class<?> clazz = cl.loadClass(optValue);
-                    return SftpClientFactory.class.cast(clazz.newInstance());
-                } catch (Throwable t) {
-                    System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
-                            .append(" to instantiate ").append(optValue)
-                            .append(": ").println(t.getMessage());
-                    System.err.flush();
-                    throw GenericUtils.toRuntimeException(t, true);
-                }
+        String factoryName = session.getString(SftpClientFactory.class.getSimpleName());
+        if (GenericUtils.isNotEmpty(factoryName)) {
+            try {
+                Class<?> clazz = cl.loadClass(factoryName);
+                return SftpClientFactory.class.cast(clazz.newInstance());
+            } catch (Throwable t) {
+                System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
+                        .append(" to instantiate ").append(factoryName)
+                        .append(": ").println(t.getMessage());
+                System.err.flush();
+                throw GenericUtils.toRuntimeException(t, true);
             }
         }
 
@@ -312,6 +302,15 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
         return SftpClientFactory.instance();
     }
+
+    /* -------------------------------------------------------------------- */
+
+    public static NamedVersionSelector resolveVersionSelector(ClientSession session) {
+        String selector = session.getString(SshServerConfigFileReader.SFTP_FORCED_VERSION_PROP.getName());
+        return SftpVersionSelector.resolveVersionSelector(selector);
+    }
+
+    /* -------------------------------------------------------------------- */
 
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
@@ -330,15 +329,23 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
                                    + " [-J proxyJump] [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"
-                                   + " [-w password] [-c cipherlist]  [-m maclist] [-C] hostname/user@host");
+                                   + " [-w password] [-c cipherlist] [-m maclist] [-C] hostname/user@host");
                 System.exit(-1);
                 return;
             }
 
             try {
-                // TODO allow command-line specification of SftpClientFactory
-                SftpClientFactory clientFactory = resolveSftpClientFactory(args);
-                try (SftpClient sftpClient = clientFactory.createSftpClient(session);
+                SftpClientFactory clientFactory = resolveSftpClientFactory(session);
+                if ((level != null) && (level.intValue() <= Level.INFO.intValue())) {
+                    stdout.append("Using factory=").println(clientFactory.getClass().getSimpleName());
+                }
+
+                SftpVersionSelector versionSelector = resolveVersionSelector(session);
+                if ((level != null) && (level.intValue() <= Level.INFO.intValue())) {
+                    stdout.append("Using version selector=").println(versionSelector);
+                }
+
+                try (SftpClient sftpClient = clientFactory.createSftpClient(session, versionSelector);
                      SftpCommandMain sftp = new SftpCommandMain(sftpClient)) {
                     // TODO allow injection of extra CommandExecutor(s) via command line and/or service loading
                     sftp.doInteractive(stdin, stdout, stderr);
@@ -352,6 +359,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             }
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     private static class ExitCommandExecutor implements SftpCommandExecutor {
         ExitCommandExecutor() {
@@ -373,6 +382,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class PwdCommandExecutor implements SftpCommandExecutor {
         protected PwdCommandExecutor() {
             super();
@@ -393,6 +404,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class SessionCommandExecutor implements SftpCommandExecutor {
         SessionCommandExecutor() {
@@ -423,6 +436,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class KexCommandExecutor implements SftpCommandExecutor {
         KexCommandExecutor() {
@@ -455,6 +470,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class ClientCommandExecutor implements SftpCommandExecutor {
         ClientCommandExecutor() {
@@ -493,6 +510,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class InfoCommandExecutor implements SftpCommandExecutor {
         InfoCommandExecutor() {
@@ -534,6 +553,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class VersionCommandExecutor implements SftpCommandExecutor {
         VersionCommandExecutor() {
             super();
@@ -554,6 +575,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class CdCommandExecutor extends PwdCommandExecutor {
         CdCommandExecutor() {
@@ -577,6 +600,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return super.executeCommand("", stdin, stdout, stderr);
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class LcdCommandExecutor extends PwdCommandExecutor {
         LcdCommandExecutor() {
@@ -605,6 +630,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class MkdirCommandExecutor implements SftpCommandExecutor {
         MkdirCommandExecutor() {
             super();
@@ -627,6 +654,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class LsCommandExecutor implements SftpCommandExecutor {
         LsCommandExecutor() {
@@ -669,6 +698,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class RmCommandExecutor implements SftpCommandExecutor {
         RmCommandExecutor() {
@@ -757,6 +788,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class RmdirCommandExecutor implements SftpCommandExecutor {
         RmdirCommandExecutor() {
             super();
@@ -779,6 +812,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class RenameCommandExecutor implements SftpCommandExecutor {
         RenameCommandExecutor() {
@@ -804,6 +839,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class StatVfsCommandExecutor implements SftpCommandExecutor {
         StatVfsCommandExecutor() {
@@ -846,6 +883,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class LStatCommandExecutor implements SftpCommandExecutor {
         LStatCommandExecutor() {
             super();
@@ -871,6 +910,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class ReadLinkCommandExecutor implements SftpCommandExecutor {
         ReadLinkCommandExecutor() {
             super();
@@ -895,6 +936,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class HelpCommandExecutor implements SftpCommandExecutor {
         HelpCommandExecutor() {
             super();
@@ -917,6 +960,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private abstract class TransferCommandExecutor implements SftpCommandExecutor {
         protected TransferCommandExecutor() {
@@ -1101,6 +1146,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class GetCommandExecutor extends TransferCommandExecutor {
         GetCommandExecutor() {
             super();
@@ -1120,6 +1167,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         }
     }
 
+    /* -------------------------------------------------------------------- */
+
     private class PutCommandExecutor extends TransferCommandExecutor {
         PutCommandExecutor() {
             super();
@@ -1138,6 +1187,8 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             return false;
         }
     }
+
+    /* -------------------------------------------------------------------- */
 
     private class ProgressCommandExecutor implements SftpCommandExecutor {
         ProgressCommandExecutor() {

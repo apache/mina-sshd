@@ -122,4 +122,10 @@ public interface NamedResource {
             }
         };
     }
+
+    static int safeCompareByName(NamedResource r1, NamedResource r2, boolean caseSensitive) {
+        String n1 = (r1 == null) ? null : r1.getName();
+        String n2 = (r2 == null) ? null : r2.getName();
+        return GenericUtils.safeCompare(n1, n2, caseSensitive);
+    }
 }
