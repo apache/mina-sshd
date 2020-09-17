@@ -19,7 +19,6 @@
 package org.apache.sshd.common.channel.throttle;
 
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.io.PacketWriter;
 
 /**
  * A special mechanism that enables users to intervene in the way packets are sent from {@code ChannelOutputStream}-s -
@@ -28,18 +27,19 @@ import org.apache.sshd.common.io.PacketWriter;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FunctionalInterface
-public interface ChannelStreamPacketWriterResolver {
+public interface ChannelStreamWriterResolver {
     /**
      * An identity resolver - i.e., no special intervention - simply use the channel itself
      */
-    ChannelStreamPacketWriterResolver NONE = (channel, cmd) -> channel;
+    ChannelStreamWriterResolver NONE = (channel, cmd) -> new DefaultChannelStreamWriter(channel);
 
     /**
      * @param  channel The original {@link Channel}
      * @param  cmd     The {@code SSH_MSG_CHANNEL_DATA} or {@code SSH_MSG_CHANNEL_EXTENDED_DATA} command that triggered
      *                 the resolution
-     * @return         The {@link PacketWriter} to use - <B>Note:</B> if the return value is not a {@link Channel} then
-     *                 it will be closed when the stream is closed
+     * @return         The {@link ChannelStreamWriter} to use - <B>Note:</B> if the return value is not a
+     *                 {@link Channel} then it will be closed when the stream is closed
      */
-    PacketWriter resolveChannelStreamPacketWriter(Channel channel, byte cmd);
+    ChannelStreamWriter resolveChannelStreamWriter(Channel channel, byte cmd);
+
 }

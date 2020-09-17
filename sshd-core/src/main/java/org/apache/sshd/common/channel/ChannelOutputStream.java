@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
-import org.apache.sshd.common.io.PacketWriter;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -44,7 +44,7 @@ import org.slf4j.Logger;
 public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
 
     private final AbstractChannel channelInstance;
-    private final PacketWriter packetWriter;
+    private final ChannelStreamWriter packetWriter;
     private final Window remoteWindow;
     private final Duration maxWaitTimeout;
     private final Logger log;
@@ -76,7 +76,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                                AbstractChannel channel, Window remoteWindow, Duration maxWaitTimeout, Logger log, byte cmd,
                                boolean eofOnClose) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
-        this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
+        this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
         Objects.requireNonNull(maxWaitTimeout, "No maxWaitTimeout");
         ValidateUtils.checkTrue(GenericUtils.isPositive(maxWaitTimeout), "Non-positive max. wait time: %s",
@@ -240,7 +240,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     log.trace("flush({}) send {} len={}",
                             channel, SshConstants.getCommandMessageName(cmd), length);
                 }
-                packetWriter.writePacket(buf);
+                packetWriter.writeData(buf);
             }
         } catch (WindowClosedException e) {
             if (!closedState.getAndSet(true)) {

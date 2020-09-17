@@ -42,7 +42,7 @@ import org.apache.sshd.common.SyspropsMapWrapper;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.ForwarderFactory;
@@ -96,7 +96,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     private PropertyResolver parentResolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private SessionDisconnectHandler sessionDisconnectHandler;
-    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    private ChannelStreamWriterResolver channelStreamWriterResolver;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
     private IoServiceEventListener eventListener;
 
@@ -314,13 +314,13 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
-        return channelStreamPacketWriterResolver;
+    public ChannelStreamWriterResolver getChannelStreamWriterResolver() {
+        return channelStreamWriterResolver;
     }
 
     @Override
-    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
-        channelStreamPacketWriterResolver = resolver;
+    public void setChannelStreamWriterResolver(ChannelStreamWriterResolver resolver) {
+        channelStreamWriterResolver = resolver;
     }
 
     @Override

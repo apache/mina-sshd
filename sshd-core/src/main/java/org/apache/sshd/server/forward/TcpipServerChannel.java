@@ -219,7 +219,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 } else {
                     Buffer buffer = new ByteArrayBuffer(message.available(), false);
                     buffer.putBuffer(message);
-                    out.writePacket(buffer);
+                    out.write(buffer);
                 }
             }
 

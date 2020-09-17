@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.channel.IoWriteFutureImpl;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -45,27 +44,27 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
-public class ThrottlingPacketWriterTest extends BaseTestSupport {
-    public ThrottlingPacketWriterTest() {
+public class ThrottlingChannelStreamWriterTest extends BaseTestSupport {
+    public ThrottlingChannelStreamWriterTest() {
         super();
     }
 
     @Test(timeout = 10_000)
     public void testThrottlerWaitsUntilPacketSendSignalled() throws IOException {
-        try (ThrottlingPacketWriter throttler
-                = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
+        try (ThrottlingChannelStreamWriter throttler
+                = new ThrottlingChannelStreamWriter(new MockChannelStreamWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
             int maxSize = throttler.getMaxPendingPackets();
             List<IoWriteFuture> pendingWrites = new ArrayList<>(maxSize);
             Buffer buf = new ByteArrayBuffer(Byte.SIZE);
             for (int index = maxSize; index > 0; index--) {
-                IoWriteFuture future = throttler.writePacket(buf);
+                IoWriteFuture future = throttler.writeData(buf);
                 pendingWrites.add(future);
                 assertEquals("Mismatched available packets count", index - 1, throttler.getAvailablePacketsCount());
             }
 
             assertEquals("Not all available packet window size exhausted", 0, throttler.getAvailablePacketsCount());
             try {
-                IoWriteFuture future = throttler.writePacket(buf);
+                IoWriteFuture future = throttler.writeData(buf);
                 fail("Unexpected extra packet success: " + future);
             } catch (InterruptedByTimeoutException e) {
                 // expected
@@ -79,41 +78,41 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
             }
 
             for (int index = throttler.getAvailablePacketsCount(); index < maxSize; index++) {
-                throttler.writePacket(buf);
+                throttler.writeData(buf);
             }
         }
     }
 
     @Test(expected = ClosedSelectorException.class, timeout = 10_000)
     public void testThrottlerDoesNotSendIfClosed() throws IOException {
-        try (PacketWriter throttler
-                = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
+        try (ChannelStreamWriter throttler
+                = new ThrottlingChannelStreamWriter(new MockChannelStreamWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
             assertTrue("Throttler not marked as open", throttler.isOpen());
             throttler.close();
             assertFalse("Throttler not marked as closed", throttler.isOpen());
 
-            IoWriteFuture future = throttler.writePacket(new ByteArrayBuffer(Byte.SIZE));
+            IoWriteFuture future = throttler.writeData(new ByteArrayBuffer(Byte.SIZE));
             fail("Unexpected success: " + future);
         }
     }
 
     @Test(expected = ClosedSelectorException.class, timeout = 10_000)
     public void testThrottlerStopsSendingIfExceptionSignaledOnFutureOperationCompletion() throws IOException {
-        try (PacketWriter throttler
-                = new ThrottlingPacketWriter(new MockPacketWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
+        try (ChannelStreamWriter throttler
+                = new ThrottlingChannelStreamWriter(new MockChannelStreamWriter(), Byte.SIZE, TimeUnit.SECONDS.toMillis(3L))) {
             assertTrue("Throttler not marked as open", throttler.isOpen());
 
-            IoWriteFutureImpl futureImpl = (IoWriteFutureImpl) throttler.writePacket(new ByteArrayBuffer(Byte.SIZE));
+            IoWriteFutureImpl futureImpl = (IoWriteFutureImpl) throttler.writeData(new ByteArrayBuffer(Byte.SIZE));
             futureImpl.setValue(new StreamCorruptedException(getCurrentTestName()));
             assertFalse("Throttler not marked as closed", throttler.isOpen());
 
-            IoWriteFuture future = throttler.writePacket(new ByteArrayBuffer(Byte.SIZE));
+            IoWriteFuture future = throttler.writeData(new ByteArrayBuffer(Byte.SIZE));
             fail("Unexpected success: " + future);
         }
     }
 
-    private static class MockPacketWriter implements PacketWriter {
-        MockPacketWriter() {
+    private static class MockChannelStreamWriter implements ChannelStreamWriter {
+        MockChannelStreamWriter() {
             super();
         }
 
@@ -128,8 +127,8 @@ public class ThrottlingPacketWriterTest extends BaseTestSupport {
         }
 
         @Override
-        public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-            return new IoWriteFutureImpl(MockPacketWriter.class.getSimpleName(), buffer);
+        public IoWriteFuture writeData(Buffer buffer) throws IOException {
+            return new IoWriteFutureImpl(MockChannelStreamWriter.class.getSimpleName(), buffer);
         }
     }
 }

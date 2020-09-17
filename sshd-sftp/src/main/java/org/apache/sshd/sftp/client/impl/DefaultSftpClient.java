@@ -288,7 +288,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         IoOutputStream asyncIn = channel.getAsyncIn();
-        IoWriteFuture writeFuture = asyncIn.writePacket(buf);
+        IoWriteFuture writeFuture = asyncIn.write(buf);
         writeFuture.verify();
         return id;
     }
@@ -368,7 +368,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if (traceEnabled) {
             log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
         }
-        IoWriteFuture writeFuture = asyncIn.writePacket(buf);
+        IoWriteFuture writeFuture = asyncIn.write(buf);
         writeFuture.verify();
 
         if (traceEnabled) {

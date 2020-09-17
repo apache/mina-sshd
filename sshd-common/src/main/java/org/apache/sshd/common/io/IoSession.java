@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.net.SocketAddress;
 
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
-public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, Closeable {
+public interface IoSession extends ConnectionEndpointsIndicator, Closeable {
 
     /**
      * @return a unique identifier for this session. Every session has its own ID which is different from any other.
@@ -81,6 +83,27 @@ public interface IoSession extends ConnectionEndpointsIndicator, PacketWriter, C
      * @return     The old value of the attribute - {@code null} if not found.
      */
     Object removeAttribute(Object key);
+
+    /**
+     * Write a packet on the socket. Multiple writes can be issued concurrently and will be queued.
+     *
+     * @param  buffer      the buffer send. <B>NOTE:</B> the buffer must not be touched until the returned write future
+     *                     is completed.
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when sending the packet
+     */
+    IoWriteFuture writePacket(Buffer buffer) throws IOException;
+
+    /**
+     * Closes this session immediately or after all queued write requests are flushed. This operation is asynchronous.
+     * Wait for the returned {@link CloseFuture} if you want to wait for the session actually closed.
+     *
+     * @param  immediately {@code true} to close this session immediately. The pending write requests will simply be
+     *                     discarded. {@code false} to close this session after all queued write requests are flushed.
+     * @return             The generated {@link CloseFuture}
+     */
+    @Override
+    CloseFuture close(boolean immediately);
 
     /**
      * @return the {@link IoService} that created this session.

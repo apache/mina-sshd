@@ -50,7 +50,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    public IoWriteFuture write(Buffer buffer) throws IOException {
         if (isClosing()) {
             throw new EOFException("Closed - state=" + state);
         }
@@ -71,7 +71,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
             return;
         }
 
-        out.writePacket(future.getBuffer()).addListener(
+        out.write(future.getBuffer()).addListener(
                 new SshFutureListener<IoWriteFuture>() {
                     @Override
                     public void operationComplete(IoWriteFuture f) {

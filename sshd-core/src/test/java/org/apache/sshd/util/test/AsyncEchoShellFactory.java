@@ -140,7 +140,7 @@ public class AsyncEchoShellFactory implements ShellFactory {
                 if (buffer.charAt(i) == '\n') {
                     String s = buffer.substring(0, i + 1);
                     byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-                    out.writePacket(new ByteArrayBuffer(bytes)).addListener(future -> {
+                    out.write(new ByteArrayBuffer(bytes)).addListener(future -> {
                         Session session1 = channel.getSession();
                         if (future.isWritten()) {
                             try {
