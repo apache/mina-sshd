@@ -44,11 +44,18 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
     @Test
     public void testTransferIntegrity() throws IOException {
         for (int i = 0; i < 10; i++) {
-            doTestTransferIntegrity();
+            doTestTransferIntegrity(0);
         }
     }
 
-    protected void doTestTransferIntegrity() throws IOException {
+    @Test
+    public void testTransferIntegrityWithBufferLargerThanPacket() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            doTestTransferIntegrity(65536);
+        }
+    }
+
+    protected void doTestTransferIntegrity(int bufferSize) throws IOException {
         Path localRoot = detectTargetFolder().resolve("sftp");
         Files.createDirectories(localRoot);
 
@@ -67,6 +74,8 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
         try (ClientSession session = createClientSession();
              SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
+            fs.setReadBufferSize(bufferSize);
+            fs.setWriteBufferSize(bufferSize);
 
             Path remoteRoot = fs.getDefaultDir().resolve("target/sftp");
             Path remote0 = remoteRoot.resolve("files-1.txt");
