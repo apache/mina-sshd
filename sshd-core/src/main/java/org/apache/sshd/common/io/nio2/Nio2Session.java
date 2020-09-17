@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,8 +70,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final AtomicLong lastReadCycleStart = new AtomicLong();
     private final AtomicLong writeCyclesCounter = new AtomicLong();
     private final AtomicLong lastWriteCycleStart = new AtomicLong();
-    private final AtomicBoolean suspendRead = new AtomicBoolean(false);
-    private final AtomicReference<Runnable> readRunnable = new AtomicReference<>(null);
+    private final Object suspendLock = new Object();
+    private volatile boolean suspend;
+    private volatile Runnable readRunnable;
 
     public Nio2Session(
                        Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket,
@@ -388,7 +388,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     @Override
     public void suspendRead() {
         log.trace("suspendRead({})", this);
-        if (suspendRead.compareAndSet(false, true)) {
+        boolean prev = suspend;
+        suspend = true;
+        if (!prev) {
             log.debug("suspendRead({}) requesting read suspension", this);
         }
     }
@@ -396,19 +398,28 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     @Override
     public void resumeRead() {
         log.trace("resumeRead({})", this);
-        Runnable runnable = readRunnable.getAndSet(null);
-        suspendRead.set(false);
-        if (runnable != null) {
-            log.debug("resumeRead({}) resuming read", this);
-            runnable.run();
+        if (suspend) {
+            Runnable runnable;
+            synchronized (suspendLock) {
+                suspend = false;
+                runnable = readRunnable;
+            }
+            if (runnable != null) {
+                log.debug("resumeRead({}) resuming read", this);
+                runnable.run();
+            }
         }
     }
 
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
-        if (suspendRead.get()) {
+        if (suspend) {
             log.debug("doReadCycle({}) suspending reading", this);
-            readRunnable.set(() -> doReadCycle(buffer, completion));
-            return;
+            synchronized (suspendLock) {
+                if (suspend) {
+                    readRunnable = () -> doReadCycle(buffer, completion);
+                    return;
+                }
+            }
         }
 
         AsynchronousSocketChannel socket = getSocket();
