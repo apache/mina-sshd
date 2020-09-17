@@ -183,7 +183,6 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
-        boolean debugEnabled = log.isDebugEnabled();
         boolean traceEnabled = log.isTraceEnabled();
         for (SocketAddress address : addresses) {
             AsynchronousServerSocketChannel channel = channels.remove(address);

@@ -230,7 +230,6 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 return true;
             }
 
-            boolean debugEnabled = log.isDebugEnabled();
             while (iterator.hasNext()) {
                 R r = iterator.next();
                 try {

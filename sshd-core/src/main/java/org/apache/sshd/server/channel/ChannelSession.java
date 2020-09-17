@@ -196,7 +196,6 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeImmediately0() {
-        boolean debugEnabled = log.isDebugEnabled();
         if (commandInstance != null) {
             try {
                 commandInstance.destroy(this);
