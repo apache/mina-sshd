@@ -533,14 +533,14 @@ public class ClientTest extends BaseTestSupport {
                 AtomicInteger writes = new AtomicInteger(nbMessages);
 
                 IoOutputStream asyncIn = channel.getAsyncIn();
-                asyncIn.write(new ByteArrayBuffer(message))
+                asyncIn.writeBuffer(new ByteArrayBuffer(message))
                         .addListener(new SshFutureListener<IoWriteFuture>() {
                             @Override
                             public void operationComplete(IoWriteFuture future) {
                                 try {
                                     if (future.isWritten()) {
                                         if (writes.decrementAndGet() > 0) {
-                                            asyncIn.write(new ByteArrayBuffer(message)).addListener(this);
+                                            asyncIn.writeBuffer(new ByteArrayBuffer(message)).addListener(this);
                                         } else {
                                             asyncIn.close(false);
                                         }

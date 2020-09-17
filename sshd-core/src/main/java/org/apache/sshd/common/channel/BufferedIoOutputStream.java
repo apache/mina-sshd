@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
- * An {@link IoOutputStream} capable of queuing write requests
+ * An {@link IoOutputStream} capable of queuing write requests.
  */
 public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
     protected final IoOutputStream out;
@@ -50,7 +50,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     }
 
     @Override
-    public IoWriteFuture write(Buffer buffer) throws IOException {
+    public IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         if (isClosing()) {
             throw new EOFException("Closed - state=" + state);
         }
@@ -71,7 +71,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
             return;
         }
 
-        out.write(future.getBuffer()).addListener(
+        out.writeBuffer(future.getBuffer()).addListener(
                 new SshFutureListener<IoWriteFuture>() {
                     @Override
                     public void operationComplete(IoWriteFuture f) {

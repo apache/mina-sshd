@@ -92,7 +92,7 @@ public interface IoSession extends ConnectionEndpointsIndicator, Closeable {
      * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
      * @throws IOException if an error occurred when sending the packet
      */
-    IoWriteFuture writePacket(Buffer buffer) throws IOException;
+    IoWriteFuture writeBuffer(Buffer buffer) throws IOException;
 
     /**
      * Closes this session immediately or after all queued write requests are flushed. This operation is asynchronous.

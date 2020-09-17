@@ -793,7 +793,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
         IoSession networkSession = getIoSession();
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
-        return networkSession.writePacket(new ByteArrayBuffer(data));
+        return networkSession.writeBuffer(new ByteArrayBuffer(data));
     }
 
     /**

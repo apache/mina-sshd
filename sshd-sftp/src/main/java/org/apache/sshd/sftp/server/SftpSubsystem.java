@@ -943,7 +943,7 @@ public class SftpSubsystem
     @Override
     protected void send(Buffer buffer) throws IOException {
         BufferUtils.updateLengthPlaceholder(buffer, 0);
-        out.write(buffer);
+        out.writeBuffer(buffer);
     }
 
     @Override

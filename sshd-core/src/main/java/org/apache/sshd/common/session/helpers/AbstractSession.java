@@ -974,7 +974,7 @@ public abstract class AbstractSession extends SessionHelper {
             ignoreBuf = encode(ignoreBuf);
 
             IoSession networkSession = getIoSession();
-            networkSession.writePacket(ignoreBuf);
+            networkSession.writeBuffer(ignoreBuf);
         }
 
         return encode(buffer);
@@ -987,7 +987,7 @@ public abstract class AbstractSession extends SessionHelper {
         synchronized (encodeLock) {
             Buffer packet = resolveOutputPacket(buffer);
             IoSession networkSession = getIoSession();
-            IoWriteFuture future = networkSession.writePacket(packet);
+            IoWriteFuture future = networkSession.writeBuffer(packet);
             return future;
         }
     }

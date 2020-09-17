@@ -300,7 +300,7 @@ public class WindowAdjustTest extends BaseTestSupport {
 
         private void writeWithPendingDetection(Buffer msg, boolean wasPending) throws IOException {
             try {
-                asyncIn.write(msg).addListener(future -> {
+                asyncIn.writeBuffer(msg).addListener(future -> {
                     if (future.isWritten()) {
                         if (wasPending) {
                             pending.remove();

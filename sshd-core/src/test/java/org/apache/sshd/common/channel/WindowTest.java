@@ -290,7 +290,7 @@ public class WindowTest extends BaseTestSupport {
                     IoInputStream input = channel.getAsyncOut();
                     for (int i = 0; i < nbMessages; i++) {
                         Buffer buffer = new ByteArrayBuffer(bytes);
-                        output.write(buffer).verify(DEFAULT_TIMEOUT);
+                        output.writeBuffer(buffer).verify(DEFAULT_TIMEOUT);
 
                         waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote",
                                 TimeUnit.SECONDS.toMillis(3L));

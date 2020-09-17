@@ -23,6 +23,11 @@ import java.io.IOException;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
+/**
+ * Represents a stream that can be written asynchronously.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public interface IoOutputStream extends Closeable {
 
     /**
@@ -33,6 +38,6 @@ public interface IoOutputStream extends Closeable {
      * @return             An {@code IoWriteFuture} that can be used to check when the data has actually been written.
      * @throws IOException if an error occurred when writing the data
      */
-    IoWriteFuture write(Buffer buffer) throws IOException;
+    IoWriteFuture writeBuffer(Buffer buffer) throws IOException;
 
 }

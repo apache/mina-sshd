@@ -58,14 +58,14 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     @Override
-    public synchronized IoWriteFuture write(Buffer buffer) throws IOException {
+    public synchronized IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         if (isClosing()) {
             throw new EOFException("Closing: " + state);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);
         if (!pendingWrite.compareAndSet(null, future)) {
-            throw new WritePendingException("No write pending future");
+            throw new WritePendingException("A write operation is already pending");
         }
         doWriteIfPossible(false);
         return future;
