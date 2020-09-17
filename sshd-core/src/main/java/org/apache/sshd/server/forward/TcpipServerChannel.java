@@ -59,11 +59,9 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
-
-import static org.apache.sshd.core.CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH;
-import static org.apache.sshd.core.CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW;
 
 /**
  * TODO Add javadoc
@@ -215,8 +213,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                         return super.doCloseGracefully();
                     }
                 });
-        long thresholdHigh = TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
-        long thresholdLow = TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
+        long thresholdHigh = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
+        long thresholdLow = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")
