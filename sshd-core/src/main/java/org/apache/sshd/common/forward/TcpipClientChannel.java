@@ -89,7 +89,6 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         this.localEntry = new SshdSocketAddress((InetSocketAddress) serverSession.getLocalAddress());
         this.remote = remote;
         this.messagesQueue = new ClientChannelPendingMessagesQueue(this);
-        this.streaming = Streaming.Async;
     }
 
     public OpenFuture getOpenFuture() {
