@@ -35,6 +35,9 @@ import org.apache.sshd.common.channel.BufferedIoOutputStream;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.SimpleIoOutputStream;
+import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.forward.Forwarder;
@@ -68,7 +71,7 @@ import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipServerChannel extends AbstractServerChannel implements ForwardingTunnelEndpointsProvider {
+public class TcpipServerChannel extends AbstractServerChannel implements StreamingChannel, ForwardingTunnelEndpointsProvider {
 
     public abstract static class TcpipFactory implements ChannelFactory, ExecutorServiceCarrier {
 
@@ -107,6 +110,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
     private final AtomicLong inFlightDataSize = new AtomicLong();
+    private Streaming streaming = Streaming.Sync;
 
     public TcpipServerChannel(ForwardingFilter.Type type, CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
@@ -123,6 +127,16 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     public void setLocalAddress(SocketAddress localAddress) {
         this.localAddress = localAddress;
+    }
+
+    @Override
+    public Streaming getStreaming() {
+        return streaming;
+    }
+
+    @Override
+    public void setStreaming(Streaming streaming) {
+        this.streaming = streaming;
     }
 
     @Override
@@ -200,19 +214,25 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
             throw new RuntimeSshException(e);
         }
 
-        out = new BufferedIoOutputStream(
-                "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    protected CloseFuture doCloseGracefully() {
-                        try {
-                            sendEof();
-                        } catch (IOException e) {
-                            session.exceptionCaught(e);
-                        }
-                        return super.doCloseGracefully();
+        if (streaming == Streaming.Async) {
+            out = new BufferedIoOutputStream(
+                    "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                protected CloseFuture doCloseGracefully() {
+                    try {
+                        sendEof();
+                    } catch (IOException e) {
+                        session.exceptionCaught(e);
                     }
-                });
+                    return super.doCloseGracefully();
+                }
+            });
+        } else {
+            this.out = new SimpleIoOutputStream(new ChannelOutputStream(
+                    this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
+
+        }
         long thresholdHigh = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
         long thresholdLow = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
         IoHandler handler = new IoHandler() {
