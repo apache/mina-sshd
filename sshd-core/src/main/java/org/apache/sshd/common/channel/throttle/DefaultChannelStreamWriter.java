@@ -24,10 +24,15 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 
+/**
+ * A ChannelStreamWriter that simply calls the {@link Channel#writePacket(Buffer)} method.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class DefaultChannelStreamWriter implements ChannelStreamWriter {
 
-    private final Channel channel;
-    private volatile boolean closed;
+    protected final Channel channel;
+    protected volatile boolean closed;
 
     public DefaultChannelStreamWriter(Channel channel) {
         this.channel = channel;

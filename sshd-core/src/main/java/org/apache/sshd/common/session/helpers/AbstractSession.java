@@ -259,7 +259,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @param  etmMode   Whether using &quot;encrypt-then-MAC&quot; mode
      * @return           The required padding length
      */
-    protected static int calculatePadLength(int len, int blockSize, boolean etmMode) {
+    public static int calculatePadLength(int len, int blockSize, boolean etmMode) {
         /*
          * Note: according to RFC-4253 section 6:
          *
