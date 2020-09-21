@@ -27,6 +27,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -213,6 +214,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         final int reportPhase = dataBytes.length / 10;
         log.info("{} using payload size={}", getCurrentTestName(), dataBytes.length);
 
+        AtomicInteger errors = new AtomicInteger();
+
         Session session = createSession();
         try (ServerSocket ss = new ServerSocket()) {
             ss.setReuseAddress(true);
@@ -287,41 +290,46 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             };
             tAcceptor.start();
-            Thread.sleep(TimeUnit.SECONDS.toMillis(3L));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
 
             byte[] buf = new byte[8192];
             for (int i = 0; i < numIterations; i++) {
-                log.info("Iteration {}/{} started", i, numIterations);
+                log.debug("Iteration {}/{} started", i, numIterations);
                 try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 
-                    log.info("Iteration {} connected to {}", i, s.getRemoteSocketAddress());
+                    log.debug("Iteration {} connected to {}", i, s.getRemoteSocketAddress());
                     s.setSoTimeout((int) CoreModuleProperties.NIO2_MIN_WRITE_TIMEOUT.getRequiredDefault().toMillis());
 
                     sockOut.write(dataBytes);
                     sockOut.flush();
 
-                    log.info("Iteration {} awaiting echoed data", i);
+                    log.debug("Iteration {} awaiting echoed data", i);
                     try (InputStream sockIn = s.getInputStream();
                          ByteArrayOutputStream baos = new ByteArrayOutputStream(dataBytes.length)) {
                         for (int readSize = 0, lastReport = 0; readSize < dataBytes.length;) {
-                            int l = sockIn.read(buf);
-                            if (l < 0) {
-                                break;
-                            }
+                            try {
+                                int l = sockIn.read(buf);
+                                if (l < 0) {
+                                    break;
+                                }
 
-                            baos.write(buf, 0, l);
-                            readSize += l;
+                                baos.write(buf, 0, l);
+                                readSize += l;
 
-                            if ((readSize - lastReport) >= reportPhase) {
-                                log.info("Read {}/{} bytes of iteration #{}", readSize, dataBytes.length, i);
-                                lastReport = readSize;
+                                if ((readSize - lastReport) >= reportPhase) {
+                                    log.debug("Read {}/{} bytes of iteration #{}", readSize, dataBytes.length, i);
+                                    lastReport = readSize;
+                                }
+                            } catch (SocketTimeoutException e) {
+                                throw new IOException("Error reading data at index " + readSize + "/" + dataBytes.length + " of iteration #" + i, e);
                             }
                         }
                         assertPayloadEquals("Mismatched payload at iteration #" + i, dataBytes, baos.toByteArray());
                     }
                 } catch (Exception e) {
                     log.error("Error in iteration #" + i, e);
+                    errors.incrementAndGet();
                 }
             }
 
@@ -339,6 +347,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         } finally {
             session.disconnect();
         }
+
+        assertEquals("Some errors occured", 0, errors.get());
     }
 
     private static void assertPayloadEquals(String message, byte[] expectedBytes, byte[] actualBytes) {
@@ -451,7 +461,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             for (int i = 0; i < numIterations; i++) {
                 ok += (lenOK[i] == null) ? 1 : 0;
             }
-            log.info("Successful iteration: " + ok + " out of " + numIterations);
+            log.info("Successful iterations: " + ok + " out of " + numIterations);
             Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             for (int i = 0; i < numIterations; i++) {
                 assertNull("Bad length at iteration " + i, lenOK[i]);
@@ -527,7 +537,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     errors.add(e);
                                 } finally {
                                     latch.countDown();
-                                    System.err.println("Remaining: " + latch.getCount());
+                                    log.debug("Remaining: " + latch.getCount());
                                 }
                             }
                             mgr.shutdown();
