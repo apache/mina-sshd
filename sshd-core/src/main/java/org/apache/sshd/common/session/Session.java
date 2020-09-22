@@ -31,13 +31,12 @@ import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingInformationProvider;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
@@ -58,12 +57,11 @@ public interface Session
         ReservedSessionMessagesManager,
         SessionDisconnectHandlerManager,
         ChannelListenerManager,
-        ChannelStreamPacketWriterResolverManager,
+        ChannelStreamWriterResolverManager,
         PortForwardingEventListenerManager,
         UnknownChannelReferenceHandlerManager,
         FactoryManagerHolder,
-        PortForwardingInformationProvider,
-        PacketWriter {
+        PortForwardingInformationProvider {
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space (5 bytes) for the packet header.
@@ -103,7 +101,7 @@ public interface Session
      *                     &quot;null&quot; string is sent
      * @param  lang        The language - {@code null}/empty if some pre-agreed default is used
      * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding or sending the packet
      * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-11.3">RFC 4253 - section 11.3</A>
      */
     IoWriteFuture sendDebugMessage(boolean display, Object msg, String lang) throws IOException;
@@ -113,10 +111,20 @@ public interface Session
      *
      * @param  data        The message data
      * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding or sending the packet
      * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-11.2">RFC 4253 - section 11.2</A>
      */
     IoWriteFuture sendIgnoreMessage(byte... data) throws IOException;
+
+    /**
+     * Encode and send the given buffer. The buffer has to have 5 bytes free at the beginning to allow the encoding to
+     * take place. Also, the write position of the buffer has to be set to the position of the last byte to write.
+     *
+     * @param  buffer      the buffer to encode and send
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding sending the packet
+     */
+    IoWriteFuture writePacket(Buffer buffer) throws IOException;
 
     /**
      * Encode and send the given buffer with the specified timeout. If the buffer could not be written before the
@@ -127,7 +135,7 @@ public interface Session
      * @param  timeout     the (never {@code null}) timeout value - its {@link Duration#toMillis() milliseconds} value
      *                     will be used
      * @return             a future that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding or sending the packet
      * @see                #writePacket(Buffer, long)
      */
     default IoWriteFuture writePacket(Buffer buffer, Duration timeout) throws IOException {
@@ -143,7 +151,7 @@ public interface Session
      * @param  buffer        the buffer to encode and spend
      * @param  maxWaitMillis the timeout in milliseconds
      * @return               a future that can be used to check when the packet has actually been sent
-     * @throws IOException   if an error occurred when encoding sending the packet
+     * @throws IOException   if an error occurred when encoding or sending the packet
      */
     default IoWriteFuture writePacket(Buffer buffer, long maxWaitMillis) throws IOException {
         return writePacket(buffer, maxWaitMillis, TimeUnit.MILLISECONDS);
@@ -158,7 +166,7 @@ public interface Session
      * @param  timeout     the timeout
      * @param  unit        the time unit of the timeout parameter
      * @return             a future that can be used to check when the packet has actually been sent
-     * @throws IOException if an error occurred when encoding sending the packet
+     * @throws IOException if an error occurred when encoding or sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
@@ -171,7 +179,7 @@ public interface Session
      * @param  timeout                         The number of time units to wait - must be <U>positive</U>
      * @param  unit                            The {@link TimeUnit} to wait for the response
      * @return                                 the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException                     if an error occurred when encoding sending the packet
+     * @throws IOException                     if an error occurred when encoding or sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     default Buffer request(
@@ -190,7 +198,7 @@ public interface Session
      * @param  buffer                          the buffer containing the global request
      * @param  timeout                         The (never {@code null}) timeout to wait - its milliseconds value is used
      * @return                                 the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException                     if an error occurred when encoding sending the packet
+     * @throws IOException                     if an error occurred when encoding or sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     default Buffer request(String request, Buffer buffer, Duration timeout) throws IOException {
@@ -206,7 +214,7 @@ public interface Session
      * @param  buffer                          the buffer containing the global request
      * @param  maxWaitMillis                   Max. time to wait for response (millis) - must be <U>positive</U>
      * @return                                 the return buffer if the request was successful, {@code null} otherwise.
-     * @throws IOException                     if an error occurred when encoding sending the packet
+     * @throws IOException                     if an error occurred when encoding or sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException;

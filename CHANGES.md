@@ -17,6 +17,7 @@ or `-key-file` command line option.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.
+* [SSHD-1080](https://issues.apache.org/jira/browse/SSHD-1080) Rework the PacketWriter to split according to the various semantics
 * [SSHD-1084](https://issues.apache.org/jira/browse/SSHD-1084) Revert the usage of asynchronous streams when forwarding ports. 
 
 ## Minor code helpers

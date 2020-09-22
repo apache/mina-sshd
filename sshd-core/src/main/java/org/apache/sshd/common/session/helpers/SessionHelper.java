@@ -48,8 +48,8 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -104,7 +104,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     private ReservedSessionMessagesHandler reservedSessionMessagesHandler;
     private SessionDisconnectHandler sessionDisconnectHandler;
     private UnknownChannelReferenceHandler unknownChannelReferenceHandler;
-    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    private ChannelStreamWriterResolver channelStreamPacketWriterResolver;
 
     /**
      * The name of the authenticated user
@@ -514,24 +514,24 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+    public ChannelStreamWriterResolver getChannelStreamWriterResolver() {
         return channelStreamPacketWriterResolver;
     }
 
     @Override
-    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+    public void setChannelStreamWriterResolver(ChannelStreamWriterResolver resolver) {
         channelStreamPacketWriterResolver = resolver;
     }
 
     @Override
-    public ChannelStreamPacketWriterResolver resolveChannelStreamPacketWriterResolver() {
-        ChannelStreamPacketWriterResolver resolver = getChannelStreamPacketWriterResolver();
+    public ChannelStreamWriterResolver resolveChannelStreamWriterResolver() {
+        ChannelStreamWriterResolver resolver = getChannelStreamWriterResolver();
         if (resolver != null) {
             return resolver;
         }
 
-        ChannelStreamPacketWriterResolverManager manager = getFactoryManager();
-        return manager.resolveChannelStreamPacketWriterResolver();
+        ChannelStreamWriterResolverManager manager = getFactoryManager();
+        return manager.resolveChannelStreamWriterResolver();
     }
 
     @Override
@@ -793,7 +793,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
         IoSession networkSession = getIoSession();
         byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
-        return networkSession.writePacket(new ByteArrayBuffer(data));
+        return networkSession.writeBuffer(new ByteArrayBuffer(data));
     }
 
     /**

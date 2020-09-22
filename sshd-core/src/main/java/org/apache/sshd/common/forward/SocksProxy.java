@@ -103,7 +103,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         protected void onMessage(Buffer buffer) throws IOException {
             IoOutputStream asyncIn = channel.getAsyncIn();
             if (asyncIn != null) {
-                asyncIn.writePacket(buffer);
+                asyncIn.writeBuffer(buffer);
             } else {
                 OutputStream invertedIn = channel.getInvertedIn();
                 invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
@@ -185,7 +185,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
             try {
-                session.writePacket(buffer);
+                session.writeBuffer(buffer);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 log.error("Failed ({}) to send channel open packet for {}: {}", e.getClass().getSimpleName(), channel,
@@ -229,7 +229,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 buffer = new ByteArrayBuffer(Byte.SIZE, false);
                 buffer.putByte((byte) 0x05);
                 buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
-                session.writePacket(buffer);
+                session.writeBuffer(buffer);
                 if (!foundNoAuth) {
                     throw new IllegalStateException("Received socks5 greeting without NoAuth method");
                 } else if (debugEnabled) {
@@ -304,7 +304,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
             response.wpos(wpos);
             try {
-                session.writePacket(response);
+                session.writeBuffer(response);
             } catch (IOException e) {
                 log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel,
                         e.getMessage());

@@ -21,7 +21,7 @@ package org.apache.sshd.common.channel;
 /**
  * A channel that can be either configured to use synchronous or asynchrounous streams.
  *
- * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface StreamingChannel {
 

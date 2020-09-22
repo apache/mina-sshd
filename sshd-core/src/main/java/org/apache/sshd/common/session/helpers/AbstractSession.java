@@ -63,7 +63,6 @@ import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
@@ -252,6 +251,46 @@ public abstract class AbstractSession extends SessionHelper {
                 throw new RuntimeSshException(e);
             }
         }
+    }
+
+    /**
+     * @param  len       The packet payload size
+     * @param  blockSize The cipher block size
+     * @param  etmMode   Whether using &quot;encrypt-then-MAC&quot; mode
+     * @return           The required padding length
+     */
+    public static int calculatePadLength(int len, int blockSize, boolean etmMode) {
+        /*
+         * Note: according to RFC-4253 section 6:
+         *
+         * The minimum size of a packet is 16 (or the cipher block size, whichever is larger) bytes (plus 'mac').
+         *
+         * Since all out ciphers, MAC(s), etc. have a block size > 8 then the minimum size of the packet will be at
+         * least 16 due to the padding at the very least - so even packets that contain an opcode with no arguments will
+         * be above this value. This avoids an un-necessary call to Math.max(len, 16) for each and every packet
+         */
+
+        len++; // the pad length
+        if (!etmMode) {
+            len += Integer.BYTES;
+        }
+
+        /*
+         * Note: according to RFC-4253 section 6:
+         *
+         * Note that the length of the concatenation of 'packet_length', 'padding_length', 'payload', and 'random
+         * padding' MUST be a multiple of the cipher block size or 8, whichever is larger.
+         *
+         * However, we currently do not have ciphers with a block size of less than 8 so we do not take this into
+         * account in order to accelerate the calculation and avoiding an un-necessary call to Math.max(blockSize, 8)
+         * for each and every packet.
+         */
+        int pad = (-len) & (blockSize - 1);
+        if (pad < blockSize) {
+            pad += blockSize;
+        }
+
+        return pad;
     }
 
     @Override
@@ -935,7 +974,7 @@ public abstract class AbstractSession extends SessionHelper {
             ignoreBuf = encode(ignoreBuf);
 
             IoSession networkSession = getIoSession();
-            networkSession.writePacket(ignoreBuf);
+            networkSession.writeBuffer(ignoreBuf);
         }
 
         return encode(buffer);
@@ -948,7 +987,7 @@ public abstract class AbstractSession extends SessionHelper {
         synchronized (encodeLock) {
             Buffer packet = resolveOutputPacket(buffer);
             IoSession networkSession = getIoSession();
-            IoWriteFuture future = networkSession.writePacket(packet);
+            IoWriteFuture future = networkSession.writeBuffer(packet);
             return future;
         }
     }
@@ -1104,7 +1143,7 @@ public abstract class AbstractSession extends SessionHelper {
         boolean etmMode = outMac != null && outMac.isEncryptThenMac();
         int authLen = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
         boolean authMode = authLen > 0;
-        int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode);
+        int pad = calculatePadLength(len, outCipherSize, etmMode || authMode);
         len += SshConstants.SSH_PACKET_HEADER_LEN + pad + authLen;
         if (outMac != null) {
             len += outMacSize;
@@ -1204,7 +1243,7 @@ public abstract class AbstractSession extends SessionHelper {
             boolean authMode = authSize > 0;
             int oldLen = len;
 
-            int pad = PacketWriter.calculatePadLength(len, outCipherSize, etmMode || authMode);
+            int pad = calculatePadLength(len, outCipherSize, etmMode || authMode);
 
             len += Byte.BYTES + pad;
 

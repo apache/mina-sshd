@@ -389,7 +389,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
 
         @Override
-        public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+        public IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
             if (!isOpen()) {
                 throw new EOFException("Not open");
             }

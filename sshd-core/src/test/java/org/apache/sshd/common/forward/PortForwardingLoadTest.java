@@ -322,7 +322,10 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                     lastReport = readSize;
                                 }
                             } catch (SocketTimeoutException e) {
-                                throw new IOException("Error reading data at index " + readSize + "/" + dataBytes.length + " of iteration #" + i, e);
+                                throw new IOException(
+                                        "Error reading data at index " + readSize + "/" + dataBytes.length + " of iteration #"
+                                                      + i,
+                                        e);
                             }
                         }
                         assertPayloadEquals("Mismatched payload at iteration #" + i, dataBytes, baos.toByteArray());

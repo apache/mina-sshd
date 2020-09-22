@@ -210,7 +210,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         Window wLocal = getLocalWindow();
         wLocal.consumeAndCheck(len);
-        serverSession.writePacket(buf);
+        serverSession.writeBuffer(buf);
     }
 
     @Override

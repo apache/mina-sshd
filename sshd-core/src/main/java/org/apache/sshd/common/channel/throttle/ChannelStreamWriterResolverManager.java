@@ -19,26 +19,25 @@
 package org.apache.sshd.common.channel.throttle;
 
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.io.PacketWriter;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ChannelStreamPacketWriterResolverManager extends ChannelStreamPacketWriterResolver {
-    ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver();
+public interface ChannelStreamWriterResolverManager extends ChannelStreamWriterResolver {
+    ChannelStreamWriterResolver getChannelStreamWriterResolver();
 
-    void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver);
+    void setChannelStreamWriterResolver(ChannelStreamWriterResolver resolver);
 
-    default ChannelStreamPacketWriterResolver resolveChannelStreamPacketWriterResolver() {
-        ChannelStreamPacketWriterResolver resolver = getChannelStreamPacketWriterResolver();
-        return (resolver == null) ? ChannelStreamPacketWriterResolver.NONE : resolver;
+    default ChannelStreamWriterResolver resolveChannelStreamWriterResolver() {
+        return getChannelStreamWriterResolver();
     }
 
     @Override
-    default PacketWriter resolveChannelStreamPacketWriter(Channel channel, byte cmd) {
-        ChannelStreamPacketWriterResolver resolver = resolveChannelStreamPacketWriterResolver();
-        return (resolver == null) ? channel : resolver.resolveChannelStreamPacketWriter(channel, cmd);
+    default ChannelStreamWriter resolveChannelStreamWriter(Channel channel, byte cmd) {
+        ChannelStreamWriterResolver resolver = resolveChannelStreamWriterResolver();
+        ChannelStreamWriterResolver actual = (resolver == null) ? ChannelStreamWriterResolver.NONE : resolver;
+        return actual.resolveChannelStreamWriter(channel, cmd);
     }
 }

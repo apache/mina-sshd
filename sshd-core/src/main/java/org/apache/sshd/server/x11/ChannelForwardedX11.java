@@ -101,7 +101,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         wLocal.consumeAndCheck(len);
         // use a clone in case data buffer is re-used
         Buffer packet = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        serverSession.writePacket(packet);
+        serverSession.writeBuffer(packet);
     }
 
     @Override

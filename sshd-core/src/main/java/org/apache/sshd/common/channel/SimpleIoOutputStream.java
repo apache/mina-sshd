@@ -26,12 +26,11 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.forward.TcpipServerChannel;
 
 /**
  * An implementation of {@link IoOutputStream} using a synchronous {@link ChannelOutputStream}.
  *
- * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SimpleIoOutputStream extends AbstractCloseable implements IoOutputStream {
 
@@ -48,7 +47,7 @@ public class SimpleIoOutputStream extends AbstractCloseable implements IoOutputS
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    public IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         os.write(buffer.array(), buffer.rpos(), buffer.available());
         os.flush();
         DefaultIoWriteFuture f = new DefaultIoWriteFuture(this, null);

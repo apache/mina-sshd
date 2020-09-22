@@ -24,10 +24,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -36,14 +36,14 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
     private final Channel channelInstance;
-    private final PacketWriter packetWriter;
+    private final ChannelStreamWriter packetWriter;
     private final byte cmd;
     private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
     private final Object packetWriteId;
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
-        this.packetWriter = channelInstance.resolveChannelStreamPacketWriter(channel, cmd);
+        this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.cmd = cmd;
         this.packetWriteId = channel.toString() + "[" + SshConstants.getCommandMessageName(cmd) + "]";
     }
@@ -58,14 +58,14 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     @Override
-    public synchronized IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    public synchronized IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         if (isClosing()) {
             throw new EOFException("Closing: " + state);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);
         if (!pendingWrite.compareAndSet(null, future)) {
-            throw new WritePendingException("No write pending future");
+            throw new WritePendingException("A write operation is already pending");
         }
         doWriteIfPossible(false);
         return future;
@@ -164,7 +164,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 remoteWindow.consume(length);
 
                 try {
-                    IoWriteFuture writeFuture = packetWriter.writePacket(buf);
+                    IoWriteFuture writeFuture = packetWriter.writeData(buf);
                     writeFuture.addListener(f -> onWritten(future, total, length, f));
                 } catch (IOException e) {
                     future.setValue(e);

@@ -217,24 +217,26 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         if (streaming == Streaming.Async) {
             out = new BufferedIoOutputStream(
                     "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                protected CloseFuture doCloseGracefully() {
-                    try {
-                        sendEof();
-                    } catch (IOException e) {
-                        session.exceptionCaught(e);
-                    }
-                    return super.doCloseGracefully();
-                }
-            });
+                        @SuppressWarnings("synthetic-access")
+                        @Override
+                        protected CloseFuture doCloseGracefully() {
+                            try {
+                                sendEof();
+                            } catch (IOException e) {
+                                session.exceptionCaught(e);
+                            }
+                            return super.doCloseGracefully();
+                        }
+                    });
         } else {
-            this.out = new SimpleIoOutputStream(new ChannelOutputStream(
-                    this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
+            this.out = new SimpleIoOutputStream(
+                    new ChannelOutputStream(
+                            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
 
         }
         long thresholdHigh = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
-        long thresholdLow = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
+        long thresholdLow
+                = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -251,7 +253,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
                     if (total > thresholdHigh) {
                         session.suspendRead();
                     }
-                    IoWriteFuture ioWriteFuture = out.writePacket(buffer);
+                    IoWriteFuture ioWriteFuture = out.writeBuffer(buffer);
                     ioWriteFuture.addListener(new SshFutureListener<IoWriteFuture>() {
                         @Override
                         public void operationComplete(IoWriteFuture future) {
@@ -379,7 +381,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        ioSession.writePacket(buf).addListener(future -> {
+        ioSession.writeBuffer(buf).addListener(future -> {
             if (future.isWritten()) {
                 handleWriteDataSuccess(
                         SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);

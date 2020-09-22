@@ -136,7 +136,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) {
+    public IoWriteFuture writeBuffer(Buffer buffer) {
         int bufLen = buffer.available();
         ByteBuf buf = Unpooled.buffer(bufLen);
         buf.writeBytes(buffer.array(), buffer.rpos(), bufLen);

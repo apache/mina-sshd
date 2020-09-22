@@ -28,8 +28,8 @@ import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
-import org.apache.sshd.common.io.PacketWriter;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
@@ -47,8 +47,7 @@ public interface Channel
         ChannelListenerManager,
         PropertyResolver,
         AttributeStore,
-        PacketWriter,
-        ChannelStreamPacketWriterResolverManager,
+        ChannelStreamWriterResolverManager,
         Closeable {
     // Known types of channels
     String CHANNEL_EXEC = "exec";
@@ -224,4 +223,16 @@ public interface Channel
         T value = channel.getAttribute(key);
         return (value != null) ? value : Session.resolveAttribute(channel.getSession(), key);
     }
+
+    /**
+     * Encode and send the given buffer. <B>Note:</B> for session packets the buffer has to have 5 bytes free at the
+     * beginning to allow the encoding to take place. Also, the write position of the buffer has to be set to the
+     * position of the last byte to write.
+     *
+     * @param  buffer      the buffer to encode and send. <B>NOTE:</B> the buffer must not be touched until the returned
+     *                     write future is completed.
+     * @return             An {@code IoWriteFuture} that can be used to check when the packet has actually been sent
+     * @throws IOException if an error occurred when encoding or sending the packet
+     */
+    IoWriteFuture writePacket(Buffer buffer) throws IOException;
 }

@@ -16,28 +16,43 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
+package org.apache.sshd.common.channel.throttle;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Represents a stream that can be written asynchronously.
+ * A ChannelStreamWriter that simply calls the {@link Channel#writePacket(Buffer)} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface IoOutputStream extends Closeable {
+public class DefaultChannelStreamWriter implements ChannelStreamWriter {
 
-    /**
-     * Write the given buffer.
-     *
-     * @param  buffer      the data to write. <B>NOTE:</B> the buffer must not be touched until the returned write
-     *                     future is completed.
-     * @return             An {@code IoWriteFuture} that can be used to check when the data has actually been written.
-     * @throws IOException if an error occurred when writing the data
-     */
-    IoWriteFuture writeBuffer(Buffer buffer) throws IOException;
+    protected final Channel channel;
+    protected volatile boolean closed;
 
+    public DefaultChannelStreamWriter(Channel channel) {
+        this.channel = channel;
+    }
+
+    @Override
+    public IoWriteFuture writeData(Buffer buffer) throws IOException {
+        if (closed) {
+            throw new IOException("ChannelStreamPacketWriter has been closed");
+        }
+        return channel.writePacket(buffer);
+    }
+
+    @Override
+    public boolean isOpen() {
+        return !closed;
+    }
+
+    @Override
+    public void close() throws IOException {
+        closed = true;
+    }
 }

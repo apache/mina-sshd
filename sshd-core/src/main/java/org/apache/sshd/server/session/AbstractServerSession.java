@@ -325,7 +325,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             startService(authService, buffer);
 
             // Now we can inform the peer that authentication is successful
-            future = networkSession.writePacket(packet);
+            future = networkSession.writeBuffer(packet);
         }
 
         resetIdleTimeout();
@@ -491,7 +491,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         if (err != null) {
             IoSession networkSession = getIoSession();
-            networkSession.writePacket(
+            networkSession.writeBuffer(
                     new ByteArrayBuffer((err.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)))
                     .addListener(future -> close(true));
             throw err;

@@ -34,22 +34,22 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.io.PacketWriter;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * A {@link PacketWriter} delegate implementation that &quot;throttles&quot; the output by having a limit on the
- * outstanding packets that have not been sent yet. The {@link #writePacket(Buffer) writePacket} implementation make
- * sure that the limit has not been exceeded - if so, then it waits until pending packets have been successfully sent
- * before sending the next packet.
+ * A {@link ChannelStreamWriter} delegate implementation that &quot;throttles&quot; the output by having a limit on the
+ * outstanding packets that have not been sent yet. The {@link #writeData(Buffer) writePacket} implementation make sure
+ * that the limit has not been exceeded - if so, then it waits until pending packets have been successfully sent before
+ * sending the next packet.
  *
  * <B>Note:</B> {@link #close() closing} the throttler does not close the delegate writer
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ThrottlingPacketWriter extends AbstractLoggingBean implements PacketWriter, SshFutureListener<IoWriteFuture> {
+public class ThrottlingChannelStreamWriter extends AbstractLoggingBean
+        implements ChannelStreamWriter, SshFutureListener<IoWriteFuture> {
     /** Timeout (seconds) for throttling packet writer to wait for pending packets send */
     public static final Property<Duration> WAIT_TIME
             = Property.durationSec("packet-writer-wait-time", Duration.ofSeconds(30L));
@@ -58,29 +58,30 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     public static final Property<Integer> MAX_PEND_COUNT
             = Property.integer("packet-writer-max-pend-count", 4096);
 
-    private final PacketWriter delegate;
+    private final ChannelStreamWriter delegate;
     private final int maxPendingPackets;
     private final long maxWait;
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final AtomicInteger availableCount;
 
-    public ThrottlingPacketWriter(Channel channel) {
-        this(channel, channel);
+    public ThrottlingChannelStreamWriter(Channel channel) {
+        this(new DefaultChannelStreamWriter(channel), channel);
     }
 
-    public ThrottlingPacketWriter(PacketWriter delegate, PropertyResolver resolver) {
+    public ThrottlingChannelStreamWriter(ChannelStreamWriter delegate, PropertyResolver resolver) {
         this(delegate, MAX_PEND_COUNT.getRequired(resolver), WAIT_TIME.getRequired(resolver));
     }
 
-    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, TimeUnit waitUnit, long waitCount) {
+    public ThrottlingChannelStreamWriter(ChannelStreamWriter delegate, int maxPendingPackets, TimeUnit waitUnit,
+                                         long waitCount) {
         this(delegate, maxPendingPackets, waitUnit.toMillis(waitCount));
     }
 
-    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, Duration maxWait) {
+    public ThrottlingChannelStreamWriter(ChannelStreamWriter delegate, int maxPendingPackets, Duration maxWait) {
         this(delegate, maxPendingPackets, maxWait.toMillis());
     }
 
-    public ThrottlingPacketWriter(PacketWriter delegate, int maxPendingPackets, long maxWait) {
+    public ThrottlingChannelStreamWriter(ChannelStreamWriter delegate, int maxPendingPackets, long maxWait) {
         this.delegate = Objects.requireNonNull(delegate, "No delegate provided");
         ValidateUtils.checkTrue(maxPendingPackets > 0, "Invalid pending packets limit: %d", maxPendingPackets);
         this.maxPendingPackets = maxPendingPackets;
@@ -89,7 +90,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
         this.maxWait = maxWait;
     }
 
-    public PacketWriter getDelegate() {
+    public ChannelStreamWriter getDelegate() {
         return delegate;
     }
 
@@ -111,7 +112,7 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    public IoWriteFuture writeData(Buffer buffer) throws IOException {
         if (!isOpen()) {
             throw new ClosedSelectorException();
         }
@@ -147,8 +148,8 @@ public class ThrottlingPacketWriter extends AbstractLoggingBean implements Packe
             throw new EOFException("Negative available packets count: " + available);
         }
 
-        PacketWriter writer = getDelegate();
-        return writer.writePacket(buffer).addListener(this);
+        ChannelStreamWriter writer = getDelegate();
+        return writer.writeData(buffer).addListener(this);
     }
 
     @Override

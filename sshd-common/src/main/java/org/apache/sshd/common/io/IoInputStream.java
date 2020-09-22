@@ -21,6 +21,11 @@ package org.apache.sshd.common.io;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
+/**
+ * Represents a stream that can be read asynchronously.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public interface IoInputStream extends Closeable {
     /**
      * NOTE: the buffer must not be touched until the returned read future is completed.

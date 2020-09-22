@@ -41,8 +41,8 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolver;
-import org.apache.sshd.common.channel.throttle.ChannelStreamPacketWriterResolverManager;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
+import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -105,7 +105,7 @@ public abstract class AbstractChannel
 
     private final Window localWindow;
     private final Window remoteWindow;
-    private ChannelStreamPacketWriterResolver channelStreamPacketWriterResolver;
+    private ChannelStreamWriterResolver channelStreamPacketWriterResolver;
 
     /**
      * A {@link Map} of sent requests - key = request name, value = timestamp when request was sent.
@@ -196,24 +196,24 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public ChannelStreamPacketWriterResolver getChannelStreamPacketWriterResolver() {
+    public ChannelStreamWriterResolver getChannelStreamWriterResolver() {
         return channelStreamPacketWriterResolver;
     }
 
     @Override
-    public void setChannelStreamPacketWriterResolver(ChannelStreamPacketWriterResolver resolver) {
+    public void setChannelStreamWriterResolver(ChannelStreamWriterResolver resolver) {
         channelStreamPacketWriterResolver = resolver;
     }
 
     @Override
-    public ChannelStreamPacketWriterResolver resolveChannelStreamPacketWriterResolver() {
-        ChannelStreamPacketWriterResolver resolver = getChannelStreamPacketWriterResolver();
+    public ChannelStreamWriterResolver resolveChannelStreamWriterResolver() {
+        ChannelStreamWriterResolver resolver = getChannelStreamWriterResolver();
         if (resolver != null) {
             return resolver;
         }
 
-        ChannelStreamPacketWriterResolverManager manager = getSession();
-        return manager.resolveChannelStreamPacketWriterResolver();
+        ChannelStreamWriterResolverManager manager = getSession();
+        return manager.resolveChannelStreamWriterResolver();
     }
 
     /**
