@@ -17,6 +17,7 @@ or `-key-file` command line option.
 * [SSHD-1034](https://issues.apache.org/jira/browse/SSHD-1034) Rename `org.apache.sshd.common.ForwardingFilter` to `Forwarder`.
 * [SSHD-1035](https://issues.apache.org/jira/browse/SSHD-1035) Move property definitions to common locations.
 * [SSHD-1038](https://issues.apache.org/jira/browse/SSHD-1038) Refactor packages from a module into a cleaner hierarchy.
+* [SSHD-1084](https://issues.apache.org/jira/browse/SSHD-1084) Revert the usage of asynchronous streams when forwarding ports. 
 
 ## Minor code helpers
 
@@ -28,6 +29,7 @@ or `-key-file` command line option.
 * [SSHD-1064](https://issues.apache.org/jira/browse/SSHD-1064) Fixed `ClientSession#executeRemoteCommand` handling of STDERR in case of exception to behave according to its documentation
 * [SSHD-1076](https://issues.apache.org/jira/browse/SSHD-1076) Break down `ClientUserAuthService#auth` method into several to allow for flexible override
 * [SSHD-1077](https://issues.apache.org/jira/browse/SSHD-1077) Added command line option to request specific SFTP version in `SftpCommandMain`
+* [SSHD-1079](https://issues.apache.org/jira/browse/SSHD-1079) Experimental async mode on the local port forwarder
 
 ## Behavioral changes and enhancements
 
@@ -51,4 +53,5 @@ or `-key-file` command line option.
 * [SSHD-1058](https://issues.apache.org/jira/browse/SSHD-1058) Improve exception logging strategy.
 * [SSHD-1059](https://issues.apache.org/jira/browse/SSHD-1059) Do not send heartbeat if KEX state not DONE
 * [SSHD-1063](https://issues.apache.org/jira/browse/SSHD-1063) Fixed known-hosts file server key verifier matching of same host with different ports
+* [SSHD-1070](https://issues.apache.org/jira/browse/SSHD-1070) OutOfMemoryError when use async port forwarding
 
