@@ -70,6 +70,9 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final AtomicLong lastReadCycleStart = new AtomicLong();
     private final AtomicLong writeCyclesCounter = new AtomicLong();
     private final AtomicLong lastWriteCycleStart = new AtomicLong();
+    private final Object suspendLock = new Object();
+    private volatile boolean suspend;
+    private volatile Runnable readRunnable;
 
     public Nio2Session(
                        Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket,
@@ -382,7 +385,43 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         exceptionCaught(exc);
     }
 
+    @Override
+    public void suspendRead() {
+        log.trace("suspendRead({})", this);
+        boolean prev = suspend;
+        suspend = true;
+        if (!prev) {
+            log.debug("suspendRead({}) requesting read suspension", this);
+        }
+    }
+
+    @Override
+    public void resumeRead() {
+        log.trace("resumeRead({})", this);
+        if (suspend) {
+            Runnable runnable;
+            synchronized (suspendLock) {
+                suspend = false;
+                runnable = readRunnable;
+            }
+            if (runnable != null) {
+                log.debug("resumeRead({}) resuming read", this);
+                runnable.run();
+            }
+        }
+    }
+
     protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
+        if (suspend) {
+            log.debug("doReadCycle({}) suspending reading", this);
+            synchronized (suspendLock) {
+                if (suspend) {
+                    readRunnable = () -> doReadCycle(buffer, completion);
+                    return;
+                }
+            }
+        }
+
         AsynchronousSocketChannel socket = getSocket();
         Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(manager);
         readCyclesCounter.incrementAndGet();

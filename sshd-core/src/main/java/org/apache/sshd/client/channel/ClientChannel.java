@@ -31,6 +31,7 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 
@@ -41,11 +42,7 @@ import org.apache.sshd.common.io.IoOutputStream;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientChannel extends Channel, ClientSessionHolder {
-    enum Streaming {
-        Async,
-        Sync
-    }
+public interface ClientChannel extends Channel, StreamingChannel, ClientSessionHolder {
 
     @Override
     default ClientSession getClientSession() {
@@ -56,10 +53,6 @@ public interface ClientChannel extends Channel, ClientSessionHolder {
      * @return The type of channel reported when it was created
      */
     String getChannelType();
-
-    Streaming getStreaming();
-
-    void setStreaming(Streaming streaming);
 
     IoOutputStream getAsyncIn();
 

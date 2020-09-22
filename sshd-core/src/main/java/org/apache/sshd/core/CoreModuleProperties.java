@@ -678,6 +678,23 @@ public final class CoreModuleProperties {
     public static final Property<String> X11_BIND_HOST
             = Property.string("x11-fwd-bind-host", SshdSocketAddress.LOCALHOST_IPV4);
 
+    /**
+     * Configuration value for the {@link org.apache.sshd.server.forward.TcpipServerChannel} to control the higher
+     * theshold for the data to be buffered waiting to be sent. If the buffered data size reaches this value, the
+     * session will pause reading until the data length goes below the
+     * {@link #TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW} threshold.
+     */
+    public static final Property<Long> TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH
+            = Property.long_("tcpip-server-channel-buffer-size-threshold-high", 1024 * 1024);
+
+    /**
+     * The lower threshold. If not set, half the higher threshold will be used.
+     * 
+     * @see #TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH
+     */
+    public static final Property<Long> TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW
+            = Property.long_("tcpip-server-channel-buffer-size-threshold-low");
+
     private CoreModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }
