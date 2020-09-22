@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 /**
  * An implementation of {@link IoOutputStream} using a synchronous {@link ChannelOutputStream}.
  *
- * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SimpleIoOutputStream extends AbstractCloseable implements IoOutputStream {
 

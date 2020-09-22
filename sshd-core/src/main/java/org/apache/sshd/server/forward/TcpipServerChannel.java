@@ -217,24 +217,26 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         if (streaming == Streaming.Async) {
             out = new BufferedIoOutputStream(
                     "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                protected CloseFuture doCloseGracefully() {
-                    try {
-                        sendEof();
-                    } catch (IOException e) {
-                        session.exceptionCaught(e);
-                    }
-                    return super.doCloseGracefully();
-                }
-            });
+                        @SuppressWarnings("synthetic-access")
+                        @Override
+                        protected CloseFuture doCloseGracefully() {
+                            try {
+                                sendEof();
+                            } catch (IOException e) {
+                                session.exceptionCaught(e);
+                            }
+                            return super.doCloseGracefully();
+                        }
+                    });
         } else {
-            this.out = new SimpleIoOutputStream(new ChannelOutputStream(
-                    this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
+            this.out = new SimpleIoOutputStream(
+                    new ChannelOutputStream(
+                            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
 
         }
         long thresholdHigh = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
-        long thresholdLow = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
+        long thresholdLow
+                = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
         IoHandler handler = new IoHandler() {
             @Override
             @SuppressWarnings("synthetic-access")

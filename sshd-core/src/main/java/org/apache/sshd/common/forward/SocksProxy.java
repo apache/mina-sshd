@@ -103,7 +103,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         protected void onMessage(Buffer buffer) throws IOException {
             IoOutputStream asyncIn = channel.getAsyncIn();
             if (asyncIn != null) {
-                asyncIn.writePacket(buffer);
+                asyncIn.writeBuffer(buffer);
             } else {
                 OutputStream invertedIn = channel.getInvertedIn();
                 invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());

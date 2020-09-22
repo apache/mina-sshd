@@ -73,6 +73,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -523,7 +524,7 @@ public class ClientTest extends BaseTestSupport {
         try (ClientSession session = createTestClientSession();
              ChannelShell channel = session.createShellChannel()) {
 
-            channel.setStreaming(ClientChannel.Streaming.Async);
+            channel.setStreaming(StreamingChannel.Streaming.Async);
             channel.open().verify(OPEN_TIMEOUT);
 
             byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
@@ -622,7 +623,7 @@ public class ClientTest extends BaseTestSupport {
             ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
 
             try (ChannelExec channel = session.createExecChannel("test")) {
-                channel.setStreaming(ClientChannel.Streaming.Async);
+                channel.setStreaming(StreamingChannel.Streaming.Async);
                 OpenFuture open = channel.open();
 
                 Thread.sleep(100L); // Removing this line will make the test succeed

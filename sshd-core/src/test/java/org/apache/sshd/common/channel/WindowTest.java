@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
@@ -273,7 +272,7 @@ public class WindowTest extends BaseTestSupport {
             session.auth().verify(AUTH_TIMEOUT);
 
             try (ChannelShell channel = session.createShellChannel()) {
-                channel.setStreaming(ClientChannel.Streaming.Async);
+                channel.setStreaming(StreamingChannel.Streaming.Async);
                 channel.open().verify(OPEN_TIMEOUT);
 
                 try (Channel serverChannel = GenericUtils.head(GenericUtils.head(sshd.getActiveSessions())
