@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -100,9 +101,14 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
 
         protected void onMessage(Buffer buffer) throws IOException {
-            OutputStream invertedIn = channel.getInvertedIn();
-            invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
-            invertedIn.flush();
+            IoOutputStream asyncIn = channel.getAsyncIn();
+            if (asyncIn != null) {
+                asyncIn.writePacket(buffer);
+            } else {
+                OutputStream invertedIn = channel.getInvertedIn();
+                invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
+                invertedIn.flush();
+            }
         }
 
         @Override
