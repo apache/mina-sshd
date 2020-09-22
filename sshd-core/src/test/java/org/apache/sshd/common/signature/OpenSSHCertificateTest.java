@@ -32,13 +32,13 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -56,7 +56,6 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
-    private static List<NamedFactory<Signature>> defaultSignatureFactories;
 
     private final FileHostKeyCertificateProvider certificateProvider;
     private final FileKeyPairProvider keyPairProvider;
@@ -77,7 +76,6 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
         client = CoreTestSupportUtils.setupTestFullSupportClient(OpenSSHCertificateTest.class);
         client.start();
-        defaultSignatureFactories = client.getSignatureFactories();
     }
 
     @AfterClass
@@ -108,7 +106,9 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         String certificateSha512 = "ssh_host_rsa_key-cert.pub";
 
         // default client
-        list.add(new Object[] { key, certificate, null });
+        list.add(new Object[] {
+                key, certificate,
+                Arrays.asList(BuiltinSignatures.rsaSHA512, BuiltinSignatures.rsaSHA256, BuiltinSignatures.rsa) });
         list.add(new Object[] { key, certificate, Arrays.asList(BuiltinSignatures.rsa_cert, BuiltinSignatures.rsa) });
         // client does not support cert
         list.add(new Object[] { key, certificate, Collections.singletonList(BuiltinSignatures.rsa) });
@@ -128,11 +128,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.remove(client);
 
-        if (signatureFactory != null) {
-            client.setSignatureFactories(signatureFactory);
-        } else {
-            client.setSignatureFactories(defaultSignatureFactories);
-        }
+        client.setSignatureFactories(signatureFactory);
     }
 
     @Test
@@ -159,9 +155,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @Test // invalid principal, abort
     public void testAbortOnInvalidPrincipal() throws Exception {
-        Assume.assumeTrue("Have signature factory", signatureFactory != null);
-
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);
+        boolean thrown = false;
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
                 .verify(CONNECT_TIMEOUT)
                 .getSession()) {
@@ -172,6 +167,10 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
             assertFalse(client.getSignatureFactories().contains(BuiltinSignatures.rsa_cert));
         } catch (SshException e) {
             assertEquals(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, e.getDisconnectCode());
+            thrown = true;
         }
+        boolean containsCert = GenericUtils.containsAny(client.getSignatureFactories(),
+                Arrays.asList(BuiltinSignatures.rsaSHA512_cert, BuiltinSignatures.rsaSHA256_cert, BuiltinSignatures.rsa_cert));
+        assertEquals(containsCert, thrown);
     }
 }

@@ -378,7 +378,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 "Mismatched signatures proposed factory manager");
 
         KeyPairProvider kpp = getKeyPairProvider();
-        boolean debugEnabled = log.isDebugEnabled();
         Collection<String> provided = null;
         try {
             if (kpp != null) {

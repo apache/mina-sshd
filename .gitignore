@@ -37,3 +37,6 @@ release.properties
 # Locks and temporary files
 *~
 .attach_pid*
+
+# OSX files
+.DS_Store

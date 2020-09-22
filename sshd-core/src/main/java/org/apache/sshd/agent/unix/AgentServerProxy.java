@@ -87,8 +87,6 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                     : ThreadUtils.noClose(executor);
             piper = pipeService.submit(() -> {
                 try {
-                    boolean debugEnabled = log.isDebugEnabled();
-                    boolean traceEnabled = log.isTraceEnabled();
                     while (isOpen()) {
                         try {
                             long clientSock = Local.accept(handle);

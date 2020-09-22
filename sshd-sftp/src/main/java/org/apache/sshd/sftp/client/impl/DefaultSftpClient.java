@@ -566,24 +566,6 @@ public class DefaultSftpClient extends AbstractSftpClient {
                     }
                     return super.doCloseGracefully();
                 }
-
-                @Override
-                protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
-                    if ((buffer.rpos() >= 9) && (length == buffer.available())) {
-                        int rpos = buffer.rpos();
-                        int wpos = buffer.wpos();
-                        buffer.rpos(rpos - 9);
-                        buffer.wpos(rpos - 8);
-                        buffer.putInt(channel.getRecipient());
-                        buffer.putInt(length);
-                        buffer.wpos(wpos);
-                        Buffer buf = new ByteArrayBuffer(buffer.array(), buffer.rpos(), buffer.available());
-                        buffer.rpos(buffer.wpos());
-                        return buf;
-                    } else {
-                        return super.createSendBuffer(buffer, channel, length);
-                    }
-                }
             };
         }
 

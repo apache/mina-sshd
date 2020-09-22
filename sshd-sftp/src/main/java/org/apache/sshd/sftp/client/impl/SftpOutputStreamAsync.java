@@ -127,14 +127,14 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
             }
 
             int max = bufferSize - (9 + 16 + id.length + 72);
-            int nb = Math.min(len, max - (buffer.wpos() - buffer.rpos()));
+            int nb = Math.min(len, Math.max(0, max - buffer.available()));
             buffer.putRawBytes(b, off, nb);
 
             off += nb;
             len -= nb;
             writtenCount += nb;
 
-            if (buffer.available() == max) {
+            if (buffer.available() >= max) {
                 if (traceEnabled) {
                     log.trace("write({}) flush after {}/{} bytes", this, writtenCount, totalLen);
                 }
@@ -210,7 +210,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         int reqId = client.send(SftpConstants.SSH_FXP_WRITE, buf);
         SftpAckData ack = new SftpAckData(reqId, offset, avail);
         if (debugEnabled) {
-            log.debug("flush({}) enueue pending ack={}", this, ack);
+            log.debug("flush({}) enqueue pending ack={}", this, ack);
         }
         pendingWrites.add(ack);
 

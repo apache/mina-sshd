@@ -16,18 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-package org.apache.sshd.common.signature;
-
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
+package org.apache.sshd.common.channel;
 
 /**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * A channel that can be either configured to use synchronous or asynchrounous streams.
+ *
+ * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureRSASHA1 extends SignatureRSA {
-    public static final String ALGORITHM = "SHA1withRSA";
+public interface StreamingChannel {
 
-    public SignatureRSASHA1() {
-        super(ALGORITHM, KeyPairProvider.SSH_RSA);
+    enum Streaming {
+        Async,
+        Sync
     }
+
+    Streaming getStreaming();
+
+    void setStreaming(Streaming streaming);
+
 }

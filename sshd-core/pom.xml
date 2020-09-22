@@ -184,9 +184,6 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
-                    <excludes>
-                        <exclude>**/*LoadTest.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
