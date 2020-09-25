@@ -19,21 +19,25 @@
 
 package org.apache.sshd.sftp.client.fs;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiPredicate;
 
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.DirectoryScanner;
+import org.apache.sshd.common.util.io.PathUtils;
+import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.SftpClient.Attributes;
+import org.apache.sshd.sftp.client.SftpClient.DirEntry;
+import org.apache.sshd.sftp.client.fs.SftpClientDirectoryScanner.ScanDirEntry;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -45,12 +49,6 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
-    private static final BiPredicate<Path, Path> BY_FILE_NAME = (p1, p2) -> {
-        String n1 = Objects.toString(p1.getFileName());
-        String n2 = Objects.toString(p2.getFileName());
-        return Objects.equals(n1, n2);
-    };
-
     public SftpDirectoryScannersTest() throws IOException {
         super();
     }
@@ -66,27 +64,68 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
     }
 
     @Test
-    public void testSftpDirectoryScannerFileSuffixMatching() throws IOException {
+    public void testSftpPathDirectoryScannerFileSuffixMatching() throws IOException {
         testSftpPathDirectoryScanner(setupFileSuffixMatching(), "*.txt");
     }
 
-    private void testSftpPathDirectoryScanner(
-            Map.Entry<String, List<Path>> setup, String pattern)
-            throws IOException {
-        List<Path> expected = setup.getValue();
+    private void testSftpPathDirectoryScanner(SetupDetails setup, String pattern) throws IOException {
+        List<Path> expected = setup.getExpected();
         List<Path> actual;
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
-            String remDirPath = setup.getKey();
+            String remDirPath = setup.getRemoteFilePath();
             Path basedir = fs.getPath(remDirPath);
             DirectoryScanner ds = new SftpPathDirectoryScanner(basedir, pattern);
             actual = ds.scan(() -> new ArrayList<>(expected.size()));
         }
         Collections.sort(actual);
 
-        assertListEquals(getCurrentTestName(), expected, actual, BY_FILE_NAME);
+        assertListEquals(getCurrentTestName(), expected, actual, PathUtils.EQ_CASE_SENSITIVE_FILENAME);
     }
 
-    private Map.Entry<String, List<Path>> setupDeepScanning() throws IOException {
+    @Test
+    public void testSftpClientDirectoryScannerDeepScanning() throws IOException {
+        testSftpClientDirectoryScanner(setupDeepScanning(), "**/*");
+    }
+
+    @Test
+    public void testSftpClientDirectoryScannerFileSuffixMatching() throws IOException {
+        testSftpClientDirectoryScanner(setupFileSuffixMatching(), "*.txt");
+    }
+
+    private void testSftpClientDirectoryScanner(SetupDetails setup, String pattern) throws IOException {
+        List<Path> expected = setup.getExpected();
+        String remRoot = setup.getRemoteFilePath();
+        List<ScanDirEntry> actual;
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(remRoot, pattern);
+            actual = ds.scan(sftp, () -> new ArrayList<>(expected.size()));
+        }
+
+        assertEquals("Mismatched result size", expected.size(), actual.size());
+
+        Collections.sort(expected, PathUtils.BY_CASE_INSENSITIVE_FILENAME);
+        Collections.sort(actual, DirEntry.BY_CASE_SENSITIVE_FILENAME);
+
+        Path lclRoot = setup.getRootDir();
+        for (int index = 0, count = expected.size(); index < count; index++) {
+            Path lclPath = expected.get(index);
+            ScanDirEntry remEntry = actual.get(index);
+            String filename = remEntry.getFilename();
+            assertEquals("Mismatched name", Objects.toString(lclPath.getFileName()), filename);
+
+            Path relPath = lclRoot.relativize(lclPath);
+            String lclRelative = Objects.toString(relPath).replace(File.separatorChar, '/');
+            assertEquals("Mismatched relative path", lclRelative, remEntry.getRelativePath());
+
+            Attributes attrs = remEntry.getAttributes();
+            assertEquals("Mismatched directory indicator for " + filename, Files.isDirectory(lclPath), attrs.isDirectory());
+            assertEquals("Mismatched regular file indicator for " + filename, Files.isRegularFile(lclPath),
+                    attrs.isRegularFile());
+        }
+    }
+
+    private SetupDetails setupDeepScanning() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootDir = CommonTestSupportUtils.resolve(targetPath,
                 TEMP_SUBFOLDER_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -107,11 +146,10 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
 
         Path parentPath = targetPath.getParent();
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, rootDir);
-
-        return new SimpleImmutableEntry<>(remFilePath, expected);
+        return new SetupDetails(rootDir, remFilePath, expected);
     }
 
-    private Map.Entry<String, List<Path>> setupFileSuffixMatching() throws IOException {
+    private SetupDetails setupFileSuffixMatching() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootDir = CommonTestSupportUtils.resolve(targetPath,
                 TEMP_SUBFOLDER_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -131,7 +169,30 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
 
         Path parentPath = targetPath.getParent();
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, rootDir);
+        return new SetupDetails(rootDir, remFilePath, expected);
+    }
 
-        return new SimpleImmutableEntry<>(remFilePath, expected);
+    private static class SetupDetails {
+        private final Path rootDir;
+        private final String remFilePath;
+        private final List<Path> expected;
+
+        SetupDetails(Path rootDir, String remFilePath, List<Path> expected) {
+            this.rootDir = rootDir;
+            this.remFilePath = remFilePath;
+            this.expected = expected;
+        }
+
+        public Path getRootDir() {
+            return rootDir;
+        }
+
+        public String getRemoteFilePath() {
+            return remFilePath;
+        }
+
+        public List<Path> getExpected() {
+            return expected;
+        }
     }
 }

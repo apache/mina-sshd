@@ -418,7 +418,7 @@ UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.
 
 ### SFTP aware directory scanners
 
-The framework provides special SFTP aware directory scanners that look for files (!) matching specific patterns. The
+The framework provides special SFTP aware directory scanners that look for files/folders matching specific patterns. The
 scanners support *recursive* scanning of the directories based on the selected patterns.
 
 E.g. - let's assume the layout present below
@@ -437,9 +437,9 @@ E.g. - let's assume the layout present below
 
 Then scan results from `root` are expected as follows for the given patterns
 
-* "**/*" - all the files - `[a1.txt, a1.csv, b1.txt, b1.csv, c1.txt, c2.csv]`
+* "**/*" - all the files/folders - `[a1.txt, a1.csv, sub1, sub2, b1.txt, b1.csv, c1.txt, c2.csv]`
 * "**/*.txt" - only the ".txt" files - `[a1.txt, b1.txt, c1.txt]`
-* "*" - only the files at the root - `[a1.txt, a1.csv]`
+* "*" - only the files/folders at the root - `[a1.txt, a1.csv, sub1, sub2]`
 * "*.csv" - only `a1.csv` at the root
 
 **Note:** the scanner supports various patterns - including *regex* - see `DirectoryScanner` and `SelectorUtils`
@@ -452,6 +452,10 @@ classes for supported patterns and matching - include case sensitive vs. insensi
     DirectoryScanner ds = new SftpPathDirectoryScanner(basedir, ...pattern...);
     Collection<Path> matches = ds.scan();
     
+    // Using an SftpClientDirectoryScanner
+    SftpClient client = ... obtain a client instance ...
+    SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(basedir, ...pattern...);
+    Collection<ScanDirEntry> matches = ds.scan(client);
 ```
 
 ## Extensions

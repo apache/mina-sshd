@@ -175,37 +175,32 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
+            try {
+                Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
+                fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getKey());
+            } catch (IOException e) { // expected - not allowed to hash a folder
+                assertTrue("Not an SftpException", e instanceof SftpException);
+            }
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
+            CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
+            try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                 try {
-                    Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
-                    fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getKey());
+                    Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
+                    fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
                 } catch (IOException e) { // expected - not allowed to hash a folder
                     assertTrue("Not an SftpException", e instanceof SftpException);
                 }
+            }
 
-                CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
-                try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
-                    try {
-                        Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
-                        fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
-                    } catch (IOException e) { // expected - not allowed to hash a folder
-                        assertTrue("Not an SftpException", e instanceof SftpException);
-                    }
-                }
-
-                String hashAlgo = algorithms.get(0);
-                validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
+            String hashAlgo = algorithms.get(0);
+            validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
+                    expectedHash);
+            try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
                         expectedHash);
-                try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                    validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), hashAlgo,
-                            expectedHash);
-                }
             }
         }
     }

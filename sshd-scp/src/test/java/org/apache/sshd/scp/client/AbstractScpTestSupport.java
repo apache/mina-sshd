@@ -19,6 +19,7 @@
 
 package org.apache.sshd.scp.client;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
@@ -137,6 +138,34 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
                 client.stop();
             } finally {
                 client = null;
+            }
+        }
+    }
+
+    protected ClientSession createClientSession() throws IOException {
+        return client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession();
+    }
+
+    protected ClientSession createAuthenticatedClientSession() throws IOException {
+        return createAuthenticatedClientSession(getCurrentTestName());
+    }
+
+    protected static ClientSession createAuthenticatedClientSession(String username) throws IOException {
+        ClientSession session = client.connect(username, TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession();
+        try {
+            session.addPasswordIdentity(username);
+            session.auth().verify(AUTH_TIMEOUT);
+
+            ClientSession result = session;
+            session = null; // avoid auto-close at finally clause
+            return result;
+        } finally {
+            if (session != null) {
+                session.close();
             }
         }
     }

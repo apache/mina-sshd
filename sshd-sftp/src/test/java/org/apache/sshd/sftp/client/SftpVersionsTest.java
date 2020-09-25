@@ -124,32 +124,21 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
-                    out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
-                }
-                assertTrue("File should exist on disk: " + lclFile, Files.exists(lclFile));
-                sftp.remove(remotePath);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
+                out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
             }
+            assertTrue("File should exist on disk: " + lclFile, Files.exists(lclFile));
+            sftp.remove(remotePath);
         }
     }
 
     @Test
     public void testSftpVersionSelector() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
         }
     }
 
@@ -163,32 +152,26 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            Attributes attrs = sftp.lstat(remotePath);
+            long expectedSeconds = TimeUnit.SECONDS.convert(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1L),
+                    TimeUnit.MILLISECONDS);
+            attrs.getFlags().clear();
+            attrs.modifyTime(expectedSeconds);
+            sftp.setStat(remotePath, attrs);
 
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                Attributes attrs = sftp.lstat(remotePath);
-                long expectedSeconds = TimeUnit.SECONDS.convert(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1L),
-                        TimeUnit.MILLISECONDS);
-                attrs.getFlags().clear();
-                attrs.modifyTime(expectedSeconds);
-                sftp.setStat(remotePath, attrs);
-
-                attrs = sftp.lstat(remotePath);
-                long actualSeconds = attrs.getModifyTime().to(TimeUnit.SECONDS);
-                // The NTFS file system delays updates to the last access time for a file by up to 1 hour after the last
-                // access
-                if (expectedSeconds != actualSeconds) {
-                    System.err.append("Mismatched last modified time for ").append(lclFile.toString())
-                            .append(" - expected=").append(String.valueOf(expectedSeconds))
-                            .append('[').append(new Date(TimeUnit.SECONDS.toMillis(expectedSeconds)).toString()).append(']')
-                            .append(", actual=").append(String.valueOf(actualSeconds))
-                            .append('[').append(new Date(TimeUnit.SECONDS.toMillis(actualSeconds)).toString()).append(']')
-                            .println();
-                }
+            attrs = sftp.lstat(remotePath);
+            long actualSeconds = attrs.getModifyTime().to(TimeUnit.SECONDS);
+            // The NTFS file system delays updates to the last access time for a file by up to 1 hour after the last
+            // access
+            if (expectedSeconds != actualSeconds) {
+                System.err.append("Mismatched last modified time for ").append(lclFile.toString())
+                        .append(" - expected=").append(String.valueOf(expectedSeconds))
+                        .append('[').append(new Date(TimeUnit.SECONDS.toMillis(expectedSeconds)).toString()).append(']')
+                        .append(", actual=").append(String.valueOf(actualSeconds))
+                        .append('[').append(new Date(TimeUnit.SECONDS.toMillis(actualSeconds)).toString()).append(']')
+                        .println();
             }
         }
     }
@@ -207,27 +190,21 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            for (DirEntry entry : sftp.readDir(remotePath)) {
+                String fileName = entry.getFilename();
+                if (".".equals(fileName) || "..".equals(fileName)) {
+                    continue;
+                }
 
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                for (DirEntry entry : sftp.readDir(remotePath)) {
-                    String fileName = entry.getFilename();
-                    if (".".equals(fileName) || "..".equals(fileName)) {
-                        continue;
-                    }
-
-                    Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
-                    if (subFolderName.equals(fileName)) {
-                        assertEquals("Mismatched sub-folder type", SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType());
-                        assertTrue("Sub-folder not marked as directory", attrs.isDirectory());
-                    } else if (lclFileName.equals(fileName)) {
-                        assertEquals("Mismatched sub-file type", SftpConstants.SSH_FILEXFER_TYPE_REGULAR, attrs.getType());
-                        assertTrue("Sub-folder not marked as directory", attrs.isRegularFile());
-                    }
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                if (subFolderName.equals(fileName)) {
+                    assertEquals("Mismatched sub-folder type", SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType());
+                    assertTrue("Sub-folder not marked as directory", attrs.isDirectory());
+                } else if (lclFileName.equals(fileName)) {
+                    assertEquals("Mismatched sub-file type", SftpConstants.SSH_FILEXFER_TYPE_REGULAR, attrs.getType());
+                    assertTrue("Sub-folder not marked as directory", attrs.isRegularFile());
                 }
             }
         }
@@ -328,33 +305,27 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
         List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            for (DirEntry entry : sftp.readDir(remotePath)) {
+                String fileName = entry.getFilename();
+                if (".".equals(fileName) || "..".equals(fileName)) {
+                    continue;
+                }
 
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                for (DirEntry entry : sftp.readDir(remotePath)) {
-                    String fileName = entry.getFilename();
-                    if (".".equals(fileName) || "..".equals(fileName)) {
-                        continue;
-                    }
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                List<AclEntry> aclActual = attrs.getAcl();
+                if (getTestedVersion() == SftpConstants.SFTP_V3) {
+                    assertNull("Unexpected ACL for entry=" + fileName, aclActual);
+                } else {
+                    assertListEquals("Mismatched ACL for entry=" + fileName, aclExpected, aclActual);
+                }
 
-                    Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
-                    List<AclEntry> aclActual = attrs.getAcl();
-                    if (getTestedVersion() == SftpConstants.SFTP_V3) {
-                        assertNull("Unexpected ACL for entry=" + fileName, aclActual);
-                    } else {
-                        assertListEquals("Mismatched ACL for entry=" + fileName, aclExpected, aclActual);
-                    }
-
-                    attrs.getFlags().clear();
-                    attrs.setAcl(aclExpected);
-                    sftp.setStat(remotePath + "/" + fileName, attrs);
-                    if (getTestedVersion() > SftpConstants.SFTP_V3) {
-                        numInvoked++;
-                    }
+                attrs.getFlags().clear();
+                attrs.setAcl(aclExpected);
+                sftp.setStat(remotePath + "/" + fileName, attrs);
+                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                    numInvoked++;
                 }
             }
         } finally {
@@ -456,27 +427,21 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
         List<SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                for (DirEntry entry : sftp.readDir(remotePath)) {
-                    String fileName = entry.getFilename();
-                    if (".".equals(fileName) || "..".equals(fileName)) {
-                        continue;
-                    }
-
-                    Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
-                    Map<String, byte[]> actExtensions = attrs.getExtensions();
-                    assertExtensionsMapEquals("dirEntry=" + fileName, expExtensions, actExtensions);
-                    attrs.getFlags().clear();
-                    attrs.setStringExtensions(expExtensions);
-                    sftp.setStat(remotePath + "/" + fileName, attrs);
-                    numInvoked++;
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            for (DirEntry entry : sftp.readDir(remotePath)) {
+                String fileName = entry.getFilename();
+                if (".".equals(fileName) || "..".equals(fileName)) {
+                    continue;
                 }
+
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                Map<String, byte[]> actExtensions = attrs.getExtensions();
+                assertExtensionsMapEquals("dirEntry=" + fileName, expExtensions, actExtensions);
+                attrs.getFlags().clear();
+                attrs.setStringExtensions(expExtensions);
+                sftp.setStat(remotePath + "/" + fileName, attrs);
+                numInvoked++;
             }
         } finally {
             sshd.setSubsystemFactories(factories);
@@ -487,43 +452,37 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-623
     public void testEndOfListIndicator() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
+            int version = sftp.getVersion();
+            Path targetPath = detectTargetFolder();
+            Path parentPath = targetPath.getParent();
+            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
 
-            try (SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-                AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
-                int version = sftp.getVersion();
-                Path targetPath = detectTargetFolder();
-                Path parentPath = targetPath.getParent();
-                String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
-
-                try (CloseableHandle handle = sftp.openDir(remotePath)) {
-                    List<DirEntry> entries = sftp.readDir(handle, eolIndicator);
-                    for (int index = 1; entries != null; entries = sftp.readDir(handle, eolIndicator), index++) {
-                        Boolean value = eolIndicator.get();
-                        if (version < SftpConstants.SFTP_V6) {
-                            assertNull("Unexpected indicator value at iteration #" + index, value);
-                        } else {
-                            assertNotNull("No indicator returned at iteration #" + index, value);
-                            if (value) {
-                                break;
-                            }
-                        }
-                        eolIndicator.set(null); // make sure starting fresh
-                    }
-
+            try (CloseableHandle handle = sftp.openDir(remotePath)) {
+                List<DirEntry> entries = sftp.readDir(handle, eolIndicator);
+                for (int index = 1; entries != null; entries = sftp.readDir(handle, eolIndicator), index++) {
                     Boolean value = eolIndicator.get();
                     if (version < SftpConstants.SFTP_V6) {
-                        assertNull("Unexpected end-of-list indication received at end of entries", value);
-                        assertNull("Unexpected no last entries indication", entries);
+                        assertNull("Unexpected indicator value at iteration #" + index, value);
                     } else {
-                        assertNotNull("No end-of-list indication received at end of entries", value);
-                        assertNotNull("No last received entries", entries);
-                        assertTrue("Bad end-of-list value", value);
+                        assertNotNull("No indicator returned at iteration #" + index, value);
+                        if (value) {
+                            break;
+                        }
                     }
+                    eolIndicator.set(null); // make sure starting fresh
+                }
+
+                Boolean value = eolIndicator.get();
+                if (version < SftpConstants.SFTP_V6) {
+                    assertNull("Unexpected end-of-list indication received at end of entries", value);
+                    assertNull("Unexpected no last entries indication", entries);
+                } else {
+                    assertNotNull("No end-of-list indication received at end of entries", value);
+                    assertNotNull("No last received entries", entries);
+                    assertTrue("Bad end-of-list value", value);
                 }
             }
         }

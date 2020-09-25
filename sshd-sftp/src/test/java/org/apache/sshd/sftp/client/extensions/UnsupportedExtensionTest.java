@@ -41,29 +41,24 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-890
     public void testUnsupportedExtension() throws IOException {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftpClient = createSftpClient(session)) {
+            String opcode = getCurrentTestName();
+            Buffer buffer = new ByteArrayBuffer(Integer.BYTES + GenericUtils.length(opcode) + Byte.SIZE, false);
+            buffer.putString(opcode);
 
-            try (SftpClient sftpClient = createSftpClient(session)) {
-                String opcode = getCurrentTestName();
-                Buffer buffer = new ByteArrayBuffer(Integer.BYTES + GenericUtils.length(opcode) + Byte.SIZE, false);
-                buffer.putString(opcode);
+            assertObjectInstanceOf("Not a raw SFTP client", RawSftpClient.class, sftpClient);
+            RawSftpClient sftp = (RawSftpClient) sftpClient;
+            int cmd = sftp.send(SftpConstants.SSH_FXP_EXTENDED, buffer);
+            Buffer responseBuffer = sftp.receive(cmd);
 
-                assertObjectInstanceOf("Not a raw SFTP client", RawSftpClient.class, sftpClient);
-                RawSftpClient sftp = (RawSftpClient) sftpClient;
-                int cmd = sftp.send(SftpConstants.SSH_FXP_EXTENDED, buffer);
-                Buffer responseBuffer = sftp.receive(cmd);
+            responseBuffer.getInt(); // Ignoring length
+            int type = responseBuffer.getUByte();
+            responseBuffer.getInt(); // Ignoring message ID
+            int substatus = responseBuffer.getInt();
 
-                responseBuffer.getInt(); // Ignoring length
-                int type = responseBuffer.getUByte();
-                responseBuffer.getInt(); // Ignoring message ID
-                int substatus = responseBuffer.getInt();
-
-                assertEquals("Type is not STATUS", SftpConstants.SSH_FXP_STATUS, type);
-                assertEquals("Sub-Type is not UNSUPPORTED", SftpConstants.SSH_FX_OP_UNSUPPORTED, substatus);
-            }
+            assertEquals("Type is not STATUS", SftpConstants.SSH_FXP_STATUS, type);
+            assertEquals("Sub-Type is not UNSUPPORTED", SftpConstants.SSH_FX_OP_UNSUPPORTED, substatus);
         }
     }
 }

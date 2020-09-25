@@ -72,7 +72,7 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
             }
         }
 
-        try (ClientSession session = createClientSession();
+        try (ClientSession session = createAuthenticatedClientSession();
              SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
             if (bufferSize > 0) {
                 fs.setReadBufferSize(bufferSize);
@@ -98,19 +98,6 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
             Files.copy(remote1, local2);
 
             assertSameContent(local0, local2);
-        }
-    }
-
-    private ClientSession createClientSession() throws IOException {
-        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession();
-        try {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-            return session;
-        } catch (IOException e) {
-            session.close();
-            throw e;
         }
     }
 

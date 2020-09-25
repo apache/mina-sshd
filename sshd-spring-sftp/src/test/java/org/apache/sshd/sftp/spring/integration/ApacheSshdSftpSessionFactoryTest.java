@@ -43,6 +43,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.PathUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
@@ -81,15 +82,6 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
             } else {
                 return GenericUtils.safeCompare(o1.getFilename(), o2.getFilename(), false);
             }
-        }
-    };
-
-    private static final Comparator<Path> BY_CASE_INSENSITIVE_FILE_PART = new Comparator<Path>() {
-        @Override
-        public int compare(Path o1, Path o2) {
-            String n1 = (o1 == null) ? null : Objects.toString(o1.getFileName(), null);
-            String n2 = (o2 == null) ? null : Objects.toString(o2.getFileName(), null);
-            return GenericUtils.safeCompare(n1, n2, false);
         }
     };
 
@@ -267,7 +259,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
             Path dir = Files.createDirectories(lclSftp.resolve("dir" + index));
             subFolders.add(dir);
         }
-        Collections.sort(subFolders, BY_CASE_INSENSITIVE_FILE_PART);
+        Collections.sort(subFolders, PathUtils.BY_CASE_INSENSITIVE_FILENAME);
 
         List<Path> subFiles = new ArrayList<>();
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -275,7 +267,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
                     (getClass().getSimpleName() + "#" + getCurrentTestName() + "-" + index).getBytes(StandardCharsets.UTF_8));
             subFiles.add(file);
         }
-        Collections.sort(subFiles, BY_CASE_INSENSITIVE_FILE_PART);
+        Collections.sort(subFiles, PathUtils.BY_CASE_INSENSITIVE_FILENAME);
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);

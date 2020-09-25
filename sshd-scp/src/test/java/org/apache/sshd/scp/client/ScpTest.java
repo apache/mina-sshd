@@ -120,12 +120,7 @@ public class ScpTest extends AbstractScpTestSupport {
         String[] remoteComps = GenericUtils.split(remotePath, '/');
         Factory<? extends Random> factory = client.getRandomFactory();
         Random rnd = factory.create();
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             StringBuilder sb = new StringBuilder(remotePath.length() + Long.SIZE);
             for (int i = 0; i < Math.max(Long.SIZE, remoteComps.length); i++) {
@@ -180,12 +175,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
         String localPath = localFile.toString();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             scp.upload(localPath, remotePath);
             assertFileLength(remoteFile, data.length, DEFAULT_TIMEOUT);
@@ -204,12 +194,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpUploadOverwrite() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
@@ -255,12 +240,7 @@ public class ScpTest extends AbstractScpTestSupport {
             Files.delete(zeroRemote);
         }
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
             scp.upload(zeroLocal.toString(), remotePath);
@@ -289,12 +269,7 @@ public class ScpTest extends AbstractScpTestSupport {
         }
         assertEquals("Non-zero size for remote file=" + zeroRemote, 0L, Files.size(zeroRemote));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
             scp.download(remotePath, zeroLocal.toString());
@@ -320,12 +295,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Path remoteDir = scpRoot.resolve("remote");
         Path remoteOutFile = remoteDir.resolve(localOutFile.getFileName());
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             CommonTestSupportUtils.writeFile(localOutFile, data);
 
@@ -365,12 +335,7 @@ public class ScpTest extends AbstractScpTestSupport {
         // see SSHD-822
         assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.MINA, BuiltinIoServiceFactoryFactories.NETTY));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -444,12 +409,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnRecursiveDirs() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -484,12 +444,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test // see SSHD-893
     public void testScpNativeOnDirWithPattern() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -526,12 +481,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Files.createDirectories(remoteDir);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -569,12 +519,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnMixedDirAndFiles() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -614,12 +559,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativePreserveAttributes() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -677,12 +617,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testStreamsUploadAndDownload() throws Exception {
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClient scp = createScpClient(session);
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -750,12 +685,7 @@ public class ScpTest extends AbstractScpTestSupport {
         ScpFileOpener opener = factory.getScpFileOpener();
         TrackingFileOpener serverOpener = new TrackingFileOpener();
         factory.setScpFileOpener(serverOpener);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             TrackingFileOpener clientOpener = new TrackingFileOpener();
             ScpClientCreator creator = ScpClientCreator.instance();
             ScpClient scp = creator.createScpClient(session, clientOpener);
@@ -840,12 +770,7 @@ public class ScpTest extends AbstractScpTestSupport {
             }
         });
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
+        try (ClientSession session = createAuthenticatedClientSession()) {
             ScpClientCreator creator = ScpClientCreator.instance();
             ScpClient scp = creator.createScpClient(session);
             Path targetPath = detectTargetFolder();

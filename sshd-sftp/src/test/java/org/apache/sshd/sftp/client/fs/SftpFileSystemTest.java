@@ -304,20 +304,15 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             return value;
         };
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (FileSystem fs = createSftpFileSystem(session, selector)) {
-                assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
-                Collection<String> views = fs.supportedFileAttributeViews();
-                assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
-                        views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
-                int expectedVersion = selected.get();
-                assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
-                testFileSystem(fs, expectedVersion);
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             FileSystem fs = createSftpFileSystem(session, selector)) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Collection<String> views = fs.supportedFileAttributeViews();
+            assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
+                    views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
+            int expectedVersion = selected.get();
+            assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
+            testFileSystem(fs, expectedVersion);
         }
     }
 

@@ -18,24 +18,19 @@
  */
 package org.apache.sshd.common.util.io;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SelectorUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * <p>
@@ -131,26 +126,11 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
  * @author <a href="mailto:levylambert@tiscali-dsl.de">Antoine Levy-Lambert</a>
  */
-public class DirectoryScanner {
+public class DirectoryScanner extends PathScanningMatcher {
     /**
      * The base directory to be scanned.
      */
     protected Path basedir;
-
-    /**
-     * The patterns for the files to be included.
-     */
-    protected List<String> includePatterns;
-
-    /**
-     * Whether or not the file system should be treated as a case sensitive one.
-     */
-    protected boolean caseSensitive = OsUtils.isUNIX();
-
-    /**
-     * The file separator to use to parse paths - default=local O/S separator
-     */
-    protected String separator = File.separator;
 
     public DirectoryScanner() {
         super();
@@ -175,7 +155,7 @@ public class DirectoryScanner {
      * @param basedir The base directory for scanning. Should not be {@code null}.
      */
     public void setBasedir(Path basedir) {
-        this.basedir = basedir;
+        this.basedir = Objects.requireNonNull(basedir, "No base directory provided");
     }
 
     /**
@@ -185,61 +165,6 @@ public class DirectoryScanner {
      */
     public Path getBasedir() {
         return basedir;
-    }
-
-    /**
-     * <p>
-     * Sets the list of include patterns to use. All '/' and '\' characters are replaced by
-     * <code>File.separatorChar</code>, so the separator used need not match <code>File.separatorChar</code>.
-     * </p>
-     *
-     * <p>
-     * When a pattern ends with a '/' or '\', "**" is appended.
-     * </p>
-     *
-     * @param includes A list of include patterns. May be {@code null}, indicating that all files should be included. If
-     *                 a non-{@code null} list is given, all elements must be non-{@code null}.
-     */
-    public void setIncludes(String... includes) {
-        setIncludes(GenericUtils.isEmpty(includes) ? Collections.emptyList() : Arrays.asList(includes));
-    }
-
-    /**
-     * @return Un-modifiable list of the inclusion patterns
-     */
-    public List<String> getIncludes() {
-        return includePatterns;
-    }
-
-    public void setIncludes(Collection<String> includes) {
-        this.includePatterns = GenericUtils.isEmpty(includes)
-                ? Collections.emptyList()
-                : Collections.unmodifiableList(
-                        includes.stream()
-                                .map(v -> normalizePattern(v))
-                                .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
-    }
-
-    /**
-     * @return Whether or not the file system should be treated as a case sensitive one.
-     */
-    public boolean isCaseSensitive() {
-        return caseSensitive;
-    }
-
-    public void setCaseSensitive(boolean caseSensitive) {
-        this.caseSensitive = caseSensitive;
-    }
-
-    /**
-     * @return The file separator to use to parse paths - default=local O/S separator
-     */
-    public String getSeparator() {
-        return separator;
-    }
-
-    public void setSeparator(String separator) {
-        this.separator = ValidateUtils.checkNotNullAndNotEmpty(separator, "No separator provided");
     }
 
     /**
@@ -268,6 +193,13 @@ public class DirectoryScanner {
         }
         if (GenericUtils.isEmpty(getIncludes())) {
             throw new IllegalStateException("No includes set for " + dir);
+        }
+
+        FileSystem fs = dir.getFileSystem();
+        String fsSep = fs.getSeparator();
+        String curSep = getSeparator();
+        if (!Objects.equals(fsSep, curSep)) {
+            throw new IllegalStateException("Mismatched separator - expected=" + curSep + ", actual=" + fsSep);
         }
 
         return scandir(dir, dir, factory.get());
@@ -307,115 +239,5 @@ public class DirectoryScanner {
         }
 
         return filesList;
-    }
-
-    /**
-     * Tests whether or not a name matches against at least one include pattern.
-     *
-     * @param  name The name to match. Must not be {@code null}.
-     * @return      <code>true</code> when the name matches against at least one include pattern, or <code>false</code>
-     *              otherwise.
-     */
-    protected boolean isIncluded(String name) {
-        Collection<String> includes = getIncludes();
-        if (GenericUtils.isEmpty(includes)) {
-            return false;
-        }
-
-        boolean cs = isCaseSensitive();
-        String sep = getSeparator();
-        for (String include : includes) {
-            if (SelectorUtils.matchPath(include, name, sep, cs)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Tests whether or not a name matches the start of at least one include pattern.
-     *
-     * @param  name The name to match. Must not be {@code null}.
-     * @return      <code>true</code> when the name matches against the start of at least one include pattern, or
-     *              <code>false</code> otherwise.
-     */
-    protected boolean couldHoldIncluded(String name) {
-        Collection<String> includes = getIncludes();
-        if (GenericUtils.isEmpty(includes)) {
-            return false;
-        }
-
-        boolean cs = isCaseSensitive();
-        String sep = getSeparator();
-        for (String include : includes) {
-            if (SelectorUtils.matchPatternStart(include, name, sep, cs)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Normalizes the pattern, e.g. converts forward and backward slashes to the platform-specific file separator.
-     *
-     * @param  pattern The pattern to normalize, must not be {@code null}.
-     * @return         The normalized pattern, never {@code null}.
-     */
-    public static String normalizePattern(String pattern) {
-        pattern = pattern.trim();
-
-        if (pattern.startsWith(SelectorUtils.REGEX_HANDLER_PREFIX)) {
-            if (File.separatorChar == '\\') {
-                pattern = replace(pattern, "/", "\\\\", -1);
-            } else {
-                pattern = replace(pattern, "\\\\", "/", -1);
-            }
-        } else {
-            pattern = pattern.replace(File.separatorChar == '/' ? '\\' : '/', File.separatorChar);
-
-            if (pattern.endsWith(File.separator)) {
-                pattern += "**";
-            }
-        }
-
-        return pattern;
-    }
-
-    /**
-     * <p>
-     * Replace a String with another String inside a larger String, for the first <code>max</code> values of the search
-     * String.
-     * </p>
-     *
-     * <p>
-     * A {@code null} reference passed to this method is a no-op.
-     * </p>
-     *
-     * @param  text text to search and replace in
-     * @param  repl String to search for
-     * @param  with String to replace with
-     * @param  max  maximum number of values to replace, or <code>-1</code> if no maximum
-     * @return      the text with any replacements processed
-     */
-    @SuppressWarnings("PMD.AssignmentInOperand")
-    public static String replace(String text, String repl, String with, int max) {
-        if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0)) {
-            return text;
-        }
-
-        int start = 0;
-        StringBuilder buf = new StringBuilder(text.length());
-        for (int end = text.indexOf(repl, start); end != -1; end = text.indexOf(repl, start)) {
-            buf.append(text.substring(start, end)).append(with);
-            start = end + repl.length();
-
-            if (--max == 0) {
-                break;
-            }
-        }
-        buf.append(text.substring(start));
-        return buf.toString();
     }
 }

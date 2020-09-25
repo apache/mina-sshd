@@ -112,6 +112,46 @@ public final class GenericUtils {
     }
 
     /**
+     * <p>
+     * Replace a String with another String inside a larger String, for the first <code>max</code> values of the search
+     * String.
+     * </p>
+     *
+     * <p>
+     * A {@code null} reference passed to this method is a no-op.
+     * </p>
+     *
+     * @param  text text to search and replace in
+     * @param  repl String to search for
+     * @param  with String to replace with
+     * @param  max  maximum number of values to replace, or <code>-1</code> if no maximum
+     * @return      the text with any replacements processed
+     * @author      Arnout J. Kuiper <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
+     * @author      Magesh Umasankar
+     * @author      <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
+     * @author      <a href="mailto:levylambert@tiscali-dsl.de">Antoine Levy-Lambert</a>
+     */
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public static String replace(String text, String repl, String with, int max) {
+        if ((text == null) || (repl == null) || (with == null) || (repl.length() == 0)) {
+            return text;
+        }
+
+        int start = 0;
+        StringBuilder buf = new StringBuilder(text.length());
+        for (int end = text.indexOf(repl, start); end != -1; end = text.indexOf(repl, start)) {
+            buf.append(text.substring(start, end)).append(with);
+            start = end + repl.length();
+
+            if (--max == 0) {
+                break;
+            }
+        }
+        buf.append(text.substring(start));
+        return buf.toString();
+    }
+
+    /**
      * @param  s The {@link String} value to calculate the hash code on - may be {@code null}/empty in which case a
      *           value of zero is returned
      * @return   The calculated hash code

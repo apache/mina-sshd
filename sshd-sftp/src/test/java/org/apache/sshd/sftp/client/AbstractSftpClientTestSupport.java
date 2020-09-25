@@ -87,6 +87,28 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         sshd.setFileSystemFactory(fileSystemFactory);
     }
 
+    protected ClientSession createClientSession() throws IOException {
+        return client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession();
+    }
+
+    protected ClientSession createAuthenticatedClientSession() throws IOException {
+        ClientSession session = createClientSession();
+        try {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            ClientSession authSession = session;
+            session = null;     // avoid auto-close at finally clause
+            return authSession;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
     protected SftpClient createSftpClient(ClientSession session) throws IOException {
         return SftpClientFactory.instance().createSftpClient(session);
     }

@@ -31,15 +31,18 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -119,12 +122,28 @@ public interface ScpFileOpener {
      *
      * @param  session     The client/server {@link Session} through which the transfer is being executed
      * @param  basedir     The base directory - may be {@code null}/empty to indicate CWD
-     * @param  pattern     The required pattern
+     * @param  pattern     The required pattern - ignored if {@code null}/empty - returns empty result
      * @return             The matching <U>relative paths</U> of the children to send
      * @throws IOException If failed to scan the directory
      */
     default Iterable<Path> getMatchingFilesToSend(Session session, Path basedir, String pattern) throws IOException {
-        DirectoryScanner ds = new DirectoryScanner(basedir, pattern);
+        if (GenericUtils.isEmpty(pattern)) {
+            return Collections.emptyList();
+        }
+
+        if (basedir == null) {
+            String cwdLocal = System.getProperty("user.dir");
+            Path cwdPath = Paths.get(cwdLocal);
+            basedir = cwdPath.toAbsolutePath();
+        }
+
+        // We may reach this location with a rooted path which uses '/' as the separator
+        FileSystem fs = basedir.getFileSystem();
+        String fsSep = fs.getSeparator();
+        DirectoryScanner ds = new DirectoryScanner(basedir);
+        ds.setSeparator(fsSep);
+        ds.setIncludes(Collections.singletonList(pattern));
+
         return ds.scan();
     }
 

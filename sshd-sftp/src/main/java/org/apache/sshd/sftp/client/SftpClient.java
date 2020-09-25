@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -461,39 +462,37 @@ public interface SftpClient extends SubsystemClient {
     }
 
     class DirEntry {
-        public static final Comparator<DirEntry> BY_CASE_SENSITIVE_FILENAME = new Comparator<DirEntry>() {
-            @Override
-            public int compare(DirEntry o1, DirEntry o2) {
-                if (o1 == o2) {
-                    return 0;
-                } else if (o1 == null) {
-                    return 1;
-                } else if (o2 == null) {
-                    return -1;
-                } else {
-                    return GenericUtils.safeCompare(o1.getFilename(), o2.getFilename(), true);
-                }
+        public static final Comparator<DirEntry> BY_CASE_SENSITIVE_FILENAME = (e1, e2) -> {
+            if (GenericUtils.isSameReference(e1, e2)) {
+                return 0;
+            } else if (e1 == null) {
+                return 1;
+            } else if (e2 == null) {
+                return -1;
+            } else {
+                return GenericUtils.safeCompare(e1.getFilename(), e2.getFilename(), true);
             }
         };
 
-        public static final Comparator<DirEntry> BY_CASE_INSENSITIVE_FILENAME = new Comparator<DirEntry>() {
-            @Override
-            public int compare(DirEntry o1, DirEntry o2) {
-                if (o1 == o2) {
-                    return 0;
-                } else if (o1 == null) {
-                    return 1;
-                } else if (o2 == null) {
-                    return -1;
-                } else {
-                    return GenericUtils.safeCompare(o1.getFilename(), o2.getFilename(), false);
-                }
+        public static final Comparator<DirEntry> BY_CASE_INSENSITIVE_FILENAME = (e1, e2) -> {
+            if (GenericUtils.isSameReference(e1, e2)) {
+                return 0;
+            } else if (e1 == null) {
+                return 1;
+            } else if (e2 == null) {
+                return -1;
+            } else {
+                return GenericUtils.safeCompare(e1.getFilename(), e2.getFilename(), false);
             }
         };
 
         private final String filename;
         private final String longFilename;
         private final Attributes attributes;
+
+        public DirEntry(DirEntry other) {
+            this(other.getFilename(), other.getLongFilename(), other.getAttributes());
+        }
 
         public DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
@@ -880,6 +879,24 @@ public interface SftpClient extends SubsystemClient {
      * @see                #readDir(Handle)
      */
     Iterable<DirEntry> readDir(String path) throws IOException;
+
+    /**
+     * Reads all entries available for a directory
+     *
+     * @param  path        Remote directory path
+     * @return             A {@link Collection} of all the entries in the remote directory
+     * @throws IOException If failed to retrieve the entries
+     * @see                #readDir(String)
+     */
+    default Collection<DirEntry> readEntries(String path) throws IOException {
+        Iterable<DirEntry> iter = readDir(path);
+        Collection<DirEntry> entries = new LinkedList<>();
+        for (DirEntry d : iter) {
+            entries.add(d);
+        }
+
+        return entries;
+    }
 
     default InputStream read(String path) throws IOException {
         return read(path, 0);

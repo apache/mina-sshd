@@ -71,26 +71,21 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
+            ext.copyFile(srcPath, dstPath, false);
+            assertTrue("Source file not preserved", Files.exists(srcFile, options));
+            assertTrue("Destination file not created", Files.exists(dstFile, options));
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
+            byte[] actual = Files.readAllBytes(dstFile);
+            assertArrayEquals("Mismatched copied data", data, actual);
+
+            try {
                 ext.copyFile(srcPath, dstPath, false);
-                assertTrue("Source file not preserved", Files.exists(srcFile, options));
-                assertTrue("Destination file not created", Files.exists(dstFile, options));
-
-                byte[] actual = Files.readAllBytes(dstFile);
-                assertArrayEquals("Mismatched copied data", data, actual);
-
-                try {
-                    ext.copyFile(srcPath, dstPath, false);
-                    fail("Unexpected success to overwrite existing destination: " + dstFile);
-                } catch (IOException e) {
-                    assertTrue("Not an SftpException", e instanceof SftpException);
-                }
+                fail("Unexpected success to overwrite existing destination: " + dstFile);
+            } catch (IOException e) {
+                assertTrue("Not an SftpException", e instanceof SftpException);
             }
         }
     }

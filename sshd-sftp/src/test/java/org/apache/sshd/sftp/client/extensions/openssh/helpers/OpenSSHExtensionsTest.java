@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -82,20 +81,15 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
+            try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
+                sftp.write(fileHandle, 0L, expected);
+                fsync.fsync(fileHandle);
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
-                try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
-                    sftp.write(fileHandle, 0L, expected);
-                    fsync.fsync(fileHandle);
-
-                    byte[] actual = Files.readAllBytes(srcFile);
-                    assertArrayEquals("Mismatched written data", expected, actual);
-                }
+                byte[] actual = Files.readAllBytes(srcFile);
+                assertArrayEquals("Mismatched written data", expected, actual);
             }
         }
     }
@@ -170,29 +164,20 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             }
         }));
 
-        try (SshClient client = setupTestClient()) {
-            client.start();
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
+            OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
+            String invokedExtension = extensionHolder.getAndSet(null);
+            assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
+            assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(AUTH_TIMEOUT);
-
-                try (SftpClient sftp = createSftpClient(session)) {
-                    OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
-                    OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
-                    String invokedExtension = extensionHolder.getAndSet(null);
-                    assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
-                    assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
-
-                    try (CloseableHandle handle = sftp.open(srcPath)) {
-                        OpenSSHStatHandleExtension handleStat = assertExtensionCreated(sftp, OpenSSHStatHandleExtension.class);
-                        actual = handleStat.stat(handle);
-                        invokedExtension = extensionHolder.getAndSet(null);
-                        assertEquals("Mismatched invoked extension", handleStat.getName(), invokedExtension);
-                        assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
-                    }
-                }
+            try (CloseableHandle handle = sftp.open(srcPath)) {
+                OpenSSHStatHandleExtension handleStat = assertExtensionCreated(sftp, OpenSSHStatHandleExtension.class);
+                actual = handleStat.stat(handle);
+                invokedExtension = extensionHolder.getAndSet(null);
+                assertEquals("Mismatched invoked extension", handleStat.getName(), invokedExtension);
+                assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
             }
         }
     }

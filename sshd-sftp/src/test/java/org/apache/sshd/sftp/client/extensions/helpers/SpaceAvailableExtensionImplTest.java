@@ -88,16 +88,11 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
             }
         }));
 
-        try (ClientSession session
-                = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session)) {
-                SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
-                SpaceAvailableExtensionInfo actual = ext.available(queryPath);
-                assertEquals("Mismatched information", expected, actual);
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
+            SpaceAvailableExtensionInfo actual = ext.available(queryPath);
+            assertEquals("Mismatched information", expected, actual);
         } finally {
             sshd.setSubsystemFactories(factories);
         }

@@ -159,17 +159,12 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
             }
         }
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session)) {
-                CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
-                try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
-                     CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
-                    ext.copyData(readHandle, readOffset, readLength, writeHandle, writeOffset);
-                }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
+            try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
+                 CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
+                ext.copyData(readHandle, readOffset, readLength, writeHandle, writeOffset);
             }
         }
 

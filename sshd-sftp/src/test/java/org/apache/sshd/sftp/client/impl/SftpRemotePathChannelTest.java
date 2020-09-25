@@ -66,29 +66,24 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         byte[] expected
                 = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session)) {
+            Path parentPath = targetPath.getParent();
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                Path parentPath = targetPath.getParent();
-                String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+            try (FileChannel fc = sftp.openRemotePathChannel(
+                    remFilePath, EnumSet.of(
+                            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                int writeLen = fc.write(ByteBuffer.wrap(expected));
+                assertEquals("Mismatched written length", expected.length, writeLen);
 
-                try (FileChannel fc = sftp.openRemotePathChannel(
-                        remFilePath, EnumSet.of(
-                                StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-                    int writeLen = fc.write(ByteBuffer.wrap(expected));
-                    assertEquals("Mismatched written length", expected.length, writeLen);
+                FileChannel fcPos = fc.position(0L);
+                assertSame("Mismatched positioned file channel", fc, fcPos);
 
-                    FileChannel fcPos = fc.position(0L);
-                    assertSame("Mismatched positioned file channel", fc, fcPos);
-
-                    byte[] actual = new byte[expected.length];
-                    int readLen = fc.read(ByteBuffer.wrap(actual));
-                    assertEquals("Mismatched read len", writeLen, readLen);
-                    assertArrayEquals("Mismatched read data", expected, actual);
-                }
+                byte[] actual = new byte[expected.length];
+                int readLen = fc.read(ByteBuffer.wrap(actual));
+                assertEquals("Mismatched read len", writeLen, readLen);
+                assertArrayEquals("Mismatched read data", expected, actual);
             }
         }
 
@@ -119,19 +114,14 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session);
-                 FileChannel srcChannel = sftp.openRemotePathChannel(
-                         remFilePath, EnumSet.of(StandardOpenOption.READ));
-                 FileChannel dstChannel = FileChannel.open(dstFile,
-                         StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                long numXfered = srcChannel.transferTo(0L, expected.length, dstChannel);
-                assertEquals("Mismatched reported transfer count", expected.length, numXfered);
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session);
+             FileChannel srcChannel = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(StandardOpenOption.READ));
+             FileChannel dstChannel = FileChannel.open(dstFile,
+                     StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            long numXfered = srcChannel.transferTo(0L, expected.length, dstChannel);
+            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
@@ -158,21 +148,16 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session);
-                 FileChannel srcChannel = sftp.openRemotePathChannel(
-                         remFilePath, EnumSet.of(StandardOpenOption.READ));
-                 FileChannel dstChannel = FileChannel.open(dstFile,
-                         StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                // SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
-                long numXfered
-                        = srcChannel.transferTo(0L, SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault(), dstChannel);
-                assertEquals("Mismatched reported transfer count", expected.length, numXfered);
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session);
+             FileChannel srcChannel = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(StandardOpenOption.READ));
+             FileChannel dstChannel = FileChannel.open(dstFile,
+                     StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            // SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
+            long numXfered
+                    = srcChannel.transferTo(0L, SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault(), dstChannel);
+            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
@@ -203,18 +188,13 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            try (SftpClient sftp = createSftpClient(session);
-                 FileChannel dstChannel = sftp.openRemotePathChannel(
-                         remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
-                 FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
-                long numXfered = dstChannel.transferFrom(srcChannel, 0L, expected.length);
-                assertEquals("Mismatched reported transfer count", expected.length, numXfered);
-            }
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session);
+             FileChannel dstChannel = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+             FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
+            long numXfered = dstChannel.transferFrom(srcChannel, 0L, expected.length);
+            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
         }
 
         byte[] actual = Files.readAllBytes(dstFile);

@@ -142,8 +142,8 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
         String dstPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
 
         AtomicLong xferCount = new AtomicLong();
-        try (ClientSession srcSession = createClientSession(getCurrentTestName() + "-src");
-             ClientSession dstSession = createClientSession(getCurrentTestName() + "-dst")) {
+        try (ClientSession srcSession = createAuthenticatedClientSession(getCurrentTestName() + "-src");
+             ClientSession dstSession = createAuthenticatedClientSession(getCurrentTestName() + "-dst")) {
             ScpRemote2RemoteTransferHelper helper = new ScpRemote2RemoteTransferHelper(
                     srcSession, dstSession, new ScpRemote2RemoteTransferListener() {
                         @Override
@@ -222,8 +222,8 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
 
         Path dstDir = assertHierarchyTargetFolderExists(scpRoot.resolve("dstdir"));
         String dstPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstDir);
-        try (ClientSession srcSession = createClientSession(getCurrentTestName() + "-src");
-             ClientSession dstSession = createClientSession(getCurrentTestName() + "-dst")) {
+        try (ClientSession srcSession = createAuthenticatedClientSession(getCurrentTestName() + "-src");
+             ClientSession dstSession = createAuthenticatedClientSession(getCurrentTestName() + "-dst")) {
             ScpRemote2RemoteTransferHelper helper = new ScpRemote2RemoteTransferHelper(
                     srcSession, dstSession,
                     new ScpRemote2RemoteTransferListener() {
@@ -308,24 +308,6 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
                 } else {
                     assertTrue(name + ": unmatched destination file", Files.exists(srcFile));
                 }
-            }
-        }
-    }
-
-    private ClientSession createClientSession(String username) throws IOException {
-        ClientSession session = client.connect(username, TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession();
-        try {
-            session.addPasswordIdentity(username);
-            session.auth().verify(AUTH_TIMEOUT);
-
-            ClientSession result = session;
-            session = null; // avoid auto-close at finally clause
-            return result;
-        } finally {
-            if (session != null) {
-                session.close();
             }
         }
     }
