@@ -79,7 +79,7 @@ public class DirectoryScannerTest extends JUnitTestSupport {
         Files.createDirectories(rootDir);
 
         List<Path> expected = new ArrayList<>();
-        for (int level = 1; level <= Byte.SIZE; level++) {
+        for (int level = 1; level <= 8; level++) {
             Path file = rootDir.resolve(Integer.toString(level) + (((level & 0x03) == 0) ? ".csv" : ".txt"));
             Files.write(file, Collections.singletonList(file.toString()), StandardCharsets.UTF_8);
             String name = Objects.toString(file.getFileName());

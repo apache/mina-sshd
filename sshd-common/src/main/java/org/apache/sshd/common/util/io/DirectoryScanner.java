@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * <p>
@@ -104,7 +105,7 @@ import org.apache.sshd.common.util.SelectorUtils;
  * <p>
  * Example of usage:
  * </p>
- * 
+ *
  * <pre>
  * String[] includes = { "**\\*.class" };
  * String[] excludes = { "modules\\*\\**" };
@@ -134,17 +135,22 @@ public class DirectoryScanner {
     /**
      * The base directory to be scanned.
      */
-    private Path basedir;
+    protected Path basedir;
 
     /**
      * The patterns for the files to be included.
      */
-    private List<String> includePatterns;
+    protected List<String> includePatterns;
 
     /**
      * Whether or not the file system should be treated as a case sensitive one.
      */
-    private boolean caseSensitive = OsUtils.isUNIX();
+    protected boolean caseSensitive = OsUtils.isUNIX();
+
+    /**
+     * The file separator to use to parse paths - default=local O/S separator
+     */
+    protected String separator = File.separator;
 
     public DirectoryScanner() {
         super();
@@ -214,12 +220,26 @@ public class DirectoryScanner {
                                 .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
     }
 
+    /**
+     * @return Whether or not the file system should be treated as a case sensitive one.
+     */
     public boolean isCaseSensitive() {
         return caseSensitive;
     }
 
     public void setCaseSensitive(boolean caseSensitive) {
         this.caseSensitive = caseSensitive;
+    }
+
+    /**
+     * @return The file separator to use to parse paths - default=local O/S separator
+     */
+    public String getSeparator() {
+        return separator;
+    }
+
+    public void setSeparator(String separator) {
+        this.separator = ValidateUtils.checkNotNullAndNotEmpty(separator, "No separator provided");
     }
 
     /**
@@ -303,8 +323,9 @@ public class DirectoryScanner {
         }
 
         boolean cs = isCaseSensitive();
+        String sep = getSeparator();
         for (String include : includes) {
-            if (SelectorUtils.matchPath(include, name, cs)) {
+            if (SelectorUtils.matchPath(include, name, sep, cs)) {
                 return true;
             }
         }
@@ -326,8 +347,9 @@ public class DirectoryScanner {
         }
 
         boolean cs = isCaseSensitive();
+        String sep = getSeparator();
         for (String include : includes) {
-            if (SelectorUtils.matchPatternStart(include, name, cs)) {
+            if (SelectorUtils.matchPatternStart(include, name, sep, cs)) {
                 return true;
             }
         }

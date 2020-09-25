@@ -60,69 +60,36 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
-import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
-import org.apache.sshd.sftp.server.SftpSubsystemFactory;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SuppressWarnings("checkstyle:MethodCount")
-public class SftpFileSystemTest extends BaseTestSupport {
-    private static SshServer sshd;
-    private static int port;
-
-    private final FileSystemFactory fileSystemFactory;
-
+public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
     public SftpFileSystemTest() throws IOException {
-        Path targetPath = detectTargetFolder();
-        Path parentPath = targetPath.getParent();
-        fileSystemFactory = new VirtualFileSystemFactory(parentPath);
-    }
-
-    @BeforeClass
-    public static void setupServerInstance() throws Exception {
-        sshd = CoreTestSupportUtils.setupTestServer(SftpFileSystemTest.class);
-        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        sshd.start();
-        port = sshd.getPort();
-    }
-
-    @AfterClass
-    public static void tearDownServerInstance() throws Exception {
-        if (sshd != null) {
-            try {
-                sshd.stop(true);
-            } finally {
-                sshd = null;
-            }
-        }
+        super();
     }
 
     @Before
     public void setUp() throws Exception {
-        sshd.setFileSystemFactory(fileSystemFactory);
+        setupServer();
     }
 
     @Test
@@ -228,6 +195,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
                 SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
         Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
         Files.deleteIfExists(lclFile);
         byte[] expected
@@ -282,47 +251,41 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testMultipleFileStoresOnSameProvider() throws IOException {
-        try (SshClient client = setupTestClient()) {
-            client.start();
+        SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
+        Collection<SftpFileSystem> fsList = new LinkedList<>();
+        try {
+            Collection<String> idSet = new HashSet<>();
+            Map<String, Object> empty = Collections.emptyMap();
+            for (int index = 0; index < 4; index++) {
+                String credentials = getCurrentTestName() + "-user-" + index;
+                SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials, empty), empty);
+                fsList.add(expected);
 
-            SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
-            Collection<SftpFileSystem> fsList = new LinkedList<>();
-            try {
-                Collection<String> idSet = new HashSet<>();
-                Map<String, Object> empty = Collections.emptyMap();
-                for (int index = 0; index < 4; index++) {
-                    String credentials = getCurrentTestName() + "-user-" + index;
-                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials, empty), empty);
-                    fsList.add(expected);
+                String id = expected.getId();
+                assertTrue("Non unique file system id: " + id, idSet.add(id));
 
-                    String id = expected.getId();
-                    assertTrue("Non unique file system id: " + id, idSet.add(id));
+                SftpFileSystem actual = provider.getFileSystem(id);
+                assertSame("Mismatched cached instances for " + id, expected, actual);
+                outputDebugMessage("Created file system id: %s", id);
+            }
 
-                    SftpFileSystem actual = provider.getFileSystem(id);
-                    assertSame("Mismatched cached instances for " + id, expected, actual);
-                    outputDebugMessage("Created file system id: %s", id);
-                }
-
-                for (SftpFileSystem fs : fsList) {
-                    String id = fs.getId();
+            for (SftpFileSystem fs : fsList) {
+                String id = fs.getId();
+                fs.close();
+                assertNull("File system not removed from cache: " + id, provider.getFileSystem(id));
+            }
+        } finally {
+            IOException err = null;
+            for (FileSystem fs : fsList) {
+                try {
                     fs.close();
-                    assertNull("File system not removed from cache: " + id, provider.getFileSystem(id));
+                } catch (IOException e) {
+                    err = GenericUtils.accumulateException(err, e);
                 }
-            } finally {
-                IOException err = null;
-                for (FileSystem fs : fsList) {
-                    try {
-                        fs.close();
-                    } catch (IOException e) {
-                        err = GenericUtils.accumulateException(err, e);
-                    }
-                }
+            }
 
-                client.stop();
-
-                if (err != null) {
-                    throw err;
-                }
+            if (err != null) {
+                throw err;
             }
         }
     }
@@ -341,25 +304,19 @@ public class SftpFileSystemTest extends BaseTestSupport {
             return value;
         };
 
-        try (SshClient client = setupTestClient()) {
-            client.start();
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
 
-            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(AUTH_TIMEOUT);
-
-                try (FileSystem fs = createSftpFileSystem(session, selector)) {
-                    assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
-                    Collection<String> views = fs.supportedFileAttributeViews();
-                    assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
-                            views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
-                    int expectedVersion = selected.get();
-                    assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
-                    testFileSystem(fs, expectedVersion);
-                }
-            } finally {
-                client.stop();
+            try (FileSystem fs = createSftpFileSystem(session, selector)) {
+                assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+                Collection<String> views = fs.supportedFileAttributeViews();
+                assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
+                        views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
+                int expectedVersion = selected.get();
+                assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
+                testFileSystem(fs, expectedVersion);
             }
         }
     }
@@ -388,10 +345,6 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
 
         assertTrue("No configuration found", found);
-    }
-
-    private FileSystem createSftpFileSystem(ClientSession session, SftpVersionSelector selector) throws IOException {
-        return SftpClientFactory.instance().createSftpFileSystem(session, selector);
     }
 
     private void testFileSystem(FileSystem fs, int version) throws Exception {
@@ -519,21 +472,5 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
 
         Files.delete(file1);
-    }
-
-    private URI createDefaultFileSystemURI() {
-        return createDefaultFileSystemURI(Collections.emptyMap());
-    }
-
-    private URI createDefaultFileSystemURI(Map<String, ?> params) {
-        return createFileSystemURI(getCurrentTestName(), params);
-    }
-
-    private URI createFileSystemURI(String username, Map<String, ?> params) {
-        return createFileSystemURI(username, port, params);
-    }
-
-    private static URI createFileSystemURI(String username, int port, Map<String, ?> params) {
-        return SftpFileSystemProvider.createFileSystemURI(TEST_LOCALHOST, port, username, username, params);
     }
 }

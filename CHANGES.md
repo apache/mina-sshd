@@ -31,6 +31,7 @@ or `-key-file` command line option.
 * [SSHD-1076](https://issues.apache.org/jira/browse/SSHD-1076) Break down `ClientUserAuthService#auth` method into several to allow for flexible override
 * [SSHD-1077](https://issues.apache.org/jira/browse/SSHD-1077) Added command line option to request specific SFTP version in `SftpCommandMain`
 * [SSHD-1079](https://issues.apache.org/jira/browse/SSHD-1079) Experimental async mode on the local port forwarder
+* [SSHD-1086](https://issues.apache.org/jira/browse/SSHD-1086) Added SFTP aware directory scanning helper classes
 
 ## Behavioral changes and enhancements
 

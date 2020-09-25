@@ -93,6 +93,11 @@ public final class SelectorUtils {
      *                         &quot;**&quot;.
      */
     public static boolean matchPatternStart(String pattern, String str, boolean isCaseSensitive) {
+        return matchPath(pattern, str, File.separator, isCaseSensitive);
+    }
+
+    public static boolean matchPatternStart(
+            String pattern, String str, String separator, boolean isCaseSensitive) {
         if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
                 && pattern.startsWith(REGEX_HANDLER_PREFIX)
                 && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
@@ -106,14 +111,15 @@ public final class SelectorUtils {
                 pattern = pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             }
 
-            String altStr = str.replace('\\', '/');
+            if (matchAntPathPatternStart(pattern, str, separator, isCaseSensitive)) {
+                return true;
+            }
 
-            return matchAntPathPatternStart(pattern, str, File.separator, isCaseSensitive)
-                    || matchAntPathPatternStart(pattern, altStr, "/", isCaseSensitive);
+            return matchAntPathPatternStart(pattern, str.replace('\\', '/'), "/", isCaseSensitive);
         }
     }
 
-    private static boolean matchAntPathPatternStart(
+    public static boolean matchAntPathPatternStart(
             String pattern, String str, String separator, boolean isCaseSensitive) {
         // When str starts with a File.separator, pattern has to start with a
         // File.separator.
@@ -137,8 +143,7 @@ public final class SelectorUtils {
             if (patDir.equals("**")) {
                 break;
             }
-            if (!match(patDir, strDirs.get(strIdxStart),
-                    isCaseSensitive)) {
+            if (!match(patDir, strDirs.get(strIdxStart), isCaseSensitive)) {
                 return false;
             }
             patIdxStart++;
@@ -175,7 +180,13 @@ public final class SelectorUtils {
      * @return                 <code>true</code> if the pattern matches against the string, or <code>false</code>
      *                         otherwise.
      */
-    public static boolean matchPath(String pattern, String str, boolean isCaseSensitive) {
+    public static boolean matchPath(
+            String pattern, String str, boolean isCaseSensitive) {
+        return matchPath(pattern, str, File.separator, isCaseSensitive);
+    }
+
+    public static boolean matchPath(
+            String pattern, String str, String separator, boolean isCaseSensitive) {
         if ((pattern.length() > (REGEX_HANDLER_PREFIX.length() + PATTERN_HANDLER_SUFFIX.length() + 1))
                 && pattern.startsWith(REGEX_HANDLER_PREFIX)
                 && pattern.endsWith(PATTERN_HANDLER_SUFFIX)) {
@@ -188,21 +199,27 @@ public final class SelectorUtils {
                 pattern = pattern.substring(ANT_HANDLER_PREFIX.length(), pattern.length() - PATTERN_HANDLER_SUFFIX.length());
             }
 
-            return matchAntPathPattern(pattern, str, isCaseSensitive);
+            return matchAntPathPattern(pattern, str, separator, isCaseSensitive);
         }
     }
 
-    private static boolean matchAntPathPattern(String pattern, String str, boolean isCaseSensitive) {
-        // When str starts with a File.separator, pattern has to start with a
-        // File.separator.
-        // When pattern starts with a File.separator, str has to start with a
-        // File.separator.
-        if (str.startsWith(File.separator) != pattern.startsWith(File.separator)) {
+    public static boolean matchAntPathPattern(
+            String pattern, String str, boolean isCaseSensitive) {
+        return matchAntPathPattern(pattern, str, File.separator, isCaseSensitive);
+    }
+
+    public static boolean matchAntPathPattern(
+            String pattern, String str, String separator, boolean isCaseSensitive) {
+        // When str starts with a file separator, pattern has to start with a
+        // file separator.
+        // When pattern starts with a file separator, str has to start with a
+        // file separator.
+        if (str.startsWith(separator) != pattern.startsWith(separator)) {
             return false;
         }
 
-        List<String> patDirs = tokenizePath(pattern, File.separator);
-        List<String> strDirs = tokenizePath(str, File.separator);
+        List<String> patDirs = tokenizePath(pattern, separator);
+        List<String> strDirs = tokenizePath(str, separator);
 
         int patIdxStart = 0;
         int patIdxEnd = patDirs.size() - 1;
@@ -215,19 +232,23 @@ public final class SelectorUtils {
             if (patDir.equals("**")) {
                 break;
             }
-            if (!match(patDir, strDirs.get(strIdxStart),
-                    isCaseSensitive)) {
+
+            String subDir = strDirs.get(strIdxStart);
+            if (!match(patDir, subDir, isCaseSensitive)) {
                 patDirs = null;
                 strDirs = null;
                 return false;
             }
+
             patIdxStart++;
             strIdxStart++;
         }
+
         if (strIdxStart > strIdxEnd) {
             // String is exhausted
             for (int i = patIdxStart; i <= patIdxEnd; i++) {
-                if (!patDirs.get(i).equals("**")) {
+                String subPat = patDirs.get(i);
+                if (!subPat.equals("**")) {
                     patDirs = null;
                     strDirs = null;
                     return false;
@@ -249,19 +270,23 @@ public final class SelectorUtils {
             if (patDir.equals("**")) {
                 break;
             }
-            if (!match(patDir, strDirs.get(strIdxEnd),
-                    isCaseSensitive)) {
+
+            String subDir = strDirs.get(strIdxEnd);
+            if (!match(patDir, subDir, isCaseSensitive)) {
                 patDirs = null;
                 strDirs = null;
                 return false;
             }
+
             patIdxEnd--;
             strIdxEnd--;
         }
+
         if (strIdxStart > strIdxEnd) {
             // String is exhausted
             for (int i = patIdxStart; i <= patIdxEnd; i++) {
-                if (!patDirs.get(i).equals("**")) {
+                String subPat = patDirs.get(i);
+                if (!subPat.equals("**")) {
                     patDirs = null;
                     strDirs = null;
                     return false;
@@ -273,7 +298,8 @@ public final class SelectorUtils {
         while (patIdxStart != patIdxEnd && strIdxStart <= strIdxEnd) {
             int patIdxTmp = -1;
             for (int i = patIdxStart + 1; i <= patIdxEnd; i++) {
-                if (patDirs.get(i).equals("**")) {
+                String subPat = patDirs.get(i);
+                if (subPat.equals("**")) {
                     patIdxTmp = i;
                     break;
                 }
@@ -312,7 +338,8 @@ public final class SelectorUtils {
         }
 
         for (int i = patIdxStart; i <= patIdxEnd; i++) {
-            if (!patDirs.get(i).equals("**")) {
+            String subPat = patDirs.get(i);
+            if (!subPat.equals("**")) {
                 patDirs = null;
                 strDirs = null;
                 return false;
