@@ -189,13 +189,10 @@ public final class EventListenerUtils {
      * @see                             #proxyWrapper(Class, ClassLoader, Iterable)
      */
     public static <T extends SshdEventListener> T proxyWrapper(
-            Class<T> listenerType, ClassLoader loader, final Iterable<? extends T> listeners) {
-        Objects.requireNonNull(listenerType, "No listener type specified");
-        ValidateUtils.checkTrue(listenerType.isInterface(), "Target proxy is not an interface: %s",
-                listenerType.getSimpleName());
+            Class<T> listenerType, ClassLoader loader, Iterable<? extends T> listeners) {
         Objects.requireNonNull(listeners, "No listeners container provided");
 
-        Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[] { listenerType }, (proxy, method, args) -> {
+        return ProxyUtils.newProxyInstance(loader, listenerType, (proxy, method, args) -> {
             Throwable err = null;
             for (T l : listeners) {
                 try {
@@ -207,11 +204,10 @@ public final class EventListenerUtils {
             }
 
             if (err != null) {
-                throw err;
+                throw ProxyUtils.unwrapInvocationThrowable(err);
             }
 
             return null; // we assume always void return value...
         });
-        return listenerType.cast(wrapper);
     }
 }

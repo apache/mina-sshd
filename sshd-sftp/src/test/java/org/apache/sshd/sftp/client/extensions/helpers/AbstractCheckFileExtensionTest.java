@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.digest.BuiltinDigests;
@@ -175,8 +174,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
             try {
                 Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);

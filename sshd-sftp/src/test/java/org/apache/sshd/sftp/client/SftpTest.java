@@ -169,24 +169,21 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expectedRandom);
 
         byte[] expectedText = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
-            String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient();
+             CloseableHandle handle = sftp.open(
+                     file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
+            sftp.write(handle, 7365L, expectedRandom);
+            byte[] actualRandom = new byte[expectedRandom.length];
+            int readLen = sftp.read(handle, 0L, actualRandom);
+            assertEquals("Incomplete random data read", expectedRandom.length, readLen);
+            assertArrayEquals("Mismatched read random data", expectedRandom, actualRandom);
 
-            try (CloseableHandle handle = sftp.open(
-                    file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
-                sftp.write(handle, 7365L, expectedRandom);
-                byte[] actualRandom = new byte[expectedRandom.length];
-                int readLen = sftp.read(handle, 0L, actualRandom);
-                assertEquals("Incomplete random data read", expectedRandom.length, readLen);
-                assertArrayEquals("Mismatched read random data", expectedRandom, actualRandom);
-
-                sftp.write(handle, 3777347L, expectedText);
-                byte[] actualText = new byte[expectedText.length];
-                readLen = sftp.read(handle, actualRandom.length, actualText);
-                assertEquals("Incomplete text data read", actualText.length, readLen);
-                assertArrayEquals("Mismatched read text data", expectedText, actualText);
-            }
+            sftp.write(handle, 3777347L, expectedText);
+            byte[] actualText = new byte[expectedText.length];
+            readLen = sftp.read(handle, actualRandom.length, actualText);
+            assertEquals("Incomplete text data read", actualText.length, readLen);
+            assertArrayEquals("Mismatched read text data", expectedText, actualText);
         }
 
         byte[] actualBytes = Files.readAllBytes(testFile);
@@ -214,29 +211,27 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expected);
         Files.write(testFile, expected);
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
-            String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
-            byte[] actual = new byte[expected.length];
-            int maxAllowed = actual.length / 4;
-            // allow less than actual
-            SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.set(sshd, maxAllowed);
-            try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
-                int readLen = sftp.read(handle, 0L, actual);
-                assertEquals("Mismatched read len", maxAllowed, readLen);
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        byte[] actual = new byte[expected.length];
+        int maxAllowed = actual.length / 4;
+        // allow less than actual
+        SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.set(sshd, maxAllowed);
+        try (SftpClient sftp = createSingleSessionClient();
+             CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
+            int readLen = sftp.read(handle, 0L, actual);
+            assertEquals("Mismatched read len", maxAllowed, readLen);
 
-                for (int index = 0; index < readLen; index++) {
-                    byte expByte = expected[index];
-                    byte actByte = actual[index];
-                    if (expByte != actByte) {
-                        fail("Mismatched values at index=" + index
-                             + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
-                             + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
-                    }
+            for (int index = 0; index < readLen; index++) {
+                byte expByte = expected[index];
+                byte actByte = actual[index];
+                if (expByte != actByte) {
+                    fail("Mismatched values at index=" + index
+                         + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
+                         + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
                 }
-            } finally {
-                SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.remove(sshd);
             }
+        } finally {
+            SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.remove(sshd);
         }
     }
 
@@ -256,8 +251,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
         });
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             String rootDir = sftp.canonicalPath("/");
             String upDir = sftp.canonicalPath(rootDir + "/..");
             assertEquals("Mismatched root dir parent", rootDir, upDir);
@@ -281,39 +275,36 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         lclSftp = assertHierarchyTargetFolderExists(lclSftp);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(lclSftp));
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            String escapePath;
-            if (useAbsolutePath) {
-                escapePath = targetPath.toString();
-                if (OsUtils.isWin32()) {
-                    escapePath = "/" + escapePath.replace(File.separatorChar, '/');
-                }
-            } else {
-                Path parent = lclSftp.getParent();
-                Path forbidden = Files.createDirectories(parent.resolve("forbidden"));
-                escapePath = "../" + forbidden.getFileName();
+        String escapePath;
+        if (useAbsolutePath) {
+            escapePath = targetPath.toString();
+            if (OsUtils.isWin32()) {
+                escapePath = "/" + escapePath.replace(File.separatorChar, '/');
             }
+        } else {
+            Path parent = lclSftp.getParent();
+            Path forbidden = Files.createDirectories(parent.resolve("forbidden"));
+            escapePath = "../" + forbidden.getFileName();
+        }
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                SftpClient.Attributes attrs = sftp.stat(escapePath);
-                fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
-            } catch (SftpException e) {
-                int expected = OsUtils.isWin32() || (!useAbsolutePath)
-                        ? SftpConstants.SSH_FX_INVALID_FILENAME
-                        : SftpConstants.SSH_FX_NO_SUCH_FILE;
-                assertEquals("Mismatched status for " + escapePath,
-                        SftpConstants.getStatusName(expected),
-                        SftpConstants.getStatusName(e.getStatus()));
-            }
+        try (SftpClient sftp = createSingleSessionClient()) {
+            SftpClient.Attributes attrs = sftp.stat(escapePath);
+            fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
+        } catch (SftpException e) {
+            int expected = OsUtils.isWin32() || (!useAbsolutePath)
+                    ? SftpConstants.SSH_FX_INVALID_FILENAME
+                    : SftpConstants.SSH_FX_NO_SUCH_FILE;
+            assertEquals("Mismatched status for " + escapePath,
+                    SftpConstants.getStatusName(expected),
+                    SftpConstants.getStatusName(e.getStatus()));
         }
     }
 
     @Test
     public void testNormalizeRemoteRootValues() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
-            StringBuilder sb = new StringBuilder(Long.SIZE + 1);
+        try (SftpClient sftp = createSingleSessionClient()) {
             String expected = sftp.canonicalPath("/");
+            StringBuilder sb = new StringBuilder(Long.SIZE + 1);
             for (int i = 0; i < Long.SIZE; i++) {
                 if (sb.length() > 0) {
                     sb.setLength(0);
@@ -342,8 +333,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         Factory<? extends Random> factory = client.getRandomFactory();
         Random rnd = factory.create();
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             StringBuilder sb = new StringBuilder(file.length() + comps.length);
             String expected = sftp.canonicalPath(file);
             for (int i = 0; i < file.length(); i++) {
@@ -392,86 +382,83 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         File javaFile = testFile.toFile();
         assertHierarchyTargetFolderExists(javaFile.getParentFile());
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            javaFile.createNewFile();
-            javaFile.setWritable(false, false);
-            javaFile.setReadable(false, false);
+        javaFile.createNewFile();
+        javaFile.setWritable(false, false);
+        javaFile.setReadable(false, false);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            boolean isWindows = OsUtils.isWin32();
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                boolean isWindows = OsUtils.isWin32();
-
-                try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
-                    // NOTE: on Windows files are always readable
-                    // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/
-                    // luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
-                    assertTrue("Empty read should have failed on " + file, isWindows);
-                } catch (IOException e) {
-                    if (isWindows) {
-                        throw e;
-                    }
-                }
-
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
-                    fail("Empty write should have failed on " + file);
-                } catch (IOException e) {
-                    // ok
-                }
-
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate))) {
-                    // NOTE: on Windows files are always readable
-                    assertTrue("Empty truncate should have failed on " + file, isWindows);
-                } catch (IOException e) {
-                    // ok
-                }
-
+            try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                 // NOTE: on Windows files are always readable
-                int perms = sftp.stat(file).getPermissions();
-                int readMask = isWindows ? 0 : SftpConstants.S_IRUSR;
-                int permsMask = SftpConstants.S_IWUSR | readMask;
-                assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, perms & permsMask);
-
-                javaFile.setWritable(true, false);
-
-                try (SftpClient.CloseableHandle h = sftp.open(
-                        file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write))) {
-                    // OK should succeed
-                    assertTrue("Handle not marked as open for file=" + file, h.isOpen());
+                // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/
+                // luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
+                assertTrue("Empty read should have failed on " + file, isWindows);
+            } catch (IOException e) {
+                if (isWindows) {
+                    throw e;
                 }
+            }
 
-                byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
-                    sftp.write(h, 0, d, 0, d.length);
-                    sftp.write(h, d.length, d, 0, d.length);
+            try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
+                fail("Empty write should have failed on " + file);
+            } catch (IOException e) {
+                // ok
+            }
+
+            try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate))) {
+                // NOTE: on Windows files are always readable
+                assertTrue("Empty truncate should have failed on " + file, isWindows);
+            } catch (IOException e) {
+                // ok
+            }
+
+            // NOTE: on Windows files are always readable
+            int perms = sftp.stat(file).getPermissions();
+            int readMask = isWindows ? 0 : SftpConstants.S_IRUSR;
+            int permsMask = SftpConstants.S_IWUSR | readMask;
+            assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, perms & permsMask);
+
+            javaFile.setWritable(true, false);
+
+            try (SftpClient.CloseableHandle h = sftp.open(
+                    file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write))) {
+                // OK should succeed
+                assertTrue("Handle not marked as open for file=" + file, h.isOpen());
+            }
+
+            byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
+            try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
+                sftp.write(h, 0, d, 0, d.length);
+                sftp.write(h, d.length, d, 0, d.length);
+            }
+
+            try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
+                sftp.write(h, d.length * 2, d, 0, d.length);
+            }
+
+            try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
+                byte[] overwrite = "-".getBytes(StandardCharsets.UTF_8);
+                sftp.write(h, 3L, overwrite, 0, 1);
+                d[3] = overwrite[0];
+            }
+
+            try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
+                // NOTE: on Windows files are always readable
+                assertTrue("Data read should have failed on " + file, isWindows);
+            } catch (IOException e) {
+                if (isWindows) {
+                    throw e;
                 }
+            }
 
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
-                    sftp.write(h, d.length * 2, d, 0, d.length);
-                }
+            javaFile.setReadable(true, false);
 
-                try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
-                    byte[] overwrite = "-".getBytes(StandardCharsets.UTF_8);
-                    sftp.write(h, 3L, overwrite, 0, 1);
-                    d[3] = overwrite[0];
-                }
-
-                try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
-                    // NOTE: on Windows files are always readable
-                    assertTrue("Data read should have failed on " + file, isWindows);
-                } catch (IOException e) {
-                    if (isWindows) {
-                        throw e;
-                    }
-                }
-
-                javaFile.setReadable(true, false);
-
-                byte[] buf = new byte[3];
-                try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
-                    int l = sftp.read(h, 2L, buf, 0, buf.length);
-                    String expected = new String(d, 2, l, StandardCharsets.UTF_8);
-                    String actual = new String(buf, 0, l, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched read data", expected, actual);
-                }
+            byte[] buf = new byte[3];
+            try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
+                int l = sftp.read(h, 2L, buf, 0, buf.length);
+                String expected = new String(d, 2, l, StandardCharsets.UTF_8);
+                String actual = new String(buf, 0, l, StandardCharsets.UTF_8);
+                assertEquals("Mismatched read data", expected, actual);
             }
         }
     }
@@ -487,28 +474,26 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
 
         assertHierarchyTargetFolderExists(testFile.getParent());
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            Files.deleteIfExists(testFile); // make sure starting fresh
-            Files.createFile(testFile, IoUtils.EMPTY_FILE_ATTRIBUTES);
+        Files.deleteIfExists(testFile); // make sure starting fresh
+        Files.createFile(testFile, IoUtils.EMPTY_FILE_ATTRIBUTES);
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                Collection<PosixFilePermission> initialPermissions = IoUtils.getPermissions(testFile);
-                assertTrue("File does not have enough initial permissions: " + initialPermissions,
-                        initialPermissions.containsAll(
-                                EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
+        try (SftpClient sftp = createSingleSessionClient()) {
+            Collection<PosixFilePermission> initialPermissions = IoUtils.getPermissions(testFile);
+            assertTrue("File does not have enough initial permissions: " + initialPermissions,
+                    initialPermissions.containsAll(
+                            EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
 
-                try (CloseableHandle handle = sendRawAttributeImpactOpen(file, sftp)) {
-                    outputDebugMessage("%s - handle=%s", getCurrentTestName(), handle);
-                }
-
-                Collection<PosixFilePermission> updatedPermissions = IoUtils.getPermissions(testFile);
-                assertEquals("Mismatched updated permissions count", initialPermissions.size(), updatedPermissions.size());
-                assertTrue("File does not preserve initial permissions: expected=" + initialPermissions + ", actual="
-                           + updatedPermissions,
-                        updatedPermissions.containsAll(initialPermissions));
-            } finally {
-                Files.delete(testFile);
+            try (CloseableHandle handle = sendRawAttributeImpactOpen(file, sftp)) {
+                outputDebugMessage("%s - handle=%s", getCurrentTestName(), handle);
             }
+
+            Collection<PosixFilePermission> updatedPermissions = IoUtils.getPermissions(testFile);
+            assertEquals("Mismatched updated permissions count", initialPermissions.size(), updatedPermissions.size());
+            assertTrue("File does not preserve initial permissions: expected=" + initialPermissions + ", actual="
+                       + updatedPermissions,
+                    updatedPermissions.containsAll(initialPermissions));
+        } finally {
+            Files.delete(testFile);
         }
     }
 
@@ -552,8 +537,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         byte[] data
                 = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
         Files.write(localFile, data, StandardOpenOption.CREATE);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session);
+        try (SftpClient sftp = createSingleSessionClient();
              InputStream stream = sftp.read(
                      CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
             byte[] expected = new byte[data.length / 4];
@@ -626,8 +610,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]")
                     .getBytes(StandardCharsets.UTF_8);
             Files.write(localFile, expected, StandardOpenOption.CREATE);
-            try (ClientSession session = createAuthenticatedClientSession();
-                 SftpClient sftp = createSftpClient(session)) {
+            try (SftpClient sftp = createSingleSessionClient()) {
                 byte[] actual = new byte[expected.length];
                 try (InputStream stream = sftp.read(
                         CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
@@ -865,8 +848,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         };
         factory.addSftpEventListener(listener);
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             assertEquals("Mismatched negotiated version", sftp.getVersion(), versionHolder.get());
             testClient(client, sftp);
 
@@ -895,51 +877,49 @@ public class SftpTest extends AbstractSftpClientTestSupport {
      */
     @Test
     public void testWriteChunking() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            Path targetPath = detectTargetFolder();
-            Path lclSftp = CommonTestSupportUtils.resolve(
-                    targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-            CommonTestSupportUtils.deleteRecursive(lclSftp);
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
 
-            Path parentPath = targetPath.getParent();
-            Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
-            String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
+        String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
 
-            try (SftpClient sftp = createSftpClient(session)) {
-                sftp.mkdir(dir);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            sftp.mkdir(dir);
 
-                uploadAndVerifyFile(sftp, clientFolder, dir, 0, "emptyFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, 1000, "smallFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir, 0, "emptyFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir, 1000, "smallFile.txt");
 
-                // Make sure sizes should invoke our internal chunking mechanism
-                ClientChannel clientChannel = sftp.getClientChannel();
-                SftpModuleProperties.WRITE_CHUNK_SIZE.set(clientChannel,
-                        Math.min(SftpClient.IO_BUFFER_SIZE, SftpModuleProperties.WRITE_CHUNK_SIZE.getRequiredDefault())
-                                                                         - Byte.MAX_VALUE);
+            // Make sure sizes should invoke our internal chunking mechanism
+            ClientChannel clientChannel = sftp.getClientChannel();
+            SftpModuleProperties.WRITE_CHUNK_SIZE.set(clientChannel,
+                    Math.min(SftpClient.IO_BUFFER_SIZE, SftpModuleProperties.WRITE_CHUNK_SIZE.getRequiredDefault())
+                                                                     - Byte.MAX_VALUE);
 
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "bufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT + 1, "bufferMaxLenPlusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        (int) (1.5 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT), "1point5BufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "2TimesBufferMaxLenFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir,
-                        (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
-                uploadAndVerifyFile(sftp, clientFolder, dir, 200000, "largerFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT - 1, "bufferMaxLenMinusOneFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "bufferMaxLenFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT + 1, "bufferMaxLenPlusOneFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (int) (1.5 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT), "1point5BufferMaxLenFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT, "2TimesBufferMaxLenFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir,
+                    (2 * SshConstants.SSH_REQUIRED_TOTAL_PACKET_LENGTH_SUPPORT) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+            uploadAndVerifyFile(sftp, clientFolder, dir, 200000, "largerFile.txt");
 
-                // test erroneous calls that check for negative values
-                Path invalidPath = clientFolder.resolve(getCurrentTestName() + "-invalid");
-                testInvalidParams(sftp, invalidPath, CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, invalidPath));
+            // test erroneous calls that check for negative values
+            Path invalidPath = clientFolder.resolve(getCurrentTestName() + "-invalid");
+            testInvalidParams(sftp, invalidPath, CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, invalidPath));
 
-                // cleanup
-                sftp.rmdir(dir);
-            }
+            // cleanup
+            sftp.rmdir(dir);
         }
     }
 
@@ -1125,8 +1105,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             Path file1 = clientFolder.resolve("file-1.txt");
             String file1Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file1);
             try (OutputStream os = sftp.write(file1Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
@@ -1163,8 +1142,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testServerExtensionsDeclarations() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             for (String name : new String[] {
                     SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
@@ -1497,8 +1475,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test // see SSHD-903
     public void testForcedVersionNegotiation() throws Exception {
         SftpModuleProperties.SFTP_VERSION.set(sshd, SftpConstants.SFTP_V3);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             assertEquals("Mismatched negotiated version", SftpConstants.SFTP_V3, sftp.getVersion());
         }
     }
@@ -1547,8 +1524,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             Path file = clientFolder.resolve("file.txt");
             String filePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file);
             try (OutputStream os = sftp.write(filePath, SftpClient.MIN_WRITE_BUFFER_SIZE)) {

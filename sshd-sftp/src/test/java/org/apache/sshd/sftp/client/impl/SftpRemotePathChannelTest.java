@@ -30,7 +30,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Date;
 import java.util.EnumSet;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -66,25 +65,23 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         byte[] expected
                 = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")").getBytes(StandardCharsets.UTF_8);
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
-            Path parentPath = targetPath.getParent();
-            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+        Path parentPath = targetPath.getParent();
+        String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
 
-            try (FileChannel fc = sftp.openRemotePathChannel(
-                    remFilePath, EnumSet.of(
-                            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-                int writeLen = fc.write(ByteBuffer.wrap(expected));
-                assertEquals("Mismatched written length", expected.length, writeLen);
+        try (SftpClient sftp = createSingleSessionClient();
+             FileChannel fc = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(
+                             StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+            int writeLen = fc.write(ByteBuffer.wrap(expected));
+            assertEquals("Mismatched written length", expected.length, writeLen);
 
-                FileChannel fcPos = fc.position(0L);
-                assertSame("Mismatched positioned file channel", fc, fcPos);
+            FileChannel fcPos = fc.position(0L);
+            assertSame("Mismatched positioned file channel", fc, fcPos);
 
-                byte[] actual = new byte[expected.length];
-                int readLen = fc.read(ByteBuffer.wrap(actual));
-                assertEquals("Mismatched read len", writeLen, readLen);
-                assertArrayEquals("Mismatched read data", expected, actual);
-            }
+            byte[] actual = new byte[expected.length];
+            int readLen = fc.read(ByteBuffer.wrap(actual));
+            assertEquals("Mismatched read len", writeLen, readLen);
+            assertArrayEquals("Mismatched read data", expected, actual);
         }
 
         byte[] actual = Files.readAllBytes(lclFile);
@@ -114,8 +111,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session);
+        try (SftpClient sftp = createSingleSessionClient();
              FileChannel srcChannel = sftp.openRemotePathChannel(
                      remFilePath, EnumSet.of(StandardOpenOption.READ));
              FileChannel dstChannel = FileChannel.open(dstFile,
@@ -148,8 +144,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session);
+        try (SftpClient sftp = createSingleSessionClient();
              FileChannel srcChannel = sftp.openRemotePathChannel(
                      remFilePath, EnumSet.of(StandardOpenOption.READ));
              FileChannel dstChannel = FileChannel.open(dstFile,
@@ -188,8 +183,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         Files.deleteIfExists(dstFile);
 
         String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session);
+        try (SftpClient sftp = createSingleSessionClient();
              FileChannel dstChannel = sftp.openRemotePathChannel(
                      remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
              FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {

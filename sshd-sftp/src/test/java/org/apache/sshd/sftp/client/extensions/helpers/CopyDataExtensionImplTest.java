@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -159,8 +158,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
             }
         }
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
             try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
                  CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {

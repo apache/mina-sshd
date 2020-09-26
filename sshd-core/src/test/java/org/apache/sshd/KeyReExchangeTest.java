@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,6 +51,7 @@ import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ProxyUtils;
 import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -156,7 +156,6 @@ public class KeyReExchangeTest extends BaseTestSupport {
             AtomicBoolean successfulInit = new AtomicBoolean(true);
             AtomicBoolean successfulNext = new AtomicBoolean(true);
             ClassLoader loader = getClass().getClassLoader();
-            Class<?>[] interfaces = { KeyExchange.class };
             for (KeyExchangeFactory factory : client.getKeyExchangeFactories()) {
                 kexFactories.add(new KeyExchangeFactory() {
                     @Override
@@ -167,7 +166,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     @Override
                     public KeyExchange createKeyExchange(Session s) throws Exception {
                         KeyExchange proxiedInstance = factory.createKeyExchange(s);
-                        return (KeyExchange) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
+                        return ProxyUtils.newProxyInstance(loader, KeyExchange.class, (proxy, method, args) -> {
                             String name = method.getName();
                             if ("init".equals(name) && (!successfulInit.get())) {
                                 throw new UnsupportedOperationException("Intentionally failing 'init'");

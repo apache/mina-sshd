@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -88,8 +87,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
             }
         }));
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
             SpaceAvailableExtensionInfo actual = ext.available(queryPath);
             assertEquals("Mismatched information", expected, actual);

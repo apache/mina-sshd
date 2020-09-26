@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.PathUtils;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -96,8 +95,7 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
         List<Path> expected = setup.getExpected();
         String remRoot = setup.getRemoteFilePath();
         List<ScanDirEntry> actual;
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(remRoot, pattern);
             actual = ds.scan(sftp, () -> new ArrayList<>(expected.size()));
         }
