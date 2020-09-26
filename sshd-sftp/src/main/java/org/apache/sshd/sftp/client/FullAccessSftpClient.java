@@ -17,25 +17,23 @@
  * under the License.
  */
 
-package org.apache.sshd.scp.client;
+package org.apache.sshd.sftp.client;
 
-import java.nio.channels.Channel;
-
-import org.apache.sshd.common.util.closeable.NioChannelDelegateInvocationHandler;
+import org.apache.sshd.common.util.closeable.AutoCloseableDelegateInvocationHandler;
 
 /**
- * An {@link ScpClient} wrapper that also closes the underlying session when closed
- *
+ * Provides both structured and raw SFTP access
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CloseableScpClient extends ScpClient, Channel {
-    /**
-     * @param  client The (never {@code null}) {@link ScpClient} instance
-     * @return        A {@link CloseableScpClient} wrapper that also closes the underlying {@link #getClientSession()}
-     *                when closed
-     */
-    static CloseableScpClient singleSessionInstance(ScpClient client) {
-        return NioChannelDelegateInvocationHandler.wrapDelegateChannel(
-                client, CloseableScpClient.class, client.getClientSession());
+public interface FullAccessSftpClient extends SftpClient, RawSftpClient {
+    static SftpClient singleSessionInstance(SftpClient client) {
+        if (client instanceof FullAccessSftpClient) {
+            return AutoCloseableDelegateInvocationHandler.wrapDelegateCloseable(
+                    client, FullAccessSftpClient.class, client.getClientSession());
+        } else {
+            return AutoCloseableDelegateInvocationHandler.wrapDelegateCloseable(
+                    client, SftpClient.class, client.getClientSession());
+        }
     }
 }

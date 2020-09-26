@@ -143,13 +143,36 @@ In order to obtain an `SftpClient` instance one needs to use an `SftpClientFacto
 
 ```java
 
-    ClientSession session = ...obtain session...
-    SftpClientFactory factory = ...obtain factory...
-    SftpClient client = factory.createSftpClient(session);
+    try (ClientSession session = ...obtain session...) {
+        SftpClientFactory factory = ...obtain factory...
+        try (SftpClient client = factory.createSftpClient(session)) {
+            ... use the SFTP client...
+        }
+        
+        // NOTE: session is still alive here...
+    }
 
 ```
 
 A default client factory implementations is provided in the module - see `SftpClientFactory.instance()`
+
+If the intended use of the client instance is "one-shot" - i.e., the client session should be closed when the
+SFTP client instance is closed, then it is possible to obtain a special wrapper that implements this functionality:
+
+```java
+
+// The underlying session will also be closed when the client is
+try (SftpClient client = createSftpClient(....)) {
+    ... use the SFTP client...
+}
+
+SftpClient createSftpClient(...) {
+    ClientSession session = ...obtain session...
+    SftpClientFactory factory = ...obtain factory...
+    SftpClient client = factory.createSftpClient(session);
+    return client.singleSessionInstance();
+}
+```
 
 ### Using a custom `SftpClientFactory`
 

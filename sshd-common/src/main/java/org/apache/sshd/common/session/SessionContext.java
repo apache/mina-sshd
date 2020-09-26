@@ -46,14 +46,14 @@ public interface SessionContext
         Closeable {
     /**
      * Default prefix expected for the client / server identification string
-     * 
+     *
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
     String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
 
     /**
      * Backward compatible special prefix
-     * 
+     *
      * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-5">RFC 4253 - section 5</A>
      */
     String FALLBACK_SSH_VERSION_PREFIX = "SSH-1.99-";

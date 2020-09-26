@@ -608,7 +608,11 @@ public abstract class JUnitTestSupport extends Assert {
             long nanoSleep = sleepEnd - sleepStart;
 
             sleepTime = TimeUnit.NANOSECONDS.toMillis(nanoSleep);
-            timeout -= sleepTime;
+            if (sleepTime <= 0L) {
+                timeout -= 10L;
+            } else {
+                timeout -= sleepTime;
+            }
         }
 
         return false;

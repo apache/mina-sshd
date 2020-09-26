@@ -109,6 +109,28 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         }
     }
 
+    protected SftpClient createSingleSessionClient() throws IOException {
+        ClientSession session = createAuthenticatedClientSession();
+        try {
+            SftpClient client = createSftpClient(session);
+            try {
+                SftpClient closer = client.singleSessionInstance();
+                // avoid auto-close at finally clause
+                client = null;
+                session = null;
+                return closer;
+            } finally {
+                if (client != null) {
+                    client.close();
+                }
+            }
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
     protected SftpClient createSftpClient(ClientSession session) throws IOException {
         return SftpClientFactory.instance().createSftpClient(session);
     }

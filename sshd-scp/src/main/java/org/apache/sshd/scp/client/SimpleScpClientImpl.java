@@ -20,7 +20,6 @@
 package org.apache.sshd.scp.client;
 
 import java.io.IOException;
-import java.lang.reflect.Proxy;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.Objects;
@@ -98,7 +97,7 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
         try {
             ScpClientCreator creator = getScpClientCreator();
             ScpClient client = creator.createScpClient(Objects.requireNonNull(session, "No client session"));
-            return createScpClient(session, client);
+            return CloseableScpClient.singleSessionInstance(client);
         } catch (Exception e) {
             log.warn("createScpClient({}) failed ({}) to create proxy: {}",
                     session, e.getClass().getSimpleName(), e.getMessage());
@@ -112,28 +111,6 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
 
             throw GenericUtils.toIOException(e);
         }
-    }
-
-    protected CloseableScpClient createScpClient(ClientSession session, ScpClient client) throws IOException {
-        ClassLoader loader = CloseableScpClient.class.getClassLoader();
-        Class<?>[] interfaces = { CloseableScpClient.class };
-        return (CloseableScpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
-            String name = method.getName();
-            try {
-                // The Channel implementation is provided by the session
-                if (("close".equals(name) || "isOpen".equals(name)) && GenericUtils.isEmpty(args)) {
-                    return method.invoke(session, args);
-                } else {
-                    return method.invoke(client, args);
-                }
-            } catch (Throwable t) {
-                if (log.isTraceEnabled()) {
-                    log.trace("invoke(CloseableScpClient#{}) failed ({}) to execute: {}",
-                            name, t.getClass().getSimpleName(), t.getMessage());
-                }
-                throw t;
-            }
-        });
     }
 
     @Override

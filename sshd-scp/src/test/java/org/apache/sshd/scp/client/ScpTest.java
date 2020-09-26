@@ -120,8 +120,7 @@ public class ScpTest extends AbstractScpTestSupport {
         String[] remoteComps = GenericUtils.split(remotePath, '/');
         Factory<? extends Random> factory = client.getRandomFactory();
         Random rnd = factory.create();
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             StringBuilder sb = new StringBuilder(remotePath.length() + Long.SIZE);
             for (int i = 0; i < Math.max(Long.SIZE, remoteComps.length); i++) {
                 if (sb.length() > 0) {
@@ -175,8 +174,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
         String localPath = localFile.toString();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             scp.upload(localPath, remotePath);
             assertFileLength(remoteFile, data.length, DEFAULT_TIMEOUT);
 
@@ -194,28 +192,28 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpUploadOverwrite() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
-            String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
+        String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
-            Path targetPath = detectTargetFolder();
-            Path parentPath = targetPath.getParent();
-            Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
-                    ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-            CommonTestSupportUtils.deleteRecursive(scpRoot);
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(scpRoot);
 
-            Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-            Path localFile = localDir.resolve("file.txt");
-            CommonTestSupportUtils.writeFile(localFile, data);
+        Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+        Path localFile = localDir.resolve("file.txt");
+        CommonTestSupportUtils.writeFile(localFile, data);
 
-            Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-            Path remoteFile = remoteDir.resolve(localFile.getFileName());
-            CommonTestSupportUtils.writeFile(remoteFile, data + data);
+        Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+        Path remoteFile = remoteDir.resolve(localFile.getFileName());
+        CommonTestSupportUtils.writeFile(remoteFile, data + data);
 
-            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteFile);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             scp.upload(localFile.toString(), remotePath);
-            assertFileLength(remoteFile, data.length(), DEFAULT_TIMEOUT);
         }
+
+        assertFileLength(remoteFile, data.length(), DEFAULT_TIMEOUT);
     }
 
     @Test
@@ -240,12 +238,11 @@ public class ScpTest extends AbstractScpTestSupport {
             Files.delete(zeroRemote);
         }
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
-            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             scp.upload(zeroLocal.toString(), remotePath);
-            assertFileLength(zeroRemote, 0L, DEFAULT_TIMEOUT);
         }
+        assertFileLength(zeroRemote, 0L, DEFAULT_TIMEOUT);
     }
 
     @Test
@@ -269,12 +266,11 @@ public class ScpTest extends AbstractScpTestSupport {
         }
         assertEquals("Non-zero size for remote file=" + zeroRemote, 0L, Files.size(zeroRemote));
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
-            String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             scp.download(remotePath, zeroLocal.toString());
-            assertFileLength(zeroLocal, 0L, DEFAULT_TIMEOUT);
         }
+        assertFileLength(zeroLocal, 0L, DEFAULT_TIMEOUT);
     }
 
     @Test
@@ -295,8 +291,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Path remoteDir = scpRoot.resolve("remote");
         Path remoteOutFile = remoteDir.resolve(localOutFile.getFileName());
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             CommonTestSupportUtils.writeFile(localOutFile, data);
 
             assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
@@ -335,8 +330,7 @@ public class ScpTest extends AbstractScpTestSupport {
         // see SSHD-822
         assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.MINA, BuiltinIoServiceFactoryFactories.NETTY));
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -409,8 +403,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnRecursiveDirs() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -444,8 +437,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test // see SSHD-893
     public void testScpNativeOnDirWithPattern() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -481,8 +473,7 @@ public class ScpTest extends AbstractScpTestSupport {
         Files.createDirectories(remoteDir);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(remoteDir));
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                     ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -519,8 +510,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnMixedDirAndFiles() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -559,8 +549,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativePreserveAttributes() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -617,8 +606,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testStreamsUploadAndDownload() throws Exception {
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClient scp = createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -770,9 +758,7 @@ public class ScpTest extends AbstractScpTestSupport {
             }
         });
 
-        try (ClientSession session = createAuthenticatedClientSession()) {
-            ScpClientCreator creator = ScpClientCreator.instance();
-            ScpClient scp = creator.createScpClient(session);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,

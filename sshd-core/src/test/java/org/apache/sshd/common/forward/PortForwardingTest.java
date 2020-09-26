@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +54,7 @@ import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.common.util.ProxyUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
@@ -180,7 +180,6 @@ public class PortForwardingTest extends BaseTestSupport {
 
         ForwarderFactory factory = Objects.requireNonNull(sshd.getForwarderFactory(), "No ForwarderFactory");
         sshd.setForwarderFactory(new ForwarderFactory() {
-            private final Class<?>[] interfaces = { Forwarder.class };
             private final Map<String, String> method2req
                     = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                             .put("localPortForwardingRequested", TcpipForwardHandler.REQUEST)
@@ -193,7 +192,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 ClassLoader cl = thread.getContextClassLoader();
 
                 Forwarder forwarder = factory.create(service);
-                return (Forwarder) Proxy.newProxyInstance(cl, interfaces, new InvocationHandler() {
+                return ProxyUtils.newProxyInstance(cl, Forwarder.class, new InvocationHandler() {
                     private final org.slf4j.Logger log = LoggerFactory.getLogger(Forwarder.class);
 
                     @SuppressWarnings("synthetic-access")

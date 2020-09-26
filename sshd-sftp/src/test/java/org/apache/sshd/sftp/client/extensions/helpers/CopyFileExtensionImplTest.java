@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -71,8 +70,7 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         LinkOption[] options = IoUtils.getLinkOptions(true);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
             ext.copyFile(srcPath, dstPath, false);
             assertTrue("Source file not preserved", Files.exists(srcFile, options));

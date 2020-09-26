@@ -21,7 +21,6 @@ package org.apache.sshd.sftp.client.extensions;
 
 import java.io.IOException;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -41,14 +40,13 @@ public class UnsupportedExtensionTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-890
     public void testUnsupportedExtension() throws IOException {
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftpClient = createSftpClient(session)) {
+        try (SftpClient sftpClient = createSingleSessionClient()) {
+            RawSftpClient sftp = assertObjectInstanceOf("Not a raw SFTP client", RawSftpClient.class, sftpClient);
+
             String opcode = getCurrentTestName();
             Buffer buffer = new ByteArrayBuffer(Integer.BYTES + GenericUtils.length(opcode) + Byte.SIZE, false);
             buffer.putString(opcode);
 
-            assertObjectInstanceOf("Not a raw SFTP client", RawSftpClient.class, sftpClient);
-            RawSftpClient sftp = (RawSftpClient) sftpClient;
             int cmd = sftp.send(SftpConstants.SSH_FXP_EXTENDED, buffer);
             Buffer responseBuffer = sftp.receive(cmd);
 

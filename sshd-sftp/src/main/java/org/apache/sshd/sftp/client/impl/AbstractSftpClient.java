@@ -44,8 +44,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.sftp.SftpModuleProperties;
-import org.apache.sshd.sftp.client.RawSftpClient;
-import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.FullAccessSftpClient;
 import org.apache.sshd.sftp.client.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtensionFactory;
@@ -57,7 +56,7 @@ import org.apache.sshd.sftp.common.extensions.ParserUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSftpClient extends AbstractSubsystemClient implements SftpClient, RawSftpClient {
+public abstract class AbstractSftpClient extends AbstractSubsystemClient implements FullAccessSftpClient {
     public static final int INIT_COMMAND_SIZE = Byte.BYTES /* command */ + Integer.BYTES /* version */;
 
     private final Attributes fileOpenAttributes = new Attributes();

@@ -978,4 +978,14 @@ public interface SftpClient extends SubsystemClient {
      * @see                  #getServerExtensions()
      */
     SftpClientExtension getExtension(String extensionName);
+
+    /**
+     * Creates an {@link SftpClient} instance that also closes the underlying {@link #getClientSession() client session}
+     * when the client instance is closed.
+     *
+     * @return The wrapper instance
+     */
+    default SftpClient singleSessionInstance() {
+        return FullAccessSftpClient.singleSessionInstance(this);
+    }
 }

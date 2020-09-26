@@ -44,13 +44,31 @@ In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
 
 ```java
 
-ClientSession session = ... obtain an instance ...
-ScpClientCreator creator = ... obtain an instance ...
-ScpClient client = creator.createScpClient(session);
-
+try (ClientSession session = ... obtain an instance ...) {
+    ScpClientCreator creator = ... obtain an instance ...
+    ScpClient client = creator.createScpClient(session);
+    ... use client ...
+}
 ```
 
 A default `ScpClientCreator` instance is provided as part of the module - see `ScpClientCreator.instance()`
+
+If the intended use of the client instance is "one-shot" - i.e., the client session should be closed when the
+SCP client instance is closed, then it is possible to obtain a special wrapper that implements this functionality:
+
+```java
+// The underlying session will also be closed when the client is
+try (CloseableScpClient client = createScpClient(...)) {
+    ... use client ...
+}
+
+CloseableScpClient createScpClient(...) {
+    ClientSession session = ... obtain an instance ...;
+    ScpClientCreator creator = ... obtain an instance ...
+    ScpClient client = creator.createScpClient(session);
+    return CloseableScpClient.singleSessionInstance(client);
+}
+```
 
 The `ScpClientCreator` can also be used to attach a default `ScpTransferEventListener` that will be automatically
 add to **all** created SCP client instances through that creator - unless specifically overridden:

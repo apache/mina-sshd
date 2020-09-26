@@ -20,7 +20,6 @@
 package org.apache.sshd.sftp.client.impl;
 
 import java.io.IOException;
-import java.lang.reflect.Proxy;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 
@@ -33,8 +32,10 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SimpleSftpClient;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleSftpClient {
-
     private SimpleClient clientInstance;
     private SftpClientFactory sftpClientFactory;
 
@@ -97,15 +98,20 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         try {
             SftpClient client = sftpClientFactory.createSftpClient(session);
             try {
-                return createSftpClient(session, client);
+                SftpClient closer = client.singleSessionInstance();
+                client = null; // disable auto-close at finally block
+                return closer;
             } catch (Exception e) {
                 err = GenericUtils.accumulateException(err, e);
-                try {
-                    client.close();
-                } catch (Exception t) {
-                    debug("createSftpClient({}) failed ({}) to close client: {}",
-                            session, t.getClass().getSimpleName(), t.getMessage(), t);
-                    err = GenericUtils.accumulateException(err, t);
+            } finally {
+                if (client != null) {
+                    try {
+                        client.close();
+                    } catch (Exception t) {
+                        debug("createSftpClient({}) failed ({}) to close client: {}",
+                                session, t.getClass().getSimpleName(), t.getMessage(), t);
+                        err = GenericUtils.accumulateException(err, t);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -113,7 +119,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         }
 
         // This point is reached if error occurred
-        log.warn("createSftpClient({}) failed ({}) to create session: {}",
+        log.warn("createSftpClient({}) failed ({}) to create client: {}",
                 session, err.getClass().getSimpleName(), err.getMessage());
 
         try {
@@ -129,40 +135,6 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         } else {
             throw new IOException(err);
         }
-    }
-
-    protected SftpClient createSftpClient(ClientSession session, SftpClient client) throws IOException {
-        ClassLoader loader = SftpClient.class.getClassLoader();
-        Class<?>[] interfaces = { SftpClient.class };
-        return (SftpClient) Proxy.newProxyInstance(loader, interfaces, (proxy, method, args) -> {
-            Throwable err = null;
-            Object result = null;
-            String name = method.getName();
-            try {
-                result = method.invoke(client, args);
-            } catch (Throwable t) {
-                debug("invoke(SftpClient#{}) failed ({}) to execute: {}",
-                        name, t.getClass().getSimpleName(), t.getMessage(), t);
-                err = GenericUtils.accumulateException(err, t);
-            }
-
-            // propagate the "close" call to the session as well
-            if ("close".equals(name) && GenericUtils.isEmpty(args)) {
-                try {
-                    session.close();
-                } catch (Throwable t) {
-                    debug("invoke(ClientSession#{}) failed ({}) to execute: {}",
-                            name, t.getClass().getSimpleName(), t.getMessage(), t);
-                    err = GenericUtils.accumulateException(err, t);
-                }
-            }
-
-            if (err != null) {
-                throw err;
-            }
-
-            return result;
-        });
     }
 
     @Override

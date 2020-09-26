@@ -174,6 +174,24 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
         return OUTPUT_DEBUG_MESSAGES ? DEBUG_LISTENER : ScpTransferEventListener.EMPTY;
     }
 
+    protected CloseableScpClient createCloseableScpClient() throws IOException {
+        return createCloseableScpClient(getCurrentTestName());
+    }
+
+    protected CloseableScpClient createCloseableScpClient(String username) throws IOException {
+        ClientSession session = createAuthenticatedClientSession(username);
+        try {
+            ScpClient client = createScpClient(session);
+            CloseableScpClient closer = CloseableScpClient.singleSessionInstance(client);
+            session = null; // avoid auto-close at finally clause
+            return closer;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
     protected static ScpClient createScpClient(ClientSession session) {
         ScpClientCreator creator = ScpClientCreator.instance();
         ScpTransferEventListener listener = getScpTransferEventListener(session);

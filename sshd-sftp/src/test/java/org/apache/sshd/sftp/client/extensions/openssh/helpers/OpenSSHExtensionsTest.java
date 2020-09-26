@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -81,8 +80,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             OpenSSHFsyncExtension fsync = assertExtensionCreated(sftp, OpenSSHFsyncExtension.class);
             try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
                 sftp.write(fileHandle, 0L, expected);
@@ -164,8 +162,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             }
         }));
 
-        try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session)) {
+        try (SftpClient sftp = createSingleSessionClient()) {
             OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
             OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
             String invokedExtension = extensionHolder.getAndSet(null);
