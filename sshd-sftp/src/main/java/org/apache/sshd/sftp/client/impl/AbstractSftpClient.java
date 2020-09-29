@@ -82,11 +82,7 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     }
 
     @Override
-    public SftpClientExtension getExtension(String extensionName) {
-        return getExtension(BuiltinSftpClientExtensions.fromName(extensionName));
-    }
-
-    protected SftpClientExtension getExtension(SftpClientExtensionFactory factory) {
+    public SftpClientExtension getExtension(SftpClientExtensionFactory factory) {
         if (factory == null) {
             return null;
         }

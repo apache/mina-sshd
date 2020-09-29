@@ -48,7 +48,9 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
+import org.apache.sshd.sftp.client.extensions.SftpClientExtensionFactory;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpHelper;
 
@@ -968,7 +970,14 @@ public interface SftpClient extends SubsystemClient {
      *                       implemented by the client
      * @see                  #getServerExtensions()
      */
-    <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType);
+    default <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType) {
+        Object instance = getExtension(BuiltinSftpClientExtensions.fromType(extensionType));
+        if (instance == null) {
+            return null;
+        } else {
+            return extensionType.cast(instance);
+        }
+    }
 
     /**
      * @param  extensionName The extension name
@@ -977,7 +986,18 @@ public interface SftpClient extends SubsystemClient {
      *                       implemented by the client
      * @see                  #getServerExtensions()
      */
-    SftpClientExtension getExtension(String extensionName);
+    default SftpClientExtension getExtension(String extensionName) {
+        return getExtension(BuiltinSftpClientExtensions.fromName(extensionName));
+    }
+
+    /**
+     *
+     * @param  factory The {@link SftpClientExtensionFactory} instance to use - ignored if {@code null}
+     * @return         The extension instance - <B>Note:</B> it is up to the caller to invoke
+     *                 {@link SftpClientExtension#isSupported()} - {@code null} if this extension type is not
+     *                 implemented by the client
+     */
+    SftpClientExtension getExtension(SftpClientExtensionFactory factory);
 
     /**
      * Creates an {@link SftpClient} instance that also closes the underlying {@link #getClientSession() client session}
