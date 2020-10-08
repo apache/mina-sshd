@@ -33,7 +33,6 @@
                 <exclude>commons-io:commons-io</exclude>
                 <exclude>org.springframework.integration:*</exclude>
                 <exclude>org.eclipse.jgit:*</exclude>
-                <exclude>com.jcraft:*</exclude>
                 <exclude>com.googlecode.javaewah:JavaEWAH</exclude>
                 <exclude>org.c02e.jpgpj:jpgpj</exclude>
             </excludes>
@@ -62,7 +61,6 @@
                 <include>io.projectreactor:*</include>
                 <include>org.reactivestreams:*</include>
                 <include>commons-io:commons-io</include>
-                <include>com.jcraft:*</include>
                 <include>com.googlecode.javaewah:JavaEWAH</include>
                 <include>org.c02e.jpgpj:jpgpj</include>
             </includes>
