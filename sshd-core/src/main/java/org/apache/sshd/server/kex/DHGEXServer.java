@@ -126,7 +126,12 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             }
 
             dh = chooseDH(min, prf, max);
-            f = dh.getE();
+
+            setF(dh.getE());
+
+            BigInteger pValue = dh.getP();
+            validateFValue(pValue);
+
             hash = dh.getHash();
             hash.init();
 
@@ -136,7 +141,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             }
 
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
-            buffer.putMPInt(dh.getP());
+            buffer.putMPInt(pValue);
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
 
@@ -157,7 +162,12 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             }
 
             dh = chooseDH(min, prf, max);
-            f = dh.getE();
+
+            setF(dh.getE());
+
+            BigInteger pValue = dh.getP();
+            validateFValue(pValue);
+
             hash = dh.getHash();
             hash.init();
 
@@ -166,7 +176,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                         this, session, min, prf, max);
             }
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
-            buffer.putMPInt(dh.getP());
+            buffer.putMPInt(pValue);
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
 
@@ -182,11 +192,14 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
-            e = buffer.getMPIntAsBytes();
+            byte[] e = updateE(buffer.getMPIntAsBytes());
+            BigInteger pValue = dh.getP();
+            validateEValue(pValue);
+
             dh.setF(e);
+
             k = dh.getK();
 
-            byte[] k_s;
             KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             Signature sig = ValidateUtils.checkNotNull(
@@ -196,7 +209,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
             buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(kp.getPublic());
-            k_s = buffer.getCompactData();
+
+            byte[] k_s = buffer.getCompactData();
 
             buffer.clear();
             buffer.putBytes(v_c);
@@ -213,11 +227,13 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                 buffer.putInt(max);
             }
 
-            buffer.putMPInt(dh.getP());
+            buffer.putMPInt(pValue);
             buffer.putMPInt(dh.getG());
             buffer.putMPInt(e);
+            byte[] f = getF();
             buffer.putMPInt(f);
             buffer.putMPInt(k);
+
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
             sig.update(session, h);

@@ -37,6 +37,7 @@ or `-key-file` command line option.
 ## Behavioral changes and enhancements
 
 * [SSHD-506](https://issues.apache.org/jira/browse/SSHD-506) Added support for AES-GCM ciphers.
+* [SSHD-954](https://issues.apache.org/jira/browse/SSHD-954) Improve validation of DH public key values.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate DES, RC4 and Blowfish ciphers from default setup.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate SHA-1 based key exchanges and signatures from default setup.
 * [SSHD-1004](https://issues.apache.org/jira/browse/SSHD-1004) Deprecate MD5-based and truncated HMAC algorithms from default setup.

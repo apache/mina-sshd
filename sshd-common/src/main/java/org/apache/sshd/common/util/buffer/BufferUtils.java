@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.math.BigInteger;
 import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
 
@@ -400,6 +401,18 @@ public final class BufferUtils {
         l |= (long) buf[off + 7] & 0xff;
 
         return l;
+    }
+
+    public static BigInteger fromMPIntBytes(byte[] mpInt) {
+        if (NumberUtils.isEmpty(mpInt)) {
+            return null;
+        }
+
+        if ((mpInt[0] & 0x80) != 0) {
+            return new BigInteger(0, mpInt);
+        } else {
+            return new BigInteger(mpInt);
+        }
     }
 
     /**
