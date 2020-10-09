@@ -82,7 +82,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         dh = factory.create();
         hash = dh.getHash();
         hash.init();
-        f = dh.getE();
+        setF(dh.getE());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
                     "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 
-        e = buffer.getMPIntAsBytes();
+        byte[] e = updateE(buffer);
         dh.setF(e);
         k = dh.getK();
 
@@ -122,8 +122,10 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putBytes(i_s);
         buffer.putBytes(k_s);
         buffer.putMPInt(e);
+        byte[] f = getF();
         buffer.putMPInt(f);
         buffer.putMPInt(k);
+
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
         sig.update(session, h);

@@ -37,6 +37,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -52,8 +53,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     protected int prf;
     protected int max;
     protected AbstractDH dh;
-    protected byte[] p;
     protected byte[] g;
+
+    private byte[] p;
+    private BigInteger pValue;
 
     protected DHGEXClient(DHFactory factory, Session session) {
         super(session);
@@ -71,6 +74,34 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     @Override
     public final String getName() {
         return factory.getName();
+    }
+
+    protected byte[] getP() {
+        return p;
+    }
+
+    protected BigInteger getPValue() {
+        if (pValue == null) {
+            pValue = BufferUtils.fromMPIntBytes(getP());
+        }
+
+        return pValue;
+    }
+
+    protected void setP(byte[] p) {
+        this.p = p;
+
+        if (pValue != null) {
+            pValue = null;  // force lazy re-initialization
+        }
+    }
+
+    protected void validateEValue() throws Exception {
+        validateEValue(getPValue());
+    }
+
+    protected void validateFValue() throws Exception {
+        validateFValue(getPValue());
     }
 
     public static KeyExchangeFactory newFactory(DHFactory delegate) {
@@ -137,13 +168,15 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
-            p = buffer.getMPIntAsBytes();
+            setP(buffer.getMPIntAsBytes());
             g = buffer.getMPIntAsBytes();
 
-            dh = getDH(new BigInteger(p), new BigInteger(g));
+            dh = getDH(getPValue(), new BigInteger(g));
             hash = dh.getHash();
             hash.init();
-            e = dh.getE();
+
+            byte[] e = updateE(dh.getE());
+            validateEValue();
 
             if (debugEnabled) {
                 log.debug("next({})[{}] Send SSH_MSG_KEX_DH_GEX_INIT", this, session);
@@ -164,8 +197,11 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             }
 
             byte[] k_s = buffer.getBytes();
-            f = buffer.getMPIntAsBytes();
+            byte[] f = updateF(buffer);
             byte[] sig = buffer.getBytes();
+
+            validateFValue();
+
             dh.setF(f);
             k = dh.getK();
 
@@ -188,9 +224,9 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             buffer.putInt(min);
             buffer.putInt(prf);
             buffer.putInt(max);
-            buffer.putMPInt(p);
+            buffer.putMPInt(getP());
             buffer.putMPInt(g);
-            buffer.putMPInt(e);
+            buffer.putMPInt(getE());
             buffer.putMPInt(f);
             buffer.putMPInt(k);
             hash.update(buffer.array(), 0, buffer.available());

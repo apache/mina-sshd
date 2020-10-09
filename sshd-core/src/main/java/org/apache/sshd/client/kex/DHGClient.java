@@ -95,7 +95,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         dh = getDH();
         hash = dh.getHash();
         hash.init();
-        e = dh.getE();
+
+        byte[] e = updateE(dh.getE());
 
         Session s = getSession();
         if (log.isDebugEnabled()) {
@@ -127,8 +128,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         }
 
         byte[] k_s = buffer.getBytes();
-        f = buffer.getMPIntAsBytes();
+        byte[] f = updateF(buffer);
         byte[] sig = buffer.getBytes();
+
         dh.setF(f);
         k = dh.getK();
 
@@ -166,7 +168,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         buffer.putBytes(i_c);
         buffer.putBytes(i_s);
         buffer.putBytes(k_s);
-        buffer.putMPInt(e);
+        buffer.putMPInt(getE());
         buffer.putMPInt(f);
         buffer.putMPInt(k);
         hash.update(buffer.array(), 0, buffer.available());

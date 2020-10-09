@@ -853,18 +853,18 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    public void putMPInt(BigInteger bi) {
-        putMPInt(bi.toByteArray());
+    public void putMPInt(BigInteger bigint) {
+        putMPInt(bigint.toByteArray());
     }
 
-    public void putMPInt(byte[] foo) {
-        if ((foo[0] & 0x80) != 0) {
-            putInt(foo.length + 1 /* padding */);
+    public void putMPInt(byte[] mpInt) {
+        if ((mpInt[0] & 0x80) != 0) {
+            putInt(mpInt.length + 1 /* padding */);
             putByte((byte) 0);
         } else {
-            putInt(foo.length);
+            putInt(mpInt.length);
         }
-        putRawBytes(foo);
+        putRawBytes(mpInt);
     }
 
     public void putRawBytes(byte[] d) {

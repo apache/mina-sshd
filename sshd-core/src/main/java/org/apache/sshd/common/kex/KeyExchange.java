@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.kex;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.NavigableMap;
 
@@ -100,5 +101,23 @@ public interface KeyExchange extends NamedResource, SessionHolder<Session> {
         } else {
             return name;
         }
+    }
+
+    // see https://tools.ietf.org/html/rfc8268#section-4
+    static boolean isValidDHValue(BigInteger value, BigInteger p) {
+        if ((value == null) || (p == null)) {
+            return false;
+        }
+
+        // 1 < value < p-1
+        if (value.compareTo(BigInteger.ONE) <= 0) {
+            return false;
+        }
+
+        if (value.compareTo(p.subtract(BigInteger.ONE)) >= 0) {
+            return false;
+        }
+
+        return true;
     }
 }
