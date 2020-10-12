@@ -90,7 +90,7 @@ public class BaseGCMCipher extends BaseCipher {
         protected void incrementCounter() {
             int off = iv.length - Long.BYTES;
             long counter = BufferUtils.getLong(iv, off, Long.BYTES);
-            BufferUtils.putLong(Math.addExact(counter, 1L), iv, off, Long.BYTES);
+            BufferUtils.putLong(counter + 1L, iv, off, Long.BYTES);
         }
 
         @Override
