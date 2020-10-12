@@ -78,6 +78,7 @@ public class BaseGCMCipher extends BaseCipher {
      */
     protected static class CounterGCMParameterSpec extends GCMParameterSpec {
         protected final byte[] iv;
+        protected final long initialCounter;
 
         protected CounterGCMParameterSpec(int tLen, byte[] src) {
             super(tLen, src);
@@ -85,12 +86,17 @@ public class BaseGCMCipher extends BaseCipher {
                 throw new IllegalArgumentException("GCM nonce must be 12 bytes, but given len=" + src.length);
             }
             iv = src.clone();
+            initialCounter = BufferUtils.getLong(iv, iv.length - Long.BYTES, Long.BYTES);
         }
 
         protected void incrementCounter() {
             int off = iv.length - Long.BYTES;
             long counter = BufferUtils.getLong(iv, off, Long.BYTES);
-            BufferUtils.putLong(counter + 1L, iv, off, Long.BYTES);
+            long newCounter = counter + 1L;
+            if (newCounter == initialCounter) {
+                throw new IllegalStateException("GCM IV would be reused");
+            }
+            BufferUtils.putLong(newCounter, iv, off, Long.BYTES);
         }
 
         @Override
