@@ -146,11 +146,30 @@
                     </excludes>
                 </configuration>
             </plugin>        
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <configuration>
+                            <instructions>
+                                <_removeheaders>Import-Package,Export-Package,Require-Capability,Private-Package,Include-Resource,Bundle*</_removeheaders>
+                            </instructions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- publish the test-jar since it contains some classes used by other
                 artifacts tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile/>
+                    </archive>
+                </configuration>
                 <executions>
                     <execution>
                         <id>small-test-jar</id>

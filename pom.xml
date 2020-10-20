@@ -1351,6 +1351,18 @@
                 <extensions>true</extensions>
                 <executions>
                     <execution>
+                        <id>versions</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>cleanVersions</goal>
+                        </goals>
+                        <configuration>
+                            <versions>
+                                <sshd.osgi.version.clean>${project.version}</sshd.osgi.version.clean>
+                            </versions>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>bundle-manifest</id>
                         <phase>process-classes</phase>
                         <goals>
@@ -1358,6 +1370,7 @@
                         </goals>
                         <configuration>
                             <instructions>
+                                <Import-Package>org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))"</Import-Package>
                                 <Export-Package>*;-noimport:=true</Export-Package>
                             </instructions>
                             <noWarningProjectTypes>pom</noWarningProjectTypes>
