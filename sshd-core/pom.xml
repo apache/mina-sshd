@@ -165,11 +165,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestFile/>
-                    </archive>
-                </configuration>
                 <executions>
                     <execution>
                         <id>small-test-jar</id>
