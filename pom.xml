@@ -1347,23 +1347,6 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <version>5.1.1</version>
-                <inherited>true</inherited>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                        <configuration>
-                            <instructions>
-                                <Export-Package>*;-noimport:=true</Export-Package>
-                            </instructions>
-                            <noWarningProjectTypes>pom</noWarningProjectTypes>
-                        </configuration>
-                    </execution>
-                </executions>
                 <!-- NOTE: do not upgrade maven-archiver plugin
                     dependency for this plugin in order to avoid
 
@@ -1380,12 +1363,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.2.0</version>
-                <inherited>true</inherited>
-                <configuration>
-                    <archive>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven</groupId>

@@ -101,6 +101,36 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                <Export-Package>*;-noimport:=true</Export-Package>
+                            </instructions>
+                            <noWarningProjectTypes>pom</noWarningProjectTypes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
                 <!-- We need special build instructions for the sources JAR
                     since this is a 'shaded' JAR constructed from the already
                     compiled classes of its component modules -->
