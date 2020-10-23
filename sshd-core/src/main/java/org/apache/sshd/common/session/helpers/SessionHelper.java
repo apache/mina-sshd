@@ -1199,7 +1199,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
+    public List<Map.Entry<SshdSocketAddress, SshdSocketAddress>> getLocalForwardsBindings() {
         Forwarder forwarder = getForwarder();
         return (forwarder == null) ? Collections.emptyList() : forwarder.getLocalForwardsBindings();
     }
@@ -1211,15 +1211,15 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     @Override
-    public NavigableSet<Integer> getStartedLocalPortForwards() {
+    public List<SshdSocketAddress> getStartedLocalPortForwards() {
         Forwarder forwarder = getForwarder();
-        return (forwarder == null) ? Collections.emptyNavigableSet() : forwarder.getStartedLocalPortForwards();
+        return (forwarder == null) ? Collections.emptyList() : forwarder.getStartedLocalPortForwards();
     }
 
     @Override
-    public SshdSocketAddress getBoundLocalPortForward(int port) {
+    public List<SshdSocketAddress> getBoundLocalPortForwards(int port) {
         Forwarder forwarder = getForwarder();
-        return (forwarder == null) ? null : forwarder.getBoundLocalPortForward(port);
+        return (forwarder == null) ? Collections.emptyList() : forwarder.getBoundLocalPortForwards(port);
     }
 
     @Override

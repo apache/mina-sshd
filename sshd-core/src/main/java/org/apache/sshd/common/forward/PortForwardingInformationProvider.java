@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -30,33 +31,33 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public interface PortForwardingInformationProvider {
     /**
-     * @return A {@link NavigableSet} <u>snapshot</u> of the currently started local port forwards
+     * @return A {@link List} <u>snapshot</u> of the currently started local port forward bindings
      */
-    NavigableSet<Integer> getStartedLocalPortForwards();
+    List<SshdSocketAddress> getStartedLocalPortForwards();
 
     /**
      * @param  port The port number
-     * @return      The local bound {@link SshdSocketAddress} for the port - {@code null} if none bound
+     * @return      The local bound {@link SshdSocketAddress}-es for the port
      * @see         #isLocalPortForwardingStartedForPort(int) isLocalPortForwardingStartedForPort
      * @see         #getStartedLocalPortForwards()
      */
-    SshdSocketAddress getBoundLocalPortForward(int port);
+    List<SshdSocketAddress> getBoundLocalPortForwards(int port);
 
     /**
-     * @return A <u>snapshot</u> of the currently bound forwarded local ports as &quot;pairs&quot; of port + bound
-     *         {@link SshdSocketAddress}
+     * @return A <u>snapshot</u> of the currently bound forwarded local ports as &quot;pairs&quot; of local/remote
+     *         {@link SshdSocketAddress}-es
      */
-    List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings();
+    List<Map.Entry<SshdSocketAddress, SshdSocketAddress>> getLocalForwardsBindings();
 
     /**
      * Test if local port forwarding is started
      *
      * @param  port The local port
      * @return      {@code true} if local port forwarding is started
-     * @see         #getBoundLocalPortForward(int) getBoundLocalPortForward
+     * @see         #getBoundLocalPortForwards(int) getBoundLocalPortForwards
      */
     default boolean isLocalPortForwardingStartedForPort(int port) {
-        return getBoundLocalPortForward(port) != null;
+        return GenericUtils.isNotEmpty(getBoundLocalPortForwards(port));
     }
 
     /**

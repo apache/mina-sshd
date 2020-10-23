@@ -18,10 +18,12 @@
  */
 package org.apache.sshd.util.test;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
@@ -117,6 +119,28 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     protected void assumeNotIoServiceProvider(
             Collection<BuiltinIoServiceFactoryFactories> excluded) {
         assumeNotIoServiceProvider(getCurrentTestName(), excluded);
+    }
+
+    protected ClientSession createClientSession(SshClient client, int port) throws IOException {
+        return client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession();
+    }
+
+    protected ClientSession createAuthenticatedClientSession(SshClient client, int port) throws IOException {
+        ClientSession session = createClientSession(client, port);
+        try {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            ClientSession authSession = session;
+            session = null;     // avoid auto-close at finally clause
+            return authSession;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     public static IoServiceFactoryFactory getIoServiceProvider() {

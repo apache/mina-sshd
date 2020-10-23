@@ -18,18 +18,30 @@
  */
 package org.apache.sshd.common.forward;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.Proxy;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -38,6 +50,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -55,6 +68,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.ProxyUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
@@ -66,6 +80,7 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -77,6 +92,7 @@ import org.slf4j.LoggerFactory;
  * Port forwarding tests
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@SuppressWarnings("checkstyle:MethodCount")
 public class PortForwardingTest extends BaseTestSupport {
 
     public static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(13L);
@@ -198,7 +214,13 @@ public class PortForwardingTest extends BaseTestSupport {
                     @SuppressWarnings("synthetic-access")
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        Object result = method.invoke(forwarder, args);
+                        Object result;
+                        try {
+                            result = method.invoke(forwarder, args);
+                        } catch (Throwable t) {
+                            throw ProxyUtils.unwrapInvocationThrowable(t);
+                        }
+
                         String name = method.getName();
                         String request = method2req.get(name);
                         if (GenericUtils.length(request) > 0) {
@@ -246,7 +268,14 @@ public class PortForwardingTest extends BaseTestSupport {
         }
     }
 
-    private void waitForForwardingRequest(String expected, Duration timeout) throws InterruptedException {
+    @Before
+    public void setUp() {
+        if (!REQUESTS_QUEUE.isEmpty()) {
+            REQUESTS_QUEUE.clear();
+        }
+    }
+
+    private static void waitForForwardingRequest(String expected, Duration timeout) throws InterruptedException {
         for (long remaining = timeout.toMillis(); remaining > 0L;) {
             long waitStart = System.currentTimeMillis();
             String actual = REQUESTS_QUEUE.poll(remaining, TimeUnit.MILLISECONDS);
@@ -622,6 +651,8 @@ public class PortForwardingTest extends BaseTestSupport {
 
                 byte[] buf = new byte[bytes.length + Long.SIZE];
                 int n = input.read(buf);
+                assertTrue("No data read from tunnel", n > 0);
+
                 String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
             } finally {
@@ -672,6 +703,8 @@ public class PortForwardingTest extends BaseTestSupport {
                     output.flush();
 
                     int n = input.read(buf);
+                    assertTrue("No data read from tunnel", n > 0);
+
                     String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
@@ -752,6 +785,61 @@ public class PortForwardingTest extends BaseTestSupport {
         } finally {
             session.disconnect();
         }
+    }
+
+    @Test   // see SSHD-1066
+    public void testLocalBindingOnDifferentInterfaces() throws Exception {
+        InetSocketAddress addr = (InetSocketAddress) GenericUtils.head(sshd.getBoundAddresses());
+        log.info("{} - using bound address={}", getCurrentTestName(), addr);
+
+        List<String> allAddresses = getHostAddresses();
+        log.info("{} - test on addresses={}", getCurrentTestName(), allAddresses);
+
+        try (ClientSession session = createNativeSession(null)) {
+            List<ExplicitPortForwardingTracker> trackers = new ArrayList<>();
+            try {
+                for (String host : allAddresses) {
+                    ExplicitPortForwardingTracker tracker = session.createLocalPortForwardingTracker(
+                            new SshdSocketAddress(host, 8080),
+                            new SshdSocketAddress("test.javastack.org", 80));
+                    SshdSocketAddress boundAddress = tracker.getBoundAddress();
+                    log.info("{} - test for binding={}", getCurrentTestName(), boundAddress);
+                    testRemoteURL(new Proxy(Proxy.Type.HTTP, boundAddress.toInetSocketAddress()),
+                            "http://test.javastack.org/");
+                    trackers.add(tracker);
+                }
+            } finally {
+                IoUtils.closeQuietly(trackers);
+            }
+        }
+    }
+
+    private static List<String> getHostAddresses() throws SocketException {
+        List<String> addresses = new ArrayList<>();
+        Enumeration<NetworkInterface> eni = NetworkInterface.getNetworkInterfaces();
+        while (eni.hasMoreElements()) {
+            NetworkInterface networkInterface = eni.nextElement();
+            Enumeration<InetAddress> eia = networkInterface.getInetAddresses();
+            while (eia.hasMoreElements()) {
+                InetAddress ia = eia.nextElement();
+                if (ia instanceof Inet4Address) {
+                    addresses.add(ia.getHostAddress());
+                }
+            }
+        }
+        return addresses;
+    }
+
+    private static void testRemoteURL(Proxy proxy, String url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection(proxy);
+        connection.setConnectTimeout((int) DEFAULT_TIMEOUT.toMillis());
+        connection.setReadTimeout((int) DEFAULT_TIMEOUT.toMillis());
+        String result;
+        try (InputStream inputStream = connection.getInputStream();
+             BufferedReader in = new BufferedReader(new InputStreamReader(inputStream))) {
+            result = in.lines().collect(Collectors.joining(System.lineSeparator()));
+        }
+        assertEquals("Unexpected server response", "OK", result);
     }
 
     /**
@@ -848,10 +936,6 @@ public class PortForwardingTest extends BaseTestSupport {
             client.addPortForwardingEventListener(listener);
         }
 
-        ClientSession session
-                = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(CONNECT_TIMEOUT).getSession();
-        session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify(AUTH_TIMEOUT);
-        return session;
+        return createAuthenticatedClientSession(client, sshPort);
     }
 }

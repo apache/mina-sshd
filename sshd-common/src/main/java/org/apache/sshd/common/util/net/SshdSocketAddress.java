@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -191,7 +192,7 @@ public class SshdSocketAddress extends SocketAddress {
             return true;
         } else {
             return (this.getPort() == that.getPort())
-                    && (GenericUtils.safeCompare(this.getHostName(), that.getHostName(), false) == 0);
+                    && isEquivalentHostName(this.getHostName(), that.getHostName(), false);
         }
     }
 
@@ -208,12 +209,12 @@ public class SshdSocketAddress extends SocketAddress {
 
     @Override
     public int hashCode() {
-        return GenericUtils.hashCode(getHostName(), Boolean.FALSE) + getPort();
+        return GenericUtils.hashCode(getHostName(), Boolean.FALSE) + 31 * Integer.hashCode(getPort());
     }
 
     /**
      * Returns the first external network address assigned to this machine or null if one is not found.
-     * 
+     *
      * @return Inet4Address associated with an external interface DevNote: We actually return InetAddress here, as
      *         Inet4Addresses are final and cannot be mocked.
      */
@@ -292,7 +293,6 @@ public class SshdSocketAddress extends SocketAddress {
         }
 
         return !isLoopback(addr);
-
     }
 
     /**
@@ -325,11 +325,22 @@ public class SshdSocketAddress extends SocketAddress {
             return false;
         }
 
-        if (LOCALHOST_NAME.equals(ip) || LOCALHOST_IPV4.equals(ip)) {
+        if (LOCALHOST_NAME.equals(ip)) {
             return true;
         }
 
-        // TODO add support for IPv6 - see SSHD-746
+        return isIPv4LoopbackAddress(ip) || isIPv6LoopbackAddress(ip);
+    }
+
+    public static boolean isIPv4LoopbackAddress(String ip) {
+        if (GenericUtils.isEmpty(ip)) {
+            return false;
+        }
+
+        if (LOCALHOST_IPV4.equals(ip)) {
+            return true; // most used
+        }
+
         String[] values = GenericUtils.split(ip, '.');
         if (GenericUtils.length(values) != 4) {
             return false;
@@ -350,6 +361,34 @@ public class SshdSocketAddress extends SocketAddress {
         }
 
         return true;
+    }
+
+    public static boolean isIPv6LoopbackAddress(String ip) {
+        // TODO add more patterns - e.g., https://tools.ietf.org/id/draft-smith-v6ops-larger-ipv6-loopback-prefix-04.html
+        return IPV6_LONG_LOCALHOST.equals(ip) || IPV6_SHORT_LOCALHOST.equals(ip);
+    }
+
+    public static boolean isEquivalentHostName(String h1, String h2, boolean allowWildcard) {
+        if (GenericUtils.safeCompare(h1, h2, false) == 0) {
+            return true;
+        }
+
+        if (allowWildcard) {
+            return isWildcardAddress(h1) || isWildcardAddress(h2);
+        }
+
+        return false;
+    }
+
+    public static boolean isLoopbackAlias(String h1, String h2) {
+        return (LOCALHOST_NAME.equals(h1) && isLoopback(h2))
+                || (LOCALHOST_NAME.equals(h2) && isLoopback(h1));
+    }
+
+    public static boolean isWildcardAddress(String addr) {
+        return IPV4_ANYADDR.equalsIgnoreCase(addr)
+                || IPV6_LONG_ANY_ADDRESS.equalsIgnoreCase(addr)
+                || IPV6_SHORT_ANY_ADDRESS.equalsIgnoreCase(addr);
     }
 
     public static SshdSocketAddress toSshdSocketAddress(SocketAddress addr) {
@@ -457,7 +496,7 @@ public class SshdSocketAddress extends SocketAddress {
 
     /**
      * Checks if the address is one of the allocated private blocks
-     * 
+     *
      * @param  addr The address string
      * @return      {@code true} if this is one of the allocated private blocks. <B>Note:</B> it assumes that the
      *              address string is indeed an IPv4 address
@@ -533,7 +572,7 @@ public class SshdSocketAddress extends SocketAddress {
      * <LI>Has at most 3 <U>digits</U></LI>
      * <LI>Its value is &le; 255</LI>
      * </UL>
-     * 
+     *
      * @param  c The {@link CharSequence} to be validate
      * @return   {@code true} if valid IPv4 address component
      */
@@ -651,5 +690,45 @@ public class SshdSocketAddress extends SocketAddress {
             return false;
         }
         return true;
+    }
+
+    public static <V> V findByOptionalWildcardAddress(Map<SshdSocketAddress, ? extends V> map, SshdSocketAddress address) {
+        Map.Entry<SshdSocketAddress, ? extends V> entry = findMatchingOptionalWildcardEntry(map, address);
+        return (entry == null) ? null : entry.getValue();
+    }
+
+    public static <V> V removeByOptionalWildcardAddress(Map<SshdSocketAddress, ? extends V> map, SshdSocketAddress address) {
+        Map.Entry<SshdSocketAddress, ? extends V> entry = findMatchingOptionalWildcardEntry(map, address);
+        return (entry == null) ? null : map.remove(entry.getKey());
+    }
+
+    public static <V> Map.Entry<SshdSocketAddress, ? extends V> findMatchingOptionalWildcardEntry(
+            Map<SshdSocketAddress, ? extends V> map, SshdSocketAddress address) {
+        if (GenericUtils.isEmpty(map) || (address == null)) {
+            return null;
+        }
+
+        String hostName = address.getHostName();
+        Map.Entry<SshdSocketAddress, ? extends V> candidate = null;
+        for (Map.Entry<SshdSocketAddress, ? extends V> e : map.entrySet()) {
+            SshdSocketAddress a = e.getKey();
+            if (a.getPort() != address.getPort()) {
+                continue;
+            }
+
+            String candidateName = a.getHostName();
+            if (hostName.equalsIgnoreCase(candidateName)) {
+                return e;   // If found exact match then use it
+            }
+
+            if (isEquivalentHostName(hostName, candidateName, true)) {
+                if (candidate != null) {
+                    throw new IllegalStateException("Multiple candidate matches for " + address + ": " + candidate + ", " + e);
+                }
+                candidate = e;
+            }
+        }
+
+        return candidate;
     }
 }
