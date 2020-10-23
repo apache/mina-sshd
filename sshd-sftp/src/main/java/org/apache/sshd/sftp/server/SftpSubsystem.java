@@ -316,7 +316,7 @@ public class SftpSubsystem
         try {
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             accessor.createLink(session, this, link, existing, symLink);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.linked(session, link, existing, symLink, e);
             throw e;
         }
@@ -510,7 +510,7 @@ public class SftpSubsystem
         listener.blocking(session, handle, fileHandle, offset, length, mask);
         try {
             fileHandle.lock(offset, length, mask);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.blocked(session, handle, fileHandle, offset, length, mask, e);
             throw e;
         }
@@ -531,7 +531,7 @@ public class SftpSubsystem
         listener.unblocking(session, handle, fileHandle, offset, length);
         try {
             fileHandle.unlock(offset, length);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.unblocked(session, handle, fileHandle, offset, length, e);
             throw e;
         }
@@ -688,7 +688,7 @@ public class SftpSubsystem
             }
 
             Objects.requireNonNull(reply, "No reply buffer created");
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
             return;
         }
@@ -785,7 +785,7 @@ public class SftpSubsystem
             } else {
                 fh.write(data, doff, length, offset);
             }
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.written(session, handle, fh, offset, data, doff, length, e);
             throw e;
         }
@@ -810,7 +810,7 @@ public class SftpSubsystem
         listener.reading(session, handle, fh, offset, data, doff, length);
         try {
             readLen = fh.read(data, doff, length, offset);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.read(session, handle, fh, offset, data, doff, length, -1, e);
             throw e;
         }
@@ -832,8 +832,9 @@ public class SftpSubsystem
             listener.closing(session, handle, nodeHandle);
             nodeHandle.close();
             listener.closed(session, handle, nodeHandle, null);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.closed(session, handle, nodeHandle, e);
+            throw e;
         } finally {
             nodeHandle.clearAttributes();
         }

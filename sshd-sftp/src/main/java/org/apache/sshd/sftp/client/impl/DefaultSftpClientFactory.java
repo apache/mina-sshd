@@ -47,7 +47,7 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
         DefaultSftpClient client = createDefaultSftpClient(session, selector);
         try {
             client.negotiateVersion(selector);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             debug("createSftpClient({}) failed ({}) to negotiate version: {}",
                     session, e.getClass().getSimpleName(), e.getMessage(), e);
             client.close();

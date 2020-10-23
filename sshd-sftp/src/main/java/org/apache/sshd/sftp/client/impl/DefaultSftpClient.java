@@ -106,7 +106,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         try {
             init(clientSession, initialVersionSelector, initializationTimeout);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             this.channel.close(true);
             throw e;
         }

@@ -1199,7 +1199,7 @@ public abstract class AbstractSftpSubsystemHelper
         try {
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             accessor.renameFile(session, this, o, n, opts);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.moved(session, o, n, opts, e);
             throw e;
         }
@@ -1537,7 +1537,7 @@ public abstract class AbstractSftpSubsystemHelper
         try {
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             accessor.removeFile(session, this, p, isDirectory);
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.removed(session, p, isDirectory, e);
             throw e;
         }
@@ -1591,7 +1591,7 @@ public abstract class AbstractSftpSubsystemHelper
                 boolean followLinks = resolvePathResolutionFollowLinks(
                         SftpConstants.SSH_FXP_MKDIR, "", p);
                 doSetAttributes(p, attrs, followLinks);
-            } catch (IOException | RuntimeException e) {
+            } catch (IOException | RuntimeException | Error e) {
                 listener.created(session, p, attrs, e);
                 throw e;
             }
@@ -2468,7 +2468,7 @@ public abstract class AbstractSftpSubsystemHelper
         listener.modifyingAttributes(session, file, attributes);
         try {
             setFileAttributes(file, attributes, IoUtils.getLinkOptions(followLinks));
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             listener.modifiedAttributes(session, file, attributes, e);
             throw e;
         }
