@@ -33,7 +33,7 @@ import org.apache.sshd.server.session.ServerSession;
 /**
  * A no-op implementation of {@link SftpEventListener} for those who wish to implement only a small number of methods.
  * By default, all non-overridden methods simply log at TRACE level their invocation parameters
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBean implements SftpEventListener {
@@ -42,14 +42,14 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void initialized(ServerSession session, int version) {
+    public void initialized(ServerSession session, int version) throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("initialized(" + session + ") version: " + version);
         }
     }
 
     @Override
-    public void destroying(ServerSession session) {
+    public void destroying(ServerSession session) throws IOException {
         if (log.isTraceEnabled()) {
             log.trace("destroying(" + session + ")");
         }
@@ -65,7 +65,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void open(ServerSession session, String remoteHandle, Handle localHandle) {
+    public void open(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
             log.trace("open(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
@@ -172,7 +172,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void closing(ServerSession session, String remoteHandle, Handle localHandle) {
+    public void closing(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
             log.trace("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
