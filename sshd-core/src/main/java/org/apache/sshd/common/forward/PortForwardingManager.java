@@ -28,6 +28,18 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  */
 public interface PortForwardingManager extends PortForwardingInformationProvider {
     /**
+     * Start forwarding the given local port on the client to the given address on the server.
+     *
+     * @param  localPort   The local port - if zero then one will be allocated
+     * @param  remote      The remote address
+     * @return             The bound {@link SshdSocketAddress}
+     * @throws IOException If failed to create the requested binding
+     */
+    default SshdSocketAddress startLocalPortForwarding(int localPort, SshdSocketAddress remote) throws IOException {
+        return startLocalPortForwarding(new SshdSocketAddress(localPort), remote);
+    }
+
+    /**
      * Start forwarding the given local address on the client to the given address on the server.
      *
      * @param  local       The local address

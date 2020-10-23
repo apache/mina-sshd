@@ -328,7 +328,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         } else if (Channel.CHANNEL_SUBSYSTEM.equals(type)) {
             return createSubsystemChannel(subType);
         } else {
-            throw new IllegalArgumentException("Unsupported channel type " + type);
+            throw new IllegalArgumentException("Unsupported channel type requested: " + type);
         }
     }
 

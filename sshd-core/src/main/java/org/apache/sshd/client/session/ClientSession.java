@@ -312,6 +312,22 @@ public interface ClientSession
      * Starts a local port forwarding and returns a tracker that stops the forwarding when the {@code close()} method is
      * called. This tracker can be used in a {@code try-with-resource} block to ensure cleanup of the set up forwarding.
      *
+     * @param  localPort   The local port - if zero one is allocated
+     * @param  remote      The remote address
+     * @return             The tracker instance
+     * @throws IOException If failed to set up the requested forwarding
+     * @see                #startLocalPortForwarding(SshdSocketAddress, SshdSocketAddress)
+     */
+    default ExplicitPortForwardingTracker createLocalPortForwardingTracker(
+            int localPort, SshdSocketAddress remote)
+            throws IOException {
+        return createLocalPortForwardingTracker(new SshdSocketAddress(localPort), remote);
+    }
+
+    /**
+     * Starts a local port forwarding and returns a tracker that stops the forwarding when the {@code close()} method is
+     * called. This tracker can be used in a {@code try-with-resource} block to ensure cleanup of the set up forwarding.
+     *
      * @param  local       The local address
      * @param  remote      The remote address
      * @return             The tracker instance

@@ -19,6 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -26,15 +27,14 @@ import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -86,13 +86,13 @@ public class DefaultForwarder
     private final Session sessionInstance;
 
     private final Object localLock = new Object();
-    private final Map<Integer, SshdSocketAddress> localToRemote = new TreeMap<>(Comparator.naturalOrder());
-    private final Map<Integer, InetSocketAddress> boundLocals = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<SshdSocketAddress, SshdSocketAddress> localToRemote = new HashMap<>();
+    private final Map<SshdSocketAddress, InetSocketAddress> boundLocals = new HashMap<>();
 
     private final Object dynamicLock = new Object();
-    private final Map<Integer, SshdSocketAddress> remoteToLocal = new TreeMap<>(Comparator.naturalOrder());
-    private final Map<Integer, SocksProxy> dynamicLocal = new TreeMap<>(Comparator.naturalOrder());
-    private final Map<Integer, InetSocketAddress> boundDynamic = new TreeMap<>(Comparator.naturalOrder());
+    private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<>();
+    private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
+    private final Map<Integer, InetSocketAddress> boundDynamic = new HashMap<>();
 
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = StaticIoHandler::new;
@@ -186,29 +186,32 @@ public class DefaultForwarder
             throw new IllegalStateException("TcpipForwarder is closed or closing: " + state);
         }
 
-        InetSocketAddress bound = null;
-        int port;
         signalEstablishingExplicitTunnel(local, remote, true);
+
+        InetSocketAddress bound = null;
+        SshdSocketAddress result;
         try {
             bound = doBind(local, getLocalIoAcceptor());
-            port = bound.getPort();
+            int port = bound.getPort();
+            result = new SshdSocketAddress(bound.getHostString(), port);
+
             synchronized (localLock) {
-                SshdSocketAddress prevRemote = localToRemote.get(port);
+                SshdSocketAddress prevRemote = SshdSocketAddress.findByOptionalWildcardAddress(localToRemote, result);
                 if (prevRemote != null) {
                     throw new IOException(
-                            "Multiple local port forwarding addressing on port=" + port
+                            "Multiple local port forwarding addressing on port=" + result
                                           + ": current=" + remote + ", previous=" + prevRemote);
                 }
 
-                InetSocketAddress prevBound = boundLocals.get(port);
+                InetSocketAddress prevBound = SshdSocketAddress.findByOptionalWildcardAddress(boundLocals, result);
                 if (prevBound != null) {
                     throw new IOException(
-                            "Multiple local port forwarding bindings on port=" + port
+                            "Multiple local port forwarding bindings on port=" + result
                                           + ": current=" + bound + ", previous=" + prevBound);
                 }
 
-                localToRemote.put(port, remote);
-                boundLocals.put(port, bound);
+                localToRemote.put(result, remote);
+                boundLocals.put(result, bound);
             }
         } catch (IOException | RuntimeException e) {
             try {
@@ -221,7 +224,6 @@ public class DefaultForwarder
         }
 
         try {
-            SshdSocketAddress result = new SshdSocketAddress(bound.getHostString(), port);
             if (log.isDebugEnabled()) {
                 log.debug("startLocalPortForwarding(" + local + " -> " + remote + "): " + result);
             }
@@ -239,10 +241,9 @@ public class DefaultForwarder
 
         SshdSocketAddress remote;
         InetSocketAddress bound;
-        int port = local.getPort();
         synchronized (localLock) {
-            remote = localToRemote.remove(port);
-            bound = boundLocals.remove(port);
+            remote = SshdSocketAddress.removeByOptionalWildcardAddress(localToRemote, local);
+            bound = SshdSocketAddress.removeByOptionalWildcardAddress(boundLocals, local);
         }
 
         unbindLocalForwarding(local, remote, bound);
@@ -723,29 +724,29 @@ public class DefaultForwarder
         }
 
         signalEstablishingExplicitTunnel(local, null, true);
+
         SshdSocketAddress result;
         try {
             InetSocketAddress bound = doBind(local, getLocalIoAcceptor());
-            result = new SshdSocketAddress(bound.getHostString(), bound.getPort());
+            result = new SshdSocketAddress(bound);
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingRequested(" + local + "): " + result);
             }
 
             boolean added;
+            LocalForwardingEntry localEntry = new LocalForwardingEntry(local, result);
             synchronized (localForwards) {
-                // NOTE !!! it is crucial to use the bound address host name first
-                added = localForwards
-                        .add(new LocalForwardingEntry(result.getHostName(), local.getHostName(), result.getPort()));
+                added = localForwards.add(localEntry);
             }
 
             if (!added) {
                 throw new IOException("Failed to add local port forwarding entry for " + local + " -> " + result);
             }
-        } catch (IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException | Error e) {
             try {
                 localPortForwardingCancelled(local);
-            } catch (IOException | RuntimeException err) {
-                e.addSuppressed(e);
+            } catch (IOException | RuntimeException | Error err) {
+                e.addSuppressed(err);
             }
             signalEstablishedExplicitTunnel(local, null, true, null, e);
             throw e;
@@ -763,7 +764,8 @@ public class DefaultForwarder
     public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         LocalForwardingEntry entry;
         synchronized (localForwards) {
-            entry = LocalForwardingEntry.findMatchingEntry(local.getHostName(), local.getPort(), localForwards);
+            entry = LocalForwardingEntry.findMatchingEntry(
+                    local.getHostName(), local.getPort(), localForwards);
             if (entry != null) {
                 localForwards.remove(entry);
             }
@@ -774,15 +776,18 @@ public class DefaultForwarder
                 log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
             }
 
-            signalTearingDownExplicitTunnel(entry, true, null);
+            SshdSocketAddress reportedBoundAddress = entry.getCombinedBoundAddress();
+            signalTearingDownExplicitTunnel(reportedBoundAddress, true, null);
+
+            SshdSocketAddress boundAddress = entry.getBoundAddress();
             try {
-                localAcceptor.unbind(entry.toInetSocketAddress());
-            } catch (RuntimeException e) {
-                signalTornDownExplicitTunnel(entry, true, null, e);
+                localAcceptor.unbind(boundAddress.toInetSocketAddress());
+            } catch (RuntimeException | Error e) {
+                signalTornDownExplicitTunnel(reportedBoundAddress, true, null, e);
                 throw e;
             }
 
-            signalTornDownExplicitTunnel(entry, true, null, null);
+            signalTornDownExplicitTunnel(reportedBoundAddress, true, null, null);
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("localPortForwardingCancelled(" + local + ") no match/acceptor: " + entry);
@@ -993,12 +998,12 @@ public class DefaultForwarder
     protected InetSocketAddress doBind(SshdSocketAddress address, IoAcceptor acceptor)
             throws IOException {
         // TODO find a better way to determine the resulting bind address - what if multi-threaded calls...
-        Set<SocketAddress> before = acceptor.getBoundAddresses();
+        Collection<SocketAddress> before = acceptor.getBoundAddresses();
         try {
             InetSocketAddress bindAddress = address.toInetSocketAddress();
             acceptor.bind(bindAddress);
 
-            Set<SocketAddress> after = acceptor.getBoundAddresses();
+            Collection<SocketAddress> after = acceptor.getBoundAddresses();
             if (GenericUtils.size(after) > 0) {
                 after.removeAll(before);
             }
@@ -1009,7 +1014,9 @@ public class DefaultForwarder
             if (after.size() > 1) {
                 throw new IOException("Multiple local addresses have been bound for " + address + "[" + bindAddress + "]");
             }
-            return (InetSocketAddress) GenericUtils.head(after);
+
+            InetSocketAddress boundAddress = (InetSocketAddress) GenericUtils.head(after);
+            return boundAddress;
         } catch (IOException bindErr) {
             Collection<SocketAddress> after = acceptor.getBoundAddresses();
             if (GenericUtils.isEmpty(after)) {
@@ -1034,9 +1041,13 @@ public class DefaultForwarder
 
         @Override
         public void sessionCreated(IoSession session) throws Exception {
-            InetSocketAddress local = (InetSocketAddress) session.getLocalAddress();
-            int localPort = local.getPort();
-            SshdSocketAddress remote = localToRemote.get(localPort);
+            InetSocketAddress localAddress = (InetSocketAddress) session.getLocalAddress();
+            SshdSocketAddress local = new SshdSocketAddress(localAddress);
+            SshdSocketAddress remote;
+            synchronized (localLock) {
+                remote = SshdSocketAddress.findByOptionalWildcardAddress(localToRemote, local);
+            }
+
             TcpipClientChannel.Type channelType = (remote == null)
                     ? TcpipClientChannel.Type.Forwarded
                     : TcpipClientChannel.Type.Direct;
@@ -1048,9 +1059,12 @@ public class DefaultForwarder
                 SocketAddress accepted = session.getAcceptanceAddress();
                 LocalForwardingEntry localEntry = null;
                 if (accepted instanceof InetSocketAddress) {
+                    InetSocketAddress inetSocketAddress = (InetSocketAddress) accepted;
+                    InetAddress inetAddress = inetSocketAddress.getAddress();
                     synchronized (localForwards) {
                         localEntry = LocalForwardingEntry.findMatchingEntry(
-                                ((InetSocketAddress) accepted).getHostString(), localPort, localForwards);
+                                inetSocketAddress.getHostString(), inetAddress.isAnyLocalAddress(), local.getPort(),
+                                localForwards);
                     }
                 }
 
@@ -1162,18 +1176,33 @@ public class DefaultForwarder
     }
 
     @Override
-    public SshdSocketAddress getBoundLocalPortForward(int port) {
-        ValidateUtils.checkTrue(port > 0, "Invalid local port: %d", port);
-
-        Integer portKey = Integer.valueOf(port);
-        synchronized (localToRemote) {
-            return localToRemote.get(portKey);
+    public List<SshdSocketAddress> getBoundLocalPortForwards(int port) {
+        synchronized (localLock) {
+            return localToRemote.isEmpty()
+                    ? Collections.emptyList()
+                    : localToRemote.keySet()
+                            .stream()
+                            .filter(k -> k.getPort() == port)
+                            .collect(Collectors.toList());
         }
     }
 
     @Override
-    public List<Map.Entry<Integer, SshdSocketAddress>> getLocalForwardsBindings() {
-        synchronized (localToRemote) {
+    public boolean isLocalPortForwardingStartedForPort(int port) {
+        synchronized (localLock) {
+            return localToRemote.isEmpty()
+                    ? false
+                    : localToRemote.keySet()
+                            .stream()
+                            .filter(e -> e.getPort() == port)
+                            .findAny()
+                            .isPresent();
+        }
+    }
+
+    @Override
+    public List<Map.Entry<SshdSocketAddress, SshdSocketAddress>> getLocalForwardsBindings() {
+        synchronized (localLock) {
             return localToRemote.isEmpty()
                     ? Collections.emptyList()
                     : localToRemote.entrySet()
@@ -1184,13 +1213,9 @@ public class DefaultForwarder
     }
 
     @Override
-    public NavigableSet<Integer> getStartedLocalPortForwards() {
-        synchronized (localToRemote) {
-            if (localToRemote.isEmpty()) {
-                return Collections.emptyNavigableSet();
-            }
-
-            return GenericUtils.asSortedSet(localToRemote.keySet());
+    public List<SshdSocketAddress> getStartedLocalPortForwards() {
+        synchronized (localLock) {
+            return localToRemote.isEmpty() ? Collections.emptyList() : new ArrayList<>(localToRemote.keySet());
         }
     }
 
@@ -1219,11 +1244,7 @@ public class DefaultForwarder
     @Override
     public NavigableSet<Integer> getStartedRemotePortForwards() {
         synchronized (remoteToLocal) {
-            if (remoteToLocal.isEmpty()) {
-                return Collections.emptyNavigableSet();
-            }
-
-            return GenericUtils.asSortedSet(remoteToLocal.keySet());
+            return remoteToLocal.isEmpty() ? Collections.emptyNavigableSet() : GenericUtils.asSortedSet(remoteToLocal.keySet());
         }
     }
 }

@@ -105,7 +105,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     public void updateLocalForwardingEntry(LocalForwardingEntry entry) {
         Objects.requireNonNull(entry, "No local forwarding entry provided");
-        localEntry = new SshdSocketAddress(entry.getAlias(), entry.getPort());
+        localEntry = entry.getBoundAddress();
     }
 
     @Override
