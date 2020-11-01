@@ -242,6 +242,54 @@ public enum BuiltinDHFactories implements DHFactory {
         public boolean isSupported() {
             return ECCurves.nistp521.isSupported();
         }
+    },
+    /**
+     * @see <a href="https://www.rfc-editor.org/info/rfc8731">RFC 8731</a>
+     */
+    curve25519(Constants.CURVE25519_SHA256) {
+        @Override
+        public XDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new XDH(MontgomeryCurve.x25519);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MontgomeryCurve.x25519.isSupported();
+        }
+    },
+    curve25519_libssh(Constants.CURVE25519_SHA256_LIBSSH) {
+        @Override
+        public XDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new XDH(MontgomeryCurve.x25519);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MontgomeryCurve.x25519.isSupported();
+        }
+    },
+    /**
+     * @see <a href="https://www.rfc-editor.org/info/rfc8731">RFC 8731</a>
+     */
+    curve448(Constants.CURVE448_SHA512) {
+        @Override
+        public XDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new XDH(MontgomeryCurve.x448);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MontgomeryCurve.x448.isSupported();
+        }
     };
 
     public static final Set<BuiltinDHFactories> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
@@ -417,6 +465,9 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String ECDH_SHA2_NISTP256 = "ecdh-sha2-nistp256";
         public static final String ECDH_SHA2_NISTP384 = "ecdh-sha2-nistp384";
         public static final String ECDH_SHA2_NISTP521 = "ecdh-sha2-nistp521";
+        public static final String CURVE25519_SHA256 = "curve25519-sha256";
+        public static final String CURVE25519_SHA256_LIBSSH = "curve25519-sha256@libssh.org";
+        public static final String CURVE448_SHA512 = "curve448-sha512";
 
         private Constants() {
             throw new UnsupportedOperationException("No instance allowed");
