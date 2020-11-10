@@ -254,7 +254,6 @@ public abstract class SshClientCliSupport extends CliSupport {
             port = SshConstants.TO_EFFECTIVE_PORT.applyAsInt(port);
 
             HostConfigEntry entry = resolveHost(client, login, host, port, proxyJump);
-            // TODO use a configurable wait time
             ClientSession session = client.connect(entry, null, null)
                     .verify(CliClientModuleProperties.CONECT_TIMEOUT.getRequired(client))
                     .getSession();

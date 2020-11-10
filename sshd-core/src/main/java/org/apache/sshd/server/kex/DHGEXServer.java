@@ -269,46 +269,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     }
 
     protected DHG chooseDH(int min, int prf, int max) throws Exception {
-        int maxDHGroupExchangeKeySize = SecurityUtils.getMaxDHGroupExchangeKeySize();
-        min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        prf = Math.max(prf, SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        prf = Math.min(prf, maxDHGroupExchangeKeySize);
-        max = Math.min(max, maxDHGroupExchangeKeySize);
-
-        List<Moduli.DhGroup> groups = loadModuliGroups();
-        Session session = getServerSession();
-        List<Moduli.DhGroup> selected = new ArrayList<>();
-        int bestSize = 0;
-        boolean traceEnabled = log.isTraceEnabled();
-        for (Moduli.DhGroup group : groups) {
-            int size = group.getSize();
-            if ((size < min) || (size > max)) {
-                if (traceEnabled) {
-                    log.trace("chooseDH({})[{}] - skip group={} - size not in range [{}-{}]",
-                            this, session, group, min, max);
-                }
-                continue;
-            }
-
-            if (((size > prf) && (size < bestSize)) || ((size > bestSize) && (bestSize < prf))) {
-                bestSize = size;
-                if (traceEnabled) {
-                    log.trace("chooseDH({})[{}][prf={}, min={}, max={}] new best size={} from group={}",
-                            this, session, prf, min, max, bestSize, group);
-                }
-                selected.clear();
-            }
-
-            if (size == bestSize) {
-                if (traceEnabled) {
-                    log.trace("chooseDH({})[{}][prf={}, min={}, max={}] selected {}",
-                            this, session, prf, min, max, group);
-                }
-                selected.add(group);
-            }
-        }
-
-        if (selected.isEmpty()) {
+        ServerSession session = getServerSession();
+        List<Moduli.DhGroup> groups = loadModuliGroups(session);
+        List<Moduli.DhGroup> selected = selectModuliGroups(session, min, prf, max, groups);
+        if (GenericUtils.isEmpty(selected)) {
             log.warn("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found, defaulting to DHG1",
                     this, session, prf, min, max);
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
@@ -319,15 +283,58 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         Random random = Objects.requireNonNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
-        if (traceEnabled) {
+        if (log.isTraceEnabled()) {
             log.trace("chooseDH({})[{}][prf={}, min={}, max={}] selected {}",
                     this, session, prf, min, max, group);
         }
+
         return getDH(group.getP(), group.getG());
     }
 
-    protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
-        Session session = getServerSession();
+    protected List<Moduli.DhGroup> selectModuliGroups(
+            ServerSession session, int min, int prf, int max, List<Moduli.DhGroup> groups)
+            throws Exception {
+        int maxDHGroupExchangeKeySize = SecurityUtils.getMaxDHGroupExchangeKeySize();
+        min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        prf = Math.max(prf, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        prf = Math.min(prf, maxDHGroupExchangeKeySize);
+        max = Math.min(max, maxDHGroupExchangeKeySize);
+
+        List<Moduli.DhGroup> selected = new ArrayList<>();
+        int bestSize = 0;
+        boolean traceEnabled = log.isTraceEnabled();
+        for (Moduli.DhGroup group : groups) {
+            int size = group.getSize();
+            if ((size < min) || (size > max)) {
+                if (traceEnabled) {
+                    log.trace("selectModuliGroups({})[{}] - skip group={} - size not in range [{}-{}]",
+                            this, session, group, min, max);
+                }
+                continue;
+            }
+
+            if (((size > prf) && (size < bestSize)) || ((size > bestSize) && (bestSize < prf))) {
+                bestSize = size;
+                if (traceEnabled) {
+                    log.trace("selectModuliGroups({})[{}][prf={}, min={}, max={}] new best size={} from group={}",
+                            this, session, prf, min, max, bestSize, group);
+                }
+                selected.clear();
+            }
+
+            if (size == bestSize) {
+                if (traceEnabled) {
+                    log.trace("selectModuliGroups({})[{}][prf={}, min={}, max={}] selected {}",
+                            this, session, prf, min, max, group);
+                }
+                selected.add(group);
+            }
+        }
+
+        return selected;
+    }
+
+    protected List<Moduli.DhGroup> loadModuliGroups(ServerSession session) throws IOException {
         String moduliStr = CoreModuleProperties.MODULI_URL.getOrNull(session);
         List<Moduli.DhGroup> groups = null;
         if (!GenericUtils.isEmpty(moduliStr)) {
