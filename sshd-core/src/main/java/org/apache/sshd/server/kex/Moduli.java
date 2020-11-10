@@ -21,7 +21,9 @@ package org.apache.sshd.server.kex;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -113,50 +115,70 @@ public final class Moduli {
     }
 
     public static List<DhGroup> parseModuli(URL url) throws IOException {
+        try (InputStream inputStream = url.openStream()) {
+            return parseModuli(inputStream);
+        }
+    }
+
+    public static List<DhGroup> parseModuli(InputStream inputStream) throws IOException {
+        try (Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+            return parseModuli(reader);
+        }
+    }
+
+    public static List<DhGroup> parseModuli(Reader reader) throws IOException {
+        if (reader instanceof BufferedReader) {
+            return parseModuli((BufferedReader) reader);
+        }
+
+        try (BufferedReader r = new BufferedReader(reader)) {
+            return parseModuli(r);
+        }
+    }
+
+    public static List<DhGroup> parseModuli(BufferedReader r) throws IOException {
         List<DhGroup> groups = new ArrayList<>();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-            for (String line = r.readLine(); line != null; line = r.readLine()) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-
-                if (line.startsWith("#")) {
-                    continue;
-                }
-
-                String[] parts = line.split("\\s+");
-                // Ensure valid line
-                if (parts.length != 7) {
-                    continue;
-                }
-
-                // Discard moduli types which are not safe
-                int type = Integer.parseInt(parts[1]);
-                if (type != MODULI_TYPE_SAFE) {
-                    continue;
-                }
-
-                // Discard untested moduli
-                int tests = Integer.parseInt(parts[2]);
-                if (((tests & MODULI_TESTS_COMPOSITE) != 0) || ((tests & ~MODULI_TESTS_COMPOSITE) == 0)) {
-                    continue;
-                }
-
-                // Discard untried
-                int tries = Integer.parseInt(parts[3]);
-                if (tries == 0) {
-                    continue;
-                }
-
-                DhGroup group = new DhGroup(
-                        Integer.parseInt(parts[4]) + 1,
-                        new BigInteger(parts[5], 16),
-                        new BigInteger(parts[6], 16));
-                groups.add(group);
+        for (String line = r.readLine(); line != null; line = r.readLine()) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;   // skip empty lines
             }
 
-            return groups;
+            if (line.charAt(0) == '#') {
+                continue;   // skip comments
+            }
+
+            String[] parts = line.split("\\s+");
+            // Ensure valid line
+            if (parts.length != 7) {
+                continue;
+            }
+
+            // Discard moduli types which are not safe
+            int type = Integer.parseInt(parts[1]);
+            if (type != MODULI_TYPE_SAFE) {
+                continue;
+            }
+
+            // Discard untested moduli
+            int tests = Integer.parseInt(parts[2]);
+            if (((tests & MODULI_TESTS_COMPOSITE) != 0) || ((tests & ~MODULI_TESTS_COMPOSITE) == 0)) {
+                continue;
+            }
+
+            // Discard untried
+            int tries = Integer.parseInt(parts[3]);
+            if (tries == 0) {
+                continue;
+            }
+
+            DhGroup group = new DhGroup(
+                    Integer.parseInt(parts[4]) + 1,
+                    new BigInteger(parts[5], 16),
+                    new BigInteger(parts[6], 16));
+            groups.add(group);
         }
+
+        return groups;
     }
 }

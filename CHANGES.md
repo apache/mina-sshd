@@ -59,4 +59,4 @@ or `-key-file` command line option.
 * [SSHD-1063](https://issues.apache.org/jira/browse/SSHD-1063) Fixed known-hosts file server key verifier matching of same host with different ports
 * [SSHD-1066](https://issues.apache.org/jira/browse/SSHD-1066) Allow multiple binding to local port tunnel on different addresses
 * [SSHD-1070](https://issues.apache.org/jira/browse/SSHD-1070) OutOfMemoryError when use async port forwarding
-
+* [SSHD-1100](https://issues.apache.org/jira/browse/SSHD-1100) Updated used moduli for DH group KEX

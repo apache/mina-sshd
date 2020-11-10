@@ -114,7 +114,7 @@ public final class SecurityUtils {
      * groups with a modulus length of k bits, where 1024 <= k <= 8192&quot;. </code>
      */
     public static final int MIN_DHGEX_KEY_SIZE = 1024;
-    // Keys of size > 1024 are not support by default with JCE
+    // Keys of size > 1024 are not supported by default with JCE
     public static final int DEFAULT_DHGEX_KEY_SIZE = MIN_DHGEX_KEY_SIZE;
     public static final int PREFERRED_DHGEX_KEY_SIZE = 4096;
     public static final int MAX_DHGEX_KEY_SIZE = 8192;
@@ -130,7 +130,7 @@ public final class SecurityUtils {
 
     /**
      * System property used to control whether to automatically register the {@code Bouncyastle} JCE provider
-     * 
+     *
      * @deprecated Please use &quot;org.apache.sshd.security.provider.BC.enabled&quot;
      */
     @Deprecated
@@ -147,7 +147,7 @@ public final class SecurityUtils {
      * System property used to decide whether EDDSA curves are supported or not (in addition or even in spite of
      * {@link #isEDDSACurveSupported()}). If not set or set to {@code true}, then the existence of the optional support
      * classes determines the support.
-     * 
+     *
      * @deprecated Please use &quot;org.apache.sshd.security.provider.EdDSA.enabled&qupt;
      */
     @Deprecated
@@ -297,7 +297,7 @@ public final class SecurityUtils {
 
     /**
      * Set programmatically the reported value for {@link #getMaxDHGroupExchangeKeySize()}
-     * 
+     *
      * @param keySize The reported key size - if zero, then it will be auto-detected, if negative then DH group exchange
      *                will be disabled
      */

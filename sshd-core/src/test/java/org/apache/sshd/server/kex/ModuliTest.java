@@ -20,23 +20,32 @@ package org.apache.sshd.server.kex;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.kex.Moduli.DhGroup;
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class ModuliTest extends JUnitTestSupport {
     public ModuliTest() {
         super();
@@ -66,5 +75,22 @@ public class ModuliTest extends JUnitTestSupport {
             List<DhGroup> actual = Moduli.loadInternalModuli(moduli);
             assertSame("Mismatched cached instance at retry #" + index, expected, actual);
         }
+    }
+
+    @Test
+    public void testKeySizesCoverage() throws IOException {
+        URL moduli = getClass().getResource(Moduli.INTERNAL_MODULI_RESPATH);
+        List<DhGroup> groups = Moduli.loadInternalModuli(moduli);
+        Collection<Integer> actualSizes = new TreeSet<>(Comparator.naturalOrder());
+        for (DhGroup g : groups) {
+            int size = g.getSize();
+            assertTrue("Size below min. required " + SecurityUtils.MIN_DHGEX_KEY_SIZE,
+                    size >= SecurityUtils.MIN_DHGEX_KEY_SIZE);
+            assertTrue("Size above max. allowed " + SecurityUtils.MAX_DHGEX_KEY_SIZE, size <= SecurityUtils.MAX_DHGEX_KEY_SIZE);
+            actualSizes.add(size);
+        }
+
+        assertListEquals("Mismatched groups size", Arrays.asList(1024, 1536, 2048, 3072, 4096, 6144, 7670, 8192),
+                new ArrayList<>(actualSizes));
     }
 }
