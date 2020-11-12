@@ -38,7 +38,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -132,7 +131,6 @@ public class SftpPerformanceTest {
         return session;
     }
 
-    @NotNull
     public SshClient createSshClient() {
         SshClient client = SshClient.setUpDefaultClient();
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
