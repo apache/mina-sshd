@@ -520,7 +520,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         final SftpPath p = toSftpPath(dir);
-        return new SftpDirectoryStream(p);
+        return new SftpDirectoryStream(p, filter);
     }
 
     @Override

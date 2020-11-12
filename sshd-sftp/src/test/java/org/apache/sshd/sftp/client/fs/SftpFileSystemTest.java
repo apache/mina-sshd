@@ -26,22 +26,13 @@ import java.io.Reader;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -340,132 +331,5 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
 
         assertTrue("No configuration found", found);
-    }
-
-    private void testFileSystem(FileSystem fs, int version) throws Exception {
-        Iterable<Path> rootDirs = fs.getRootDirectories();
-        for (Path root : rootDirs) {
-            String rootName = root.toString();
-            try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
-                for (Path child : ds) {
-                    String name = child.getFileName().toString();
-                    assertNotEquals("Unexpected dot name", ".", name);
-                    assertNotEquals("Unexpected dotdot name", "..", name);
-                    outputDebugMessage("[%s] %s", rootName, child);
-                }
-            } catch (IOException | RuntimeException e) {
-                // TODO on Windows one might get share problems for *.sys files
-                // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another
-                // process"
-                // for now, Windows is less of a target so we are lenient with it
-                if (OsUtils.isWin32()) {
-                    System.err.println(
-                            e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
-                } else {
-                    throw e;
-                }
-            }
-        }
-
-        Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
-                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        CommonTestSupportUtils.deleteRecursive(lclSftp);
-
-        Path current = fs.getPath(".").toRealPath().normalize();
-        outputDebugMessage("CWD: %s", current);
-
-        Path parentPath = targetPath.getParent();
-        Path clientFolder = lclSftp.resolve("client");
-        String remFile1Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-1.txt"));
-        Path file1 = fs.getPath(remFile1Path);
-        assertHierarchyTargetFolderExists(file1.getParent());
-
-        String expected = "Hello world: " + getCurrentTestName();
-        outputDebugMessage("Write initial data to %s", file1);
-        Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
-        String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
-        assertEquals("Mismatched read test data", expected, buf);
-
-        if (version >= SftpConstants.SFTP_V4) {
-            outputDebugMessage("getFileAttributeView(%s)", file1);
-            AclFileAttributeView aclView
-                    = Files.getFileAttributeView(file1, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-            assertNotNull("No ACL view for " + file1, aclView);
-
-            Map<String, ?> attrs = Files.readAttributes(file1, "acl:*", LinkOption.NOFOLLOW_LINKS);
-            outputDebugMessage("readAttributes(%s) %s", file1, attrs);
-            assertEquals("Mismatched owner for " + file1, aclView.getOwner(), attrs.get("owner"));
-
-            @SuppressWarnings("unchecked")
-            List<AclEntry> acl = (List<AclEntry>) attrs.get("acl");
-            outputDebugMessage("acls(%s) %s", file1, acl);
-            assertListEquals("Mismatched ACLs for " + file1, aclView.getAcl(), acl);
-        }
-
-        String remFile2Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));
-        Path file2 = fs.getPath(remFile2Path);
-        String remFile3Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
-        Path file3 = fs.getPath(remFile3Path);
-        try {
-            outputDebugMessage("Move with failure expected %s => %s", file2, file3);
-            Files.move(file2, file3, LinkOption.NOFOLLOW_LINKS);
-            fail("Unexpected success in moving " + file2 + " => " + file3);
-        } catch (NoSuchFileException e) {
-            // expected
-        }
-
-        Files.write(file2, "h".getBytes(StandardCharsets.UTF_8));
-        try {
-            outputDebugMessage("Move with failure expected %s => %s", file1, file2);
-            Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS);
-            fail("Unexpected success in moving " + file1 + " => " + file2);
-        } catch (FileAlreadyExistsException e) {
-            // expected
-        }
-
-        outputDebugMessage("Move with success expected %s => %s", file1, file2);
-        Files.move(file1, file2, LinkOption.NOFOLLOW_LINKS, StandardCopyOption.REPLACE_EXISTING);
-        outputDebugMessage("Move with success expected %s => %s", file2, file1);
-        Files.move(file2, file1, LinkOption.NOFOLLOW_LINKS);
-
-        Map<String, Object> attrs = Files.readAttributes(file1, "*");
-        outputDebugMessage("%s attributes: %s", file1, attrs);
-
-        // TODO there are many issues with symbolic links on Windows
-        if (OsUtils.isUNIX()) {
-            Path link = fs.getPath(remFile2Path);
-            Path linkParent = link.getParent();
-            Path relPath = linkParent.relativize(file1);
-            outputDebugMessage("Create symlink %s => %s", link, relPath);
-            Files.createSymbolicLink(link, relPath);
-            assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
-
-            Path symLink = Files.readSymbolicLink(link);
-            assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
-
-            outputDebugMessage("Delete symlink %s", link);
-            Files.delete(link);
-        }
-
-        attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
-        outputDebugMessage("%s no-follow attributes: %s", file1, attrs);
-        assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1), StandardCharsets.UTF_8));
-
-        try (FileChannel channel = FileChannel.open(file1)) {
-            try (FileLock lock = channel.lock()) {
-                outputDebugMessage("Lock %s: %s", file1, lock);
-
-                try (FileChannel channel2 = FileChannel.open(file1)) {
-                    try (FileLock lock2 = channel2.lock()) {
-                        fail("Unexpected success in re-locking " + file1 + ": " + lock2);
-                    } catch (OverlappingFileLockException e) {
-                        // expected
-                    }
-                }
-            }
-        }
-
-        Files.delete(file1);
     }
 }

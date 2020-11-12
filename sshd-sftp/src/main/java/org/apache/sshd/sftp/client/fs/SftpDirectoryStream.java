@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.sshd.sftp.client.SftpClient;
 
@@ -31,19 +32,36 @@ import org.apache.sshd.sftp.client.SftpClient;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpDirectoryStream implements DirectoryStream<Path> {
+    protected SftpPathIterator pathIterator;
+
+    private final SftpPath path;
+    private final Filter<? super Path> filter;
     private final SftpClient sftp;
-    private final Iterable<SftpClient.DirEntry> iter;
-    private final SftpPath p;
 
     /**
      * @param  path        The remote {@link SftpPath}
      * @throws IOException If failed to initialize the directory access handle
      */
     public SftpDirectoryStream(SftpPath path) throws IOException {
+        this(path, null);
+    }
+
+    /**
+     *
+     * @param  path        The remote {@link SftpPath}
+     * @param  filter      An <U>optional</U> {@link java.nio.file.DirectoryStream.Filter filter} - ignored if
+     *                     {@code null}
+     * @throws IOException If failed to initialize the directory access handle
+     */
+    public SftpDirectoryStream(SftpPath path, Filter<? super Path> filter) throws IOException {
+        this.path = Objects.requireNonNull(path, "No path specified");
+        this.filter = filter;
+
         SftpFileSystem fs = path.getFileSystem();
-        p = path;
         sftp = fs.getClient();
-        iter = sftp.readDir(path.toString());
+
+        Iterable<SftpClient.DirEntry> iter = sftp.readDir(path.toString());
+        pathIterator = new SftpPathIterator(getRootPath(), iter, getFilter());
     }
 
     /**
@@ -55,9 +73,36 @@ public class SftpDirectoryStream implements DirectoryStream<Path> {
         return sftp;
     }
 
+    /**
+     * @return The root {@link SftpPath} for this directory stream
+     */
+    public final SftpPath getRootPath() {
+        return path;
+    }
+
+    /**
+     * @return The original filter - may be {@code null} to indicate no filter
+     */
+    public final Filter<? super Path> getFilter() {
+        return filter;
+    }
+
     @Override
     public Iterator<Path> iterator() {
-        return new SftpPathIterator(p, iter);
+        if (!sftp.isOpen()) {
+            throw new IllegalStateException("Stream has been closed");
+        }
+
+        /*
+         * According to documentation this method can be called only once
+         */
+        if (pathIterator == null) {
+            throw new IllegalStateException("Iterator has already been consumed");
+        }
+
+        Iterator<Path> iter = pathIterator;
+        pathIterator = null;
+        return iter;
     }
 
     @Override

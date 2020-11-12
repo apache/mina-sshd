@@ -22,11 +22,13 @@ package org.apache.sshd.sftp.client.fs;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -89,6 +91,79 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
     @Test
     public void testSftpClientDirectoryScannerFileSuffixMatching() throws IOException {
         testSftpClientDirectoryScanner(setupFileSuffixMatching(), "*.txt");
+    }
+
+    @Test   // see SSHD-1102
+    public void testDirectoryStreamFilter() throws IOException {
+        SetupDetails details = setupFileSuffixMatching();
+        List<Path> expected = details.getExpected();
+        List<Path> actual = new ArrayList<>();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            DirectoryStream.Filter<Path> filter = p -> {
+                if (Files.isDirectory(p)) {
+                    return true;
+                }
+
+                if (!Files.isRegularFile(p)) {
+                    return false;
+                }
+
+                return p.getFileName().toString().endsWith(".txt");
+            };
+            collectMatchingFiles(fs.getPath(details.getRemoteFilePath()), filter, actual);
+        }
+
+        Collections.sort(actual);
+
+        assertListEquals(getCurrentTestName(), expected, actual, PathUtils.EQ_CASE_SENSITIVE_FILENAME);
+    }
+
+    private static void collectMatchingFiles(
+            Path dir, DirectoryStream.Filter<? super Path> filter, Collection<Path> matches)
+            throws IOException {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, filter)) {
+            for (Path p : ds) {
+                assertTrue("Unfiltered path: " + p, filter.accept(p));
+
+                if (Files.isDirectory(p)) {
+                    collectMatchingFiles(p, filter, matches);
+                } else if (Files.isRegularFile(p)) {
+                    matches.add(p);
+                }
+            }
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testClosedDirectoryStreamIteration() throws IOException {
+        SetupDetails details = setupDeepScanning();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path dir = fs.getPath(details.getRemoteFilePath());
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                ds.close();
+
+                for (Path p : ds) {
+                    fail("Unexpected iterated path: " + p);
+                }
+            }
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testDirectoryStreamRepeatedIteration() throws IOException {
+        SetupDetails details = setupDeepScanning();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path dir = fs.getPath(details.getRemoteFilePath());
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                for (Path p : ds) {
+                    assertNotNull(p);
+                }
+
+                for (Path p : ds) {
+                    fail("Unexpected iterated path: " + p);
+                }
+            }
+        }
     }
 
     private void testSftpClientDirectoryScanner(SetupDetails setup, String pattern) throws IOException {
