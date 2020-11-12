@@ -9,19 +9,19 @@ the tracker is `close()`-d:
 
 
 ```java
+client.addPortForwardingEventListener(new MySuperDuperListener());
 
-    client.addPortForwardingEventListener(new MySuperDuperListener());
+try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth().verify(...timeout...);
 
-    try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(...timeout...);
-
-        try (PortForwardingTracker tracker = session.createLocal/RemotePortForwardingTracker(...)) {
-            ...do something that requires the tunnel...
-        }
-
-        // Tunnel is torn down when code reaches this point
+    try (PortForwardingTracker tracker = session.createLocal/RemotePortForwardingTracker(...)) {
+        ...do something that requires the tunnel...
     }
+
+    // Tunnel is torn down when code reaches this point
+}
+
 ```
 
 ### Standard port forwarding
@@ -33,11 +33,12 @@ and server. By default, this capability is **disabled** - i.e., the user must pr
 `setForwardingFilter` method on the client/server.
 
 ```java
-    SshClient client = ...create/obtain an instance...
-    client.setForwardingFilter(...filter instance...);
+SshClient client = ...create/obtain an instance...
+client.setForwardingFilter(...filter instance...);
 
-    SshServer server = ...create/obtain an instance...
-    server.setForwardingFilter(...filter instance...);
+SshServer server = ...create/obtain an instance...
+server.setForwardingFilter(...filter instance...);
+
 ```
 
 The code contains 2 simple implementations - an `AcceptAllForwardingFilter` and a `RejectAllForwardingFilter` one that can be used for

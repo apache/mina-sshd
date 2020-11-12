@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @param  <T> The generic property type
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Property<T> {
+public interface Property<T> extends NamedResource {
 
     static Property<String> string(String name) {
         return string(name, null);
@@ -380,11 +380,6 @@ public interface Property<T> {
             delegate.remove(resolver);
         }
     }
-
-    /**
-     * @return Property name
-     */
-    String getName();
 
     /**
      * @return Property type - <B>Note:</B> for primitive types the wrapper equivalent is returned

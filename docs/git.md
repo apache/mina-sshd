@@ -13,19 +13,18 @@ created - which is started and stopped as necessary. However, this can be pretty
 that access GIT repositories via SSH, one should maintain a **single** client instance and re-use it:
 
 ```java
+SshClient client = ...create and setup the client...
+try {
+    client.start();
 
-    SshClient client = ...create and setup the client...
-    try {
-        client.start();
+    GitSshdSessionFactory sshdFactory = new GitSshdSessionFactory(client);  // re-use the same client for all SSH sessions
+    org.eclipse.jgit.transport.SshSessionFactory.setInstance(sshdFactory);  // replace the JSCH-based factory
 
-        GitSshdSessionFactory sshdFactory = new GitSshdSessionFactory(client);  // re-use the same client for all SSH sessions
-        org.eclipse.jgit.transport.SshSessionFactory.setInstance(sshdFactory);  // replace the JSCH-based factory
+    ... issue GIT commands that access remote repositories via SSH ....
 
-        ... issue GIT commands that access remote repositories via SSH ....
-
-    } finally {
-        client.stop();
-    }
+} finally {
+    client.stop();
+}
 
 ```
 ### Server-side
@@ -35,33 +34,31 @@ that is invoked in order to allow the user to decide which is the correct GIT re
 with all the relevant details - including the command and server session through which the command was received:
 
 ```java
-
-    GitLocationResolver resolver = (cmd, session, fs) -> ...consult some code - perhaps based on the authenticated username...
-    sshd.setCommandFactory(new GitPackCommandFactory().withGitLocationResolver(resolver));
+GitLocationResolver resolver = (cmd, session, fs) -> ...consult some code - perhaps based on the authenticated username...
+sshd.setCommandFactory(new GitPackCommandFactory().withGitLocationResolver(resolver));
 
 ```
 
 These command factories also accept a delegate to which non-_git_ commands are routed:
 
 ```java
+sshd.setCommandFactory(new GitPackCommandFactory()
+    .withDelegate(new MyCommandFactory())
+    .withGitLocationResolver(resolver));
 
-    sshd.setCommandFactory(new GitPackCommandFactory()
+// Here is how it looks if SCP is also requested
+sshd.setCommandFactory(new GitPackCommandFactory()
+    .withDelegate(new ScpCommandFactory()
+        .withDelegate(new MyCommandFactory()))
+    .withGitLocationResolver(resolver));
+
+// or
+sshd.setCommandFactory(new ScpCommandFactory()
+    .withDelegate(new GitPackCommandFactory()
         .withDelegate(new MyCommandFactory())
-        .withGitLocationResolver(resolver));
+        .withGitLocationResolver(resolver)));
 
-    // Here is how it looks if SCP is also requested
-    sshd.setCommandFactory(new GitPackCommandFactory()
-        .withDelegate(new ScpCommandFactory()
-            .withDelegate(new MyCommandFactory()))
-        .withGitLocationResolver(resolver));
-
-    // or
-    sshd.setCommandFactory(new ScpCommandFactory()
-        .withDelegate(new GitPackCommandFactory()
-            .withDelegate(new MyCommandFactory())
-            .withGitLocationResolver(resolver)));
-
-    // or any other combination ...
+// or any other combination ...
 
 ```
 
@@ -71,10 +68,9 @@ is completed (regardless of whether successful or not):
 
 
 ```java
-
-    sshd.setCommandFactory(new GitPackCommandFactory(resolver)
-        .withDelegate(new MyCommandFactory())
-        .withExecutorService(myService)
-        .withShutdownOnExit(false));
+sshd.setCommandFactory(new GitPackCommandFactory(resolver)
+    .withDelegate(new MyCommandFactory())
+    .withExecutorService(myService)
+    .withShutdownOnExit(false));
 
 ```

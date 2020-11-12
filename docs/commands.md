@@ -10,15 +10,14 @@ deciding what is the logged-in user's file system view and then use a `RootedFil
 file system where the logged-in user can access only the files under the specified root and no others.
 
 ```java
-
-    SshServer sshd = SshServer.setupDefaultServer();
-    sshd.setFileSystemFactory(new VirtualFileSystemFactory() {
-        @Override
-        public Path getUserHomeDir(SessionContext session) throws IOException {
-            ...use whatever information ...
-            return somePath;
-        }
-    });
+SshServer sshd = SshServer.setupDefaultServer();
+sshd.setFileSystemFactory(new VirtualFileSystemFactory() {
+    @Override
+    public Path getUserHomeDir(SessionContext session) throws IOException {
+        ...use whatever information ...
+        return somePath;
+    }
+});
 
 ```
 
@@ -42,18 +41,17 @@ and take care of shutting it down when SSHD is done with (provided, of course, t
 remain active afterwards...).
 
 ```java
-
-    /*
-     * An example user-provided executor service for SFTP - there are other such locations.
-     * By default, the SftpSubsystem implementation creates a single-threaded executor
-     * for each session, uses it to spawn the SFTP command handler and shuts
-     * it down when the command is destroyed
-     */
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorServiceProvider(() -> new NoCloseExecutor(mySuperDuperExecutorService))
-        .build();
-    SshServer sshd = SshServer.setupDefaultServer();
-    sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+/*
+ * An example user-provided executor service for SFTP - there are other such locations.
+ * By default, the SftpSubsystem implementation creates a single-threaded executor
+ * for each session, uses it to spawn the SFTP command handler and shuts
+ * it down when the command is destroyed
+ */
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    .withExecutorServiceProvider(() -> new NoCloseExecutor(mySuperDuperExecutorService))
+    .build();
+SshServer sshd = SshServer.setupDefaultServer();
+sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
 
 ```
 
@@ -61,13 +59,14 @@ If a single `CloseableExecutorService` is shared between several services, it ne
 `ThreadUtils.noClose(executor)` method.
 
 ```java
-    CloseableExecutorService sharedService = ...obtain/create an instance...;
+CloseableExecutorService sharedService = ...obtain/create an instance...;
 
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorServiceProvider(() -> ThreadUtils.noClose(sharedService))
-        .build();
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    .withExecutorServiceProvider(() -> ThreadUtils.noClose(sharedService))
+    .build();
 
-   ChannelAgentForwarding forward = new ChannelAgentForwarding(ThreadUtils.noClose(sharedService));
+ChannelAgentForwarding forward = new ChannelAgentForwarding(ThreadUtils.noClose(sharedService));
+
 ```
 
 **Note:** Do not share the instance returned by `ThreadUtils.noClose` between services as it interferes with
@@ -92,66 +91,66 @@ and the provided result status code is sent as an `exit-status` message as descr
 The provided message is simply logged at DEBUG level.
 
 ```java
+// A simple command implementation example
+class MyCommand implements Command, Runnable {
+    private InputStream in;
+    private OutputStream out, err;
+    private ExitCallback callback;
 
-    // A simple command implementation example
-    class MyCommand implements Command, Runnable {
-        private InputStream in;
-        private OutputStream out, err;
-        private ExitCallback callback;
-
-        public MyCommand() {
-            super();
-        }
-
-        @Override
-        public void setInputStream(InputStream in) {
-            this.in = in;
-        }
-
-        @Override
-        public void setOutputStream(OutputStream out) {
-            this.out = out;
-        }
-
-        @Override
-        public void setErrorStream(OutputStream err) {
-            this.err = err;
-        }
-
-        @Override
-        public void setExitCallback(ExitCallback callback) {
-            this.callback = callback;
-        }
-
-        @Override
-        public void start(Environment env) throws IOException {
-            spawnHandlerThread(this);
-        }
-
-        @Override
-        public void run() {
-            while(true) {
-                try {
-                    String cmd = readCommand(in);
-                    if ("exit".equals(cmd)) {
-                        break;
-                    }
-
-                    handleCommand(cmd, out);
-                } catch (Exception e) {
-                    writeError(err, e);
-                    callback.onExit(-1, e.getMessage());
-                    return;
-            }
-
-            callback.onExit(0);
-        }
-
-        @Override
-        public void destroy() throws Exception {
-            ...release any allocated resources...
-        }
+    public MyCommand() {
+        super();
     }
+
+    @Override
+    public void setInputStream(InputStream in) {
+        this.in = in;
+    }
+
+    @Override
+    public void setOutputStream(OutputStream out) {
+        this.out = out;
+    }
+
+    @Override
+    public void setErrorStream(OutputStream err) {
+        this.err = err;
+    }
+
+    @Override
+    public void setExitCallback(ExitCallback callback) {
+        this.callback = callback;
+    }
+
+    @Override
+    public void start(Environment env) throws IOException {
+        spawnHandlerThread(this);
+    }
+
+    @Override
+    public void run() {
+        while(true) {
+            try {
+                String cmd = readCommand(in);
+                if ("exit".equals(cmd)) {
+                    break;
+                }
+
+                handleCommand(cmd, out);
+            } catch (Exception e) {
+                writeError(err, e);
+                callback.onExit(-1, e.getMessage());
+                return;
+        }
+
+        callback.onExit(0);
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        ...release any allocated resources...
+    }
+}
+
 ```
 
 ### `Aware` interfaces

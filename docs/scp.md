@@ -18,24 +18,24 @@ to add this additional dependency to your maven project:
 Callback to inform about SCP related events. `ScpTransferEventListener`(s) can be registered on *both* client and server side:
 
 ```java
+// Server side
+ScpCommandFactory factory = new ScpCommandFactory(...with/out delegate..);
+factory.addEventListener(new MyServerSideScpTransferEventListener());
+sshd.setCommandFactory(factory);
 
-    // Server side
-    ScpCommandFactory factory = new ScpCommandFactory(...with/out delegate..);
-    factory.addEventListener(new MyServerSideScpTransferEventListener());
-    sshd.setCommandFactory(factory);
+// Client side
+try (ClientSession session = client.connect(user, host, port)
+        .verify(...timeout...)
+        .getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth().verify(...timeout...);
 
-    // Client side
-    try (ClientSession session = client.connect(user, host, port)
-            .verify(...timeout...)
-            .getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(...timeout...);
+    ScpClientCreator creator = ... obtain an instance ...
+    ScpClient client = creator.createScpClient(session, new MySuperDuperListener());
 
-        ScpClientCreator creator = ... obtain an instance ...
-        ScpClient client = creator.createScpClient(session, new MySuperDuperListener());
+    ...scp.upload/download...
+}
 
-        ...scp.upload/download...
-    }
 ```
 
 ## Client-side SCP
@@ -43,12 +43,12 @@ Callback to inform about SCP related events. `ScpTransferEventListener`(s) can b
 In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
 
 ```java
-
 try (ClientSession session = ... obtain an instance ...) {
     ScpClientCreator creator = ... obtain an instance ...
     ScpClient client = creator.createScpClient(session);
     ... use client ...
 }
+
 ```
 
 A default `ScpClientCreator` instance is provided as part of the module - see `ScpClientCreator.instance()`
@@ -68,13 +68,13 @@ CloseableScpClient createScpClient(...) {
     ScpClient client = creator.createScpClient(session);
     return CloseableScpClient.singleSessionInstance(client);
 }
+
 ```
 
 The `ScpClientCreator` can also be used to attach a default `ScpTransferEventListener` that will be automatically
 add to **all** created SCP client instances through that creator - unless specifically overridden:
 
 ```java
-
 ClientSession session = ... obtain an instance ...
 ScpClientCreator creator = ... obtain an instance ...
 creator.setScpTransferEventListener(new MySuperDuperListener());
@@ -93,7 +93,6 @@ the user may replace it and intercept the calls - e.g., for logging, monitoring 
 The user may attach a default opener that will be automatically attached to **all** clients created unless specifically overridden:
 
 ```java
-
 /**
  * Example of using a non-default opener for monitoring and reporting on transfer progress
  */
@@ -126,6 +125,7 @@ creator.setScpFileOpener(ScpTransferProgressMonitor.INSTANCE);
 ScpClient client1 = creator.createScpClient(session);   // <<== automatically uses ScpTransferProgressMonitor
 ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   // <<== uses SomeOtherOpener instead of ScpTransferProgressMonitor
 
+
 ```
 
 **Note(s):**
@@ -134,7 +134,7 @@ ScpClient client2 = creator.createScpClient(session, new SomeOtherOpener());   /
 **before** the file opener is invoked - so there are a few limitations on what one can do within this interface implementation.
 
 * By default, SCP synchronizes the local copied file data with the file system using the [Java SYNC open option](https://docs.oracle.com/javase/8/docs/api/java/nio/file/StandardOpenOption.html#SYNC).
-This behavior can be controlled by setting the `scp-auto-sync-on-write` (a.k.a. `ScpFileOpener#PROP_AUTO_SYNC_FILE_ON_WRITE`) property to _false_
+This behavior can be controlled by setting the `scp-auto-sync-on-write` (a.k.a. `ScpModuleProperties#PROP_AUTO_SYNC_FILE_ON_WRITE`) property to _false_
 or overriding the `DefaultScpFileOpener#resolveOpenOptions`, or even overriding the `ScpFileOpener#openWrite` method altogether.
 
 * Patterns used in `ScpFileOpener#getMatchingFilesToSend` are matched using case sensitivity derived from the O/S as detected by
@@ -159,6 +159,7 @@ ScpCommandFactory factory = new ScpCommandFactory.Builder()
 
 SshServer sshd = ...create an instance...
 sshd.setCommandFactory(factory);
+
 ```
 
 The `ScpCommandFactory` allows users to attach an `ScpFileOpener` and/or `ScpTransferEventListener` having the same behavior as the client - i.e.,
@@ -178,14 +179,14 @@ is likely to require. For this purpose, the `ScpCommandFactory` also implements 
 
 
 ```java
+ScpCommandFactory factory = new ScpCommandFactory.Builder()
+    .with(...)
+    .with(...)
+    .build()
+    ;
+sshd.setCommandFactory(factory);
+sshd.setShellFactory(factory);
 
-    ScpCommandFactory factory = new ScpCommandFactory.Builder()
-        .with(...)
-        .with(...)
-        .build()
-        ;
-    sshd.setCommandFactory(factory);
-    sshd.setShellFactory(factory);
 ```
 
 **Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
@@ -196,12 +197,12 @@ The code provides an `ScpTransferHelper` class that enables copying files betwee
 the local file system.
 
 ```java
-    ClientSession src = ...;
-    ClientSession dst = ...;
-    // Can also provide a listener in the constructor in order to be informed of the actual transfer progress
-    ScpRemote2RemoteTransferHelper helper = new ScpRemote2RemoteTransferHelper(src, dst);
-    // can be repeated for as many files as necessary using the same helper
-    helper.transferFile("remote/src/path/file1", "remote/dst/path/file2");
+ClientSession src = ...;
+ClientSession dst = ...;
+// Can also provide a listener in the constructor in order to be informed of the actual transfer progress
+ScpRemote2RemoteTransferHelper helper = new ScpRemote2RemoteTransferHelper(src, dst);
+// can be repeated for as many files as necessary using the same helper
+helper.transferFile("remote/src/path/file1", "remote/dst/path/file2");
     
 ```
 

@@ -4,12 +4,11 @@ As part of the their initialization, both client and server code require the spe
 that is used to initialize network connections.
 
 ```java
+SshServer server = ...create server instance...
+server.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
 
-    SshServer server = ...create server instance...
-    server.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
-
-    SshClient client = ... create client instance ...
-    client.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
+SshClient client = ... create client instance ...
+client.setIoServiceFactoryFactory(new MyIoServiceFactoryFactory());
 
 ```
 
@@ -53,10 +52,11 @@ The easiest way to configure a target instance (client/server/session/channel) i
 `updateProperty` methods:
 
 ```java
-    PropertyResolverUtils.updateProperty(client, "prop1", 5L);
-    PropertyResolverUtils.updateProperty(server, "prop2", someInteger);
-    PropertyResolverUtils.updateProperty(session, "prop3", "hello world");
-    PropertyResolverUtils.updateProperty(channel, "prop4", false);
+PropertyResolverUtils.updateProperty(client, "prop1", 5L);
+PropertyResolverUtils.updateProperty(server, "prop2", someInteger);
+PropertyResolverUtils.updateProperty(session, "prop3", "hello world");
+PropertyResolverUtils.updateProperty(channel, "prop4", false);
+
 ```
 
 **Note**: the `updateProperty` method(s) accept **any** `Object` so care must be taken to provide the expected type. However, at
@@ -68,6 +68,7 @@ least for **primitive** values, the various `getXXXProperty` methods automatical
     // all will yield 7365 converted to the relevant type
     Long value = PropertyResolverUtils.getLongProperty(client, "prop1");
     Integer value = PropertyResolverUtils.getLongProperty(client, "prop1");
+
 ```
 
 including strings
@@ -78,6 +79,7 @@ including strings
     // all will yield 7365
     Long value = PropertyResolverUtils.getLongProperty(client, "prop1");
     Integer value = PropertyResolverUtils.getLongProperty(client, "prop1");
+
 ```
 
 ### Using the inheritance model for fine-grained/targeted configuration
@@ -103,7 +105,7 @@ configured/customized.
 
 ### Welcome banner content customization
 
-The welcome banner contents are controlled by the `ServerAuthenticationManager.WELCOME_BANNER` configuration
+The welcome banner contents are controlled by the `CoreModuleProperties#WELCOME_BANNER` configuration
 key - there are several possible values for this key:
 
 * A simple string - in which case its contents are the welcome banner.
@@ -117,7 +119,7 @@ and its contents are read.
 * A [File](https://docs.oracle.com/javase/8/docs/api/java/io/File.html) or
 a [Path](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) - in this case, the file's contents are __re-loaded__ every time it is required and sent as the banner contents.
 
-* The special value `ServerAuthenticationManager.AUTO_WELCOME_BANNER_VALUE` which generates a combined "random art" of
+* The special value `CoreModuleProperties#AUTO_WELCOME_BANNER_VALUE` which generates a combined "random art" of
 all the server's keys as described in `Perrig A.` and `Song D.`-s article
 [Hash Visualization: a New Technique to improve Real-World Security](http://sparrow.ece.cmu.edu/~adrian/projects/validation/validation.pdf) - _International Workshop on Cryptographic Techniques and E-Commerce (CrypTEC '99)_
 
@@ -129,7 +131,7 @@ all the server's keys as described in `Perrig A.` and `Song D.`-s article
 
 2. If the banner is loaded from a file or URL resource, then one can configure the [Charset](https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html) used to convert the file's contents into a string via the `ServerAuthenticationManager.WELCOME_BANNER_CHARSET` configuration key (default=`UTF-8`).
 
-3. In this context, see also the `ServerAuthenticationManager.WELCOME_BANNER_LANGUAGE` configuration key - which
+3. In this context, see also the `CoreModuleProperties#WELCOME_BANNER_LANGUAGE` configuration key - which
 provides control over the declared language tag, although most clients seem to ignore it.
 
 ### Welcome banner sending phase
@@ -138,8 +140,8 @@ According to [RFC 4252 - section 5.4](https://tools.ietf.org/html/rfc4252#sectio
 
 > The SSH server may send an SSH_MSG_USERAUTH_BANNER message at any time after this authentication protocol starts and before authentication is successful.
 
-The code contains a `WelcomeBannerPhase` enumeration that can be used to configure via the `ServerAuthenticationManager.WELCOME_BANNER_PHASE`
-configuration key the authentication phase at which the welcome banner is sent (see also the `ServerAuthenticationManager.DEFAULT_BANNER_PHASE` value).
+The code contains a `WelcomeBannerPhase` enumeration that can be used to configure via the `CoreModuleProperties#WELCOME_BANNER_PHASE`
+configuration key the authentication phase at which the welcome banner is sent (see also the `CoreModuleProperties#DEFAULT_BANNER_PHASE` value).
 In this context, note that if the `NEVER` phase is configured, no banner will be sent even if one has been configured via one of the methods mentioned previously.
 
 ## `HostConfigEntryResolver`
@@ -150,7 +152,6 @@ client instance follows the [SSH config file](https://www.digitalocean.com/commu
 standards, but the interface can be replaced so as to implement whatever proprietary logic is required.
 
 ```java
-
     SshClient client = SshClient.setupDefaultClient();
     client.setHostConfigEntryResolver(new MyHostConfigEntryResolver());
     client.start();
@@ -163,6 +164,7 @@ standards, but the interface can be replaced so as to implement whatever proprie
         session.addPasswordIdentity(...password1...);
         session.auth().verify(...timeout...);
     }
+
 ```
 
 ### SSH Jumps
@@ -183,6 +185,7 @@ to connect to the server:
 ConnectFuture future = client.connect(new HostConfigEntry(
         "", host, port, user,
         proxyUser + "@" + proxyHost + ":" + proxyPort));
+
 ```
 
 The configuration options specified in the configuration file for the jump hosts are also honored. 
@@ -206,14 +209,14 @@ if they are malformed - i.e., they never reach the handler.
 
 [RFC 4253 - section 9](https://tools.ietf.org/html/rfc4253#section-9) recommends re-exchanging keys every once in a while
 based on the amount of traffic and the selected cipher - the matter is further clarified in [RFC 4251 - section 9.3.2](https://tools.ietf.org/html/rfc4251#section-9.3.2).
-These recommendations are mirrored in the code via the `FactoryManager` related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT`
+These recommendations are mirrored in the code via the `CoreModuleProperties` related `REKEY_TIME_LIMIT`, `REKEY_PACKETS_LIMIT`
 and `REKEY_BLOCKS_LIMIT` configuration properties that can be used to configure said behavior - please be sure to read
 the relevant _Javadoc_ as well as the aforementioned RFC section(s) when manipulating them. This behavior can also be
 controlled programmatically by overriding the `AbstractSession#isRekeyRequired()` method.
 
 As an added security mechanism [RFC 4251 - section 9.3.1](https://tools.ietf.org/html/rfc4251#section-9.3.1) recommends adding
 "spurious" [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2) messages. This functionality is mirrored in the
-`FactoryManager` related `IGNORE_MESSAGE_FREQUENCY`, `IGNORE_MESSAGE_VARIANCE` and `IGNORE_MESSAGE_SIZE`
+`CoreModuleProperties` related `IGNORE_MESSAGE_FREQUENCY`, `IGNORE_MESSAGE_VARIANCE` and `IGNORE_MESSAGE_SIZE`
 configuration properties that can be used to configure said behavior - please be sure to read the relevant _Javadoc_ as well
 as the aforementioned RFC section when manipulating them. This behavior can also be controlled programmatically by overriding
 the `AbstractSession#resolveIgnoreBufferDataLength()` method.
@@ -226,17 +229,16 @@ ones are derived from `ChannelRequestHandler`(s). In order to add a handler one 
 it is detected. For global request handlers this is done by registering them on the server:
 
 ```java
-
-    // NOTE: the following code can be employed on BOTH client and server - the example is for the server
-    SshServer server = SshServer.setUpDefaultServer();
-    List<RequestHandler<ConnectionService>> oldGlobals = server.getGlobalRequestHandlers();
-    // Create a copy in case current one is null/empty/un-modifiable
-    List<RequestHandler<ConnectionService>> newGlobals = new ArrayList<>();
-    if (GenericUtils.size(oldGlobals) > 0) {
-        newGlobals.addAll(oldGLobals);
-    }
-    newGlobals.add(new MyGlobalRequestHandler());
-    server.setGlobalRequestHandlers(newGlobals);
+// NOTE: the following code can be employed on BOTH client and server - the example is for the server
+SshServer server = SshServer.setUpDefaultServer();
+List<RequestHandler<ConnectionService>> oldGlobals = server.getGlobalRequestHandlers();
+// Create a copy in case current one is null/empty/un-modifiable
+List<RequestHandler<ConnectionService>> newGlobals = new ArrayList<>();
+if (GenericUtils.size(oldGlobals) > 0) {
+     newGlobals.addAll(oldGLobals);
+}
+newGlobals.add(new MyGlobalRequestHandler());
+server.setGlobalRequestHandlers(newGlobals);
 
 ```
 
@@ -258,21 +260,21 @@ the handler may choose to build and send the response within its own code, in wh
 `Result.Replied` value indicating that it has done so.
 
 ```java
+public class MySpecialChannelRequestHandler implements ChannelRequestHandler {
+    ...
 
-    public class MySpecialChannelRequestHandler implements ChannelRequestHandler {
-        ...
-
-        @Override
-        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            if (!"my-special-request".equals(request)) {
-               return Result.Unsupported;   // Not mine - maybe someone else can handle it
-            }
-
-            ...handle the request - can read more parameters from the message buffer...
-
-            return Result.ReplySuccess/Failure/Replied; // signal processing result
+    @Override
+    public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
+        if (!"my-special-request".equals(request)) {
+           return Result.Unsupported;   // Not mine - maybe someone else can handle it
         }
+
+        ...handle the request - can read more parameters from the message buffer...
+
+        return Result.ReplySuccess/Failure/Replied; // signal processing result
     }
+}
+
 ```
 
 #### Default registered handlers

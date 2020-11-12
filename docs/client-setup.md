@@ -10,7 +10,7 @@ This is simply done by calling
 
 ```java
 
-    SshClient client = SshClient.setupDefaultClient();
+SshClient client = SshClient.setupDefaultClient();
 
 ```
 
@@ -119,40 +119,39 @@ Furthermore, one can change almost any configured `SshClient` parameter - althou
 sessions depends on the actual changed configuration. Here is how a typical usage would look like
 
 ```java
+SshClient client = SshClient.setupDefaultClient();
+// override any default configuration...
+client.setSomeConfiguration(...);
+client.setOtherConfiguration(...);
+client.start();
 
-    SshClient client = SshClient.setupDefaultClient();
-    // override any default configuration...
-    client.setSomeConfiguration(...);
-    client.setOtherConfiguration(...);
-    client.start();
+    // using the client for multiple sessions...
+    try (ClientSession session = client.connect(user, host, port)
+                .verify(...timeout...)
+                .getSession()) {
+        session.addPasswordIdentity(...password..); // for password-based authentication
+        // or
+        session.addPublicKeyIdentity(...key-pair...); // for password-less authentication
+        // Note: can add BOTH password AND public key identities - depends on the client/server security setup
 
-        // using the client for multiple sessions...
-        try (ClientSession session = client.connect(user, host, port)
-                    .verify(...timeout...)
-                    .getSession()) {
-            session.addPasswordIdentity(...password..); // for password-based authentication
-            // or
-            session.addPublicKeyIdentity(...key-pair...); // for password-less authentication
-            // Note: can add BOTH password AND public key identities - depends on the client/server security setup
+        session.auth().verify(...timeout...);
+        // start using the session to run commands, do SCP/SFTP, create local/remote port forwarding, etc...
+    }
 
-            session.auth().verify(...timeout...);
-            // start using the session to run commands, do SCP/SFTP, create local/remote port forwarding, etc...
-        }
+    // NOTE: this is just an example - one can open multiple concurrent sessions using the same client.
+    //      No need to close the previous session before establishing a new one
+    try (ClientSession anotherSession = client.connect(otherUser, otherHost, port)
+                .verify(...timeout...)
+                .getSession()) {
+        anotherSession.addPasswordIdentity(...password..); // for password-based authentication
+        anotherSession.addPublicKeyIdentity(...key-pair...); // for password-less authentication
+        anotherSession.auth().verify(...timeout...);
+        // start using the session to run commands, do SCP/SFTP, create local/remote port forwarding, etc...
+    }
 
-        // NOTE: this is just an example - one can open multiple concurrent sessions using the same client.
-        //      No need to close the previous session before establishing a new one
-        try (ClientSession anotherSession = client.connect(otherUser, otherHost, port)
-                    .verify(...timeout...)
-                    .getSession()) {
-            anotherSession.addPasswordIdentity(...password..); // for password-based authentication
-            anotherSession.addPublicKeyIdentity(...key-pair...); // for password-less authentication
-            anotherSession.auth().verify(...timeout...);
-            // start using the session to run commands, do SCP/SFTP, create local/remote port forwarding, etc...
-        }
-
-    // exiting in an orderly fashion once the code no longer needs to establish SSH session
-    // NOTE: this can/should be done when the application exits.
-    client.stop();
+// exiting in an orderly fashion once the code no longer needs to establish SSH session
+// NOTE: this can/should be done when the application exits.
+client.stop();
 
 ```
 
@@ -164,10 +163,11 @@ participate in it. By default, the client sends its identification string immedi
 this can be modified so that the client waits for the server's identification before sending its own.
 
 ```java
-    SshClient client = ...setup client...
-    PropertyResolverUtils.updateProperty(
-       client, ClientFactoryManager.SEND_IMMEDIATE_IDENTIFICATION, false);
-    client.start();
+SshClient client = ...setup client...
+PropertyResolverUtils.updateProperty(
+   client, CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.getName(), false);
+client.start();
+
 ```
 
 A similar configuration can be applied to sending the initial `SSH_MSG_KEXINIT` message - i.e., the client can be configured
@@ -175,10 +175,11 @@ to wait until the server's identification is received before sending the message
 customize the KEX phase according to the parsed server identification.
 
 ```java
-    SshClient client = ...setup client...
-    PropertyResolverUtils.updateProperty(
-       client, ClientFactoryManager.SEND_IMMEDIATE_KEXINIT, false);
-    client.start();
+SshClient client = ...setup client...
+PropertyResolverUtils.updateProperty(
+   client, CoreModuleProperties.SEND_IMMEDIATE_KEXINIT.getName(), false);
+client.start();
+
 ```
 
 **Note:** if immediate sending of the client's identification is disabled, `SSH_MSG_KEXINIT` message sending is also
@@ -208,7 +209,7 @@ regardless of the user's own traffic:
 
 * Sending `keepalive@...` [global requests](https://tools.ietf.org/html/rfc4254#section-4).
 
-    The feature is controlled via the `ClientFactoryManager#HEARTBEAT_REQUEST` and `HEARTBEAT_INTERVAL` properties - see the relevant
+    The feature is controlled via the `CoreModuleProperties#HEARTBEAT_REQUEST` and `HEARTBEAT_INTERVAL` properties - see the relevant
     documentation for these features. The simplest way to activate this feature is to set the `HEARTBEAT_INTERVAL` property value
     to the **milliseconds** value of the requested heartbeat interval.
 
@@ -259,29 +260,29 @@ reported environment variables. By default, unless specific instructions are pro
 defaults - which however, might not be adequate for the specific client/server.
 
 ```java
-    // Assuming one has obtained a ClientSession as already shown
-    try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
-        channel.setIn(...stdin...);
-        channel.setOut(...stdout...);
-        channel.setErr(...stderr...);
-        // ... spawn the thread(s) that will pump the STDIN/OUT/ERR
-        try {
-            channel.open().verify(...some timeout...);
-            // Wait (forever) for the channel to close - signalling shell exited
-            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
-        } finally {
-            // ... stop the pumping threads ...
-        }
+// Assuming one has obtained a ClientSession as already shown
+try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
+    channel.setIn(...stdin...);
+    channel.setOut(...stdout...);
+    channel.setErr(...stderr...);
+    // ... spawn the thread(s) that will pump the STDIN/OUT/ERR
+    try {
+        channel.open().verify(...some timeout...);
+        // Wait (forever) for the channel to close - signalling shell exited
+        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+    } finally {
+        // ... stop the pumping threads ...
     }
+}
 
-    // In order to override the PTY and/or environment
-    Map<String, ?> env = ...some environment...
-    PtyChannelConfiguration ptyConfig = ...some configuration...
-    try (ClientChannel channel = session.createShellChannel(ptyConfig, env)) {
-        ... same code as before ...
-    }
+// In order to override the PTY and/or environment
+Map<String, ?> env = ...some environment...
+PtyChannelConfiguration ptyConfig = ...some configuration...
+try (ClientChannel channel = session.createShellChannel(ptyConfig, env)) {
+    ... same code as before ...
+}
 
-    // the same code can be used when opening a ChannelExec in order to run a single command
+// the same code can be used when opening a ChannelExec in order to run a single command
 
 ```
 

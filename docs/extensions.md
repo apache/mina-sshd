@@ -27,6 +27,7 @@ try (ClientSession session = client.connect(login, host, port).await().getSessio
      session.auth.verify(...timeout...);
      ... continue with the authenticated session ...
 }
+
 ```
 
 or
@@ -40,6 +41,7 @@ try (ClientSession session = client.connect(login, host, port).await().getSessio
     session.auth.verify(...timeout...);
      ... continue with the authenticated session ...
 }
+
 ```
 
 **Note:** `UserInteraction#isInteractionAllowed` is consulted prior to invoking `getUpdatedPassword` - if it

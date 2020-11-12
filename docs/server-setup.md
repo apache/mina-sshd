@@ -9,8 +9,7 @@ server - for more details refer to the `SshServer` class.
 Creating an instance of `SshServer` is as simple as creating a new object
 
 ```java
-
-    SshServer sshd = SshServer.setUpDefaultServer();
+SshServer sshd = SshServer.setUpDefaultServer();
 
 ```
 
@@ -46,8 +45,7 @@ implementation that you can use if you want. This implementation will create a p
 so it's mostly useful to launch the OS native shell. E.g.,
 
 ```java
-
-    sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
+sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
 
 ```
 
@@ -66,8 +64,7 @@ SSHD provides a `CommandFactory` to support SCP that can be configured in the fo
 
 
 ```java
-
-    sshd.setCommandFactory(new ScpCommandFactory());
+sshd.setCommandFactory(new ScpCommandFactory());
 
 ```
 
@@ -76,8 +73,7 @@ of the `ScpCommandFactory`. The `ScpCommandFactory` will intercept SCP commands 
 other commands to the delegate `CommandFactory`
 
 ```java
-
-    sshd.setCommandFactory(new ScpCommandFactory(myCommandFactory));
+sshd.setCommandFactory(new ScpCommandFactory(myCommandFactory));
 
 ```
 
@@ -95,11 +91,10 @@ The SSHD server security layer has to be customized to suit your needs. This lay
 These custom classes can be configured on the SSHD server using the respective setter methods:
 
 ```java
-
-    sshd.setPasswordAuthenticator(new MyPasswordAuthenticator());
-    sshd.setPublickeyAuthenticator(new MyPublickeyAuthenticator());
-    sshd.setKeyboardInteractiveAuthenticator(new MyKeyboardInteractiveAuthenticator());
-    ...etc...
+sshd.setPasswordAuthenticator(new MyPasswordAuthenticator());
+sshd.setPublickeyAuthenticator(new MyPublickeyAuthenticator());
+sshd.setKeyboardInteractiveAuthenticator(new MyKeyboardInteractiveAuthenticator());
+...etc...
 
 ```
 
@@ -118,9 +113,8 @@ The list of supported implementations can be changed to suit one's needs, or one
 Configuring supported factories can be done with the following code:
 
 ```java
-
-    sshd.setCipherFactories(Arrays.asList(BuiltinCiphers.aes256ctr, BuiltinCiphers.aes192ctr, BuiltinCiphers.aes128ctr));
-    sshd.setKeyExchangeFactories(Arrays.asList(new MyKex1(), new MyKex2(), BuiltinKeyExchange.A, ...etc...));
+sshd.setCipherFactories(Arrays.asList(BuiltinCiphers.aes256ctr, BuiltinCiphers.aes192ctr, BuiltinCiphers.aes128ctr));
+sshd.setKeyExchangeFactories(Arrays.asList(new MyKex1(), new MyKex2(), BuiltinKeyExchange.A, ...etc...));
 
 ```
 

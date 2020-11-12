@@ -10,21 +10,20 @@ listeners registered on a specific `Channel` - e.g.,
 
 
 ```java
-
-    // Any channel event will be signalled to ALL the registered listeners
-    sshClient/Server.addChannelListener(new Listener1());
-    sshClient/Server.addSessionListener(new SessionListener() {
-        @Override
-        public void sessionCreated(Session session) {
-            session.addChannelListener(new Listener2());
-            session.addChannelListener(new ChannelListener() {
-                @Override
-                public void channelInitialized(Channel channel) {
-                    channel.addChannelListener(new Listener3());
-                }
-            });
-        }
-    });
+// Any channel event will be signalled to ALL the registered listeners
+sshClient/Server.addChannelListener(new Listener1());
+sshClient/Server.addSessionListener(new SessionListener() {
+    @Override
+    public void sessionCreated(Session session) {
+        session.addChannelListener(new Listener2());
+        session.addChannelListener(new ChannelListener() {
+            @Override
+            public void channelInitialized(Channel channel) {
+                channel.addChannelListener(new Listener3());
+            }
+        });
+    }
+});
 
 ```
 
@@ -45,30 +44,29 @@ In this context, it is worth mentioning that one can attach to sessions **arbitr
 
 
 ```java
+public static final AttributeKey<String> STR_KEY = new AttributeKey<>();
+public static final AttributeKey<Long> LONG_KEY = new AttributeKey<>();
 
-    public static final AttributeKey<String> STR_KEY = new AttributeKey<>();
-    public static final AttributeKey<Long> LONG_KEY = new AttributeKey<>();
+sshClient/Server.addSessionListener(new SessionListener() {
+    @Override
+    public void sessionEstablished(Session session) {
+        // examine the peer address or the connection context and set some attributes
+    }
 
-    sshClient/Server.addSessionListener(new SessionListener() {
-        @Override
-        public void sessionEstablished(Session session) {
-            // examine the peer address or the connection context and set some attributes
-        }
+    @Override
+    public void sessionCreated(Session session) {
+        session.setAttribute(STR_KEY, "Some string value");
+        session.setAttribute(LONG_KEY, 3777347L);
+        // ...etc...
+    }
 
-        @Override
-        public void sessionCreated(Session session) {
-            session.setAttribute(STR_KEY, "Some string value");
-            session.setAttribute(LONG_KEY, 3777347L);
-            // ...etc...
-        }
-
-        @Override
-        public void sessionClosed(Session session) {
-            String str = session.getAttribute(STR_KEY);
-            Long l = session.getAttribute(LONG_KEY);
-            // ... do something with the retrieved attributes ...
-        }
-    });
+    @Override
+    public void sessionClosed(Session session) {
+        String str = session.getAttribute(STR_KEY);
+        Long l = session.getAttribute(LONG_KEY);
+        // ... do something with the retrieved attributes ...
+    }
+});
 ```
 
 The attributes cache is automatically cleared once the session is closed.
@@ -114,62 +112,61 @@ or [server](./server-setup.md#providing-server-side-heartbeat).
 message received in the session as well.
 
 ```java
-
-    class MyClientSideReservedSessionMessagesHandler implements ReservedSessionMessagesHandler {
-        @Override
-        public boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
-            switch(cmd) {
-                case MY_SPECIAL_CMD1:
-                    ....
-                    return true;
-                case MY_SPECIAL_CMD2:
-                    ....
-                    return true;
-                default:
-                    return false;    // send SSH_MSG_UNIMPLEMENTED reply if necessary
-            }
+class MyClientSideReservedSessionMessagesHandler implements ReservedSessionMessagesHandler {
+    @Override
+    public boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
+        switch(cmd) {
+            case MY_SPECIAL_CMD1:
+                ....
+                return true;
+            case MY_SPECIAL_CMD2:
+                ....
+                return true;
+            default:
+                return false;    // send SSH_MSG_UNIMPLEMENTED reply if necessary
         }
     }
+}
 
-    // client side
-    SshClient client = SshClient.setupDefaultClient();
-    // This is the default for ALL sessions unless specifically overridden
-    client.setReservedSessionMessagesHandler(new MyClientSideReservedSessionMessagesHandler());
-    // Adding it via a session listener
-    client.setSessionListener(new SessionListener() {
-            @Override
-            public void sessionCreated(Session session) {
-                // Overrides the one set at the client level.
-                if (isSomeSessionOfInterest(session)) {
-                    session.setReservedSessionMessagesHandler(new MyClientSessionReservedSessionMessagesHandler(session));
-                }
+// client side
+SshClient client = SshClient.setupDefaultClient();
+// This is the default for ALL sessions unless specifically overridden
+client.setReservedSessionMessagesHandler(new MyClientSideReservedSessionMessagesHandler());
+// Adding it via a session listener
+client.setSessionListener(new SessionListener() {
+        @Override
+        public void sessionCreated(Session session) {
+            // Overrides the one set at the client level.
+            if (isSomeSessionOfInterest(session)) {
+                session.setReservedSessionMessagesHandler(new MyClientSessionReservedSessionMessagesHandler(session));
             }
-    });
+        }
+});
 
-    try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
-        // setting it explicitly
-        session.setReservedSessionMessagesHandler(new MyOtherClientSessionReservedSessionMessagesHandler(session));
-        session.addPasswordIdentity(password);
-        session.auth().verify(...timeout...);
+try (ClientSession session = client.connect(user, host, port).verify(...timeout...).getSession()) {
+    // setting it explicitly
+    session.setReservedSessionMessagesHandler(new MyOtherClientSessionReservedSessionMessagesHandler(session));
+    session.addPasswordIdentity(password);
+    session.auth().verify(...timeout...);
 
-        ...use the session...
-    }
+    ...use the session...
+}
 
 
-    // server side
-    SshServer server = SshServer.setupDefaultServer();
-    // This is the default for ALL sessions unless specifically overridden
-    server.setReservedSessionMessagesHandler(new MyServerSideReservedSessionMessagesHandler());
-    // Adding it via a session listener
-    server.setSessionListener(new SessionListener() {
-            @Override
-            public void sessionCreated(Session session) {
-                // Overrides the one set at the server level.
-                if (isSomeSessionOfInterest(session)) {
-                    session.setReservedSessionMessagesHandler(new MyServerSessionReservedSessionMessagesHandler(session));
-                }
+// server side
+SshServer server = SshServer.setupDefaultServer();
+// This is the default for ALL sessions unless specifically overridden
+server.setReservedSessionMessagesHandler(new MyServerSideReservedSessionMessagesHandler());
+// Adding it via a session listener
+server.setSessionListener(new SessionListener() {
+        @Override
+        public void sessionCreated(Session session) {
+            // Overrides the one set at the server level.
+            if (isSomeSessionOfInterest(session)) {
+                session.setReservedSessionMessagesHandler(new MyServerSessionReservedSessionMessagesHandler(session));
             }
-    });
+        }
+});
 
 ```
 

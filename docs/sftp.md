@@ -18,12 +18,11 @@ in the `sshd-sftp` artifact, so one needs to add this additional dependency to o
 On the server side, the following code needs to be added:
 
 ```java
-
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        ...with...
-        ...with...
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    ...with...
+    ...with...
+    .build();
+server.setSubsystemFactories(Collections.singletonList(factory));
 
 ```
 
@@ -33,12 +32,11 @@ it must be protected from shutdown if the user needs it to remain active between
 This can be done via the `ThreadUtils#noClose` utility:
 
 ```java
-
-    CloseableExecutorService mySpecialExecutor = ...;
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withExecutorServiceProvider(() -> ThreadUtils.noClose(mySpecialExecutor))
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
+CloseableExecutorService mySpecialExecutor = ...;
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    .withExecutorServiceProvider(() -> ThreadUtils.noClose(mySpecialExecutor))
+    .build();
+server.setSubsystemFactories(Collections.singletonList(factory));
     
 ```
 
@@ -48,29 +46,29 @@ Provides information about major SFTP protocol events. The provided `File/Direct
 store user-defined attributes via its `AttributeStore` implementation. The listener is registered at the `SftpSubsystemFactory`:
 
 ```java
-    public class MySfpEventListener implements SftpEventListener {
-        private static final AttributeKey<SomeType> MY_SPECIAL_KEY = new Attribute<SomeType>();
+public class MySfpEventListener implements SftpEventListener {
+    private static final AttributeKey<SomeType> MY_SPECIAL_KEY = new Attribute<SomeType>();
 
-        ...
-        @Override
-        public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
-            localHandle.setAttribute(MY_SPECIAL_KEY, instanceOfSomeType);
-        }
-
-        @Override
-        public void writing(
-                ServerSession session, String remoteHandle, FileHandle localHandle,
-                long offset, byte[] data, int dataOffset, int dataLen)
-                    throws IOException {
-            SomeType myData = localHandle.getAttribute(MY_SPECIAL_KEY);
-            ...do something based on my data...
-        }
+    ...
+    @Override
+    public void opening(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
+        localHandle.setAttribute(MY_SPECIAL_KEY, instanceOfSomeType);
     }
 
+    @Override
+    public void writing(
+            ServerSession session, String remoteHandle, FileHandle localHandle,
+            long offset, byte[] data, int dataOffset, int dataLen)
+                throws IOException {
+        SomeType myData = localHandle.getAttribute(MY_SPECIAL_KEY);
+        ...do something based on my data...
+    }
+}
 
-    SftpSubsystemFactory factory = new SftpSubsystemFactory();
-    factory.addSftpEventListener(new MySftpEventListener());
-    sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
+
+SftpSubsystemFactory factory = new SftpSubsystemFactory();
+factory.addSftpEventListener(new MySftpEventListener());
+sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
 
 ```
 
@@ -86,11 +84,10 @@ and thus be able to track and/or intervene in all opened files and folders throu
 The accessor is registered/overwritten in via the `SftpSubSystemFactory`:
 
 ```java
-
-    SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
-        .withFileSystemAccessor(new MySftpFileSystemAccessor())
-        .build();
-    server.setSubsystemFactories(Collections.singletonList(factory));
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    .withFileSystemAccessor(new MySftpFileSystemAccessor())
+    .build();
+server.setSubsystemFactories(Collections.singletonList(factory));
 
 ```
 
@@ -142,15 +139,14 @@ In order to obtain an `SftpClient` instance one needs to use an `SftpClientFacto
 
 
 ```java
-
-    try (ClientSession session = ...obtain session...) {
-        SftpClientFactory factory = ...obtain factory...
-        try (SftpClient client = factory.createSftpClient(session)) {
-            ... use the SFTP client...
-        }
-        
-        // NOTE: session is still alive here...
+try (ClientSession session = ...obtain session...) {
+    SftpClientFactory factory = ...obtain factory...
+    try (SftpClient client = factory.createSftpClient(session)) {
+        ... use the SFTP client...
     }
+    
+    // NOTE: session is still alive here...
+}
 
 ```
 
@@ -160,7 +156,6 @@ If the intended use of the client instance is "one-shot" - i.e., the client sess
 SFTP client instance is closed, then it is possible to obtain a special wrapper that implements this functionality:
 
 ```java
-
 // The underlying session will also be closed when the client is
 try (SftpClient client = createSftpClient(....)) {
     ... use the SFTP client...
@@ -172,6 +167,7 @@ SftpClient createSftpClient(...) {
     SftpClient client = factory.createSftpClient(session);
     return client.singleSessionInstance();
 }
+
 ```
 
 ### Using a custom `SftpClientFactory`
@@ -181,18 +177,17 @@ The code creates `SftpClient`-s and `SftpFileSystem`-s using a default built-in 
 implementations - e.g., in order to override some default behavior - e.g.:
 
 ```java
+SshClient client = ... setup client...
 
-    SshClient client = ... setup client...
+try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth.verify(timeout);
 
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-
-        // User-specific factory
-        try (SftpClient sftp = MySpecialSessionSftpClientFactory.INSTANCE.createSftpClient(session)) {
-            ... instance created through SpecialSessionSftpClientFactory ...
-        }
+    // User-specific factory
+    try (SftpClient sftp = MySpecialSessionSftpClientFactory.INSTANCE.createSftpClient(session)) {
+        ... instance created through SpecialSessionSftpClientFactory ...
     }
+}
 
 ```
 
@@ -204,24 +199,23 @@ range.
 
 
 ```java
-
-    SftpVersionSelector myVersionSelector = new SftpVersionSelector() {
-        @Override
-        public int selectVersion(ClientSession session, boolean initial, int current, List<Integer> available) {
-            int selectedVersion = ...run some logic to decide...;
-            return selectedVersion;
-        }
-    };
-
-    try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth.verify(timeout);
-
-        SftpClientFactory factory = SftpClientFactory.instance();
-        try (SftpClient sftp = factory.createSftpClient(session, myVersionSelector)) {
-            ... do SFTP related stuff...
-        }
+SftpVersionSelector myVersionSelector = new SftpVersionSelector() {
+    @Override
+    public int selectVersion(ClientSession session, boolean initial, int current, List<Integer> available) {
+        int selectedVersion = ...run some logic to decide...;
+        return selectedVersion;
     }
+};
+
+try (ClientSession session = client.connect(user, host, port).verify(timeout).getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth.verify(timeout);
+
+    SftpClientFactory factory = SftpClientFactory.instance();
+    try (SftpClient sftp = factory.createSftpClient(session, myVersionSelector)) {
+        ... do SFTP related stuff...
+    }
+}
 
 ```
 
@@ -248,28 +242,27 @@ standard [java.nio](https://docs.oracle.com/javase/8/docs/api/java/nio/package-f
 system.
 
 ```java
+// Direct URI
+Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path"));
+// Releasing the file-system once no longer necessary
+try (FileSystem fs = remotePath.getFileSystem()) {
+    ... work with the remote path...
+}
 
-    // Direct URI
-    Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path"));
-    // Releasing the file-system once no longer necessary
-    try (FileSystem fs = remotePath.getFileSystem()) {
-        ... work with the remote path...
-    }
+// "Mounting" a file system
+URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
+try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+    Path remotePath = fs.getPath("/some/remote/path");
+    ...
+}
 
-    // "Mounting" a file system
-    URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-        Path remotePath = fs.getPath("/some/remote/path");
-        ...
-    }
-
-    // Full programmatic control
-    SshClient client = ...setup and start the SshClient instance...
-    SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
-    URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    try (FileSystem fs = provider.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-        Path remotePath = fs.getPath("/some/remote/path");
-    }
+// Full programmatic control
+SshClient client = ...setup and start the SshClient instance...
+SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
+URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
+try (FileSystem fs = provider.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+    Path remotePath = fs.getPath("/some/remote/path");
+}
 
 ```
 
@@ -277,21 +270,21 @@ system.
 
 
  ```java
+try (InputStream input = Files.newInputStream(remotePath)) {
+    ...read from remote file...
+}
 
-    try (InputStream input = Files.newInputStream(remotePath)) {
-        ...read from remote file...
-    }
-
-    try (DirectoryStream<Path> ds = Files.newDirectoryStream(remoteDir)) {
-        for (Path remoteFile : ds) {
-            if (Files.isRegularFile(remoteFile)) {
-                System.out.println("Delete " + remoteFile + " size=" + Files.size(remoteFile));
-                Files.delete(remoteFile);
-            } else if (Files.isDirectory(remoteFile)) {
-                System.out.println(remoteFile + " - directory");
-            }
+try (DirectoryStream<Path> ds = Files.newDirectoryStream(remoteDir)) {
+    for (Path remoteFile : ds) {
+        if (Files.isRegularFile(remoteFile)) {
+            System.out.println("Delete " + remoteFile + " size=" + Files.size(remoteFile));
+            Files.delete(remoteFile);
+        } else if (Files.isDirectory(remoteFile)) {
+            System.out.println(remoteFile + " - directory");
         }
     }
+}
+
 ```
 
 It is highly recommended to `close()` the mounted file system once no longer necessary in order to release the
@@ -313,25 +306,24 @@ configuration keys and values.
 
 
 ```java
+// Using explicit parameters
+Map<String, Object> params = new HashMap<>();
+params.put("param1", value1);
+params.put("param2", value2);
+...etc...
 
-    // Using explicit parameters
-    Map<String, Object> params = new HashMap<>();
-    params.put("param1", value1);
-    params.put("param2", value2);
-    ...etc...
+URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
+try (FileSystem fs = FileSystems.newFileSystem(uri, params)) {
+    Path remotePath = fs.getPath("/some/remote/path");
+    ... work with the remote path...
+}
 
-    URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
-    try (FileSystem fs = FileSystems.newFileSystem(uri, params)) {
-        Path remotePath = fs.getPath("/some/remote/path");
-        ... work with the remote path...
-    }
-
-    // Using URI parameters
-    Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path?param1=value1&param2=value2..."));
-    // Releasing the file-system once no longer necessary
-    try (FileSystem fs = remotePath.getFileSystem()) {
-        ... work with the remote path...
-    }
+// Using URI parameters
+Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path?param1=value1&param2=value2..."));
+// Releasing the file-system once no longer necessary
+try (FileSystem fs = remotePath.getFileSystem()) {
+    ... work with the remote path...
+}
 
 ```
 
@@ -339,17 +331,16 @@ configuration keys and values.
 
 
 ```java
+Map<String, Object> params = new HashMap<>();
+params.put("param1", value1);
+params.put("param2", value2);
 
-    Map<String, Object> params = new HashMap<>();
-    params.put("param1", value1);
-    params.put("param2", value2);
-
-    // The value of 'param1' is overridden in the URI
-    try (FileSystem fs = FileSystems.newFileSystem(
-            new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
-        Path remotePath = fs.getPath("/some/remote/path");
-        ... work with the remote path...
-    }
+// The value of 'param1' is overridden in the URI
+try (FileSystem fs = FileSystems.newFileSystem(
+        new URI("sftp://user:password@host/some/remote/path?param1=otherValue1", params)) {
+    Path remotePath = fs.getPath("/some/remote/path");
+    ... work with the remote path...
+}
 
 ```
 
@@ -362,25 +353,24 @@ to override some options or provide their own - e.g., execute a password-less au
 the (default) password-based one:
 
 ```java
-
-    SftpFileSystemProvider provider = ... obtain/create a provider ...
-    provider.setSftpFileSystemClientSessionInitializer(new SftpFileSystemClientSessionInitializer() {
-        @Override
-        public void authenticateClientSession(
-                SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
-                    throws IOException {
-            /*
-             * Set up password-less login instead of password-based using the specified key
-             *
-             * Note: if SSH client and/or session already have a KeyPairProvider set up and the code
-             * knows that these keys are already registered with the remote server, then no need to
-             * add the public key identitiy - can simply call sesssion.auth().verify(context.getMaxAuthTime()).
-             */
-            KeyPair kp = ... obtain a registered key-pair...
-            session.addPublicKeyIdentity(kp);
-            sesssion.auth().verify(context.getMaxAuthTime());
-        }
-    });
+SftpFileSystemProvider provider = ... obtain/create a provider ...
+provider.setSftpFileSystemClientSessionInitializer(new SftpFileSystemClientSessionInitializer() {
+    @Override
+    public void authenticateClientSession(
+            SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session)
+                throws IOException {
+        /*
+         * Set up password-less login instead of password-based using the specified key
+         *
+         * Note: if SSH client and/or session already have a KeyPairProvider set up and the code
+         * knows that these keys are already registered with the remote server, then no need to
+         * add the public key identitiy - can simply call sesssion.auth().verify(context.getMaxAuthTime()).
+         */
+        KeyPair kp = ... obtain a registered key-pair...
+        session.addPublicKeyIdentity(kp);
+        sesssion.auth().verify(context.getMaxAuthTime());
+    }
+});
 
 ```
 
@@ -391,18 +381,17 @@ and thus the "visible" names by the client become corrupted, or even worse - cau
 a `get/setNameDecodingCharset` method which enables the user to modify the charset - even while the SFTP session is in progress - e.g.:
 
 ```java
-
-    try (SftpClient client = ...obtain an instance...) {
-        client.setNameDecodingCharset(Charset.forName("ISO-8859-8"));
-        for (DirEntry entry : client.readDir(...some path...)) {
-            ...handle entry assuming ISO-8859-8 encoded names...
-        }
-
-        client.setNameDecodingCharset(Charset.forName("ISO-8859-4"));
-        for (DirEntry entry : client.readDir(...some other path...)) {
-            ...handle entry assuming ISO-8859-4 encoded names...
-        }
+try (SftpClient client = ...obtain an instance...) {
+    client.setNameDecodingCharset(Charset.forName("ISO-8859-8"));
+    for (DirEntry entry : client.readDir(...some path...)) {
+        ...handle entry assuming ISO-8859-8 encoded names...
     }
+
+    client.setNameDecodingCharset(Charset.forName("ISO-8859-4"));
+    for (DirEntry entry : client.readDir(...some other path...)) {
+        ...handle entry assuming ISO-8859-4 encoded names...
+    }
+}
 
 ```
 
@@ -410,32 +399,31 @@ The initial charset can be pre-configured on the client/session by using the `sf
 UTF-8 is used. **Note:** the value can be a charset name or a `java.nio.charset.Charset` instance - e.g.:
 
 ```java
+SshClient client = ... setup/obtain an instance...
+// default for ALL SFTP clients obtained through this client
+PropertyResolverUtils.updateProperty(client, SftpModuleProperties.NAME_DECODING_CHARSET.getName(), "ISO-8859-8");
 
-    SshClient client = ... setup/obtain an instance...
-    // default for ALL SFTP clients obtained through this client
-    PropertyResolverUtils.updateProperty(client, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-8");
+try (ClientSession session = client.connect(...)) {
+    session.addPasswordIdentity(password);
+    session.auth().verify(timeout);
 
-    try (ClientSession session = client.connect(...)) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(timeout);
+    // default for ALL SFTP clients obtained through the session - overrides client setting
+    PropertyResolverUtils.updateProperty(session, SftpModuleProperties.NAME_DECODING_CHARSET.getName(), "ISO-8859-4");
 
-        // default for ALL SFTP clients obtained through the session - overrides client setting
-        PropertyResolverUtils.updateProperty(session, SftpClient.NAME_DECODING_CHARSET, "ISO-8859-4");
+    SftpClientFactory factory = SftpClientFactory.instance();
+    try (SftpClient sftp = factory.createSftpClient(session)) {
+        for (DirEntry entry : sftp.readDir(...some path...)) {
+            ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
+        }
 
-        SftpClientFactory factory = SftpClientFactory.instance();
-        try (SftpClient sftp = factory.createSftpClient(session)) {
-            for (DirEntry entry : sftp.readDir(...some path...)) {
-                ...handle entry assuming ISO-8859-4 (inherited from the session) encoded names...
-            }
+        // override the inherited default from the session
+        sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
 
-            // override the inherited default from the session
-            sftp.setNameDecodingCharset(Charset.forName("ISO-8859-1"));
-
-            for (DirEntry entry : sftp.readDir(...some other path...)) {
-                ...handle entry assuming ISO-8859-1 encoded names...
-            }
+        for (DirEntry entry : sftp.readDir(...some other path...)) {
+            ...handle entry assuming ISO-8859-1 encoded names...
         }
     }
+}
 
 ```
 
@@ -469,16 +457,17 @@ Then scan results from `root` are expected as follows for the given patterns
 classes for supported patterns and matching - include case sensitive vs. insensitive match.
 
 ```java
-    // Using an SftpPathDirectoryScanner
-    FileSystem fs = ... obtain an SFTP file system instance ...
-    Path rootDir = fs.getPath(...remote path...);
-    DirectoryScanner ds = new SftpPathDirectoryScanner(basedir, ...pattern...);
-    Collection<Path> matches = ds.scan();
-    
-    // Using an SftpClientDirectoryScanner
-    SftpClient client = ... obtain a client instance ...
-    SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(basedir, ...pattern...);
-    Collection<ScanDirEntry> matches = ds.scan(client);
+// Using an SftpPathDirectoryScanner
+FileSystem fs = ... obtain an SFTP file system instance ...
+Path rootDir = fs.getPath(...remote path...);
+DirectoryScanner ds = new SftpPathDirectoryScanner(basedir, ...pattern...);
+Collection<Path> matches = ds.scan();
+
+// Using an SftpClientDirectoryScanner
+SftpClient client = ... obtain a client instance ...
+SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(basedir, ...pattern...);
+Collection<ScanDirEntry> matches = ds.scan(client);
+
 ```
 
 ## Extensions
@@ -514,55 +503,53 @@ can easily add support for more extensions in a similar manner as the existing o
 and then registering it at the `ParserUtils` - see the existing ones for details how this can be achieved.
 
 ```java
+// properietary/special extension parser
+ParserUtils.registerExtension(new MySpecialExtension());
 
-    // properietary/special extension parser
-    ParserUtils.registerExtension(new MySpecialExtension());
+try (ClientSession session = client.connect(username, host, port).verify(timeout).getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth().verify(timeout);
 
-    try (ClientSession session = client.connect(username, host, port).verify(timeout).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(timeout);
-
-        SftpClientFactory factory = SftpClientFactory.instance();
-        try (SftpClient sftp = factory.createSftpClient(session)) {
-            Map<String, byte[]> extensions = sftp.getServerExtensions();
-            // Key=extension name, value=registered parser instance
-            Map<String, ?> data = ParserUtils.parse(extensions);
-            for (Map.Entry<String, ?> de : data.entrySet()) {
-                String extName = de.getKey();
-                Object extValue = de.getValue();
-                if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
-                    AclCapabilities capabilities = (AclCapabilities) extValue;
-                    ...see what other information can be gleaned from it...
-                } else if (SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
-                    Versions versions = (Versions) extValue;
-                    ...see what other information can be gleaned from it...
-                } else if ("my-special-extension".equalsIgnoreCase(extName)) {
-                    MySpecialExtension special = (MySpecialExtension) extValue;
-                    ...see what other information can be gleaned from it...
-                } // ...etc....
-            }
+    SftpClientFactory factory = SftpClientFactory.instance();
+    try (SftpClient sftp = factory.createSftpClient(session)) {
+        Map<String, byte[]> extensions = sftp.getServerExtensions();
+        // Key=extension name, value=registered parser instance
+        Map<String, ?> data = ParserUtils.parse(extensions);
+        for (Map.Entry<String, ?> de : data.entrySet()) {
+            String extName = de.getKey();
+            Object extValue = de.getValue();
+            if (SftpConstants.EXT_ACL_SUPPORTED.equalsIgnoreCase(extName)) {
+                AclCapabilities capabilities = (AclCapabilities) extValue;
+                ...see what other information can be gleaned from it...
+            } else if (SftpConstants.EXT_VERSIONS.equalsIgnoreCase(extName)) {
+                Versions versions = (Versions) extValue;
+                ...see what other information can be gleaned from it...
+            } else if ("my-special-extension".equalsIgnoreCase(extName)) {
+                MySpecialExtension special = (MySpecialExtension) extValue;
+                ...see what other information can be gleaned from it...
+            } // ...etc....
         }
     }
+}
 
 ```
 
 One can skip all the conditional code if a specific known extension is required:
 
 ```java
+try (ClientSession session = client.connect(username, host, port).verify(timeout).getSession()) {
+    session.addPasswordIdentity(password);
+    session.auth().verify(timeout);
 
-    try (ClientSession session = client.connect(username, host, port).verify(timeout).getSession()) {
-        session.addPasswordIdentity(password);
-        session.auth().verify(timeout);
-
-        SftpClientFactory factory = SftpClientFactory.instance();
-        try (SftpClient sftp = factory.createSftpClient(session)) {
-            // Returns null if extension is not supported by remote server
-            SpaceAvailableExtension space = sftp.getExtension(SpaceAvailableExtension.class);
-            if (space != null) {
-                ...use it...
-            }
+    SftpClientFactory factory = SftpClientFactory.instance();
+    try (SftpClient sftp = factory.createSftpClient(session)) {
+        // Returns null if extension is not supported by remote server
+        SpaceAvailableExtension space = sftp.getExtension(SpaceAvailableExtension.class);
+        if (space != null) {
+            ...use it...
         }
     }
+}
 
 ```
 
