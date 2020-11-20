@@ -20,13 +20,26 @@ package org.apache.sshd.common.keyprovider;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.session.SessionContext;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+@FunctionalInterface
 public interface HostKeyCertificateProvider {
 
     Iterable<OpenSshCertificate> loadCertificates(SessionContext session) throws IOException, GeneralSecurityException;
 
-    OpenSshCertificate loadCertificate(SessionContext session, String keyType) throws IOException, GeneralSecurityException;
+    default OpenSshCertificate loadCertificate(SessionContext session, String keyType)
+            throws IOException, GeneralSecurityException {
+        Iterable<OpenSshCertificate> certificates = loadCertificates(session);
+        return StreamSupport.stream(certificates.spliterator(), false)
+                .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
+                .findFirst()
+                .orElse(null);
+    }
 }

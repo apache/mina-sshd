@@ -25,6 +25,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Represents and OpenSSH certificate key as specified in
+ * <A HREF="https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.certkeys?annotate=HEAD">PROTOCOL.certkeys</A>
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public interface OpenSshCertificate extends PublicKey, PrivateKey {
     int SSH_CERT_TYPE_USER = 1;
     int SSH_CERT_TYPE_HOST = 2;

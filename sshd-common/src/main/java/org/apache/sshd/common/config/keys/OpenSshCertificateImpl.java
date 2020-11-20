@@ -26,6 +26,9 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     private static final long serialVersionUID = -3592634724148744943L;

@@ -764,7 +764,7 @@ public abstract class Buffer implements Readable {
      *      A name-list is represented as a uint32 containing its length (number of bytes
      *      that follow) followed by a comma-separated list of zero or more names.
      * </CODE>
-     * 
+     *
      * @param names The name list to put
      */
     public void putNameList(Collection<String> names) {
@@ -925,17 +925,21 @@ public abstract class Buffer implements Readable {
             putLong(cert.getSerial());
             putInt(cert.getType());
             putString(cert.getId());
+
             ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
             tmpBuffer.putStringList(cert.getPrincipals(), false);
             putBytes(tmpBuffer.getCompactData());
+
             putLong(cert.getValidAfter());
             putLong(cert.getValidBefore());
             putNameList(cert.getCriticalOptions());
             putNameList(cert.getExtensions());
             putString(cert.getReserved());
-            tmpBuffer = new ByteArrayBuffer();
+
+            tmpBuffer = new ByteArrayBuffer();  // TODO tmpBuffer.clear() instead of allocate new buffer
             tmpBuffer.putRawPublicKey(cert.getCaPubKey());
             putBytes(tmpBuffer.getCompactData());
+
             putBytes(cert.getSignature());
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());

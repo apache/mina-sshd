@@ -143,9 +143,7 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
     }
 
     protected ClientSession createClientSession() throws IOException {
-        return client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
-                .verify(CONNECT_TIMEOUT)
-                .getSession();
+        return createClientSession(client, port);
     }
 
     protected ClientSession createAuthenticatedClientSession() throws IOException {

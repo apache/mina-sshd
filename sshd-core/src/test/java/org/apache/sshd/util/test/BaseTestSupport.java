@@ -122,18 +122,24 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     }
 
     protected ClientSession createClientSession(SshClient client, int port) throws IOException {
-        return client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+        return createClientSession(getCurrentTestName(), client, port);
+    }
+
+    protected ClientSession createAuthenticatedClientSession(SshClient client, int port) throws IOException {
+        return createAuthenticatedClientSession(getCurrentTestName(), client, port);
+    }
+
+    public static ClientSession createClientSession(String username, SshClient client, int port) throws IOException {
+        return client.connect(username, TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT)
                 .getSession();
     }
 
-    protected ClientSession createAuthenticatedClientSession(SshClient client, int port) throws IOException {
-        ClientSession session = createClientSession(client, port);
+    public static ClientSession createAuthenticatedClientSession(String username, SshClient client, int port)
+            throws IOException {
+        ClientSession session = createClientSession(username, client, port);
         try {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(AUTH_TIMEOUT);
-
-            ClientSession authSession = session;
+            ClientSession authSession = createAuthenticatedClientSession(session, username);
             session = null;     // avoid auto-close at finally clause
             return authSession;
         } finally {
@@ -141,6 +147,12 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
                 session.close();
             }
         }
+    }
+
+    public static ClientSession createAuthenticatedClientSession(ClientSession session, String username) throws IOException {
+        session.addPasswordIdentity(username);
+        session.auth().verify(AUTH_TIMEOUT);
+        return session;
     }
 
     public static IoServiceFactoryFactory getIoServiceProvider() {

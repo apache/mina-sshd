@@ -30,8 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.StreamSupport;
 
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -62,12 +60,18 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
     @Override
     public Iterable<OpenSshCertificate> loadCertificates(SessionContext session)
             throws IOException, GeneralSecurityException {
+        Collection<? extends Path> keyPaths = getPaths();
         List<OpenSshCertificate> certificates = new ArrayList<>();
-        for (Path file : getPaths()) {
-            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        boolean debugEnabled = log.isDebugEnabled();
+        for (Path file : keyPaths) {
+            if (debugEnabled) {
+                log.debug("loadCertificates({}) loading file {}", session, file);
+            }
+
+            Collection<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (String line : lines) {
                 line = GenericUtils.replaceWhitespaceAndTrim(line);
-                if (GenericUtils.isEmpty(line) || line.startsWith("#")) {
+                if (GenericUtils.isEmpty(line) || (line.charAt(0) == '#')) {
                     continue;
                 }
 
@@ -75,27 +79,20 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
                 if (publicKeyEntry == null) {
                     continue;
                 }
+
                 PublicKey publicKey = publicKeyEntry.resolvePublicKey(session, null, null);
                 if (publicKey == null) {
                     continue;
                 }
+
                 if (!(publicKey instanceof OpenSshCertificate)) {
                     throw new InvalidKeyException("Got unexpected key type in " + file + ". Expected OpenSSHCertificate.");
                 }
+
                 certificates.add((OpenSshCertificate) publicKey);
             }
         }
 
         return certificates;
-    }
-
-    @Override
-    public OpenSshCertificate loadCertificate(SessionContext session, String keyType)
-            throws IOException, GeneralSecurityException {
-        Iterable<OpenSshCertificate> certificates = loadCertificates(session);
-        return StreamSupport.stream(certificates.spliterator(), false)
-                .filter(pubKey -> Objects.equals(pubKey.getKeyType(), keyType))
-                .findFirst()
-                .orElse(null);
     }
 }
