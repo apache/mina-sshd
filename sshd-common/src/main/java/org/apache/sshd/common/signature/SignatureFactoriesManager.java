@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -34,20 +33,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SignatureFactoriesManager {
-    /**
-     * @return The list of named <code>Signature</code> factories
-     */
-    List<NamedFactory<Signature>> getSignatureFactories();
-
-    default String getSignatureFactoriesNameList() {
-        return NamedResource.getNames(getSignatureFactories());
-    }
-
-    default List<String> getSignatureFactoriesNames() {
-        return NamedResource.getNameList(getSignatureFactories());
-    }
-
+public interface SignatureFactoriesManager extends SignatureFactoriesHolder {
     void setSignatureFactories(List<NamedFactory<Signature>> factories);
 
     default void setSignatureFactoriesNameList(String names) {

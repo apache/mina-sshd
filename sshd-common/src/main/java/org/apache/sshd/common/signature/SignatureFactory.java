@@ -187,4 +187,18 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
 
         return posValue;
     }
+
+    static NamedFactory<? extends Signature> resolveSignatureFactory(
+            String keyType, Collection<? extends NamedFactory<? extends Signature>> factories) {
+        if (GenericUtils.isEmpty(keyType) || GenericUtils.isEmpty(factories)) {
+            return null;
+        }
+
+        Collection<String> aliases = KeyUtils.getAllEquivalentKeyTypes(keyType);
+        if (GenericUtils.isEmpty(aliases)) {
+            return NamedResource.findByName(keyType, String.CASE_INSENSITIVE_ORDER, factories);
+        } else {
+            return NamedResource.findFirstMatchByName(aliases, String.CASE_INSENSITIVE_ORDER, factories);
+        }
+    }
 }

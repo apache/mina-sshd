@@ -61,4 +61,4 @@ or `-key-file` command line option.
 * [SSHD-1070](https://issues.apache.org/jira/browse/SSHD-1070) OutOfMemoryError when use async port forwarding
 * [SSHD-1100](https://issues.apache.org/jira/browse/SSHD-1100) Updated used moduli for DH group KEX
 * [SSHD-1102](https://issues.apache.org/jira/browse/SSHD-1102) Provide filter support for SftpDirectoryStream
-
+* [SSHD-1104](https://issues.apache.org/jira/browse/SSHD-1104) Take into account possible key type aliases when using public key authentication

@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,7 +33,9 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
+import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -40,7 +43,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * Implements the &quot;publickey&quot; authentication mechanism
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
@@ -115,7 +118,17 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
-        String algo = KeyUtils.getKeyType(key);
+        String keyType = KeyUtils.getKeyType(key);
+        NamedFactory<? extends Signature> factory;
+        // SSHD-1104 check if the key type is aliased
+        if (current instanceof SignatureFactoriesHolder) {
+            factory = SignatureFactory.resolveSignatureFactory(
+                    keyType, ((SignatureFactoriesHolder) current).getSignatureFactories());
+        } else {
+            factory = SignatureFactory.resolveSignatureFactory(keyType, getSignatureFactories());
+        }
+
+        String algo = (factory == null) ? keyType : factory.getName();
         String name = getName();
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
@@ -156,12 +169,25 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
-        String algo = KeyUtils.getKeyType(key);
+        String curKeyType = KeyUtils.getKeyType(key);
         String rspKeyType = buffer.getString();
-        if (!rspKeyType.equals(algo)) {
-            throw new InvalidKeySpecException(
-                    "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
-                                              + " mismatched key types: expected=" + algo + ", actual=" + rspKeyType);
+        Collection<String> aliases = KeyUtils.getAllEquivalentKeyTypes(curKeyType);
+        String algo;
+        // SSHD-1104 see if key aliases used
+        if (GenericUtils.isEmpty(aliases)) {
+            algo = curKeyType;
+            if (!rspKeyType.equals(algo)) {
+                throw new InvalidKeySpecException(
+                        "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+                                                  + " mismatched key types: expected=" + algo + ", actual=" + rspKeyType);
+            }
+        } else {
+            if (GenericUtils.findFirstMatchingMember(n -> n.equalsIgnoreCase(rspKeyType), aliases) == null) {
+                throw new InvalidKeySpecException(
+                        "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+                                                  + " unsupported key type: expected=" + aliases + ", actual=" + rspKeyType);
+            }
+            algo = rspKeyType;
         }
 
         PublicKey rspKey = buffer.getPublicKey();

@@ -95,12 +95,23 @@ public interface NamedResource {
      */
     static <R extends NamedResource> R findByName(
             String name, Comparator<? super String> c, Collection<? extends R> resources) {
-        return GenericUtils.isEmpty(name)
+        return (GenericUtils.isEmpty(name) || GenericUtils.isEmpty(resources))
                 ? null
                 : GenericUtils.stream(resources)
                         .filter(r -> c.compare(name, r.getName()) == 0)
                         .findFirst()
                         .orElse(null);
+    }
+
+    static <R extends NamedResource> R findFirstMatchByName(
+            Collection<String> names, Comparator<? super String> c, Collection<? extends R> resources) {
+        return (GenericUtils.isEmpty(names) || GenericUtils.isEmpty(resources))
+                ? null
+                : GenericUtils.stream(resources)
+                        .filter(r -> GenericUtils.findFirstMatchingMember(n -> c.compare(n, r.getName()) == 0, names) != null)
+                        .findFirst()
+                        .orElse(null);
+
     }
 
     /**
