@@ -25,6 +25,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
@@ -37,6 +38,7 @@ import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -241,10 +243,14 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         byte[] contents = bs.getCompactData();
         byte[] sig;
         try {
-            sig = current.sign(session, contents);
+            Map.Entry<String, byte[]> result = current.sign(session, algo, contents);
+            String factoryName = result.getKey();
+            ValidateUtils.checkState(algo.equalsIgnoreCase(factoryName),
+                    "Mismatched signature type generated: requested=%s, used=%s", algo, factoryName);
+            sig = result.getValue();
         } catch (Error e) {
-            warn("appendSignature({})[{}][{}] failed ({}) to sign contents: {}",
-                    session, service, name, e.getClass().getSimpleName(), e.getMessage(), e);
+            warn("appendSignature({})[{}][{}] failed ({}) to sign contents using {}: {}",
+                    session, service, name, e.getClass().getSimpleName(), algo, e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 

@@ -103,7 +103,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
+    public Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) throws IOException {
         int cmd = SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
         int okcmd = SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
         if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
@@ -127,22 +127,23 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
         byte[] signature = buffer.getBytes();
         boolean debugEnabled = log.isDebugEnabled();
+        String keyType = KeyUtils.getKeyType(key);
         if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             if (debugEnabled) {
-                log.debug("sign({})[{}] : {}",
-                        KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), BufferUtils.toHex(':', signature));
+                log.debug("sign({}/{})[{}] : {}",
+                        algo, keyType, KeyUtils.getFingerPrint(key), BufferUtils.toHex(':', signature));
             }
+            return new SimpleImmutableEntry<>(keyType, signature);
         } else {
             Buffer buf = new ByteArrayBuffer(signature);
             String algorithm = buf.getString();
             signature = buf.getBytes();
             if (debugEnabled) {
-                log.debug("sign({})[{}] {}: {}",
-                        KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key), algorithm, BufferUtils.toHex(':', signature));
+                log.debug("sign({}/{})[{}] {}: {}",
+                        algo, keyType, KeyUtils.getFingerPrint(key), algorithm, BufferUtils.toHex(':', signature));
             }
+            return new SimpleImmutableEntry<>(algorithm, signature);
         }
-
-        return signature;
     }
 
     @Override

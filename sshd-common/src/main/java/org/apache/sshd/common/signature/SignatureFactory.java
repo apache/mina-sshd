@@ -19,6 +19,11 @@
 
 package org.apache.sshd.common.signature;
 
+import java.security.PublicKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,6 +40,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -200,5 +206,51 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
         } else {
             return NamedResource.findFirstMatchByName(aliases, String.CASE_INSENSITIVE_ORDER, factories);
         }
+    }
+
+    /**
+     * @param  pubKey                  The intended {@link PublicKey} - ignored if {@code null}
+     * @param  algo                    The intended signature algorithm - if {@code null}/empty and multiple signatures
+     *                                 available for the key type then a default will be used. Otherwise, it is
+     *                                 validated to make sure it matches the public key type
+     * @return                         The {@link Signature} factory or {@code null} if no match found
+     * @throws InvalidKeySpecException If specified algorithm does not match the selected public key
+     */
+    static NamedFactory<Signature> resolveSignatureFactoryByPublicKey(PublicKey pubKey, String algo)
+            throws InvalidKeySpecException {
+        if (pubKey == null) {
+            return null;
+        }
+
+        NamedFactory<Signature> factory = null;
+        if (pubKey instanceof DSAPublicKey) {
+            factory = BuiltinSignatures.dsa;
+        } else if (pubKey instanceof ECPublicKey) {
+            ECPublicKey ecKey = (ECPublicKey) pubKey;
+            factory = BuiltinSignatures.getFactoryByCurveSize(ecKey.getParams());
+        } else if (pubKey instanceof RSAPublicKey) {
+            // SSHD-1104 take into account key aliases
+            if (GenericUtils.isEmpty(algo)) {
+                factory = BuiltinSignatures.rsa;
+            } else if (algo.contains("rsa")) {
+                factory = BuiltinSignatures.fromFactoryName(algo);
+            }
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())) {
+            factory = BuiltinSignatures.ed25519;
+        }
+
+        if (GenericUtils.isEmpty(algo) || (factory == null)) {
+            return factory;
+        }
+
+        String name = factory.getName();
+        if (!algo.equalsIgnoreCase(name)) {
+            throw new InvalidKeySpecException(
+                    "Mismatched factory name (" + name + ")"
+                                              + " for algorithm=" + algo + " when using key type"
+                                              + KeyUtils.getKeyType(pubKey));
+        }
+
+        return factory;
     }
 }

@@ -273,15 +273,20 @@ public enum BuiltinSignatures implements SignatureFactory {
         factoryName = facName;
     }
 
-    public static Signature getByCurveSize(ECParameterSpec params) {
+    public static BuiltinSignatures getFactoryByCurveSize(ECParameterSpec params) {
         int curveSize = ECCurves.getCurveSize(params);
         if (curveSize <= 256) {
-            return nistp256.create();
+            return nistp256;
         } else if (curveSize <= 384) {
-            return nistp384.create();
+            return nistp384;
         } else {
-            return nistp521.create();
+            return nistp521;
         }
+    }
+
+    public static Signature getSignerByCurveSize(ECParameterSpec params) {
+        NamedFactory<Signature> factory = getFactoryByCurveSize(params);
+        return (factory == null) ? null : factory.create();
     }
 
     @Override

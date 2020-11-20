@@ -20,17 +20,21 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.signature.SignatureFactory;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -61,15 +65,23 @@ public class KeyPairIdentity implements PublicKeyIdentity, SignatureFactoriesHol
     }
 
     @Override
-    public byte[] sign(SessionContext session, byte[] data) throws Exception {
-        String keyType = KeyUtils.getKeyType(getPublicKey());
-        // SSHD-1104 check if the key type is aliased
-        NamedFactory<? extends Signature> factory = SignatureFactory.resolveSignatureFactory(keyType, getSignatureFactories());
+    public Map.Entry<String, byte[]> sign(SessionContext session, String algo, byte[] data) throws Exception {
+        NamedFactory<? extends Signature> factory;
+        if (GenericUtils.isEmpty(algo)) {
+            algo = KeyUtils.getKeyType(getPublicKey());
+            // SSHD-1104 check if the key type is aliased
+            factory = SignatureFactory.resolveSignatureFactory(algo, getSignatureFactories());
+        } else {
+            factory = NamedResource.findByName(algo, String.CASE_INSENSITIVE_ORDER, getSignatureFactories());
+        }
+
         Signature verifier = (factory == null) ? null : factory.create();
-        ValidateUtils.checkNotNull(verifier, "No signer could be located for key type=%s", keyType);
+        ValidateUtils.checkNotNull(verifier, "No signer could be located for key type=%s", algo);
         verifier.initSigner(session, pair.getPrivate());
         verifier.update(session, data);
-        return verifier.sign(session);
+
+        byte[] signature = verifier.sign(session);
+        return new SimpleImmutableEntry<>(factory.getName(), signature);
     }
 
     @Override

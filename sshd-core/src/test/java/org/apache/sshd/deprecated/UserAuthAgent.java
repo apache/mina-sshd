@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
@@ -45,10 +47,12 @@ public class UserAuthAgent extends AbstractUserAuth {
 
     public UserAuthAgent(ClientSessionImpl session, String service) throws IOException {
         super(session, service);
-        if (session.getFactoryManager().getAgentFactory() == null) {
+        ClientFactoryManager factoryManager = session.getFactoryManager();
+        SshAgentFactory agentFactory = factoryManager.getAgentFactory();
+        if (agentFactory == null) {
             throw new IllegalStateException("No ssh agent factory has been configured");
         }
-        this.agent = session.getFactoryManager().getAgentFactory().createClient(session.getFactoryManager());
+        this.agent = agentFactory.createClient(factoryManager);
         this.keys = agent.getIdentities().iterator();
     }
 
@@ -79,9 +83,11 @@ public class UserAuthAgent extends AbstractUserAuth {
 
             String keyType = KeyUtils.getKeyType(key);
             byte[] contents = bs.getCompactData();
-            byte[] signature = agent.sign(session, key, contents);
-            Buffer bs2 = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE, false);
-            bs2.putString(keyType);
+            Map.Entry<String, byte[]> result = agent.sign(session, key, keyType, contents);
+            String algo = result.getKey();
+            byte[] signature = result.getValue();
+            Buffer bs2 = new ByteArrayBuffer(algo.length() + signature.length + Long.SIZE, false);
+            bs2.putString(algo);
             bs2.putBytes(signature);
             buffer.putBytes(bs2.array(), bs2.rpos(), bs2.available());
 

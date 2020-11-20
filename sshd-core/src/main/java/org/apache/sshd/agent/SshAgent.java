@@ -34,7 +34,18 @@ public interface SshAgent extends java.nio.channels.Channel {
 
     Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() throws IOException;
 
-    byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException;
+    /**
+     *
+     * @param  session     The current {@link SessionContext}
+     * @param  key         The {@link PublicKey} to use for signing
+     * @param  algo        Recommended signature algorithm - if {@code null}/empty then one will be selected based on
+     *                     the key type and/or signature factories. <B>Note:</B> even if specific algorithm specified,
+     *                     the implementation may disregard and choose another
+     * @param  data        Data to sign
+     * @return             used algorithm + signed data - using the identity
+     * @throws IOException If failed to sign
+     */
+    Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) throws IOException;
 
     void addIdentity(KeyPair key, String comment) throws IOException;
 

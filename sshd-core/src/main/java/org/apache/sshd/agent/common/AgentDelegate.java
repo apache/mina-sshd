@@ -50,8 +50,8 @@ public class AgentDelegate implements SshAgent {
     }
 
     @Override
-    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
-        return agent.sign(session, key, data);
+    public Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) throws IOException {
+        return agent.sign(session, key, algo, data);
     }
 
     @Override

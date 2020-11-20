@@ -21,9 +21,6 @@ package org.apache.sshd.agent.local;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
@@ -34,20 +31,19 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * A local SSH agent implementation
  */
 public class AgentImpl implements SshAgent {
-
     private final List<Map.Entry<KeyPair, String>> keys = new ArrayList<>();
     private final AtomicBoolean open = new AtomicBoolean(true);
 
@@ -70,32 +66,29 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
-    public byte[] sign(SessionContext session, PublicKey key, byte[] data) throws IOException {
+    public Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
 
         try {
             Map.Entry<KeyPair, String> pp = Objects.requireNonNull(getKeyPair(keys, key), "Key not found");
-            KeyPair kp = ValidateUtils.checkNotNull(pp.getKey(), "No key pair for agent=%s", pp.getValue());
-            PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getValue());
-
-            Signature verif;
-            if (pubKey instanceof DSAPublicKey) {
-                verif = BuiltinSignatures.dsa.create();
-            } else if (pubKey instanceof ECPublicKey) {
-                ECPublicKey ecKey = (ECPublicKey) pubKey;
-                verif = BuiltinSignatures.getByCurveSize(ecKey.getParams());
-            } else if (pubKey instanceof RSAPublicKey) {
-                verif = BuiltinSignatures.rsa.create();
-            } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())) {
-                verif = BuiltinSignatures.ed25519.create();
-            } else {
-                throw new InvalidKeySpecException("Unsupported key type: " + pubKey.getClass().getSimpleName());
+            String agentName = pp.getValue();
+            KeyPair kp = ValidateUtils.checkNotNull(pp.getKey(), "No key pair for agent=%s", agentName);
+            PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", agentName);
+            NamedFactory<Signature> factory = SignatureFactory.resolveSignatureFactoryByPublicKey(pubKey, algo);
+            Signature verif = (factory == null) ? null : factory.create();
+            if (verif == null) {
+                throw new InvalidKeySpecException(
+                        "No signer found for " + pubKey.getClass().getSimpleName()
+                                                  + " when algorithm=" + algo + " requested for "
+                                                  + KeyUtils.getKeyType(pubKey));
             }
             verif.initSigner(session, kp.getPrivate());
             verif.update(session, data);
-            return verif.sign(session);
+
+            byte[] signature = verif.sign(session);
+            return new SimpleImmutableEntry<>(factory.getName(), signature);
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {

@@ -19,6 +19,7 @@
 package org.apache.sshd.client.auth.pubkey;
 
 import java.security.PublicKey;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.agent.SshAgent;
@@ -51,8 +52,8 @@ public class KeyAgentIdentity implements PublicKeyIdentity {
     }
 
     @Override
-    public byte[] sign(SessionContext session, byte[] data) throws Exception {
-        return agent.sign(session, getPublicKey(), data);
+    public Map.Entry<String, byte[]> sign(SessionContext session, String algo, byte[] data) throws Exception {
+        return agent.sign(session, getPublicKey(), algo, data);
     }
 
     @Override

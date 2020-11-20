@@ -19,6 +19,7 @@
 package org.apache.sshd.client.auth.pubkey;
 
 import java.security.PublicKey;
+import java.util.Map;
 
 import org.apache.sshd.common.session.SessionContext;
 
@@ -38,9 +39,12 @@ public interface PublicKeyIdentity {
      *
      * @param  session   The {@link SessionContext} for calling this method - may be {@code null} if not called within a
      *                   session context
+     * @param  algo      Recommended signature algorithm - if {@code null}/empty then one will be selected based on the
+     *                   key type and/or signature factories. <B>Note:</B> even if specific algorithm specified, the
+     *                   implementation may disregard and choose another
      * @param  data      Data to sign
-     * @return           Signed data - using the identity
+     * @return           used algorithm + signed data - using the identity
      * @throws Exception If failed to sign the data
      */
-    byte[] sign(SessionContext session, byte[] data) throws Exception;
+    Map.Entry<String, byte[]> sign(SessionContext session, String algo, byte[] data) throws Exception;
 }

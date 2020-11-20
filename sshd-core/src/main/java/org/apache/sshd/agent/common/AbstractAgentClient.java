@@ -130,9 +130,11 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                         KeyUtils.getKeyType(signingKey),
                         "Cannot resolve key type of %s",
                         signingKey.getClass().getSimpleName());
-                byte[] signature = agent.sign(null, signingKey, data);
-                Buffer sig = new ByteArrayBuffer(keyType.length() + signature.length + Long.SIZE, false);
-                sig.putString(keyType);
+                Map.Entry<String, byte[]> result = agent.sign(null, signingKey, keyType, data);
+                String algo = result.getKey();
+                byte[] signature = result.getValue();
+                Buffer sig = new ByteArrayBuffer(algo.length() + signature.length + Long.SIZE, false);
+                sig.putString(algo);
                 sig.putBytes(signature);
                 rep.putByte(SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE);
                 rep.putBytes(sig.array(), sig.rpos(), sig.available());
