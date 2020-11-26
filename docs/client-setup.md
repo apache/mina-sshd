@@ -119,7 +119,7 @@ Furthermore, one can change almost any configured `SshClient` parameter - althou
 sessions depends on the actual changed configuration. Here is how a typical usage would look like
 
 ```java
-SshClient client = SshClient.setupDefaultClient();
+SshClient client = SshClient.setUpDefaultClient();
 // override any default configuration...
 client.setSomeConfiguration(...);
 client.setOtherConfiguration(...);
