@@ -300,25 +300,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             log.debug("resolveSftpVersionSelector({}) preference={}", uri, preference);
         }
 
+        // These are aliases for shorter parameters specification
         if ("max".equalsIgnoreCase(preference)) {
             return SftpVersionSelector.MAXIMUM;
         } else if ("min".equalsIgnoreCase(preference)) {
             return SftpVersionSelector.MINIMUM;
-        } else if ("current".equalsIgnoreCase(preference)) {
-            return SftpVersionSelector.CURRENT;
+        } else {
+            return SftpVersionSelector.resolveVersionSelector(preference);
         }
-
-        String[] values = GenericUtils.split(preference, ',');
-        if (values.length == 1) {
-            return SftpVersionSelector.fixedVersionSelector(Integer.parseInt(values[0]));
-        }
-
-        int[] preferred = new int[values.length];
-        for (int index = 0; index < values.length; index++) {
-            preferred[index] = Integer.parseInt(values[index]);
-        }
-
-        return SftpVersionSelector.preferredVersionSelector(preferred);
     }
 
     // NOTE: URI parameters override environment ones
