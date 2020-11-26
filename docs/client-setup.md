@@ -10,13 +10,13 @@ This is simply done by calling
 
 ```java
 
-SshClient client = SshClient.setupDefaultClient();
+SshClient client = SshClient.setUpDefaultClient();
 
 ```
 
 The call will create an instance with a default configuration suitable for most use cases - including ciphers,
 compression, MACs, key exchanges, signatures, etc... If your code requires some special configuration, one can
-look at the code for `setupDefaultClient` and `checkConfig` as a reference for available options and configure
+look at the code for `setUpDefaultClient` and `checkConfig` as a reference for available options and configure
 the SSH client the way you need.
 
 ## Set up client side security
@@ -119,7 +119,7 @@ Furthermore, one can change almost any configured `SshClient` parameter - althou
 sessions depends on the actual changed configuration. Here is how a typical usage would look like
 
 ```java
-SshClient client = SshClient.setupDefaultClient();
+SshClient client = SshClient.setUpDefaultClient();
 // override any default configuration...
 client.setSomeConfiguration(...);
 client.setOtherConfiguration(...);

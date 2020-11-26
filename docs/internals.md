@@ -152,7 +152,7 @@ client instance follows the [SSH config file](https://www.digitalocean.com/commu
 standards, but the interface can be replaced so as to implement whatever proprietary logic is required.
 
 ```java
-    SshClient client = SshClient.setupDefaultClient();
+    SshClient client = SshClient.setUpDefaultClient();
     client.setHostConfigEntryResolver(new MyHostConfigEntryResolver());
     client.start();
 

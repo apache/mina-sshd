@@ -129,7 +129,7 @@ class MyClientSideReservedSessionMessagesHandler implements ReservedSessionMessa
 }
 
 // client side
-SshClient client = SshClient.setupDefaultClient();
+SshClient client = SshClient.setUpDefaultClient();
 // This is the default for ALL sessions unless specifically overridden
 client.setReservedSessionMessagesHandler(new MyClientSideReservedSessionMessagesHandler());
 // Adding it via a session listener
@@ -154,7 +154,7 @@ try (ClientSession session = client.connect(user, host, port).verify(...timeout.
 
 
 // server side
-SshServer server = SshServer.setupDefaultServer();
+SshServer server = SshServer.setUpDefaultServer();
 // This is the default for ALL sessions unless specifically overridden
 server.setReservedSessionMessagesHandler(new MyServerSideReservedSessionMessagesHandler());
 // Adding it via a session listener

@@ -10,7 +10,7 @@ deciding what is the logged-in user's file system view and then use a `RootedFil
 file system where the logged-in user can access only the files under the specified root and no others.
 
 ```java
-SshServer sshd = SshServer.setupDefaultServer();
+SshServer sshd = SshServer.setUpDefaultServer();
 sshd.setFileSystemFactory(new VirtualFileSystemFactory() {
     @Override
     public Path getUserHomeDir(SessionContext session) throws IOException {
@@ -50,7 +50,7 @@ remain active afterwards...).
 SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
     .withExecutorServiceProvider(() -> new NoCloseExecutor(mySuperDuperExecutorService))
     .build();
-SshServer sshd = SshServer.setupDefaultServer();
+SshServer sshd = SshServer.setUpDefaultServer();
 sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(factory));
 
 ```
