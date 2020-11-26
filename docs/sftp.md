@@ -130,8 +130,8 @@ it consults the `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` m
 the value of the `sftp-auto-follow-links` configuration property (default=*true*).
 
 **Note:** the property is consulted only for cases where there is no clear indication in the standard how to behave for the
-specific command. E.g., the `lsetstat@openssh.com` specifically specifies that symbolic links should not be followed, so the
-implementation does not consult the aforementioned property.
+specific command. E.g., the `lsetstat@openssh.com` command specifically specifies that symbolic links should not be followed,
+so the implementation does not consult the aforementioned property.
 
 ## Client-side SFTP
 
@@ -459,12 +459,13 @@ classes for supported patterns and matching - include case sensitive vs. insensi
 ```java
 // Using an SftpPathDirectoryScanner
 FileSystem fs = ... obtain an SFTP file system instance ...
-Path rootDir = fs.getPath(...remote path...);
+Path basedir = fs.getPath("/some/remote/path");
 DirectoryScanner ds = new SftpPathDirectoryScanner(basedir, ...pattern...);
 Collection<Path> matches = ds.scan();
 
 // Using an SftpClientDirectoryScanner
 SftpClient client = ... obtain a client instance ...
+Strinng basedir = "/some/remote/path";
 SftpClientDirectoryScanner ds = new SftpClientDirectoryScanner(basedir, ...pattern...);
 Collection<ScanDirEntry> matches = ds.scan(client);
 
