@@ -83,7 +83,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2020-01-01T00:00:00Z</project.build.outputTimestamp>
 
-        <!-- NOTE: actual value updated by groovy-maven-plugin on initialization phase -->
+        <!-- NOTE: actual value updated by gmavenplus-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
 
         <java.major.version>1</java.major.version>
@@ -103,12 +103,7 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
-        <gmaven.plugin.version>2.1.1</gmaven.plugin.version>
-        <groovy.major.version>2</groovy.major.version>
-        <groovy.minor.version>5</groovy.minor.version>
-        <groovy.release.version>13</groovy.release.version>
-        <groovy.compliance.level>2.0</groovy.compliance.level>
-        <groovy.version>${groovy.major.version}.${groovy.minor.version}.${groovy.release.version}</groovy.version>
+        <groovy.version>3.0.6</groovy.version>
         <bouncycastle.version>1.67</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring.version> 5.3.1</spring.version>
@@ -288,8 +283,8 @@
                                         </pluginExecution>
                                         <pluginExecution>
                                             <pluginExecutionFilter>
-                                                <groupId>org.codehaus.gmaven</groupId>
-                                                <artifactId>groovy-maven-plugin</artifactId>
+                                                <groupId>org.codehaus.gmavenplus</groupId>
+                                                <artifactId>gmavenplus-plugin</artifactId>
                                                 <versionRange>[1.0,)</versionRange>
                                                 <goals>
                                                     <goal>compile</goal>
@@ -786,9 +781,9 @@
                     </dependencies>
                 </plugin>
                 <plugin>
-                    <groupId>org.codehaus.gmaven</groupId>
-                    <artifactId>groovy-maven-plugin</artifactId>
-                    <version>${gmaven.plugin.version}</version>
+                    <groupId>org.codehaus.gmavenplus</groupId>
+                    <artifactId>gmavenplus-plugin</artifactId>
+                    <version>1.11.0</version>
                     <dependencies>
                           <!-- referenced indirectly by groovy-ant -->
                         <dependency>
@@ -1064,8 +1059,8 @@
 
         <plugins>
             <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>groovy-maven-plugin</artifactId>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
                 <executions>
                     <!-- Works only for Maven 3.x -->
                     <execution>
@@ -1076,24 +1071,26 @@
                             <goal>execute</goal>
                         </goals>
                         <configuration>
-                            <source>
-                                <![CDATA[
-                                    for (java.io.File file = new java.io.File(new java.net.URI('${project.baseUri}')); file != null; file = file.getParentFile()) {
-                                        if (!file.isDirectory()) {
-                                            continue
+                            <scripts>
+                                <script>
+                                    <![CDATA[
+                                        for (java.io.File file = new java.io.File(new java.net.URI('${project.baseUri}')); file != null; file = file.getParentFile()) {
+                                            if (!file.isDirectory()) {
+                                                continue
+                                            }
+
+                                            java.io.File testFile = new java.io.File(file, 'LICENSE.txt')
+                                            if (testFile.canRead()) {
+                                                project.properties['workspace.root.dir'] = file.getAbsolutePath()
+                                                // System.out.println("Workspace root dir: " + project.properties['workspace.root.dir'])
+                                                return
+                                            }
                                         }
 
-                                        java.io.File testFile = new java.io.File(file, 'LICENSE.txt')
-                                        if (testFile.canRead()) {
-                                            project.properties['workspace.root.dir'] = file.getAbsolutePath()
-                                            // System.out.println("Workspace root dir: " + project.properties['workspace.root.dir'])
-                                            return
-                                        }
-                                    }
-
-                                    System.err.println("Failed to detect workspace root dir")
-                                ]]>
-                            </source>
+                                        System.err.println("Failed to detect workspace root dir")
+                                    ]]>
+                                </script>
+                            </scripts>
                         </configuration>
                     </execution>
                 </executions>
