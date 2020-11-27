@@ -448,10 +448,10 @@ E.g. - let's assume the layout present below
 
 Then scan results from `root` are expected as follows for the given patterns
 
-* "**/*" - all the files/folders - `[a1.txt, a1.csv, sub1, sub2, b1.txt, b1.csv, c1.txt, c2.csv]`
+* "**/*" - all the files/folders - `[a1.txt, a2.csv, sub1, sub2, b1.txt, b2.csv, c1.txt, c2.csv]`
 * "**/*.txt" - only the ".txt" files - `[a1.txt, b1.txt, c1.txt]`
-* "*" - only the files/folders at the root - `[a1.txt, a1.csv, sub1, sub2]`
-* "*.csv" - only `a1.csv` at the root
+* "*" - only the files/folders at the root - `[a1.txt, a2.csv, sub1, sub2]`
+* "*.csv" - only `a2.csv` at the root
 
 **Note:** the scanner supports various patterns - including *regex* - see `DirectoryScanner` and `SelectorUtils`
 classes for supported patterns and matching - include case sensitive vs. insensitive match.
