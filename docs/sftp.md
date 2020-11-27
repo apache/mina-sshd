@@ -437,18 +437,18 @@ E.g. - let's assume the layout present below
 ```
     root
       + --- a1.txt
-      + --- a2.csv
+      + --- a1.csv
       + sub1
          +--- b1.txt
-         +--- b2.csv
+         +--- b1.csv
       + sub2
          + --- c1.txt
-         + --- c2.csv
+         + --- c1.csv
 ```
 
 Then scan results from `root` are expected as follows for the given patterns
 
-* "**/*" - all the files/folders - `[a1.txt, a1.csv, sub1, sub2, b1.txt, b1.csv, c1.txt, c2.csv]`
+* "**/*" - all the files/folders - `[a1.txt, a1.csv, sub1, sub2, b1.txt, b1.csv, c1.txt, c1.csv]`
 * "**/*.txt" - only the ".txt" files - `[a1.txt, b1.txt, c1.txt]`
 * "*" - only the files/folders at the root - `[a1.txt, a1.csv, sub1, sub2]`
 * "*.csv" - only `a1.csv` at the root
