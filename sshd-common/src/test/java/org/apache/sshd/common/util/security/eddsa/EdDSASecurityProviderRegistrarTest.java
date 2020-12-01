@@ -30,16 +30,19 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrarTestSupport;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Category({ NoIoTestCase.class })
 public class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistrarTestSupport {
     private static SecurityProviderRegistrar registrarInstance;
 

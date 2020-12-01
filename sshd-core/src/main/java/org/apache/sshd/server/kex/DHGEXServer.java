@@ -114,7 +114,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         if ((cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD)
                 && (expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST)) {
             oldRequest = true;
-            min = CoreModuleProperties.PROP_DHGEX_SERVER_MIN_KEY.get(session).orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
+            min = CoreModuleProperties.PROP_DHGEX_SERVER_MIN_KEY.get(session)
+                    .orElse(SecurityUtils.getMinDHGroupExchangeKeySize());
             prf = buffer.getInt();
             max = CoreModuleProperties.PROP_DHGEX_SERVER_MAX_KEY.get(session)
                     .orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
@@ -295,8 +296,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             ServerSession session, int min, int prf, int max, List<Moduli.DhGroup> groups)
             throws Exception {
         int maxDHGroupExchangeKeySize = SecurityUtils.getMaxDHGroupExchangeKeySize();
-        min = Math.max(min, SecurityUtils.MIN_DHGEX_KEY_SIZE);
-        prf = Math.max(prf, SecurityUtils.MIN_DHGEX_KEY_SIZE);
+        int minDHGroupExchangeKeySize = SecurityUtils.getMinDHGroupExchangeKeySize();
+        min = Math.max(min, minDHGroupExchangeKeySize);
+        prf = Math.max(prf, minDHGroupExchangeKeySize);
         prf = Math.min(prf, maxDHGroupExchangeKeySize);
         max = Math.min(max, maxDHGroupExchangeKeySize);
 

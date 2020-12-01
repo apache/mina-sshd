@@ -64,7 +64,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
         // SSHD-941 give the user a chance to intervene in the choice
         min = CoreModuleProperties.PROP_DHGEX_CLIENT_MIN_KEY.get(session)
-                .orElse(SecurityUtils.MIN_DHGEX_KEY_SIZE);
+                .orElse(SecurityUtils.getMinDHGroupExchangeKeySize());
         max = CoreModuleProperties.PROP_DHGEX_CLIENT_MAX_KEY.get(session)
                 .orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
         prf = CoreModuleProperties.PROP_DHGEX_CLIENT_PRF_KEY.get(session)

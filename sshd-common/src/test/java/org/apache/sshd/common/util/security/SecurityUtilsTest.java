@@ -46,11 +46,8 @@ import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
-import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -62,27 +59,12 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 @SuppressWarnings("checkstyle:MethodCount")
-public class SecurityUtilsTest extends JUnitTestSupport {
-    public static final String BC_NAMED_USAGE_PROP = SecurityProviderRegistrar.CONFIG_PROP_BASE
-                                                     + "." + SecurityUtils.BOUNCY_CASTLE
-                                                     + "." + SecurityProviderRegistrar.NAMED_PROVIDER_PROPERTY;
-
+public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (session, file, index) -> DEFAULT_PASSWORD;
 
     public SecurityUtilsTest() {
         super();
-    }
-
-    // NOTE: Using the BouncyCastle provider instead of the name does not work as expected so we take no chances
-    @BeforeClass
-    public static void useNamedBouncyCastleProvider() {
-        System.setProperty(BC_NAMED_USAGE_PROP, Boolean.TRUE.toString());
-    }
-
-    @AfterClass
-    public static void unsetBouncyCastleProviderUsagePreference() {
-        System.clearProperty(BC_NAMED_USAGE_PROP);
     }
 
     @Test
@@ -227,6 +209,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
                 }
             }
         } finally {
+            SecurityUtils.setMinDHGroupExchangeKeySize(0); // force detection
             SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
         }
     }
@@ -242,6 +225,7 @@ public class SecurityUtilsTest extends JUnitTestSupport {
                 assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
             }
         } finally {
+            SecurityUtils.setMinDHGroupExchangeKeySize(0); // force detection
             SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
         }
     }

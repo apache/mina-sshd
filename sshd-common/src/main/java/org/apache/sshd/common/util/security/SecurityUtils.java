@@ -102,6 +102,13 @@ public final class SecurityUtils {
     public static final String CURVE_ED25519_SHA512 = "NONEwithEdDSA";
 
     /**
+     * System property used to configure the value for the minimum supported Diffie-Hellman Group Exchange key size. If
+     * not set, then an internal auto-discovery mechanism is employed. If set to negative value then Diffie-Hellman
+     * Group Exchange is disabled. If set to a negative value then Diffie-Hellman Group Exchange is disabled
+     */
+    public static final String MIN_DHGEX_KEY_SIZE_PROP = "org.apache.sshd.minDHGexKeySize";
+
+    /**
      * System property used to configure the value for the maximum supported Diffie-Hellman Group Exchange key size. If
      * not set, then an internal auto-discovery mechanism is employed. If set to negative value then Diffie-Hellman
      * Group Exchange is disabled. If set to a negative value then Diffie-Hellman Group Exchange is disabled
@@ -155,6 +162,7 @@ public final class SecurityUtils {
 
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 
+    private static final AtomicInteger MIN_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
     /*
@@ -244,55 +252,50 @@ public final class SecurityUtils {
 
     /**
      * @return {@code true} if Diffie-Hellman Group Exchange is supported
+     * @see    #getMinDHGroupExchangeKeySize()
      * @see    #getMaxDHGroupExchangeKeySize()
      */
     public static boolean isDHGroupExchangeSupported() {
-        return getMaxDHGroupExchangeKeySize() > 0;
+        int maxSize = getMaxDHGroupExchangeKeySize();
+        int minSize = getMinDHGroupExchangeKeySize();
+        return (minSize > 0) && (maxSize > 0) && (minSize <= maxSize);
     }
 
     /**
      * @param  keySize The expected key size
      * @return         {@code true} if Oakely Diffie-Hellman Group Exchange is supported for the specified key size
+     * @see            #isDHGroupExchangeSupported()
      * @see            #getMaxDHGroupExchangeKeySize()
      */
     public static boolean isDHOakelyGroupSupported(int keySize) {
-        return getMaxDHGroupExchangeKeySize() >= keySize;
+        return isDHGroupExchangeSupported()
+                && (getMaxDHGroupExchangeKeySize() >= keySize);
+    }
+
+    /**
+     * @return The minimum supported Diffie-Hellman Group Exchange key size, or non-positive if not supported
+     */
+    public static int getMinDHGroupExchangeKeySize() {
+        return resolveDHGEXKeySizeValue(MIN_DHG_KEY_SIZE_HOLDER, MIN_DHGEX_KEY_SIZE_PROP, MIN_DHGEX_KEY_SIZE);
+    }
+
+    /**
+     * Set programmatically the reported value for {@link #getMinDHGroupExchangeKeySize()}
+     *
+     * @param keySize The reported key size - if zero, then it will be auto-detected, if negative then DH group exchange
+     *                will be disabled
+     */
+    public static void setMinDHGroupExchangeKeySize(int keySize) {
+        synchronized (MIN_DHG_KEY_SIZE_HOLDER) {
+            MIN_DHG_KEY_SIZE_HOLDER.set(keySize);
+        }
     }
 
     /**
      * @return The maximum supported Diffie-Hellman Group Exchange key size, or non-positive if not supported
      */
     public static int getMaxDHGroupExchangeKeySize() {
-        int maxSupportedKeySize;
-        synchronized (MAX_DHG_KEY_SIZE_HOLDER) {
-            maxSupportedKeySize = MAX_DHG_KEY_SIZE_HOLDER.get();
-            if (maxSupportedKeySize != 0) { // 1st time we are called ?
-                return maxSupportedKeySize;
-            }
-
-            String propValue = System.getProperty(MAX_DHGEX_KEY_SIZE_PROP);
-            if (GenericUtils.isEmpty(propValue)) {
-                maxSupportedKeySize = -1;
-                // Go down from max. to min. to ensure we stop at 1st maximum value success
-                for (int testKeySize = MAX_DHGEX_KEY_SIZE; testKeySize >= MIN_DHGEX_KEY_SIZE; testKeySize -= 1024) {
-                    if (isDHGroupExchangeSupported(testKeySize)) {
-                        maxSupportedKeySize = testKeySize;
-                        break;
-                    }
-                }
-            } else {
-                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                logger.info("Override max. DH group exchange key size: " + propValue);
-                maxSupportedKeySize = Integer.parseInt(propValue);
-                // negative is OK - means user wants to disable DH group exchange
-                ValidateUtils.checkTrue(maxSupportedKeySize != 0,
-                        "Configured " + MAX_DHGEX_KEY_SIZE_PROP + " value must be non-zero: %d", maxSupportedKeySize);
-            }
-
-            MAX_DHG_KEY_SIZE_HOLDER.set(maxSupportedKeySize);
-        }
-
-        return maxSupportedKeySize;
+        return resolveDHGEXKeySizeValue(MAX_DHG_KEY_SIZE_HOLDER, MAX_DHGEX_KEY_SIZE_PROP, MAX_DHGEX_KEY_SIZE);
     }
 
     /**
@@ -305,6 +308,40 @@ public final class SecurityUtils {
         synchronized (MAX_DHG_KEY_SIZE_HOLDER) {
             MAX_DHG_KEY_SIZE_HOLDER.set(keySize);
         }
+    }
+
+    private static int resolveDHGEXKeySizeValue(
+            AtomicInteger holder, String propName, int maxKeySize) {
+        int maxSupportedKeySize;
+        synchronized (holder) {
+            maxSupportedKeySize = holder.get();
+            if (maxSupportedKeySize != 0) { // 1st time we are called ?
+                return maxSupportedKeySize;
+            }
+
+            String propValue = System.getProperty(propName);
+            if (GenericUtils.isEmpty(propValue)) {
+                maxSupportedKeySize = -1;
+                // Go down from max. to min. to ensure we stop at 1st maximum value success
+                for (int testKeySize = maxKeySize; testKeySize >= MIN_DHGEX_KEY_SIZE; testKeySize -= 1024) {
+                    if (isDHGroupExchangeSupported(testKeySize)) {
+                        maxSupportedKeySize = testKeySize;
+                        break;
+                    }
+                }
+            } else {
+                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+                logger.info("Override DH group exchange key size via {}: {}", propName, propValue);
+                maxSupportedKeySize = Integer.parseInt(propValue);
+                // negative is OK - means user wants to disable DH group exchange
+                ValidateUtils.checkTrue(maxSupportedKeySize != 0,
+                        "Configured " + propName + " value must be non-zero: %d", maxSupportedKeySize);
+            }
+
+            holder.set(maxSupportedKeySize);
+        }
+
+        return maxSupportedKeySize;
     }
 
     public static boolean isDHGroupExchangeSupported(int maxKeySize) {

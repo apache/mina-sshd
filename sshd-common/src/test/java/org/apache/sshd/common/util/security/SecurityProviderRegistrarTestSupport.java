@@ -23,13 +23,10 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.experimental.categories.Category;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Category({ NoIoTestCase.class })
 public abstract class SecurityProviderRegistrarTestSupport extends JUnitTestSupport {
     protected SecurityProviderRegistrarTestSupport() {
         super();

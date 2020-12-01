@@ -82,3 +82,26 @@ with the `Cipher` class as its argument.
 * Specifically for **ciphers** the argument to the support query contains a **transformation** (e.g., `AES/CBC/NoPadding`)
 so one should take that into account when parsing the input argument to decide which cipher is referenced - see
 `SecurityProviderRegistrar.getEffectiveSecurityEntityName(Class<?>, String)` helper method
+
+## Diff-Hellman group exchange configuration
+
+The [RFC 4419 - Diffie-Hellman Group Exchange for the Secure Shell (SSH) Transport Layer Protocol](https://tools.ietf.org/html/rfc4419)
+specifies in section 3:
+
+>> Servers and clients SHOULD support groups with a modulus length of k bits, where 1024 <= k <= 8192.
+>> The recommended values for min and max are 1024 and 8192, respectively.
+
+This was subsequently amended in [RFC 8270 - Increase the Secure Shell Minimum Recommended Diffie-Hellman Modulus Size to 2048 Bits](https://tools.ietf.org/html/rfc8270).
+
+In any case, the values are auto-detected by the code but the user can intervene in 2 ways:
+
+1. Programmatically - by invoking `SecurityUtils#setMin/MaxDHGroupExchangeKeySize` respectively
+2. Via system property - by setting `org.apache.sshd.min/maxDHGexKeySize` system property respectively
+
+**Note(s)**
+
+* The value should be a multiple of 1024 (not enforced)
+* The value should be between 1024 and 8192 (not enforced)
+* The minimum must be less or equal to the maximum (enforced - if reversed then group exchange is **disabled**)
+* If a **negative** value is set in either one then group exchange is **disabled**
+* Setting a value of zero indicates a **lazy** auto-detection of the supported range the next time these values are needed.
