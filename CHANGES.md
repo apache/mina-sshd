@@ -63,3 +63,4 @@ or `-key-file` command line option.
 * [SSHD-1102](https://issues.apache.org/jira/browse/SSHD-1102) Provide filter support for SftpDirectoryStream
 * [SSHD-1104](https://issues.apache.org/jira/browse/SSHD-1104) Take into account possible key type aliases when using public key authentication
 * [SSHD-1107](https://issues.apache.org/jira/browse/SSHD-1107) Allow configuration of minimum DH group exchange key size via property or programmatically
+* [SSHD-1108](https://issues.apache.org/jira/browse/SSHD-1108) Increased minimum default DH group exchange key size to 2048 (but support 1024)

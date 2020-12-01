@@ -79,7 +79,12 @@ the unsafe settings must do so **explicitly**. The following settings have been 
 * [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
 * SHA-1 based key exchanges and signatures
 * MD5-based and truncated HMAC algorithms
-
+* [RFC 8270 - Increase the Secure Shell Minimum Recommended Diffie-Hellman Modulus Size to 2048 Bits](https://tools.ietf.org/html/rfc8270)  
+    **Note:** it still possible to use 1024 by initializing the value *programmatically* or via system property - 
+    see [Security providers setup](./docs/security-providers.md#diff-hellman-group-exchange-configuration).
+    The code still contains moduli for 1024 and will use them if user **explicitly** lowers the default minimum
+    to it.
+    
 **Caveat:**: According to [RFC 8332 - section 3.31](https://tools.ietf.org/html/rfc8332#section-3.3)
 >>
 >> Implementation experience has shown that there are servers that apply authentication penalties to clients

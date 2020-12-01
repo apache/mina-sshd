@@ -119,10 +119,10 @@ public final class SecurityUtils {
      * The min. key size value used for testing whether Diffie-Hellman Group Exchange is supported or not. According to
      * <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A> section 3: &quot;Servers and clients SHOULD support
      * groups with a modulus length of k bits, where 1024 <= k <= 8192&quot;. </code>
+     *
+     * <B>Note: this has been amended by <A HREF="https://tools.ietf.org/html/rfc8270">RFC 8270</A>
      */
-    public static final int MIN_DHGEX_KEY_SIZE = 1024;
-    // Keys of size > 1024 are not supported by default with JCE
-    public static final int DEFAULT_DHGEX_KEY_SIZE = MIN_DHGEX_KEY_SIZE;
+    public static final int MIN_DHGEX_KEY_SIZE = 2048;
     public static final int PREFERRED_DHGEX_KEY_SIZE = 4096;
     public static final int MAX_DHGEX_KEY_SIZE = 8192;
 

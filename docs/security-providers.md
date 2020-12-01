@@ -101,7 +101,7 @@ In any case, the values are auto-detected by the code but the user can intervene
 **Note(s)**
 
 * The value should be a multiple of 1024 (not enforced)
-* The value should be between 1024 and 8192 (not enforced)
+* The value should be between 2048 and 8192 (not enforced - allows users to make an **explicit** decision to use shorter keys - especially the minimum).
 * The minimum must be less or equal to the maximum (enforced - if reversed then group exchange is **disabled**)
 * If a **negative** value is set in either one then group exchange is **disabled**
 * Setting a value of zero indicates a **lazy** auto-detection of the supported range the next time these values are needed.

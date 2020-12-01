@@ -84,8 +84,8 @@ public class ModuliTest extends JUnitTestSupport {
         Collection<Integer> actualSizes = new TreeSet<>(Comparator.naturalOrder());
         for (DhGroup g : groups) {
             int size = g.getSize();
-            assertTrue("Size below min. required " + SecurityUtils.MIN_DHGEX_KEY_SIZE,
-                    size >= SecurityUtils.MIN_DHGEX_KEY_SIZE);
+            // SSHD-1108 - raised default minimum to 2048...
+            assertTrue("Size below min. required " + 1024 + ": " + size, size >= 1024);
             assertTrue("Size above max. allowed " + SecurityUtils.MAX_DHGEX_KEY_SIZE, size <= SecurityUtils.MAX_DHGEX_KEY_SIZE);
             actualSizes.add(size);
         }
