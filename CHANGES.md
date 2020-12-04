@@ -33,6 +33,7 @@ or `-key-file` command line option.
 * [SSHD-1079](https://issues.apache.org/jira/browse/SSHD-1079) Experimental async mode on the local port forwarder
 * [SSHD-1086](https://issues.apache.org/jira/browse/SSHD-1086) Added SFTP aware directory scanning helper classes
 * [SSHD-1089](https://issues.apache.org/jira/browse/SSHD-1089) Added wrappers for one-time single session usage of SFTP/SCP clients
+* Propagate SCP file transfer ACK data to ScpTransferListener before validating it.
 
 ## Behavioral changes and enhancements
 

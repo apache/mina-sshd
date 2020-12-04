@@ -54,6 +54,7 @@ import org.apache.sshd.scp.client.ScpRemote2RemoteTransferHelper;
 import org.apache.sshd.scp.client.ScpRemote2RemoteTransferListener;
 import org.apache.sshd.scp.common.ScpLocation;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
@@ -241,7 +242,7 @@ public class ScpCommandMain extends SshClientCliSupport {
 
     /* -------------------------------------------------------------------------------- */
 
-    @SuppressWarnings("checkstyle:ParameterNumber")
+    @SuppressWarnings({ "checkstyle:ParameterNumber", "checkstyle:anoninnerlength" })
     public static void xferLocalToRemote(
             BufferedReader stdin, PrintStream stdout, PrintStream stderr, String[] args,
             ScpLocation source, ScpLocation target, Collection<Option> options,
@@ -283,6 +284,14 @@ public class ScpCommandMain extends SshClientCliSupport {
                             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms,
                             Throwable thrown) {
                         logEvent("endFileEvent", session, op, file, length, perms, thrown);
+                    }
+
+                    @Override
+                    public void handleFileEventAckInfo(
+                            Session session, FileOperation op, Path file, long length,
+                            Set<PosixFilePermission> perms, ScpAckInfo ackInfo)
+                            throws IOException {
+                        logEvent("ackInfo(" + ackInfo + ")", session, op, file, length, perms, null);
                     }
 
                     private void logEvent(

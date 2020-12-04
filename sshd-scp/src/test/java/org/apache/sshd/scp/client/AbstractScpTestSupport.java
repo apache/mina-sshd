@@ -32,6 +32,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -45,6 +46,7 @@ import org.junit.Before;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpTestSupport extends BaseTestSupport {
+    @SuppressWarnings("checkstyle:anoninnerlength")
     protected static final ScpTransferEventListener DEBUG_LISTENER = new ScpTransferEventListener() {
         @Override
         public void startFolderEvent(
@@ -68,6 +70,14 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
         public void endFileEvent(
                 Session s, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
             logEvent("endFileEvent", s, op, file, true, length, perms, thrown);
+        }
+
+        @Override
+        public void handleFileEventAckInfo(
+                Session session, FileOperation op, Path file, long length,
+                Set<PosixFilePermission> perms, ScpAckInfo ackInfo)
+                throws IOException {
+            logEvent("ackInfo(" + ackInfo + ")", session, op, file, true, length, perms, null);
         }
 
         private void logEvent(

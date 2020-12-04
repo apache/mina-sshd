@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.SshdEventListener;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 
 /**
  * Can be registered in order to receive events about SCP transfers
@@ -73,6 +74,24 @@ public interface ScpTransferEventListener extends SshdEventListener {
      */
     default void endFileEvent(
             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
+            throws IOException {
+        // ignored
+    }
+
+    /**
+     * Called after {@link #endFileEvent(Session, FileOperation, Path, long, Set, Throwable)} if no exception was thrown
+     * and the peer's ACK was successfully read
+     *
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  op          The {@link FileOperation}
+     * @param  file        The <U>local</U> referenced file {@link Path}
+     * @param  length      Size (in bytes) of transferred data
+     * @param  perms       A {@link Set} of {@link PosixFilePermission}s to be applied once transfer is complete
+     * @param  ackInfo     The {@link ScpAckInfo} received after a file transfer - <U>before</U> validating it
+     * @throws IOException If failed to handle the event
+     */
+    default void handleFileEventAckInfo(
+            Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, ScpAckInfo ackInfo)
             throws IOException {
         // ignored
     }
