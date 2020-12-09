@@ -556,7 +556,7 @@ public final class LoggingUtils {
     }
 
     public static void debug(Logger log, String message, Object o1, Object o2, Throwable t) {
-        if (log.isTraceEnabled() && t != null) {
+        if (log.isTraceEnabled() && (t != null)) {
             log.debug(message, o1, o2, t);
         } else if (log.isDebugEnabled()) {
             log.debug(message, o1, o2);
@@ -564,7 +564,7 @@ public final class LoggingUtils {
     }
 
     public static void debug(Logger log, String message, Object o1, Object o2, Object o3, Throwable t) {
-        if (log.isTraceEnabled() && t != null) {
+        if (log.isTraceEnabled() && (t != null)) {
             log.debug(message, o1, o2, o3, t);
         } else if (log.isDebugEnabled()) {
             log.debug(message, o1, o2, o3);
@@ -572,7 +572,7 @@ public final class LoggingUtils {
     }
 
     public static void debug(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
-        if (log.isTraceEnabled() && t != null) {
+        if (log.isTraceEnabled() && (t != null)) {
             log.debug(message, o1, o2, o3, o4, t);
         } else if (log.isDebugEnabled()) {
             log.debug(message, o1, o2, o3, o4);
@@ -580,7 +580,7 @@ public final class LoggingUtils {
     }
 
     public static void debug(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
-        if (log.isTraceEnabled() && t != null) {
+        if (log.isTraceEnabled() && (t != null)) {
             log.debug(message, o1, o2, o3, o4, o5, t);
         } else if (log.isDebugEnabled()) {
             log.debug(message, o1, o2, o3, o4, o5);
@@ -590,7 +590,7 @@ public final class LoggingUtils {
     @SuppressWarnings("all")
     public static void debug(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
-        if (log.isTraceEnabled() && t != null) {
+        if (log.isTraceEnabled() && (t != null)) {
             log.debug(message, o1, o2, o3, o4, o5, o6, t);
         } else if (log.isDebugEnabled()) {
             log.debug(message, o1, o2, o3, o4, o5, o6);
@@ -598,7 +598,7 @@ public final class LoggingUtils {
     }
 
     public static void info(Logger log, String message, Object o1, Object o2, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.info(message, o1, o2, t);
         } else {
             log.info(message, o1, o2);
@@ -606,7 +606,7 @@ public final class LoggingUtils {
     }
 
     public static void info(Logger log, String message, Object o1, Object o2, Object o3, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.info(message, o1, o2, o3, t);
         } else {
             log.info(message, o1, o2, o3);
@@ -614,7 +614,7 @@ public final class LoggingUtils {
     }
 
     public static void warn(Logger log, String message, Object o1, Object o2, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, t);
         } else {
             log.warn(message, o1, o2);
@@ -622,7 +622,7 @@ public final class LoggingUtils {
     }
 
     public static void warn(Logger log, String message, Object o1, Object o2, Object o3, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, t);
         } else {
             log.warn(message, o1, o2, o3);
@@ -630,7 +630,7 @@ public final class LoggingUtils {
     }
 
     public static void warn(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, t);
         } else if (log.isDebugEnabled()) {
             log.warn(message, o1, o2, o3, o4);
@@ -638,7 +638,7 @@ public final class LoggingUtils {
     }
 
     public static void warn(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, o5, t);
         } else {
             log.warn(message, o1, o2, o3, o4, o5);
@@ -648,7 +648,7 @@ public final class LoggingUtils {
     @SuppressWarnings("all")
     public static void warn(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, o5, o6, t);
         } else {
             log.warn(message, o1, o2, o3, o4, o5, o6);
@@ -659,7 +659,7 @@ public final class LoggingUtils {
     public static void warn(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7,
             Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7, t);
         } else {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7);
@@ -670,7 +670,7 @@ public final class LoggingUtils {
     public static void warn(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7, Object o8,
             Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7, o8, t);
         } else {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7, o8);
@@ -681,7 +681,7 @@ public final class LoggingUtils {
     public static void warn(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7, Object o8,
             Object o9, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7, o8, o9, t);
         } else {
             log.warn(message, o1, o2, o3, o4, o5, o6, o7, o8, o9);
@@ -689,7 +689,7 @@ public final class LoggingUtils {
     }
 
     public static void error(Logger log, String message, Object o1, Object o2, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, t);
         } else {
             log.error(message, o1, o2);
@@ -697,7 +697,7 @@ public final class LoggingUtils {
     }
 
     public static void error(Logger log, String message, Object o1, Object o2, Object o3, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, o3, t);
         } else {
             log.error(message, o1, o2, o3);
@@ -705,7 +705,7 @@ public final class LoggingUtils {
     }
 
     public static void error(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, o3, o4, t);
         } else if (log.isDebugEnabled()) {
             log.error(message, o1, o2, o3, o4);
@@ -713,7 +713,7 @@ public final class LoggingUtils {
     }
 
     public static void error(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, o3, o4, o5, t);
         } else {
             log.error(message, o1, o2, o3, o4, o5);
@@ -723,7 +723,7 @@ public final class LoggingUtils {
     @SuppressWarnings("all")
     public static void error(
             Logger log, String message, Object o1, Object o2, Object o3, Object o4, Object o5, Object o6, Throwable t) {
-        if (log.isDebugEnabled() && t != null) {
+        if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, o3, o4, o5, o6, t);
         } else {
             log.error(message, o1, o2, o3, o4, o5, o6);

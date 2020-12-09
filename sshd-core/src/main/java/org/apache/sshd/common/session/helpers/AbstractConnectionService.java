@@ -43,7 +43,6 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
@@ -389,7 +388,7 @@ public abstract class AbstractConnectionService
     protected Closeable getInnerCloseable() {
         return builder()
                 .sequential(forwarderHolder.get(), agentForwardHolder.get(), x11ForwardHolder.get())
-                .parallel(toString(), channels.values())
+                .parallel(toString(), getChannels())
                 .build();
     }
 
@@ -417,23 +416,12 @@ public abstract class AbstractConnectionService
             }
         }
 
-        if (!registered) {
-            handleChannelRegistrationFailure(channel, channelId);
-        }
-
         if (log.isDebugEnabled()) {
-            log.debug("registerChannel({})[id={}] {}", this, channelId, channel);
+            log.debug("registerChannel({})[id={}, registered={}] {}", this, channelId, registered, channel);
         }
-        return channelId;
-    }
 
-    protected void handleChannelRegistrationFailure(Channel channel, int channelId) throws IOException {
-        RuntimeException reason = new IllegalStateException(
-                "Channel id=" + channelId + " not registered because session is being closed: " + this);
-        AbstractChannel notifier
-                = ValidateUtils.checkInstanceOf(channel, AbstractChannel.class, "Non abstract channel for id=%d", channelId);
-        notifier.signalChannelClosed(reason);
-        throw reason;
+        channel.handleChannelRegistrationResult(this, session, channelId, registered);
+        return channelId;
     }
 
     /**
@@ -451,6 +439,10 @@ public abstract class AbstractConnectionService
 
         if (log.isDebugEnabled()) {
             log.debug("unregisterChannel({}) result={}", channel, result);
+        }
+
+        if (result != null) {
+            result.handleChannelUnregistration(this);
         }
     }
 

@@ -108,7 +108,7 @@ public class SshClientMain extends SshClientCliSupport {
                     error = true;
                     break;
                 }
-                if (GenericUtils.isEmpty(command) && target == null) {
+                if (GenericUtils.isEmpty(command) && (target == null)) {
                     target = argName;
                 } else {
                     if (command == null) {

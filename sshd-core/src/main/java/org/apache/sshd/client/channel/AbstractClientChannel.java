@@ -297,7 +297,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if ((openFuture != null) && openFuture.isOpened()) {
             state.add(ClientChannelEvent.OPENED);
         }
-        if (closeFuture.isClosed()) {
+        if (closeFuture.isClosed() || closeSignaled.get() || unregisterSignaled.get() || isClosed()) {
             state.add(ClientChannelEvent.CLOSED);
         }
         if (isEofSignalled()) {

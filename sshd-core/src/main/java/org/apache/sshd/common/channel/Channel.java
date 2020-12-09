@@ -153,6 +153,24 @@ public interface Channel
     void init(ConnectionService service, Session session, int id) throws IOException;
 
     /**
+     * Invoked after being successfully registered by the connection service - should throw a {@link RuntimeException}
+     * if not registered
+     *
+     * @param service    The {@link ConnectionService} through which the channel is registered
+     * @param session    The {@link Session} associated with the channel
+     * @param id         The locally assigned channel identifier
+     * @param registered Whether registration was successful or not
+     */
+    void handleChannelRegistrationResult(ConnectionService service, Session session, int id, boolean registered);
+
+    /**
+     * Called by the connection service to inform the channel that it has bee unregistered.
+     *
+     * @param service The {@link ConnectionService} through which the channel is unregistered
+     */
+    void handleChannelUnregistration(ConnectionService service);
+
+    /**
      * @return {@code true} if call to {@link #init(ConnectionService, Session, int)} was successfully completed
      */
     boolean isInitialized();
