@@ -41,6 +41,12 @@ public final class CliClientModuleProperties {
     public static final Property<Duration> AUTH_TIMEOUT
             = Property.duration("cli-auth-timeout", Duration.ofMinutes(2));
 
+    /**
+     * Key used to retrieve the value of the timeout for opening an EXEC or SHELL channel - in msec.
+     */
+    public static final Property<Duration> CHANNEL_OPEN_TIMEOUT
+            = Property.duration("cli-channel-open-timeout", Duration.ofSeconds(30));
+
     private CliClientModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }

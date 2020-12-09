@@ -23,18 +23,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -53,6 +57,7 @@ public class SshClientMain extends SshClientCliSupport {
 
     //////////////////////////////////////////////////////////////////////////
 
+    @SuppressWarnings("checkstyle:methodlength")
     public static void main(String[] args) throws Exception {
         PrintStream stdout = System.out;
         PrintStream stderr = System.err;
@@ -142,6 +147,8 @@ public class SshClientMain extends SshClientCliSupport {
                 return;
             }
 
+            CliLogger logger = new CliLogger(level, System.err);
+            boolean verbose = logger.isInfoEnabled();
             try (SshClient client = (SshClient) session.getFactoryManager()) {
                 /*
                  * String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME); if (authSock == null && provider
@@ -152,6 +159,11 @@ public class SshClientMain extends SshClientCliSupport {
 
                 try {
                     if (socksPort >= 0) {
+                        if (verbose) {
+                            logger.info(
+                                    "Start dynamic port forwarding to " + SshdSocketAddress.LOCALHOST_NAME + ":" + socksPort);
+                        }
+
                         session.startDynamicPortForwarding(
                                 new SshdSocketAddress(SshdSocketAddress.LOCALHOST_NAME, socksPort));
                         Thread.sleep(Long.MAX_VALUE);
@@ -159,21 +171,46 @@ public class SshClientMain extends SshClientCliSupport {
                         Map<String, ?> env = resolveClientEnvironment(client);
                         PtyChannelConfiguration ptyConfig = resolveClientPtyOptions(client);
                         ClientChannel channel;
+                        String cmdValue;
                         if (GenericUtils.isEmpty(command)) {
                             channel = session.createShellChannel(ptyConfig, env);
                             ((ChannelShell) channel).setAgentForwarding(agentForward);
                             channel.setIn(new NoCloseInputStream(System.in));
+                            cmdValue = Channel.CHANNEL_SHELL;
                         } else {
-                            channel = session.createExecChannel(
-                                    String.join(" ", command).trim(), ptyConfig, env);
+                            cmdValue = String.join(" ", command).trim();
+                            channel = session.createExecChannel(cmdValue, ptyConfig, env);
+                        }
+
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("PTY=" + ptyConfig + " for command=" + cmdValue);
+                            logger.debug("ENV=" + env + " for command=" + cmdValue);
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);
                              OutputStream channelErr = new NoCloseOutputStream(System.err)) {
                             channel.setOut(channelOut);
                             channel.setErr(channelErr);
-                            channel.open().await(); // TODO use verify and a configurable timeout
-                            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+
+                            Duration maxWait = CliClientModuleProperties.CHANNEL_OPEN_TIMEOUT.getRequired(channel);
+                            if (verbose) {
+                                logger.info("Wait " + maxWait + " for open channel for command=" + cmdValue);
+                            }
+                            channel.open().verify(maxWait);
+                            if (verbose) {
+                                logger.info("Channel opened for command=" + cmdValue);
+                            }
+
+                            Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+                            if (verbose) {
+                                logger.info("command=" + cmdValue + " - waitFor result=" + result);
+                                if (result.contains(ClientChannelEvent.EXIT_SIGNAL)) {
+                                    logger.info("    " + ClientChannelEvent.EXIT_SIGNAL + "=" + channel.getExitSignal());
+                                }
+                                if (result.contains(ClientChannelEvent.EXIT_STATUS)) {
+                                    logger.info("    " + ClientChannelEvent.EXIT_STATUS + "=" + channel.getExitStatus());
+                                }
+                            }
                         } finally {
                             channel.close();
                         }
@@ -185,6 +222,9 @@ public class SshClientMain extends SshClientCliSupport {
             } finally {
                 session.close();
             }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+            throw e;
         } finally {
             if (logStream != null && logStream != stdout && logStream != stderr) {
                 logStream.close();

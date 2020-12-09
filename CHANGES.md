@@ -16,6 +16,9 @@
 
 ## Minor code helpers
 
+* [SSHD-1085](https://issues.apache.org/jira/browse/SSHD-1085) Added `CliLogger` + more verbosity on `SshClientMain`
+
+
 ## Behavioral changes and enhancements
 
 * [SSHD-1085](https://issues.apache.org/jira/browse/SSHD-1085) Added more notifications related to channel state change for detecting channel closing or closed earlier.
