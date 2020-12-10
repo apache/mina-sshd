@@ -528,7 +528,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>3.5.15</version>
+                <version>3.6.28</version>
             </dependency>
                 <!-- Used by mockito -->
             <dependency>
