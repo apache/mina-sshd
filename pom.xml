@@ -176,9 +176,9 @@
                     NOTE: recommend also
 
                     * Activating 'quick' profile
-                    * Skip PMD, checkstyle
+                    * Skip PMD, checkstyle, formatting, assembly, etc.
 
-                mvn -Powasp,quick -Dpmd.skip=true -Dcheckstyle.skip=true verify
+                mvn -Powasp,quick -Danimal.sniffer.skip=true -Drat.skip=true -Dpmd.skip=true -Dcheckstyle.skip=true -Dassembly.skipAssembly=true -Dformatter.skip=true -Dimpsort.skip=true verify
 
                 -->
             <id>owasp</id>
@@ -187,7 +187,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>6.0.2</version>
+                        <version>6.0.3</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
