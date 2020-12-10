@@ -79,6 +79,7 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -579,7 +580,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(KexExtensionHandler.class);
             try {
                 Class<?> clazz = cl.loadClass(kexExtension);
-                KexExtensionHandler handler = KexExtensionHandler.class.cast(clazz.newInstance());
+                KexExtensionHandler handler = ReflectionUtils.newInstance(clazz, KexExtensionHandler.class);
                 manager.setKexExtensionHandler(handler);
             } catch (Exception e) {
                 stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')

@@ -98,6 +98,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     }
 
     @Parameters(name = "type={2}")
+    @SuppressWarnings("deprecation")
     public static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
 
@@ -154,6 +155,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     }
 
     @Test // invalid principal, abort
+    @SuppressWarnings("deprecation")
     public void testAbortOnInvalidPrincipal() throws Exception {
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);
         boolean thrown = false;

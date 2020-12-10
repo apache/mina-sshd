@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.function.Function;
@@ -49,5 +50,16 @@ public final class ReflectionUtils {
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+    public static Object newInstance(Class<?> clazz) throws ReflectiveOperationException {
+        return newInstance(clazz, Object.class);
+    }
+
+    @SuppressWarnings("checkstyle:ThrowsCount")
+    public static <T> T newInstance(Class<?> clazz, Class<? extends T> castType) throws ReflectiveOperationException {
+        Constructor<?> ctor = clazz.getDeclaredConstructor();
+        Object instance = ctor.newInstance();
+        return castType.cast(instance);
     }
 }

@@ -64,6 +64,7 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
     }
 
     @Test   // SSHD-1004
+    @SuppressWarnings("deprecation")
     public void testNoDeprecatedCiphers() {
         assertNoDeprecatedFactoryInstanceNames(Cipher.class.getSimpleName(),
                 EnumSet.of(BuiltinCiphers.arcfour128, BuiltinCiphers.arcfour256, BuiltinCiphers.tripledescbc,
@@ -93,6 +94,7 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
     }
 
     @Test   // SSHD-1004
+    @SuppressWarnings("deprecation")
     public void testNoDeprecatedSignatures() {
         assertNoDeprecatedFactoryInstanceNames(Cipher.class.getSimpleName(),
                 EnumSet.of(BuiltinSignatures.dsa, BuiltinSignatures.rsa_cert, BuiltinSignatures.dsa_cert),
@@ -107,6 +109,7 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testNoDeprecatedMacs() {
         assertNoDeprecatedFactoryInstanceNames(
                 Mac.class.getSimpleName(), EnumSet.of(BuiltinMacs.hmacmd5, BuiltinMacs.hmacmd596, BuiltinMacs.hmacsha196),

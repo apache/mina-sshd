@@ -97,7 +97,7 @@ public final class AprLibrary {
     }
 
     @Override
-    @SuppressWarnings("checkstyle:NoFinalizer")
+    @SuppressWarnings({ "checkstyle:NoFinalizer", "deprecation" })
     protected void finalize() throws Throwable {
         library = null;
         Pool.destroy(pool);

@@ -33,6 +33,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -66,6 +67,7 @@ public class CipherTest extends BaseTestSupport {
     /*
      * NOTE !!! order is important since we build from it the C2S/S2C ciphers proposal
      */
+    @SuppressWarnings("deprecation")
     private static final List<Object[]> PARAMETERS = Collections.unmodifiableList(
             Arrays.asList(
                     new Object[] { BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS },
@@ -199,7 +201,7 @@ public class CipherTest extends BaseTestSupport {
     static boolean checkCipher(String cipher) {
         try {
             Class<?> c = Class.forName(cipher);
-            com.jcraft.jsch.Cipher jschCipher = (com.jcraft.jsch.Cipher) (c.newInstance());
+            com.jcraft.jsch.Cipher jschCipher = ReflectionUtils.newInstance(c, com.jcraft.jsch.Cipher.class);
             jschCipher.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
                     new byte[jschCipher.getBlockSize()],
                     new byte[jschCipher.getIVSize()]);

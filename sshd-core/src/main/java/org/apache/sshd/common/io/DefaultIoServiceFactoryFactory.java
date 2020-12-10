@@ -26,6 +26,7 @@ import java.util.ServiceLoader;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +144,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         return services.removeFirst();
     }
 
-    public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz, String factory) {
+    public static <T extends IoServiceFactoryFactory> T newInstance(Class<? extends T> clazz, String factory) {
         BuiltinIoServiceFactoryFactories builtin = BuiltinIoServiceFactoryFactories.fromFactoryName(factory);
         if (builtin != null) {
             IoServiceFactoryFactory builtinInstance = builtin.create();
@@ -155,8 +156,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         if (cl != null) {
             try {
                 Class<?> loaded = cl.loadClass(factory);
-                Object factoryInstance = loaded.newInstance();
-                return clazz.cast(factoryInstance);
+                return ReflectionUtils.newInstance(loaded, clazz);
             } catch (Throwable t) {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }
@@ -166,8 +166,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
         if (cl != clDefault) {
             try {
                 Class<?> loaded = clDefault.loadClass(factory);
-                Object factoryInstance = loaded.newInstance();
-                return clazz.cast(factoryInstance);
+                return ReflectionUtils.newInstance(loaded, clazz);
             } catch (Throwable t) {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }

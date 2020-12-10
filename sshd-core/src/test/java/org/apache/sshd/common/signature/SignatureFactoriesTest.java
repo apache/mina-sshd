@@ -89,6 +89,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
     }
 
     @Parameters(name = "type={0}, size={2}")
+    @SuppressWarnings("deprecation")
     public static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
         addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);

@@ -45,6 +45,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.scp.client.ScpClient;
@@ -196,7 +197,7 @@ public class ScpCommandMain extends SshClientCliSupport {
         try {
             ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ScpClientCreator.class);
             Class<?> clazz = cl.loadClass(className);
-            return ScpClientCreator.class.cast(clazz.newInstance());
+            return ReflectionUtils.newInstance(clazz, ScpClientCreator.class);
         } catch (Exception e) {
             stderr.append("WARNING: Failed (").append(e.getClass().getSimpleName()).append(')')
                     .append(" to instantiate ").append(className)

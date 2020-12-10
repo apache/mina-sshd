@@ -50,6 +50,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -182,7 +183,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             for (String fqcn : classes) {
                 try {
                     Class<?> clazz = cl.loadClass(fqcn);
-                    SubsystemFactory factory = SubsystemFactory.class.cast(clazz.newInstance());
+                    SubsystemFactory factory = ReflectionUtils.newInstance(clazz, SubsystemFactory.class);
                     factory = registerSubsystemFactoryListeners(
                             server, level, stdout, stderr, options, factory);
                     subsystems.add(factory);
@@ -302,8 +303,7 @@ public abstract class SshServerCliSupport extends CliSupport {
         ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(ShellFactory.class);
         try {
             Class<?> clazz = cl.loadClass(factory);
-            Object instance = clazz.newInstance();
-            ShellFactory shellFactory = ShellFactory.class.cast(instance);
+            ShellFactory shellFactory = ReflectionUtils.newInstance(clazz, ShellFactory.class);
             return useScp ? createScpCommandFactory(level, stdout, stderr, shellFactory) : shellFactory;
         } catch (Exception e) {
             stderr.append("ERROR: Failed (").append(e.getClass().getSimpleName()).append(')')

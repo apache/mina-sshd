@@ -28,6 +28,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.apache.sshd.common.util.ReflectionUtils;
+
 /**
  * Utility class for thread pools.
  *
@@ -75,21 +77,20 @@ public final class ThreadUtils {
     }
 
     public static <T> T createDefaultInstance(
-            Class<?> anchor, Class<T> targetType, String className)
+            Class<?> anchor, Class<? extends T> targetType, String className)
             throws ReflectiveOperationException {
         return createDefaultInstance(resolveDefaultClassLoaders(anchor), targetType, className);
     }
 
     public static <T> T createDefaultInstance(
-            ClassLoader cl, Class<T> targetType, String className)
+            ClassLoader cl, Class<? extends T> targetType, String className)
             throws ReflectiveOperationException {
         Class<?> instanceType = cl.loadClass(className);
-        Object instance = instanceType.newInstance();
-        return targetType.cast(instance);
+        return ReflectionUtils.newInstance(instanceType, targetType);
     }
 
     public static <T> T createDefaultInstance(
-            Iterable<? extends ClassLoader> cls, Class<T> targetType, String className)
+            Iterable<? extends ClassLoader> cls, Class<? extends T> targetType, String className)
             throws ReflectiveOperationException {
         for (ClassLoader cl : cls) {
             try {

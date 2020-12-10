@@ -60,6 +60,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -280,7 +281,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         if (GenericUtils.isNotEmpty(factoryName)) {
             try {
                 Class<?> clazz = cl.loadClass(factoryName);
-                return SftpClientFactory.class.cast(clazz.newInstance());
+                return ReflectionUtils.newInstance(clazz, SftpClientFactory.class);
             } catch (Throwable t) {
                 System.err.append("Failed (").append(t.getClass().getSimpleName()).append(')')
                         .append(" to instantiate ").append(factoryName)

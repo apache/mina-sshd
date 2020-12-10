@@ -33,6 +33,7 @@ public class ARCFOUR128Test extends BaseCipherTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testEncryptDecrypt() throws Exception {
         testEncryptDecrypt(BuiltinCiphers.arcfour128);
     }
