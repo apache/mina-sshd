@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -297,7 +298,7 @@ public final class SshFsMounter extends SshServerCliSupport {
         }
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        Level level = resolveLoggingVerbosity(resolver, args);
+        Level level = CliLogger.resolveLoggingVerbosity(resolver, args);
         SshServer sshd = error
                 ? null : setupIoServiceFactory(
                         CoreTestSupportUtils.setupTestServer(SshFsMounter.class), resolver,

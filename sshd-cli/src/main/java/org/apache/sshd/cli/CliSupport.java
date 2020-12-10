@@ -20,14 +20,12 @@ package org.apache.sshd.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.AttributeRepository;
@@ -44,7 +42,6 @@ import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.config.CompressionConfigValue;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
-import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -58,6 +55,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.slf4j.Logger;
 
 /**
  * Provides common utilities for SSH client/server execution from the CLI
@@ -69,20 +67,6 @@ public abstract class CliSupport {
 
     protected CliSupport() {
         super();
-    }
-
-    public static boolean showError(PrintStream stderr, String message) {
-        stderr.append("ERROR: ").println(message);
-        return true;
-    }
-
-    public static boolean isEnabledVerbosityLogging(Level level) {
-        if ((level == null) || Level.OFF.equals(level) || Level.CONFIG.equals(level)
-                || Level.SEVERE.equals(level) || Level.WARNING.equals(level)) {
-            return false;
-        }
-
-        return true;
     }
 
     public static <
@@ -160,39 +144,22 @@ public abstract class CliSupport {
 
         manager.setIoServiceFactoryFactory(factory.create());
 
-        if (!isEnabledVerbosityLogging(level)) {
-            return manager;
+        Logger logger = CliLogger.resolveLogger(CliSupport.class, level, stdout, stderr);
+        if (logger.isInfoEnabled()) {
+            manager.setIoServiceEventListener(createLoggingIoServiceEventListener(logger));
+            manager.addSessionListener(createLoggingSessionListener(logger));
         }
-
-        PrintStream out = Level.INFO.equals(level) ? stderr : stdout;
-        manager.setIoServiceEventListener(createLoggingIoServiceEventListener(out));
-        manager.addSessionListener(createLoggingSessionListener(out));
         return manager;
     }
 
-    public static void printStackTrace(Appendable out, Throwable reason) {
-        if ((reason == null) || (out == null)) {
-            return;
-        }
-
-        if (out instanceof PrintStream) {
-            reason.printStackTrace((PrintStream) out);
-        } else if (out instanceof PrintWriter) {
-            reason.printStackTrace((PrintWriter) out);
-        }
-    }
-
     @SuppressWarnings("checkstyle:anoninnerlength")
-    public static IoServiceEventListener createLoggingIoServiceEventListener(Appendable out) {
+    public static IoServiceEventListener createLoggingIoServiceEventListener(Logger logger) {
         return new IoServiceEventListener() {
             @Override
             public void connectionEstablished(
                     IoConnector connector, SocketAddress local, AttributeRepository context, SocketAddress remote)
                     throws IOException {
-                out.append("Connection established via ").append(Objects.toString(connector))
-                        .append("- local=").append(Objects.toString(local))
-                        .append(", remote=").append(Objects.toString(remote))
-                        .append(System.lineSeparator());
+                logger.info("Connection established via {} - local={}, remote={}", connector, local, remote);
             }
 
             @Override
@@ -200,13 +167,11 @@ public abstract class CliSupport {
                     IoConnector connector, SocketAddress local, AttributeRepository context,
                     SocketAddress remote, Throwable reason)
                     throws IOException {
-                out.append("Abort established connection ").append(Objects.toString(connector))
-                        .append(" - local=").append(Objects.toString(local))
-                        .append(", remote=").append(Objects.toString(remote))
-                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                        .append(' ').append(reason.getMessage())
-                        .append(System.lineSeparator());
-                printStackTrace(out, reason);
+                logger.info("Abort established connection {}  - local={}, remote={}", connector, local, remote);
+                if (reason != null) {
+                    logger.warn("     {}: {}", reason.getClass().getSimpleName(), reason.getMessage());
+                    logger.error(reason.getClass().getSimpleName(), reason);
+                }
             }
 
             @Override
@@ -214,11 +179,7 @@ public abstract class CliSupport {
                     IoAcceptor acceptor, SocketAddress local,
                     SocketAddress remote, SocketAddress service)
                     throws IOException {
-                out.append("Connection accepted via ").append(Objects.toString(acceptor))
-                        .append(" - local=").append(Objects.toString(local))
-                        .append(", remote=").append(Objects.toString(remote))
-                        .append(", service=").append(Objects.toString(service))
-                        .append(System.lineSeparator());
+                logger.info("Connection accepted via {} - local={}, remote={}, service={}", acceptor, local, remote, service);
             }
 
             @Override
@@ -226,35 +187,26 @@ public abstract class CliSupport {
                     IoAcceptor acceptor, SocketAddress local, SocketAddress remote,
                     SocketAddress service, Throwable reason)
                     throws IOException {
-                out.append("Abort accepted connection ").append(Objects.toString(acceptor))
-                        .append(" - local=").append(Objects.toString(local))
-                        .append(", remote=").append(Objects.toString(remote))
-                        .append(", service=").append(Objects.toString(service))
-                        .append(": (").append(reason.getClass().getSimpleName()).append(')')
-                        .append(' ').append(reason.getMessage())
-                        .append(System.lineSeparator());
-                printStackTrace(out, reason);
+                logger.info("Abort accepted connection {} - local={}, remote={}, service={}", acceptor, local, remote, service);
+                if (reason != null) {
+                    logger.warn("     {}: {}", reason.getClass().getSimpleName(), reason.getMessage());
+                    logger.error(reason.getClass().getSimpleName(), reason);
+                }
             }
         };
     }
 
     @SuppressWarnings("checkstyle:anoninnerlength")
-    public static SessionListener createLoggingSessionListener(Appendable out) {
+    public static SessionListener createLoggingSessionListener(Logger logger) {
         return new SessionListener() {
             @Override
             public void sessionPeerIdentificationReceived(
                     Session session, String version, List<String> extraLines) {
-                try {
-                    out.append(Objects.toString(session))
-                            .append(" peer identification=").append(version)
-                            .append(System.lineSeparator());
-                    if (GenericUtils.isNotEmpty(extraLines)) {
-                        for (String l : extraLines) {
-                            out.append("    => ").append(l).append(System.lineSeparator());
-                        }
+                logger.info("{} peer identification={}", session, version);
+                if (GenericUtils.isNotEmpty(extraLines)) {
+                    for (String l : extraLines) {
+                        logger.info("    => {}", l);
                     }
-                } catch (IOException e) {
-                    // ignored
                 }
             }
 
@@ -269,88 +221,23 @@ public abstract class CliSupport {
                     return;
                 }
 
-                try {
-                    out.append(Objects.toString(session))
-                            .append(" KEX negotiation results:")
-                            .append(System.lineSeparator());
-                    for (KexProposalOption opt : KexProposalOption.VALUES) {
-                        String value = negotiatedOptions.get(opt);
-                        out.append("    ").append(opt.getDescription())
-                                .append(": ").append(value)
-                                .append(System.lineSeparator());
-                    }
-                } catch (IOException e) {
-                    // ignored
+                logger.info("{} KEX negotiation results:", session);
+                for (KexProposalOption opt : KexProposalOption.VALUES) {
+                    logger.info("    {}: {}", opt.getDescription(), negotiatedOptions.get(opt));
                 }
             }
 
             @Override
             public void sessionException(Session session, Throwable t) {
-                try {
-                    out.append(Objects.toString(session))
-                            .append(' ').append(t.getClass().getSimpleName())
-                            .append(": ").append(t.getMessage())
-                            .append(System.lineSeparator());
-                    printStackTrace(out, t);
-                } catch (IOException e) {
-                    // ignored
-                }
+                logger.error("{} {}: {}", session, t.getClass().getSimpleName(), t.getMessage());
+                logger.error(t.getClass().getSimpleName(), t);
             }
 
             @Override
             public void sessionClosed(Session session) {
-                try {
-                    out.append(Objects.toString(session))
-                            .append(" closed")
-                            .append(System.lineSeparator());
-                } catch (IOException e) {
-                    // ignored
-                }
+                logger.info("{} closed", session);
             }
         };
-    }
-
-    public static Level resolveLoggingVerbosity(String... args) {
-        return resolveLoggingVerbosity(args, GenericUtils.length(args));
-    }
-
-    public static Level resolveLoggingVerbosity(String[] args, int maxIndex) {
-        for (int index = 0; index < maxIndex; index++) {
-            String argName = args[index];
-            if ("-v".equals(argName)) {
-                return Level.INFO;
-            } else if ("-vv".equals(argName)) {
-                return Level.FINE;
-            } else if ("-vvv".equals(argName)) {
-                return Level.FINEST;
-            }
-        }
-
-        return Level.CONFIG;
-    }
-
-    /**
-     * Looks for the {@link ConfigFileReaderSupport#LOG_LEVEL_CONFIG_PROP} in the options. If found, then uses it as the
-     * result. Otherwise, invokes {@link #resolveLoggingVerbosity(String...)}
-     *
-     * @param  resolver The {@code -o} options specified by the user
-     * @param  args     The command line arguments
-     * @return          The resolved verbosity level
-     */
-    public static Level resolveLoggingVerbosity(PropertyResolver resolver, String... args) {
-        String levelValue = PropertyResolverUtils.getString(
-                resolver, ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP);
-        if (GenericUtils.isEmpty(levelValue)) {
-            return resolveLoggingVerbosity(args);
-        }
-
-        LogLevelValue level = LogLevelValue.fromName(levelValue);
-        if (level == null) {
-            throw new IllegalArgumentException(
-                    "Unknown " + ConfigFileReaderSupport.LOG_LEVEL_CONFIG_PROP + " option value: " + levelValue);
-        }
-
-        return level.getLoggingLevel();
     }
 
     public static List<NamedFactory<Compression>> setupCompressions(PropertyResolver options, PrintStream stderr) {
@@ -362,7 +249,7 @@ public abstract class CliSupport {
 
         NamedFactory<Compression> value = CompressionConfigValue.fromName(argVal);
         if (value == null) {
-            showError(stderr, "Unknown compression configuration value: " + argVal);
+            CliLogger.showError(stderr, "Unknown compression configuration value: " + argVal);
             return null;
         }
 
@@ -372,14 +259,14 @@ public abstract class CliSupport {
     public static List<NamedFactory<Compression>> setupCompressions(
             String argName, String argVal, List<NamedFactory<Compression>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
+            CliLogger.showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
         BuiltinCompressions.ParseResult result = BuiltinCompressions.parseCompressionsList(argVal);
         Collection<? extends NamedFactory<Compression>> available = result.getParsedFactories();
         if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "No known compressions in " + argVal);
+            CliLogger.showError(stderr, "No known compressions in " + argVal);
             return null;
         }
 
@@ -403,14 +290,14 @@ public abstract class CliSupport {
     public static List<NamedFactory<Mac>> setupMacs(
             String argName, String argVal, List<NamedFactory<Mac>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
+            CliLogger.showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
         BuiltinMacs.ParseResult result = BuiltinMacs.parseMacsList(argVal);
         Collection<? extends NamedFactory<Mac>> available = result.getParsedFactories();
         if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "No known MACs in " + argVal);
+            CliLogger.showError(stderr, "No known MACs in " + argVal);
             return null;
         }
 
@@ -435,14 +322,14 @@ public abstract class CliSupport {
     public static List<NamedFactory<Cipher>> setupCiphers(
             String argName, String argVal, List<NamedFactory<Cipher>> current, PrintStream stderr) {
         if (GenericUtils.size(current) > 0) {
-            showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
+            CliLogger.showError(stderr, argName + " option value re-specified: " + NamedResource.getNames(current));
             return null;
         }
 
         BuiltinCiphers.ParseResult result = BuiltinCiphers.parseCiphersList(argVal);
         Collection<? extends NamedFactory<Cipher>> available = result.getParsedFactories();
         if (GenericUtils.isEmpty(available)) {
-            showError(stderr, "WARNING: No known ciphers in " + argVal);
+            CliLogger.showError(stderr, "WARNING: No known ciphers in " + argVal);
             return null;
         }
 

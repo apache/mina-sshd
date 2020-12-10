@@ -43,6 +43,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.ClientAuthenticationManager;
 import org.apache.sshd.client.ClientBuilder;
@@ -135,7 +136,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             if (isArgumentedOption(portOption, argName)) {
                 i++;
                 if (i >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
+                    error = CliLogger.showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
@@ -144,24 +145,24 @@ public abstract class SshClientCliSupport extends CliSupport {
 
             if (portOption.equals(argName)) {
                 if (port > 0) {
-                    error = showError(stderr, argName + " option value re-specified: " + port);
+                    error = CliLogger.showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
                 port = Integer.parseInt(argVal);
                 if (port <= 0) {
-                    error = showError(stderr, "Bad option value for " + argName + ": " + port);
+                    error = CliLogger.showError(stderr, "Bad option value for " + argName + ": " + port);
                     break;
                 }
             } else if ("-J".equals(argName)) {
                 if (proxyJump != null) {
-                    error = showError(stderr, argName + " option value re-specified: " + proxyJump);
+                    error = CliLogger.showError(stderr, argName + " option value re-specified: " + proxyJump);
                     break;
                 }
                 proxyJump = argVal;
             } else if ("-w".equals(argName)) {
                 if (GenericUtils.length(password) > 0) {
-                    error = showError(stderr, argName + " option value re-specified: " + password);
+                    error = CliLogger.showError(stderr, argName + " option value re-specified: " + password);
                     break;
                 }
                 password = argVal;
@@ -190,7 +191,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 String opt = argVal;
                 int idx = opt.indexOf('=');
                 if (idx <= 0) {
-                    error = showError(stderr, "bad syntax for option: " + opt);
+                    error = CliLogger.showError(stderr, "bad syntax for option: " + opt);
                     break;
                 }
 
@@ -204,7 +205,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                 }
             } else if ("-l".equals(argName)) {
                 if (login != null) {
-                    error = showError(stderr, argName + " option value re-specified: " + port);
+                    error = CliLogger.showError(stderr, argName + " option value re-specified: " + port);
                     break;
                 }
 
@@ -221,7 +222,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                         login = host.substring(0, pos);
                         host = host.substring(pos + 1);
                     } else {
-                        error = showError(stderr, "Login already specified using -l option (" + login + "): " + host);
+                        error = CliLogger.showError(stderr, "Login already specified using -l option (" + login + "): " + host);
                         break;
                     }
                 }
@@ -229,7 +230,7 @@ public abstract class SshClientCliSupport extends CliSupport {
         }
 
         if ((!error) && GenericUtils.isEmpty(host)) {
-            error = showError(stderr, "Hostname not specified");
+            error = CliLogger.showError(stderr, "Hostname not specified");
         }
 
         if (error) {
@@ -461,7 +462,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             try {
                 setupSessionIdentities(client, identities, stdin, stdout, stderr);
             } catch (Throwable t) { // show but do not fail the setup - maybe a password can be used
-                showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
+                CliLogger.showError(stderr, t.getClass().getSimpleName() + " while loading user keys: " + t.getMessage());
             }
 
             setupServerKeyVerifier(client, resolver, stdin, stdout, stderr);
@@ -476,7 +477,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             }
             return client;
         } catch (Throwable t) {
-            showError(stderr, "Failed (" + t.getClass().getSimpleName() + ") to setup client: " + t.getMessage());
+            CliLogger.showError(stderr, "Failed (" + t.getClass().getSimpleName() + ") to setup client: " + t.getMessage());
             client.close();
             return null;
         }
@@ -649,7 +650,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             String argName = args[index];
             if ("-E".equals(argName)) {
                 if ((index + 1) >= maxIndex) {
-                    showError(stderr, "Missing " + argName + " option argument");
+                    CliLogger.showError(stderr, "Missing " + argName + " option argument");
                     return null;
                 }
 
@@ -662,7 +663,7 @@ public abstract class SshClientCliSupport extends CliSupport {
                     Path path = Paths.get(argVal).normalize().toAbsolutePath();
                     return Files.newOutputStream(path);
                 } catch (IOException e) {
-                    showError(stderr,
+                    CliLogger.showError(stderr,
                             "Failed (" + e.getClass().getSimpleName() + ") to open " + argVal + ": " + e.getMessage());
                     return null;
                 }

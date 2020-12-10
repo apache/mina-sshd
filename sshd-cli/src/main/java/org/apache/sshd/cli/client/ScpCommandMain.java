@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
-import org.apache.sshd.cli.CliSupport;
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
@@ -58,6 +58,7 @@ import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
+import org.slf4j.Logger;
 
 /**
  * @see    <A HREF="https://man7.org/linux/man-pages/man1/scp.1.html">SCP(1) - manual page</A>
@@ -95,7 +96,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             if (isArgumentedOption(SCP_PORT_OPTION, argName) || "-creator".equals(argName)) {
                 index++;
                 if (index >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
+                    error = CliLogger.showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
@@ -109,32 +110,32 @@ public class ScpCommandMain extends SshClientCliSupport {
                 threeWay = true;
                 effective.add(argName);
             } else if (argName.charAt(0) == '-') {
-                error = showError(stderr, "Unknown option: " + argName);
+                error = CliLogger.showError(stderr, "Unknown option: " + argName);
                 break;
             } else {
                 index++;
                 if (index >= numArgs) {
-                    error = showError(stderr, "Not enough arguments");
+                    error = CliLogger.showError(stderr, "Not enough arguments");
                     break;
                 }
 
                 ScpLocation source = new ScpLocation(argName);
                 ScpLocation target = new ScpLocation(args[index]);
                 if (index < (numArgs - 1)) {
-                    error = showError(stderr, "Unexpected extra arguments");
+                    error = CliLogger.showError(stderr, "Unexpected extra arguments");
                     break;
                 }
 
                 if (threeWay) {
                     if (source.isLocal() || target.isLocal()) {
-                        error = showError(stderr, "Both targets must be remote for the 3-way copy option");
+                        error = CliLogger.showError(stderr, "Both targets must be remote for the 3-way copy option");
                         break;
                     }
 
                     adjustRemoteTargetArguments(source, source, target, effective);
                 } else {
                     if (source.isLocal() == target.isLocal()) {
-                        error = showError(stderr, "Both targets are either remote or local");
+                        error = CliLogger.showError(stderr, "Both targets are either remote or local");
                         break;
                     }
 
@@ -176,7 +177,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             if ("-creator".equals(argName)) {
                 index++;
                 if (index >= numArgs) {
-                    showError(stderr, "option requires an argument: " + argName);
+                    CliLogger.showError(stderr, "option requires an argument: " + argName);
                     return null;
                 }
 
@@ -260,6 +261,8 @@ public class ScpCommandMain extends SshClientCliSupport {
         try {
             if (!quiet) {
                 creator.setScpTransferEventListener(new ScpTransferEventListener() {
+                    private final Logger log = CliLogger.resolveLogger(ScpCommandMain.class, level, stdout, stderr);
+
                     @Override
                     public void startFolderEvent(
                             Session session, FileOperation op, Path file, Set<PosixFilePermission> perms) {
@@ -297,21 +300,14 @@ public class ScpCommandMain extends SshClientCliSupport {
                     private void logEvent(
                             String name, Session session, FileOperation op, Path file, long length,
                             Collection<PosixFilePermission> perms, Throwable thrown) {
-                        PrintStream ps = (thrown == null) ? stdout : stderr;
-                        ps.append("    ").append(name)
-                                .append('[').append(session.toString()).append(']')
-                                .append('[').append(op.name()).append(']')
-                                .append(' ').append(file.toString());
-                        if (length > 0L) {
-                            ps.append(' ').append("length=").append(Long.toString(length));
+                        if (!log.isInfoEnabled()) {
+                            return;
                         }
-                        ps.append(' ').append(String.valueOf(perms));
 
+                        log.info("{} - [{}][{}] (length={}) {} {}", name, session, op, file, length, perms);
                         if (thrown != null) {
-                            ps.append(" - ").append(thrown.getClass().getSimpleName()).append(": ")
-                                    .append(thrown.getMessage());
+                            log.error("{} -   {}: {}", name, thrown.getClass().getSimpleName(), thrown.getMessage());
                         }
-                        ps.println();
                     }
                 });
             }
@@ -452,7 +448,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             int numArgs = GenericUtils.length(args);
             // see the way normalizeCommandArguments works...
             if (numArgs >= 2) {
-                level = CliSupport.resolveLoggingVerbosity(args, numArgs - 2);
+                level = CliLogger.resolveLoggingVerbosity(args, numArgs - 2);
                 logStream = resolveLoggingTargetStream(stdout, stderr, args, numArgs - 2);
                 if (logStream != null) {
                     setupLogging(level, stdout, stderr, logStream);

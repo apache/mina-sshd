@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.apache.sshd.cli.CliLogger;
-import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -44,6 +43,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.slf4j.Logger;
 
 /**
  * TODO Add javadoc
@@ -74,7 +74,7 @@ public class SshClientMain extends SshClientCliSupport {
             // handled by 'setupClientSession'
             if (GenericUtils.isEmpty(command) && isArgumentedOption("-p", argName)) {
                 if ((i + 1) >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
+                    error = CliLogger.showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
 
@@ -89,17 +89,17 @@ public class SshClientMain extends SshClientCliSupport {
 
             if (GenericUtils.isEmpty(command) && "-D".equals(argName)) {
                 if ((i + 1) >= numArgs) {
-                    error = showError(stderr, "option requires an argument: " + argName);
+                    error = CliLogger.showError(stderr, "option requires an argument: " + argName);
                     break;
                 }
                 if (socksPort > 0) {
-                    error = showError(stderr, argName + " option value re-specified: " + socksPort);
+                    error = CliLogger.showError(stderr, argName + " option value re-specified: " + socksPort);
                     break;
                 }
 
                 socksPort = Integer.parseInt(args[++i]);
                 if (socksPort <= 0) {
-                    error = showError(stderr, "Bad option value for " + argName + ": " + socksPort);
+                    error = CliLogger.showError(stderr, "Bad option value for " + argName + ": " + socksPort);
                     break;
                 }
             } else if (GenericUtils.isEmpty(command) && "-A".equals(argName)) {
@@ -107,7 +107,7 @@ public class SshClientMain extends SshClientCliSupport {
             } else if (GenericUtils.isEmpty(command) && "-a".equals(argName)) {
                 agentForward = false;
             } else {
-                level = CliSupport.resolveLoggingVerbosity(args, i);
+                level = CliLogger.resolveLoggingVerbosity(args, i);
                 logStream = resolveLoggingTargetStream(stdout, stderr, args, i);
                 if (logStream == null) {
                     error = true;
@@ -147,7 +147,7 @@ public class SshClientMain extends SshClientCliSupport {
                 return;
             }
 
-            CliLogger logger = new CliLogger(level, System.err);
+            Logger logger = CliLogger.resolveSystemLogger(SshClientMain.class, level);
             boolean verbose = logger.isInfoEnabled();
             try (SshClient client = (SshClient) session.getFactoryManager()) {
                 /*
@@ -160,8 +160,7 @@ public class SshClientMain extends SshClientCliSupport {
                 try {
                     if (socksPort >= 0) {
                         if (verbose) {
-                            logger.info(
-                                    "Start dynamic port forwarding to " + SshdSocketAddress.LOCALHOST_NAME + ":" + socksPort);
+                            logger.info("Start dynamic port forwarding to {}:{}", SshdSocketAddress.LOCALHOST_NAME, socksPort);
                         }
 
                         session.startDynamicPortForwarding(
@@ -183,8 +182,8 @@ public class SshClientMain extends SshClientCliSupport {
                         }
 
                         if (logger.isDebugEnabled()) {
-                            logger.debug("PTY=" + ptyConfig + " for command=" + cmdValue);
-                            logger.debug("ENV=" + env + " for command=" + cmdValue);
+                            logger.debug("PTY={} for command={}", ptyConfig, cmdValue);
+                            logger.debug("ENV={} for command={}", env, cmdValue);
                         }
 
                         try (OutputStream channelOut = new NoCloseOutputStream(System.out);
@@ -194,21 +193,21 @@ public class SshClientMain extends SshClientCliSupport {
 
                             Duration maxWait = CliClientModuleProperties.CHANNEL_OPEN_TIMEOUT.getRequired(channel);
                             if (verbose) {
-                                logger.info("Wait " + maxWait + " for open channel for command=" + cmdValue);
+                                logger.info("Wait {} for open channel for command={}", maxWait, cmdValue);
                             }
                             channel.open().verify(maxWait);
                             if (verbose) {
-                                logger.info("Channel opened for command=" + cmdValue);
+                                logger.info("Channel opened for command={}", cmdValue);
                             }
 
                             Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
                             if (verbose) {
-                                logger.info("command=" + cmdValue + " - waitFor result=" + result);
+                                logger.info("command={} - waitFor result={}", cmdValue, result);
                                 if (result.contains(ClientChannelEvent.EXIT_SIGNAL)) {
-                                    logger.info("    " + ClientChannelEvent.EXIT_SIGNAL + "=" + channel.getExitSignal());
+                                    logger.info("    {}={}", ClientChannelEvent.EXIT_SIGNAL, channel.getExitSignal());
                                 }
                                 if (result.contains(ClientChannelEvent.EXIT_STATUS)) {
-                                    logger.info("    " + ClientChannelEvent.EXIT_STATUS + "=" + channel.getExitStatus());
+                                    logger.info("    {}={}", ClientChannelEvent.EXIT_STATUS, channel.getExitStatus());
                                 }
                             }
                         } finally {

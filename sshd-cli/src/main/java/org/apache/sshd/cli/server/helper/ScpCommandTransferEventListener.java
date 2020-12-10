@@ -26,7 +26,9 @@ import java.util.Set;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.server.ScpCommandFactory;
+import org.slf4j.Logger;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -34,15 +36,17 @@ import org.apache.sshd.scp.server.ScpCommandFactory;
 public class ScpCommandTransferEventListener
         extends ServerEventListenerHelper
         implements ScpTransferEventListener {
-    public ScpCommandTransferEventListener(Appendable stdout, Appendable stderr) {
-        super(ScpCommandFactory.SCP_FACTORY_NAME, stdout, stderr);
+    public ScpCommandTransferEventListener(Logger logger) {
+        super(ScpCommandFactory.SCP_FACTORY_NAME, logger);
     }
 
     @Override
     public void startFileEvent(
             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms)
             throws IOException {
-        outputDebugMessage("startFileEvent(%s)[%s] len=%d, perms=%s: %s", session, op, length, perms, file);
+        if (log.isInfoEnabled()) {
+            log.info("startFileEvent({})[{}] len={}, perms={}: {}", session, op, length, perms, file);
+        }
     }
 
     @Override
@@ -50,17 +54,19 @@ public class ScpCommandTransferEventListener
             Session session, FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
         if (thrown != null) {
-            outputErrorMessage("endFileEvent(%s)[%s] failed (%s) len=%d, perms=%s [%s]: %s",
+            log.error("endFileEvent({})[{}] failed ({}) len={}, perms={} [{}]: {}",
                     session, op, thrown.getClass().getSimpleName(), length, perms, file, thrown.getMessage());
-        } else {
-            outputDebugMessage("endFileEvent(%s)[%s] len=%d, perms=%s: %s", session, op, length, perms, file);
+        } else if (log.isInfoEnabled()) {
+            log.info("endFileEvent({})[{}] len={}, perms={}: {}", session, op, length, perms, file);
         }
     }
 
     @Override
     public void startFolderEvent(Session session, FileOperation op, Path file, Set<PosixFilePermission> perms)
             throws IOException {
-        outputDebugMessage("startFolderEvent(%s)[%s] perms=%s: %s", session, op, perms, file);
+        if (log.isInfoEnabled()) {
+            log.info("startFolderEvent({})[{}] perms={}: {}", session, op, perms, file);
+        }
     }
 
     @Override
@@ -68,10 +74,21 @@ public class ScpCommandTransferEventListener
             Session session, FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown)
             throws IOException {
         if (thrown != null) {
-            outputErrorMessage("endFolderEvent(%s)[%s] failed (%s) perms=%s [%s]: %s",
+            log.error("endFolderEvent({})[{}] failed ({}) perms={} [{}]: {}",
                     session, op, thrown.getClass().getSimpleName(), perms, file, thrown.getMessage());
-        } else {
-            outputDebugMessage("endFolderEvent(%s)[%s] lperms=%s: %s", session, op, perms, file);
+        } else if (log.isInfoEnabled()) {
+            log.info("endFolderEvent({})[{}] perms={}: {}", session, op, perms, file);
+        }
+    }
+
+    @Override
+    public void handleFileEventAckInfo(
+            Session session, FileOperation op, Path file, long length,
+            Set<PosixFilePermission> perms, ScpAckInfo ackInfo)
+            throws IOException {
+        if (log.isInfoEnabled()) {
+            log.info("handleFileEventAckInfo({})[{}] perms={}, length={}, ACK={}: {}",
+                    session, op, perms, length, ackInfo, file);
         }
     }
 }

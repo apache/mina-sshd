@@ -38,6 +38,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.slf4j.Logger;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -503,6 +505,23 @@ public final class LoggingUtils {
                 return "TRACE";
             }
         };
+    }
+
+    /**
+     * Formats an {@code slf4j} message using its formatting structure - mainly the usage of <U>positional</U> arguments
+     * - e.g., &quot;Value1={}, Value2={}, ...&quot;
+     *
+     * @param  format    The formatting instructions - ignored if {@code null}/empty
+     * @param  arguments The formatting arguments - ignored if {@code null}/empty
+     * @return           The formatted message - or the format itself if no arguments or no format string
+     */
+    public static String formatMessage(String format, Object... arguments) {
+        if (GenericUtils.isEmpty(format) || GenericUtils.isEmpty(arguments)) {
+            return format;
+        }
+
+        FormattingTuple tuple = MessageFormatter.arrayFormat(format, arguments, null);
+        return tuple.getMessage();
     }
 
     public static void debug(Logger log, String message, Object o1, Object o2, Throwable t) {

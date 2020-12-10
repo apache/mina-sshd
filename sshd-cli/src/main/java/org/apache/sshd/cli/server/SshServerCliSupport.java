@@ -37,6 +37,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.cli.server.helper.ScpCommandTransferEventListener;
 import org.apache.sshd.cli.server.helper.ServerPortForwardingEventListener;
@@ -54,6 +55,7 @@ import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
+import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
@@ -68,6 +70,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpEventListener;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
+import org.slf4j.Logger;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -155,8 +158,9 @@ public abstract class SshServerCliSupport extends CliSupport {
             SshServer server, Level level, PrintStream stdout, PrintStream stderr, PropertyResolver options) {
         ForwardingFilter forwardFilter = SshServerConfigFileReader.resolveServerForwarding(options);
         server.setForwardingFilter(forwardFilter);
-        if (isEnabledVerbosityLogging(level)) {
-            server.addPortForwardingEventListener(new ServerPortForwardingEventListener(stdout, stderr));
+        if (CliLogger.isEnabledVerbosityLogging(level)) {
+            Logger logger = CliLogger.resolveLogger(SshServerCliSupport.class, level, stdout, stderr);
+            server.addPortForwardingEventListener(new ServerPortForwardingEventListener(logger));
         }
         return forwardFilter;
     }
@@ -202,7 +206,8 @@ public abstract class SshServerCliSupport extends CliSupport {
         if (SftpConstants.SFTP_SUBSYSTEM_NAME.equalsIgnoreCase(nameList)) {
             SubsystemFactory factory = registerSubsystemFactoryListeners(
                     server, level, stdout, stderr, options, new SftpSubsystemFactory());
-            stdout.println("Using built-in SFTP subsystem");
+            PrintStream logStream = CliLogger.resolvePrintStream(level, stdout, stderr);
+            CliLogger.log(logStream, level, "Using built-in SFTP subsystem");
             return Collections.singletonList(factory);
         }
 
@@ -232,8 +237,9 @@ public abstract class SshServerCliSupport extends CliSupport {
             F factory)
             throws Exception {
         if (factory instanceof SftpSubsystemFactory) {
-            if (isEnabledVerbosityLogging(level)) {
-                SftpEventListener listener = new SftpServerSubSystemEventListener(stdout, stderr);
+            if (CliLogger.isEnabledVerbosityLogging(level)) {
+                Logger logger = CliLogger.resolveLogger(SftpEventListener.class, level, stdout, stderr);
+                SftpEventListener listener = new SftpServerSubSystemEventListener(logger);
                 ((SftpSubsystemFactory) factory).addSftpEventListener(listener);
             }
 
@@ -309,12 +315,13 @@ public abstract class SshServerCliSupport extends CliSupport {
     }
 
     public static ScpCommandFactory createScpCommandFactory(
-            Level level, Appendable stdout, Appendable stderr, ShellFactory delegateShellFactory) {
+            Level level, PrintStream stdout, PrintStream stderr, ShellFactory delegateShellFactory) {
         ScpCommandFactory.Builder scp = new ScpCommandFactory.Builder()
                 .withDelegate(ProcessShellCommandFactory.INSTANCE)
                 .withDelegateShellFactory(delegateShellFactory);
-        if (isEnabledVerbosityLogging(level)) {
-            scp.addEventListener(new ScpCommandTransferEventListener(stdout, stderr));
+        if (CliLogger.isEnabledVerbosityLogging(level)) {
+            Logger logger = CliLogger.resolveLogger(ScpTransferEventListener.class, level, stdout, stderr);
+            scp.addEventListener(new ScpCommandTransferEventListener(logger));
         }
 
         return scp.build();

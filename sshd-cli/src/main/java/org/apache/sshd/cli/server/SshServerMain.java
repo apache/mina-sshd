@@ -19,6 +19,7 @@
 
 package org.apache.sshd.cli.server;
 
+import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -29,6 +30,7 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
@@ -46,6 +48,7 @@ import org.apache.sshd.server.config.keys.ServerIdentity;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
+import org.slf4j.Logger;
 
 /**
  * TODO Add javadoc
@@ -158,7 +161,8 @@ public class SshServerMain extends SshServerCliSupport {
         }
 
         PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
-        Level level = resolveLoggingVerbosity(resolver, args);
+        Level level = CliLogger.resolveLoggingVerbosity(resolver, args);
+        Logger logger = CliLogger.resolveSystemLogger(SshServerMain.class, level);
         SshServer sshd = error
                 ? null
                 : setupIoServiceFactory(
@@ -192,7 +196,9 @@ public class SshServerMain extends SshServerCliSupport {
 
         ShellFactory shellFactory = resolveShellFactory(level, System.out, System.err, resolver);
         if (shellFactory != null) {
-            System.out.append("Using shell=").println(shellFactory.getClass().getName());
+            if (logger.isInfoEnabled()) {
+                logger.info("Using shell={}", shellFactory.getClass().getName());
+            }
             sshd.setShellFactory(shellFactory);
         }
 
@@ -204,7 +210,9 @@ public class SshServerMain extends SshServerCliSupport {
 
         List<SubsystemFactory> subsystems = resolveServerSubsystems(sshd, level, System.out, System.err, resolver);
         if (GenericUtils.isNotEmpty(subsystems)) {
-            System.out.append("Setup subsystems=").println(NamedResource.getNames(subsystems));
+            if (logger.isInfoEnabled()) {
+                logger.info("Setup subsystems={}", NamedResource.getNames(subsystems));
+            }
             sshd.setSubsystemFactories(subsystems);
         }
 
@@ -215,7 +223,7 @@ public class SshServerMain extends SshServerCliSupport {
     }
 
     private static CommandFactory setupCommandFactory(
-            SshServer sshd, Level level, Appendable stdout, Appendable stderr, ShellFactory shellFactory) {
+            SshServer sshd, Level level, PrintStream stdout, PrintStream stderr, ShellFactory shellFactory) {
         ScpCommandFactory scpFactory;
         if (shellFactory instanceof ScpCommandFactory) {
             scpFactory = (ScpCommandFactory) shellFactory;

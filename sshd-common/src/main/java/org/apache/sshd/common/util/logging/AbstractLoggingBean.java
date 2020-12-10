@@ -37,9 +37,11 @@ public abstract class AbstractLoggingBean {
 
     /**
      * Default constructor - creates a logger using the full class name
+     *
+     * @see #AbstractLoggingBean(Logger)
      */
     protected AbstractLoggingBean() {
-        this("");
+        this((Logger) null);
     }
 
     /**
@@ -54,6 +56,14 @@ public abstract class AbstractLoggingBean {
             name += "[" + discriminator + "]";
         }
         log = LoggerFactory.getLogger(name);
+    }
+
+    /**
+     * @param logger The {@link Logger} instance to use - if {@code null} then one is retrieved using the full class
+     *               name
+     */
+    protected AbstractLoggingBean(Logger logger) {
+        log = (logger == null) ? LoggerFactory.getLogger(getClass()) : logger;
     }
 
     protected SimplifiedLog getSimplifiedLogger() {

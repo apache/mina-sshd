@@ -42,7 +42,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import org.apache.sshd.cli.CliSupport;
+import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
@@ -79,6 +79,7 @@ import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
+import org.slf4j.Logger;
 
 /**
  * TODO Add javadoc
@@ -317,7 +318,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         PrintStream stderr = System.err;
         OutputStream logStream = stderr;
         try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
-            Level level = CliSupport.resolveLoggingVerbosity(args);
+            Level level = CliLogger.resolveLoggingVerbosity(args);
             logStream = resolveLoggingTargetStream(stdout, stderr, args);
             if (logStream != null) {
                 setupLogging(level, stdout, stderr, logStream);
@@ -336,13 +337,17 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             try {
                 SftpClientFactory clientFactory = resolveSftpClientFactory(session);
-                if ((level != null) && (level.intValue() <= Level.INFO.intValue())) {
-                    stdout.append("Using factory=").println(clientFactory.getClass().getSimpleName());
+                Logger logger = (logStream != null)
+                        ? CliLogger.getLogger(SftpCommandMain.class, level,
+                                (logStream instanceof PrintStream) ? (PrintStream) logStream : new PrintStream(logStream))
+                        : CliLogger.resolveSystemLogger(SftpCommandMain.class, level);
+                if (logger.isInfoEnabled()) {
+                    logger.info("Using factory={}", clientFactory.getClass().getSimpleName());
                 }
 
                 SftpVersionSelector versionSelector = resolveVersionSelector(session);
-                if ((level != null) && (level.intValue() <= Level.INFO.intValue())) {
-                    stdout.append("Using version selector=").println(versionSelector);
+                if (logger.isInfoEnabled()) {
+                    logger.info("Using version selector={}", versionSelector);
                 }
 
                 try (SftpClient sftpClient = clientFactory.createSftpClient(session, versionSelector);

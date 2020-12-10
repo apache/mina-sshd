@@ -19,52 +19,21 @@
 
 package org.apache.sshd.cli.server.helper;
 
-import java.io.Flushable;
-import java.io.IOException;
-import java.util.Objects;
-
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.slf4j.Logger;
 
-public abstract class ServerEventListenerHelper implements NamedResource {
+public abstract class ServerEventListenerHelper extends AbstractLoggingBean implements NamedResource {
     private final String name;
-    private final Appendable stdout;
-    private final Appendable stderr;
 
-    public ServerEventListenerHelper(String name, Appendable stdout, Appendable stderr) {
+    public ServerEventListenerHelper(String name, Logger logger) {
+        super(logger);
+
         this.name = name;
-        this.stdout = Objects.requireNonNull(stdout, "No output target");
-        this.stderr = Objects.requireNonNull(stderr, "No error target");
     }
 
     @Override
     public String getName() {
         return name;
-    }
-
-    public Appendable getStdout() {
-        return stdout;
-    }
-
-    public Appendable getStderr() {
-        return stderr;
-    }
-
-    protected String outputErrorMessage(String format, Object... args) throws IOException {
-        return outputMessage(getStderr(), format, args);
-    }
-
-    protected String outputDebugMessage(String format, Object... args) throws IOException {
-        return outputMessage(getStdout(), format, args);
-    }
-
-    protected String outputMessage(Appendable out, String format, Object... args) throws IOException {
-        String message = String.format(format, args);
-        out.append(getName())
-                .append(": ").append(message)
-                .append(System.lineSeparator());
-        if (out instanceof Flushable) {
-            ((Flushable) out).flush();
-        }
-        return message;
     }
 }

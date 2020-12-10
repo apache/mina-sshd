@@ -24,10 +24,11 @@ import java.io.IOException;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.slf4j.Logger;
 
 public class ServerPortForwardingEventListener extends ServerEventListenerHelper implements PortForwardingEventListener {
-    public ServerPortForwardingEventListener(Appendable stdout, Appendable stderr) {
-        super("PORT-FWD", stdout, stderr);
+    public ServerPortForwardingEventListener(Logger logger) {
+        super("PORT-FWD", logger);
     }
 
     @Override
@@ -36,11 +37,13 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             boolean localForwarding, SshdSocketAddress boundAddress, Throwable reason)
             throws IOException {
         if (reason == null) {
-            outputDebugMessage("Estalibshed explicit tunnel for session=%s: local=%s, remote=%s, bound=%s, localForward=%s",
-                    session, local, remote, boundAddress, localForwarding);
+            if (log.isInfoEnabled()) {
+                log.info("Estalibshed explicit tunnel for session={}: local={}, remote={}, bound={}, localForward={}",
+                        session, local, remote, boundAddress, localForwarding);
+            }
         } else {
-            outputErrorMessage(
-                    "Failed (%s) to establish explicit tunnel for session=%s, local=%s, remote=%s, bound=%s, localForward=%s: %s",
+            log.error(
+                    "Failed ({}) to establish explicit tunnel for session={}, local={}, remote={}, bound={}, localForward={}: {}",
                     reason.getClass().getSimpleName(), session, local, remote, boundAddress, localForwarding,
                     reason.getMessage());
         }
@@ -52,11 +55,13 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             Throwable reason)
             throws IOException {
         if (reason == null) {
-            outputDebugMessage("Torn down explicit tunnel for session=%s: address=%s, remote=%s, localForward=%s",
-                    session, address, remoteAddress, localForwarding);
+            if (log.isInfoEnabled()) {
+                log.info("Torn down explicit tunnel for session={}: address={}, remote={}, localForward={}",
+                        session, address, remoteAddress, localForwarding);
+            }
         } else {
-            outputErrorMessage(
-                    "Failed (%s) to tear down explicit tunnel for session=%s, address=%s, remote=%s, localForward=%s: %s",
+            log.error(
+                    "Failed ({}) to tear down explicit tunnel for session={}, address={}, remote={}, localForward={}: {}",
                     reason.getClass().getSimpleName(), session, address, remoteAddress, localForwarding, reason.getMessage());
         }
     }
@@ -66,9 +71,11 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             Session session, SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
             throws IOException {
         if (reason == null) {
-            outputDebugMessage("Estalibshed dynamic tunnel for session=%s: local=%s,  bound=%s", session, local, boundAddress);
+            if (log.isInfoEnabled()) {
+                log.info("Estalibshed dynamic tunnel for session={}: local={},  bound={}", session, local, boundAddress);
+            }
         } else {
-            outputErrorMessage("Failed (%s) to establish dynamic tunnel for session=%s, bound=%s: %s",
+            log.error("Failed ({}) to establish dynamic tunnel for session={}, bound={}: {}",
                     reason.getClass().getSimpleName(), session, local, boundAddress, reason.getMessage());
         }
     }
@@ -78,9 +85,11 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             Session session, SshdSocketAddress address, Throwable reason)
             throws IOException {
         if (reason == null) {
-            outputDebugMessage("Tornd down dynamic tunnel for session=%s: address=%s", session);
+            if (log.isInfoEnabled()) {
+                log.info("Torn down dynamic tunnel for session={}: address={}", session);
+            }
         } else {
-            outputErrorMessage("Failed (%s) to tear down dynamic tunnel for session=%s, address=%s: %s",
+            log.error("Failed ({}) to tear down dynamic tunnel for session={}, address={}: {}",
                     reason.getClass().getSimpleName(), session, address, reason.getMessage());
         }
     }

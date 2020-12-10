@@ -28,23 +28,28 @@ import java.util.Map;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpEventListener;
+import org.slf4j.Logger;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpServerSubSystemEventListener extends ServerEventListenerHelper implements SftpEventListener {
-    public SftpServerSubSystemEventListener(Appendable stdout, Appendable stderr) {
-        super(SftpConstants.SFTP_SUBSYSTEM_NAME, stdout, stderr);
+    public SftpServerSubSystemEventListener(Logger logger) {
+        super(SftpConstants.SFTP_SUBSYSTEM_NAME, logger);
     }
 
     @Override
     public void initialized(ServerSession session, int version) throws IOException {
-        outputDebugMessage("Session %s initialized - version=%d", session, version);
+        if (log.isInfoEnabled()) {
+            log.info("Session {} initialized - version={}", session, version);
+        }
     }
 
     @Override
     public void destroying(ServerSession session) throws IOException {
-        outputDebugMessage("Session destroyed: %s", session);
+        if (log.isInfoEnabled()) {
+            log.info("Session destroyed: {}", session);
+        }
     }
 
     @Override
@@ -52,9 +57,11 @@ public class SftpServerSubSystemEventListener extends ServerEventListenerHelper 
             ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown)
             throws IOException {
         if (thrown == null) {
-            outputDebugMessage("Session %s created directory %s with attributes=%s", session, path, attrs);
+            if (log.isInfoEnabled()) {
+                log.info("Session {} created directory {} with attributes={}", session, path, attrs);
+            }
         } else {
-            outputErrorMessage("Failed (%s) to create directory %s in session %s: %s",
+            log.error("Failed ({}) to create directory {} in session {}: {}",
                     thrown.getClass().getSimpleName(), path, session, thrown.getMessage());
         }
     }
@@ -64,10 +71,12 @@ public class SftpServerSubSystemEventListener extends ServerEventListenerHelper 
             ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown)
             throws IOException {
         if (thrown == null) {
-            outputDebugMessage("Session %s moved %s to %s with options=%s",
-                    session, srcPath, dstPath, opts);
+            if (log.isInfoEnabled()) {
+                log.info("Session {} moved {} to {} with options={}",
+                        session, srcPath, dstPath, opts);
+            }
         } else {
-            outputErrorMessage("Failed (%s) to move %s to %s using options=%s in session %s: %s",
+            log.error("Failed ({}) to move {} to {} using options={} in session {}: {}",
                     thrown.getClass().getSimpleName(), srcPath, dstPath, opts, session, thrown.getMessage());
         }
     }
@@ -75,9 +84,11 @@ public class SftpServerSubSystemEventListener extends ServerEventListenerHelper 
     @Override
     public void removed(ServerSession session, Path path, boolean isDirectory, Throwable thrown) throws IOException {
         if (thrown == null) {
-            outputDebugMessage("Session %s removed %s", session, path);
+            if (log.isInfoEnabled()) {
+                log.info("Session {} removed {}", session, path);
+            }
         } else {
-            outputErrorMessage("Failed (%s) to remove %s in session %s: %s",
+            log.error("Failed ({}) to remove {} in session {}: {}",
                     thrown.getClass().getSimpleName(), path, session, thrown.getMessage());
         }
     }
