@@ -106,6 +106,7 @@
         <groovy.version>3.0.6</groovy.version>
         <bouncycastle.version>1.67</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
+        <logback.version>1.2.3</logback.version>        
         <spring.version> 5.3.1</spring.version>
         <jgit.version>5.9.0.202009080501-r</jgit.version>
         <junit.version>4.13.1</junit.version>
@@ -449,11 +450,6 @@
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-jdk14</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
@@ -462,6 +458,19 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+           
             <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jsch</artifactId>
@@ -510,37 +519,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.jms</groupId>
-                        <artifactId>jms</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jmx</groupId>
-                        <artifactId>jmxri</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jdmk</groupId>
-                        <artifactId>jmxtools</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>ant</groupId>
-                        <artifactId>ant-nodeps</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>ant</groupId>
-                        <artifactId>ant-junit</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>ant-contrib</groupId>
-                        <artifactId>ant-contrib</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -627,6 +605,18 @@
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit.pgm</artifactId>
                 <version>${jgit.version}</version>
+                    <!-- We provide our own slf4j logging - needed for tests only -->
+                <exclusions>
+                    <exclusion>
+                      <groupId>org.slf4j</groupId>
+                      <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+
+                    <exclusion>
+                      <groupId>log4j</groupId>
+                      <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -656,8 +646,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -1331,7 +1326,7 @@
                                 <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
                             </resourceBundles>
                             <supplementalModels>
-                                <supplementalModel>${workspace.root.dir}/assembly/src/main/legal/notices.xml</supplementalModel>
+                                <supplementalModel>${workspace.root.dir}${file.separator}assembly${file.separator}src${file.separator}main${file.separator}legal${file.separator}notices.xml</supplementalModel>
                             </supplementalModels>
                             <properties>
                                 <projectName>Apache MINA SSHD</projectName>
@@ -1464,6 +1459,7 @@
                         <java.awt.headless>true</java.awt.headless>
                         <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
                         <org.apache.sshd.test.timeout.factor>${sshd.tests.timeout.factor}</org.apache.sshd.test.timeout.factor>
+                        <logback.configurationFile>${workspace.root.folder}${file.separator}sshd-common${file.separator}src${file.separator}test${file.separator}resources${file.separator}logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                     <trimStackTrace>false</trimStackTrace>
                     <!-- lets re-run the failed test one more time, just to be sure -->

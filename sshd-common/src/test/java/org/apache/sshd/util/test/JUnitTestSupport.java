@@ -58,10 +58,14 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
@@ -78,6 +82,8 @@ public abstract class JUnitTestSupport extends Assert {
     public static final String TEST_SUBFOLDER = "test";
     public static final String RESOURCES_SUBFOLDER = "resources";
 
+    public static final org.slf4j.event.Level DEFAULT_LOGGING_LEVEL = org.slf4j.event.Level.INFO;
+
     // useful test sizes for keys
     public static final List<Integer> DSS_SIZES = Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
     public static final List<Integer> RSA_SIZES = Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
@@ -91,6 +97,43 @@ public abstract class JUnitTestSupport extends Assert {
 
     protected JUnitTestSupport() {
         replaceJULLoggers();
+    }
+
+    @BeforeClass
+    public static void setupRootLoggerLevel() {
+        String levelName = System.getProperty(
+                "org.apache.sshd.test.root.log.level", DEFAULT_LOGGING_LEVEL.toString());
+        org.slf4j.event.Level level = LoggingUtils.slf4jLevelFromName(levelName);
+        if (level == null) {
+            level = DEFAULT_LOGGING_LEVEL;
+        }
+
+        replaceJULLoggers();
+
+        Logger rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        if (rootLogger instanceof ch.qos.logback.classic.Logger) {
+            Class<?> clazz = rootLogger.getClass();
+            ch.qos.logback.classic.Level rawLevel = getRawLoggerLevel(level);
+            ((ch.qos.logback.classic.Logger) rootLogger).setLevel(rawLevel);
+            rootLogger.info("Using {} logger(s) at level={}", clazz.getName(), rawLevel);
+        }
+    }
+
+    public static ch.qos.logback.classic.Level getRawLoggerLevel(org.slf4j.event.Level level) {
+        if (org.slf4j.event.Level.ERROR.equals(level)) {
+            return ch.qos.logback.classic.Level.ERROR;
+        } else if (org.slf4j.event.Level.WARN.equals(level)) {
+            return ch.qos.logback.classic.Level.WARN;
+        } else if (org.slf4j.event.Level.INFO.equals(level)) {
+            return ch.qos.logback.classic.Level.INFO;
+        } else if (org.slf4j.event.Level.DEBUG.equals(level)) {
+            return ch.qos.logback.classic.Level.DEBUG;
+        } else if (org.slf4j.event.Level.TRACE.equals(level)) {
+            return ch.qos.logback.classic.Level.TRACE;
+        } else {
+            return ch.qos.logback.classic.Level.INFO;
+        }
+
     }
 
     public final String getCurrentTestName() {

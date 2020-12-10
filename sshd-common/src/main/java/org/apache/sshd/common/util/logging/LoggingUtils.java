@@ -25,10 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -45,9 +47,20 @@ import org.slf4j.helpers.MessageFormatter;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class LoggingUtils {
+    public static final Set<org.slf4j.event.Level> SLF4J_LEVELS
+            = Collections.unmodifiableSet(EnumSet.allOf(org.slf4j.event.Level.class));
 
     private LoggingUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    public static org.slf4j.event.Level slf4jLevelFromName(String name) {
+        return GenericUtils.isEmpty(name)
+                ? null
+                : SLF4J_LEVELS.stream()
+                        .filter(l -> name.equalsIgnoreCase(l.name()))
+                        .findAny()
+                        .orElse(null);
     }
 
     /**
