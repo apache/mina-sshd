@@ -62,6 +62,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * TODO Add javadoc
@@ -89,7 +90,7 @@ public abstract class JUnitTestSupport extends Assert {
     private Path tempFolder;
 
     protected JUnitTestSupport() {
-        super();
+        replaceJULLoggers();
     }
 
     public final String getCurrentTestName() {
@@ -635,6 +636,19 @@ public abstract class JUnitTestSupport extends Assert {
     public static void outputDebugMessage(Object message) {
         if (OUTPUT_DEBUG_MESSAGES) {
             System.out.append("===[DEBUG]=== ").println(message);
+        }
+    }
+
+    /* ---------------------------------------------------------------------------- */
+
+    public static void replaceJULLoggers() {
+        if (!SLF4JBridgeHandler.isInstalled()) {
+            // Optionally remove existing handlers attached to j.u.l root logger
+            SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
+
+            // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
+            // the initialization phase of your application
+            SLF4JBridgeHandler.install();
         }
     }
 }

@@ -23,12 +23,15 @@ import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.logging.Level;
+
+import org.apache.sshd.common.util.logging.SimplifiedLog;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CliLogger {
+public class CliLogger implements SimplifiedLog {
     public static final DateFormat LOG_TIME_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
 
     protected final Level threshold;
@@ -39,71 +42,13 @@ public class CliLogger {
         this.logStream = logStream;
     }
 
-    public boolean isErrorEnabled() {
-        return isEnabledLevel(Level.SEVERE);
-    }
-
-    public void error(String msg) {
-        error(msg, null);
-    }
-
-    public void error(String msg, Throwable err) {
-        log(Level.SEVERE, msg, err);
-    }
-
-    public boolean isWarnEnabled() {
-        return isEnabledLevel(Level.WARNING);
-    }
-
-    public void warn(String msg) {
-        warn(msg, null);
-    }
-
-    public void warn(String msg, Throwable err) {
-        log(Level.WARNING, msg, err);
-    }
-
-    public boolean isInfoEnabled() {
-        return isEnabledLevel(Level.INFO);
-    }
-
-    public void info(String msg) {
-        info(msg, null);
-    }
-
-    public void info(String msg, Throwable err) {
-        log(Level.INFO, msg, err);
-    }
-
-    public boolean isDebugEnabled() {
-        return isEnabledLevel(Level.FINE);
-    }
-
-    public void debug(String msg) {
-        debug(msg, null);
-    }
-
-    public void debug(String msg, Throwable err) {
-        log(Level.FINE, msg, err);
-    }
-
-    public boolean isTraceEnabled() {
-        return isEnabledLevel(Level.FINER);
-    }
-
-    public void trace(String msg) {
-        trace(msg, null);
-    }
-
-    public void trace(String msg, Throwable err) {
-        log(Level.FINER, msg, err);
-    }
-
+    @Override
     public boolean isEnabledLevel(Level level) {
-        return isLevelEnabled(level, threshold);
+        return SimplifiedLog.isLoggable(level, threshold);
     }
 
-    public void log(Level level, String msg, Throwable err) {
+    @Override
+    public void log(Level level, Object msg, Throwable err) {
         if (!isEnabledLevel(level)) {
             return;
         }
@@ -116,34 +61,10 @@ public class CliLogger {
         logStream.append(time)
                 .append(' ').append(level.getName())
                 .append(' ').append(Thread.currentThread().getName())
-                .append(' ').append(msg)
+                .append(' ').append(Objects.toString(msg))
                 .println();
         if (err != null) {
             err.printStackTrace(logStream);
         }
-    }
-
-    public static boolean isErrorEnabled(Level level) {
-        return isLevelEnabled(level, Level.SEVERE);
-    }
-
-    public static boolean isWarnEnabled(Level level) {
-        return isLevelEnabled(level, Level.WARNING);
-    }
-
-    public static boolean isInfoEnabled(Level level) {
-        return isLevelEnabled(level, Level.INFO);
-    }
-
-    public static boolean isDebugEnabled(Level level) {
-        return isLevelEnabled(level, Level.FINE);
-    }
-
-    public static boolean isTraceEnabled(Level level) {
-        return isLevelEnabled(level, Level.FINER);
-    }
-
-    public static boolean isLevelEnabled(Level level, Level threshold) {
-        return (level != null) && (threshold != null) && (level.intValue() <= threshold.intValue());
     }
 }

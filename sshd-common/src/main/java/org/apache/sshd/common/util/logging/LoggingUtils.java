@@ -190,71 +190,21 @@ public final class LoggingUtils {
         });
     }
 
-    /**
-     * Verifies if the given level is above the required threshold for logging.
-     *
-     * @param  level     The {@link Level} to evaluate
-     * @param  threshold The threshold {@link Level}
-     * @return           {@code true} if the evaluated level is above the required threshold.
-     *                   <P>
-     *                   <B>Note(s):</B>
-     *                   </P>
-     *                   <UL>
-     *                   <LI>
-     *                   <P>
-     *                   If either argument is {@code null} then result is {@code false}.
-     *                   </P>
-     *                   </LI>
-     *
-     *                   <LI>
-     *                   <P>
-     *                   If the evaluated level is {@link Level#OFF} then result is {@code false} regardless of the
-     *                   threshold.
-     *                   </P>
-     *                   </LI>
-     *
-     *                   <LI>
-     *                   <P>
-     *                   If the threshold is {@link Level#ALL} and the evaluated level is <U>not</U> {@link Level#OFF}
-     *                   the result is {@code true}.
-     *                   </P>
-     *                   </LI>
-     *
-     *                   <LI>
-     *                   <P>
-     *                   Otherwise, the evaluated level {@link Level#intValue()} must be greater or equal to the
-     *                   threshold.
-     *                   </P>
-     *                   </LI>
-     *                   </UL>
-     */
-    public static boolean isLoggable(Level level, Level threshold) {
-        if ((level == null) || (threshold == null)) {
-            return false;
-        } else if (Level.OFF.equals(level) || Level.OFF.equals(threshold)) {
-            return false;
-        } else if (Level.ALL.equals(threshold)) {
-            return true;
-        } else {
-            return level.intValue() >= threshold.intValue();
-        }
-    }
-
-    public static SimplifiedLog wrap(final Logger logger) {
+    public static SimplifiedLog wrap(Logger logger) {
         if (logger == null) {
             return SimplifiedLog.EMPTY;
         } else {
             return new SimplifiedLog() {
                 @Override
                 public void log(Level level, Object message, Throwable t) {
-                    if (isEnabled(level)) {
+                    if (isEnabledLevel(level)) {
                         logMessage(logger, level, message, t);
                     }
 
                 }
 
                 @Override
-                public boolean isEnabled(Level level) {
+                public boolean isEnabledLevel(Level level) {
                     return isLoggable(logger, level);
                 }
             };

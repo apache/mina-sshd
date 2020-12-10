@@ -17,7 +17,7 @@
 ## Minor code helpers
 
 * [SSHD-1085](https://issues.apache.org/jira/browse/SSHD-1085) Added `CliLogger` + more verbosity on `SshClientMain`
-
+* [SSHD-1109](https://issues.apache.org/jira/browse/SSHD-1109) Route tests JUL logging via SLF4JBridgeHandler
 
 ## Behavioral changes and enhancements
 

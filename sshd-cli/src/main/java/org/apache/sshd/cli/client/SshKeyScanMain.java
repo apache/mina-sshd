@@ -81,7 +81,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -158,7 +157,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
     @Override
     public void log(Level level, Object message, Throwable t) {
-        if (isEnabled(level)) {
+        if (isEnabledLevel(level)) {
             PrintStream ps = System.out;
             if ((t != null) || Level.SEVERE.equals(level) || Level.WARNING.equals(level)) {
                 ps = System.err;
@@ -172,8 +171,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     @Override
-    public boolean isEnabled(Level level) {
-        return LoggingUtils.isLoggable(level, getLogLevel());
+    public boolean isEnabledLevel(Level level) {
+        return SimplifiedLog.isLoggable(level, getLogLevel());
     }
 
     @Override
@@ -191,7 +190,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         for (String kt : sigTypes) {
             List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
             if (GenericUtils.isEmpty(factories)) {
-                if (isEnabled(Level.FINEST)) {
+                if (isEnabledLevel(Level.FINEST)) {
                     log(Level.FINEST, "Skip empty signature factories for " + kt);
                 }
                 pairsMap.remove(kt);
@@ -230,7 +229,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
                     @Override
                     public void serverVersionInfo(ClientSession session, List<String> lines) {
-                        if (isEnabled(Level.FINE) && GenericUtils.isNotEmpty(lines)) {
+                        if (isEnabledLevel(Level.FINE) && GenericUtils.isNotEmpty(lines)) {
                             for (String l : lines) {
                                 log(Level.FINE, "Server Info: " + l);
                             }
@@ -239,7 +238,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
                     @Override
                     public void welcome(ClientSession session, String banner, String lang) {
-                        if (isEnabled(Level.FINE) && GenericUtils.isNotEmpty(banner)) {
+                        if (isEnabledLevel(Level.FINE) && GenericUtils.isNotEmpty(banner)) {
                             String[] lines = GenericUtils.split(banner, '\n');
                             for (String l : lines) {
                                 log(Level.FINE, "Welcome[" + lang + "]: " + l);
@@ -270,7 +269,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                                 throw e;
                             }
 
-                            if (isEnabled(Level.FINE)) {
+                            if (isEnabledLevel(Level.FINE)) {
                                 log(Level.FINE, "Failed to retrieve keys from " + h, e);
                             }
                             err = GenericUtils.accumulateException(err, e);
@@ -316,7 +315,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                 client.setSignatureFactories(forced);
                 resolveServerKeys(client, host, kt, pe.getValue());
             } catch (Exception e) {
-                if (isEnabled(Level.FINE)) {
+                if (isEnabledLevel(Level.FINE)) {
                     log(Level.FINE, "Failed to resolve key=" + kt + " for " + host);
                 }
 
@@ -331,7 +330,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
 
     protected void resolveServerKeys(SshClient client, String host, String kt, List<KeyPair> ids) throws Exception {
         int connectPort = getPort();
-        if (isEnabled(Level.FINE)) {
+        if (isEnabledLevel(Level.FINE)) {
             log(Level.FINE, "Connecting to " + host + ":" + connectPort + " to retrieve key type=" + kt);
         }
 
@@ -348,13 +347,13 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             IoSession ioSession = session.getIoSession();
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             String remoteLocation = toString(remoteAddress);
-            if (isEnabled(Level.FINE)) {
+            if (isEnabledLevel(Level.FINE)) {
                 log(Level.FINE, "Connected to " + remoteLocation + " to retrieve key type=" + kt);
             }
 
             try {
                 session.addSessionListener(this);
-                if (isEnabled(Level.FINER)) {
+                if (isEnabledLevel(Level.FINER)) {
                     log(Level.FINER, "Authenticating with key type=" + kt + " to " + remoteLocation);
                 }
 
@@ -365,7 +364,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                     session.auth().verify(waitTime);
                     log(Level.WARNING, "Unexpected authentication success using key type=" + kt + " with " + remoteLocation);
                 } catch (Exception e) {
-                    if (isEnabled(Level.FINER)) {
+                    if (isEnabledLevel(Level.FINER)) {
                         log(Level.FINER, "Failed to authenticate using key type=" + kt + " with " + remoteLocation);
                     }
                 } finally {
@@ -385,7 +384,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     @Override
     public void sessionEvent(Session session, Event event) {
         logSessionEvent(session, event);
-        if (isEnabled(Level.FINEST) && Event.KexCompleted.equals(event)) {
+        if (isEnabledLevel(Level.FINEST) && Event.KexCompleted.equals(event)) {
             IoSession ioSession = session.getIoSession();
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             String remoteLocation = toString(remoteAddress);
@@ -415,7 +414,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     protected void logNegotiationProposal(String type, Map<KexProposalOption, String> proposal) {
-        if (!isEnabled(Level.FINEST)) {
+        if (!isEnabledLevel(Level.FINEST)) {
             return;
         }
 
@@ -435,7 +434,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     protected void logSessionEvent(Session session, Object event) {
-        if (isEnabled(Level.FINEST)) {
+        if (isEnabledLevel(Level.FINEST)) {
             IoSession ioSession = session.getIoSession();
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             log(Level.FINEST, "Session " + toString(remoteAddress) + " event: " + event);
@@ -450,11 +449,11 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             String keyType = KeyUtils.getKeyType(serverKey);
             String current = GenericUtils.isEmpty(keyType) ? null : currentHostFingerprints.get(keyType);
             if (Objects.equals(current, extra)) {
-                if (isEnabled(Level.FINER)) {
+                if (isEnabledLevel(Level.FINER)) {
                     log(Level.FINER, "verifyServerKey(" + remoteLocation + ")[" + keyType + "] skip existing key: " + extra);
                 }
             } else {
-                if (isEnabled(Level.FINE)) {
+                if (isEnabledLevel(Level.FINE)) {
                     log(Level.FINE, "verifyServerKey(" + remoteLocation + ")[" + keyType + "] found new key: " + extra);
                 }
 
@@ -490,7 +489,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     protected List<NamedFactory<Signature>> resolveSignatureFactories(String keyType) throws GeneralSecurityException {
-        if (isEnabled(Level.FINE)) {
+        if (isEnabledLevel(Level.FINE)) {
             log(Level.FINE, "Resolve signature factories for " + keyType);
         }
 
@@ -501,7 +500,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             List<NamedFactory<Signature>> factories = new ArrayList<>(ECCurves.NAMES.size());
             for (String n : ECCurves.NAMES) {
-                if (isEnabled(Level.FINER)) {
+                if (isEnabledLevel(Level.FINER)) {
                     log(Level.FINER, "Resolve signature factory for curve=" + n);
                 }
 
@@ -549,7 +548,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
     }
 
     protected List<KeyPair> createKeyPairs(String keyType) throws GeneralSecurityException {
-        if (isEnabled(Level.FINE)) {
+        if (isEnabledLevel(Level.FINE)) {
             log(Level.FINE, "Generate key pairs for " + keyType);
         }
 
@@ -565,7 +564,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             List<KeyPair> kps = new ArrayList<>(ECCurves.NAMES.size());
             for (ECCurves curve : ECCurves.VALUES) {
                 String curveName = curve.getName();
-                if (isEnabled(Level.FINER)) {
+                if (isEnabledLevel(Level.FINER)) {
                     log(Level.FINER, "Generate key pair for curve=" + curveName);
                 }
 

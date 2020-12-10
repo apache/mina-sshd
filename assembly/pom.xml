@@ -126,10 +126,6 @@
             <artifactId>eddsa</artifactId>
         </dependency>
             <!-- Replacement of commons-logging for Spring parts that still use it -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-        </dependency>
             <!-- Used for Unix sockets proxy -->
         <dependency>
             <groupId>tomcat</groupId>

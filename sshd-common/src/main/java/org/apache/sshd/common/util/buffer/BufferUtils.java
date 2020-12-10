@@ -86,7 +86,7 @@ public final class BufferUtils {
     public static void dumpHex(
             SimplifiedLog logger, Level level, String prefix, char sep,
             int chunkSize, byte[] data, int offset, int len) {
-        if ((logger == null) || (level == null) || (!logger.isEnabled(level))) {
+        if ((logger == null) || (level == null) || (!logger.isEnabledLevel(level))) {
             return;
         }
 
