@@ -114,6 +114,7 @@
 
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
         <maven.archiver.version>3.5.0</maven.archiver.version>
+        <scm.plugin.version>1.11.2</scm.plugin.version>
         <plexus.archiver.version>4.2.3</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.29.0</pmd.version>
@@ -739,7 +740,29 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-scm-plugin</artifactId>
-                    <version>1.11.2</version>
+                    <version>${scm.plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-api</artifactId>
+                            <version>>${scm.plugin.version}</version>
+                        </dependency>                    
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-gitexe</artifactId>
+                            <version>>${scm.plugin.version}</version>
+                        </dependency>                    
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-svn-commons</artifactId>
+                            <version>>${scm.plugin.version}</version>
+                        </dependency>                    
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-svnexe</artifactId>
+                            <version>>${scm.plugin.version}</version>
+                        </dependency>                    
+                    </dependencies>
                 </plugin>                
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
