@@ -107,7 +107,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                 || "-o".equals(argName)
                 || "-l".equals(argName)
                 || "-w".equals(argName)
-                || "-c".equals(argName)
+                || "-c".equals(argName) // cipher
+                || "-C".equals(argName) // compression
                 || "-m".equals(argName)
                 || "-E".equals(argName)
                 || "-J".equals(argName);
