@@ -28,6 +28,7 @@ import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
@@ -105,6 +106,10 @@ public interface ClientAuthenticationManager
     UserInteraction getUserInteraction();
 
     void setUserInteraction(UserInteraction userInteraction);
+
+    PasswordAuthenticationReporter getPasswordAuthenticationReporter();
+
+    void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter);
 
     @Override
     default void setUserAuthFactoriesNames(Collection<String> names) {

@@ -46,6 +46,7 @@ import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
@@ -170,7 +171,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
-    protected UserInteraction userInteraction;
     protected List<UserAuthFactory> userAuthFactories;
 
     private ClientProxyConnector proxyConnector;
@@ -180,6 +180,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private KeyIdentityProvider keyIdentityProvider;
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private UserInteraction userInteraction;
+    private PasswordAuthenticationReporter passwordAuthenticationReporter;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
@@ -255,6 +257,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction;
+    }
+
+    @Override
+    public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+        return passwordAuthenticationReporter;
+    }
+
+    @Override
+    public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+        this.passwordAuthenticationReporter = reporter;
     }
 
     @Override

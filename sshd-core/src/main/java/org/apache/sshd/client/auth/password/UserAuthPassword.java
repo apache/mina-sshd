@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.client.auth.password;
 
-import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
@@ -157,11 +157,11 @@ public class UserAuthPassword extends AbstractUserAuth {
      * @param  newPassword The new password
      * @return             An {@link IoWriteFuture} that can be used to wait and check on the success/failure of the
      *                     request packet being sent
-     * @throws IOException If failed to send the message.
+     * @throws Exception   If failed to send the message.
      */
     protected IoWriteFuture sendPassword(
             Buffer buffer, ClientSession session, String oldPassword, String newPassword)
-            throws IOException {
+            throws Exception {
         String username = session.getUsername();
         String service = getService();
         String name = getName();
@@ -187,6 +187,29 @@ public class UserAuthPassword extends AbstractUserAuth {
             buffer.putString(newPassword);
         }
 
+        PasswordAuthenticationReporter reporter = session.getPasswordAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationAttempt(session, service, oldPassword, modified, newPassword);
+        }
+
         return session.writePacket(buffer);
+    }
+
+    @Override
+    public void signalAuthMethodSuccess(ClientSession session, String service, Buffer buffer) throws Exception {
+        PasswordAuthenticationReporter reporter = session.getPasswordAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationSuccess(session, service, current);
+        }
+    }
+
+    @Override
+    public void signalAuthMethodFailure(
+            ClientSession session, String service, boolean partial, List<String> serverMethods, Buffer buffer)
+            throws Exception {
+        PasswordAuthenticationReporter reporter = session.getPasswordAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationFailure(session, service, current, partial, serverMethods);
+        }
     }
 }

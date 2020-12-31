@@ -193,3 +193,9 @@ the handler decided not to intervene.
 Informs about signal requests as described in [RFC 4254 - section 6.9](https://tools.ietf.org/html/rfc4254#section-6.9), "break" requests
 (sent as SIGINT) as described in [RFC 4335](https://tools.ietf.org/html/rfc4335) and "window-change" (sent as SIGWINCH) requests as described
 in [RFC 4254 - section 6.7](https://tools.ietf.org/html/rfc4254#section-6.7)
+
+### `PasswordAuthenticationReporter`
+
+Used to inform about the progress of the client-side password based authentication as described in [RFC-4252 section 8](https://tools.ietf.org/html/rfc4252#section-8).
+Can be registered globally on the `SshClient` and also for a specific `ClientSession` after it is established but before its `auth()` method is called - thus
+overriding any globally registered instance.

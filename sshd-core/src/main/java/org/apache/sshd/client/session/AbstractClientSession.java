@@ -33,6 +33,7 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -90,6 +91,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private PasswordAuthenticationReporter passwordAuthenticationReporter;
     private KeyIdentityProvider keyIdentityProvider;
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
@@ -158,6 +160,18 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction; // OK if null - inherit from parent
+    }
+
+    @Override
+    public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PasswordAuthenticationReporter.class, passwordAuthenticationReporter,
+                manager.getPasswordAuthenticationReporter());
+    }
+
+    @Override
+    public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+        this.passwordAuthenticationReporter = reporter;
     }
 
     @Override

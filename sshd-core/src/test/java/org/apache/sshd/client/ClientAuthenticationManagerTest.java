@@ -31,6 +31,7 @@ import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
@@ -97,6 +98,16 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             @Override
             public void setUserInteraction(UserInteraction userInteraction) {
                 throw new UnsupportedOperationException("setUserInteraction(" + userInteraction + ")");
+            }
+
+            @Override
+            public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setPasswordAuthenticationReporter(" + reporter + ")");
             }
 
             @Override
@@ -183,7 +194,8 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
                         PasswordIdentityProvider.class,
                         ServerKeyVerifier.class,
                         UserInteraction.class,
-                        KeyIdentityProvider.class
+                        KeyIdentityProvider.class,
+                        PasswordAuthenticationReporter.class
                 }) {
                     testClientProvidersPropagation(provider, client, session);
                 }

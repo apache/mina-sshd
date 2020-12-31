@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
@@ -236,7 +238,7 @@ public class AuthenticationTest extends BaseTestSupport {
                                 @Override
                                 protected IoWriteFuture sendPassword(
                                         Buffer buffer, ClientSession session, String oldPassword, String newPassword)
-                                        throws IOException {
+                                        throws Exception {
                                     int count = sentCount.incrementAndGet();
                                     // 1st one is the original one (which is denied by the server)
                                     // 2nd one is the updated one retrieved from the user interaction
@@ -970,7 +972,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 session.auth().verify(AUTH_TIMEOUT);
 
                 KeyExchange kex = session.getKex();
-                assertNull("KEX no nullified after completion", kex);
+                assertNull("KEX not nullified after completion", kex);
 
                 actualKey = session.getServerKey();
             } finally {
@@ -988,6 +990,52 @@ public class AuthenticationTest extends BaseTestSupport {
         }
 
         fail("No matching server key found for " + actualKey);
+    }
+
+    @Test   // see SSHD-1114
+    public void testPasswordAuthenticationReporter() throws Exception {
+        String goodPassword = getCurrentTestName();
+        String badPassword = getClass().getSimpleName();
+        List<String> actual = new ArrayList<>();
+        PasswordAuthenticationReporter reporter = new PasswordAuthenticationReporter() {
+            @Override
+            public void signalAuthenticationAttempt(
+                    ClientSession session, String service, String oldPassword, boolean modified, String newPassword)
+                    throws Exception {
+                actual.add(oldPassword);
+            }
+
+            @Override
+            public void signalAuthenticationSuccess(ClientSession session, String service, String password)
+                    throws Exception {
+                assertEquals("Mismatched succesful password", goodPassword, password);
+            }
+
+            @Override
+            public void signalAuthenticationFailure(
+                    ClientSession session, String service, String password, boolean partial, List<String> serverMethods)
+                    throws Exception {
+                assertEquals("Mismatched failed password", badPassword, password);
+            }
+        };
+
+        try (SshClient client = setupTestClient()) {
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.password.UserAuthPasswordFactory()));
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPasswordIdentity(badPassword);
+                session.addPasswordIdentity(goodPassword);
+                session.setPasswordAuthenticationReporter(reporter);
+                session.auth().verify(AUTH_TIMEOUT);
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertListEquals("Attempted passwords", Arrays.asList(badPassword, goodPassword), actual);
     }
 
     private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
