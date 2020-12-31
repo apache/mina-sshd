@@ -205,3 +205,9 @@ overriding any globally registered instance.
 Used to inform about the progress of the client-side public key authentication as described in [RFC-4252 section 7](https://tools.ietf.org/html/rfc4252#section-7).
 Can be registered globally on the `SshClient` and also for a specific `ClientSession` after it is established but before its `auth()` method is called - thus
 overriding any globally registered instance.
+
+### `HostBasedAuthenticationReporter`
+
+Used to inform about the progress of the client-side host-based authentication as described in [RFC-4252 section 9](https://tools.ietf.org/html/rfc4252#section-9).
+Can be registered globally on the `SshClient` and also for a specific `ClientSession` after it is established but before its `auth()` method is called - thus
+overriding any globally registered instance.

@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
@@ -95,6 +96,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private PasswordAuthenticationReporter passwordAuthenticationReporter;
     private KeyIdentityProvider keyIdentityProvider;
     private PublicKeyAuthenticationReporter publicKeyAuthenticationReporter;
+    private HostBasedAuthenticationReporter hostBasedAuthenticationReporter;
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
@@ -226,6 +228,18 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
         this.publicKeyAuthenticationReporter = reporter;
+    }
+
+    @Override
+    public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(HostBasedAuthenticationReporter.class, hostBasedAuthenticationReporter,
+                manager.getHostBasedAuthenticationReporter());
+    }
+
+    @Override
+    public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+        this.hostBasedAuthenticationReporter = reporter;
     }
 
     @Override

@@ -48,8 +48,9 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 public class UserAuthHostBased extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthHostBasedFactory.NAME;
 
-    private Iterator<? extends Map.Entry<KeyPair, ? extends Collection<X509Certificate>>> keys;
-    private final HostKeyIdentityProvider clientHostKeys;
+    protected Iterator<? extends Map.Entry<KeyPair, ? extends Collection<X509Certificate>>> keys;
+    protected Map.Entry<KeyPair, ? extends Collection<X509Certificate>> keyInfo;
+    protected final HostKeyIdentityProvider clientHostKeys;
     private List<NamedFactory<Signature>> factories;
     private String clientUsername;
     private String clientHostname;
@@ -103,7 +104,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
             return false;
         }
 
-        Map.Entry<KeyPair, ? extends Collection<X509Certificate>> keyInfo = keys.next();
+        keyInfo = keys.next();
         KeyPair kp = keyInfo.getKey();
         PublicKey pub = kp.getPublic();
         String keyType = KeyUtils.getKeyType(pub);
@@ -159,13 +160,22 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         buffer.putBytes(keyBytes);
         buffer.putString(clientHostname);
         buffer.putString(clientUsername);
-        appendSignature(session, service, keyType, pub, keyBytes, clientHostname, clientUsername, verifier, buffer);
+
+        byte[] signature = appendSignature(
+                session, service, keyType, pub, keyBytes,
+                clientHostname, clientUsername, verifier, buffer);
+        HostBasedAuthenticationReporter reporter = session.getHostBasedAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationAttempt(
+                    session, service, kp, clientHostname, clientUsername, signature);
+        }
+
         session.writePacket(buffer);
         return true;
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
-    protected void appendSignature(
+    protected byte[] appendSignature(
             ClientSession session, String service,
             String keyType, PublicKey key, byte[] keyBytes,
             String clientHostname, String clientUsername,
@@ -203,6 +213,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         bs.putString(keyType);
         bs.putBytes(signature);
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
+        return signature;
     }
 
     @Override
@@ -213,6 +224,28 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         throw new IllegalStateException(
                 "processAuthDataRequest(" + session + ")[" + service + "]"
                                         + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
+    }
+
+    @Override
+    public void signalAuthMethodSuccess(ClientSession session, String service, Buffer buffer) throws Exception {
+        HostBasedAuthenticationReporter reporter = session.getHostBasedAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationSuccess(
+                    session, service, (keyInfo == null) ? null : keyInfo.getKey(), resolveClientHostname(),
+                    resolveClientUsername());
+        }
+    }
+
+    @Override
+    public void signalAuthMethodFailure(
+            ClientSession session, String service, boolean partial, List<String> serverMethods, Buffer buffer)
+            throws Exception {
+        HostBasedAuthenticationReporter reporter = session.getHostBasedAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationFailure(
+                    session, service, (keyInfo == null) ? null : keyInfo.getKey(),
+                    resolveClientHostname(), resolveClientUsername(), partial, serverMethods);
+        }
     }
 
     protected String resolveClientUsername() {

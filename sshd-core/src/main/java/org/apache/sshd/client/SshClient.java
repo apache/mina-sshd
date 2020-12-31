@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
@@ -183,6 +184,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
     private PasswordAuthenticationReporter passwordAuthenticationReporter;
+    private HostBasedAuthenticationReporter hostBasedAuthenticationReporter;
     private UserInteraction userInteraction;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
@@ -269,6 +271,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
         this.passwordAuthenticationReporter = reporter;
+    }
+
+    @Override
+    public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+        return hostBasedAuthenticationReporter;
+    }
+
+    @Override
+    public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+        this.hostBasedAuthenticationReporter = reporter;
     }
 
     @Override

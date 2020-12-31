@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
@@ -99,6 +100,16 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             @Override
             public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
                 throw new UnsupportedOperationException("setPublicKeyAuthenticationReporter(" + reporter + ")");
+            }
+
+            @Override
+            public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setHostBasedAuthenticationReporter(" + reporter + ")");
             }
 
             @Override
