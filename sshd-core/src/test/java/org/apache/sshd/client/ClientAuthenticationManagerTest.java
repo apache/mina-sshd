@@ -33,6 +33,7 @@ import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
@@ -88,6 +89,16 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             @Override
             public void setKeyIdentityProvider(KeyIdentityProvider provider) {
                 throw new UnsupportedOperationException("setKeyIdentityProvider(" + provider + ")");
+            }
+
+            @Override
+            public PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setPublicKeyAuthenticationReporter(" + reporter + ")");
             }
 
             @Override

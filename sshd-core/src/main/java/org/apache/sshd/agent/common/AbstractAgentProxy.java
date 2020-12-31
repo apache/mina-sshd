@@ -83,6 +83,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         }
 
         int nbIdentities = buffer.getInt();
+        // TODO make the maximum a Property
         if ((nbIdentities < 0) || (nbIdentities > 1024)) {
             throw new SshException("Illogical identities count: " + nbIdentities);
         }

@@ -30,6 +30,7 @@ import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.auth.UserAuthFactoriesManager;
@@ -110,6 +111,10 @@ public interface ClientAuthenticationManager
     PasswordAuthenticationReporter getPasswordAuthenticationReporter();
 
     void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter);
+
+    PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter();
+
+    void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter);
 
     @Override
     default void setUserAuthFactoriesNames(Collection<String> names) {

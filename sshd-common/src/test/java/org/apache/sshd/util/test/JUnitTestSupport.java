@@ -455,6 +455,19 @@ public abstract class JUnitTestSupport extends Assert {
         assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
     }
 
+    public static <T extends Key> void assertKeyListEquals(
+            String message, List<? extends T> expected, List<? extends T> actual) {
+        int numKeys = GenericUtils.size(expected);
+        assertEquals(message + "[size]", numKeys, GenericUtils.size(actual));
+        if (numKeys <= 0) {
+            return;
+        }
+
+        for (int index = 0; index < numKeys; index++) {
+            assertKeyEquals(message + "[#" + index + "]", expected.get(index), actual.get(index));
+        }
+    }
+
     public static <T extends Key> void assertKeyEquals(String message, T expected, T actual) {
         if (expected == actual) {
             return;

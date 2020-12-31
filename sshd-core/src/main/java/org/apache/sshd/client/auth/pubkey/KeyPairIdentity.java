@@ -43,7 +43,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class KeyPairIdentity implements PublicKeyIdentity, SignatureFactoriesHolder {
-    protected final KeyPair pair;
+    private final KeyPair pair;
     private final List<NamedFactory<Signature>> signatureFactories;
 
     public KeyPairIdentity(SignatureFactoriesManager primary, SignatureFactoriesManager secondary, KeyPair pair) {
@@ -55,8 +55,8 @@ public class KeyPairIdentity implements PublicKeyIdentity, SignatureFactoriesHol
     }
 
     @Override
-    public PublicKey getPublicKey() {
-        return pair.getPublic();
+    public KeyPair getKeyIdentity() {
+        return pair;
     }
 
     @Override
@@ -68,7 +68,8 @@ public class KeyPairIdentity implements PublicKeyIdentity, SignatureFactoriesHol
     public Map.Entry<String, byte[]> sign(SessionContext session, String algo, byte[] data) throws Exception {
         NamedFactory<? extends Signature> factory;
         if (GenericUtils.isEmpty(algo)) {
-            algo = KeyUtils.getKeyType(getPublicKey());
+            KeyPair kp = getKeyIdentity();
+            algo = KeyUtils.getKeyType(kp.getPublic());
             // SSHD-1104 check if the key type is aliased
             factory = SignatureFactory.resolveSignatureFactory(algo, getSignatureFactories());
         } else {
@@ -86,7 +87,8 @@ public class KeyPairIdentity implements PublicKeyIdentity, SignatureFactoriesHol
 
     @Override
     public String toString() {
-        PublicKey pubKey = getPublicKey();
+        KeyPair kp = getKeyIdentity();
+        PublicKey pubKey = kp.getPublic();
         return getClass().getSimpleName()
                + " type=" + KeyUtils.getKeyType(pubKey)
                + ", factories=" + getSignatureFactoriesNameList()

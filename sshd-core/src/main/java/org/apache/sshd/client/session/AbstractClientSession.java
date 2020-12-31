@@ -35,6 +35,7 @@ import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -93,6 +94,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private PasswordIdentityProvider passwordIdentityProvider;
     private PasswordAuthenticationReporter passwordAuthenticationReporter;
     private KeyIdentityProvider keyIdentityProvider;
+    private PublicKeyAuthenticationReporter publicKeyAuthenticationReporter;
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
@@ -212,6 +214,18 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setKeyIdentityProvider(KeyIdentityProvider keyIdentityProvider) {
         this.keyIdentityProvider = keyIdentityProvider;
+    }
+
+    @Override
+    public PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PublicKeyAuthenticationReporter.class, publicKeyAuthenticationReporter,
+                manager.getPublicKeyAuthenticationReporter());
+    }
+
+    @Override
+    public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
+        this.publicKeyAuthenticationReporter = reporter;
     }
 
     @Override

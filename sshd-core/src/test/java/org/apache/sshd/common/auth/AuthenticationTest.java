@@ -42,6 +42,7 @@ import org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.AttributeRepository;
@@ -996,13 +997,21 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testPasswordAuthenticationReporter() throws Exception {
         String goodPassword = getCurrentTestName();
         String badPassword = getClass().getSimpleName();
-        List<String> actual = new ArrayList<>();
+        List<String> attempted = new ArrayList<>();
+        sshd.setPasswordAuthenticator((user, password, session) -> {
+            attempted.add(password);
+            return goodPassword.equals(password);
+        });
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+
+        List<String> reported = new ArrayList<>();
         PasswordAuthenticationReporter reporter = new PasswordAuthenticationReporter() {
             @Override
             public void signalAuthenticationAttempt(
                     ClientSession session, String service, String oldPassword, boolean modified, String newPassword)
                     throws Exception {
-                actual.add(oldPassword);
+                reported.add(oldPassword);
             }
 
             @Override
@@ -1035,7 +1044,77 @@ public class AuthenticationTest extends BaseTestSupport {
             }
         }
 
-        assertListEquals("Attempted passwords", Arrays.asList(badPassword, goodPassword), actual);
+        List<String> expected = Arrays.asList(badPassword, goodPassword);
+        assertListEquals("Attempted passwords", expected, attempted);
+        assertListEquals("Reported passwords", expected, reported);
+    }
+
+    @Test   // see SSHD-1114
+    public void testPublicKeyAuthenticationReporter() throws Exception {
+        KeyPair goodIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        KeyPair badIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        List<PublicKey> attempted = new ArrayList<>();
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            attempted.add(key);
+            return KeyUtils.compareKeys(goodIdentity.getPublic(), key);
+        });
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+
+        List<PublicKey> reported = new ArrayList<>();
+        List<PublicKey> signed = new ArrayList<>();
+        PublicKeyAuthenticationReporter reporter = new PublicKeyAuthenticationReporter() {
+            @Override
+            public void signalAuthenticationAttempt(
+                    ClientSession session, String service, KeyPair identity, String signature)
+                    throws Exception {
+                reported.add(identity.getPublic());
+            }
+
+            @Override
+            public void signalSignatureAttempt(
+                    ClientSession session, String service, KeyPair identity, String signature, byte[] sigData)
+                    throws Exception {
+                signed.add(identity.getPublic());
+            }
+
+            @Override
+            public void signalAuthenticationSuccess(ClientSession session, String service, KeyPair identity)
+                    throws Exception {
+                assertTrue("Mismatched success identity", KeyUtils.compareKeys(goodIdentity.getPublic(), identity.getPublic()));
+            }
+
+            @Override
+            public void signalAuthenticationFailure(
+                    ClientSession session, String service, KeyPair identity, boolean partial, List<String> serverMethods)
+                    throws Exception {
+                assertTrue("Mismatched failed identity", KeyUtils.compareKeys(badIdentity.getPublic(), identity.getPublic()));
+            }
+        };
+
+        try (SshClient client = setupTestClient()) {
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPublicKeyIdentity(badIdentity);
+                session.addPublicKeyIdentity(goodIdentity);
+                session.setPublicKeyAuthenticationReporter(reporter);
+                session.auth().verify(AUTH_TIMEOUT);
+            } finally {
+                client.stop();
+            }
+        }
+
+        List<PublicKey> expected = Arrays.asList(badIdentity.getPublic(), goodIdentity.getPublic());
+        // The server public key authenticator is called twice with the good identity
+        int numAttempted = attempted.size();
+        assertKeyListEquals("Attempted", expected, (numAttempted > 0) ? attempted.subList(0, numAttempted - 1) : attempted);
+        assertKeyListEquals("Reported", expected, reported);
+        // The signing is attempted only if the initial public key is accepted
+        assertKeyListEquals("Signed", Collections.singletonList(goodIdentity.getPublic()), signed);
     }
 
     private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
