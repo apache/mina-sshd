@@ -62,15 +62,20 @@ public class UserAuthPassword extends AbstractUserAuth {
             return false;
         }
 
-        if ((passwords == null) || (!passwords.hasNext())) {
+        current = resolveAttemptedPassword(session, service);
+        if (current == null) {
             if (log.isDebugEnabled()) {
-                log.debug("sendAuthDataRequest({})[{}] no more passwords to send", session, service);
+                log.debug("resolveAttemptedPassword({})[{}] no more passwords to send", session, service);
+            }
+
+            PasswordAuthenticationReporter reporter = session.getPasswordAuthenticationReporter();
+            if (reporter != null) {
+                reporter.signalAuthenticationExhausted(session, service);
             }
 
             return false;
         }
 
-        current = passwords.next();
         String username = session.getUsername();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
                 username.length() + service.length()
@@ -83,6 +88,19 @@ public class UserAuthPassword extends AbstractUserAuth {
                                                                                                     */);
         sendPassword(buffer, session, current, current);
         return true;
+    }
+
+    protected String resolveAttemptedPassword(ClientSession session, String service) throws Exception {
+        if ((passwords != null) && passwords.hasNext()) {
+            return passwords.next();
+        }
+
+        UserInteraction ui = session.getUserInteraction();
+        if ((ui == null) || (!ui.isInteractionAllowed(session))) {
+            return null;
+        }
+
+        return ui.resolveAuthPasswordAttempt(session);
     }
 
     @Override

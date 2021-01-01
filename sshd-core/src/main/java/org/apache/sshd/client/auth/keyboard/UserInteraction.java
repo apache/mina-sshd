@@ -149,6 +149,17 @@ public interface UserInteraction {
     String getUpdatedPassword(ClientSession session, String prompt, String lang);
 
     /**
+     * Invoked during password authentication when no more pre-registered passwords are available
+     *
+     * @param  session   The {@link ClientSession} through which the request was received
+     * @return           The password to use - {@code null} signals no more passwords available
+     * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+     */
+    default String resolveAuthPasswordAttempt(ClientSession session) throws Exception {
+        return null;
+    }
+
+    /**
      * @param  prompt     The user interaction prompt
      * @param  tokensList A comma-separated list of tokens whose <U>last</U> index is prompt is sought.
      * @return            The position of any token in the prompt - negative if not found

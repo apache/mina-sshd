@@ -45,6 +45,20 @@ public interface PasswordAuthenticationReporter {
     }
 
     /**
+     * Signals end of passwords attempts and optionally switching to other authentication methods. <B>Note:</B> neither
+     * {@link #signalAuthenticationSuccess(ClientSession, String, String) signalAuthenticationSuccess} nor
+     * {@link #signalAuthenticationFailure(ClientSession, String, String, boolean, List) signalAuthenticationFailure}
+     * are invoked.
+     *
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
+     * @throws Exception If failed to handle the callback - <B>Note:</B> may cause session close
+     */
+    default void signalAuthenticationExhausted(ClientSession session, String service) throws Exception {
+        // ignored
+    }
+
+    /**
      * @param  session   The {@link ClientSession}
      * @param  service   The requesting service name
      * @param  password  The password that was attempted

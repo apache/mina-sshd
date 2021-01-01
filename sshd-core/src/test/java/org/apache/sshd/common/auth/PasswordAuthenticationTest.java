@@ -437,4 +437,66 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         assertListEquals("Attempted passwords", expected, attempted);
         assertListEquals("Reported passwords", expected, reported);
     }
+
+    @Test   // see SSHD-1114
+    public void testAuthenticationAttemptsExhausted() throws Exception {
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+
+        AtomicInteger exhaustedCount = new AtomicInteger();
+        PasswordAuthenticationReporter reporter = new PasswordAuthenticationReporter() {
+            @Override
+            public void signalAuthenticationExhausted(ClientSession session, String service) throws Exception {
+                exhaustedCount.incrementAndGet();
+            }
+        };
+
+        AtomicInteger attemptsCount = new AtomicInteger();
+        UserInteraction ui = new UserInteraction() {
+            @Override
+            public String[] interactive(
+                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                throw new UnsupportedOperationException("Unexpected interactive invocation");
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                throw new UnsupportedOperationException("Unexpected updated password request");
+            }
+
+            @Override
+            public String resolveAuthPasswordAttempt(ClientSession session) throws Exception {
+                int count = attemptsCount.incrementAndGet();
+                if (count <= 3) {
+                    return "attempt#" + count;
+                } else {
+                    return UserInteraction.super.resolveAuthPasswordAttempt(session);
+                }
+            }
+        };
+
+        try (SshClient client = setupTestClient()) {
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.password.UserAuthPasswordFactory()));
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.setPasswordAuthenticationReporter(reporter);
+                session.setUserInteraction(ui);
+                for (int index = 1; index <= 5; index++) {
+                    session.addPasswordIdentity("password#" + index);
+                }
+
+                AuthFuture auth = session.auth();
+                assertAuthenticationResult("Authenticating", auth, false);
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
+        assertEquals("Mismatched retries count", 4 /* 3 attempts + null */, attemptsCount.getAndSet(0));
+    }
 }

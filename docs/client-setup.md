@@ -96,12 +96,12 @@ our default limit seems quite suitable (and beyond) for most cases we are likely
 
 ### `UserInteraction`
 
-This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC 4256](https://www.ietf.org/rfc/rfc4256.txt).
+This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC-4252 section 9](https://tools.ietf.org/html/rfc4252#section-9).
 The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
-provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://www.ietf.org/rfc/rfc4252.txt).
+provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://tools.ietf.org/html/rfc4252#section-8).
 
 While RFC-4256 support is the primary purpose of this interface, it can also be used to retrieve the server's welcome banner as described
-in [RFC 4252 section 5.4](https://www.ietf.org/rfc/rfc4252.txt) as well as its initial identification string as described
+in [RFC 4252 section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) as well as its initial identification string as described
 in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
 In this context, regardless of whether such interaction is configured, the default implementation for the client side contains code
@@ -109,6 +109,20 @@ that attempts to auto-detect a password prompt. If it detects it, then it attemp
 the interactive response to the server's challenge - (see client-side implementation of `UserAuthKeyboardInteractive#useCurrentPassword`
 method). Basically, detection occurs by checking if the server sent **exactly one** challenge with no requested echo, and the challenge
 string looks like `"... password ...:"` (**Note:** the auto-detection and password prompt detection patterns are configurable).
+
+This interface can also be used to easily implement interactive password request from user for the `password` authentication protocol
+as described in [RFC-4252 section 8](https://tools.ietf.org/html/rfc4252#section-8) via the `resolveAuthPasswordAttempt` method.
+
+```java
+/**
+ * Invoked during password authentication when no more pre-registered passwords are available
+ *
+ * @param  session The {@link ClientSession} through which the request was received
+ * @return The password to use - {@code null} signals no more passwords available
+ * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+ */
+String resolveAuthPasswordAttempt(ClientSession session) throws Exception;
+```
 
 ## Using the `SshClient` to connect to a server
 
