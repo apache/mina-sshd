@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
@@ -93,19 +94,24 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         try {
-            if ((keys == null) || (!keys.hasNext())) {
-                if (debugEnabled) {
-                    log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
-                }
-
-                return false;
-            }
-
-            current = keys.next();
+            current = resolveAttemptedPublicKeyIdentity(session, service);
         } catch (Error e) {
             warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
                     session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
+        }
+
+        if (current == null) {
+            if (debugEnabled) {
+                log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
+            }
+
+            PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+            if (reporter != null) {
+                reporter.signalAuthenticationExhausted(session, service);
+            }
+
+            return false;
         }
 
         if (log.isTraceEnabled()) {
@@ -153,6 +159,24 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putPublicKey(pubKey);
         session.writePacket(buffer);
         return true;
+    }
+
+    protected PublicKeyIdentity resolveAttemptedPublicKeyIdentity(ClientSession session, String service) throws Exception {
+        if ((keys != null) && keys.hasNext()) {
+            return keys.next();
+        }
+
+        UserInteraction ui = session.getUserInteraction();
+        if ((ui == null) || (!ui.isInteractionAllowed(session))) {
+            return null;
+        }
+
+        KeyPair kp = ui.resolveAuthPublicKeyIdentityAttempt(session);
+        if (kp == null) {
+            return null;
+        }
+
+        return new KeyPairIdentity(this, session, kp);
     }
 
     @Override

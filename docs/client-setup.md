@@ -124,6 +124,20 @@ as described in [RFC-4252 section 8](https://tools.ietf.org/html/rfc4252#section
 String resolveAuthPasswordAttempt(ClientSession session) throws Exception;
 ```
 
+The interface can also be used to implement interactive key based authentication as described in [RFC-4252 section 7](https://tools.ietf.org/html/rfc4252#section-7)
+via the `resolveAuthPublicKeyIdentityAttempt` method.
+
+```java
+/**
+ * Invoked during public key authentication when no more pre-registered keys are available
+ *
+ * @param  session   The {@link ClientSession} through which the request was received
+ * @return           The {@link KeyPair} to use - {@code null} signals no more keys available
+ * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+ */
+KeyPair resolveAuthPublicKeyIdentityAttempt(ClientSession session) throws Exception;
+```
+
 ## Using the `SshClient` to connect to a server
 
 Once the `SshClient` instance is properly configured it needs to be `start()`-ed in order to connect to a server.

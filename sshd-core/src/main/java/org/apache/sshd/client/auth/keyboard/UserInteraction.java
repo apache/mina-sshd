@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.auth.keyboard;
 
+import java.security.KeyPair;
 import java.util.List;
 
 import org.apache.sshd.client.session.ClientSession;
@@ -88,7 +89,6 @@ public interface UserInteraction {
     };
 
     /**
-     *
      * @param  session The {@link ClientSession}
      * @return         {@code true} if user interaction allowed for this session (default)
      */
@@ -156,6 +156,17 @@ public interface UserInteraction {
      * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
      */
     default String resolveAuthPasswordAttempt(ClientSession session) throws Exception {
+        return null;
+    }
+
+    /**
+     * Invoked during public key authentication when no more pre-registered keys are available
+     *
+     * @param  session   The {@link ClientSession} through which the request was received
+     * @return           The {@link KeyPair} to use - {@code null} signals no more keys available
+     * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+     */
+    default KeyPair resolveAuthPublicKeyIdentityAttempt(ClientSession session) throws Exception {
         return null;
     }
 

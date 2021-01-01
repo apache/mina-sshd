@@ -48,6 +48,20 @@ public interface PublicKeyAuthenticationReporter {
     }
 
     /**
+     * Signals end of public key attempts and optionally switching to other authentication methods. <B>Note:</B> neither
+     * {@link #signalAuthenticationSuccess(ClientSession, String, KeyPair) signalAuthenticationSuccess} nor
+     * {@link #signalAuthenticationFailure(ClientSession, String, KeyPair, boolean, List) signalAuthenticationFailure}
+     * are invoked.
+     *
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
+     * @throws Exception If failed to handle the callback - <B>Note:</B> may cause session close
+     */
+    default void signalAuthenticationExhausted(ClientSession session, String service) throws Exception {
+        // ignored
+    }
+
+    /**
      * Sending the signed response to the server's challenge
      *
      * @param  session   The {@link ClientSession}

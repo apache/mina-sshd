@@ -33,7 +33,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -53,6 +55,7 @@ import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -323,5 +326,67 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         assertKeyListEquals("Reported", expected, reported);
         // The signing is attempted only if the initial public key is accepted
         assertKeyListEquals("Signed", Collections.singletonList(goodIdentity.getPublic()), signed);
+    }
+
+    @Test   // see SSHD-1114
+    public void testAuthenticationAttemptsExhausted() throws Exception {
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+
+        AtomicInteger exhaustedCount = new AtomicInteger();
+        PublicKeyAuthenticationReporter reporter = new PublicKeyAuthenticationReporter() {
+            @Override
+            public void signalAuthenticationExhausted(ClientSession session, String service) throws Exception {
+                exhaustedCount.incrementAndGet();
+            }
+        };
+
+        KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        AtomicInteger attemptsCount = new AtomicInteger();
+        UserInteraction ui = new UserInteraction() {
+            @Override
+            public String[] interactive(
+                    ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                throw new UnsupportedOperationException("Unexpected interactive invocation");
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                throw new UnsupportedOperationException("Unexpected updated password request");
+            }
+
+            @Override
+            public KeyPair resolveAuthPublicKeyIdentityAttempt(ClientSession session) throws Exception {
+                int count = attemptsCount.incrementAndGet();
+                if (count <= 3) {
+                    return kp;
+                } else {
+                    return UserInteraction.super.resolveAuthPublicKeyIdentityAttempt(session);
+                }
+            }
+        };
+
+        try (SshClient client = setupTestClient()) {
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.setPublicKeyAuthenticationReporter(reporter);
+                session.setUserInteraction(ui);
+                for (int index = 1; index <= 5; index++) {
+                    session.addPublicKeyIdentity(kp);
+                }
+                AuthFuture auth = session.auth();
+                assertAuthenticationResult("Authenticating", auth, false);
+            } finally {
+                client.stop();
+            }
+        }
+
+        assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
+        assertEquals("Mismatched retries count", 4 /* 3 attempts + null */, attemptsCount.getAndSet(0));
     }
 }
