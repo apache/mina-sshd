@@ -101,12 +101,12 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (current == null) {
             if (debugEnabled) {
                 log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
             }
 
-            PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
             if (reporter != null) {
                 reporter.signalAuthenticationExhausted(session, service);
             }
@@ -145,7 +145,6 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     session, service, name, algo, KeyUtils.getFingerPrint(pubKey));
         }
 
-        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (reporter != null) {
             reporter.signalAuthenticationAttempt(session, service, keyPair, algo);
         }

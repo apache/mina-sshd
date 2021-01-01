@@ -100,9 +100,9 @@ This interface is required for full support of `keyboard-interactive` authentica
 The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
 provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://tools.ietf.org/html/rfc4252#section-8).
 
-While RFC-4256 support is the primary purpose of this interface, it can also be used to retrieve the server's welcome banner as described
-in [RFC 4252 section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) as well as its initial identification string as described
-in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
+While ]RFC-4256](https://tools.ietf.org/html/rfc4256) support is the primary purpose of this interface, it can also be used to retrieve the server's
+welcome banner as described in [RFC 4252 section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) as well as its initial identification string
+as described in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 
 In this context, regardless of whether such interaction is configured, the default implementation for the client side contains code
 that attempts to auto-detect a password prompt. If it detects it, then it attempts to use one of the registered passwords (if any) as

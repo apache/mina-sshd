@@ -49,6 +49,24 @@ public interface HostBasedAuthenticationReporter {
     }
 
     /**
+     * Signals end of host based attempts and optionally switching to other authentication methods. <B>Note:</B> neither
+     * {@link #signalAuthenticationSuccess(ClientSession, String, KeyPair, String, String) signalAuthenticationSuccess}
+     * nor {@link #signalAuthenticationFailure(ClientSession, String, KeyPair, String, String, boolean, List)
+     * signalAuthenticationFailure} are invoked.
+     *
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
+     * @param  hostname  The host name value sent to the server
+     * @param  username  The username value sent to the server
+     * @throws Exception If failed to handle the callback - <B>Note:</B> may cause session close
+     */
+    default void signalAuthenticationExhausted(
+            ClientSession session, String service, String hostname, String username)
+            throws Exception {
+        // ignored
+    }
+
+    /**
      * @param  session   The {@link ClientSession}
      * @param  service   The requesting service name
      * @param  identity  The {@link KeyPair} identity being attempted
