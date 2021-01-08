@@ -225,7 +225,7 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
-    protected void signalSessionEvent(SessionListener.Event event) throws IOException {
+    protected void signalSessionEvent(SessionListener.Event event) throws Exception {
         if (SessionListener.Event.KeyEstablished.equals(event)) {
             sendInitialServiceRequest();
         }

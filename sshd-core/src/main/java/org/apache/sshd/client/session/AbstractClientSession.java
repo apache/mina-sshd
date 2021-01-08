@@ -556,7 +556,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
         mergeProposals(clientProposal, proposal);
         return super.sendKexInit(proposal);
     }
@@ -683,10 +683,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
                 proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
 
-                byte[] seed;
-                synchronized (kexState) {
-                    seed = sendKexInit(proposal);
-                    setKexSeed(seed);
+                try {
+                    synchronized (kexState) {
+                        byte[] seed = sendKexInit(proposal);
+                        setKexSeed(seed);
+                    }
+                } catch (Exception e) {
+                    GenericUtils.rethrowAsIoException(e);
                 }
             }
 

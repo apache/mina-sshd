@@ -214,7 +214,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @Override
     public void setAuthenticated() throws IOException {
         this.authed = true;
-        signalSessionEvent(SessionListener.Event.Authenticated);
+        try {
+            signalSessionEvent(SessionListener.Event.Authenticated);
+        } catch (Exception e) {
+            GenericUtils.rethrowAsIoException(e);
+        }
     }
 
     /**
@@ -691,10 +695,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Sends a session event to all currently registered session listeners
      *
-     * @param  event       The event to send
-     * @throws IOException If any of the registered listeners threw an exception.
+     * @param  event     The event to send
+     * @throws Exception If any of the registered listeners threw an exception.
      */
-    protected void signalSessionEvent(SessionListener.Event event) throws IOException {
+    protected void signalSessionEvent(SessionListener.Event event) throws Exception {
         try {
             invokeSessionSignaller(l -> {
                 signalSessionEvent(l, event);
@@ -704,13 +708,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             Throwable t = GenericUtils.peelException(err);
             debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
                     this, event, t.getClass().getSimpleName(), t.getMessage(), t);
-            if (t instanceof IOException) {
-                throw (IOException) t;
-            } else if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
+            if (t instanceof Exception) {
+                throw (Exception) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ") to send session event: " + t.getMessage(), t);
+                throw new RuntimeSshException(t);
             }
         }
     }
@@ -1279,6 +1280,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             Throwable e = GenericUtils.peelException(err);
             debug("signalSessionClosed({}) {} while signal session closed: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
+            // Do not re-throw since session closed anyway
         }
     }
 

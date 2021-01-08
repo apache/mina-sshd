@@ -100,6 +100,7 @@ An **experimental** implementation example is available for the client side - se
 
 Can be used to handle the following cases:
 
+* Intervene during the initial identification and KEX
 * [SSH_MSG_IGNORE](https://tools.ietf.org/html/rfc4253#section-11.2)
 * [SSH_MSG_DEBUG](https://tools.ietf.org/html/rfc4253#section-11.3)
 * [SSH_MSG_UNIMPLEMENTED](https://tools.ietf.org/html/rfc4253#section-11.4)

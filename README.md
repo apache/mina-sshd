@@ -52,6 +52,7 @@ based applications requiring SSH support.
     * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
     * `space-available` - [DRAFT 09 - section 9.3](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
     * Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+* [Endless tarpit](https://nullprogram.com/blog/2019/03/22/) - see [HOWTO(s)](./docs/howto.md) section.
 
 ## Implemented/available support
 
@@ -172,3 +173,5 @@ implementation of the logging API can be selected from the many existing adaptor
 ## [Configuration/data files parsing support](./docs/files-parsing.md)
 
 ## [Extension modules](./docs/extensions.md)
+
+# [HOWTO(s)](./docs/howto.md)

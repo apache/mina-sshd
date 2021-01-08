@@ -928,11 +928,15 @@ public final class GenericUtils {
         return current;
     }
 
-    public static IOException toIOException(Throwable e) {
+    public static void rethrowAsIoException(Throwable e) throws IOException {
         if (e instanceof IOException) {
-            return (IOException) e;
+            throw (IOException) e;
+        } else if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else if (e instanceof Error) {
+            throw (Error) e;
         } else {
-            return new IOException(e);
+            throw new IOException(e);
         }
     }
 

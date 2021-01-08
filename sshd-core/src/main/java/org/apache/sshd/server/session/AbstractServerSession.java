@@ -354,7 +354,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
         mergeProposals(serverProposal, proposal);
         return super.sendKexInit(proposal);
     }

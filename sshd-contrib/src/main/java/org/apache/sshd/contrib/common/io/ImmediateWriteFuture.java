@@ -17,34 +17,19 @@
  * under the License.
  */
 
-package org.apache.sshd.common.session;
+package org.apache.sshd.contrib.common.io;
 
-import java.util.Objects;
-
+import org.apache.sshd.common.channel.IoWriteFutureImpl;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
+ * Succeeds immediately upon construction
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionWorkBuffer extends ByteArrayBuffer implements SessionHolder<Session> {
-    private final Session session;
-
-    public SessionWorkBuffer(Session session) {
-        this.session = Objects.requireNonNull(session, "No session");
-    }
-
-    @Override
-    public Session getSession() {
-        return session;
-    }
-
-    @Override
-    public Buffer clear(boolean wipeData) {
-        throw new UnsupportedOperationException("Not allowed to clear session work buffer of " + getSession());
-    }
-
-    public void forceClear(boolean wipeData) {
-        super.clear(wipeData);
+public class ImmediateWriteFuture extends IoWriteFutureImpl {
+    public ImmediateWriteFuture(Object id, Buffer buffer) {
+        super(id, buffer);
+        setValue(Boolean.TRUE);
     }
 }

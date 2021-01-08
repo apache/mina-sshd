@@ -157,18 +157,20 @@ public abstract class Buffer implements Readable {
     /**
      * Reset read/write positions to zero - <B>Note:</B> zeroes any previously existing data
      *
-     * @see #clear(boolean)
+     * @return Reference to this buffer
+     * @see    #clear(boolean)
      */
-    public void clear() {
-        clear(true);
+    public Buffer clear() {
+        return clear(true);
     }
 
     /**
      * Reset read/write positions to zero
      *
-     * @param wipeData Whether to zero any previously existing data
+     * @param  wipeData Whether to zero any previously existing data
+     * @return          Reference to this buffer
      */
-    public abstract void clear(boolean wipeData);
+    public abstract Buffer clear(boolean wipeData);
 
     public boolean isValidMessageStructure(Class<?>... fieldTypes) {
         return isValidMessageStructure(GenericUtils.isEmpty(fieldTypes) ? Collections.emptyList() : Arrays.asList(fieldTypes));
@@ -992,17 +994,18 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    protected void ensureCapacity(int capacity) {
-        ensureCapacity(capacity, BufferUtils.DEFAULT_BUFFER_GROWTH_FACTOR);
+    public Buffer ensureCapacity(int capacity) {
+        return ensureCapacity(capacity, BufferUtils.DEFAULT_BUFFER_GROWTH_FACTOR);
     }
 
     /**
-     * @param capacity     The required capacity
-     * @param growthFactor An {@link IntUnaryOperator} that is invoked if the current capacity is insufficient. The
-     *                     argument is the minimum required new data length, the function result should be the effective
-     *                     new data length to be allocated - if less than minimum then an exception is thrown
+     * @param  capacity     The required capacity
+     * @param  growthFactor An {@link IntUnaryOperator} that is invoked if the current capacity is insufficient. The
+     *                      argument is the minimum required new data length, the function result should be the
+     *                      effective new data length to be allocated - if less than minimum then an exception is thrown
+     * @return              This buffer instance
      */
-    public abstract void ensureCapacity(int capacity, IntUnaryOperator growthFactor);
+    public abstract Buffer ensureCapacity(int capacity, IntUnaryOperator growthFactor);
 
     /**
      * @return Current size of underlying backing data bytes array

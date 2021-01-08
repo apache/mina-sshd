@@ -109,7 +109,8 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
                 e.addSuppressed(t);
             }
 
-            throw GenericUtils.toIOException(e);
+            GenericUtils.rethrowAsIoException(e);
+            return null;    // actually dead code...
         }
     }
 

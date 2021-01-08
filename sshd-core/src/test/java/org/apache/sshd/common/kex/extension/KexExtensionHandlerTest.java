@@ -53,7 +53,7 @@ public class KexExtensionHandlerTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testEncodeDecodeExtensionMessage() throws IOException {
+    public void testEncodeDecodeExtensionMessage() throws Exception {
         List<Map.Entry<String, ?>> expected = Arrays.asList(
                 new SimpleImmutableEntry<>(
                         DelayCompression.NAME,

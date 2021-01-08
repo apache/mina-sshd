@@ -184,13 +184,15 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
-    public void clear(boolean wipeData) {
+    public Buffer clear(boolean wipeData) {
         rpos = 0;
         wpos = 0;
 
         if (wipeData) {
             Arrays.fill(data, (byte) 0);
         }
+
+        return this;
     }
 
     @Override
@@ -207,11 +209,11 @@ public class ByteArrayBuffer extends Buffer {
 
     @Override
     public int putBuffer(Readable buffer, boolean expand) {
-        int r = expand ? buffer.available() : Math.min(buffer.available(), capacity());
-        ensureCapacity(r);
-        buffer.getRawBytes(data, wpos, r);
-        wpos += r;
-        return r;
+        int required = expand ? buffer.available() : Math.min(buffer.available(), capacity());
+        ensureCapacity(required);
+        buffer.getRawBytes(data, wpos, required);
+        wpos += required;
+        return required;
     }
 
     @Override
@@ -259,7 +261,7 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
-    public void ensureCapacity(int capacity, IntUnaryOperator growthFactor) {
+    public Buffer ensureCapacity(int capacity, IntUnaryOperator growthFactor) {
         ValidateUtils.checkTrue(capacity >= 0, "Negative capacity requested: %d", capacity);
 
         int maxSize = size();
@@ -276,6 +278,8 @@ public class ByteArrayBuffer extends Buffer {
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }
+
+        return this;
     }
 
     @Override
