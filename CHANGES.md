@@ -27,6 +27,7 @@
 * [SSHD-1085](https://issues.apache.org/jira/browse/SSHD-1085) Added more notifications related to channel state change for detecting channel closing or closed earlier.
 * [SSHD-1091](https://issues.apache.org/jira/browse/SSHD-1091) Renamed `sshd-contrib` top-level package in order to align naming convention.
 * [SSHD-1097](https://issues.apache.org/jira/browse/SSHD-1097) Added more `SessionListener` callbacks related to the initial version and key exchange
+* [SSHD-1097](https://issues.apache.org/jira/browse/SSHD-1097) Added more capability to send peer identification via `ReservedSessionMessagesHandler`
 * [SSHD-1109](https://issues.apache.org/jira/browse/SSHD-1109) Replace log4j with logback as the slf4j logger implementation for tests
 * [SSHD-1114](https://issues.apache.org/jira/browse/SSHD-1114) Added callbacks for client-side password authentication progress
 * [SSHD-1114](https://issues.apache.org/jira/browse/SSHD-1114) Added callbacks for client-side public key authentication progress

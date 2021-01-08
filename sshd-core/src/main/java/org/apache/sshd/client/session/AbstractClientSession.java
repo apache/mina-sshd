@@ -356,8 +356,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
         // Note: we intentionally use an unmodifiable list in order to enforce the fact that client cannot send header lines
         signalSendIdentification(clientVersion, Collections.emptyList());
-
-        return sendIdentification(clientVersion);
+        return sendIdentification(clientVersion, Collections.emptyList());
     }
 
     @Override

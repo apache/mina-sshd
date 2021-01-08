@@ -225,13 +225,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     protected IoWriteFuture sendServerIdentification(List<String> headerLines) throws Exception {
         serverVersion = resolveIdentificationString(CoreModuleProperties.SERVER_IDENTIFICATION.getName());
         signalSendIdentification(serverVersion, headerLines);
-
-        String ident = serverVersion;
-        if (GenericUtils.size(headerLines) > 0) {
-            ident = GenericUtils.join(headerLines, "\r\n") + "\r\n" + serverVersion;
-        }
-
-        return sendIdentification(ident);
+        return sendIdentification(serverVersion, headerLines);
     }
 
     @Override

@@ -832,13 +832,31 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Send our identification.
      *
-     * @param  ident       our identification to send
-     * @return             {@link IoWriteFuture} that can be used to wait for notification that identification has been
-     *                     send
-     * @throws IOException If failed to send the packet
+     * @param  version    our identification to send
+     * @param  extraLines Extra lines to send - used only by server sessions
+     * @return            {@link IoWriteFuture} that can be used to wait for notification that identification has been
+     *                    send
+     * @throws Exception  If failed to send the packet
      */
-    protected IoWriteFuture sendIdentification(String ident) throws IOException {
-        if (log.isDebugEnabled()) {
+    protected IoWriteFuture sendIdentification(String version, List<String> extraLines) throws Exception {
+        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
+        IoWriteFuture future = (handler == null) ? null : handler.sendIdentification(this, version, extraLines);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (future != null) {
+            if (debugEnabled) {
+                log.debug("sendIdentification({})[{}] sent {} lines via reserved handler",
+                        this, version, GenericUtils.size(extraLines));
+            }
+
+            return future;
+        }
+
+        String ident = version;
+        if (GenericUtils.size(extraLines) > 0) {
+            ident = GenericUtils.join(extraLines, "\r\n") + "\r\n" + version;
+        }
+
+        if (debugEnabled) {
             log.debug("sendIdentification({}): {}",
                     this, ident.replace('\r', '|').replace('\n', '|'));
         }
