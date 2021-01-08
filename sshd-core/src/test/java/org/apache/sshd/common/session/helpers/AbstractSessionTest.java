@@ -86,28 +86,28 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadIdentSimple() throws IOException {
+    public void testReadIdentSimple() throws Exception {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithoutCR() throws IOException {
+    public void testReadIdentWithoutCR() throws Exception {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithHeaders() throws IOException {
+    public void testReadIdentWithHeaders() throws Exception {
         Buffer buf = new ByteArrayBuffer("a header line\r\nSSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithSplitPackets() throws IOException {
+    public void testReadIdentWithSplitPackets() throws Exception {
         Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertNull("Unexpected identification for header only", ident);
@@ -118,14 +118,14 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentBadLineEnding() throws IOException {
+    public void testReadIdentBadLineEnding() throws Exception {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\ra".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         fail("Unexpected success: " + ident);
     }
 
     @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentLongLine() throws IOException {
+    public void testReadIdentLongLine() throws Exception {
         StringBuilder sb = new StringBuilder(SessionContext.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
         sb.append("SSH-2.0-software");
         do {
@@ -138,7 +138,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentWithNullChar() throws IOException {
+    public void testReadIdentWithNullChar() throws Exception {
         String id = "SSH-2.0" + '\0' + "-software\r\n";
         Buffer buf = new ByteArrayBuffer(id.getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
@@ -146,7 +146,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentLongHeader() throws IOException {
+    public void testReadIdentLongHeader() throws Exception {
         int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault();
         StringBuilder sb = new StringBuilder(maxIdentSize + Integer.SIZE);
         do {
@@ -300,7 +300,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    private static String readIdentification(MySession session, Buffer buf) throws IOException {
+    private static String readIdentification(MySession session, Buffer buf) throws Exception {
         List<String> lines = session.doReadIdentification(buf);
         return GenericUtils.isEmpty(lines) ? null : lines.get(lines.size() - 1);
     }
@@ -439,7 +439,7 @@ public class AbstractSessionTest extends BaseTestSupport {
             return false;
         }
 
-        public List<String> doReadIdentification(Buffer buffer) throws IOException {
+        public List<String> doReadIdentification(Buffer buffer) throws Exception {
             return super.doReadIdentification(buffer, false);
         }
 

@@ -2282,6 +2282,8 @@ public abstract class AbstractSession extends SessionHelper {
             }
         }
 
+        signalNegotiationOptionsCreated(proposal);
+
         byte[] seed;
         synchronized (kexState) {
             seed = sendKexInit(proposal);

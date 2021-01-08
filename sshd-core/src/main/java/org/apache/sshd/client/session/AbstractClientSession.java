@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -353,6 +354,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected IoWriteFuture sendClientIdentification() throws Exception {
         clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
+        // Note: we intentionally use an unmodifiable list in order to enforce the fact that client cannot send header lines
+        signalSendIdentification(clientVersion, Collections.emptyList());
+
         return sendIdentification(clientVersion);
     }
 

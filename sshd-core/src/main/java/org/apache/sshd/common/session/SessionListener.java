@@ -58,6 +58,38 @@ public interface SessionListener extends SshdEventListener {
     }
 
     /**
+     * About to send identification to peer
+     *
+     * @param session    The {@link Session} instance
+     * @param version    The resolved identification version
+     * @param extraLines Extra data preceding the identification to be sent. <B>Note:</B> the list is modifiable only if
+     *                   this is a server session. The user may modify it based on the peer.
+     * @see              <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol
+     *                   Version Exchange</A>
+     */
+    default void sessionPeerIdentificationSend(
+            Session session, String version, List<String> extraLines) {
+        // ignored
+    }
+
+    /**
+     * Successfully read a line as part of the initial peer identification
+     *
+     * @param session    The {@link Session} instance
+     * @param line       The data that was read so far - <B>Note:</B> might not be a full line if more packets are
+     *                   required for full identification data. Furthermore, it may be <U>repeated</U> data due to
+     *                   packets segmentation and re-assembly mechanism
+     * @param extraLines Previous lines that were before this one - <B>Note:</B> it may be <U>repeated</U> data due to
+     *                   packets segmentation and re-assembly mechanism
+     * @see              <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol
+     *                   Version Exchange</A>
+     */
+    default void sessionPeerIdentificationLine(
+            Session session, String line, List<String> extraLines) {
+        // ignored
+    }
+
+    /**
      * The peer's identification version was received
      *
      * @param session    The {@link Session} instance
@@ -68,6 +100,16 @@ public interface SessionListener extends SshdEventListener {
      */
     default void sessionPeerIdentificationReceived(
             Session session, String version, List<String> extraLines) {
+        // ignored
+    }
+
+    /**
+     *
+     * @param session  The referenced {@link Session}
+     * @param proposal The proposals that will be sent to the peer - <B>Caveat emptor:</B> the proposal is
+     *                 <U>modifiable</U> i.e., the handler can modify it before being sent
+     */
+    default void sessionNegotiationOptionsCreated(Session session, Map<KexProposalOption, String> proposal) {
         // ignored
     }
 

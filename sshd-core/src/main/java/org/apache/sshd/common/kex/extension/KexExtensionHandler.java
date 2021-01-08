@@ -84,7 +84,7 @@ public interface KexExtensionHandler {
      * @param  initiator   {@code true} if the proposal is about to be sent, {@code false} if this is a proposal
      *                     received from the peer.
      * @param  proposal    The proposal contents - <B>Caveat emptor:</B> the proposal is <U>modifiable</U> i.e., the
-     *                     handler can modify before being sent or before being processed (if incoming)
+     *                     handler can modify it before being sent or before being processed (if incoming)
      * @throws IOException If failed to handle the request
      */
     default void handleKexInitProposal(
@@ -117,7 +117,7 @@ public interface KexExtensionHandler {
 
     /**
      * The phase at which {@code sendKexExtensions} is invoked
-     * 
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     enum KexPhase {
@@ -130,7 +130,7 @@ public interface KexExtensionHandler {
     /**
      * Invoked in order to allow the handler to send an {@code SSH_MSG_EXT_INFO} message. <B>Note:</B> this method is
      * called only if {@code isKexExtensionsAvailable} returns {@code true} for the session.
-     * 
+     *
      * @param  session     The {@link Session}
      * @param  phase       The phase at which the handler is invoked
      * @throws IOException If failed to handle the invocation

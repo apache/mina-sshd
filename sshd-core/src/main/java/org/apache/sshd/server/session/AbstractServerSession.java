@@ -219,16 +219,18 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      *                     {@code null}/empty
      * @return             An {@link IoWriteFuture} that can be used to be notified of identification data being written
      *                     successfully or failing
-     * @throws IOException If failed to send identification
+     * @throws Exception   If failed to send identification
      * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
-    protected IoWriteFuture sendServerIdentification(String... headerLines) throws IOException {
+    protected IoWriteFuture sendServerIdentification(List<String> headerLines) throws Exception {
         serverVersion = resolveIdentificationString(CoreModuleProperties.SERVER_IDENTIFICATION.getName());
+        signalSendIdentification(serverVersion, headerLines);
 
         String ident = serverVersion;
-        if (GenericUtils.length(headerLines) > 0) {
+        if (GenericUtils.size(headerLines) > 0) {
             ident = GenericUtils.join(headerLines, "\r\n") + "\r\n" + serverVersion;
         }
+
         return sendIdentification(ident);
     }
 

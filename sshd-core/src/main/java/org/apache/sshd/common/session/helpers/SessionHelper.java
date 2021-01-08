@@ -610,6 +610,57 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         listener.sessionCreated(this);
     }
 
+    protected void signalSendIdentification(String version, List<String> extraLines) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalSendIdentification(l, version, extraLines);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalSendIdentification(SessionListener listener, String version, List<String> extraLines) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationSend(this, version, extraLines);
+    }
+
+    protected void signalReadPeerIdentificationLine(String line, List<String> extraLines) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalReadPeerIdentificationLine(l, line, extraLines);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = GenericUtils.peelException(err);
+            debug("signalReadPeerIdentificationLine({}) Failed ({}) to announce peer={}: {}",
+                    this, e.getClass().getSimpleName(), line, e.getMessage(), e);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalReadPeerIdentificationLine(
+            SessionListener listener, String version, List<String> extraLines) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationLine(this, version, extraLines);
+    }
+
     protected void signalPeerIdentificationReceived(String version, List<String> extraLines) throws Exception {
         try {
             invokeSessionSignaller(l -> {
@@ -626,10 +677,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 throw new RuntimeSshException(e);
             }
         }
-
     }
 
-    protected void signalPeerIdentificationReceived(SessionListener listener, String version, List<String> extraLines) {
+    protected void signalPeerIdentificationReceived(
+            SessionListener listener, String version, List<String> extraLines) {
         if (listener == null) {
             return;
         }
@@ -684,6 +735,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             if (l == null) {
                 continue;
             }
+
             try {
                 invoker.invoke(l);
             } catch (Throwable t) {
@@ -801,14 +853,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * state and a {@code null} value will be returned. Else the identification string will be returned and the data
      * read will be consumed from the buffer.
      *
-     * @param  buffer      the buffer containing the identification string
-     * @param  server      {@code true} if it is called by the server session, {@code false} if by the client session
-     * @return             A {@link List} of all received remote identification lines until the version line was read or
-     *                     {@code null} if more data is needed. The identification line is the <U>last</U> one in the
-     *                     list
-     * @throws IOException if malformed identification found
+     * @param  buffer    the buffer containing the identification string
+     * @param  server    {@code true} if it is called by the server session, {@code false} if by the client session
+     * @return           A {@link List} of all received remote identification lines until the version line was read or
+     *                   {@code null} if more data is needed. The identification line is the <U>last</U> one in the list
+     * @throws Exception if malformed identification found
      */
-    protected List<String> doReadIdentification(Buffer buffer, boolean server) throws IOException {
+    protected List<String> doReadIdentification(Buffer buffer, boolean server) throws Exception {
         int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequired(this);
         List<String> ident = null;
         int rpos = buffer.rpos();
@@ -869,6 +920,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             if (ident == null) {
                 ident = new ArrayList<>();
             }
+
+            signalReadPeerIdentificationLine(str, ident);
             ident.add(str);
 
             // if this is a server then only one line is expected from the client
@@ -943,6 +996,32 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return proposal;
     }
 
+    protected void signalNegotiationOptionsCreated(Map<KexProposalOption, String> proposal) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalNegotiationOptionsCreated(l, proposal);
+                return null;
+            });
+        } catch (Throwable t) {
+            Throwable err = GenericUtils.peelException(t);
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new RuntimeException(err);
+            }
+        }
+    }
+
+    protected void signalNegotiationOptionsCreated(SessionListener listener, Map<KexProposalOption, String> proposal) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionNegotiationOptionsCreated(this, proposal);
+    }
+
     protected void signalNegotiationStart(
             Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
         try {
@@ -950,7 +1029,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 signalNegotiationStart(l, c2sOptions, s2cOptions);
                 return null;
             });
-        } catch (Throwable err) {
+        } catch (Throwable t) {
+            Throwable err = GenericUtils.peelException(t);
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
             } else if (err instanceof Error) {
@@ -978,7 +1058,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 signalNegotiationEnd(l, c2sOptions, s2cOptions, negotiatedGuess, reason);
                 return null;
             });
-        } catch (Throwable err) {
+        } catch (Throwable t) {
+            Throwable err = GenericUtils.peelException(t);
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
             } else if (err instanceof Error) {

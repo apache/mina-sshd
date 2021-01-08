@@ -18,6 +18,10 @@
  */
 package org.apache.sshd.server.session;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -35,6 +39,10 @@ public class ServerSessionImpl extends AbstractServerSession {
 
         String headerConfig = CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.getOrNull(this);
         String[] headers = GenericUtils.split(headerConfig, CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
-        sendServerIdentification(headers);
+        // We intentionally create a modifiable array so as to allow users to modify it via SessionListener
+        List<String> extraLines = GenericUtils.isEmpty(headers)
+                ? new ArrayList<>()
+                : new ArrayList<>(Arrays.asList(headers));
+        sendServerIdentification(extraLines);
     }
 }
