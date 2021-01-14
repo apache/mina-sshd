@@ -39,7 +39,7 @@ public class OpenSSHPosixRenameExtensionImpl extends AbstractSftpClientExtension
 
     @Override
     public void posixRename(String oldPath, String newPath) throws IOException {
-        Buffer buffer = getCommandBuffer(Integer.BYTES + ((CharSequence) oldPath).length() + ((CharSequence) newPath).length());
+        Buffer buffer = getCommandBuffer(Integer.BYTES + oldPath.length() + newPath.length());
         putTarget(buffer, oldPath);
         putTarget(buffer, newPath);
 
