@@ -617,7 +617,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleSubsystemParsed(String request, String subsystem) throws IOException {
         ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
-        Collection<SubsystemFactory> factories
+        Collection<? extends SubsystemFactory> factories
                 = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);

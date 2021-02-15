@@ -67,7 +67,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         final String queryPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
 
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {

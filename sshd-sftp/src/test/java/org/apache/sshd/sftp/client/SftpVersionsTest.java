@@ -303,7 +303,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = createAuthenticatedClientSession();
              SftpClient sftp = createSftpClient(session, getTestedVersion())) {
@@ -425,7 +425,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         int numInvoked = 0;
 
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = createAuthenticatedClientSession();
              SftpClient sftp = createSftpClient(session, getTestedVersion())) {

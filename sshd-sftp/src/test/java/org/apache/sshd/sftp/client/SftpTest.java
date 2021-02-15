@@ -565,7 +565,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testSftpFileSystemAccessor() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);
@@ -654,7 +654,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     @SuppressWarnings({ "checkstyle:anoninnerlength", "checkstyle:methodlength" })
     public void testClient() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);
@@ -1270,7 +1270,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-621
     public void testServerDoesNotSupportSftp() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         sshd.setSubsystemFactories(null);
@@ -1386,7 +1386,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);

@@ -57,5 +57,5 @@ public interface ServerFactoryManager
      * @return a list of named {@link SubsystemFactory}-ies or {@code null}/empty if subsystems are not supported on
      *         this server
      */
-    List<SubsystemFactory> getSubsystemFactories();
+    List<? extends SubsystemFactory> getSubsystemFactories();
 }
