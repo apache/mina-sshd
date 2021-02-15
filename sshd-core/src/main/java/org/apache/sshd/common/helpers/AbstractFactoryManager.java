@@ -72,7 +72,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
 public abstract class AbstractFactoryManager extends AbstractKexFactoryManager implements FactoryManager {
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
-    protected Factory<Random> randomFactory;
+    protected Factory<? extends Random> randomFactory;
     protected List<? extends ChannelFactory> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
@@ -135,11 +135,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public Factory<Random> getRandomFactory() {
+    public Factory<? extends Random> getRandomFactory() {
         return randomFactory;
     }
 
-    public void setRandomFactory(Factory<Random> randomFactory) {
+    public void setRandomFactory(Factory<? extends Random> randomFactory) {
         this.randomFactory = randomFactory;
     }
 

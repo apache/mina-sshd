@@ -40,6 +40,7 @@ import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.hosts.KnownHostHashValue;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.HostEntryPair;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -95,6 +96,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void testParallelLoading() {
         KnownHostsServerKeyVerifier verifier
                 = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, entriesFile) {
@@ -115,7 +117,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 };
 
         ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
-        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+        Mockito.when(manager.getRandomFactory()).thenReturn((Factory) JceRandomFactory.INSTANCE);
 
         HOST_KEYS.entrySet().parallelStream().forEach(line -> {
             KnownHostEntry entry = hostsEntries.get(line.getKey());
@@ -221,6 +223,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testWriteHashedHostValues() throws Exception {
         Path path = getKnownHostCopyPath();
         Files.deleteIfExists(path);
@@ -234,7 +237,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         };
 
         ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
-        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+        Mockito.when(manager.getRandomFactory()).thenReturn((Factory) JceRandomFactory.INSTANCE);
 
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getFactoryManager()).thenReturn(manager);

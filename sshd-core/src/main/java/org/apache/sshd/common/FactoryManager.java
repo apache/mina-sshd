@@ -84,7 +84,7 @@ public interface FactoryManager
      *
      * @return The <code>Random</code> factory, never {@code null}
      */
-    Factory<Random> getRandomFactory();
+    Factory<? extends Random> getRandomFactory();
 
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.

@@ -83,7 +83,7 @@ public final class EndlessTarpitSenderSupportDevelopment extends AbstractLogging
         this.dataBuffer = new byte[(lineLength * 4) / 6 /* BASE64 */];
         this.outputBuffer = new byte[lineLength + 8 /* some padding */ + 2 /* CRLF */];
         FactoryManager manager = session.getFactoryManager();
-        Factory<Random> randomFactory = manager.getRandomFactory();
+        Factory<? extends Random> randomFactory = manager.getRandomFactory();
         this.randomizer = randomFactory.create();
         this.session.addSessionListener(this);
     }

@@ -270,6 +270,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         return manager;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private ClientSession createMockClientSession() throws Exception {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(client.getForwarderFactory()).thenReturn(DefaultForwarderFactory.INSTANCE);
@@ -296,8 +297,8 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         });
         Mockito.when(client.getChannelListenerProxy()).thenReturn(ChannelListener.EMPTY);
         Mockito.when(client.getPortForwardingEventListenerProxy()).thenReturn(PortForwardingEventListener.EMPTY);
-        Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
-        Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
+        Factory<? extends Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
+        Mockito.when(client.getRandomFactory()).thenReturn((Factory) randomFactory);
 
         Mockito.when(client.getServiceFactories()).thenReturn((List) SshClient.DEFAULT_SERVICE_FACTORIES);
         Mockito.when(client.getUserAuthFactories()).thenReturn(SshClient.DEFAULT_USER_AUTH_FACTORIES);
