@@ -73,7 +73,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected Factory<Random> randomFactory;
-    protected List<ChannelFactory> channelFactories;
+    protected List<? extends ChannelFactory> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
@@ -209,11 +209,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public List<ChannelFactory> getChannelFactories() {
+    public List<? extends ChannelFactory> getChannelFactories() {
         return channelFactories;
     }
 
-    public void setChannelFactories(List<ChannelFactory> channelFactories) {
+    public void setChannelFactories(List<? extends ChannelFactory> channelFactories) {
         this.channelFactories = channelFactories;
     }
 

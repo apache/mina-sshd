@@ -91,7 +91,7 @@ public interface FactoryManager
      *
      * @return A list of {@link ChannelFactory}-ies, never {@code null}
      */
-    List<ChannelFactory> getChannelFactories();
+    List<? extends ChannelFactory> getChannelFactories();
 
     /**
      * Retrieve the agent factory for creating <code>SshAgent</code> objects.

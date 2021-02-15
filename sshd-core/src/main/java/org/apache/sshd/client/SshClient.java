@@ -407,7 +407,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     agentFactory.getChannelForwardingFactories(this),
                     "No agent channel forwarding factories for %s",
                     agentFactory);
-            List<ChannelFactory> factories = getChannelFactories();
+            List<? extends ChannelFactory> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
                 factories = forwarders;
             } else {
