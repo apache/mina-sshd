@@ -147,7 +147,7 @@ public interface FactoryManager
      *
      * @return a list of named <code>Service</code> factories, never {@code null}
      */
-    List<ServiceFactory> getServiceFactories();
+    List<? extends ServiceFactory> getServiceFactories();
 
     /**
      * Retrieve the list of global request handlers.

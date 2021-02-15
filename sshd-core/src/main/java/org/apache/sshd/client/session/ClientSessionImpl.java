@@ -82,7 +82,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established. For instance, to
         // set the authPassword.
-        List<ServiceFactory> factories = client.getServiceFactories();
+        List<? extends ServiceFactory> factories = client.getServiceFactories();
         int numFactories = GenericUtils.size(factories);
         ValidateUtils.checkTrue((numFactories > 0) && (numFactories <= 2), "One or two services must be configured: %d",
                 numFactories);

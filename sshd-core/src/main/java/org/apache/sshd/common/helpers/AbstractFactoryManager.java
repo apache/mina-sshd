@@ -80,7 +80,7 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected ForwarderFactory forwarderFactory;
     protected ForwardingFilter forwardingFilter;
     protected FileSystemFactory fileSystemFactory;
-    protected List<ServiceFactory> serviceFactories;
+    protected List<? extends ServiceFactory> serviceFactories;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
@@ -276,11 +276,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public List<ServiceFactory> getServiceFactories() {
+    public List<? extends ServiceFactory> getServiceFactories() {
         return serviceFactories;
     }
 
-    public void setServiceFactories(List<ServiceFactory> serviceFactories) {
+    public void setServiceFactories(List<? extends ServiceFactory> serviceFactories) {
         this.serviceFactories = serviceFactories;
     }
 

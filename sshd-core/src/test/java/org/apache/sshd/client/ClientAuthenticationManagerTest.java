@@ -299,7 +299,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
         Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
 
-        Mockito.when(client.getServiceFactories()).thenReturn(SshClient.DEFAULT_SERVICE_FACTORIES);
+        Mockito.when(client.getServiceFactories()).thenReturn((List) SshClient.DEFAULT_SERVICE_FACTORIES);
         Mockito.when(client.getUserAuthFactories()).thenReturn(SshClient.DEFAULT_USER_AUTH_FACTORIES);
         return createMockClientSession(client);
     }
