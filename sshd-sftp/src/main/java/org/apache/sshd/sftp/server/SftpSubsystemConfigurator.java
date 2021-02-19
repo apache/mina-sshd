@@ -19,9 +19,13 @@
 
 package org.apache.sshd.sftp.server;
 
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpFileSystemAccessorManager extends SftpFileSystemAccessorProvider {
-    void setFileSystemAccessor(SftpFileSystemAccessor accessor);
+public interface SftpSubsystemConfigurator
+        extends ExecutorServiceCarrier, SftpFileSystemAccessorProvider,
+        SftpUnsupportedAttributePolicyProvider, SftpErrorStatusDataHandlerProvider {
+    // Nothing extra
 }

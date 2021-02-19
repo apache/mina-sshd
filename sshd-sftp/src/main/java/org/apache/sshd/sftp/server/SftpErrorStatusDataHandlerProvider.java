@@ -22,6 +22,12 @@ package org.apache.sshd.sftp.server;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpFileSystemAccessorManager extends SftpFileSystemAccessorProvider {
-    void setFileSystemAccessor(SftpFileSystemAccessor accessor);
+@FunctionalInterface
+public interface SftpErrorStatusDataHandlerProvider {
+
+    /**
+     * @return The (never {@code null}) {@link SftpErrorStatusDataHandler} to use when generating failed commands error
+     *         messages
+     */
+    SftpErrorStatusDataHandler getErrorStatusDataHandler();
 }

@@ -115,21 +115,12 @@ public class SftpSubsystem
     protected CloseableExecutorService executorService;
 
     /**
-     * @param executorService        The {@link CloseableExecutorService} to be used by the {@link SftpSubsystem}
-     *                               command when starting execution. If {@code null} then a single-threaded ad-hoc
-     *                               service is used.
-     * @param policy                 The {@link UnsupportedAttributePolicy} to use if failed to access some local file
-     *                               attributes
-     * @param accessor               The {@link SftpFileSystemAccessor} to use for opening files and directories
-     * @param errorStatusDataHandler The (never {@code null}) {@link SftpErrorStatusDataHandler} to use when generating
-     *                               failed commands error messages
-     * @see                          ThreadUtils#newSingleThreadExecutor(String)
+     * @param configurator The {@link SftpSubsystemConfigurator} to use
      */
-    public SftpSubsystem(
-                         CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
-                         SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
-        super(policy, accessor, errorStatusDataHandler);
+    public SftpSubsystem(SftpSubsystemConfigurator configurator) {
+        super(configurator);
 
+        CloseableExecutorService executorService = configurator.getExecutorService();
         if (executorService == null) {
             this.executorService = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
         } else {
@@ -186,6 +177,7 @@ public class SftpSubsystem
 
     @Override
     public void setFileSystem(FileSystem fileSystem) {
+        // reference check on purpose
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
             this.defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();

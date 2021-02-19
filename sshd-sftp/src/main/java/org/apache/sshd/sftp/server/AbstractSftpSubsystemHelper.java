@@ -147,13 +147,13 @@ public abstract class AbstractSftpSubsystemHelper
     private final SftpFileSystemAccessor fileSystemAccessor;
     private final SftpErrorStatusDataHandler errorStatusDataHandler;
 
-    protected AbstractSftpSubsystemHelper(
-                                          UnsupportedAttributePolicy policy, SftpFileSystemAccessor accessor,
-                                          SftpErrorStatusDataHandler handler) {
-        unsupportedAttributePolicy = Objects.requireNonNull(policy, "No unsupported attribute policy provided");
-        fileSystemAccessor = Objects.requireNonNull(accessor, "No file system accessor");
+    protected AbstractSftpSubsystemHelper(SftpSubsystemConfigurator configurator) {
+        unsupportedAttributePolicy = Objects.requireNonNull(configurator.getUnsupportedAttributePolicy(),
+                "No unsupported attribute policy provided");
+        fileSystemAccessor = Objects.requireNonNull(configurator.getFileSystemAccessor(), "No file system accessor");
         sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, sftpEventListeners);
-        errorStatusDataHandler = Objects.requireNonNull(handler, "No error status data handler");
+        errorStatusDataHandler
+                = Objects.requireNonNull(configurator.getErrorStatusDataHandler(), "No error status data handler");
     }
 
     @Override
@@ -185,6 +185,7 @@ public abstract class AbstractSftpSubsystemHelper
         return sftpEventListeners.remove(SftpEventListener.validateListener(listener));
     }
 
+    @Override
     public SftpErrorStatusDataHandler getErrorStatusDataHandler() {
         return errorStatusDataHandler;
     }

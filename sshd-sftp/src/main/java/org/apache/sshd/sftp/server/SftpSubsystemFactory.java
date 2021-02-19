@@ -38,7 +38,8 @@ import org.apache.sshd.sftp.common.SftpConstants;
 public class SftpSubsystemFactory
         extends AbstractSftpEventListenerManager
         implements ManagedExecutorServiceSupplier, SubsystemFactory,
-        SftpEventListenerManager, SftpFileSystemAccessorManager {
+        SftpEventListenerManager, SftpFileSystemAccessorManager,
+        SftpSubsystemConfigurator {
 
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
@@ -110,6 +111,7 @@ public class SftpSubsystemFactory
         executorsProvider = provider;
     }
 
+    @Override
     public UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
         return policy;
     }
@@ -132,6 +134,7 @@ public class SftpSubsystemFactory
         fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
     }
 
+    @Override
     public SftpErrorStatusDataHandler getErrorStatusDataHandler() {
         return errorStatusDataHandler;
     }
@@ -141,11 +144,13 @@ public class SftpSubsystemFactory
     }
 
     @Override
+    public CloseableExecutorService getExecutorService() {
+        return resolveExecutorService();
+    }
+
+    @Override
     public Command createSubsystem(ChannelSession channel) throws IOException {
-        SftpSubsystem subsystem = new SftpSubsystem(
-                resolveExecutorService(),
-                getUnsupportedAttributePolicy(), getFileSystemAccessor(),
-                getErrorStatusDataHandler());
+        SftpSubsystem subsystem = new SftpSubsystem(this);
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }

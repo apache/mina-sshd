@@ -123,6 +123,9 @@ reasonable buffer size by setting the `channel-session-max-extdata-bufsize` prop
 extended data handler is registered it will be buffered (up to the specified max. size). **Note:** if a buffer size is configured
 but no extended data handler is registered when channel is spawning the command then an exception will occur.
 
+The same applies with any error I/O streams provided to the `SftpSubsystem` - if the handler implements the relevant `Aware` interface
+then it will be provided with the relevant stream.
+
 ### Symbolic links handling
 
 Whenever the server needs to execute a command that may behave differently if applied to a symbolic link instead of its target

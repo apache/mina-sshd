@@ -34,7 +34,9 @@ import org.apache.sshd.sftp.common.SftpConstants;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, ServerSessionHolder {
+public interface SftpSubsystemEnvironment
+        extends SessionHolder<ServerSession>, ServerSessionHolder,
+        SftpFileSystemAccessorProvider, SftpUnsupportedAttributePolicyProvider {
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
 
@@ -56,16 +58,6 @@ public interface SftpSubsystemEnvironment extends SessionHolder<ServerSession>, 
      * @return The negotiated version
      */
     int getVersion();
-
-    /**
-     * @return The {@link SftpFileSystemAccessor} used to access effective server-side paths
-     */
-    SftpFileSystemAccessor getFileSystemAccessor();
-
-    /**
-     * @return The selected behavior in case some unsupported attributes are requested
-     */
-    UnsupportedAttributePolicy getUnsupportedAttributePolicy();
 
     /**
      * @return The default root directory used to resolve relative paths - a.k.a. the {@code chroot} location

@@ -22,6 +22,10 @@ package org.apache.sshd.sftp.server;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpFileSystemAccessorManager extends SftpFileSystemAccessorProvider {
-    void setFileSystemAccessor(SftpFileSystemAccessor accessor);
+@FunctionalInterface
+public interface SftpFileSystemAccessorProvider {
+    /**
+     * @return The {@link SftpFileSystemAccessor} to use for accessing files and directories
+     */
+    SftpFileSystemAccessor getFileSystemAccessor();
 }
