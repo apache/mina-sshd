@@ -71,7 +71,9 @@ import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.AsyncCommandErrorStreamAware;
 import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -96,10 +98,10 @@ public class SftpSubsystem
     protected final Map<String, Handle> handles = new ConcurrentHashMap<>();
     protected final Buffer buffer = new ByteArrayBuffer(1024);
     protected final BlockingQueue<Buffer> requests = new LinkedBlockingQueue<>();
+    protected final ChannelDataReceiver errorDataChannelReceiver;
 
     protected ExitCallback callback;
     protected IoOutputStream out;
-    protected IoOutputStream err;
     protected Environment env;
     protected Random randomizer;
     protected int fileHandleSize = SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE;
@@ -119,6 +121,31 @@ public class SftpSubsystem
      */
     public SftpSubsystem(SftpSubsystemConfigurator configurator) {
         super(configurator);
+
+        ChannelDataReceiver receiver = configurator.getErrorChannelDataReceiver();
+        if (receiver == null) {
+            errorDataChannelReceiver = new ChannelDataReceiver() {
+                @Override
+                @SuppressWarnings("synthetic-access")
+                public void close() throws IOException {
+                    if (log.isDebugEnabled()) {
+                        log.debug("stderrData({}) closing", getSession());
+                    }
+
+                }
+
+                @Override
+                @SuppressWarnings("synthetic-access")
+                public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
+                    if (log.isDebugEnabled()) {
+                        log.debug("stderrData({}) received {} data bytes", channel, len);
+                    }
+                    return len;
+                }
+            };
+        } else {
+            errorDataChannelReceiver = receiver;
+        }
 
         CloseableExecutorService executorService = configurator.getExecutorService();
         if (executorService == null) {
@@ -168,6 +195,7 @@ public class SftpSubsystem
     public void setChannelSession(ChannelSession session) {
         this.channelSession = session;
         session.setDataReceiver(this);
+        session.setExtendedDataWriter(errorDataChannelReceiver);
 
         SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
         if (errHandler instanceof ChannelSessionAware) {
@@ -201,7 +229,10 @@ public class SftpSubsystem
 
     @Override
     public void setErrorStream(OutputStream err) {
-        // Do nothing
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof CommandDirectErrorStreamAware) {
+            ((CommandDirectErrorStreamAware) errHandler).setErrorStream(err);
+        }
     }
 
     @Override
@@ -216,7 +247,10 @@ public class SftpSubsystem
 
     @Override
     public void setIoErrorStream(IoOutputStream err) {
-        this.err = err;
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof AsyncCommandErrorStreamAware) {
+            ((AsyncCommandErrorStreamAware) errHandler).setIoErrorStream(err);
+        }
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
+import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -49,6 +50,7 @@ public class SftpSubsystemFactory
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
         private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
         private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
+        private ChannelDataReceiver errorChannelDataReceiver;
 
         public Builder() {
             super();
@@ -74,6 +76,11 @@ public class SftpSubsystemFactory
             return this;
         }
 
+        public Builder withErrorChannelDataReceiver(ChannelDataReceiver receiver) {
+            errorChannelDataReceiver = receiver;
+            return this;
+        }
+
         @Override
         public SftpSubsystemFactory build() {
             SftpSubsystemFactory factory = new SftpSubsystemFactory();
@@ -81,6 +88,7 @@ public class SftpSubsystemFactory
             factory.setUnsupportedAttributePolicy(policy);
             factory.setFileSystemAccessor(fileSystemAccessor);
             factory.setErrorStatusDataHandler(errorStatusDataHandler);
+            factory.setErrorChannelDataReceiver(errorChannelDataReceiver);
             GenericUtils.forEach(getRegisteredListeners(), factory::addSftpEventListener);
             return factory;
         }
@@ -90,6 +98,7 @@ public class SftpSubsystemFactory
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
     private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
     private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
+    private ChannelDataReceiver errorChannelDataReceiver;
 
     public SftpSubsystemFactory() {
         super();
@@ -146,6 +155,15 @@ public class SftpSubsystemFactory
     @Override
     public CloseableExecutorService getExecutorService() {
         return resolveExecutorService();
+    }
+
+    @Override
+    public ChannelDataReceiver getErrorChannelDataReceiver() {
+        return errorChannelDataReceiver;
+    }
+
+    public void setErrorChannelDataReceiver(ChannelDataReceiver errorChannelDataReceiver) {
+        this.errorChannelDataReceiver = errorChannelDataReceiver;
     }
 
     @Override

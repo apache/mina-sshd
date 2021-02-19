@@ -19,14 +19,16 @@
 
 package org.apache.sshd.sftp.server;
 
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.server.channel.ChannelDataReceiver;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemConfigurator
-        extends ExecutorServiceCarrier, SftpFileSystemAccessorProvider,
-        SftpUnsupportedAttributePolicyProvider, SftpErrorStatusDataHandlerProvider,
-        SftpErrorDataChannelReceiverProvider {
-    // Nothing extra
+@FunctionalInterface
+public interface SftpErrorDataChannelReceiverProvider {
+    /**
+     * @return A {@link ChannelDataReceiver} to handle optional STDERR data received during SFTP session. If
+     *         {@code null} then any received such data is ignored.
+     */
+    ChannelDataReceiver getErrorChannelDataReceiver();
 }

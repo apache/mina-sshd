@@ -17,16 +17,19 @@
  * under the License.
  */
 
-package org.apache.sshd.sftp.server;
+package org.apache.sshd.server.command;
 
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import java.io.InputStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemConfigurator
-        extends ExecutorServiceCarrier, SftpFileSystemAccessorProvider,
-        SftpUnsupportedAttributePolicyProvider, SftpErrorStatusDataHandlerProvider,
-        SftpErrorDataChannelReceiverProvider {
-    // Nothing extra
+@FunctionalInterface
+public interface CommandDirectInputStreamAware {
+    /**
+     * Set the input stream that can be used by the shell to read input.
+     *
+     * @param in The {@link InputStream} used by the shell to read input.
+     */
+    void setInputStream(InputStream in);
 }

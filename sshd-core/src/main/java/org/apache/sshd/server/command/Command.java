@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.server.command;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.apache.sshd.server.ExitCallback;
 
 /**
@@ -35,29 +32,7 @@ import org.apache.sshd.server.ExitCallback;
  * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */
-public interface Command extends CommandLifecycle {
-
-    /**
-     * Set the input stream that can be used by the shell to read input.
-     *
-     * @param in The {@link InputStream} used by the shell to read input.
-     */
-    void setInputStream(InputStream in);
-
-    /**
-     * Set the output stream that can be used by the shell to write its output.
-     *
-     * @param out The {@link OutputStream} used by the shell to write its output
-     */
-    void setOutputStream(OutputStream out);
-
-    /**
-     * Set the error stream that can be used by the shell to write its errors.
-     *
-     * @param err The {@link OutputStream} used by the shell to write its errors
-     */
-    void setErrorStream(OutputStream err);
-
+public interface Command extends CommandLifecycle, CommandDirectStreamsAware {
     /**
      * Set the callback that the shell has to call when it is closed.
      *

@@ -68,7 +68,8 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
-import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.AsyncCommandInputStreamAware;
+import org.apache.sshd.server.command.AsyncCommandStreamsAware;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
@@ -719,11 +720,11 @@ public class ChannelSession extends AbstractServerChannel {
             ((FileSystemAware) command).setFileSystemFactory(factory, session);
         }
         // If the shell wants to use non-blocking io
-        if (command instanceof AsyncCommand) {
+        if (command instanceof AsyncCommandStreamsAware) {
             asyncOut = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncErr = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
-            ((AsyncCommand) command).setIoOutputStream(asyncOut);
-            ((AsyncCommand) command).setIoErrorStream(asyncErr);
+            ((AsyncCommandStreamsAware) command).setIoOutputStream(asyncOut);
+            ((AsyncCommandStreamsAware) command).setIoErrorStream(asyncErr);
         } else {
             Window wRemote = getRemoteWindow();
             out = new ChannelOutputStream(
@@ -742,10 +743,10 @@ public class ChannelSession extends AbstractServerChannel {
         if (this.receiver == null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
-            if (command instanceof AsyncCommand) {
+            if (command instanceof AsyncCommandInputStreamAware) {
                 AsyncDataReceiver recv = new AsyncDataReceiver(this);
                 setDataReceiver(recv);
-                ((AsyncCommand) command).setIoInputStream(recv.getIn());
+                ((AsyncCommandInputStreamAware) command).setIoInputStream(recv.getIn());
             } else {
                 PipeDataReceiver recv = new PipeDataReceiver(this, getLocalWindow());
                 setDataReceiver(recv);

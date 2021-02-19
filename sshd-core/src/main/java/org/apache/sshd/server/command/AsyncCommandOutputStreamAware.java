@@ -17,16 +17,20 @@
  * under the License.
  */
 
-package org.apache.sshd.sftp.server;
+package org.apache.sshd.server.command;
 
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.io.IoOutputStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemConfigurator
-        extends ExecutorServiceCarrier, SftpFileSystemAccessorProvider,
-        SftpUnsupportedAttributePolicyProvider, SftpErrorStatusDataHandlerProvider,
-        SftpErrorDataChannelReceiverProvider {
-    // Nothing extra
+@FunctionalInterface
+public interface AsyncCommandOutputStreamAware {
+    /**
+     * Set the output stream that can be used by the shell to write its output.
+     *
+     * @param out The {@link IoOutputStream} used by the shell to write its output
+     */
+    void setIoOutputStream(IoOutputStream out);
+
 }

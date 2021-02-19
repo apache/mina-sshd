@@ -17,16 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.sftp.server;
-
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+package org.apache.sshd.server.command;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpSubsystemConfigurator
-        extends ExecutorServiceCarrier, SftpFileSystemAccessorProvider,
-        SftpUnsupportedAttributePolicyProvider, SftpErrorStatusDataHandlerProvider,
-        SftpErrorDataChannelReceiverProvider {
+public interface CommandDirectStreamsAware
+        extends CommandDirectInputStreamAware, CommandDirectOutputStreamAware, CommandDirectErrorStreamAware {
     // Nothing extra
 }
