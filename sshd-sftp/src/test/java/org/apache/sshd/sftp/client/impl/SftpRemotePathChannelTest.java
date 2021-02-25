@@ -48,6 +48,7 @@ import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
@@ -217,6 +218,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
      * limit the available heap memory of the junit execution by passing "-Xmx256m" to the VM.
      */
     @Test(timeout = 5L * 60L * 1000L)   // see SSHD-1125
+    @Ignore("Used only for debugging SSHD-1125")
     public void testReadRequestsOutOfMemory() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
