@@ -99,12 +99,21 @@ public class AsyncEchoShellFactory implements ShellFactory {
 
         @Override
         public void setIoOutputStream(IoOutputStream out) {
-            this.out = new BufferedIoOutputStream("STDOUT", out);
+            this.out = wrapOutputStream("SHELL-STDOUT", out);
         }
 
         @Override
         public void setIoErrorStream(IoOutputStream err) {
-            this.err = new BufferedIoOutputStream("STDERR", err);
+            this.err = wrapOutputStream("SHELL-STDERR", err);
+        }
+
+        protected BufferedIoOutputStream wrapOutputStream(String prefix, IoOutputStream stream) {
+            if (stream instanceof BufferedIoOutputStream) {
+                return (BufferedIoOutputStream) stream;
+            }
+
+            int channelId = session.getId();
+            return new BufferedIoOutputStream(prefix + "@" + channelId, channelId, stream, session);
         }
 
         @Override

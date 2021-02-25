@@ -24,6 +24,7 @@ import java.time.Duration;
 
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.common.Property;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.OsUtils;
@@ -242,6 +243,24 @@ public final class CoreModuleProperties {
      */
     public static final Property<Duration> WINDOW_TIMEOUT
             = Property.duration("window-timeout", Duration.ZERO);
+
+    /**
+     * Key used when creating a {@code BufferedIoOutputStream} in order to specify max. allowed unwritten pending bytes.
+     * If this value is exceeded then the code waits up to {@link #BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT} for the
+     * pending data to be written and thus make room for the new request.
+     */
+    public static final Property<Integer> BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_SIZE
+            = Property.integer("buffered-io-output-max-pending-write-size",
+                    SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT * 8);
+
+    /**
+     * Key used when creating a {@code BufferedIoOutputStream} in order to specify max. wait time (msec.) for pending
+     * writes to be completed before enqueuing a new request
+     *
+     * @see #BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_SIZE
+     */
+    public static final Property<Duration> BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT
+            = Property.duration("buffered-io-output-max-pending-write-wait", Duration.ofSeconds(30L));
 
     /**
      * Key used to retrieve the value of the maximum packet size in the configuration properties map.
@@ -689,7 +708,7 @@ public final class CoreModuleProperties {
 
     /**
      * The lower threshold. If not set, half the higher threshold will be used.
-     * 
+     *
      * @see #TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH
      */
     public static final Property<Long> TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW

@@ -215,10 +215,12 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         }
 
         if (streaming == Streaming.Async) {
+            int channelId = getId();
             out = new BufferedIoOutputStream(
-                    "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                        @SuppressWarnings("synthetic-access")
+                    "aysnc-tcpip-channel@" + channelId, channelId,
+                    new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
                         @Override
+                        @SuppressWarnings("synthetic-access")
                         protected CloseFuture doCloseGracefully() {
                             try {
                                 sendEof();
@@ -227,7 +229,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
                             }
                             return super.doCloseGracefully();
                         }
-                    });
+                    }, this);
         } else {
             this.out = new SimpleIoOutputStream(
                     new ChannelOutputStream(

@@ -242,7 +242,8 @@ public class SftpSubsystem
 
     @Override
     public void setIoOutputStream(IoOutputStream out) {
-        this.out = new BufferedIoOutputStream("sftp out buffer", out);
+        int channelId = channelSession.getId();
+        this.out = new BufferedIoOutputStream("sftp-out@" + channelId, channelId, out, channelSession);
     }
 
     @Override
