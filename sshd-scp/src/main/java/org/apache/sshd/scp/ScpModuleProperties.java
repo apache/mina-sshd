@@ -60,6 +60,13 @@ public final class ScpModuleProperties {
             = Property.charset("scp-shell-name-encoding-charset", StandardCharsets.UTF_8);
 
     /**
+     * Used to indicate the {@link Charset} (or its name) for handling environment values in {@code ScpShell} -
+     * extracted from the channel session when shell initialized.
+     */
+    public static final Property<Charset> SHELL_ENVVARS_ENCODING_CHARSET
+            = Property.charset("scp-shell-envvars-encoding-charset", StandardCharsets.US_ASCII);
+
+    /**
      * Used to indicate the {@link Charset} (or its name) for decoding incoming commands to be processed by the
      * {@code ScpShell} - extracted from the channel session when shell initialized.
      */

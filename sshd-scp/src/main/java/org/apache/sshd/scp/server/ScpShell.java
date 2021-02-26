@@ -90,6 +90,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
 
     protected final Map<String, Object> variables = new HashMap<>();
     protected final Charset nameEncodingCharset;
+    protected final Charset envVarsEnodingCharset;
 
     protected final ScpFileOpener opener;
     protected final ScpTransferEventListener listener;
@@ -107,6 +108,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
 
         nameEncodingCharset = ScpModuleProperties.SHELL_NAME_ENCODING_CHARSET.getRequired(channelSession);
+        envVarsEnodingCharset = ScpModuleProperties.SHELL_ENVVARS_ENCODING_CHARSET.getRequired(channelSession);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException(
@@ -155,7 +157,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     }
 
     protected void signalError(String cmd, String errorMsg) {
-        signalError(cmd, errorMsg, StandardCharsets.US_ASCII);
+        signalError(cmd, errorMsg, envVarsEnodingCharset);
     }
 
     protected void signalError(String cmd, String errorMsg, Charset cs) {
@@ -217,6 +219,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             log.warn("run({}) {}", channel, message);
             try {
                 OutputStream stderr = getErrorStream();
+                // Don't encode it with any user defined charset
                 stderr.write(message.getBytes(StandardCharsets.US_ASCII));
             } catch (IOException ioe) {
                 log.warn("run({}) Failed ({}) to write error message={}: {}",
@@ -311,7 +314,9 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     protected void handleUnsupportedCommand(String command, String[] argv) throws Exception {
         log.warn("handleUnsupportedCommand({}) unsupported: {}", getServerChannelSession(), command);
         variables.put(STATUS, 127);
-        getErrorStream().write(("command not found: " + argv[0] + "\n").getBytes(StandardCharsets.US_ASCII));
+        OutputStream errorStream = getErrorStream();
+        // Don't encode it with any user defined charset
+        errorStream.write(("command not found: " + argv[0] + "\n").getBytes(StandardCharsets.US_ASCII));
     }
 
     protected List<String[]> parse(String command) {
@@ -366,7 +371,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         if (argv.length == 1) {
             envValues.entrySet()
                     .stream()
-                    .forEach(e -> println(argv[0], e.getKey() + "=" + e.getValue(), stdout, StandardCharsets.US_ASCII));
+                    .forEach(e -> println(argv[0], e.getKey() + "=" + e.getValue(), stdout, envVarsEnodingCharset));
             variables.put(STATUS, 0);
             return;
         }
@@ -387,7 +392,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             log.debug("printenv({}) {}={}", getServerChannelSession(), varName, varValue);
         }
 
-        println(argv[0], varValue, stdout, StandardCharsets.US_ASCII);
+        println(argv[0], varValue, stdout, envVarsEnodingCharset);
         variables.put(STATUS, 0);
     }
 

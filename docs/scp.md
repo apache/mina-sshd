@@ -204,6 +204,8 @@ ScpModuleProperties.SHELL_NAME_DECODING_CHARSET.set(sshd, Charset.forName("US-AS
 
 **Caveat emptor:** that the code does not enforce "symmetry" of the chosen character sets - in other words, user can either by design or error cause different encoding to be used for the incoming commands vs. the outgoing responses. It is important to bear in mind that if the text to be encoded/decoded contains characters that cannot be  safely handled by the chosen encoder/decoder than the result might not be correctly parsed/understood by the peer.
 
+A similar behavior is controlled via `SHELL_ENVVARS_ENCODING_CHARSET` which controls responses from the `ScpShell` regarding environment variables - the main difference being that the default is US-ASCII rather than UTF-8.
+
 ## Remote-to-remote transfer
 
 The code provides an `ScpTransferHelper` class that enables copying files between 2 remote accounts without going through
