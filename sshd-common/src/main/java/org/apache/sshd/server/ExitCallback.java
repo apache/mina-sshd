@@ -30,7 +30,17 @@ public interface ExitCallback {
      * @param exitValue the exit value
      */
     default void onExit(int exitValue) {
-        onExit(exitValue, "");
+        onExit(exitValue, false);
+    }
+
+    /**
+     * Informs the SSH server that the shell has exited
+     *
+     * @param exitValue        the exit value
+     * @param closeImmediately whether to also terminate the channel immediately or do a graceful close.
+     */
+    default void onExit(int exitValue, boolean closeImmediately) {
+        onExit(exitValue, "", closeImmediately);
     }
 
     /**
@@ -39,5 +49,18 @@ public interface ExitCallback {
      * @param exitValue   the exit value
      * @param exitMessage exit value description
      */
-    void onExit(int exitValue, String exitMessage);
+    default void onExit(int exitValue, String exitMessage) {
+        onExit(exitValue, exitMessage, false);
+    }
+
+    /**
+     *
+     * Informs the SSH client/server that the shell has exited
+     *
+     * @param exitValue        the exit value
+     * @param exitMessage      exit value description
+     * @param closeImmediately whether to also terminate the channel immediately or do a graceful close.
+     */
+    void onExit(int exitValue, String exitMessage, boolean closeImmediately);
+
 }

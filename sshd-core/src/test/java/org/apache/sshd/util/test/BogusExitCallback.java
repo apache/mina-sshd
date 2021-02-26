@@ -25,21 +25,23 @@ public class BogusExitCallback implements ExitCallback {
     private boolean exited;
     private int exitValue;
     private String exitMessage;
+    private boolean closeImmediately;
 
     public BogusExitCallback() {
         super();
     }
 
     @Override
-    public void onExit(int exitValue) {
-        onExit(exitValue, String.valueOf(exitValue));
+    public void onExit(int exitValue, boolean closeImmediately) {
+        onExit(exitValue, String.valueOf(exitValue), closeImmediately);
     }
 
     @Override
-    public void onExit(int exitValue, String exitMessage) {
+    public void onExit(int exitValue, String exitMessage, boolean closeImmediately) {
         this.exited = true;
         this.exitValue = exitValue;
         this.exitMessage = exitMessage;
+        this.closeImmediately = closeImmediately;
     }
 
     public boolean isExited() {
@@ -52,5 +54,9 @@ public class BogusExitCallback implements ExitCallback {
 
     public String getExitMessage() {
         return exitMessage;
+    }
+
+    public boolean isCloseImmediately() {
+        return closeImmediately;
     }
 }

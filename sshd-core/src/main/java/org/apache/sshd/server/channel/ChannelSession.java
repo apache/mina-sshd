@@ -771,9 +771,9 @@ public class ChannelSession extends AbstractServerChannel {
             doWriteExtendedData(buffer.array(), buffer.rpos(), buffer.available());
         }
 
-        command.setExitCallback((exitValue, exitMessage) -> {
+        command.setExitCallback((exitValue, exitMessage, closeImmediately) -> {
             try {
-                closeShell(exitValue);
+                closeShell(exitValue, closeImmediately);
                 if (log.isDebugEnabled()) {
                     log.debug("onExit({}) code={} message='{}' shell closed",
                             ChannelSession.this, exitValue, exitMessage);
@@ -898,9 +898,9 @@ public class ChannelSession extends AbstractServerChannel {
         return env;
     }
 
-    protected void closeShell(int exitValue) throws IOException {
+    protected void closeShell(int exitValue, boolean closeImmediately) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("closeShell({}) exit code={}", this, exitValue);
+            log.debug("closeShell({}) exit code={}, immediate={}", this, exitValue, closeImmediately);
         }
 
         if (!isClosing()) {
@@ -910,7 +910,7 @@ public class ChannelSession extends AbstractServerChannel {
             sendEof();
             sendExitStatus(exitValue);
             commandExitFuture.setClosed();
-            close(false);
+            close(closeImmediately);
         } else {
             commandExitFuture.setClosed();
         }

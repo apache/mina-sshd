@@ -289,6 +289,7 @@ public class SftpSubsystem
 
     @Override
     public void run() {
+        int exitCode = 0;
         try {
             while (true) {
                 Buffer buffer = requests.take();
@@ -305,10 +306,11 @@ public class SftpSubsystem
                 Session session = getServerSession();
                 error("run({}) {} caught in SFTP subsystem: {}",
                         session, t.getClass().getSimpleName(), t.getMessage(), t);
+                exitCode = -1;
             }
         } finally {
             closeAllHandles();
-            callback.onExit(0);
+            callback.onExit(exitCode, exitCode != 0);
         }
     }
 
