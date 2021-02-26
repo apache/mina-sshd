@@ -19,6 +19,7 @@
 package org.apache.sshd.scp.server;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -220,7 +221,7 @@ public class ScpCommand extends AbstractFileSystemCommand implements ServerChann
             log.debug("writeCommandResponseMessage({}) command='{}', exit-status={}: {}",
                     getServerSession(), command, exitValue, exitMessage);
         }
-        ScpAckInfo.sendAck(getOutputStream(), exitValue, exitMessage);
+        ScpAckInfo.sendAck(getOutputStream(), StandardCharsets.UTF_8, exitValue, exitMessage);
     }
 
     @Override

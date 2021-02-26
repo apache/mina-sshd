@@ -47,6 +47,20 @@ public final class ScpModuleProperties {
             = Property.duration("scp-exec-channel-exit-status-timeout", Duration.ofSeconds(5));
 
     /**
+     * Used to indicate the {@link Charset} (or its name) for decoding incoming commands/responses sent by the peer
+     * (either client or server).
+     */
+    public static final Property<Charset> SCP_INCOMING_ENCODING
+            = Property.charset("scp-incoming-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
+     * Used to indicate the {@link Charset} (or its name) for encoding outgoing commands/responses sent to the peer
+     * (either client or server).
+     */
+    public static final Property<Charset> SCP_OUTGOING_ENCODING
+            = Property.charset("scp-outgoing-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
      * Whether to synchronize written file data with underlying file-system
      */
     public static final Property<Boolean> PROP_AUTO_SYNC_FILE_ON_WRITE

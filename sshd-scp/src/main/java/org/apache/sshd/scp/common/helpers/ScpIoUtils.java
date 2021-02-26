@@ -24,7 +24,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,16 +52,16 @@ public final class ScpIoUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
-    public static String readLine(InputStream in) throws IOException {
-        return readLine(in, false);
+    public static String readLine(InputStream in, Charset cs) throws IOException {
+        return readLine(in, cs, false);
     }
 
-    public static String readLine(InputStream in, boolean canEof) throws IOException {
+    public static String readLine(InputStream in, Charset cs, boolean canEof) throws IOException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
             for (;;) {
                 int c = in.read();
                 if (c == '\n') {
-                    return baos.toString(StandardCharsets.UTF_8.name());
+                    return baos.toString(cs.name());
                 } else if (c == -1) {
                     if (!canEof) {
                         throw new EOFException("EOF while await end of line");
@@ -74,22 +74,25 @@ public final class ScpIoUtils {
         }
     }
 
-    public static void writeLine(OutputStream out, String cmd) throws IOException {
+    public static void writeLine(OutputStream out, Charset cs, String cmd) throws IOException {
         if (cmd != null) {
-            out.write(cmd.getBytes(StandardCharsets.UTF_8));
+            out.write(cmd.getBytes(cs));
         }
         out.write('\n');
         out.flush();
     }
 
-    public static ScpAckInfo sendAcknowledgedCommand(AbstractScpCommandDetails cmd, InputStream in, OutputStream out)
+    public static ScpAckInfo sendAcknowledgedCommand(
+            AbstractScpCommandDetails cmd, InputStream in, Charset csIn, OutputStream out, Charset csOut)
             throws IOException {
-        return sendAcknowledgedCommand(cmd.toHeader(), in, out);
+        return sendAcknowledgedCommand(cmd.toHeader(), in, csIn, out, csOut);
     }
 
-    public static ScpAckInfo sendAcknowledgedCommand(String cmd, InputStream in, OutputStream out) throws IOException {
-        writeLine(out, cmd);
-        return ScpAckInfo.readAck(in, false);
+    public static ScpAckInfo sendAcknowledgedCommand(
+            String cmd, InputStream in, Charset csIn, OutputStream out, Charset csOut)
+            throws IOException {
+        writeLine(out, csOut, cmd);
+        return ScpAckInfo.readAck(in, csIn, false);
     }
 
     public static String getExitStatusName(Integer exitStatus) {

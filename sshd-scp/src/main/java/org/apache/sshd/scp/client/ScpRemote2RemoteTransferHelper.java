@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -36,6 +37,7 @@ import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.client.ScpClient.Option;
 import org.apache.sshd.scp.common.helpers.AbstractScpCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpAckInfo;
@@ -54,6 +56,8 @@ import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
  */
 public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     protected final ScpRemote2RemoteTransferListener listener;
+    protected final Charset csIn;
+    protected final Charset csOut;
 
     private final ClientSession sourceSession;
     private final ClientSession destSession;
@@ -70,7 +74,10 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     public ScpRemote2RemoteTransferHelper(ClientSession sourceSession, ClientSession destSession,
                                           ScpRemote2RemoteTransferListener listener) {
         this.sourceSession = Objects.requireNonNull(sourceSession, "No source session provided");
+        this.csIn = ScpModuleProperties.SCP_INCOMING_ENCODING.getRequired(sourceSession);
         this.destSession = Objects.requireNonNull(destSession, "No destination session provided");
+        this.csOut = ScpModuleProperties.SCP_OUTGOING_ENCODING.getRequired(destSession);
+
         this.listener = listener;
     }
 
@@ -199,7 +206,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             throw new IllegalArgumentException("Invalid file transfer request: " + header);
         }
 
-        ScpIoUtils.writeLine(dstOut, header);
+        ScpIoUtils.writeLine(dstOut, csOut, header);
         ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
         ackInfo.validateCommandStatusCode("[DST] " + header, "handleFileTransferRequest");
 
@@ -272,7 +279,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             throw new IllegalArgumentException("Invalid file transfer request: " + header);
         }
 
-        ScpIoUtils.writeLine(dstOut, header);
+        ScpIoUtils.writeLine(dstOut, csOut, header);
         ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
         ackInfo.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest");
 
@@ -339,7 +346,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
                     }
 
                     case ScpDirEndCommandDetails.COMMAND_NAME: {
-                        ScpIoUtils.writeLine(dstOut, header);
+                        ScpIoUtils.writeLine(dstOut, csOut, header);
                         ackInfo = transferStatusCode(header, dstIn, srcOut);
                         ackInfo.validateCommandStatusCode("[DST@" + depth + "] " + header, "handleDirectoryTransferRequest");
 
@@ -377,7 +384,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
 
         long xferCount;
         try (InputStream inputStream = new LimitInputStream(srcIn, length)) {
-            ScpAckInfo.sendOk(srcOut); // ready to receive the data from source
+            ScpAckInfo.sendOk(srcOut, csOut); // ready to receive the data from source
             xferCount = IoUtils.copy(inputStream, dstOut);
             dstOut.flush(); // make sure all data sent to destination
         }
@@ -392,7 +399,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
         ackInfo.validateCommandStatusCode("[SRC-EOF] " + header, "transferSimpleFile");
 
         // wait for destination to signal data received
-        ackInfo = ScpAckInfo.readAck(dstIn, false);
+        ackInfo = ScpAckInfo.readAck(dstIn, csIn, false);
         ackInfo.validateCommandStatusCode("[DST-EOF] " + header, "transferSimpleFile");
         return xferCount;
     }
@@ -402,7 +409,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             String destination, InputStream dstIn, OutputStream dstOut,
             String header)
             throws IOException {
-        ScpIoUtils.writeLine(dstOut, header);
+        ScpIoUtils.writeLine(dstOut, csOut, header);
         ScpAckInfo ackInfo = transferStatusCode(header, dstIn, srcOut);
         ackInfo.validateCommandStatusCode("[DST] " + header, "transferTimestampCommand");
 
@@ -414,11 +421,11 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
     }
 
     protected ScpAckInfo transferStatusCode(Object logHint, InputStream in, OutputStream out) throws IOException {
-        ScpAckInfo ackInfo = ScpAckInfo.readAck(in, false);
+        ScpAckInfo ackInfo = ScpAckInfo.readAck(in, csIn, false);
         if (log.isDebugEnabled()) {
             log.debug("transferStatusCode({})[{}] {}", this, logHint, ackInfo);
         }
-        ackInfo.send(out);
+        ackInfo.send(out, csOut);
         return ackInfo;
     }
 
@@ -436,7 +443,7 @@ public class ScpRemote2RemoteTransferHelper extends AbstractLoggingBean {
             return new ScpAckInfo(c);
         }
 
-        String line = ScpIoUtils.readLine(in, false);
+        String line = ScpIoUtils.readLine(in, csIn, false);
         if ((c == ScpAckInfo.WARNING) || (c == ScpAckInfo.ERROR)) {
             if (log.isDebugEnabled()) {
                 log.debug("receiveNextCmd({})[{}] - ACK={}", this, logHint, new ScpAckInfo(c, line));

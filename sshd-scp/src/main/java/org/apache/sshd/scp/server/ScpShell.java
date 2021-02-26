@@ -499,7 +499,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                 exitValue = ScpAckInfo.ERROR;
             }
             String exitMessage = GenericUtils.trimToEmpty(e.getMessage());
-            ScpAckInfo.sendAck(getOutputStream(), exitValue, exitMessage);
+            ScpAckInfo.sendAck(getOutputStream(), StandardCharsets.UTF_8, exitValue, exitMessage);
             variables.put(STATUS, exitValue);
         }
     }

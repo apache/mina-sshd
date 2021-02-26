@@ -38,6 +38,19 @@ try (ClientSession session = client.connect(user, host, port)
 
 ```
 
+### General text encoding/decoding
+
+The basic SCP protocol is text-based and therefore subject to character encoding/decoding of the data being exchanged. By default, the exchange is supposed to use the UTF-8 encoding which is the default/standard one for SSH. However, there are clients/servers "in the wild" that do not conform to this convention. For this purpose, it is possible to define a different  character encoding via the `SCP_INCOMING/OUTGOING_ENCODING` properties - e.g.:
+
+```java
+SshServer sshd = ...setup server...
+// Can also use the character name string rather than the object instance itself
+ScpModuleProperties.SCP_INCOMING_ENCODING.set(sshd, Charset.forName("US-ASCII"));
+ScpModuleProperties.SCP_OUTGOING_ENCODING.set(sshd, Charset.forName("US-ASCII"));
+```
+
+**Caveat emptor:** the code does not enforce "symmetry" of the chosen character sets - in other words, users can either by design or error cause different encoding to be used for the incoming commands vs. the outgoing responses. It is important to bear in mind that if the text to be encoded/decoded contains characters that cannot be safely handled by the chosen encoder/decoder than the result might not be correctly parsed/understood by the peer.
+
 ## Client-side SCP
 
 In order to obtain an `ScpClient` one needs to use an `ScpClientCreator`:
@@ -202,7 +215,7 @@ ScpModuleProperties.SHELL_NAME_ENCODING_CHARSET.set(sshd, Charset.forName("US-AS
 ScpModuleProperties.SHELL_NAME_DECODING_CHARSET.set(sshd, Charset.forName("US-ASCII"));
 ```
 
-**Caveat emptor:** that the code does not enforce "symmetry" of the chosen character sets - in other words, user can either by design or error cause different encoding to be used for the incoming commands vs. the outgoing responses. It is important to bear in mind that if the text to be encoded/decoded contains characters that cannot be  safely handled by the chosen encoder/decoder than the result might not be correctly parsed/understood by the peer.
+**Caveat emptor:** the code does not enforce "symmetry" of the chosen character sets - in other words, users can either by design or error cause different encoding to be used for the incoming commands vs. the outgoing responses. It is important to bear in mind that if the text to be encoded/decoded contains characters that cannot be safely handled by the chosen encoder/decoder than the result might not be correctly parsed/understood by the peer.
 
 A similar behavior is controlled via `SHELL_ENVVARS_ENCODING_CHARSET` which controls responses from the `ScpShell` regarding environment variables - the main difference being that the default is US-ASCII rather than UTF-8.
 

@@ -947,7 +947,7 @@ public class ScpTest extends AbstractScpTestSupport {
             os.write(0);
             os.flush();
 
-            String header = ScpIoUtils.readLine(is, false);
+            String header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
@@ -979,33 +979,33 @@ public class ScpTest extends AbstractScpTestSupport {
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
-            String header = ScpIoUtils.readLine(is, false);
+            String header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
             String expPrefix = ScpReceiveDirCommandDetails.COMMAND_NAME
                                + ScpReceiveDirCommandDetails.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
             assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
-            header = ScpIoUtils.readLine(is, false);
+            header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
             String fileName = Objects.toString(target.getFileName(), null);
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
             assertEquals("Mismatched dir header for " + path, expHeader, header);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             byte[] buffer = new byte[length];
             length = is.read(buffer, 0, buffer.length);
             assertEquals("Mismatched read buffer size for " + path, length, buffer.length);
             assertAckReceived(is, "Read date of " + path);
 
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
-            header = ScpIoUtils.readLine(is, false);
+            header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
             assertEquals("Mismatched end value for " + path, "E", header);
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             return new String(buffer, StandardCharsets.UTF_8);
         } finally {
@@ -1022,7 +1022,7 @@ public class ScpTest extends AbstractScpTestSupport {
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
 
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
             assertEquals("Mismatched response for command: " + command, ScpAckInfo.ERROR, is.read());
         } finally {
             c.disconnect();
@@ -1051,7 +1051,7 @@ public class ScpTest extends AbstractScpTestSupport {
             os.flush();
             assertAckReceived(is, "Sent data (length=" + data.length() + ") for " + path + "[" + name + "]");
 
-            ScpAckInfo.sendOk(os);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             Thread.sleep(100);
         } finally {
@@ -1060,7 +1060,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     protected void assertAckReceived(OutputStream os, InputStream is, String command) throws IOException {
-        ScpIoUtils.writeLine(os, command);
+        ScpIoUtils.writeLine(os, StandardCharsets.UTF_8, command);
         assertAckReceived(is, command);
     }
 
@@ -1080,7 +1080,7 @@ public class ScpTest extends AbstractScpTestSupport {
             assertAckReceived(is, command);
 
             command = "C7777 " + data.length() + " " + name;
-            ScpIoUtils.writeLine(os, command);
+            ScpIoUtils.writeLine(os, StandardCharsets.UTF_8, command);
             assertEquals("Mismatched response for command=" + command, ScpAckInfo.ERROR, is.read());
         } finally {
             c.disconnect();
@@ -1105,8 +1105,8 @@ public class ScpTest extends AbstractScpTestSupport {
             os.flush();
             assertAckReceived(is, "Send data of " + path);
 
-            ScpAckInfo.sendOk(os);
-            ScpIoUtils.writeLine(os, ScpDirEndCommandDetails.HEADER);
+            ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
+            ScpIoUtils.writeLine(os, StandardCharsets.UTF_8, ScpDirEndCommandDetails.HEADER);
             assertAckReceived(is, "Signal end of " + path);
         } finally {
             c.disconnect();
