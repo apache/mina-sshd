@@ -191,6 +191,19 @@ sshd.setShellFactory(factory);
 
 **Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
 
+### Text encoding/decoding
+
+The SCP "shell" is text-based and therefore subject to character encoding/decoding of the data being exchanged. By default, the exchange is supposed to use the UTF-8 encoding which is the default/standard one for SSH. However, there are clients/servers "in the wild" that do not conform to this convention. For this purpose, it is possible to define a different  character encoding via the `SHELL_NAME_EN/DECODING_CHARSET` properties - e.g.:
+
+```java
+SshServer sshd = ...setup server...
+// Can also use the character name string rather than the object instance itself
+ScpModuleProperties.SHELL_NAME_ENCODING_CHARSET.set(sshd, Charset.forName("US-ASCII"));
+ScpModuleProperties.SHELL_NAME_DECODING_CHARSET.set(sshd, Charset.forName("US-ASCII"));
+```
+
+**Caveat emptor:** that the code does not enforce "symmetry" of the chosen character sets - in other words, user can either by design or error cause different encoding to be used for the incoming commands vs. the outgoing responses. It is important to bear in mind that if the text to be encoded/decoded contains characters that cannot be  safely handled by the chosen encoder/decoder than the result might not be correctly parsed/understood by the peer.
+
 ## Remote-to-remote transfer
 
 The code provides an `ScpTransferHelper` class that enables copying files between 2 remote accounts without going through

@@ -106,7 +106,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         super(null, executorService);
         this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
 
-        nameEncodingCharset = ScpModuleProperties.NAME_ENCODING_CHARSET.getRequired(channelSession);
+        nameEncodingCharset = ScpModuleProperties.SHELL_NAME_ENCODING_CHARSET.getRequired(channelSession);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException(
@@ -185,9 +185,10 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
 
             prepareEnvironment(getEnvironment());
 
+            Charset decodingCharset = ScpModuleProperties.SHELL_NAME_DECODING_CHARSET.getRequired(channel);
             // Use a special stream reader so that the stream can be used with the scp command
             try (InputStream inputStream = getInputStream();
-                 Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                 Reader r = new InputStreamReader(inputStream, decodingCharset)) {
                 for (int executedCommands = 0;; executedCommands++) {
                     command = readLine(r);
                     if (GenericUtils.isEmpty(command)) {

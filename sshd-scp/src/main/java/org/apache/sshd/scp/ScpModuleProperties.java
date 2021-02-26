@@ -53,11 +53,18 @@ public final class ScpModuleProperties {
             = Property.bool("scp-auto-sync-on-write", true);
 
     /**
-     * Used to indicate the {@link Charset} (or its name) for encoding referenced files/folders names - extracted from
-     * the client channel session when 1st initialized.
+     * Used to indicate the {@link Charset} (or its name) for encoding returned textual responses from the
+     * {@code ScpShell} - extracted from the channel session when shell initialized.
      */
-    public static final Property<Charset> NAME_ENCODING_CHARSET
+    public static final Property<Charset> SHELL_NAME_ENCODING_CHARSET
             = Property.charset("scp-shell-name-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
+     * Used to indicate the {@link Charset} (or its name) for decoding incoming commands to be processed by the
+     * {@code ScpShell} - extracted from the channel session when shell initialized.
+     */
+    public static final Property<Charset> SHELL_NAME_DECODING_CHARSET
+            = Property.charset("scp-shell-name-decoding-charset", StandardCharsets.UTF_8);
 
     private ScpModuleProperties() {
         throw new UnsupportedOperationException("No instance");

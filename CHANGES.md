@@ -16,6 +16,8 @@
 
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Re-factored locations and names of `ServerSession` and server-side `ChannelSession` related classes
 
+## Potential compatibility issues
+
 ## Minor code helpers
 
 * [SSHD-525](https://issues.apache.org/jira/browse/SSHD-525) Added support for SFTP **client-side** ["posix-rename@openssh.com"
@@ -43,3 +45,4 @@
 * [SSHD-1114](https://issues.apache.org/jira/browse/SSHD-1114) Added capability for interactive key based authentication participation via UserInteraction
 * [SSHD-1125](https://issues.apache.org/jira/browse/SSHD-1125) Added mechanism to throttle pending write requests in BufferedIoOutputStream
 * [SSHD-1127](https://issues.apache.org/jira/browse/SSHD-1127) Added capability to register a custom receiver for SFTP STDERR channel raw or stream data
+* [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for parsing incoming commands to the `ScpShell`
