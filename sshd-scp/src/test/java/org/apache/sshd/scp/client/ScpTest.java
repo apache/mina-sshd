@@ -722,12 +722,12 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test // see SSHD-628
     public void testScpExitStatusPropagation() throws Exception {
-        final int testExitValue = 7365;
+        int testExitValue = 7365;
         class InternalScpCommand extends ScpCommand {
 
-            InternalScpCommand(String command, CloseableExecutorService executorService,
+            InternalScpCommand(ChannelSession channel, String command, CloseableExecutorService executorService,
                                int sendSize, int receiveSize, ScpFileOpener opener, ScpTransferEventListener eventListener) {
-                super(command, executorService, sendSize, receiveSize, opener, eventListener);
+                super(channel, command, executorService, sendSize, receiveSize, opener, eventListener);
             }
 
             @Override
@@ -750,7 +750,7 @@ public class ScpTest extends AbstractScpTestSupport {
                 ValidateUtils.checkTrue(
                         command.startsWith(ScpHelper.SCP_COMMAND_PREFIX), "Bad SCP command: %s", command);
                 return new InternalScpCommand(
-                        command,
+                        channel, command,
                         resolveExecutorService(command),
                         getSendBufferSize(), getReceiveBufferSize(),
                         DefaultScpFileOpener.INSTANCE,

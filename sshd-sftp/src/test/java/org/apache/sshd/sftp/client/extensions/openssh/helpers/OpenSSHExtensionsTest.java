@@ -120,7 +120,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
-                return new SftpSubsystem(this) {
+                return new SftpSubsystem(channel, this) {
                     @Override
                     protected List<OpenSSHExtension> resolveOpenSSHExtensions(ServerSession session) {
                         List<OpenSSHExtension> original = super.resolveOpenSSHExtensions(session);

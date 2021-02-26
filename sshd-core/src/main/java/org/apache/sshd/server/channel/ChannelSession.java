@@ -62,10 +62,8 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.core.CoreModuleProperties;
-import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
 import org.apache.sshd.server.command.AsyncCommandInputStreamAware;
@@ -75,6 +73,7 @@ import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionAware;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -707,8 +706,8 @@ public class ChannelSession extends AbstractServerChannel {
         Session session = getSession();
         addEnvVariable(Environment.ENV_USER, session.getUsername());
         // If the shell wants to be aware of the session, let's do that
-        if (command instanceof SessionAware) {
-            ((SessionAware) command).setSession((ServerSession) session);
+        if (command instanceof ServerSessionAware) {
+            ((ServerSessionAware) command).setSession((ServerSession) session);
         }
         if (command instanceof ChannelSessionAware) {
             ((ChannelSessionAware) command).setChannelSession(this);

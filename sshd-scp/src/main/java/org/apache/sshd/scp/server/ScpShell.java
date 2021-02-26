@@ -20,6 +20,7 @@ package org.apache.sshd.scp.server;
 
 import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -64,6 +65,7 @@ import org.apache.sshd.scp.common.helpers.DefaultScpFileOpener;
 import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ServerChannelSessionHolder;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
 /**
@@ -71,7 +73,7 @@ import org.apache.sshd.server.command.AbstractFileSystemCommand;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpShell extends AbstractFileSystemCommand {
+public class ScpShell extends AbstractFileSystemCommand implements ServerChannelSessionHolder {
 
     public static final String STATUS = "status";
 
@@ -86,7 +88,6 @@ public class ScpShell extends AbstractFileSystemCommand {
      */
     public static final String ENV_LANG = "LANG";
 
-    protected final ChannelSession channel;
     protected final Map<String, Object> variables = new HashMap<>();
     protected final Charset nameEncodingCharset;
 
@@ -97,13 +98,15 @@ public class ScpShell extends AbstractFileSystemCommand {
     protected Path currentDir;
     protected Path homeDir;
 
-    public ScpShell(ChannelSession channel, CloseableExecutorService executorService,
+    private final ChannelSession channelSession;
+
+    public ScpShell(ChannelSession channelSession, CloseableExecutorService executorService,
                     int sendSize, int receiveSize,
                     ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         super(null, executorService);
-        this.channel = channel;
+        this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
 
-        nameEncodingCharset = ScpModuleProperties.NAME_ENCODING_CHARSET.getRequired(channel);
+        nameEncodingCharset = ScpModuleProperties.NAME_ENCODING_CHARSET.getRequired(channelSession);
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException(
@@ -126,6 +129,11 @@ public class ScpShell extends AbstractFileSystemCommand {
     }
 
     @Override
+    public ChannelSession getServerChannelSession() {
+        return channelSession;
+    }
+
+    @Override
     public void setFileSystemFactory(FileSystemFactory factory, SessionContext session) throws IOException {
         homeDir = factory.getUserHomeDir(session);
         super.setFileSystemFactory(factory, session);
@@ -136,7 +144,7 @@ public class ScpShell extends AbstractFileSystemCommand {
             String s = x.toString();
             if (log.isDebugEnabled()) {
                 log.debug("println({})[{}]: {}",
-                        channel, cmd, s.replace('\n', ' ').replace('\t', ' '));
+                        getServerChannelSession(), cmd, s.replace('\n', ' ').replace('\t', ' '));
             }
             out.write(s.getBytes(cs));
             // always write LF even if running on Windows
@@ -151,7 +159,7 @@ public class ScpShell extends AbstractFileSystemCommand {
     }
 
     protected void signalError(String cmd, String errorMsg, Charset cs) {
-        log.warn("{}[{}]: {}", channel, cmd, errorMsg);
+        log.warn("{}[{}]: {}", getServerChannelSession(), cmd, errorMsg);
         println(cmd, errorMsg, getErrorStream(), cs);
         variables.put(STATUS, 1);
     }
@@ -162,6 +170,7 @@ public class ScpShell extends AbstractFileSystemCommand {
         variables.put(STATUS, 0);
 
         boolean debugEnabled = log.isDebugEnabled();
+        ChannelSession channel = getServerChannelSession();
         try {
             // TODO find some better alternative
             if (homeDir == null) {
@@ -177,7 +186,8 @@ public class ScpShell extends AbstractFileSystemCommand {
             prepareEnvironment(getEnvironment());
 
             // Use a special stream reader so that the stream can be used with the scp command
-            try (Reader r = new InputStreamReader(getInputStream(), StandardCharsets.UTF_8)) {
+            try (InputStream inputStream = getInputStream();
+                 Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
                 for (int executedCommands = 0;; executedCommands++) {
                     command = readLine(r);
                     if (GenericUtils.isEmpty(command)) {
@@ -239,7 +249,7 @@ public class ScpShell extends AbstractFileSystemCommand {
 
     protected boolean handleCommandLine(String command) throws Exception {
         if (log.isDebugEnabled()) {
-            log.debug("handleCommandLine({}) {}", channel, command);
+            log.debug("handleCommandLine({}) {}", getServerChannelSession(), command);
         }
 
         List<String[]> cmds = parse(command);
@@ -298,7 +308,7 @@ public class ScpShell extends AbstractFileSystemCommand {
     }
 
     protected void handleUnsupportedCommand(String command, String[] argv) throws Exception {
-        log.warn("handleUnsupportedCommand({}) unsupported: {}", channel, command);
+        log.warn("handleUnsupportedCommand({}) unsupported: {}", getServerChannelSession(), command);
         variables.put(STATUS, 127);
         getErrorStream().write(("command not found: " + argv[0] + "\n").getBytes(StandardCharsets.US_ASCII));
     }
@@ -373,7 +383,7 @@ public class ScpShell extends AbstractFileSystemCommand {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("printenv({}) {}={}", channel, varName, varValue);
+            log.debug("printenv({}) {}={}", getServerChannelSession(), varName, varValue);
         }
 
         println(argv[0], varValue, stdout, StandardCharsets.US_ASCII);
@@ -395,7 +405,7 @@ public class ScpShell extends AbstractFileSystemCommand {
         String varName = argv[1];
         String varValue = envValues.remove(varName);
         if (log.isDebugEnabled()) {
-            log.debug("unset({}) {}={}", channel, varName, varValue);
+            log.debug("unset({}) {}={}", getServerChannelSession(), varName, varValue);
         }
         variables.put(STATUS, (varValue == null) ? 1 : 0);
     }
@@ -464,6 +474,7 @@ public class ScpShell extends AbstractFileSystemCommand {
             String path, boolean optR, boolean optT, boolean optF, boolean optD, boolean optP)
             throws Exception {
         try {
+            ChannelSession channel = getServerChannelSession();
             ScpHelper helper = new ScpHelper(
                     channel.getSession(), getInputStream(), getOutputStream(),
                     fileSystem, opener, listener);
@@ -637,6 +648,7 @@ public class ScpShell extends AbstractFileSystemCommand {
             }
         }
 
+        // TODO see what optDirAsPlain means
         doLs(argv[0], path, optListAll, optLong, optFullTime);
     }
 

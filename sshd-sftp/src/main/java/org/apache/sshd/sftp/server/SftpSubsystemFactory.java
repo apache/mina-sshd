@@ -168,7 +168,7 @@ public class SftpSubsystemFactory
 
     @Override
     public Command createSubsystem(ChannelSession channel) throws IOException {
-        SftpSubsystem subsystem = new SftpSubsystem(this);
+        SftpSubsystem subsystem = new SftpSubsystem(channel, this);
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }

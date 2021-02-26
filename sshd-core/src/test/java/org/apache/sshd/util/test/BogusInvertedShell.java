@@ -59,7 +59,7 @@ public class BogusInvertedShell implements InvertedShell {
     }
 
     @Override
-    public ChannelSession getChannelSession() {
+    public ChannelSession getServerChannelSession() {
         return channel;
     }
 

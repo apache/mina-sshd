@@ -211,7 +211,7 @@ public class ScpCommandFactory
     }
 
     @Override
-    public boolean isSupportedCommand(String command) {
+    public boolean isSupportedCommand(ChannelSession channel, String command) {
         if (GenericUtils.isEmpty(command)) {
             return false;
         }
@@ -220,9 +220,9 @@ public class ScpCommandFactory
     }
 
     @Override
-    protected Command executeSupportedCommand(String command) {
+    protected Command executeSupportedCommand(ChannelSession channel, String command) {
         return new ScpCommand(
-                command,
+                channel, command,
                 resolveExecutorService(command),
                 getSendBufferSize(), getReceiveBufferSize(),
                 getScpFileOpener(), listenerProxy);

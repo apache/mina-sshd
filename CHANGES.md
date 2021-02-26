@@ -14,6 +14,8 @@
 
 ## Major code re-factoring
 
+* [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Re-factored locations and names of `ServerSession` and server-side `ChannelSession` related classes
+
 ## Minor code helpers
 
 * [SSHD-525](https://issues.apache.org/jira/browse/SSHD-525) Added support for SFTP **client-side** ["posix-rename@openssh.com"

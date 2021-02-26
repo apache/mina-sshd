@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.channel.ChannelSession;
 
 /**
- * TODO Add javadoc
+ * A {@link CommandFactory} wrapper that delegates calls to a proxy
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -58,8 +58,8 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
 
     @Override
     public Command createCommand(ChannelSession channel, String command) throws IOException {
-        if (isSupportedCommand(command)) {
-            return executeSupportedCommand(command);
+        if (isSupportedCommand(channel, command)) {
+            return executeSupportedCommand(channel, command);
         }
 
         CommandFactory factory = getDelegateCommandFactory();
@@ -67,19 +67,20 @@ public abstract class AbstractDelegatingCommandFactory extends AbstractLoggingBe
             return factory.createCommand(channel, command);
         }
 
-        return createUnsupportedCommand(command);
+        return createUnsupportedCommand(channel, command);
     }
 
     /**
+     * @param  channel The {@link ChannelSession} through which the command was received
      * @param  command The command about to be executed
      * @return         {@code true} if this command is supported by the command factory, {@code false} if it will be
      *                 passed on to the {@link #getDelegateCommandFactory() delegate} factory
      */
-    public abstract boolean isSupportedCommand(String command);
+    public abstract boolean isSupportedCommand(ChannelSession channel, String command);
 
-    protected abstract Command executeSupportedCommand(String command);
+    protected abstract Command executeSupportedCommand(ChannelSession channel, String command);
 
-    protected Command createUnsupportedCommand(String command) {
+    protected Command createUnsupportedCommand(ChannelSession channel, String command) {
         throw new IllegalArgumentException("Unknown command to execute: " + command);
     }
 }

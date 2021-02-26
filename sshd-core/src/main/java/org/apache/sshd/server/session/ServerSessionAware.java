@@ -16,16 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
-
-import org.apache.sshd.server.session.ServerSession;
+package org.apache.sshd.server.session;
 
 /**
  * Interface that can be implemented by a command to be able to access the server session in which this command will be
  * used.
  */
 @FunctionalInterface
-public interface SessionAware {
+public interface ServerSessionAware {
 
     /**
      * @param session The {@link ServerSession} in which this shell will be executed.

@@ -33,11 +33,11 @@ import java.io.IOException;
  * command wants to do a callback-driven I/O for the data it receives from the client, it can call
  * {@link ChannelSession#setDataReceiver(ChannelDataReceiver)} to do so. (And to grab a reference to
  * {@link ChannelSession}, a {@link org.apache.sshd.server.command.Command} should implement
- * {@link org.apache.sshd.server.ChannelSessionAware}.)
+ * {@link org.apache.sshd.server.channel.ChannelSessionAware}.)
  * </p>
  *
  * @see ChannelSession#setDataReceiver(ChannelDataReceiver)
- * @see org.apache.sshd.server.ChannelSessionAware
+ * @see org.apache.sshd.server.channel.ChannelSessionAware
  */
 public interface ChannelDataReceiver extends Closeable {
     /**

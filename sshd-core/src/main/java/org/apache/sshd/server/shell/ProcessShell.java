@@ -48,7 +48,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     private final List<String> command;
     private String cmdValue;
     private ServerSession session;
-    private ChannelSession channel;
+    private ChannelSession channelSession;
     private Process process;
     private TtyFilterOutputStream in;
     private TtyFilterInputStream out;
@@ -81,13 +81,13 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
     }
 
     @Override
-    public ChannelSession getChannelSession() {
-        return channel;
+    public ChannelSession getServerChannelSession() {
+        return channelSession;
     }
 
     @Override
     public void start(ChannelSession channel, Environment env) throws IOException {
-        this.channel = channel;
+        this.channelSession = channel;
 
         Map<String, String> varsMap = resolveShellEnvironment(env.getEnv());
         for (int i = 0; i < command.size(); i++) {

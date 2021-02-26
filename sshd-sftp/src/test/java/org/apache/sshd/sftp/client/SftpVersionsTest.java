@@ -227,7 +227,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
-                SftpSubsystem subsystem = new SftpSubsystem(this) {
+                SftpSubsystem subsystem = new SftpSubsystem(channel, this) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
                             throws IOException {
@@ -346,7 +346,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         SftpSubsystemFactory factory = new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
-                SftpSubsystem subsystem = new SftpSubsystem(this) {
+                SftpSubsystem subsystem = new SftpSubsystem(channel, this) {
                     @Override
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
                             throws IOException {

@@ -25,6 +25,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceProvider;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AbstractDelegatingCommandFactory;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
@@ -90,7 +91,7 @@ public abstract class AbstractGitCommandFactory
     }
 
     @Override
-    public boolean isSupportedCommand(String command) {
+    public boolean isSupportedCommand(ChannelSession channel, String command) {
         if (GenericUtils.isEmpty(command)) {
             return false;
         }
@@ -100,12 +101,12 @@ public abstract class AbstractGitCommandFactory
     }
 
     @Override
-    protected Command executeSupportedCommand(String command) {
+    protected Command executeSupportedCommand(ChannelSession channel, String command) {
         return createGitCommand(command);
     }
 
     @Override
-    protected Command createUnsupportedCommand(String command) {
+    protected Command createUnsupportedCommand(ChannelSession channel, String command) {
         return new UnknownCommand(command);
     }
 

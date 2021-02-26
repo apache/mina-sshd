@@ -86,6 +86,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -141,19 +142,26 @@ public abstract class AbstractSftpSubsystemHelper
                             SftpConstants.SSH_ACL_CAP_AUDIT,
                             SftpConstants.SSH_ACL_CAP_ALARM)));
 
+    private final ChannelSession channelSession;
     private final UnsupportedAttributePolicy unsupportedAttributePolicy;
     private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
     private final SftpEventListener sftpEventListenerProxy;
     private final SftpFileSystemAccessor fileSystemAccessor;
     private final SftpErrorStatusDataHandler errorStatusDataHandler;
 
-    protected AbstractSftpSubsystemHelper(SftpSubsystemConfigurator configurator) {
+    protected AbstractSftpSubsystemHelper(ChannelSession channelSession, SftpSubsystemConfigurator configurator) {
+        this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
         unsupportedAttributePolicy = Objects.requireNonNull(configurator.getUnsupportedAttributePolicy(),
                 "No unsupported attribute policy provided");
         fileSystemAccessor = Objects.requireNonNull(configurator.getFileSystemAccessor(), "No file system accessor");
         sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, sftpEventListeners);
         errorStatusDataHandler
                 = Objects.requireNonNull(configurator.getErrorStatusDataHandler(), "No error status data handler");
+    }
+
+    @Override
+    public ChannelSession getServerChannelSession() {
+        return channelSession;
     }
 
     @Override

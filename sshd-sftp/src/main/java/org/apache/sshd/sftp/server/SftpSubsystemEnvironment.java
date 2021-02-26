@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.channel.ServerChannelSessionHolder;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionHolder;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -35,7 +36,7 @@ import org.apache.sshd.sftp.common.SftpConstants;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SftpSubsystemEnvironment
-        extends SessionHolder<ServerSession>, ServerSessionHolder,
+        extends SessionHolder<ServerSession>, ServerSessionHolder, ServerChannelSessionHolder,
         SftpFileSystemAccessorProvider, SftpUnsupportedAttributePolicyProvider {
 
     int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3

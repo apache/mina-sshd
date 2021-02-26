@@ -20,6 +20,7 @@ package org.apache.sshd.scp.server;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
@@ -33,6 +34,7 @@ import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ServerChannelSessionHolder;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -42,7 +44,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand extends AbstractFileSystemCommand {
+public class ScpCommand extends AbstractFileSystemCommand implements ServerChannelSessionHolder {
     protected final int sendBufferSize;
     protected final int receiveBufferSize;
     protected final ScpFileOpener opener;
@@ -55,7 +57,10 @@ public class ScpCommand extends AbstractFileSystemCommand {
     protected IOException error;
     protected ScpTransferEventListener listener;
 
+    private final ChannelSession channelSession;
+
     /**
+     * @param channelSession  The {@link ChannelSession} through which the command was received
      * @param command         The command to be executed
      * @param executorService An {@link CloseableExecutorService} to be used when
      *                        {@code start(ChannelSession, Environment)}-ing execution. If {@code null} an ad-hoc
@@ -68,11 +73,13 @@ public class ScpCommand extends AbstractFileSystemCommand {
      * @see                   ScpHelper#MIN_SEND_BUFFER_SIZE
      * @see                   ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
-    public ScpCommand(String command,
+    public ScpCommand(ChannelSession channelSession, String command,
                       CloseableExecutorService executorService,
                       int sendSize, int receiveSize,
                       ScpFileOpener fileOpener, ScpTransferEventListener eventListener) {
         super(command, executorService);
+
+        this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
             throw new IllegalArgumentException(
@@ -145,6 +152,11 @@ public class ScpCommand extends AbstractFileSystemCommand {
         if ((!optF) && (!optT)) {
             error = new IOException("Either -f or -t option should be set for " + command);
         }
+    }
+
+    @Override
+    public ChannelSession getServerChannelSession() {
+        return channelSession;
     }
 
     @Override
