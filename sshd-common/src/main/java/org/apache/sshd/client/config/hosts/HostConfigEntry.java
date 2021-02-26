@@ -51,6 +51,7 @@ import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -308,7 +309,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public String getProperty(String name, String defaultValue) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         Map<String, String> props = getProperties();
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return defaultValue;
         }
 
@@ -342,7 +343,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         modified = updateGlobalIdentityOnly(globalEntry.isIdentitiesOnly()) || modified;
 
         Map<String, String> updated = updateGlobalProperties(globalEntry.getProperties());
-        modified = (GenericUtils.size(updated) > 0) || modified;
+        modified = (MapEntryUtils.size(updated) > 0) || modified;
 
         return modified;
     }
@@ -354,7 +355,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return       A {@link Map} of the <U>updated</U> properties
      */
     public Map<String, String> updateGlobalProperties(Map<String, String> props) {
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return Collections.emptyMap();
         }
 
@@ -545,7 +546,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
 
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        if (GenericUtils.isEmpty(properties)) {
+        if (MapEntryUtils.isEmpty(properties)) {
             properties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         }
 
@@ -559,7 +560,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public String removeProperty(String name) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         Map<String, String> props = getProperties();
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return null;
         } else {
             return props.remove(key);
@@ -618,7 +619,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @see                #appendNonEmptyProperty(Appendable, String, Object)
      */
     public static <A extends Appendable> A appendNonEmptyProperties(A sb, Map<String, ?> props) throws IOException {
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return sb;
         }
 
@@ -741,7 +742,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         normal.setProxyJump(entry.resolveProxyJump(proxyJump));
 
         Map<String, String> props = entry.getProperties();
-        if (GenericUtils.size(props) > 0) {
+        if (MapEntryUtils.size(props) > 0) {
             normal.setProperties(
                     NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                             .putAll(props)

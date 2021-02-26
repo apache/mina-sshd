@@ -23,11 +23,9 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
-import org.apache.sshd.common.util.GenericUtils;
-
 /**
  * Checks equality between 2 entities of same type
- * 
+ *
  * @param  <T> Type of compared entity
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -67,6 +65,10 @@ public interface UnaryEquator<T> extends BiPredicate<T, T> {
         return (t1, t2) -> !this.test(t1, t2);
     }
 
+    static <T> boolean isSameReference(T o1, T o2) {
+        return o1 == o2;
+    }
+
     /**
      * @param  <T> Type of entity
      * @return     The default equality checker
@@ -79,10 +81,10 @@ public interface UnaryEquator<T> extends BiPredicate<T, T> {
     /**
      * @param  <T> Type of entity
      * @return     An equator that checks reference equality
-     * @see        GenericUtils#isSameReference(Object, Object)
+     * @see        UnaryEquator#isSameReference(Object, Object)
      */
     static <T> UnaryEquator<T> referenceEquality() {
-        return GenericUtils::isSameReference;
+        return UnaryEquator::isSameReference;
     }
 
     /**

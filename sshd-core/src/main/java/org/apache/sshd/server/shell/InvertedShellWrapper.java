@@ -27,6 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -148,7 +149,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         } catch (Throwable e) {
             warn("destroy({}) failed ({}) to destroy shell: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (shutdownExecutor && (executor instanceof ExecutorService)) {
@@ -157,7 +158,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             } catch (Exception e) {
                 warn("destroy({}) failed ({}) to shut down executor: {}",
                         this, e.getClass().getSimpleName(), e.getMessage(), e);
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 

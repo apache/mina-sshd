@@ -38,6 +38,7 @@ import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -88,7 +89,7 @@ public class PuttyKeyUtilsTest extends JUnitTestSupport {
     public void testCanDecodePuttyKeyFile() throws IOException, GeneralSecurityException {
         for (String resource : new String[] { regularFile, encryptedFile }) {
             URL url = getClass().getResource(resource);
-            if (GenericUtils.isSameReference(regularFile, resource)) {
+            if (UnaryEquator.isSameReference(regularFile, resource)) {
                 assertNotNull("Missing test resource: " + resource, url);
             } else {
                 if (url == null) {

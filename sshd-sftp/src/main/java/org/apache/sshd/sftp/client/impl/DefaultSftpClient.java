@@ -52,6 +52,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -488,7 +489,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         List<Integer> availableVersions = Collections.emptyList();
         if ((GenericUtils.size(extensions) > 0)
                 && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
-            Versions vers = GenericUtils.isEmpty(parsed)
+            Versions vers = MapEntryUtils.isEmpty(parsed)
                     ? null
                     : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             availableVersions = (vers == null)

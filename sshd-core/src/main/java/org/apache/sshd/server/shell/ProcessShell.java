@@ -31,6 +31,7 @@ import java.util.Objects;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -100,7 +101,7 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
-        if (GenericUtils.size(varsMap) > 0) {
+        if (MapEntryUtils.size(varsMap) > 0) {
             try {
                 Map<String, String> procEnv = builder.environment();
                 procEnv.putAll(varsMap);

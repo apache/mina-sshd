@@ -29,6 +29,7 @@ import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerBuilder;
@@ -81,7 +82,7 @@ public final class SshServerConfigFileReader {
     }
 
     public static <S extends ServerFactoryManager> S setupServerHeartbeat(S server, Map<String, ?> options) {
-        if ((server == null) || GenericUtils.isEmpty(options)) {
+        if ((server == null) || MapEntryUtils.isEmpty(options)) {
             return server;
         }
 
@@ -110,7 +111,7 @@ public final class SshServerConfigFileReader {
     }
 
     public static ForwardingFilter resolveServerForwarding(PropertyResolver options) {
-        if (GenericUtils.isEmpty(options)) {
+        if (PropertyResolver.isEmpty(options)) {
             return AcceptAllForwardingFilter.INSTANCE;
         }
 

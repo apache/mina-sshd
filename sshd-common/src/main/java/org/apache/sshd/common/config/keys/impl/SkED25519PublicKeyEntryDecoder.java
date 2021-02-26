@@ -34,9 +34,9 @@ import java.util.Objects;
 
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.util.security.eddsa.Ed25519PublicKeyDecoder;
 
 /**

@@ -26,7 +26,7 @@ import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.simple.SimpleClient;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.io.functors.IOFunction;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -109,7 +109,7 @@ public class SimpleScpClientImpl extends AbstractLoggingBean implements SimpleSc
                 e.addSuppressed(t);
             }
 
-            GenericUtils.rethrowAsIoException(e);
+            ExceptionUtils.rethrowAsIoException(e);
             return null;    // actually dead code...
         }
     }

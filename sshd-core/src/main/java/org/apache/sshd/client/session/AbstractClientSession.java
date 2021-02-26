@@ -71,6 +71,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -689,7 +690,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                         setKexSeed(seed);
                     }
                 } catch (Exception e) {
-                    GenericUtils.rethrowAsIoException(e);
+                    ExceptionUtils.rethrowAsIoException(e);
                 }
             }
 

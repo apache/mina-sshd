@@ -47,6 +47,7 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -186,7 +187,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         try {
             channel = (SelectableChannel) NIO_JAVA_CHANNEL_METHOD.invoke(ch, GenericUtils.EMPTY_OBJECT_ARRAY);
         } catch (Exception t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
                     this, e.getClass().getSimpleName(), e.getMessage());
             return;

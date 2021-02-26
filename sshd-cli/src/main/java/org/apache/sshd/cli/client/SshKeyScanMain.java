@@ -77,7 +77,9 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -199,8 +201,8 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             }
         }
 
-        ValidateUtils.checkTrue(!GenericUtils.isEmpty(pairsMap), "No client key pairs");
-        ValidateUtils.checkTrue(!GenericUtils.isEmpty(sigFactories), "No signature factories");
+        ValidateUtils.checkTrue(!MapEntryUtils.isEmpty(pairsMap), "No client key pairs");
+        ValidateUtils.checkTrue(!MapEntryUtils.isEmpty(sigFactories), "No signature factories");
 
         Exception err = null;
         try {
@@ -272,7 +274,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                             if (isEnabledLevel(Level.FINE)) {
                                 log(Level.FINE, "Failed to retrieve keys from " + h, e);
                             }
-                            err = GenericUtils.accumulateException(err, e);
+                            err = ExceptionUtils.accumulateException(err, e);
                         } finally {
                             currentHostFingerprints.clear();
                         }
@@ -283,7 +285,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             try {
                 close();
             } catch (IOException e) {
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 
@@ -600,7 +602,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             try {
                 input.close();
             } catch (IOException e) {
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             } finally {
                 input = null;
             }
@@ -610,7 +612,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
             try {
                 client.close();
             } catch (IOException e) {
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             } finally {
                 try {
                     client.stop();

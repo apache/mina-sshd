@@ -33,7 +33,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 
@@ -87,7 +87,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
             signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getSimpleName();
             signalChannelOpenFailure(e);
             f.setException(e);

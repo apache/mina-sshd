@@ -71,7 +71,7 @@ public final class ValidateUtils {
 
     public static <K, V, M extends Map<K, V>> M checkNotNullAndNotEmpty(M t, String message, Object... args) {
         t = checkNotNull(t, message, args);
-        checkTrue(GenericUtils.size(t) > 0, message, args);
+        checkTrue(MapEntryUtils.size(t) > 0, message, args);
         return t;
     }
 

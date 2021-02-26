@@ -28,6 +28,7 @@ import java.util.Iterator;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -65,7 +66,7 @@ public interface KeyIdentityProvider {
      * @return          {@code true} if instance is {@code null} or the {@link #EMPTY_KEYS_PROVIDER}
      */
     static boolean isEmpty(KeyIdentityProvider provider) {
-        return (provider == null) || GenericUtils.isSameReference(provider, EMPTY_KEYS_PROVIDER);
+        return (provider == null) || UnaryEquator.isSameReference(provider, EMPTY_KEYS_PROVIDER);
     }
 
     /**
@@ -87,7 +88,7 @@ public interface KeyIdentityProvider {
      */
     static KeyIdentityProvider resolveKeyIdentityProvider(
             KeyIdentityProvider identities, KeyIdentityProvider keys) {
-        if (isEmpty(keys) || GenericUtils.isSameReference(identities, keys)) {
+        if (isEmpty(keys) || UnaryEquator.isSameReference(identities, keys)) {
             // Prefer EMPTY over null
             return (identities == null) ? keys : identities;
         } else if (isEmpty(identities)) {

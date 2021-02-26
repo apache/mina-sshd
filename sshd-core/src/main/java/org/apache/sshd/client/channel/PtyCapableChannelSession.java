@@ -31,6 +31,7 @@ import org.apache.sshd.common.channel.PtyChannelConfigurationMutator;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -45,7 +46,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  * <P>
  * A typical code snippet would be:
  * </P>
- * 
+ *
  * <pre>
  * <code>
  * try (client = SshClient.setUpDefaultClient()) {
@@ -93,7 +94,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         this.config = PtyChannelConfigurationMutator.copyConfiguration(
                 configHolder, new PtyChannelConfiguration());
         this.config.setPtyType(resolvePtyType(this.config));
-        if (GenericUtils.isNotEmpty(env)) {
+        if (MapEntryUtils.isNotEmpty(env)) {
             for (Map.Entry<String, ?> ee : env.entrySet()) {
                 setEnv(ee.getKey(), ee.getValue());
             }
@@ -275,7 +276,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             buffer.putInt(getPtyWidth());
 
             Map<PtyMode, Integer> ptyModes = getPtyModes();
-            int numModes = GenericUtils.size(ptyModes);
+            int numModes = MapEntryUtils.size(ptyModes);
             Buffer modes = new ByteArrayBuffer(numModes * (1 + Integer.BYTES) + Long.SIZE, false);
             if (numModes > 0) {
                 ptyModes.forEach((mode, value) -> {
@@ -288,7 +289,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             writePacket(buffer);
         }
 
-        if (GenericUtils.size(env) > 0) {
+        if (MapEntryUtils.size(env) > 0) {
             if (debugEnabled) {
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST env: {}", this, env);
             }

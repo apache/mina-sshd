@@ -19,9 +19,6 @@
 
 package org.apache.sshd.common.util;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,17 +31,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -53,9 +45,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import javax.management.MBeanException;
-import javax.management.ReflectionException;
 
 import org.apache.sshd.common.util.functors.UnaryEquator;
 
@@ -87,9 +76,6 @@ public final class GenericUtils {
     };
 
     public static final String QUOTES = "\"'";
-
-    @SuppressWarnings("rawtypes")
-    private static final Supplier CASE_INSENSITIVE_MAP_FACTORY = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private GenericUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -185,7 +171,7 @@ public final class GenericUtils {
     }
 
     public static int safeCompare(String s1, String s2, boolean caseSensitive) {
-        if (isSameReference(s1, s2)) {
+        if (UnaryEquator.isSameReference(s1, s2)) {
             return 0;
         } else if (s1 == null) {
             return +1; // push null(s) to end
@@ -196,10 +182,6 @@ public final class GenericUtils {
         } else {
             return s1.compareToIgnoreCase(s2);
         }
-    }
-
-    public static <T> boolean isSameReference(T o1, T o2) {
-        return o1 == o2;
     }
 
     public static int length(CharSequence cs) {
@@ -362,18 +344,6 @@ public final class GenericUtils {
                 && c2.containsAll(c1);
     }
 
-    public static int size(Map<?, ?> m) {
-        return (m == null) ? 0 : m.size();
-    }
-
-    public static boolean isEmpty(Map<?, ?> m) {
-        return size(m) <= 0;
-    }
-
-    public static boolean isNotEmpty(Map<?, ?> m) {
-        return !isEmpty(m);
-    }
-
     @SafeVarargs
     public static <T> int length(T... a) {
         return (a == null) ? 0 : a.length;
@@ -401,8 +371,7 @@ public final class GenericUtils {
         return !isEmpty(iter);
     }
 
-    @SafeVarargs
-    public static <T> boolean isEmpty(T... a) {
+    public static <T> boolean isEmpty(T[] a) {
         return length(a) <= 0;
     }
 
@@ -566,25 +535,6 @@ public final class GenericUtils {
         return stream(values).map(mapper).collect(toSortedSet(comparator));
     }
 
-    public static <T, K, U> NavigableMap<K, U> toSortedMap(
-            Iterable<? extends T> values, Function<? super T, ? extends K> keyMapper,
-            Function<? super T, ? extends U> valueMapper, Comparator<? super K> comparator) {
-        return stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
-    }
-
-    public static <T, K, U> Collector<T, ?, NavigableMap<K, U>> toSortedMap(
-            Function<? super T, ? extends K> keyMapper,
-            Function<? super T, ? extends U> valueMapper,
-            Comparator<? super K> comparator) {
-        return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
-    }
-
-    public static <T> BinaryOperator<T> throwingMerger() {
-        return (u, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", u));
-        };
-    }
-
     public static <T> Collector<T, ?, NavigableSet<T>> toSortedSet(Comparator<? super T> comparator) {
         return Collectors.toCollection(() -> new TreeSet<>(comparator));
     }
@@ -659,79 +609,6 @@ public final class GenericUtils {
             set.addAll(values);
         }
         return set;
-    }
-
-    /**
-     * @param  <V> Type of mapped value
-     * @return     A {@link Supplier} that returns a <U>new</U> {@link NavigableMap} whenever its {@code get()} method
-     *             is invoked
-     */
-    @SuppressWarnings("unchecked")
-    public static <V> Supplier<NavigableMap<String, V>> caseInsensitiveMap() {
-        return CASE_INSENSITIVE_MAP_FACTORY;
-    }
-
-    /**
-     * Flips between keys and values of an input map
-     *
-     * @param  <K>                      Original map key type
-     * @param  <V>                      Original map value type
-     * @param  <M>                      Flipped map type
-     * @param  map                      The original map to flip
-     * @param  mapCreator               The creator of the target map
-     * @param  allowDuplicates          Whether to ignore duplicates on flip
-     * @return                          The flipped map result
-     * @throws IllegalArgumentException if <tt>allowDuplicates</tt> is {@code false} and a duplicate value found in the
-     *                                  original map.
-     */
-    public static <K, V, M extends Map<V, K>> M flipMap(
-            Map<? extends K, ? extends V> map, Supplier<? extends M> mapCreator, boolean allowDuplicates) {
-        M result = Objects.requireNonNull(mapCreator.get(), "No map created");
-        map.forEach((key, value) -> {
-            K prev = result.put(value, key);
-            if ((prev != null) && (!allowDuplicates)) {
-                ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key,
-                        prev);
-            }
-        });
-
-        return result;
-    }
-
-    @SafeVarargs
-    public static <K, V, M extends Map<K, V>> M mapValues(
-            Function<? super V, ? extends K> keyMapper, Supplier<? extends M> mapCreator, V... values) {
-        return mapValues(keyMapper, mapCreator, isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
-    }
-
-    /**
-     * Creates a map out of a group of values
-     *
-     * @param  <K>        The key type
-     * @param  <V>        The value type
-     * @param  <M>        The result {@link Map} type
-     * @param  keyMapper  The {@link Function} that generates a key for a given value. If the returned key is
-     *                    {@code null} then the value is not mapped
-     * @param  mapCreator The {@link Supplier} used to create/retrieve the result map - provided non-empty group of
-     *                    values
-     * @param  values     The values to be mapped
-     * @return            The resulting {@link Map} - <B>Note:</B> no validation is made to ensure that 2 (or more)
-     *                    values are not mapped to the same key
-     */
-    public static <K, V, M extends Map<K, V>> M mapValues(
-            Function<? super V, ? extends K> keyMapper,
-            Supplier<? extends M> mapCreator,
-            Collection<? extends V> values) {
-        M map = mapCreator.get();
-        for (V v : values) {
-            K k = keyMapper.apply(v);
-            if (k == null) {
-                continue; // debug breakpoint
-            }
-            map.put(k, v);
-        }
-
-        return map;
     }
 
     @SafeVarargs
@@ -813,130 +690,6 @@ public final class GenericUtils {
             return s;
         } else {
             return s.subSequence(1, lastPos);
-        }
-    }
-
-    public static RuntimeException toRuntimeException(Throwable t) {
-        return toRuntimeException(t, true);
-    }
-
-    /**
-     * Converts a thrown generic exception to a {@link RuntimeException}
-     *
-     * @param  t             The original thrown exception
-     * @param  peelThrowable Whether to determine the root cause by &quot;peeling&quot; any enclosing exceptions
-     * @return               The thrown cause if already a runtime exception, otherwise a runtime exception of the
-     *                       resolved exception as its cause
-     * @see                  #peelException(Throwable)
-     */
-    public static RuntimeException toRuntimeException(Throwable t, boolean peelThrowable) {
-        Throwable e = peelThrowable ? peelException(t) : t;
-        if (e instanceof RuntimeException) {
-            return (RuntimeException) e;
-        }
-
-        return new RuntimeException(e);
-    }
-
-    /**
-     * Attempts to get to the &quot;effective&quot; exception being thrown, by taking care of some known exceptions that
-     * wrap the original thrown one.
-     *
-     * @param  t The original {@link Throwable} - ignored if {@code null}
-     * @return   The effective exception - same as input if not a wrapper
-     */
-    public static Throwable peelException(Throwable t) {
-        // NOTE: check order is important - e.g., InvocationTargetException extends ReflectiveOperationException
-        if (t == null) {
-            return t;
-        } else if (t instanceof UndeclaredThrowableException) {
-            Throwable wrapped = ((UndeclaredThrowableException) t).getUndeclaredThrowable();
-            // according to the Javadoc it may be null, in which case 'getCause'
-            // might contain the information we need
-            if (wrapped != null) {
-                return peelException(wrapped);
-            }
-
-            wrapped = t.getCause();
-            if (wrapped != t) { // make sure it is a real cause
-                return peelException(wrapped);
-            }
-        } else if (t instanceof InvocationTargetException) {
-            Throwable target = ((InvocationTargetException) t).getTargetException();
-            if (target != null) {
-                return peelException(target);
-            }
-        } else if (t instanceof ReflectionException) {
-            Throwable target = ((ReflectionException) t).getTargetException();
-            if (target != null) {
-                return peelException(target);
-            }
-        } else if (t instanceof ExecutionException) {
-            Throwable wrapped = resolveExceptionCause(t);
-            if (wrapped != null) {
-                return peelException(wrapped);
-            }
-        } else if (t instanceof MBeanException) {
-            Throwable target = ((MBeanException) t).getTargetException();
-            if (target != null) {
-                return peelException(target);
-            }
-        }
-
-        return t; // no special handling required or available
-    }
-
-    /**
-     * @param  t The original {@link Throwable} - ignored if {@code null}
-     * @return   If {@link Throwable#getCause()} is non-{@code null} then the cause, otherwise the original exception -
-     *           {@code null} if the original exception was {@code null}
-     */
-    public static Throwable resolveExceptionCause(Throwable t) {
-        if (t == null) {
-            return t;
-        }
-
-        Throwable c = t.getCause();
-        if (c == null) {
-            return t;
-        } else {
-            return c;
-        }
-    }
-
-    /**
-     * Used to &quot;accumulate&quot; exceptions of the <U>same type</U>. If the current exception is {@code null} then
-     * the new one becomes the current, otherwise the new one is added as a <U>suppressed</U> exception to the current
-     * one
-     *
-     * @param  <T>     The exception type
-     * @param  current The current exception
-     * @param  extra   The extra/new exception
-     * @return         The resolved exception
-     * @see            Throwable#addSuppressed(Throwable)
-     */
-    public static <T extends Throwable> T accumulateException(T current, T extra) {
-        if (current == null) {
-            return extra;
-        }
-
-        if ((extra == null) || (extra == current)) {
-            return current;
-        }
-
-        current.addSuppressed(extra);
-        return current;
-    }
-
-    public static void rethrowAsIoException(Throwable e) throws IOException {
-        if (e instanceof IOException) {
-            throw (IOException) e;
-        } else if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        } else if (e instanceof Error) {
-            throw (Error) e;
-        } else {
-            throw new IOException(e);
         }
     }
 

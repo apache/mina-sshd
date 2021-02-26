@@ -25,7 +25,7 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.contrib.common.util.io.ExposedBufferByteArrayOutputStream;
 
@@ -159,25 +159,25 @@ public class DeflatingInputStream extends InputStream {
         try {
             compressor.close();
         } catch (IOException e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         try {
             baos.close();
         } catch (IOException e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         try {
             inputStream.close();
         } catch (IOException e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         try {
             super.close();
         } catch (IOException e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (err != null) {

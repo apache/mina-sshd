@@ -38,6 +38,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -123,7 +124,7 @@ public class PGPAuthorizedEntriesTracker
             PathResource resourceKey = f.toPathResource();
             Key container = f.loadPublicKey(session, resourceKey, provider);
             Map<String, Subkey> fpMap = PGPUtils.mapSubKeysByFingerprint(container);
-            int numSubKeys = GenericUtils.size(fpMap);
+            int numSubKeys = MapEntryUtils.size(fpMap);
             Collection<Subkey> matches = (numSubKeys <= 0)
                     ? Collections.emptyList()
                     : fpMap.entrySet()

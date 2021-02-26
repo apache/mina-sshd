@@ -35,8 +35,8 @@ import java.util.Objects;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
+import org.apache.sshd.common.config.keys.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.u2f.SkEcdsaPublicKey;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

@@ -32,6 +32,7 @@ import java.util.TreeSet;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -112,8 +113,8 @@ public class AclSupportedParser extends AbstractParser<AclCapabilities> {
             private static final NavigableMap<Integer, String> ACL_VALUES_MAP
                     = LoggingUtils.generateMnemonicMap(SftpConstants.class, ACL_CAP_NAME_PREFIX);
             private static final NavigableMap<String, Integer> ACL_NAMES_MAP = Collections.unmodifiableNavigableMap(
-                    GenericUtils.flipMap(
-                            ACL_VALUES_MAP, GenericUtils.caseInsensitiveMap(), false));
+                    MapEntryUtils.flipMap(
+                            ACL_VALUES_MAP, MapEntryUtils.caseInsensitiveMap(), false));
 
             private LazyAclCapabilityNameHolder() {
                 throw new UnsupportedOperationException("No instance allowed");

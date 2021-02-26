@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * A enum describing the tty modes according to <a href="https://tools.ietf.org/html/rfc4254#section-8">RFC 4254 -
@@ -294,7 +295,7 @@ public enum PtyMode {
     public static final Set<PtyMode> MODES = Collections.unmodifiableSet(EnumSet.allOf(PtyMode.class));
 
     public static final NavigableMap<Integer, PtyMode> COMMANDS = Collections.unmodifiableNavigableMap(
-            GenericUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
+            MapEntryUtils.toSortedMap(MODES, PtyMode::toInt, Function.identity(), Comparator.naturalOrder()));
 
     /**
      * A {@code null}-safe {@link ToIntFunction} that returns the {@link PtyMode#toInt()} value and (-1) for
@@ -304,7 +305,7 @@ public enum PtyMode {
 
     /**
      * A {@code null}-safe {@link Comparator} of {@link PtyMode} values according to their {@link PtyMode#toInt()} value
-     * 
+     *
      * @see #OPCODE_EXTRACTOR
      */
     public static final Comparator<PtyMode> BY_OPCODE = new Comparator<PtyMode>() {
@@ -385,7 +386,7 @@ public enum PtyMode {
      * @see            #getBooleanSettingValue(Map, PtyMode)
      */
     public static Set<PtyMode> resolveEnabledOptions(Map<PtyMode, ?> modes, Collection<PtyMode> options) {
-        if (GenericUtils.isEmpty(modes) || GenericUtils.isEmpty(options)) {
+        if (MapEntryUtils.isEmpty(modes) || GenericUtils.isEmpty(options)) {
             return Collections.emptySet();
         }
 
@@ -413,7 +414,7 @@ public enum PtyMode {
      * @see          #getBooleanSettingValue(Object)
      */
     public static boolean getBooleanSettingValue(Map<PtyMode, ?> modes, PtyMode m) {
-        if ((m == null) || GenericUtils.isEmpty(modes)) {
+        if ((m == null) || MapEntryUtils.isEmpty(modes)) {
             return false;
         } else {
             return getBooleanSettingValue(modes.get(m));
@@ -441,7 +442,7 @@ public enum PtyMode {
      */
     public static boolean getBooleanSettingValue(
             Map<PtyMode, ?> modes, Collection<PtyMode> enablers, boolean defaultValue) {
-        if (GenericUtils.isEmpty(modes) || GenericUtils.isEmpty(enablers)) {
+        if (MapEntryUtils.isEmpty(modes) || GenericUtils.isEmpty(enablers)) {
             return defaultValue;
         }
 

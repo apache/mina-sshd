@@ -42,6 +42,8 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -51,7 +53,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * factories (if not already added).
  *
  * <B>Note:</B> experimental - used for development purposes and as an example
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implements KexExtensionHandler {
@@ -91,7 +93,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
         // Check if client already sent its proposal - if not, we can still influence it
         Map<KexProposalOption, String> clientProposal = session.getAttribute(CLIENT_PROPOSAL_KEY);
         Map<KexProposalOption, String> serverProposal = session.getAttribute(SERVER_PROPOSAL_KEY);
-        if (GenericUtils.isNotEmpty(clientProposal)) {
+        if (MapEntryUtils.isNotEmpty(clientProposal)) {
             if (debugEnabled) {
                 log.debug("isKexExtensionsAvailable({})[{}] already sent proposal={} (server={})",
                         session, phase, clientProposal, serverProposal);
@@ -108,7 +110,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
          *
          * Therefore we want to be sure the server declared its support for extensions before we declare ours.
          */
-        if (GenericUtils.isEmpty(serverProposal)) {
+        if (MapEntryUtils.isEmpty(serverProposal)) {
             if (debugEnabled) {
                 log.debug("isKexExtensionsAvailable({})[{}] no server proposal", session, phase);
             }
@@ -164,7 +166,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             throws IOException {
         List<NamedFactory<Signature>> available = session.getSignatureFactories();
         List<NamedFactory<Signature>> updated = resolveUpdatedSignatureFactories(session, available, extraAlgos);
-        if (!GenericUtils.isSameReference(available, updated)) {
+        if (!UnaryEquator.isSameReference(available, updated)) {
             if (log.isDebugEnabled()) {
                 log.debug("updateAvailableSignatureFactories({}) available={}, updated={}",
                         session, available, updated);

@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -111,12 +111,12 @@ public interface AttributeRepository {
             @SuppressWarnings("unchecked")
             public <T> T getAttribute(AttributeKey<T> key) {
                 Objects.requireNonNull(key, "No key provided");
-                return GenericUtils.isEmpty(attributes) ? null : (T) attributes.get(key);
+                return MapEntryUtils.isEmpty(attributes) ? null : (T) attributes.get(key);
             }
 
             @Override
             public Collection<AttributeKey<?>> attributeKeys() {
-                return GenericUtils.isEmpty(attributes)
+                return MapEntryUtils.isEmpty(attributes)
                         ? Collections.emptySet()
                         : new HashSet<>(attributes.keySet());
             }

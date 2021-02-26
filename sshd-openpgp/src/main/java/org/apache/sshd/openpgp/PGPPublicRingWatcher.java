@@ -41,6 +41,8 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.common.util.io.resource.IoResource;
 import org.apache.sshd.common.util.io.resource.PathResource;
@@ -86,7 +88,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
         }
 
         Map<String, PublicKey> keysMap = resolveRingKeys(session);
-        if (GenericUtils.isEmpty(keysMap)) {
+        if (MapEntryUtils.isEmpty(keysMap)) {
             return Collections.emptyList();
         }
 
@@ -109,7 +111,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
     protected NavigableMap<String, PublicKey> resolveRingKeys(SessionContext session)
             throws IOException, GeneralSecurityException, PGPException {
         NavigableMap<String, PublicKey> keysMap = ringKeys.get();
-        if (GenericUtils.isEmpty(keysMap) || checkReloadRequired()) {
+        if (MapEntryUtils.isEmpty(keysMap) || checkReloadRequired()) {
             ringKeys.set(Collections.emptyNavigableMap()); // mark stale
 
             if (!exists()) {
@@ -119,7 +121,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
             Path file = getPath();
             keysMap = reloadRingKeys(session, new PathResource(file));
 
-            int numKeys = GenericUtils.size(keysMap);
+            int numKeys = MapEntryUtils.size(keysMap);
             if (log.isDebugEnabled()) {
                 log.debug("resolveRingKeys({}) reloaded {} keys from {}", session, numKeys, file);
             }
@@ -184,7 +186,7 @@ public class PGPPublicRingWatcher extends ModifiableFileWatcher implements PGPAu
                     PublicKey effective = handleDuplicateKeyFingerprint(session, resourceKey, fp, sk, prev, pubKey);
                     if (effective == null) {
                         keysMap.remove(fp);
-                    } else if (!GenericUtils.isSameReference(effective, pubKey)) {
+                    } else if (!UnaryEquator.isSameReference(effective, pubKey)) {
                         keysMap.put(fp, effective);
                     }
                 }

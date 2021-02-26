@@ -24,7 +24,7 @@ import java.security.GeneralSecurityException;
 import java.security.Provider;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -90,7 +90,7 @@ public interface SecurityEntityFactory<T> {
                     Object value = m.invoke(null, algorithm);
                     return entityType.cast(value);
                 } catch (ReflectiveOperationException t) {
-                    Throwable e = GenericUtils.peelException(t);
+                    Throwable e = ExceptionUtils.peelException(t);
                     if (e instanceof GeneralSecurityException) {
                         throw (GeneralSecurityException) e;
                     } else if (e instanceof RuntimeException) {
@@ -130,7 +130,7 @@ public interface SecurityEntityFactory<T> {
                     Object value = m.invoke(null, algorithm, name);
                     return entityType.cast(value);
                 } catch (ReflectiveOperationException t) {
-                    Throwable e = GenericUtils.peelException(t);
+                    Throwable e = ExceptionUtils.peelException(t);
                     if (e instanceof GeneralSecurityException) {
                         throw (GeneralSecurityException) e;
                     } else if (e instanceof RuntimeException) {
@@ -171,7 +171,7 @@ public interface SecurityEntityFactory<T> {
                     Object value = m.invoke(null, algorithm, provider);
                     return entityType.cast(value);
                 } catch (ReflectiveOperationException t) {
-                    Throwable e = GenericUtils.peelException(t);
+                    Throwable e = ExceptionUtils.peelException(t);
                     if (e instanceof GeneralSecurityException) {
                         throw (GeneralSecurityException) e;
                     } else if (e instanceof RuntimeException) {

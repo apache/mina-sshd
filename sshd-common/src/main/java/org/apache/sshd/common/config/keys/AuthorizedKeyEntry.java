@@ -43,6 +43,7 @@ import java.util.TreeMap;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
@@ -113,7 +114,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             SessionContext session, Appendable sb, PublicKeyEntryResolver fallbackResolver)
             throws IOException, GeneralSecurityException {
         Map<String, String> options = getLoginOptions();
-        if (!GenericUtils.isEmpty(options)) {
+        if (MapEntryUtils.isNotEmpty(options)) {
             int index = 0;
             // Cannot use forEach because the index value is not effectively final
             for (Map.Entry<String, String> oe : options.entrySet()) {
@@ -160,7 +161,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         String entry = super.toString();
         String kc = getComment();
         Map<?, ?> ko = getLoginOptions();
-        return (GenericUtils.isEmpty(ko) ? "" : ko.toString() + " ")
+        return (MapEntryUtils.isEmpty(ko) ? "" : ko.toString() + " ")
                + entry
                + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
     }

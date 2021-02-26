@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -704,7 +705,7 @@ public class SshdSocketAddress extends SocketAddress {
 
     public static <V> Map.Entry<SshdSocketAddress, ? extends V> findMatchingOptionalWildcardEntry(
             Map<SshdSocketAddress, ? extends V> map, SshdSocketAddress address) {
-        if (GenericUtils.isEmpty(map) || (address == null)) {
+        if (MapEntryUtils.isEmpty(map) || (address == null)) {
             return null;
         }
 

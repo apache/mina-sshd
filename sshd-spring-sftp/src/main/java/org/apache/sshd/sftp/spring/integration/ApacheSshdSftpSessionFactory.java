@@ -42,7 +42,9 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -429,7 +431,7 @@ public class ApacheSshdSftpSessionFactory
                 }
             }
         } catch (Exception e) {
-            throw GenericUtils.toRuntimeException(e);
+            throw ExceptionUtils.toRuntimeException(e);
         }
     }
 
@@ -482,7 +484,7 @@ public class ApacheSshdSftpSessionFactory
     }
 
     protected ClientSession configureClientSessionProperties(ClientSession session, Properties props) throws IOException {
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return session;
         }
 

@@ -36,6 +36,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
@@ -154,7 +155,7 @@ public final class ServerIdentity {
 
     private static Map<String, Path> getLocations(String configPropKey, Properties props, LinkOption... options)
             throws IOException {
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return Collections.emptyMap();
         }
 

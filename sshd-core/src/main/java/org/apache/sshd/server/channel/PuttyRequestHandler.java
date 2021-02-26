@@ -29,6 +29,7 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -113,7 +114,7 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
 
     public static Map<PtyMode, Integer> resolveShellTtyOptions(Map<PtyMode, Integer> modes) {
         Map<PtyMode, Integer> resolved = PtyMode.createEnabledOptions(PUTTY_OPTIONS);
-        if (GenericUtils.size(modes) > 0) {
+        if (MapEntryUtils.size(modes) > 0) {
             resolved.putAll(modes); // TODO consider adding only non-overriding options
         }
 

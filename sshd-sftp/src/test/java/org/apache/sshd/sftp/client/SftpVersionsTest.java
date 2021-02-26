@@ -46,6 +46,7 @@ import java.util.stream.IntStream;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
@@ -232,7 +233,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
                             throws IOException {
                         NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
-                        if (GenericUtils.isEmpty(attrs)) {
+                        if (MapEntryUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }
 
@@ -268,7 +269,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             @Override
             public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
                 @SuppressWarnings("unchecked")
-                List<AclEntry> aclActual = GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                List<AclEntry> aclActual = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modifying ACL for file=" + path, aclExpected, aclActual);
                 } else {
@@ -280,7 +281,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifiedAttributes(
                     ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
                 @SuppressWarnings("unchecked")
-                List<AclEntry> aclActual = GenericUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                List<AclEntry> aclActual = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
                 } else {
@@ -351,7 +352,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
                             throws IOException {
                         NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
-                        if (GenericUtils.isEmpty(attrs)) {
+                        if (MapEntryUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }
 
@@ -396,7 +397,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
                 @SuppressWarnings("unchecked")
                 Map<String, byte[]> actExtensions
-                        = GenericUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
                 assertExtensionsMapEquals("modifying(" + path + ")", expExtensions, actExtensions);
             }
 
@@ -404,7 +405,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
                 @SuppressWarnings("unchecked")
                 Map<String, byte[]> actExtensions
-                        = GenericUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
                 assertExtensionsMapEquals("modified(" + path + ")", expExtensions, actExtensions);
             }
         });

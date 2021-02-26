@@ -25,7 +25,7 @@ import java.security.Signature;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -58,7 +58,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         try {
             return getOrCreateProvider(PROVIDER_CLASS);
         } catch (ReflectiveOperationException t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             log.error("getSecurityProvider({}) failed ({}) to instantiate {}: {}",
                     getName(), e.getClass().getSimpleName(), PROVIDER_CLASS, e.getMessage());
             if (e instanceof RuntimeException) {

@@ -34,10 +34,10 @@ import org.apache.sshd.common.channel.exception.SshChannelBufferedOutputExceptio
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
@@ -167,7 +167,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
             IoWriteFutureImpl currentFuture = currentWrite.getAndSet(null);
             for (IoWriteFutureImpl pendingWrite : writes) {
                 // Checking reference by design
-                if (GenericUtils.isSameReference(pendingWrite, currentFuture)) {
+                if (UnaryEquator.isSameReference(pendingWrite, currentFuture)) {
                     continue;   // will be taken care of when its listener is eventually called
                 }
 

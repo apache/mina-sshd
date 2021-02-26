@@ -69,6 +69,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.RandomFactory;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -429,7 +430,7 @@ public final class SecurityUtils {
                         r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class,
                                 registrarClass);
                     } catch (ReflectiveOperationException t) {
-                        Throwable e = GenericUtils.peelException(t);
+                        Throwable e = ExceptionUtils.peelException(t);
                         logger.error("Failed ({}) to create default {} registrar instance: {}",
                                 e.getClass().getSimpleName(), registrarClass, e.getMessage());
                         if (e instanceof RuntimeException) {
@@ -724,7 +725,7 @@ public final class SecurityUtils {
         try {
             return SecurityEntityFactory.toFactory(entityType, registrar, getDefaultProviderChoice());
         } catch (ReflectiveOperationException t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else if (e instanceof Error) {

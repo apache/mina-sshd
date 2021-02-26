@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.u2f;
+package org.apache.sshd.common.config.keys.u2f;
 
-import java.security.interfaces.ECPublicKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
-public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
+public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
 
-    public static final String ALGORITHM = "ECDSA-SK";
+    public static final String ALGORITHM = "ED25519-SK";
 
-    private static final long serialVersionUID = -8758432826838775097L;
+    private static final long serialVersionUID = 4587115316266869640L;
 
     private final String appName;
     private final boolean noTouchRequired;
-    private final ECPublicKey delegatePublicKey;
+    private final EdDSAPublicKey delegatePublicKey;
 
-    public SkEcdsaPublicKey(String appName, boolean noTouchRequired, ECPublicKey delegatePublicKey) {
+    public SkED25519PublicKey(String appName, boolean noTouchRequired, EdDSAPublicKey delegatePublicKey) {
         this.appName = appName;
         this.noTouchRequired = noTouchRequired;
         this.delegatePublicKey = delegatePublicKey;
@@ -62,7 +62,7 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
     }
 
     @Override
-    public ECPublicKey getDelegatePublicKey() {
+    public EdDSAPublicKey getDelegatePublicKey() {
         return delegatePublicKey;
     }
 

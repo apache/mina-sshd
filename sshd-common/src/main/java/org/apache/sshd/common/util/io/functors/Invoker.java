@@ -16,11 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.io.functors;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Map;
+
+import org.apache.sshd.common.util.ExceptionUtils;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * The complement to the {@code Callable} interface - accepts one argument and possibly throws something
@@ -76,7 +79,7 @@ public interface Invoker<ARG, RET> {
             try {
                 i.invoke(arg);
             } catch (Throwable t) {
-                err = GenericUtils.accumulateException(err, t);
+                err = ExceptionUtils.accumulateException(err, t);
             }
         }
 

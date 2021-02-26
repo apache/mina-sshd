@@ -32,6 +32,7 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -161,7 +162,7 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                     ServerSession session, String username, List<String> responses)
                     throws Exception {
                 assertEquals("Unexpected authenticate call", 1, authCount.incrementAndGet());
-                assertEquals("Mismatched number of responses", GenericUtils.size(rspMap), GenericUtils.size(responses));
+                assertEquals("Mismatched number of responses", MapEntryUtils.size(rspMap), GenericUtils.size(responses));
 
                 int index = 0;
                 // Cannot use forEach because the index is not effectively final

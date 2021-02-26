@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -43,7 +44,7 @@ public class VersionPropertiesTest extends JUnitTestSupport {
     @Test
     public void testNonEmptyProperties() {
         Map<?, ?> props = VersionProperties.getVersionProperties();
-        assertTrue(GenericUtils.isNotEmpty(props));
+        assertTrue(MapEntryUtils.isNotEmpty(props));
     }
 
     @Test

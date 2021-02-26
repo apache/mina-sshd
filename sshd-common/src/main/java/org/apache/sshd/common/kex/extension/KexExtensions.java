@@ -42,6 +42,7 @@ import org.apache.sshd.common.kex.extension.parser.Elevation;
 import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -72,7 +73,7 @@ public final class KexExtensions {
             DelayCompression.INSTANCE)
             .collect(Collectors.toMap(
                     NamedResource::getName, Function.identity(),
-                    GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+                    MapEntryUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
     private KexExtensions() {
         throw new UnsupportedOperationException("No instance allowed");

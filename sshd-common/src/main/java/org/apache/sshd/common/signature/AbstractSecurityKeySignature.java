@@ -24,8 +24,8 @@ import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 

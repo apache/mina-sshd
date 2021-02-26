@@ -50,6 +50,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -395,7 +396,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         assertTrue("Accepted on port=" + port2 + " ?", accepted2);
 
         Map<SshdSocketAddress, KnownHostEntry> updatedKeys = loadEntries(path);
-        assertEquals("Mismatched total entries count", 2, GenericUtils.size(updatedKeys));
+        assertEquals("Mismatched total entries count", 2, MapEntryUtils.size(updatedKeys));
     }
 
     private Path createKnownHostsCopy() throws IOException {

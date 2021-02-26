@@ -40,6 +40,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -163,7 +164,7 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
 
     static int resolvePreferredSignaturePosition(
             List<String> preferredOrder, int prefValue, Map<String, Integer> posMap) {
-        if (GenericUtils.isEmpty(preferredOrder) || (prefValue < 0) || GenericUtils.isEmpty(posMap)) {
+        if (GenericUtils.isEmpty(preferredOrder) || (prefValue < 0) || MapEntryUtils.isEmpty(posMap)) {
             return -1;
         }
 

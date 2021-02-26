@@ -31,7 +31,7 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -120,13 +120,13 @@ public abstract class AbstractSimpleClientSessionCreator extends AbstractSimpleC
             auth.verify(getAuthenticationTimeout());
             session = null; // disable auto-close
         } catch (IOException e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         } finally {
             if (session != null) {
                 try {
                     session.close();
                 } catch (IOException e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
             }
         }

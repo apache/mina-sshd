@@ -56,6 +56,7 @@ import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -552,7 +553,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         IoSession networkSession = getIoSession();
         IoService service = networkSession.getService();
         Map<?, IoSession> sessionsMap = service.getManagedSessions();
-        if (GenericUtils.isEmpty(sessionsMap)) {
+        if (MapEntryUtils.isEmpty(sessionsMap)) {
             return 0;
         }
 

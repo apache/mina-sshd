@@ -78,6 +78,7 @@ import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -311,7 +312,7 @@ public abstract class SshClientCliSupport extends CliSupport {
     }
 
     public static Map<String, ?> resolveClientEnvironment(Map<String, ?> options) {
-        if (GenericUtils.isEmpty(options)) {
+        if (MapEntryUtils.isEmpty(options)) {
             return Collections.emptyMap();
         }
 
@@ -350,7 +351,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     public static PtyChannelConfiguration resolveClientPtyOptions(Map<String, ?> options)
             throws IOException, InterruptedException {
-        Object v = GenericUtils.isEmpty(options)
+        Object v = MapEntryUtils.isEmpty(options)
                 ? null
                 : options.get(SshClientConfigFileReader.REQUEST_TTY_OPTION);
         String s = Objects.toString(v, "auto");
@@ -367,7 +368,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
         // TODO add support for height/width, rows/columns and TERM(inal) type
         Map<PtyMode, Integer> ptyModes = resolveClientPtyModes(options);
-        if (GenericUtils.isNotEmpty(ptyModes)) {
+        if (MapEntryUtils.isNotEmpty(ptyModes)) {
             config.setPtyModes(ptyModes);
         }
 
@@ -376,7 +377,7 @@ public abstract class SshClientCliSupport extends CliSupport {
 
     public static Map<PtyMode, Integer> resolveClientPtyModes(Map<String, ?> options)
             throws IOException, InterruptedException {
-        Object v = GenericUtils.isEmpty(options) ? null : options.get(PtyMode.class.getSimpleName());
+        Object v = MapEntryUtils.isEmpty(options) ? null : options.get(PtyMode.class.getSimpleName());
         String s = Objects.toString(v, null);
         if (GenericUtils.isEmpty(s)) {
             return Collections.emptyMap();
@@ -473,7 +474,7 @@ public abstract class SshClientCliSupport extends CliSupport {
             setupSessionExtensions(client, resolver, stdin, stdout, stderr);
 
             Map<String, ?> options = resolver.getProperties();
-            if (GenericUtils.isNotEmpty(options)) {
+            if (MapEntryUtils.isNotEmpty(options)) {
                 Map<String, Object> props = client.getProperties();
                 props.putAll(options);
             }

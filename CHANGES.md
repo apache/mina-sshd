@@ -15,6 +15,7 @@
 ## Major code re-factoring
 
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Re-factored locations and names of `ServerSession` and server-side `ChannelSession` related classes
+* Moved some helper methods and classes to more natural locations
 
 ## Potential compatibility issues
 

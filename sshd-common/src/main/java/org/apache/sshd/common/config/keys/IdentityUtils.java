@@ -35,6 +35,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.MappedKeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -91,7 +92,7 @@ public final class IdentityUtils {
      * @see                  BuiltinIdentities
      */
     public static KeyPairProvider createKeyPairProvider(Map<String, KeyPair> ids, boolean supportedOnly) {
-        if (GenericUtils.isEmpty(ids)) {
+        if (MapEntryUtils.isEmpty(ids)) {
             return null;
         }
 
@@ -117,7 +118,7 @@ public final class IdentityUtils {
             }
         });
 
-        if (GenericUtils.isEmpty(pairsMap)) {
+        if (MapEntryUtils.isEmpty(pairsMap)) {
             return null;
         } else {
             return new MappedKeyPairProvider(pairsMap);
@@ -142,7 +143,7 @@ public final class IdentityUtils {
     public static NavigableMap<String, KeyPair> loadIdentities(
             SessionContext session, Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
             throws IOException, GeneralSecurityException {
-        if (GenericUtils.isEmpty(paths)) {
+        if (MapEntryUtils.isEmpty(paths)) {
             return Collections.emptyNavigableMap();
         }
 

@@ -29,6 +29,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 
 /**
  * <P>
@@ -110,7 +111,7 @@ public class InteractivePasswordIdentityProvider
             nextPassword.set(password);
         }
 
-        return !GenericUtils.isSameReference(password, EOF);
+        return !UnaryEquator.isSameReference(password, EOF);
     }
 
     @Override
@@ -120,7 +121,7 @@ public class InteractivePasswordIdentityProvider
             throw new IllegalStateException("hasNext() not called before next()");
         }
 
-        if (GenericUtils.isSameReference(password, EOF)) {
+        if (UnaryEquator.isSameReference(password, EOF)) {
             throw new NoSuchElementException("All passwords exhausted");
         }
 

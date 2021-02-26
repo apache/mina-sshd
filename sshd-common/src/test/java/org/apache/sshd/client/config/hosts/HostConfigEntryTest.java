@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -261,7 +262,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
             assertTrue("No target port for " + entry, entry.getPort() > 0);
             assertFalse("No username for " + entry, GenericUtils.isEmpty(entry.getUsername()));
             assertFalse("No identities for " + entry, GenericUtils.isEmpty(entry.getIdentities()));
-            assertFalse("No properties for " + entry, GenericUtils.isEmpty(entry.getProperties()));
+            assertFalse("No properties for " + entry, MapEntryUtils.isEmpty(entry.getProperties()));
         }
     }
 
@@ -327,7 +328,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         for (HostConfigEntry entry : entries) {
             assertFalse("No pattern for " + entry, GenericUtils.isEmpty(entry.getHost()));
-            assertFalse("No extra properties for " + entry, GenericUtils.isEmpty(entry.getProperties()));
+            assertFalse("No extra properties for " + entry, MapEntryUtils.isEmpty(entry.getProperties()));
         }
 
         return entries;

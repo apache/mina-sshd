@@ -71,6 +71,7 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -750,7 +751,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             @Override
             public void readEntries(
                     ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
-                int numEntries = GenericUtils.size(entries);
+                int numEntries = MapEntryUtils.size(entries);
                 entriesCount.addAndGet(numEntries);
 
                 if (log.isDebugEnabled()) {

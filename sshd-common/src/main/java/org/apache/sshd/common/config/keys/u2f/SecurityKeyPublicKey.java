@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.u2f;
+package org.apache.sshd.common.config.keys.u2f;
 
 import java.security.PublicKey;
 

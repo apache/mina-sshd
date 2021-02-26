@@ -79,6 +79,7 @@ import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
@@ -898,7 +899,7 @@ public abstract class AbstractSession extends SessionHelper {
                                               + " to check re-key necessity: " + e.getMessage()),
                         e);
             } catch (Exception e) {
-                GenericUtils.rethrowAsIoException(e);
+                ExceptionUtils.rethrowAsIoException(e);
             }
         }
     }
@@ -2119,7 +2120,7 @@ public abstract class AbstractSession extends SessionHelper {
                                           + " to generate keys for exchange: " + e.getMessage()),
                     e);
         } catch (Exception e) {
-            GenericUtils.rethrowAsIoException(e);
+            ExceptionUtils.rethrowAsIoException(e);
             return null;    // actually dead code
         }
 

@@ -39,7 +39,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
@@ -228,7 +228,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         try {
             channel = (Channel) NIO_SESSION_CHANNEL_FIELD.get(session);
         } catch (Exception t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
                     session, e.getClass().getSimpleName(), e.getMessage());
             return;

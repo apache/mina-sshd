@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 
@@ -190,7 +191,7 @@ public final class IoUtils {
                     c.close();
                 }
             } catch (IOException e) {
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 

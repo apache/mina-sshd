@@ -87,8 +87,10 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -755,7 +757,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // check if session listener intervened
         KeyIdentityProvider kpSession = session.getKeyIdentityProvider();
         KeyIdentityProvider kpClient = getKeyIdentityProvider();
-        if (GenericUtils.isSameReference(kpSession, kpClient)) {
+        if (UnaryEquator.isSameReference(kpSession, kpClient)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider override in session listener", session);
             }
@@ -763,7 +765,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         // Prefer the extra identities to come first since they were probably indicate by the host-config entry
         KeyIdentityProvider kpEffective = KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
-        if (!GenericUtils.isSameReference(kpSession, kpEffective)) {
+        if (!UnaryEquator.isSameReference(kpSession, kpEffective)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);
             }
@@ -772,7 +774,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         PasswordIdentityProvider passSession = session.getPasswordIdentityProvider();
         PasswordIdentityProvider passClient = getPasswordIdentityProvider();
-        if (!GenericUtils.isSameReference(passSession, passClient)) {
+        if (!UnaryEquator.isSameReference(passSession, passClient)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) password provider override", session);
             }
@@ -853,13 +855,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 try {
                     client.close();
                 } catch (Exception e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
 
                 try {
                     client.stop();
                 } catch (Exception e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
 
                 if (err != null) {

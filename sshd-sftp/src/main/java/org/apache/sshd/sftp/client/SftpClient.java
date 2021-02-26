@@ -47,6 +47,7 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
@@ -465,7 +466,7 @@ public interface SftpClient extends SubsystemClient {
 
     class DirEntry {
         public static final Comparator<DirEntry> BY_CASE_SENSITIVE_FILENAME = (e1, e2) -> {
-            if (GenericUtils.isSameReference(e1, e2)) {
+            if (UnaryEquator.isSameReference(e1, e2)) {
                 return 0;
             } else if (e1 == null) {
                 return 1;
@@ -477,7 +478,7 @@ public interface SftpClient extends SubsystemClient {
         };
 
         public static final Comparator<DirEntry> BY_CASE_INSENSITIVE_FILENAME = (e1, e2) -> {
-            if (GenericUtils.isSameReference(e1, e2)) {
+            if (UnaryEquator.isSameReference(e1, e2)) {
                 return 0;
             } else if (e1 == null) {
                 return 1;

@@ -131,11 +131,11 @@ public class GenericUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testAccumulateExceptionOnNullValues() {
-        assertNull("Unexpected null/null result", GenericUtils.accumulateException(null, null));
+        assertNull("Unexpected null/null result", ExceptionUtils.accumulateException(null, null));
 
         Throwable expected = new NoSuchMethodException(getClass().getName() + "#" + getCurrentTestName());
-        assertSame("Mismatched null/extra result", expected, GenericUtils.accumulateException(null, expected));
-        assertSame("Mismatched current/null result", expected, GenericUtils.accumulateException(expected, null));
+        assertSame("Mismatched null/extra result", expected, ExceptionUtils.accumulateException(null, expected));
+        assertSame("Mismatched current/null result", expected, ExceptionUtils.accumulateException(expected, null));
     }
 
     @Test
@@ -147,7 +147,7 @@ public class GenericUtilsTest extends JUnitTestSupport {
         };
         RuntimeException current = new UnsupportedOperationException("top");
         for (RuntimeException extra : expected) {
-            RuntimeException actual = GenericUtils.accumulateException(current, extra);
+            RuntimeException actual = ExceptionUtils.accumulateException(current, extra);
             assertSame("Mismatched returned actual exception", current, actual);
         }
 
