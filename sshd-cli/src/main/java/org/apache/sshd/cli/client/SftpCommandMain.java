@@ -1123,7 +1123,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             String remotePath;
             if (upload) {
                 localPath = src;
-                remotePath = ValidateUtils.checkNotNullAndNotEmpty(tgt, "No remote target specified: %s", args);
+                remotePath = GenericUtils.isEmpty(tgt) ? src : tgt;
             } else {
                 localPath = GenericUtils.isEmpty(tgt) ? getCurrentLocalDirectory() : tgt;
                 remotePath = src;
