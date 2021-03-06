@@ -33,7 +33,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -69,7 +69,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getSimpleName();
             signalChannelOpenFailure(e);
             f.setException(e);

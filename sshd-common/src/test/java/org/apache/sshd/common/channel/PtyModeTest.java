@@ -23,7 +23,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -50,7 +50,7 @@ public class PtyModeTest extends JUnitTestSupport {
     public void testEnabledOptions() {
         Set<PtyMode> expected = EnumSet.of(PtyMode.ECHO, PtyMode.CS8, PtyMode.ICANON);
         Map<PtyMode, Integer> modes = PtyMode.createEnabledOptions(expected);
-        assertEquals("Mismatched modes size", expected.size(), GenericUtils.size(modes));
+        assertEquals("Mismatched modes size", expected.size(), MapEntryUtils.size(modes));
 
         for (PtyMode m : expected) {
             assertSame("Mismatched setting for " + m, PtyMode.TRUE_SETTING, modes.get(m));

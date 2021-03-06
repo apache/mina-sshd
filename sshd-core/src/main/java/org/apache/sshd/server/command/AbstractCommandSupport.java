@@ -34,9 +34,9 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionAware;
 import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
@@ -46,7 +46,7 @@ import org.apache.sshd.server.session.ServerSessionHolder;
  */
 public abstract class AbstractCommandSupport
         extends AbstractLoggingBean
-        implements Command, Runnable, ExecutorServiceCarrier, SessionAware,
+        implements Command, Runnable, ExecutorServiceCarrier, ServerSessionAware,
         SessionHolder<ServerSession>, ServerSessionHolder {
     protected volatile Thread cmdRunner;
     protected CloseableExecutorService executorService;

@@ -20,6 +20,7 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
+import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
@@ -92,35 +94,41 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
         try {
-            if ((keys == null) || (!keys.hasNext())) {
-                if (debugEnabled) {
-                    log.debug("sendAuthDataRequest({})[{}] no more keys to send", session, service);
-                }
-
-                return false;
-            }
-
-            current = keys.next();
+            current = resolveAttemptedPublicKeyIdentity(session, service);
         } catch (Error e) {
             warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
                     session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        if (current == null) {
+            if (debugEnabled) {
+                log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
+            }
+
+            if (reporter != null) {
+                reporter.signalAuthenticationExhausted(session, service);
+            }
+
+            return false;
+        }
+
         if (log.isTraceEnabled()) {
             log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
         }
 
-        PublicKey key;
+        KeyPair keyPair;
         try {
-            key = current.getPublicKey();
+            keyPair = current.getKeyIdentity();
         } catch (Error e) {
-            warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve public key: {}",
+            warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve key identity: {}",
                     session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
-        String keyType = KeyUtils.getKeyType(key);
+        PublicKey pubKey = keyPair.getPublic();
+        String keyType = KeyUtils.getKeyType(pubKey);
         NamedFactory<? extends Signature> factory;
         // SSHD-1104 check if the key type is aliased
         if (current instanceof SignatureFactoriesHolder) {
@@ -134,7 +142,11 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         String name = getName();
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(key));
+                    session, service, name, algo, KeyUtils.getFingerPrint(pubKey));
+        }
+
+        if (reporter != null) {
+            reporter.signalAuthenticationAttempt(session, service, keyPair, algo);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -143,9 +155,27 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putString(name);
         buffer.putBoolean(false);
         buffer.putString(algo);
-        buffer.putPublicKey(key);
+        buffer.putPublicKey(pubKey);
         session.writePacket(buffer);
         return true;
+    }
+
+    protected PublicKeyIdentity resolveAttemptedPublicKeyIdentity(ClientSession session, String service) throws Exception {
+        if ((keys != null) && keys.hasNext()) {
+            return keys.next();
+        }
+
+        UserInteraction ui = session.getUserInteraction();
+        if ((ui == null) || (!ui.isInteractionAllowed(session))) {
+            return null;
+        }
+
+        KeyPair kp = ui.resolveAuthPublicKeyIdentityAttempt(session);
+        if (kp == null) {
+            return null;
+        }
+
+        return new KeyPairIdentity(this, session, kp);
     }
 
     @Override
@@ -161,17 +191,18 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         /*
          * Make sure the server echo-ed the same key we sent as sanctioned by RFC4252 section 7
          */
-        PublicKey key;
+        KeyPair keyPair;
         boolean debugEnabled = log.isDebugEnabled();
         try {
-            key = current.getPublicKey();
+            keyPair = current.getKeyIdentity();
         } catch (Error e) {
-            warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve public key: {}",
+            warn("processAuthDataRequest({})[{}][{}] failed ({}) to retrieve key identity: {}",
                     session, service, name, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
 
-        String curKeyType = KeyUtils.getKeyType(key);
+        PublicKey pubKey = keyPair.getPublic();
+        String curKeyType = KeyUtils.getKeyType(pubKey);
         String rspKeyType = buffer.getString();
         Collection<String> aliases = KeyUtils.getAllEquivalentKeyTypes(curKeyType);
         String algo;
@@ -193,10 +224,10 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         PublicKey rspKey = buffer.getPublicKey();
-        if (!KeyUtils.compareKeys(rspKey, key)) {
+        if (!KeyUtils.compareKeys(rspKey, pubKey)) {
             throw new InvalidKeySpecException(
                     "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
-                                              + " mismatched " + algo + " keys: expected=" + KeyUtils.getFingerPrint(key)
+                                              + " mismatched " + algo + " keys: expected=" + KeyUtils.getFingerPrint(pubKey)
                                               + ", actual=" + KeyUtils.getFingerPrint(rspKey));
         }
 
@@ -216,14 +247,19 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putString(name);
         buffer.putBoolean(true);
         buffer.putString(algo);
-        buffer.putPublicKey(key);
-        appendSignature(session, service, name, username, algo, key, buffer);
+        buffer.putPublicKey(pubKey);
+
+        byte[] sig = appendSignature(session, service, name, username, algo, pubKey, buffer);
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalSignatureAttempt(session, service, keyPair, algo, sig);
+        }
 
         session.writePacket(buffer);
         return true;
     }
 
-    protected void appendSignature(
+    protected byte[] appendSignature(
             ClientSession session, String service, String name, String username, String algo, PublicKey key, Buffer buffer)
             throws Exception {
         byte[] id = session.getSessionId();
@@ -265,6 +301,26 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         bs.putString(algo);
         bs.putBytes(sig);
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
+        return sig;
+    }
+
+    @Override
+    public void signalAuthMethodSuccess(ClientSession session, String service, Buffer buffer) throws Exception {
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        if (reporter != null) {
+            reporter.signalAuthenticationSuccess(session, service, (current == null) ? null : current.getKeyIdentity());
+        }
+    }
+
+    @Override
+    public void signalAuthMethodFailure(
+            ClientSession session, String service, boolean partial, List<String> serverMethods, Buffer buffer)
+            throws Exception {
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        if (reporter != null) {
+            KeyPair identity = (current == null) ? null : current.getKeyIdentity();
+            reporter.signalAuthenticationFailure(session, service, identity, partial, serverMethods);
+        }
     }
 
     @Override

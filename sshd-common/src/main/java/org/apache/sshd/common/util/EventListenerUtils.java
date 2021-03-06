@@ -198,8 +198,8 @@ public final class EventListenerUtils {
                 try {
                     method.invoke(l, args);
                 } catch (Throwable t) {
-                    Throwable e = GenericUtils.peelException(t);
-                    err = GenericUtils.accumulateException(err, e);
+                    Throwable e = ExceptionUtils.peelException(t);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
             }
 

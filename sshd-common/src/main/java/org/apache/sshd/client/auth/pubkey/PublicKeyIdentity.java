@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.client.auth.pubkey;
 
-import java.security.PublicKey;
+import java.security.KeyPair;
 import java.util.Map;
 
 import org.apache.sshd.common.session.SessionContext;
@@ -30,9 +30,9 @@ import org.apache.sshd.common.session.SessionContext;
  */
 public interface PublicKeyIdentity {
     /**
-     * @return The {@link PublicKey} identity value
+     * @return The {@link KeyPair} identity value
      */
-    PublicKey getPublicKey();
+    KeyPair getKeyIdentity();
 
     /**
      * Proves the public key identity by signing the given data

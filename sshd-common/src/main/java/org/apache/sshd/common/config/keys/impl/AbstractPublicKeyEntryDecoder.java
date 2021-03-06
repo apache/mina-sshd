@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * Useful base class implementation for a decoder of an {@code OpenSSH} encoded key data
@@ -43,7 +43,7 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
     }
 
     protected final boolean parseBooleanHeader(Map<String, String> headers, String propertyKey, boolean defaultVal) {
-        if (GenericUtils.isEmpty(headers) || !headers.containsKey(propertyKey)) {
+        if (MapEntryUtils.isEmpty(headers) || !headers.containsKey(propertyKey)) {
             return defaultVal;
         }
         String stringVal = headers.get(propertyKey);

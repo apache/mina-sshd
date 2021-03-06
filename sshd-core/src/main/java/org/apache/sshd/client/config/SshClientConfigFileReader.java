@@ -30,6 +30,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
@@ -79,7 +80,7 @@ public final class SshClientConfigFileReader {
     }
 
     public static <C extends SshClient> C setupClientHeartbeat(C client, Map<String, ?> options) {
-        if ((client == null) || GenericUtils.isEmpty(options)) {
+        if ((client == null) || MapEntryUtils.isEmpty(options)) {
             return client;
         }
 

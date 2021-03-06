@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -67,6 +71,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -90,7 +95,10 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private ServerKeyVerifier serverKeyVerifier;
     private UserInteraction userInteraction;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private PasswordAuthenticationReporter passwordAuthenticationReporter;
     private KeyIdentityProvider keyIdentityProvider;
+    private PublicKeyAuthenticationReporter publicKeyAuthenticationReporter;
+    private HostBasedAuthenticationReporter hostBasedAuthenticationReporter;
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
@@ -161,6 +169,18 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
+    public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PasswordAuthenticationReporter.class, passwordAuthenticationReporter,
+                manager.getPasswordAuthenticationReporter());
+    }
+
+    @Override
+    public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+        this.passwordAuthenticationReporter = reporter;
+    }
+
+    @Override
     public List<UserAuthFactory> getUserAuthFactories() {
         ClientFactoryManager manager = getFactoryManager();
         return resolveEffectiveFactories(userAuthFactories, manager.getUserAuthFactories());
@@ -198,6 +218,30 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public void setKeyIdentityProvider(KeyIdentityProvider keyIdentityProvider) {
         this.keyIdentityProvider = keyIdentityProvider;
+    }
+
+    @Override
+    public PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(PublicKeyAuthenticationReporter.class, publicKeyAuthenticationReporter,
+                manager.getPublicKeyAuthenticationReporter());
+    }
+
+    @Override
+    public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
+        this.publicKeyAuthenticationReporter = reporter;
+    }
+
+    @Override
+    public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+        ClientFactoryManager manager = getFactoryManager();
+        return resolveEffectiveProvider(HostBasedAuthenticationReporter.class, hostBasedAuthenticationReporter,
+                manager.getHostBasedAuthenticationReporter());
+    }
+
+    @Override
+    public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+        this.hostBasedAuthenticationReporter = reporter;
     }
 
     @Override
@@ -311,7 +355,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     protected IoWriteFuture sendClientIdentification() throws Exception {
         clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
-        return sendIdentification(clientVersion);
+        // Note: we intentionally use an unmodifiable list in order to enforce the fact that client cannot send header lines
+        signalSendIdentification(clientVersion, Collections.emptyList());
+        return sendIdentification(clientVersion, Collections.emptyList());
     }
 
     @Override
@@ -511,7 +557,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
         mergeProposals(clientProposal, proposal);
         return super.sendKexInit(proposal);
     }
@@ -638,10 +684,13 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
                 proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
 
-                byte[] seed;
-                synchronized (kexState) {
-                    seed = sendKexInit(proposal);
-                    setKexSeed(seed);
+                try {
+                    synchronized (kexState) {
+                        byte[] seed = sendKexInit(proposal);
+                        setKexSeed(seed);
+                    }
+                } catch (Exception e) {
+                    ExceptionUtils.rethrowAsIoException(e);
                 }
             }
 

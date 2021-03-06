@@ -25,7 +25,7 @@ import java.security.KeyPair;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.simple.SimpleClient;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.io.functors.IOFunction;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -102,7 +102,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                 client = null; // disable auto-close at finally block
                 return closer;
             } catch (Exception e) {
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             } finally {
                 if (client != null) {
                     try {
@@ -110,12 +110,12 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
                     } catch (Exception t) {
                         debug("createSftpClient({}) failed ({}) to close client: {}",
                                 session, t.getClass().getSimpleName(), t.getMessage(), t);
-                        err = GenericUtils.accumulateException(err, t);
+                        err = ExceptionUtils.accumulateException(err, t);
                     }
                 }
             }
         } catch (Exception e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         // This point is reached if error occurred
@@ -127,7 +127,7 @@ public class SimpleSftpClientImpl extends AbstractLoggingBean implements SimpleS
         } catch (Exception e) {
             debug("createSftpClient({}) failed ({}) to close session: {}",
                     session, e.getClass().getSimpleName(), e.getMessage(), e);
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (err instanceof IOException) {

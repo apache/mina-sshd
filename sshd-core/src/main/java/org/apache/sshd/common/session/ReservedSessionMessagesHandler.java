@@ -19,16 +19,61 @@
 
 package org.apache.sshd.common.session;
 
+import java.util.List;
+import java.util.Map;
+
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.util.SshdEventListener;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Provides a way to listen and handle the {@code SSH_MSG_IGNORE} and {@code SSH_MSG_DEBUG} messages that are received
- * by a session, as well as proprietary and/or extension messages.
+ * by a session, as well as proprietary and/or extension messages and behavior.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ReservedSessionMessagesHandler extends SshdEventListener {
+    /**
+     * Send the initial version exchange identification in and independent manner
+     *
+     * @param  session    The {@code Session} through which the version is exchange is being managed
+     * @param  version    The version line that was resolved - <B>Note:</B> since this string is part of the KEX and is
+     *                    <U>cached</U> in the calling session, any changes to it require updating the session's cached
+     *                    value.
+     * @param  extraLines Extra lines to be sent - valid only for server sessions. <B>Note:/B> the handler may modify
+     *                    these lines and return {@code null} thus signaling the session to proceed with sending the
+     *                    identification
+     * @return            A {@link IoWriteFuture} that can be used to wait for the data to be sent successfully. If
+     *                    {@code null} then the session will send the identification, otherwise it is assumed that the
+     *                    handler has sent it.
+     * @throws Exception  if failed to handle the callback
+     * @see               <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol
+     *                    Version Exchange</A>
+     */
+    default IoWriteFuture sendIdentification(
+            Session session, String version, List<String> extraLines)
+            throws Exception {
+        return null;
+    }
+
+    /**
+     * Invoked before sending the {@code SSH_MSG_KEXINIT} packet
+     *
+     * @param  session   The {@code Session} through which the key exchange is being managed
+     * @param  proposal  The KEX proposal that was used to build the packet
+     * @param  packet    The packet containing the fully encoded message - <B>Caveat:</B> this packet later serves as
+     *                   part of the key generation, so care must be taken if manipulating it.
+     * @return           A non-{@code null} {@link IoWriteFuture} to signal that handler took care of the KEX packet
+     *                   delivery.
+     * @throws Exception if failed to handle the callback
+     */
+    default IoWriteFuture sendKexInitRequest(
+            Session session, Map<KexProposalOption, String> proposal, Buffer packet)
+            throws Exception {
+        return null;
+    }
+
     /**
      * Invoked when an {@code SSH_MSG_IGNORE} packet is received
      *

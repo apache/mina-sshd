@@ -35,7 +35,7 @@ import org.apache.directory.server.core.integ.CreateLdapServerRule;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
@@ -69,7 +69,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
     public void testPublicKeyComparison() throws Exception {
         Map<String, String> credentials = populateUsers(serverRule.getLdapServer().getDirectoryService(),
                 LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
-        assertFalse("No keys retrieved", GenericUtils.isEmpty(credentials));
+        assertFalse("No keys retrieved", MapEntryUtils.isEmpty(credentials));
 
         // Cannot use forEach because of the potential GeneraSecurityException being thrown
         for (Map.Entry<String, String> ce : credentials.entrySet()) {

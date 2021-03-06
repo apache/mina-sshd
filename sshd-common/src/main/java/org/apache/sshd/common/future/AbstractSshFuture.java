@@ -25,7 +25,7 @@ import java.io.StreamCorruptedException;
 import java.util.function.Function;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -120,13 +120,13 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
         }
 
         if (Throwable.class.isAssignableFrom(actualType)) {
-            Throwable t = GenericUtils.peelException((Throwable) value);
+            Throwable t = ExceptionUtils.peelException((Throwable) value);
 
             if (t instanceof SshException) {
                 throw new SshException(((SshException) t).getDisconnectCode(), t.getMessage(), t);
             }
 
-            Throwable cause = GenericUtils.resolveExceptionCause(t);
+            Throwable cause = ExceptionUtils.resolveExceptionCause(t);
             throw formatExceptionMessage(
                     msg -> new SshException(msg, cause),
                     "Failed (%s) to execute: %s",

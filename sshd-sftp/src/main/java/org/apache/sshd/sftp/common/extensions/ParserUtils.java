@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.sftp.common.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.sftp.common.extensions.SupportedParser.Supported;
 import org.apache.sshd.sftp.common.extensions.openssh.FstatVfsExtensionParser;
@@ -69,7 +70,7 @@ public final class ParserUtils {
             BUILT_IN_PARSERS.stream()
                     .collect(Collectors.toMap(
                             NamedResource::getName, Function.identity(),
-                            GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER))));
+                            MapEntryUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER))));
 
     private ParserUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -136,7 +137,7 @@ public final class ParserUtils {
     }
 
     public static Set<String> supportedExtensions(Map<String, ?> parsed) {
-        if (GenericUtils.isEmpty(parsed)) {
+        if (MapEntryUtils.isEmpty(parsed)) {
             return Collections.emptySet();
         }
 
@@ -165,7 +166,7 @@ public final class ParserUtils {
      * @see               ExtensionParser#parse(byte[])
      */
     public static Map<String, Object> parse(Map<String, byte[]> extensions) {
-        if (GenericUtils.isEmpty(extensions)) {
+        if (MapEntryUtils.isEmpty(extensions)) {
             return Collections.emptyMap();
         }
 

@@ -19,9 +19,13 @@
 
 package org.apache.sshd.common.session.helpers;
 
+import java.util.List;
+
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -38,6 +42,22 @@ public class ReservedSessionMessagesHandlerAdapter
 
     public ReservedSessionMessagesHandlerAdapter() {
         super();
+    }
+
+    @Override
+    public IoWriteFuture sendIdentification(Session session, String version, List<String> extraLines) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("sendIdentification({}) version={} linesCount={}",
+                    session, version, GenericUtils.size(extraLines));
+        }
+
+        if (log.isTraceEnabled() && GenericUtils.isNotEmpty(extraLines)) {
+            for (String line : extraLines) {
+                log.trace("sendIdentification({}) {}", session, line);
+            }
+        }
+
+        return null;
     }
 
     @Override

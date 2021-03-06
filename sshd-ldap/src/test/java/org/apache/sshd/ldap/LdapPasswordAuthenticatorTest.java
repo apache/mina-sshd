@@ -27,7 +27,7 @@ import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.CreateLdapServerRule;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.server.session.ServerSession;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
@@ -59,7 +59,7 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
     public void testPasswordComparison() throws Exception {
         usersMap = populateUsers(serverRule.getLdapServer().getDirectoryService(),
                 LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
-        assertFalse("No users retrieved", GenericUtils.isEmpty(usersMap));
+        assertFalse("No users retrieved", MapEntryUtils.isEmpty(usersMap));
 
         LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
         auth.setHost(getHost(serverRule.getLdapServer()));

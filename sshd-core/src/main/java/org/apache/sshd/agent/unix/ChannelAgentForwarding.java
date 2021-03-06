@@ -30,6 +30,7 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -100,7 +101,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             signalChannelOpenFailure(e);
             f.setException(e);
         }

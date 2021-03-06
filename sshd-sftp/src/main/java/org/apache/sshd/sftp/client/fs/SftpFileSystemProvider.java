@@ -81,6 +81,7 @@ import org.apache.sshd.common.auth.BasicCredentialsProvider;
 import org.apache.sshd.common.auth.MutableBasicCredentials;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -232,7 +233,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 session = initializer.createClientSession(this, context);
 
                 // Make any extra configuration parameters available to the session
-                if (GenericUtils.size(params) > 0) {
+                if (MapEntryUtils.size(params) > 0) {
                     // Cannot use forEach because the session is not effectively final
                     for (Map.Entry<String, ?> pe : params.entrySet()) {
                         String key = pe.getKey();
@@ -312,9 +313,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     // NOTE: URI parameters override environment ones
     public static Map<String, Object> resolveFileSystemParameters(Map<String, ?> env, Map<String, Object> uriParams) {
-        if (GenericUtils.isEmpty(env)) {
-            return GenericUtils.isEmpty(uriParams) ? Collections.emptyMap() : uriParams;
-        } else if (GenericUtils.isEmpty(uriParams)) {
+        if (MapEntryUtils.isEmpty(env)) {
+            return MapEntryUtils.isEmpty(uriParams) ? Collections.emptyMap() : uriParams;
+        } else if (MapEntryUtils.isEmpty(uriParams)) {
             return Collections.unmodifiableMap(env);
         }
 
@@ -1329,7 +1330,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         ValidateUtils.checkNotNullAndNotEmpty(host, "No host provided");
 
         String queryPart = null;
-        int numParams = GenericUtils.size(params);
+        int numParams = MapEntryUtils.size(params);
         if (numParams > 0) {
             StringBuilder sb = new StringBuilder(numParams * Short.SIZE);
             for (Map.Entry<String, ?> pe : params.entrySet()) {

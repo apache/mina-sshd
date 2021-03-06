@@ -66,12 +66,14 @@ import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator.TimeoutStatus;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Invoker;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 
@@ -214,7 +216,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     @Override
     public void setAuthenticated() throws IOException {
         this.authed = true;
-        signalSessionEvent(SessionListener.Event.Authenticated);
+        try {
+            signalSessionEvent(SessionListener.Event.Authenticated);
+        } catch (Exception e) {
+            ExceptionUtils.rethrowAsIoException(e);
+        }
     }
 
     /**
@@ -567,7 +573,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("Failed ({}) to announce session={} established: {}",
                     e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
             if (e instanceof Exception) {
@@ -592,7 +598,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("Failed ({}) to announce session={} created: {}",
                     e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
             if (e instanceof Exception) {
@@ -610,6 +616,57 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         listener.sessionCreated(this);
     }
 
+    protected void signalSendIdentification(String version, List<String> extraLines) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalSendIdentification(l, version, extraLines);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = ExceptionUtils.peelException(err);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalSendIdentification(SessionListener listener, String version, List<String> extraLines) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationSend(this, version, extraLines);
+    }
+
+    protected void signalReadPeerIdentificationLine(String line, List<String> extraLines) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalReadPeerIdentificationLine(l, line, extraLines);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = ExceptionUtils.peelException(err);
+            debug("signalReadPeerIdentificationLine({}) Failed ({}) to announce peer={}: {}",
+                    this, e.getClass().getSimpleName(), line, e.getMessage(), e);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalReadPeerIdentificationLine(
+            SessionListener listener, String version, List<String> extraLines) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationLine(this, version, extraLines);
+    }
+
     protected void signalPeerIdentificationReceived(String version, List<String> extraLines) throws Exception {
         try {
             invokeSessionSignaller(l -> {
@@ -617,7 +674,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("signalPeerIdentificationReceived({}) Failed ({}) to announce peer={}: {}",
                     this, e.getClass().getSimpleName(), version, e.getMessage(), e);
             if (e instanceof Exception) {
@@ -626,10 +683,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 throw new RuntimeSshException(e);
             }
         }
-
     }
 
-    protected void signalPeerIdentificationReceived(SessionListener listener, String version, List<String> extraLines) {
+    protected void signalPeerIdentificationReceived(
+            SessionListener listener, String version, List<String> extraLines) {
         if (listener == null) {
             return;
         }
@@ -640,26 +697,23 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Sends a session event to all currently registered session listeners
      *
-     * @param  event       The event to send
-     * @throws IOException If any of the registered listeners threw an exception.
+     * @param  event     The event to send
+     * @throws Exception If any of the registered listeners threw an exception.
      */
-    protected void signalSessionEvent(SessionListener.Event event) throws IOException {
+    protected void signalSessionEvent(SessionListener.Event event) throws Exception {
         try {
             invokeSessionSignaller(l -> {
                 signalSessionEvent(l, event);
                 return null;
             });
         } catch (Throwable err) {
-            Throwable t = GenericUtils.peelException(err);
+            Throwable t = ExceptionUtils.peelException(err);
             debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
                     this, event, t.getClass().getSimpleName(), t.getMessage(), t);
-            if (t instanceof IOException) {
-                throw (IOException) t;
-            } else if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
+            if (t instanceof Exception) {
+                throw (Exception) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ") to send session event: " + t.getMessage(), t);
+                throw new RuntimeSshException(t);
             }
         }
     }
@@ -684,10 +738,11 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             if (l == null) {
                 continue;
             }
+
             try {
                 invoker.invoke(l);
             } catch (Throwable t) {
-                err = GenericUtils.accumulateException(err, t);
+                err = ExceptionUtils.accumulateException(err, t);
             }
         }
 
@@ -780,13 +835,31 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     /**
      * Send our identification.
      *
-     * @param  ident       our identification to send
-     * @return             {@link IoWriteFuture} that can be used to wait for notification that identification has been
-     *                     send
-     * @throws IOException If failed to send the packet
+     * @param  version    our identification to send
+     * @param  extraLines Extra lines to send - used only by server sessions
+     * @return            {@link IoWriteFuture} that can be used to wait for notification that identification has been
+     *                    send
+     * @throws Exception  If failed to send the packet
      */
-    protected IoWriteFuture sendIdentification(String ident) throws IOException {
-        if (log.isDebugEnabled()) {
+    protected IoWriteFuture sendIdentification(String version, List<String> extraLines) throws Exception {
+        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
+        IoWriteFuture future = (handler == null) ? null : handler.sendIdentification(this, version, extraLines);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (future != null) {
+            if (debugEnabled) {
+                log.debug("sendIdentification({})[{}] sent {} lines via reserved handler",
+                        this, version, GenericUtils.size(extraLines));
+            }
+
+            return future;
+        }
+
+        String ident = version;
+        if (GenericUtils.size(extraLines) > 0) {
+            ident = GenericUtils.join(extraLines, "\r\n") + "\r\n" + version;
+        }
+
+        if (debugEnabled) {
             log.debug("sendIdentification({}): {}",
                     this, ident.replace('\r', '|').replace('\n', '|'));
         }
@@ -801,14 +874,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      * state and a {@code null} value will be returned. Else the identification string will be returned and the data
      * read will be consumed from the buffer.
      *
-     * @param  buffer      the buffer containing the identification string
-     * @param  server      {@code true} if it is called by the server session, {@code false} if by the client session
-     * @return             A {@link List} of all received remote identification lines until the version line was read or
-     *                     {@code null} if more data is needed. The identification line is the <U>last</U> one in the
-     *                     list
-     * @throws IOException if malformed identification found
+     * @param  buffer    the buffer containing the identification string
+     * @param  server    {@code true} if it is called by the server session, {@code false} if by the client session
+     * @return           A {@link List} of all received remote identification lines until the version line was read or
+     *                   {@code null} if more data is needed. The identification line is the <U>last</U> one in the list
+     * @throws Exception if malformed identification found
      */
-    protected List<String> doReadIdentification(Buffer buffer, boolean server) throws IOException {
+    protected List<String> doReadIdentification(Buffer buffer, boolean server) throws Exception {
         int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequired(this);
         List<String> ident = null;
         int rpos = buffer.rpos();
@@ -869,6 +941,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             if (ident == null) {
                 ident = new ArrayList<>();
             }
+
+            signalReadPeerIdentificationLine(str, ident);
             ident.add(str);
 
             // if this is a server then only one line is expected from the client
@@ -933,7 +1007,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 current.clear(); // debug breakpoint
             }
 
-            if (GenericUtils.isEmpty(proposal)) {
+            if (MapEntryUtils.isEmpty(proposal)) {
                 return proposal; // debug breakpoint
             }
 
@@ -943,6 +1017,32 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return proposal;
     }
 
+    protected void signalNegotiationOptionsCreated(Map<KexProposalOption, String> proposal) {
+        try {
+            invokeSessionSignaller(l -> {
+                signalNegotiationOptionsCreated(l, proposal);
+                return null;
+            });
+        } catch (Throwable t) {
+            Throwable err = ExceptionUtils.peelException(t);
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new RuntimeException(err);
+            }
+        }
+    }
+
+    protected void signalNegotiationOptionsCreated(SessionListener listener, Map<KexProposalOption, String> proposal) {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionNegotiationOptionsCreated(this, proposal);
+    }
+
     protected void signalNegotiationStart(
             Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
         try {
@@ -950,7 +1050,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 signalNegotiationStart(l, c2sOptions, s2cOptions);
                 return null;
             });
-        } catch (Throwable err) {
+        } catch (Throwable t) {
+            Throwable err = ExceptionUtils.peelException(t);
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
             } else if (err instanceof Error) {
@@ -978,7 +1079,8 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 signalNegotiationEnd(l, c2sOptions, s2cOptions, negotiatedGuess, reason);
                 return null;
             });
-        } catch (Throwable err) {
+        } catch (Throwable t) {
+            Throwable err = ExceptionUtils.peelException(t);
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
             } else if (err instanceof Error) {
@@ -1096,7 +1198,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("signalDisconnect({}) {}: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
@@ -1156,7 +1258,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("signalExceptionCaught({}) {}: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
@@ -1177,9 +1279,10 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("signalSessionClosed({}) {} while signal session closed: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
+            // Do not re-throw since session closed anyway
         }
     }
 

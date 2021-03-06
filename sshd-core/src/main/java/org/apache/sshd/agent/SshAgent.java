@@ -47,6 +47,16 @@ public interface SshAgent extends java.nio.channels.Channel {
      */
     Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) throws IOException;
 
+    /**
+     * Used for reporting client-side public key authentication via agent
+     *
+     * @param  key The {@link PublicKey} that is going to be used
+     * @return     The {@link KeyPair} identity for it - if available - {@code null} otherwise
+     */
+    default KeyPair resolveLocalIdentity(PublicKey key) {
+        return null;
+    }
+
     void addIdentity(KeyPair key, String comment) throws IOException;
 
     void removeIdentity(PublicKey key) throws IOException;

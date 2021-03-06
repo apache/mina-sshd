@@ -56,6 +56,7 @@ import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -219,17 +220,13 @@ public abstract class AbstractServerSession extends AbstractSession implements S
      *                     {@code null}/empty
      * @return             An {@link IoWriteFuture} that can be used to be notified of identification data being written
      *                     successfully or failing
-     * @throws IOException If failed to send identification
+     * @throws Exception   If failed to send identification
      * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
      */
-    protected IoWriteFuture sendServerIdentification(String... headerLines) throws IOException {
+    protected IoWriteFuture sendServerIdentification(List<String> headerLines) throws Exception {
         serverVersion = resolveIdentificationString(CoreModuleProperties.SERVER_IDENTIFICATION.getName());
-
-        String ident = serverVersion;
-        if (GenericUtils.length(headerLines) > 0) {
-            ident = GenericUtils.join(headerLines, "\r\n") + "\r\n" + serverVersion;
-        }
-        return sendIdentification(ident);
+        signalSendIdentification(serverVersion, headerLines);
+        return sendIdentification(serverVersion, headerLines);
     }
 
     @Override
@@ -358,7 +355,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
         mergeProposals(serverProposal, proposal);
         return super.sendKexInit(proposal);
     }
@@ -556,7 +553,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         IoSession networkSession = getIoSession();
         IoService service = networkSession.getService();
         Map<?, IoSession> sessionsMap = service.getManagedSessions();
-        if (GenericUtils.isEmpty(sessionsMap)) {
+        if (MapEntryUtils.isEmpty(sessionsMap)) {
             return 0;
         }
 

@@ -77,6 +77,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -86,6 +87,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -141,19 +143,26 @@ public abstract class AbstractSftpSubsystemHelper
                             SftpConstants.SSH_ACL_CAP_AUDIT,
                             SftpConstants.SSH_ACL_CAP_ALARM)));
 
+    private final ChannelSession channelSession;
     private final UnsupportedAttributePolicy unsupportedAttributePolicy;
     private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
     private final SftpEventListener sftpEventListenerProxy;
     private final SftpFileSystemAccessor fileSystemAccessor;
     private final SftpErrorStatusDataHandler errorStatusDataHandler;
 
-    protected AbstractSftpSubsystemHelper(
-                                          UnsupportedAttributePolicy policy, SftpFileSystemAccessor accessor,
-                                          SftpErrorStatusDataHandler handler) {
-        unsupportedAttributePolicy = Objects.requireNonNull(policy, "No unsupported attribute policy provided");
-        fileSystemAccessor = Objects.requireNonNull(accessor, "No file system accessor");
+    protected AbstractSftpSubsystemHelper(ChannelSession channelSession, SftpSubsystemConfigurator configurator) {
+        this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
+        unsupportedAttributePolicy = Objects.requireNonNull(configurator.getUnsupportedAttributePolicy(),
+                "No unsupported attribute policy provided");
+        fileSystemAccessor = Objects.requireNonNull(configurator.getFileSystemAccessor(), "No file system accessor");
         sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, sftpEventListeners);
-        errorStatusDataHandler = Objects.requireNonNull(handler, "No error status data handler");
+        errorStatusDataHandler
+                = Objects.requireNonNull(configurator.getErrorStatusDataHandler(), "No error status data handler");
+    }
+
+    @Override
+    public ChannelSession getServerChannelSession() {
+        return channelSession;
     }
 
     @Override
@@ -185,6 +194,7 @@ public abstract class AbstractSftpSubsystemHelper
         return sftpEventListeners.remove(SftpEventListener.validateListener(listener));
     }
 
+    @Override
     public SftpErrorStatusDataHandler getErrorStatusDataHandler() {
         return errorStatusDataHandler;
     }
@@ -1735,7 +1745,7 @@ public abstract class AbstractSftpSubsystemHelper
         appendAclSupportedExtension(buffer, session);
 
         Map<String, OptionalFeature> extensions = getSupportedClientExtensions(session);
-        int numExtensions = GenericUtils.size(extensions);
+        int numExtensions = MapEntryUtils.size(extensions);
         List<String> extras = (numExtensions <= 0) ? Collections.emptyList() : new ArrayList<>(numExtensions);
         if (numExtensions > 0) {
             boolean debugEnabled = log.isDebugEnabled();
@@ -1954,7 +1964,7 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected void appendVendorIdExtension(
             Buffer buffer, Map<String, ?> versionProperties, ServerSession session) {
-        if (GenericUtils.isEmpty(versionProperties)) {
+        if (MapEntryUtils.isEmpty(versionProperties)) {
             return;
         }
 
@@ -2312,13 +2322,13 @@ public abstract class AbstractSftpSubsystemHelper
 
         for (String v : views) {
             Map<String, ?> ta = readFileAttributes(file, v, options);
-            if (GenericUtils.isNotEmpty(ta)) {
+            if (MapEntryUtils.isNotEmpty(ta)) {
                 attrs.putAll(ta);
             }
         }
 
         Map<String, ?> completions = resolveMissingFileAttributes(file, flags, attrs, options);
-        if (GenericUtils.isNotEmpty(completions)) {
+        if (MapEntryUtils.isNotEmpty(completions)) {
             attrs.putAll(completions);
         }
 
@@ -2351,7 +2361,7 @@ public abstract class AbstractSftpSubsystemHelper
         // Cannot use forEach because the attrs variable is not effectively final
         for (Map.Entry<String, FileInfoExtractor<?>> re : SftpFileSystemAccessor.FILEATTRS_RESOLVERS.entrySet()) {
             String name = re.getKey();
-            Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
+            Object value = MapEntryUtils.isEmpty(current) ? null : current.get(name);
             FileInfoExtractor<?> x = re.getValue();
             try {
                 Object resolved = resolveMissingFileAttributeValue(file, name, value, x, options);
@@ -2396,7 +2406,7 @@ public abstract class AbstractSftpSubsystemHelper
             Path file, NavigableMap<String, Object> current,
             String name, FileInfoExtractor<?> x, LinkOption... options)
             throws IOException {
-        Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
+        Object value = MapEntryUtils.isEmpty(current) ? null : current.get(name);
         if (value != null) { // already have the value
             return current;
         }
@@ -2422,7 +2432,7 @@ public abstract class AbstractSftpSubsystemHelper
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             Map<String, ?> attrs = accessor.readFileAttributes(
                     getServerSession(), this, file, view, options);
-            if (GenericUtils.isEmpty(attrs)) {
+            if (MapEntryUtils.isEmpty(attrs)) {
                 return Collections.emptyNavigableMap();
             }
 
@@ -2655,7 +2665,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected void setFileExtensions(
             Path file, Map<String, byte[]> extensions, LinkOption... options)
             throws IOException {
-        if (GenericUtils.isEmpty(extensions)) {
+        if (MapEntryUtils.isEmpty(extensions)) {
             return;
         }
 

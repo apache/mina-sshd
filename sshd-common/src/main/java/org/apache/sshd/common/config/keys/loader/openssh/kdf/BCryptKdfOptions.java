@@ -40,7 +40,7 @@ import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKdfOptions;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -144,12 +144,12 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
                 Arrays.fill(iv, (byte) 0);
             }
         } catch (RuntimeException e) {
-            Throwable t = GenericUtils.peelException(e);
+            Throwable t = ExceptionUtils.peelException(e);
             Throwable err = null;
             if ((t instanceof IOException) || (t instanceof GeneralSecurityException)) {
                 err = t;
             } else {
-                t = GenericUtils.resolveExceptionCause(e);
+                t = ExceptionUtils.resolveExceptionCause(e);
                 if ((t instanceof IOException) || (t instanceof GeneralSecurityException)) {
                     err = t;
                 }

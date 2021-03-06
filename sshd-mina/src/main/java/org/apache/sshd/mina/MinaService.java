@@ -37,7 +37,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Property;
 import org.apache.sshd.common.io.IoServiceEventListener;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -213,7 +213,7 @@ public abstract class MinaService extends AbstractCloseable
 
     protected void handleConfigurationError(
             SocketSessionConfig config, Property<?> property, Object propValue, RuntimeIoException t) {
-        Throwable e = GenericUtils.resolveExceptionCause(t);
+        Throwable e = ExceptionUtils.resolveExceptionCause(t);
         log.warn("handleConfigurationError({}={}) failed ({}) to configure: {}",
                 property.getName(), propValue, e.getClass().getSimpleName(), e.getMessage());
     }

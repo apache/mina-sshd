@@ -93,8 +93,8 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             }
 
             @Override
-            public ChannelSession getChannelSession() {
-                return bogusShell.getChannelSession();
+            public ChannelSession getServerChannelSession() {
+                return bogusShell.getServerChannelSession();
             }
 
             @Override
@@ -210,12 +210,12 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                         return session;
                     }
 
-                    ChannelSession channel = getChannelSession();
+                    ChannelSession channel = getServerChannelSession();
                     return (channel == null) ? null : channel.getServerSession();
                 }
 
                 @Override
-                public ChannelSession getChannelSession() {
+                public ChannelSession getServerChannelSession() {
                     return channel;
                 }
 

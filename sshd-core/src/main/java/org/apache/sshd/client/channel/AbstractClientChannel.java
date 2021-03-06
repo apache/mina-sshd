@@ -49,7 +49,7 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventNotifier;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -359,7 +359,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             this.opened.set(true);
             this.openFuture.setOpened();
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getName();
             signalChannelOpenFailure(e);
             this.openFuture.setException(e);

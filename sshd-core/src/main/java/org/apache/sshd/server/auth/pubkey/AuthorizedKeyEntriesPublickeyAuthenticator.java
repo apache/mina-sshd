@@ -32,6 +32,7 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -78,7 +79,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
 
     @Override
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
-        if (GenericUtils.isEmpty(resolvedKeys)) {
+        if (MapEntryUtils.isEmpty(resolvedKeys)) {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "] no entries");
             }

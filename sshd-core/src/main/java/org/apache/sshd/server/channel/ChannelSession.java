@@ -62,18 +62,18 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.core.CoreModuleProperties;
-import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.StandardEnvironment;
-import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.AsyncCommandInputStreamAware;
+import org.apache.sshd.server.command.AsyncCommandStreamsAware;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AgentForwardingFilter;
 import org.apache.sshd.server.forward.X11ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionAware;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -617,7 +617,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected RequestHandler.Result handleSubsystemParsed(String request, String subsystem) throws IOException {
         ServerFactoryManager manager = Objects.requireNonNull(getServerSession(), "No server session").getFactoryManager();
-        Collection<SubsystemFactory> factories
+        Collection<? extends SubsystemFactory> factories
                 = Objects.requireNonNull(manager, "No server factory manager").getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("handleSubsystem({}) No factories for subsystem: {}", this, subsystem);
@@ -706,8 +706,8 @@ public class ChannelSession extends AbstractServerChannel {
         Session session = getSession();
         addEnvVariable(Environment.ENV_USER, session.getUsername());
         // If the shell wants to be aware of the session, let's do that
-        if (command instanceof SessionAware) {
-            ((SessionAware) command).setSession((ServerSession) session);
+        if (command instanceof ServerSessionAware) {
+            ((ServerSessionAware) command).setSession((ServerSession) session);
         }
         if (command instanceof ChannelSessionAware) {
             ((ChannelSessionAware) command).setChannelSession(this);
@@ -719,11 +719,11 @@ public class ChannelSession extends AbstractServerChannel {
             ((FileSystemAware) command).setFileSystemFactory(factory, session);
         }
         // If the shell wants to use non-blocking io
-        if (command instanceof AsyncCommand) {
+        if (command instanceof AsyncCommandStreamsAware) {
             asyncOut = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncErr = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
-            ((AsyncCommand) command).setIoOutputStream(asyncOut);
-            ((AsyncCommand) command).setIoErrorStream(asyncErr);
+            ((AsyncCommandStreamsAware) command).setIoOutputStream(asyncOut);
+            ((AsyncCommandStreamsAware) command).setIoErrorStream(asyncErr);
         } else {
             Window wRemote = getRemoteWindow();
             out = new ChannelOutputStream(
@@ -742,10 +742,10 @@ public class ChannelSession extends AbstractServerChannel {
         if (this.receiver == null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
-            if (command instanceof AsyncCommand) {
+            if (command instanceof AsyncCommandInputStreamAware) {
                 AsyncDataReceiver recv = new AsyncDataReceiver(this);
                 setDataReceiver(recv);
-                ((AsyncCommand) command).setIoInputStream(recv.getIn());
+                ((AsyncCommandInputStreamAware) command).setIoInputStream(recv.getIn());
             } else {
                 PipeDataReceiver recv = new PipeDataReceiver(this, getLocalWindow());
                 setDataReceiver(recv);
@@ -770,9 +770,9 @@ public class ChannelSession extends AbstractServerChannel {
             doWriteExtendedData(buffer.array(), buffer.rpos(), buffer.available());
         }
 
-        command.setExitCallback((exitValue, exitMessage) -> {
+        command.setExitCallback((exitValue, exitMessage, closeImmediately) -> {
             try {
-                closeShell(exitValue);
+                closeShell(exitValue, closeImmediately);
                 if (log.isDebugEnabled()) {
                     log.debug("onExit({}) code={} message='{}' shell closed",
                             ChannelSession.this, exitValue, exitMessage);
@@ -897,9 +897,9 @@ public class ChannelSession extends AbstractServerChannel {
         return env;
     }
 
-    protected void closeShell(int exitValue) throws IOException {
+    protected void closeShell(int exitValue, boolean closeImmediately) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("closeShell({}) exit code={}", this, exitValue);
+            log.debug("closeShell({}) exit code={}, immediate={}", this, exitValue, closeImmediately);
         }
 
         if (!isClosing()) {
@@ -909,7 +909,7 @@ public class ChannelSession extends AbstractServerChannel {
             sendEof();
             sendExitStatus(exitValue);
             commandExitFuture.setClosed();
-            close(false);
+            close(closeImmediately);
         } else {
             commandExitFuture.setClosed();
         }

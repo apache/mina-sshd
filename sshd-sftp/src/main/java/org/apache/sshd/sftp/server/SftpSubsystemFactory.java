@@ -27,6 +27,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
+import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -38,7 +39,8 @@ import org.apache.sshd.sftp.common.SftpConstants;
 public class SftpSubsystemFactory
         extends AbstractSftpEventListenerManager
         implements ManagedExecutorServiceSupplier, SubsystemFactory,
-        SftpEventListenerManager, SftpFileSystemAccessorManager {
+        SftpEventListenerManager, SftpFileSystemAccessorManager,
+        SftpSubsystemConfigurator {
 
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
@@ -48,6 +50,7 @@ public class SftpSubsystemFactory
         private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
         private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
         private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
+        private ChannelDataReceiver errorChannelDataReceiver;
 
         public Builder() {
             super();
@@ -73,6 +76,11 @@ public class SftpSubsystemFactory
             return this;
         }
 
+        public Builder withErrorChannelDataReceiver(ChannelDataReceiver receiver) {
+            errorChannelDataReceiver = receiver;
+            return this;
+        }
+
         @Override
         public SftpSubsystemFactory build() {
             SftpSubsystemFactory factory = new SftpSubsystemFactory();
@@ -80,6 +88,7 @@ public class SftpSubsystemFactory
             factory.setUnsupportedAttributePolicy(policy);
             factory.setFileSystemAccessor(fileSystemAccessor);
             factory.setErrorStatusDataHandler(errorStatusDataHandler);
+            factory.setErrorChannelDataReceiver(errorChannelDataReceiver);
             GenericUtils.forEach(getRegisteredListeners(), factory::addSftpEventListener);
             return factory;
         }
@@ -89,6 +98,7 @@ public class SftpSubsystemFactory
     private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
     private SftpFileSystemAccessor fileSystemAccessor = SftpFileSystemAccessor.DEFAULT;
     private SftpErrorStatusDataHandler errorStatusDataHandler = SftpErrorStatusDataHandler.DEFAULT;
+    private ChannelDataReceiver errorChannelDataReceiver;
 
     public SftpSubsystemFactory() {
         super();
@@ -110,6 +120,7 @@ public class SftpSubsystemFactory
         executorsProvider = provider;
     }
 
+    @Override
     public UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
         return policy;
     }
@@ -132,6 +143,7 @@ public class SftpSubsystemFactory
         fileSystemAccessor = Objects.requireNonNull(accessor, "No accessor");
     }
 
+    @Override
     public SftpErrorStatusDataHandler getErrorStatusDataHandler() {
         return errorStatusDataHandler;
     }
@@ -141,11 +153,22 @@ public class SftpSubsystemFactory
     }
 
     @Override
+    public CloseableExecutorService getExecutorService() {
+        return resolveExecutorService();
+    }
+
+    @Override
+    public ChannelDataReceiver getErrorChannelDataReceiver() {
+        return errorChannelDataReceiver;
+    }
+
+    public void setErrorChannelDataReceiver(ChannelDataReceiver errorChannelDataReceiver) {
+        this.errorChannelDataReceiver = errorChannelDataReceiver;
+    }
+
+    @Override
     public Command createSubsystem(ChannelSession channel) throws IOException {
-        SftpSubsystem subsystem = new SftpSubsystem(
-                resolveExecutorService(),
-                getUnsupportedAttributePolicy(), getFileSystemAccessor(),
-                getErrorStatusDataHandler());
+        SftpSubsystem subsystem = new SftpSubsystem(channel, this);
         GenericUtils.forEach(getRegisteredListeners(), subsystem::addSftpEventListener);
         return subsystem;
     }

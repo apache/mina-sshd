@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -100,17 +101,17 @@ public class SpringSftpSession extends AbstractLoggingBean implements Session<Di
             SftpClient client = getClientInstance();
             closeClientInstance(client);
         } catch (Exception e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         try {
             closeSessionInstance(getSessionCloser());
         } catch (Exception e) {
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (err != null) {
-            throw GenericUtils.toRuntimeException(err);
+            throw ExceptionUtils.toRuntimeException(err);
         }
     }
 

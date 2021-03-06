@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -126,7 +127,7 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
     public void testNoOverlappingKeyTypeNamesWithOtherIdentities() {
         Collection<String> current = expected.getSupportedKeyTypes();
         for (BuiltinIdentities identity : BuiltinIdentities.VALUES) {
-            if (GenericUtils.isSameReference(expected, identity)) {
+            if (UnaryEquator.isSameReference(expected, identity)) {
                 continue;
             }
 

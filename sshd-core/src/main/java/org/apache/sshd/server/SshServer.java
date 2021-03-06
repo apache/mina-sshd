@@ -100,7 +100,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
-    private List<SubsystemFactory> subsystemFactories;
+    private List<? extends SubsystemFactory> subsystemFactories;
     private List<UserAuthFactory> userAuthFactories;
     private KeyPairProvider keyPairProvider;
     private HostKeyCertificateProvider hostKeyCertificateProvider;
@@ -191,11 +191,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    public List<SubsystemFactory> getSubsystemFactories() {
+    public List<? extends SubsystemFactory> getSubsystemFactories() {
         return subsystemFactories;
     }
 
-    public void setSubsystemFactories(List<SubsystemFactory> subsystemFactories) {
+    public void setSubsystemFactories(List<? extends SubsystemFactory> subsystemFactories) {
         this.subsystemFactories = subsystemFactories;
     }
 
@@ -350,7 +350,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     /**
      * Stop the SSH server. This method will block until all resources are actually disposed.
-     * 
+     *
      * @throws IOException if stopping failed somehow
      */
     public void stop() throws IOException {

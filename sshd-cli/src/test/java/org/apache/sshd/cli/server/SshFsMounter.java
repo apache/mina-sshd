@@ -49,7 +49,6 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -58,6 +57,7 @@ import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionAware;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
@@ -69,7 +69,7 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SshFsMounter extends SshServerCliSupport {
-    public static class MounterCommand extends AbstractLoggingBean implements Command, SessionAware, Runnable {
+    public static class MounterCommand extends AbstractLoggingBean implements Command, ServerSessionAware, Runnable {
         private final String command;
         private final String cmdName;
         private final List<String> args;

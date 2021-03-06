@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ProxyUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -85,7 +86,7 @@ public class AutoCloseableDelegateInvocationHandler implements InvocationHandler
                 Logger log = LoggerFactory.getLogger(closerType);
                 LoggingUtils.debug(log, "invoke({}#{}) failed ({}) to execute: {}",
                         closerType.getSimpleName(), method.getName(), t.getClass().getSimpleName(), t.getMessage(), t);
-                err = GenericUtils.accumulateException(err, t);
+                err = ExceptionUtils.accumulateException(err, t);
             }
         }
 

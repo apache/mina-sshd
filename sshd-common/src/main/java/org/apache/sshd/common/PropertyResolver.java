@@ -23,6 +23,8 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.sshd.common.util.MapEntryUtils;
+
 /**
  * Indicates an entity that can be configured using properties. The properties are simple name-value pairs where the
  * actual value type depends on the property. Some automatic conversions may be available - e.g., from a string to a
@@ -46,6 +48,11 @@ public interface PropertyResolver {
         @Override
         public Map<String, Object> getProperties() {
             return Collections.emptyMap();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
         }
 
         @Override
@@ -80,6 +87,10 @@ public interface PropertyResolver {
      *         immutable.
      */
     Map<String, Object> getProperties();
+
+    default boolean isEmpty() {
+        return MapEntryUtils.isEmpty(getProperties());
+    }
 
     default long getLongProperty(String name, long def) {
         return PropertyResolverUtils.getLongProperty(this, name, def);
@@ -122,4 +133,7 @@ public interface PropertyResolver {
         return (value == null) ? defaultValue : PropertyResolverUtils.toCharset(value);
     }
 
+    static boolean isEmpty(PropertyResolver resolver) {
+        return (resolver == null) || resolver.isEmpty();
+    }
 }

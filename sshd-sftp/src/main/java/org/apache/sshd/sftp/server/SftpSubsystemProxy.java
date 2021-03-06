@@ -24,6 +24,6 @@ package org.apache.sshd.sftp.server;
  */
 public interface SftpSubsystemProxy
         extends SftpSubsystemEnvironment,
-        SftpEventListenerManager {
+        SftpEventListenerManager, SftpErrorStatusDataHandlerProvider {
     // Nothing extra
 }

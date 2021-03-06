@@ -79,6 +79,7 @@ import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionWorkBuffer;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
@@ -228,7 +229,7 @@ public abstract class AbstractSession extends SessionHelper {
 
         attachSession(ioSession, this);
 
-        Factory<Random> factory = ValidateUtils.checkNotNull(
+        Factory<? extends Random> factory = ValidateUtils.checkNotNull(
                 factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(
                 factory.create(), "No randomizer instance for %s", ioSession);
@@ -376,7 +377,7 @@ public abstract class AbstractSession extends SessionHelper {
     public void messageReceived(Readable buffer) throws Exception {
         synchronized (decodeLock) {
             decoderBuffer.putBuffer(buffer);
-            // One of those property will be set by the constructor and the other
+            // One of those properties will be set by the constructor and the other
             // one should be set by the readIdentification method
             if ((clientVersion == null) || (serverVersion == null)) {
                 if (readIdentification(decoderBuffer)) {
@@ -568,10 +569,10 @@ public abstract class AbstractSession extends SessionHelper {
     /**
      * Send a message to put new keys into use.
      *
-     * @return             An {@link IoWriteFuture} that can be used to wait and check the result of sending the packet
-     * @throws IOException if an error occurs sending the message
+     * @return           An {@link IoWriteFuture} that can be used to wait and check the result of sending the packet
+     * @throws Exception if an error occurs sending the message
      */
-    protected IoWriteFuture sendNewKeys() throws IOException {
+    protected IoWriteFuture sendNewKeys() throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
         }
@@ -897,6 +898,8 @@ public abstract class AbstractSession extends SessionHelper {
                                 "Failed (" + e.getClass().getSimpleName() + ")"
                                               + " to check re-key necessity: " + e.getMessage()),
                         e);
+            } catch (Exception e) {
+                ExceptionUtils.rethrowAsIoException(e);
             }
         }
     }
@@ -1507,14 +1510,16 @@ public abstract class AbstractSession extends SessionHelper {
     /**
      * Send the key exchange initialization packet. This packet contains random data along with our proposal.
      *
-     * @param  proposal    our proposal for key exchange negotiation
-     * @return             the sent packet data which must be kept for later use when deriving the session keys
-     * @throws IOException if an error occurred sending the packet
+     * @param  proposal  our proposal for key exchange negotiation
+     * @return           the sent packet data which must be kept for later use when deriving the session keys
+     * @throws Exception if an error occurred sending the packet
      */
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
-        if (log.isDebugEnabled()) {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
             log.debug("sendKexInit({}) Send SSH_MSG_KEXINIT", this);
         }
+
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + SshConstants.MSG_KEX_COOKIE_SIZE);
@@ -1538,20 +1543,30 @@ public abstract class AbstractSession extends SessionHelper {
 
         buffer.putBoolean(false); // first kex packet follows
         buffer.putInt(0); // reserved (FFU)
+
+        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
+        IoWriteFuture future = (handler == null) ? null : handler.sendKexInitRequest(this, proposal, buffer);
         byte[] data = buffer.getCompactData();
-        writePacket(buffer);
+        if (future == null) {
+            future = writePacket(buffer);
+        } else {
+            if (debugEnabled) {
+                log.debug("sendKexInit({}) KEX handled by reserved messages handler", this);
+            }
+        }
+
         return data;
     }
 
     /**
      * Receive the remote key exchange init message. The packet data is returned for later use.
      *
-     * @param  buffer      the {@link Buffer} containing the key exchange init packet
-     * @param  proposal    the remote proposal to fill
-     * @return             the packet data
-     * @throws IOException If failed to handle the message
+     * @param  buffer    the {@link Buffer} containing the key exchange init packet
+     * @param  proposal  the remote proposal to fill
+     * @return           the packet data
+     * @throws Exception If failed to handle the message
      */
-    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) throws IOException {
+    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) throws Exception {
         // Recreate the packet payload which will be needed at a later time
         byte[] d = buffer.array();
         byte[] data = new byte[buffer.available() + 1 /* the opcode */];
@@ -1791,10 +1806,10 @@ public abstract class AbstractSession extends SessionHelper {
      * Compute the negotiated proposals by merging the client and server proposal. The negotiated proposal will also be
      * stored in the {@link #negotiationResult} property.
      *
-     * @return             The negotiated options {@link Map}
-     * @throws IOException If negotiation failed
+     * @return           The negotiated options {@link Map}
+     * @throws Exception If negotiation failed
      */
-    protected Map<KexProposalOption, String> negotiate() throws IOException {
+    protected Map<KexProposalOption, String> negotiate() throws Exception {
         Map<KexProposalOption, String> c2sOptions = getClientKexProposals();
         Map<KexProposalOption, String> s2cOptions = getServerKexProposals();
         signalNegotiationStart(c2sOptions, s2cOptions);
@@ -2104,6 +2119,9 @@ public abstract class AbstractSession extends SessionHelper {
                             "Failed (" + e.getClass().getSimpleName() + ")"
                                           + " to generate keys for exchange: " + e.getMessage()),
                     e);
+        } catch (Exception e) {
+            ExceptionUtils.rethrowAsIoException(e);
+            return null;    // actually dead code
         }
 
         return ValidateUtils.checkNotNull(
@@ -2113,26 +2131,24 @@ public abstract class AbstractSession extends SessionHelper {
     /**
      * Checks if a re-keying is required and if so initiates it
      *
-     * @return                          A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null}
-     *                                  if no need to re-key or an exchange is already in progress
-     * @throws IOException              If failed load the keys or send the request
-     * @throws GeneralSecurityException If failed to generate the necessary keys
-     * @see                             #isRekeyRequired()
-     * @see                             #requestNewKeysExchange()
+     * @return           A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null} if no need to
+     *                   re-key or an exchange is already in progress
+     * @throws Exception If failed load/generate the keys or send the request
+     * @see              #isRekeyRequired()
+     * @see              #requestNewKeysExchange()
      */
-    protected KeyExchangeFuture checkRekey() throws IOException, GeneralSecurityException {
+    protected KeyExchangeFuture checkRekey() throws Exception {
         return isRekeyRequired() ? requestNewKeysExchange() : null;
     }
 
     /**
      * Initiates a new keys exchange if one not already in progress
      *
-     * @return                          A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null}
-     *                                  if an exchange is already in progress
-     * @throws IOException              If failed to load the keys or send the request
-     * @throws GeneralSecurityException If failed to generate the keys
+     * @return           A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null} if an exchange
+     *                   is already in progress
+     * @throws Exception If failed to load/generate the keys or send the request
      */
-    protected KeyExchangeFuture requestNewKeysExchange() throws IOException, GeneralSecurityException {
+    protected KeyExchangeFuture requestNewKeysExchange() throws Exception {
         if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             if (log.isDebugEnabled()) {
                 log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState);
@@ -2259,7 +2275,7 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
-    protected byte[] sendKexInit() throws IOException, GeneralSecurityException {
+    protected byte[] sendKexInit() throws Exception {
         String resolvedAlgorithms = resolveAvailableSignaturesProposal();
         if (GenericUtils.isEmpty(resolvedAlgorithms)) {
             throw new SshException(
@@ -2281,6 +2297,8 @@ public abstract class AbstractSession extends SessionHelper {
                 log.trace("sendKexInit({}) options after handler: {}", this, proposal);
             }
         }
+
+        signalNegotiationOptionsCreated(proposal);
 
         byte[] seed;
         synchronized (kexState) {

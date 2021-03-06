@@ -58,13 +58,14 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.TcpForwardingFilter;
@@ -874,15 +875,15 @@ public class DefaultForwarder
         try {
             invokePortEventListenerSignallerListeners(getDefaultListeners(), invoker);
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            err = GenericUtils.accumulateException(err, e);
+            Throwable e = ExceptionUtils.peelException(t);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         try {
             invokePortEventListenerSignallerHolders(managersHolder, invoker);
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
-            err = GenericUtils.accumulateException(err, e);
+            Throwable e = ExceptionUtils.peelException(t);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (err != null) {
@@ -907,8 +908,8 @@ public class DefaultForwarder
             try {
                 invoker.invoke(l);
             } catch (Throwable t) {
-                Throwable e = GenericUtils.peelException(t);
-                err = GenericUtils.accumulateException(err, e);
+                Throwable e = ExceptionUtils.peelException(t);
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 
@@ -934,8 +935,8 @@ public class DefaultForwarder
                     invoker.invoke(listener);
                 }
             } catch (Throwable t) {
-                Throwable e = GenericUtils.peelException(t);
-                err = GenericUtils.accumulateException(err, e);
+                Throwable e = ExceptionUtils.peelException(t);
+                err = ExceptionUtils.accumulateException(err, e);
             }
 
             if (m instanceof PortForwardingEventListenerManagerHolder) {
@@ -943,8 +944,8 @@ public class DefaultForwarder
                     invokePortEventListenerSignallerHolders(
                             ((PortForwardingEventListenerManagerHolder) m).getRegisteredManagers(), invoker);
                 } catch (Throwable t) {
-                    Throwable e = GenericUtils.peelException(t);
-                    err = GenericUtils.accumulateException(err, e);
+                    Throwable e = ExceptionUtils.peelException(t);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
             }
         }

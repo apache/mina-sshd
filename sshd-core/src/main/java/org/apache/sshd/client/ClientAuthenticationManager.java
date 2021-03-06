@@ -27,8 +27,11 @@ import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.auth.UserAuthFactoriesManager;
@@ -105,6 +108,18 @@ public interface ClientAuthenticationManager
     UserInteraction getUserInteraction();
 
     void setUserInteraction(UserInteraction userInteraction);
+
+    PasswordAuthenticationReporter getPasswordAuthenticationReporter();
+
+    void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter);
+
+    PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter();
+
+    void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter);
+
+    HostBasedAuthenticationReporter getHostBasedAuthenticationReporter();
+
+    void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter);
 
     @Override
     default void setUserAuthFactoriesNames(Collection<String> names) {

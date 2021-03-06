@@ -25,7 +25,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.session.SessionHolder;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteSession;
@@ -113,7 +113,7 @@ public class GitSshdSessionFactory
                 @Override
                 protected void disconnectSession(ClientSession sessionInstance) {
                     ClientSession thisSession = getClientSession();
-                    if (GenericUtils.isSameReference(thisSession, sessionInstance)) {
+                    if (UnaryEquator.isSameReference(thisSession, sessionInstance)) {
                         return; // do not use the session instance we were given
                     }
 
@@ -123,7 +123,7 @@ public class GitSshdSessionFactory
                 @Override
                 protected void disconnectClient(SshClient clientInstance) {
                     SshClient thisClient = getClient();
-                    if (GenericUtils.isSameReference(thisClient, clientInstance)) {
+                    if (UnaryEquator.isSameReference(thisClient, clientInstance)) {
                         return; // do not close the client the user gave us
                     }
 

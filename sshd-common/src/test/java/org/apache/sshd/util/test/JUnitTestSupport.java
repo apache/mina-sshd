@@ -57,6 +57,7 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.junit.Assert;
@@ -428,8 +429,8 @@ public abstract class JUnitTestSupport extends Assert {
     public static <K, V> void assertMapEquals(
             String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual,
             BiPredicate<? super V, ? super V> equator) {
-        int numItems = GenericUtils.size(expected);
-        assertEquals(message + "[size]", numItems, GenericUtils.size(actual));
+        int numItems = MapEntryUtils.size(expected);
+        assertEquals(message + "[size]", numItems, MapEntryUtils.size(actual));
 
         if (numItems > 0) {
             expected.forEach((key, expValue) -> {
@@ -453,6 +454,19 @@ public abstract class JUnitTestSupport extends Assert {
 
         assertEquals(message + "[format]", expected.getFormat(), actual.getFormat());
         assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
+    }
+
+    public static <T extends Key> void assertKeyListEquals(
+            String message, List<? extends T> expected, List<? extends T> actual) {
+        int numKeys = GenericUtils.size(expected);
+        assertEquals(message + "[size]", numKeys, GenericUtils.size(actual));
+        if (numKeys <= 0) {
+            return;
+        }
+
+        for (int index = 0; index < numKeys; index++) {
+            assertKeyEquals(message + "[#" + index + "]", expected.get(index), actual.get(index));
+        }
     }
 
     public static <T extends Key> void assertKeyEquals(String message, T expected, T actual) {

@@ -33,6 +33,7 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -78,7 +79,7 @@ public class ServerIdentityTest extends BaseTestSupport {
         props.setProperty(ServerIdentity.HOST_KEY_CONFIG_PROP, GenericUtils.join(paths, ','));
 
         Map<String, KeyPair> ids = ServerIdentity.loadIdentities(props, options);
-        assertEquals("Mismatched loaded ids count", GenericUtils.size(paths), GenericUtils.size(ids));
+        assertEquals("Mismatched loaded ids count", GenericUtils.size(paths), MapEntryUtils.size(ids));
 
         Collection<KeyPair> pairs = new ArrayList<>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {

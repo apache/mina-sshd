@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.auth.pubkey;
 
+import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.Objects;
@@ -33,18 +34,23 @@ import org.apache.sshd.common.session.SessionContext;
  */
 public class KeyAgentIdentity implements PublicKeyIdentity {
     private final SshAgent agent;
-    private final PublicKey key;
+    private final KeyPair keyPair;
+    private KeyPair resolvedPair;
     private final String comment;
 
     public KeyAgentIdentity(SshAgent agent, PublicKey key, String comment) {
         this.agent = Objects.requireNonNull(agent, "No signing agent");
-        this.key = Objects.requireNonNull(key, "No public key");
+        this.keyPair = new KeyPair(Objects.requireNonNull(key, "No public key"), null);
         this.comment = comment;
     }
 
     @Override
-    public PublicKey getPublicKey() {
-        return key;
+    public KeyPair getKeyIdentity() {
+        if (resolvedPair == null) {
+            resolvedPair = agent.resolveLocalIdentity(keyPair.getPublic());
+        }
+
+        return (resolvedPair == null) ? keyPair : resolvedPair;
     }
 
     public String getComment() {
@@ -53,12 +59,14 @@ public class KeyAgentIdentity implements PublicKeyIdentity {
 
     @Override
     public Map.Entry<String, byte[]> sign(SessionContext session, String algo, byte[] data) throws Exception {
-        return agent.sign(session, getPublicKey(), algo, data);
+        KeyPair kp = getKeyIdentity();
+        return agent.sign(session, kp.getPublic(), algo, data);
     }
 
     @Override
     public String toString() {
-        PublicKey pubKey = getPublicKey();
+        KeyPair kp = getKeyIdentity();
+        PublicKey pubKey = kp.getPublic();
         return getClass().getSimpleName() + "[" + KeyUtils.getKeyType(pubKey) + "]"
                + " fingerprint=" + KeyUtils.getFingerPrint(pubKey)
                + ", comment=" + getComment();

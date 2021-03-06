@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -62,7 +62,7 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
                 detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "keyring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V1_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
-        assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
+        assertFalse("No keys extracted", MapEntryUtils.isEmpty(keys));
     }
 
     @Test
@@ -71,13 +71,13 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
                 detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "kbx2ring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V2_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
-        assertFalse("No keys extracted", GenericUtils.isEmpty(keys));
+        assertFalse("No keys extracted", MapEntryUtils.isEmpty(keys));
     }
 
     private NavigableMap<String, PublicKey> testPublicRingWatcher(Path file) throws Exception {
         PGPPublicRingWatcher watcher = new PGPPublicRingWatcher(file);
         NavigableMap<String, PublicKey> keys = watcher.reloadRingKeys(null, new PathResource(file));
-        int numKeys = GenericUtils.size(keys);
+        int numKeys = MapEntryUtils.size(keys);
         outputDebugMessage("%s: Loaded %d keys from %s", getCurrentTestName(), numKeys, file);
 
         if (numKeys > 0) {

@@ -21,6 +21,7 @@ package org.apache.sshd.common.session;
 
 import java.util.Objects;
 
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
@@ -39,7 +40,7 @@ public class SessionWorkBuffer extends ByteArrayBuffer implements SessionHolder<
     }
 
     @Override
-    public void clear(boolean wipeData) {
+    public Buffer clear(boolean wipeData) {
         throw new UnsupportedOperationException("Not allowed to clear session work buffer of " + getSession());
     }
 

@@ -30,8 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.BuiltinUserAuthFactories;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
@@ -90,6 +93,26 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             }
 
             @Override
+            public PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setPublicKeyAuthenticationReporter(" + reporter + ")");
+            }
+
+            @Override
+            public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setHostBasedAuthenticationReporter(" + reporter + ")");
+            }
+
+            @Override
             public UserInteraction getUserInteraction() {
                 return null;
             }
@@ -97,6 +120,16 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             @Override
             public void setUserInteraction(UserInteraction userInteraction) {
                 throw new UnsupportedOperationException("setUserInteraction(" + userInteraction + ")");
+            }
+
+            @Override
+            public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+                return null;
+            }
+
+            @Override
+            public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+                throw new UnsupportedOperationException("setPasswordAuthenticationReporter(" + reporter + ")");
             }
 
             @Override
@@ -183,7 +216,8 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
                         PasswordIdentityProvider.class,
                         ServerKeyVerifier.class,
                         UserInteraction.class,
-                        KeyIdentityProvider.class
+                        KeyIdentityProvider.class,
+                        PasswordAuthenticationReporter.class
                 }) {
                     testClientProvidersPropagation(provider, client, session);
                 }
@@ -236,6 +270,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         return manager;
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private ClientSession createMockClientSession() throws Exception {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(client.getForwarderFactory()).thenReturn(DefaultForwarderFactory.INSTANCE);
@@ -262,10 +297,10 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
         });
         Mockito.when(client.getChannelListenerProxy()).thenReturn(ChannelListener.EMPTY);
         Mockito.when(client.getPortForwardingEventListenerProxy()).thenReturn(PortForwardingEventListener.EMPTY);
-        Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
-        Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
+        Factory<? extends Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
+        Mockito.when(client.getRandomFactory()).thenReturn((Factory) randomFactory);
 
-        Mockito.when(client.getServiceFactories()).thenReturn(SshClient.DEFAULT_SERVICE_FACTORIES);
+        Mockito.when(client.getServiceFactories()).thenReturn((List) SshClient.DEFAULT_SERVICE_FACTORIES);
         Mockito.when(client.getUserAuthFactories()).thenReturn(SshClient.DEFAULT_USER_AUTH_FACTORIES);
         return createMockClientSession(client);
     }

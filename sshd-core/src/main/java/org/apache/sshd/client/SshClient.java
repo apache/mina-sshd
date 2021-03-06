@@ -44,10 +44,13 @@ import java.util.stream.Collectors;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.auth.UserAuthFactory;
+import org.apache.sshd.client.auth.hostbased.HostBasedAuthenticationReporter;
 import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
+import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
@@ -84,8 +87,10 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -170,7 +175,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
-    protected UserInteraction userInteraction;
     protected List<UserAuthFactory> userAuthFactories;
 
     private ClientProxyConnector proxyConnector;
@@ -178,8 +182,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
     private KeyIdentityProvider keyIdentityProvider;
+    private PublicKeyAuthenticationReporter publicKeyAuthenticationReporter;
     private FilePasswordProvider filePasswordProvider;
     private PasswordIdentityProvider passwordIdentityProvider;
+    private PasswordAuthenticationReporter passwordAuthenticationReporter;
+    private HostBasedAuthenticationReporter hostBasedAuthenticationReporter;
+    private UserInteraction userInteraction;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
@@ -255,6 +263,26 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction;
+    }
+
+    @Override
+    public PasswordAuthenticationReporter getPasswordAuthenticationReporter() {
+        return passwordAuthenticationReporter;
+    }
+
+    @Override
+    public void setPasswordAuthenticationReporter(PasswordAuthenticationReporter reporter) {
+        this.passwordAuthenticationReporter = reporter;
+    }
+
+    @Override
+    public HostBasedAuthenticationReporter getHostBasedAuthenticationReporter() {
+        return hostBasedAuthenticationReporter;
+    }
+
+    @Override
+    public void setHostBasedAuthenticationReporter(HostBasedAuthenticationReporter reporter) {
+        this.hostBasedAuthenticationReporter = reporter;
     }
 
     @Override
@@ -347,6 +375,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     @Override
+    public PublicKeyAuthenticationReporter getPublicKeyAuthenticationReporter() {
+        return publicKeyAuthenticationReporter;
+    }
+
+    @Override
+    public void setPublicKeyAuthenticationReporter(PublicKeyAuthenticationReporter reporter) {
+        this.publicKeyAuthenticationReporter = reporter;
+    }
+
+    @Override
     protected void checkConfig() {
         super.checkConfig();
 
@@ -371,7 +409,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     agentFactory.getChannelForwardingFactories(this),
                     "No agent channel forwarding factories for %s",
                     agentFactory);
-            List<ChannelFactory> factories = getChannelFactories();
+            List<? extends ChannelFactory> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
                 factories = forwarders;
             } else {
@@ -719,7 +757,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // check if session listener intervened
         KeyIdentityProvider kpSession = session.getKeyIdentityProvider();
         KeyIdentityProvider kpClient = getKeyIdentityProvider();
-        if (GenericUtils.isSameReference(kpSession, kpClient)) {
+        if (UnaryEquator.isSameReference(kpSession, kpClient)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider override in session listener", session);
             }
@@ -727,7 +765,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         // Prefer the extra identities to come first since they were probably indicate by the host-config entry
         KeyIdentityProvider kpEffective = KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
-        if (!GenericUtils.isSameReference(kpSession, kpEffective)) {
+        if (!UnaryEquator.isSameReference(kpSession, kpEffective)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);
             }
@@ -736,7 +774,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         PasswordIdentityProvider passSession = session.getPasswordIdentityProvider();
         PasswordIdentityProvider passClient = getPasswordIdentityProvider();
-        if (!GenericUtils.isSameReference(passSession, passClient)) {
+        if (!UnaryEquator.isSameReference(passSession, passClient)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) password provider override", session);
             }
@@ -817,13 +855,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 try {
                     client.close();
                 } catch (Exception e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
 
                 try {
                     client.stop();
                 } catch (Exception e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
 
                 if (err != null) {

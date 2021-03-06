@@ -105,6 +105,12 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
+    public KeyPair resolveLocalIdentity(PublicKey key) {
+        Map.Entry<KeyPair, String> pp = getKeyPair(keys, key);
+        return (pp == null) ? null : pp.getKey();
+    }
+
+    @Override
     public void removeIdentity(PublicKey key) throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");

@@ -24,7 +24,7 @@ import java.security.interfaces.ECPublicKey;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
-import org.apache.sshd.common.u2f.SkEcdsaPublicKey;
+import org.apache.sshd.common.config.keys.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

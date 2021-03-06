@@ -108,20 +108,19 @@ using a registered `SftpErrorStatusDataHandler`. The default implementation prov
 exception type. However, users may override it when creating the `SftpSubsystemFactory` and provide their own codes and/or messages - e.g.,
 for debugging one can register a `DetailedSftpErrorStatusDataHandler` (see `sshd-contrib`) that "leaks" more information in the generated message.
 
-If the registered handler implements `ChannelSessionAware` then it will also be informed of the registered `ChannelSession` when it is
-provided to the `SftpSubsystem` itself. This can be used to register an extended data writer that can handle data sent via the STDERR
-channel. **Note:** this feature is allowed according to [SFTP version 4 - section 3.1](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#section-3.1):
+### Intercepting data sent via STDERR channel data from the client
 
->> Packets are sent and received on stdout and stdin. Data sent on stderr by the server SHOULD be considered debug
->> or supplemental error information, and MAY be displayed to the user.
+If the registered handler implements `ChannelSessionAware` then it will also be informed of the registered `ChannelSession` when it is provided to the `SftpSubsystem` itself. This can be used to register an extended data writer that override the default (which ignores such data) and can handle data sent via the STDERR channel. **Note:** this feature is allowed according to [SFTP version 4 - section 3.1](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#section-3.1):
 
-however, the current code provides no built-in support for this feature.
+>> Packets are sent and received on stdout and stdin. Data sent on stderr by the server SHOULD be considered  free format debug or supplemental error information, and MAY be displayed to the user.
 
-If registering an extended data writer then one should take care of any race conditions that may occur where (extended) data
-may arrive before the handler is informed of the existence of the `ChannelSession`. For this purpose one should configure a
-reasonable buffer size by setting the `channel-session-max-extdata-bufsize` property. This way, if any data arrives before the
-extended data handler is registered it will be buffered (up to the specified max. size). **Note:** if a buffer size is configured
-but no extended data handler is registered when channel is spawning the command then an exception will occur.
+however, the current code provides no built-in support for this feature other than ignoring any such sent data.
+
+If registering an extended data writer one should take care of any race conditions that may occur where (extended) data may arrive before the handler is informed of the existence of the `ChannelSession`. For this purpose one should configure a reasonable buffer size by setting the `channel-session-max-extdata-bufsize` property. This way, if any data arrives before the extended data handler is registered it will be buffered (up to the specified max. size). **Note:** if a buffer size is configured but no extended data handler is registered when channel is spawning the command then an exception will occur.
+
+### Sending custom data via STDERR channel data to the client
+
+Same logic as the STDERR incoming data applies to the outgoing error I/O streams provided to the `SftpSubsystem`. If the handler implements the relevant `CommandDirectErrorStreamAware` and/or `AsyncCommandErrorStreamAware` interface then it will be provided with the relevant error stream when the SFTP subsystem is initialized. **Note**: the current `SftpSubsystem`implementation uses *asynchronous* streams so `AsyncCommandErrorStreamAware` is the interface that will be invoked. However, in order to support possible future changes it is highly recommended that any custom code implement **both** interfaces.
 
 ### Symbolic links handling
 

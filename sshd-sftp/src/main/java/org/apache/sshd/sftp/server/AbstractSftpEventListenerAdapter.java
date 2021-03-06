@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -76,7 +76,7 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     @Override
     public void readEntries(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries)
             throws IOException {
-        int numEntries = GenericUtils.size(entries);
+        int numEntries = MapEntryUtils.size(entries);
         if (log.isDebugEnabled()) {
             log.debug("read(" + session + ")[" + localHandle.getFile() + "] " + numEntries + " entries");
         }

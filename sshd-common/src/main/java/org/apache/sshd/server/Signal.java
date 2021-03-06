@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * System signals definition that the shell can receive.
@@ -69,20 +70,20 @@ public enum Signal {
 
     /**
      * An un-modifiable <U>case-insensitive</U> {@link NavigableMap} of the names of all available {@link Signal}s
-     * 
+     *
      * @see #SIGNALS
      */
     public static final NavigableMap<String, Signal> NAME_LOOKUP_TABLE = Collections.unmodifiableNavigableMap(
-            GenericUtils.toSortedMap(SIGNALS, Signal::name, Function.identity(), String.CASE_INSENSITIVE_ORDER));
+            MapEntryUtils.toSortedMap(SIGNALS, Signal::name, Function.identity(), String.CASE_INSENSITIVE_ORDER));
 
     /**
      * An un-modifiable {@link NavigableMap} of the numeric values of all available {@link Signal}s
-     * 
+     *
      * @see #SIGNALS
      * @see #getNumeric()
      */
     public static final NavigableMap<Integer, Signal> NUMERIC_LOOKUP_TABLE = Collections.unmodifiableNavigableMap(
-            GenericUtils.toSortedMap(SIGNALS, Signal::getNumeric, Function.identity(), Comparator.naturalOrder()));
+            MapEntryUtils.toSortedMap(SIGNALS, Signal::getNumeric, Function.identity(), Comparator.naturalOrder()));
 
     private final int numeric;
 

@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.auth;
 
+import java.util.List;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.auth.UserAuthInstance;
@@ -25,7 +27,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Represents a user authentication mechanism
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
@@ -44,6 +46,36 @@ public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSe
      * @throws Exception If failed to process the request
      */
     boolean process(Buffer buffer) throws Exception;
+
+    /**
+     * Signal reception of {@code SSH_MSG_USERAUTH_SUCCESS} message
+     *
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
+     * @param  buffer    The {@link Buffer} containing the success message (after having consumed the relevant data from
+     *                   it)
+     * @throws Exception If failed to handle the callback - <B>Note:</B> may cause session close
+     */
+    default void signalAuthMethodSuccess(ClientSession session, String service, Buffer buffer) throws Exception {
+        // ignored
+    }
+
+    /**
+     * Signals reception of {@code SSH_MSG_USERAUTH_FAILURE} message
+     *
+     * @param  session       The {@link ClientSession}
+     * @param  service       The requesting service name
+     * @param  partial       {@code true} if some partial authentication success so far
+     * @param  serverMethods The {@link List} of authentication methods that can continue
+     * @param  buffer        The {@link Buffer} containing the failure message (after having consumed the relevant data
+     *                       from it)
+     * @throws Exception     If failed to handle the callback - <B>Note:</B> may cause session close
+     */
+    default void signalAuthMethodFailure(
+            ClientSession session, String service, boolean partial, List<String> serverMethods, Buffer buffer)
+            throws Exception {
+        // ignored
+    }
 
     /**
      * Called to release any allocated resources

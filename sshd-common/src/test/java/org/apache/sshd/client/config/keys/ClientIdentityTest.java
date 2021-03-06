@@ -32,6 +32,7 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
@@ -76,7 +77,7 @@ public class ClientIdentityTest extends JUnitTestSupport {
                 false, // don't be strict
                 null, // none of the files is password protected
                 options);
-        assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), GenericUtils.size(ids));
+        assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), MapEntryUtils.size(ids));
 
         Collection<KeyPair> pairs = new ArrayList<>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {

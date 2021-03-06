@@ -58,7 +58,9 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.SignatureFactory;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -115,6 +117,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                 new LcdCommandExecutor(),
                 new MkdirCommandExecutor(),
                 new LsCommandExecutor(),
+                new LlsCommandExecutor(),
                 new LStatCommandExecutor(),
                 new ReadLinkCommandExecutor(),
                 new RmCommandExecutor(),
@@ -287,7 +290,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
                         .append(" to instantiate ").append(factoryName)
                         .append(": ").println(t.getMessage());
                 System.err.flush();
-                throw GenericUtils.toRuntimeException(t, true);
+                throw ExceptionUtils.toRuntimeException(t, true);
             }
         }
 
@@ -540,7 +543,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
 
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             Map<String, ?> parsed = ParserUtils.parse(extensions);
-            if (GenericUtils.size(extensions) > 0) {
+            if (MapEntryUtils.size(extensions) > 0) {
                 stdout.println();
             }
 
@@ -702,6 +705,61 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             }
 
             return false;
+        }
+    }
+
+    /* -------------------------------------------------------------------- */
+
+    private class LlsCommandExecutor implements SftpCommandExecutor {
+        LlsCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return "lls";
+        }
+
+        @Override
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                throws Exception {
+            String[] comps = GenericUtils.split(args, ' ');
+            int numComps = GenericUtils.length(comps);
+            String pathArg = (numComps <= 0) ? null : GenericUtils.trimToEmpty(comps[numComps - 1]);
+            String flags = (numComps >= 2) ? GenericUtils.trimToEmpty(comps[0]) : null;
+            // ignore all flags
+            if ((GenericUtils.length(pathArg) > 0) && (pathArg.charAt(0) == '-')) {
+                flags = pathArg;
+                pathArg = null;
+            }
+
+            Path local = Paths.get(resolveLocalPath(pathArg)).normalize().toAbsolutePath();
+            if (Files.notExists(local)) {
+                stderr.println("File/Folder not found");
+            } else if (Files.isDirectory(local)) {
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(local)) {
+                    for (Path path : ds) {
+                        displayLocalPathInfo(path, stdout);
+                    }
+                }
+            } else if (Files.isRegularFile(local)) {
+                displayLocalPathInfo(local, stdout);
+            } else {
+                stderr.println("Unsupported special file");
+            }
+
+            return false;
+        }
+
+        protected void displayLocalPathInfo(Path path, PrintStream stdout) throws IOException {
+            stdout.append('\t').append(Objects.toString(path.getFileName()));
+            if (Files.isRegularFile(path)) {
+                stdout.append(' ').append(Long.toString(Files.size(path)));
+            } else {
+                stdout.append('/');
+            }
+            stdout.println();
         }
     }
 
@@ -1121,7 +1179,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
             String remotePath;
             if (upload) {
                 localPath = src;
-                remotePath = ValidateUtils.checkNotNullAndNotEmpty(tgt, "No remote target specified: %s", args);
+                remotePath = GenericUtils.isEmpty(tgt) ? src : tgt;
             } else {
                 localPath = GenericUtils.isEmpty(tgt) ? getCurrentLocalDirectory() : tgt;
                 remotePath = src;

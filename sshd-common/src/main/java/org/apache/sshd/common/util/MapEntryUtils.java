@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.util;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -26,7 +28,11 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Represents an un-modifiable pair of values
@@ -40,6 +46,9 @@ public final class MapEntryUtils {
         Comparable k2 = o2.getKey();
         return k1.compareTo(k2);
     };
+
+    @SuppressWarnings("rawtypes")
+    private static final Supplier CASE_INSENSITIVE_MAP_FACTORY = () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private MapEntryUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -217,5 +226,109 @@ public final class MapEntryUtils {
         public static <K extends Enum<K>, V> EnumMapBuilder<K, V> builder(Class<K> keyType) {
             return new EnumMapBuilder<>(keyType);
         }
+    }
+
+    public static int size(Map<?, ?> m) {
+        return (m == null) ? 0 : m.size();
+    }
+
+    public static boolean isEmpty(Map<?, ?> m) {
+        return size(m) <= 0;
+    }
+
+    public static boolean isNotEmpty(Map<?, ?> m) {
+        return !isEmpty(m);
+    }
+
+    /**
+     * @param  <V> Type of mapped value
+     * @return     A {@link Supplier} that returns a <U>new</U> {@link NavigableMap} whenever its {@code get()} method
+     *             is invoked
+     */
+    @SuppressWarnings("unchecked")
+    public static <V> Supplier<NavigableMap<String, V>> caseInsensitiveMap() {
+        return CASE_INSENSITIVE_MAP_FACTORY;
+    }
+
+    /**
+     * Flips between keys and values of an input map
+     *
+     * @param  <K>                      Original map key type
+     * @param  <V>                      Original map value type
+     * @param  <M>                      Flipped map type
+     * @param  map                      The original map to flip
+     * @param  mapCreator               The creator of the target map
+     * @param  allowDuplicates          Whether to ignore duplicates on flip
+     * @return                          The flipped map result
+     * @throws IllegalArgumentException if <tt>allowDuplicates</tt> is {@code false} and a duplicate value found in the
+     *                                  original map.
+     */
+    public static <K, V, M extends Map<V, K>> M flipMap(
+            Map<? extends K, ? extends V> map, Supplier<? extends M> mapCreator, boolean allowDuplicates) {
+        M result = Objects.requireNonNull(mapCreator.get(), "No map created");
+        map.forEach((key, value) -> {
+            K prev = result.put(value, key);
+            if ((prev != null) && (!allowDuplicates)) {
+                ValidateUtils.throwIllegalArgumentException("Multiple values for key=%s: current=%s, previous=%s", value, key,
+                        prev);
+            }
+        });
+
+        return result;
+    }
+
+    @SafeVarargs
+    public static <K, V, M extends Map<K, V>> M mapValues(
+            Function<? super V, ? extends K> keyMapper, Supplier<? extends M> mapCreator, V... values) {
+        return mapValues(keyMapper, mapCreator, GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
+    }
+
+    /**
+     * Creates a map out of a group of values
+     *
+     * @param  <K>        The key type
+     * @param  <V>        The value type
+     * @param  <M>        The result {@link Map} type
+     * @param  keyMapper  The {@link Function} that generates a key for a given value. If the returned key is
+     *                    {@code null} then the value is not mapped
+     * @param  mapCreator The {@link Supplier} used to create/retrieve the result map - provided non-empty group of
+     *                    values
+     * @param  values     The values to be mapped
+     * @return            The resulting {@link Map} - <B>Note:</B> no validation is made to ensure that 2 (or more)
+     *                    values are not mapped to the same key
+     */
+    public static <K, V, M extends Map<K, V>> M mapValues(
+            Function<? super V, ? extends K> keyMapper,
+            Supplier<? extends M> mapCreator,
+            Collection<? extends V> values) {
+        M map = mapCreator.get();
+        for (V v : values) {
+            K k = keyMapper.apply(v);
+            if (k == null) {
+                continue; // debug breakpoint
+            }
+            map.put(k, v);
+        }
+
+        return map;
+    }
+
+    public static <T, K, U> NavigableMap<K, U> toSortedMap(
+            Iterable<? extends T> values, Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends U> valueMapper, Comparator<? super K> comparator) {
+        return GenericUtils.stream(values).collect(toSortedMap(keyMapper, valueMapper, comparator));
+    }
+
+    public static <T, K, U> Collector<T, ?, NavigableMap<K, U>> toSortedMap(
+            Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends U> valueMapper,
+            Comparator<? super K> comparator) {
+        return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), () -> new TreeMap<>(comparator));
+    }
+
+    public static <T> BinaryOperator<T> throwingMerger() {
+        return (u, v) -> {
+            throw new IllegalStateException(String.format("Duplicate key %s", u));
+        };
     }
 }

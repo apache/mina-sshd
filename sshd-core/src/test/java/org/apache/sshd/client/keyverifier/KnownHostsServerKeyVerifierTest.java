@@ -40,6 +40,7 @@ import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.hosts.KnownHostHashValue;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.HostEntryPair;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -49,6 +50,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -95,6 +97,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void testParallelLoading() {
         KnownHostsServerKeyVerifier verifier
                 = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, entriesFile) {
@@ -115,7 +118,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 };
 
         ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
-        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+        Mockito.when(manager.getRandomFactory()).thenReturn((Factory) JceRandomFactory.INSTANCE);
 
         HOST_KEYS.entrySet().parallelStream().forEach(line -> {
             KnownHostEntry entry = hostsEntries.get(line.getKey());
@@ -221,6 +224,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     }
 
     @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testWriteHashedHostValues() throws Exception {
         Path path = getKnownHostCopyPath();
         Files.deleteIfExists(path);
@@ -234,7 +238,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         };
 
         ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
-        Mockito.when(manager.getRandomFactory()).thenReturn(JceRandomFactory.INSTANCE);
+        Mockito.when(manager.getRandomFactory()).thenReturn((Factory) JceRandomFactory.INSTANCE);
 
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getFactoryManager()).thenReturn(manager);
@@ -392,7 +396,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         assertTrue("Accepted on port=" + port2 + " ?", accepted2);
 
         Map<SshdSocketAddress, KnownHostEntry> updatedKeys = loadEntries(path);
-        assertEquals("Mismatched total entries count", 2, GenericUtils.size(updatedKeys));
+        assertEquals("Mismatched total entries count", 2, MapEntryUtils.size(updatedKeys));
     }
 
     private Path createKnownHostsCopy() throws IOException {

@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -66,7 +66,7 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
     public void testSyspropsResolver() {
         PropertyResolver resolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
         Map<String, ?> props = resolver.getProperties();
-        assertTrue("Unexpected initial resolver values: " + props, GenericUtils.isEmpty(props));
+        assertTrue("Unexpected initial resolver values: " + props, MapEntryUtils.isEmpty(props));
 
         final String propName = getCurrentTestName();
         assertNull("Unexpected initial resolved value", PropertyResolverUtils.getObject(resolver, propName));

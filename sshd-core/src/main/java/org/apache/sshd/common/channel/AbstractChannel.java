@@ -51,15 +51,16 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.Int2IntFunction;
-import org.apache.sshd.common.util.Invoker;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
+import org.apache.sshd.common.util.functors.Int2IntFunction;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -381,7 +382,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
             notifyStateChanged("init");
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else if (e instanceof RuntimeException) {
@@ -455,7 +456,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 return null;
             });
         } catch (Throwable err) {
-            Throwable ignored = GenericUtils.peelException(err);
+            Throwable ignored = ExceptionUtils.peelException(err);
             debug("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}", this,
                     ignored.getClass().getSimpleName(), reason.getClass().getSimpleName(), ignored.getMessage(),
                     ignored);
@@ -477,7 +478,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("notifyStateChanged({})[{}] {} while signal channel state change: {}", this, hint,
                     e.getClass().getSimpleName(), e.getMessage(), e);
         } finally {
@@ -726,7 +727,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 return null;
             });
         } catch (Throwable err) {
-            Throwable e = GenericUtils.peelException(err);
+            Throwable e = ExceptionUtils.peelException(err);
             debug("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(),
                     e.getMessage(), e);
         } finally {
@@ -757,7 +758,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             try {
                 invoker.invoke(l);
             } catch (Throwable t) {
-                err = GenericUtils.accumulateException(err, t);
+                err = ExceptionUtils.accumulateException(err, t);
             }
         }
 

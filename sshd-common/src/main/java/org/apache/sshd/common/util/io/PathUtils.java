@@ -61,7 +61,7 @@ public final class PathUtils {
      *                       non-{@code null}-s
      */
     public static int safeCompareFilename(Path p1, Path p2, boolean caseSensitive) {
-        if (GenericUtils.isSameReference(p1, p2)) {
+        if (UnaryEquator.isSameReference(p1, p2)) {
             return 0;
         } else if (p1 == null) {
             return 1;

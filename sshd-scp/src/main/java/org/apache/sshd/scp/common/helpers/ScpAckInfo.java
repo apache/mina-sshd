@@ -23,6 +23,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -59,8 +60,8 @@ public class ScpAckInfo {
         return line;
     }
 
-    public <O extends OutputStream> O send(O out) throws IOException {
-        return sendAck(out, getStatusCode(), getLine());
+    public <O extends OutputStream> O send(O out, Charset cs) throws IOException {
+        return sendAck(out, cs, getStatusCode(), getLine());
     }
 
     public void validateCommandStatusCode(String command, Object location) throws IOException {
@@ -83,7 +84,7 @@ public class ScpAckInfo {
         }
     }
 
-    public static ScpAckInfo readAck(InputStream in, boolean canEof) throws IOException {
+    public static ScpAckInfo readAck(InputStream in, Charset cs, boolean canEof) throws IOException {
         int statusCode = in.read();
         if (statusCode == -1) {
             if (canEof) {
@@ -96,7 +97,7 @@ public class ScpAckInfo {
             return new ScpAckInfo(statusCode);  // OK status has no extra data
         }
 
-        String line = ScpIoUtils.readLine(in);
+        String line = ScpIoUtils.readLine(in, cs);
         return new ScpAckInfo(statusCode, line);
     }
 
@@ -104,24 +105,27 @@ public class ScpAckInfo {
      * Sends {@link #OK} ACK code
      *
      * @param  out         The target {@link OutputStream}
+     * @param  cs          The {@link Charset} to use to write the textual data
      * @throws IOException If failed to send the ACK code
      */
-    public static void sendOk(OutputStream out) throws IOException {
-        sendAck(out, OK, null /* ignored */);
+    public static void sendOk(OutputStream out, Charset cs) throws IOException {
+        sendAck(out, cs, OK, null /* ignored */);
     }
 
-    public static <O extends OutputStream> O sendWarning(O out, String message) throws IOException {
-        return sendAck(out, ScpAckInfo.WARNING, (message == null) ? "" : message);
+    public static <O extends OutputStream> O sendWarning(O out, Charset cs, String message) throws IOException {
+        return sendAck(out, cs, ScpAckInfo.WARNING, (message == null) ? "" : message);
     }
 
-    public static <O extends OutputStream> O sendError(O out, String message) throws IOException {
-        return sendAck(out, ScpAckInfo.ERROR, (message == null) ? "" : message);
+    public static <O extends OutputStream> O sendError(O out, Charset cs, String message) throws IOException {
+        return sendAck(out, cs, ScpAckInfo.ERROR, (message == null) ? "" : message);
     }
 
-    public static <O extends OutputStream> O sendAck(O out, int level, String message) throws IOException {
+    public static <O extends OutputStream> O sendAck(
+            O out, Charset cs, int level, String message)
+            throws IOException {
         out.write(level);
         if (level != OK) {
-            ScpIoUtils.writeLine(out, message); // this also flushes
+            ScpIoUtils.writeLine(out, cs, message); // this also flushes
         } else {
             out.flush();
         }

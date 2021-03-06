@@ -22,6 +22,7 @@ package org.apache.sshd.common.util;
 import java.util.Random;
 import java.util.function.IntUnaryOperator;
 
+import org.apache.sshd.common.util.functors.Int2IntFunction;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;

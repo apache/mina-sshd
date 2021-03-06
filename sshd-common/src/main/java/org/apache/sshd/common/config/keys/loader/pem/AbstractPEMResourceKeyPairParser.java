@@ -45,6 +45,8 @@ import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
 import org.apache.sshd.common.config.keys.loader.PrivateKeyObfuscator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -91,7 +93,7 @@ public abstract class AbstractPEMResourceKeyPairParser
         byte[] initVector = null;
         String algInfo = null;
         int dataStartIndex = -1;
-        boolean hdrsAvailable = GenericUtils.isNotEmpty(headers);
+        boolean hdrsAvailable = MapEntryUtils.isNotEmpty(headers);
         for (int index = 0; index < lines.size(); index++) {
             String line = GenericUtils.trimToEmpty(lines.get(index));
             if (GenericUtils.isEmpty(line)) {
@@ -108,7 +110,7 @@ public abstract class AbstractPEMResourceKeyPairParser
             String hdrName = line.substring(0, headerPos).trim();
             String hdrValue = line.substring(headerPos + 1).trim();
             if (!hdrsAvailable) {
-                Map<String, String> accHeaders = GenericUtils.isEmpty(headers)
+                Map<String, String> accHeaders = MapEntryUtils.isEmpty(headers)
                         ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
                         : headers;
                 accHeaders.put(hdrName, hdrValue);
@@ -216,7 +218,7 @@ public abstract class AbstractPEMResourceKeyPairParser
 
         if (encryptIt) {
             byte[] initVector = encContext.getInitVector();
-            if (GenericUtils.isEmpty(initVector)) {
+            if (NumberUtils.isEmpty(initVector)) {
                 initVector = o.generateInitializationVector(encContext);
                 encContext.setInitVector(initVector);
             }

@@ -29,11 +29,11 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ChannelSessionAware;
 import org.apache.sshd.server.command.AsyncCommand;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.shell.ShellFactory;
@@ -99,12 +99,21 @@ public class AsyncEchoShellFactory implements ShellFactory {
 
         @Override
         public void setIoOutputStream(IoOutputStream out) {
-            this.out = new BufferedIoOutputStream("STDOUT", out);
+            this.out = wrapOutputStream("SHELL-STDOUT", out);
         }
 
         @Override
         public void setIoErrorStream(IoOutputStream err) {
-            this.err = new BufferedIoOutputStream("STDERR", err);
+            this.err = wrapOutputStream("SHELL-STDERR", err);
+        }
+
+        protected BufferedIoOutputStream wrapOutputStream(String prefix, IoOutputStream stream) {
+            if (stream instanceof BufferedIoOutputStream) {
+                return (BufferedIoOutputStream) stream;
+            }
+
+            int channelId = session.getId();
+            return new BufferedIoOutputStream(prefix + "@" + channelId, channelId, stream, session);
         }
 
         @Override

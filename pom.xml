@@ -104,20 +104,20 @@
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <groovy.version>3.0.7</groovy.version>
-        <bouncycastle.version>1.67</bouncycastle.version>
+        <bouncycastle.version>1.68</bouncycastle.version>
         <slf4j.version>1.7.30</slf4j.version>
         <logback.version>1.2.3</logback.version>        
-        <spring.version>5.3.2</spring.version>
-        <jgit.version>5.9.0.202009080501-r</jgit.version>
+        <spring.version>5.3.3</spring.version>
+        <jgit.version>5.10.0.202012080955-r</jgit.version>
         <junit.version>4.13.1</junit.version>
-        <bytebuddy.version>1.10.18</bytebuddy.version>
+        <bytebuddy.version>1.10.20</bytebuddy.version>
 
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
-        <maven.archiver.version>3.5.0</maven.archiver.version>
+        <maven.archiver.version>3.5.1</maven.archiver.version>
         <scm.plugin.version>1.11.2</scm.plugin.version>
-        <plexus.archiver.version>4.2.3</plexus.archiver.version>
+        <plexus.archiver.version>4.2.4</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.29.0</pmd.version>
+        <pmd.version>6.31.0</pmd.version>
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -187,7 +187,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>6.0.3</version>
+                        <version>6.1.0</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
@@ -529,7 +529,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>3.6.28</version>
+                <version>3.7.7</version>
             </dependency>
                 <!-- Used by mockito -->
             <dependency>
@@ -841,7 +841,7 @@
                 <plugin>
                     <groupId>org.codehaus.gmavenplus</groupId>
                     <artifactId>gmavenplus-plugin</artifactId>
-                    <version>1.11.0</version>
+                    <version>1.12.1</version>
                     <dependencies>
                           <!-- referenced indirectly by groovy-ant -->
                         <dependency>
@@ -902,7 +902,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.38</version>
+                            <version>8.40</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
@@ -1009,7 +1009,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.13.0</version>
+                   <version>3.14.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
@@ -1090,7 +1090,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.12.1</version>
+                    <version>2.13.0</version>
                     <configuration>
                         <skipXmlFormatting>true</skipXmlFormatting>
                         <skipHtmlFormatting>true</skipHtmlFormatting>

@@ -27,6 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -34,10 +35,10 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionAware;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell} as a {@link Command}. This is useful when
@@ -46,7 +47,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InvertedShellWrapper extends AbstractLoggingBean implements Command, SessionAware {
+public class InvertedShellWrapper extends AbstractLoggingBean implements Command, ServerSessionAware {
 
     private final InvertedShell shell;
     private final Executor executor;
@@ -148,7 +149,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         } catch (Throwable e) {
             warn("destroy({}) failed ({}) to destroy shell: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
-            err = GenericUtils.accumulateException(err, e);
+            err = ExceptionUtils.accumulateException(err, e);
         }
 
         if (shutdownExecutor && (executor instanceof ExecutorService)) {
@@ -157,7 +158,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
             } catch (Exception e) {
                 warn("destroy({}) failed ({}) to shut down executor: {}",
                         this, e.getClass().getSimpleName(), e.getMessage(), e);
-                err = GenericUtils.accumulateException(err, e);
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 
@@ -203,7 +204,7 @@ public class InvertedShellWrapper extends AbstractLoggingBean implements Command
         } catch (Throwable e) {
             boolean debugEnabled = log.isDebugEnabled();
             try {
-                shell.destroy(shell.getChannelSession());
+                shell.destroy(shell.getServerChannelSession());
             } catch (Throwable err) {
                 warn("pumpStreams({}) failed ({}) to destroy shell: {}",
                         this, e.getClass().getSimpleName(), e.getMessage(), e);

@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.auth.keyboard;
 
+import java.security.KeyPair;
 import java.util.List;
 
 import org.apache.sshd.client.session.ClientSession;
@@ -88,7 +89,6 @@ public interface UserInteraction {
     };
 
     /**
-     *
      * @param  session The {@link ClientSession}
      * @return         {@code true} if user interaction allowed for this session (default)
      */
@@ -147,6 +147,28 @@ public interface UserInteraction {
      *                 means - be it other passwords, public keys, etc...)
      */
     String getUpdatedPassword(ClientSession session, String prompt, String lang);
+
+    /**
+     * Invoked during password authentication when no more pre-registered passwords are available
+     *
+     * @param  session   The {@link ClientSession} through which the request was received
+     * @return           The password to use - {@code null} signals no more passwords available
+     * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+     */
+    default String resolveAuthPasswordAttempt(ClientSession session) throws Exception {
+        return null;
+    }
+
+    /**
+     * Invoked during public key authentication when no more pre-registered keys are available
+     *
+     * @param  session   The {@link ClientSession} through which the request was received
+     * @return           The {@link KeyPair} to use - {@code null} signals no more keys available
+     * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
+     */
+    default KeyPair resolveAuthPublicKeyIdentityAttempt(ClientSession session) throws Exception {
+        return null;
+    }
 
     /**
      * @param  prompt     The user interaction prompt

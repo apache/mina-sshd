@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -414,7 +415,7 @@ public final class SftpHelper {
 
     /**
      * Converts a file type into a POSIX permission mask value
-     * 
+     *
      * @param  type File type - see {@code SSH_FILEXFER_TYPE_xxx} values
      * @return      The matching POSIX permission mask value
      */
@@ -655,7 +656,7 @@ public final class SftpHelper {
     }
 
     public static <B extends Buffer> B writeExtensions(B buffer, Map<?, ?> extensions) {
-        int numExtensions = GenericUtils.size(extensions);
+        int numExtensions = MapEntryUtils.size(extensions);
         buffer.putInt(numExtensions);
         if (numExtensions <= 0) {
             return buffer;
@@ -676,7 +677,7 @@ public final class SftpHelper {
     }
 
     public static NavigableMap<String, String> toStringExtensions(Map<String, ?> extensions) {
-        if (GenericUtils.isEmpty(extensions)) {
+        if (MapEntryUtils.isEmpty(extensions)) {
             return Collections.emptyNavigableMap();
         }
 
@@ -695,7 +696,7 @@ public final class SftpHelper {
     }
 
     public static NavigableMap<String, byte[]> toBinaryExtensions(Map<String, String> extensions) {
-        if (GenericUtils.isEmpty(extensions)) {
+        if (MapEntryUtils.isEmpty(extensions)) {
             return Collections.emptyNavigableMap();
         }
 

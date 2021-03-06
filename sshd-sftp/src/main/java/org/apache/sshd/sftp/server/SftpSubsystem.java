@@ -64,14 +64,15 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ChannelSessionAware;
 import org.apache.sshd.server.command.AsyncCommand;
+import org.apache.sshd.server.command.AsyncCommandErrorStreamAware;
 import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -85,8 +86,8 @@ import org.apache.sshd.sftp.common.SftpHelper;
  */
 public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
-        implements Command, Runnable, SessionAware, FileSystemAware, ExecutorServiceCarrier,
-        AsyncCommand, ChannelSessionAware, ChannelDataReceiver {
+        implements Command, Runnable, FileSystemAware, ExecutorServiceCarrier,
+        AsyncCommand, ChannelDataReceiver {
 
     protected static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
@@ -99,7 +100,6 @@ public class SftpSubsystem
 
     protected ExitCallback callback;
     protected IoOutputStream out;
-    protected IoOutputStream err;
     protected Environment env;
     protected Random randomizer;
     protected int fileHandleSize = SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE;
@@ -111,30 +111,55 @@ public class SftpSubsystem
     protected int version;
 
     protected ServerSession serverSession;
-    protected ChannelSession channelSession;
     protected CloseableExecutorService executorService;
 
     /**
-     * @param executorService        The {@link CloseableExecutorService} to be used by the {@link SftpSubsystem}
-     *                               command when starting execution. If {@code null} then a single-threaded ad-hoc
-     *                               service is used.
-     * @param policy                 The {@link UnsupportedAttributePolicy} to use if failed to access some local file
-     *                               attributes
-     * @param accessor               The {@link SftpFileSystemAccessor} to use for opening files and directories
-     * @param errorStatusDataHandler The (never {@code null}) {@link SftpErrorStatusDataHandler} to use when generating
-     *                               failed commands error messages
-     * @see                          ThreadUtils#newSingleThreadExecutor(String)
+     * @param channel      The {@link ChannelSession} through which the command was received
+     * @param configurator The {@link SftpSubsystemConfigurator} to use
      */
-    public SftpSubsystem(
-                         CloseableExecutorService executorService, UnsupportedAttributePolicy policy,
-                         SftpFileSystemAccessor accessor, SftpErrorStatusDataHandler errorStatusDataHandler) {
-        super(policy, accessor, errorStatusDataHandler);
+    public SftpSubsystem(ChannelSession channel, SftpSubsystemConfigurator configurator) {
+        super(channel, configurator);
 
+        CloseableExecutorService executorService = configurator.getExecutorService();
         if (executorService == null) {
             this.executorService = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
         } else {
             this.executorService = executorService;
         }
+
+        initializeSessionRelatedMember(channel);
+
+        ChannelDataReceiver errorDataChannelReceiver
+                = resolveErrorDataChannelReceiver(channel, configurator.getErrorChannelDataReceiver());
+        channel.setDataReceiver(this);
+        channel.setExtendedDataWriter(errorDataChannelReceiver);
+
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof ChannelSessionAware) {
+            ((ChannelSessionAware) errHandler).setChannelSession(channel);
+        }
+    }
+
+    protected ChannelDataReceiver resolveErrorDataChannelReceiver(ChannelSession channelSession, ChannelDataReceiver receiver) {
+        return (receiver != null) ? receiver : new ChannelDataReceiver() {
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void close() throws IOException {
+                if (log.isDebugEnabled()) {
+                    log.debug("stderrData({}) closing", getSession());
+                }
+
+            }
+
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
+                if (log.isDebugEnabled()) {
+                    log.debug("stderrData({}) received {} data bytes", channel, len);
+                }
+                return len;
+            }
+        };
     }
 
     @Override
@@ -152,16 +177,15 @@ public class SftpSubsystem
         return executorService;
     }
 
-    @Override
-    public void setSession(ServerSession session) {
-        this.serverSession = Objects.requireNonNull(session, "No session");
+    protected void initializeSessionRelatedMember(ChannelSession channel) {
+        serverSession = Objects.requireNonNull(channel.getServerSession(), "No session associated with the channel");
 
-        FactoryManager manager = session.getFactoryManager();
+        FactoryManager manager = serverSession.getFactoryManager();
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
-        this.fileHandleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(session);
-        this.maxFileHandleRounds = SftpModuleProperties.MAX_FILE_HANDLE_RAND_ROUNDS.getRequired(session);
+        this.fileHandleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(channel);
+        this.maxFileHandleRounds = SftpModuleProperties.MAX_FILE_HANDLE_RAND_ROUNDS.getRequired(channel);
 
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
@@ -174,18 +198,8 @@ public class SftpSubsystem
     }
 
     @Override
-    public void setChannelSession(ChannelSession session) {
-        this.channelSession = session;
-        session.setDataReceiver(this);
-
-        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
-        if (errHandler instanceof ChannelSessionAware) {
-            ((ChannelSessionAware) errHandler).setChannelSession(session);
-        }
-    }
-
-    @Override
     public void setFileSystem(FileSystem fileSystem) {
+        // reference check on purpose
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
             this.defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();
@@ -209,7 +223,10 @@ public class SftpSubsystem
 
     @Override
     public void setErrorStream(OutputStream err) {
-        // Do nothing
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof CommandDirectErrorStreamAware) {
+            ((CommandDirectErrorStreamAware) errHandler).setErrorStream(err);
+        }
     }
 
     @Override
@@ -219,12 +236,17 @@ public class SftpSubsystem
 
     @Override
     public void setIoOutputStream(IoOutputStream out) {
-        this.out = new BufferedIoOutputStream("sftp out buffer", out);
+        ChannelSession channel = getServerChannelSession();
+        int channelId = channel.getId();
+        this.out = new BufferedIoOutputStream("sftp-out@" + channelId, channelId, out, channel);
     }
 
     @Override
     public void setIoErrorStream(IoOutputStream err) {
-        this.err = err;
+        SftpErrorStatusDataHandler errHandler = getErrorStatusDataHandler();
+        if (errHandler instanceof AsyncCommandErrorStreamAware) {
+            ((AsyncCommandErrorStreamAware) errHandler).setIoErrorStream(err);
+        }
     }
 
     @Override
@@ -262,26 +284,31 @@ public class SftpSubsystem
 
     @Override
     public void run() {
+        int exitCode = 0;
+        long buffersCount = 0L;
         try {
+            ChannelSession channel = getServerChannelSession();
+            Window localWindow = channel.getLocalWindow();
             while (true) {
                 Buffer buffer = requests.take();
                 if (buffer == CLOSE) {
                     break;
                 }
                 int len = buffer.available();
+                buffersCount++;
                 process(buffer);
-                Window localWindow = channelSession.getLocalWindow();
                 localWindow.consumeAndCheck(len);
             }
         } catch (Throwable t) {
             if (!closed.get()) { // Ignore
                 Session session = getServerSession();
-                error("run({}) {} caught in SFTP subsystem: {}",
-                        session, t.getClass().getSimpleName(), t.getMessage(), t);
+                error("run({}) {} caught in SFTP subsystem after {} buffers: {}",
+                        session, t.getClass().getSimpleName(), buffersCount, t.getMessage(), t);
+                exitCode = -1;
             }
         } finally {
             closeAllHandles();
-            callback.onExit(0);
+            callback.onExit(exitCode, exitCode != 0);
         }
     }
 

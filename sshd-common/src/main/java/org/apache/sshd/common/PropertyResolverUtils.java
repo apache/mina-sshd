@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -128,7 +129,7 @@ public final class PropertyResolverUtils {
      * <LI>If the value is {@code null} then returns {@code null}.</LI>
      *
      * <LI>If the value is already a {@link Long} then it is returned as such.</LI>
-     * 
+     *
      * <LI>If value is a {@link Number} then its {@link Number#longValue()} is wrapped as a {@link Long}</LI>
      *
      * <LI>Otherwise, the value's {@code toString()} is parsed as a {@link Long}</LI>
@@ -317,7 +318,7 @@ public final class PropertyResolverUtils {
      * <LI>Otherwise, throws an {@link UnsupportedOperationException}</LI>
      * </P>
      * </UL>
-     * 
+     *
      * @param  value                         The value to be converted
      * @return                               The result - {@code null} if {@code null} or an empty string
      * @throws UnsupportedOperationException If value cannot be converted to a boolean - e.g., a number.
@@ -504,7 +505,7 @@ public final class PropertyResolverUtils {
     }
 
     public static PropertyResolver toPropertyResolver(Properties props) {
-        if (GenericUtils.isEmpty(props)) {
+        if (MapEntryUtils.isEmpty(props)) {
             return PropertyResolver.EMPTY;
         }
 

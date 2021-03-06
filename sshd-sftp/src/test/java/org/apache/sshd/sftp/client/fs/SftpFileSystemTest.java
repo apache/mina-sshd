@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
@@ -271,7 +272,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 try {
                     fs.close();
                 } catch (IOException e) {
-                    err = GenericUtils.accumulateException(err, e);
+                    err = ExceptionUtils.accumulateException(err, e);
                 }
             }
 

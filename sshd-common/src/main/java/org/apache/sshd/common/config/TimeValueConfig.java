@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -159,7 +160,7 @@ public enum TimeValueConfig {
      * @throws IllegalArgumentException If negative count for a time unit
      */
     public static long durationOf(Map<TimeValueConfig, ? extends Number> spec) throws IllegalArgumentException {
-        if (GenericUtils.isEmpty(spec)) {
+        if (MapEntryUtils.isEmpty(spec)) {
             return -1L;
         }
 

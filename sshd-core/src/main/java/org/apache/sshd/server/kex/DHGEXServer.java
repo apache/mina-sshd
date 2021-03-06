@@ -280,7 +280,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         }
 
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        Factory<Random> factory = Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
+        Factory<? extends Random> factory = Objects.requireNonNull(manager.getRandomFactory(), "No random factory");
         Random random = Objects.requireNonNull(factory.create(), "No random generator");
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);

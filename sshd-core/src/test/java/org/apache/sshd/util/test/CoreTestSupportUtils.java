@@ -56,7 +56,10 @@ public final class CoreTestSupportUtils {
     }
 
     public static SshClient setupTestClient(Class<?> anchor) {
-        SshClient client = SshClient.setUpDefaultClient();
+        return setupTestClient(SshClient.setUpDefaultClient(), anchor);
+    }
+
+    public static <C extends SshClient> C setupTestClient(C client, Class<?> anchor) {
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
         client.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
@@ -77,7 +80,10 @@ public final class CoreTestSupportUtils {
     }
 
     public static SshServer setupTestServer(Class<?> anchor) {
-        SshServer sshd = SshServer.setUpDefaultServer();
+        return setupTestServer(SshServer.setUpDefaultServer(), anchor);
+    }
+
+    public static <S extends SshServer> S setupTestServer(S sshd, Class<?> anchor) {
         sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(anchor));
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);

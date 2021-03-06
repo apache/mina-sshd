@@ -40,7 +40,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -199,7 +199,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 }
                 handler.exceptionCaught(this, exc);
             } catch (Throwable e) {
-                Throwable t = GenericUtils.peelException(e);
+                Throwable t = ExceptionUtils.peelException(e);
                 debug("exceptionCaught({}) Exception handler threw {}, closing the session: {}",
                         this, t.getClass().getSimpleName(), t.getMessage(), t);
             }

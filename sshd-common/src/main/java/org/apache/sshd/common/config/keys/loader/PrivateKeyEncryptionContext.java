@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.apache.sshd.common.auth.MutablePassword;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -45,7 +46,7 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
             = Stream.of(AESPrivateKeyObfuscator.INSTANCE, DESPrivateKeyObfuscator.INSTANCE)
                     .collect(Collectors.toMap(
                             AbstractPrivateKeyObfuscator::getCipherName, Function.identity(),
-                            GenericUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
+                            MapEntryUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
     private String cipherName;
     private String cipherType;

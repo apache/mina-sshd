@@ -35,15 +35,18 @@ import org.apache.sshd.sftp.client.extensions.helpers.MD5FileExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.helpers.MD5HandleExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.helpers.SpaceAvailableExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHPosixRenameExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatHandleExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHFsyncExtensionImpl;
+import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHPosixRenameExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHStatHandleExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHStatPathExtensionImpl;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
 import org.apache.sshd.sftp.common.extensions.openssh.FstatVfsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.sftp.common.extensions.openssh.PosixRenameExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 
 /**
@@ -118,6 +121,13 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
         public OpenSSHStatPathExtension create(
                 SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHStatPathExtensionImpl(client, raw, extensions);
+        }
+    },
+    OPENSSH_POSIX_RENAME(PosixRenameExtensionParser.NAME, OpenSSHPosixRenameExtension.class) {
+        @Override // co-variant return
+        public OpenSSHPosixRenameExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+            return new OpenSSHPosixRenameExtensionImpl(client, raw, extensions);
         }
     };
 

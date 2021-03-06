@@ -84,14 +84,14 @@ public interface FactoryManager
      *
      * @return The <code>Random</code> factory, never {@code null}
      */
-    Factory<Random> getRandomFactory();
+    Factory<? extends Random> getRandomFactory();
 
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.
      *
      * @return A list of {@link ChannelFactory}-ies, never {@code null}
      */
-    List<ChannelFactory> getChannelFactories();
+    List<? extends ChannelFactory> getChannelFactories();
 
     /**
      * Retrieve the agent factory for creating <code>SshAgent</code> objects.
@@ -147,7 +147,7 @@ public interface FactoryManager
      *
      * @return a list of named <code>Service</code> factories, never {@code null}
      */
-    List<ServiceFactory> getServiceFactories();
+    List<? extends ServiceFactory> getServiceFactories();
 
     /**
      * Retrieve the list of global request handlers.

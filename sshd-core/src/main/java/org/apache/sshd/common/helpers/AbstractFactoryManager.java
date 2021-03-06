@@ -72,15 +72,15 @@ import org.apache.sshd.server.forward.ForwardingFilter;
 public abstract class AbstractFactoryManager extends AbstractKexFactoryManager implements FactoryManager {
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
-    protected Factory<Random> randomFactory;
-    protected List<ChannelFactory> channelFactories;
+    protected Factory<? extends Random> randomFactory;
+    protected List<? extends ChannelFactory> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
     protected ForwarderFactory forwarderFactory;
     protected ForwardingFilter forwardingFilter;
     protected FileSystemFactory fileSystemFactory;
-    protected List<ServiceFactory> serviceFactories;
+    protected List<? extends ServiceFactory> serviceFactories;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
@@ -135,11 +135,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public Factory<Random> getRandomFactory() {
+    public Factory<? extends Random> getRandomFactory() {
         return randomFactory;
     }
 
-    public void setRandomFactory(Factory<Random> randomFactory) {
+    public void setRandomFactory(Factory<? extends Random> randomFactory) {
         this.randomFactory = randomFactory;
     }
 
@@ -209,11 +209,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public List<ChannelFactory> getChannelFactories() {
+    public List<? extends ChannelFactory> getChannelFactories() {
         return channelFactories;
     }
 
-    public void setChannelFactories(List<ChannelFactory> channelFactories) {
+    public void setChannelFactories(List<? extends ChannelFactory> channelFactories) {
         this.channelFactories = channelFactories;
     }
 
@@ -276,11 +276,11 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     @Override
-    public List<ServiceFactory> getServiceFactories() {
+    public List<? extends ServiceFactory> getServiceFactories() {
         return serviceFactories;
     }
 
-    public void setServiceFactories(List<ServiceFactory> serviceFactories) {
+    public void setServiceFactories(List<? extends ServiceFactory> serviceFactories) {
         this.serviceFactories = serviceFactories;
     }
 

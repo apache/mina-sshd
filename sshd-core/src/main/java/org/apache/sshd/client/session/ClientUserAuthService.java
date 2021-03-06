@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -239,9 +240,14 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 log.debug("processUserAuth({}) SSH_MSG_USERAUTH_SUCCESS Succeeded with {}",
                         session, (userAuth == null) ? "<unknown>" : userAuth.getName());
             }
+
             if (userAuth != null) {
                 try {
-                    userAuth.destroy();
+                    try {
+                        userAuth.signalAuthMethodSuccess(session, service, buffer);
+                    } finally {
+                        userAuth.destroy();
+                    }
                 } finally {
                     userAuth = null;
                 }
@@ -267,7 +273,12 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 currentMethod = 0;
                 if (userAuth != null) {
                     try {
-                        userAuth.destroy();
+                        try {
+                            userAuth.signalAuthMethodFailure(
+                                    session, service, partial, Collections.unmodifiableList(serverMethods), buffer);
+                        } finally {
+                            userAuth.destroy();
+                        }
                     } finally {
                         userAuth = null;
                     }

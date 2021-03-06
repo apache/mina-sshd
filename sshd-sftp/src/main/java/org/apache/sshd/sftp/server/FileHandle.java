@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -187,7 +188,7 @@ public class FileHandle extends Handle {
     }
 
     public static Collection<FileAttribute<?>> toFileAttributes(Map<String, ?> attrs) {
-        if (GenericUtils.isEmpty(attrs)) {
+        if (MapEntryUtils.isEmpty(attrs)) {
             return Collections.emptyList();
         }
 

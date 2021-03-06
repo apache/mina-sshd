@@ -71,6 +71,7 @@ import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -565,7 +566,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testSftpFileSystemAccessor() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);
@@ -654,7 +655,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     @SuppressWarnings({ "checkstyle:anoninnerlength", "checkstyle:methodlength" })
     public void testClient() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);
@@ -750,7 +751,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             @Override
             public void readEntries(
                     ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
-                int numEntries = GenericUtils.size(entries);
+                int numEntries = MapEntryUtils.size(entries);
                 entriesCount.addAndGet(numEntries);
 
                 if (log.isDebugEnabled()) {
@@ -1270,7 +1271,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test // see SSHD-621
     public void testServerDoesNotSupportSftp() throws Exception {
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         sshd.setSubsystemFactories(null);
@@ -1386,7 +1387,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
-        List<SubsystemFactory> factories = sshd.getSubsystemFactories();
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
         SubsystemFactory f = factories.get(0);

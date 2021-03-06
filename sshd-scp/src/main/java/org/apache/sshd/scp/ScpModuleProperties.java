@@ -47,17 +47,45 @@ public final class ScpModuleProperties {
             = Property.duration("scp-exec-channel-exit-status-timeout", Duration.ofSeconds(5));
 
     /**
+     * Used to indicate the {@link Charset} (or its name) for decoding incoming commands/responses sent by the peer
+     * (either client or server).
+     */
+    public static final Property<Charset> SCP_INCOMING_ENCODING
+            = Property.charset("scp-incoming-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
+     * Used to indicate the {@link Charset} (or its name) for encoding outgoing commands/responses sent to the peer
+     * (either client or server).
+     */
+    public static final Property<Charset> SCP_OUTGOING_ENCODING
+            = Property.charset("scp-outgoing-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
      * Whether to synchronize written file data with underlying file-system
      */
     public static final Property<Boolean> PROP_AUTO_SYNC_FILE_ON_WRITE
             = Property.bool("scp-auto-sync-on-write", true);
 
     /**
-     * Used to indicate the {@link Charset} (or its name) for encoding referenced files/folders names - extracted from
-     * the client channel session when 1st initialized.
+     * Used to indicate the {@link Charset} (or its name) for encoding returned textual responses from the
+     * {@code ScpShell} - extracted from the channel session when shell initialized.
      */
-    public static final Property<Charset> NAME_ENCODING_CHARSET
+    public static final Property<Charset> SHELL_NAME_ENCODING_CHARSET
             = Property.charset("scp-shell-name-encoding-charset", StandardCharsets.UTF_8);
+
+    /**
+     * Used to indicate the {@link Charset} (or its name) for handling environment values in {@code ScpShell} -
+     * extracted from the channel session when shell initialized.
+     */
+    public static final Property<Charset> SHELL_ENVVARS_ENCODING_CHARSET
+            = Property.charset("scp-shell-envvars-encoding-charset", StandardCharsets.US_ASCII);
+
+    /**
+     * Used to indicate the {@link Charset} (or its name) for decoding incoming commands to be processed by the
+     * {@code ScpShell} - extracted from the channel session when shell initialized.
+     */
+    public static final Property<Charset> SHELL_NAME_DECODING_CHARSET
+            = Property.charset("scp-shell-name-decoding-charset", StandardCharsets.UTF_8);
 
     private ScpModuleProperties() {
         throw new UnsupportedOperationException("No instance");

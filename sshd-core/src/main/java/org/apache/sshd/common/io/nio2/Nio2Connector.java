@@ -31,7 +31,7 @@ import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -69,7 +69,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     address);
             socket.connect(address, null, completionHandler);
         } catch (Throwable exc) {
-            Throwable t = GenericUtils.peelException(exc);
+            Throwable t = ExceptionUtils.peelException(exc);
             debug("connect({}) failed ({}) to schedule connection: {}",
                     address, t.getClass().getSimpleName(), t.getMessage(), t);
 
@@ -161,7 +161,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     session.startReading();
                 }
             } catch (Throwable exc) {
-                Throwable t = GenericUtils.peelException(exc);
+                Throwable t = ExceptionUtils.peelException(exc);
                 boolean debugEnabled = log.isDebugEnabled();
                 if (listener != null) {
                     try {

@@ -65,6 +65,7 @@ import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator.TimeoutStatus;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -774,7 +775,7 @@ public class ServerTest extends BaseTestSupport {
         assertNotNull("No environment set", cmdEnv);
 
         Map<String, String> vars = cmdEnv.getEnv();
-        assertTrue("Mismatched vars count", GenericUtils.size(vars) >= GenericUtils.size(expected));
+        assertTrue("Mismatched vars count", MapEntryUtils.size(vars) >= MapEntryUtils.size(expected));
         expected.forEach((key, expValue) -> {
             String actValue = vars.get(key);
             assertEquals("Mismatched value for " + key, expValue, actValue);

@@ -28,6 +28,7 @@ import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -53,7 +54,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
-        this(name, client, raw, GenericUtils.isNotEmpty(extensions) && extensions.containsKey(name));
+        this(name, client, raw, MapEntryUtils.isNotEmpty(extensions) && extensions.containsKey(name));
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, boolean supported) {

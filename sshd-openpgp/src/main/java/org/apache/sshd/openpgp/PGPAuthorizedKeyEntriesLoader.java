@@ -36,6 +36,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.bouncycastle.openpgp.PGPException;
 
 /**
@@ -82,7 +83,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
             SessionContext session, Collection<? extends PublicKeyEntry> entries, PublicKeyEntryResolver fallbackResolver)
             throws IOException, GeneralSecurityException, PGPException {
         Map<String, ? extends Collection<PublicKeyEntry>> typesMap = KeyTypeIndicator.groupByKeyType(entries);
-        if (GenericUtils.isEmpty(typesMap)) {
+        if (MapEntryUtils.isEmpty(typesMap)) {
             return Collections.emptyList();
         }
 

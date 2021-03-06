@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.FixMethodOrder;
@@ -63,7 +64,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
         PublicKey pubKey = Mockito.mock(PublicKey.class);
         PrivateKey prvKey = Mockito.mock(PrivateKey.class);
         String[] testKeys = { getCurrentTestName(), getClass().getSimpleName() };
-        Map<String, KeyPair> pairsMap = GenericUtils.toSortedMap(
+        Map<String, KeyPair> pairsMap = MapEntryUtils.toSortedMap(
                 Arrays.asList(testKeys),
                 Function.identity(),
                 k -> new KeyPair(pubKey, prvKey),

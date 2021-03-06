@@ -52,7 +52,7 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -215,10 +215,12 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         }
 
         if (streaming == Streaming.Async) {
+            int channelId = getId();
             out = new BufferedIoOutputStream(
-                    "tcpip channel", new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                        @SuppressWarnings("synthetic-access")
+                    "aysnc-tcpip-channel@" + channelId, channelId,
+                    new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
                         @Override
+                        @SuppressWarnings("synthetic-access")
                         protected CloseFuture doCloseGracefully() {
                             try {
                                 sendEof();
@@ -227,7 +229,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
                             }
                             return super.doCloseGracefully();
                         }
-                    });
+                    }, this);
         } else {
             this.out = new SimpleIoOutputStream(
                     new ChannelOutputStream(
@@ -303,12 +305,12 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
                 return;
             }
 
-            Throwable problem = GenericUtils.peelException(future.getException());
+            Throwable problem = ExceptionUtils.peelException(future.getException());
             if (problem != null) {
                 handleChannelOpenFailure(f, problem);
             }
         } catch (RuntimeException t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             signalChannelOpenFailure(e);
             try {
                 f.setException(e);
@@ -326,7 +328,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
             signalChannelOpenSuccess();
             f.setOpened();
         } catch (Throwable t) {
-            Throwable e = GenericUtils.peelException(t);
+            Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getSimpleName();
             signalChannelOpenFailure(e);
             f.setException(e);

@@ -26,8 +26,8 @@ import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHandler;
-import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.functors.Int2IntFunction;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
