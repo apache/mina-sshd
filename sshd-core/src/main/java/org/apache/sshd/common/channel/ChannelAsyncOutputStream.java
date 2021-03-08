@@ -18,11 +18,6 @@
  */
 package org.apache.sshd.common.channel;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
 import org.apache.sshd.common.future.CloseFuture;
@@ -34,15 +29,32 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
     private final Channel channelInstance;
     private final ChannelStreamWriter packetWriter;
     private final byte cmd;
     private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
     private final Object packetWriteId;
+    private boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize;
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
+        this(channel, cmd, false);
+    }
+
+    /**
+     * @param sendChunkIfRemoteWindowIsSmallerThanPacketSize Determines the chunking behvaiour, if the remote window size
+     *                                                       is smaller than the packet size. Can be use to establish
+     *                                                       compatibility with certain clients, that wait until the window
+     *                                                       size is 0 before adjusting it (see SSHD-1123). Default is false;
+     */
+    public ChannelAsyncOutputStream(Channel channel, byte cmd, boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
+        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
         this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.cmd = cmd;
         this.packetWriteId = channel.toString() + "[" + SshConstants.getCommandMessageName(cmd) + "]";
@@ -114,7 +126,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     length = packetSize;
                 } else {
                     // Window size is even smaller than packet size. Determine how to handle this.
-                    if (isSendChunkIfRemoteWindowIsSmallerThanPacketSize()) {
+                    if (sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
                         length = remoteWindowSize;
                     } else {
                         // do not chunk when the window is smaller than the packet size
@@ -189,15 +201,6 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         }
     }
 
-    /**
-     * Determines the chunking behvaiour, if the remote window size is smaller than the packet size. Chance for
-     * specialized implementations to vary the behaviour depending on the sftp client version, to establish
-     * compatibility with certain clients, that wait until the window size is 0 before adjusting it (see SSHD-1123)
-     */
-    protected boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
-        return false;
-    }
-
     protected void onWritten(IoWriteFutureImpl future, int total, long length, IoWriteFuture f) {
         if (f.isWritten()) {
             if (total > length) {
@@ -244,4 +247,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     public String toString() {
         return getClass().getSimpleName() + "[" + getChannel() + "] cmd=" + SshConstants.getCommandMessageName(cmd & 0xFF);
     }
+
+    public boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
+        return sendChunkIfRemoteWindowIsSmallerThanPacketSize;
+    }
+
+    public void setSendChunkIfRemoteWindowIsSmallerThanPacketSize(boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
+        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
+    }
+
 }

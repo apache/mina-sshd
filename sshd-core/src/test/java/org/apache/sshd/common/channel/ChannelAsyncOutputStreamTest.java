@@ -99,25 +99,14 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     }
 
     @Test
-    public void testNoChunkingSentIfRemoteWindowSmallerThanPacketSize() throws IOException {
+    public void testNoChunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
         ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
         checkChangeOfRemoteWindowSizeOnBufferWrite(channelAsyncOutputStream, 30000, 32000, 50000, 30000);
     }
 
-    /**
-     * Tests that the chunking behaviour can be modified depending on the client connected to the server to address
-     * compatibility issues
-     */
-    @Test
-    public void testClientSpecificChunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
-        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0) {
-
-            @Override
-            protected boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
-                return CLIENT_WITH_COMPATIBILITY_ISSUE.equals(getChannel().getSession().getClientVersion());
-            }
-        };
-
+     @Test
+    public void testChunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
+        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0, true);
         checkChangeOfRemoteWindowSizeOnBufferWrite(channelAsyncOutputStream, 30000, 32000, 50000, 0);
     }
 
