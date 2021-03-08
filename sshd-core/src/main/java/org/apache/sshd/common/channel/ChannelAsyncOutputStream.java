@@ -113,15 +113,21 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     // send the first chunk as we have enough space in the window
                     length = packetSize;
                 } else {
-                    // do not chunk when the window is smaller than the packet size
-                    length = 0;
-                    // do a defensive copy in case the user reuses the buffer
-                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
-                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                    pendingWrite.set(f);
-                    if (log.isTraceEnabled()) {
-                        log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
-                                this, resume, remoteWindowSize);
+                    // Window size is even smaller than packet size. Determine how to handle this.
+                    if (isSendChunkIfRemoteWindowIsSmallerThanPacketSize()) {
+                        length = remoteWindowSize;
+                    } else {
+                        // do not chunk when the window is smaller than the packet size
+                        length = 0;
+                        // do a defensive copy in case the user reuses the buffer
+                        IoWriteFutureImpl f
+                                = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                        f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                        pendingWrite.set(f);
+                        if (log.isTraceEnabled()) {
+                            log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
+                                    this, resume, remoteWindowSize);
+                        }
                     }
                 }
             } else if (total > packetSize) {
@@ -181,6 +187,15 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
             future.setValue(Boolean.TRUE);
         }
+    }
+
+    /**
+     * Determines the chunking behvaiour, if the remote window size is smaller than the packet size. Chance for
+     * specialized implementations to vary the behaviour depending on the sftp client version, to establish
+     * compatibility with certain clients, that wait until the window size is 0 before adjusting it (see SSHD-1123)
+     */
+    protected boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
+        return false;
     }
 
     protected void onWritten(IoWriteFutureImpl future, int total, long length, IoWriteFuture f) {
