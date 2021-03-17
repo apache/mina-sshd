@@ -1421,7 +1421,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Import-Package>org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))"</Import-Package>
+                                <Import-Package>org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))",*</Import-Package>
                                 <Export-Package>*;-noimport:=true</Export-Package>
                             </instructions>
                             <noWarningProjectTypes>pom</noWarningProjectTypes>
