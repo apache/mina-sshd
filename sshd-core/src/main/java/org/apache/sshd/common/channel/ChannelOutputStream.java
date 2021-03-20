@@ -42,12 +42,12 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
+    protected final Logger log;
 
     private final AbstractChannel channelInstance;
     private final ChannelStreamWriter packetWriter;
     private final Window remoteWindow;
     private final Duration maxWaitTimeout;
-    private final Logger log;
     private final byte cmd;
     private final boolean eofOnClose;
     private final byte[] b = new byte[1];
@@ -79,8 +79,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");
         Objects.requireNonNull(maxWaitTimeout, "No maxWaitTimeout");
-        ValidateUtils.checkTrue(GenericUtils.isPositive(maxWaitTimeout), "Non-positive max. wait time: %s",
-                maxWaitTimeout.toString());
+        ValidateUtils.checkTrue(GenericUtils.isPositive(maxWaitTimeout), "Non-positive max. wait time: %s", maxWaitTimeout);
         this.maxWaitTimeout = maxWaitTimeout;
         this.log = Objects.requireNonNull(log, "No logger");
         this.cmd = cmd;
@@ -93,16 +92,25 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         return channelInstance;
     }
 
+    /**
+     * @return Either {@link SshConstants#SSH_MSG_CHANNEL_DATA SSH_MSG_CHANNEL_DATA} or
+     *         {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output
+     *         stream type
+     */
+    public byte getCommandType() {
+        return cmd;
+    }
+
     public boolean isEofOnClose() {
         return eofOnClose;
     }
 
-    public void setNoDelay(boolean noDelay) {
-        this.noDelay = noDelay;
-    }
-
     public boolean isNoDelay() {
         return noDelay;
+    }
+
+    public void setNoDelay(boolean noDelay) {
+        this.noDelay = noDelay;
     }
 
     @Override
@@ -185,7 +193,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     @Override
     public synchronized void flush() throws IOException {
-        AbstractChannel channel = getChannel();
+        Channel channel = getChannel();
         if (!isOpen()) {
             throw new SshChannelClosedException(
                     channel.getId(),

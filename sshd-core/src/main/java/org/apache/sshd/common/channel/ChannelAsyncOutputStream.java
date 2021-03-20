@@ -42,16 +42,30 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     private final Object packetWriteId;
     private boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize;
 
+    /**
+     * @param channel The {@link Channel} through which the stream is communicating
+     * @param cmd     Either {@link SshConstants#SSH_MSG_CHANNEL_DATA SSH_MSG_CHANNEL_DATA} or
+     *                {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the
+     *                output stream type
+     */
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
         this(channel, cmd, false);
     }
 
     /**
+     * @param channel                                        The {@link Channel} through which the stream is
+     *                                                       communicating
+     * @param cmd                                            Either {@link SshConstants#SSH_MSG_CHANNEL_DATA
+     *                                                       SSH_MSG_CHANNEL_DATA} or
+     *                                                       {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA
+     *                                                       SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output stream
+     *                                                       type
      * @param sendChunkIfRemoteWindowIsSmallerThanPacketSize Determines the chunking behaviour, if the remote window
      *                                                       size is smaller than the packet size. Can be use to
      *                                                       establish compatibility with certain clients, that wait
-     *                                                       until the window size is 0 before adjusting it (see
-     *                                                       SSHD-1123). Default is false;
+     *                                                       until the window size is 0 before adjusting it.
+     * @see                                                  <A HREF=
+     *                                                       "https://issues.apache.org/jira/browse/SSHD-1123">SSHD-1123</A>
      */
     public ChannelAsyncOutputStream(Channel channel, byte cmd, boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
@@ -64,6 +78,15 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     @Override
     public Channel getChannel() {
         return channelInstance;
+    }
+
+    /**
+     * @return Either {@link SshConstants#SSH_MSG_CHANNEL_DATA SSH_MSG_CHANNEL_DATA} or
+     *         {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output
+     *         stream type
+     */
+    public byte getCommandType() {
+        return cmd;
     }
 
     public void onWindowExpanded() throws IOException {
@@ -256,5 +279,4 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     public void setSendChunkIfRemoteWindowIsSmallerThanPacketSize(boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
     }
-
 }

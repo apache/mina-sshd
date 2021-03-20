@@ -222,6 +222,24 @@ public final class CoreModuleProperties {
     public static final Property<Boolean> REQUEST_SUBSYSTEM_REPLY
             = Property.bool("channel-subsystem-want-reply", true);
 
+    /**
+     * If should chunk data sent via {@code ChannelAsyncOutputStream} when reported remote STDOUT stream window size is
+     * less than its packet size
+     *
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-1123">SSHD-1123</A>
+     */
+    public static final Property<Boolean> ASYNC_SERVER_STDOUT_CHUNK_BELOW_WINDOW_SIZE
+            = Property.bool("server-async-stdout-chunk-below-window-size", false);
+
+    /**
+     * If should chunk data sent via {@code ChannelAsyncOutputStream} when reported remote STDERR stream window size is
+     * less than its packet size
+     *
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-1123">SSHD-1123</A>
+     */
+    public static final Property<Boolean> ASYNC_SERVER_STDERR_CHUNK_BELOW_WINDOW_SIZE
+            = Property.bool("server-async-stderr-chunk-below-window-size", false);
+
     public static final Property<Integer> PROP_DHGEX_CLIENT_MIN_KEY
             = Property.integer("dhgex-client-min");
 
