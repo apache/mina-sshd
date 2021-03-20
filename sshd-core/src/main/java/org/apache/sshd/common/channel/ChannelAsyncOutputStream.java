@@ -40,9 +40,22 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     private final byte cmd;
     private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
     private final Object packetWriteId;
+    private boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize;
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
+        this(channel, cmd, false);
+    }
+
+    /**
+     * @param sendChunkIfRemoteWindowIsSmallerThanPacketSize Determines the chunking behaviour, if the remote window
+     *                                                       size is smaller than the packet size. Can be use to
+     *                                                       establish compatibility with certain clients, that wait
+     *                                                       until the window size is 0 before adjusting it (see
+     *                                                       SSHD-1123). Default is false;
+     */
+    public ChannelAsyncOutputStream(Channel channel, byte cmd, boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
+        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
         this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.cmd = cmd;
         this.packetWriteId = channel.toString() + "[" + SshConstants.getCommandMessageName(cmd) + "]";
@@ -113,15 +126,21 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     // send the first chunk as we have enough space in the window
                     length = packetSize;
                 } else {
-                    // do not chunk when the window is smaller than the packet size
-                    length = 0;
-                    // do a defensive copy in case the user reuses the buffer
-                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
-                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                    pendingWrite.set(f);
-                    if (log.isTraceEnabled()) {
-                        log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
-                                this, resume, remoteWindowSize);
+                    // Window size is even smaller than packet size. Determine how to handle this.
+                    if (isSendChunkIfRemoteWindowIsSmallerThanPacketSize()) {
+                        length = remoteWindowSize;
+                    } else {
+                        // do not chunk when the window is smaller than the packet size
+                        length = 0L;
+                        // do a defensive copy in case the user reuses the buffer
+                        IoWriteFutureImpl f
+                                = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                        f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+                        pendingWrite.set(f);
+                        if (log.isTraceEnabled()) {
+                            log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
+                                    this, resume, remoteWindowSize);
+                        }
                     }
                 }
             } else if (total > packetSize) {
@@ -147,7 +166,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 }
             }
 
-            if (length > 0) {
+            if (length > 0L) {
                 if (resume) {
                     if (log.isDebugEnabled()) {
                         log.debug("Resuming {} write due to more space ({}) available in the remote window", this, length);
@@ -229,4 +248,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     public String toString() {
         return getClass().getSimpleName() + "[" + getChannel() + "] cmd=" + SshConstants.getCommandMessageName(cmd & 0xFF);
     }
+
+    public boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
+        return sendChunkIfRemoteWindowIsSmallerThanPacketSize;
+    }
+
+    public void setSendChunkIfRemoteWindowIsSmallerThanPacketSize(boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
+        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
+    }
+
 }

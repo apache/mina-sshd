@@ -720,8 +720,12 @@ public class ChannelSession extends AbstractServerChannel {
         }
         // If the shell wants to use non-blocking io
         if (command instanceof AsyncCommandStreamsAware) {
-            asyncOut = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
-            asyncErr = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
+            asyncOut = new ChannelAsyncOutputStream(
+                    this, SshConstants.SSH_MSG_CHANNEL_DATA,
+                    isSendChunkIfRemoteWindowIsSmallerThanPacketSize());
+            asyncErr = new ChannelAsyncOutputStream(
+                    this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA,
+                    isSendChunkIfRemoteWindowIsSmallerThanPacketSize());
             ((AsyncCommandStreamsAware) command).setIoOutputStream(asyncOut);
             ((AsyncCommandStreamsAware) command).setIoErrorStream(asyncErr);
         } else {
@@ -913,5 +917,16 @@ public class ChannelSession extends AbstractServerChannel {
         } else {
             commandExitFuture.setClosed();
         }
+    }
+
+    /**
+     * Chance for specializations to vary chunking behaviour depending on the SFTP client version.
+     *
+     * @return {@code true} if chunk data sent via {@link ChannelAsyncOutputStream} when reported remote window size is
+     *         less than its packet size
+     * @see    ChannelAsyncOutputStream#ChannelAsyncOutputStream(Channel, byte, boolean)
+     */
+    protected boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
+        return false;
     }
 }
