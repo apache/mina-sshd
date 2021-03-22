@@ -42,6 +42,8 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
@@ -72,14 +74,21 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             = DefaultConfigFileHostEntryResolver.INSTANCE;
     public static final ClientIdentityLoader DEFAULT_CLIENT_IDENTITY_LOADER = ClientIdentityLoader.DEFAULT;
     public static final FilePasswordProvider DEFAULT_FILE_PASSWORD_PROVIDER = FilePasswordProvider.EMPTY;
+    public static final KexExtensionHandler DEFAULT_KEX_EXTENSION_HANDLER = DefaultClientKexExtensionHandler.INSTANCE;
 
     protected ServerKeyVerifier serverKeyVerifier;
     protected HostConfigEntryResolver hostConfigEntryResolver;
     protected ClientIdentityLoader clientIdentityLoader;
     protected FilePasswordProvider filePasswordProvider;
+    protected KexExtensionHandler kexExtensionHandler;
 
     public ClientBuilder() {
         super();
+    }
+
+    public ClientBuilder kexExtensionHandler(KexExtensionHandler kexExtensionHandler) {
+        this.kexExtensionHandler = kexExtensionHandler;
+        return me();
     }
 
     public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
@@ -142,6 +151,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             filePasswordProvider = DEFAULT_FILE_PASSWORD_PROVIDER;
         }
 
+        if (kexExtensionHandler == null) {
+            kexExtensionHandler = DEFAULT_KEX_EXTENSION_HANDLER;
+        }
+
         if (factory == null) {
             factory = SshClient.DEFAULT_SSH_CLIENT_FACTORY;
         }
@@ -156,6 +169,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         client.setHostConfigEntryResolver(hostConfigEntryResolver);
         client.setClientIdentityLoader(clientIdentityLoader);
         client.setFilePasswordProvider(filePasswordProvider);
+        client.setKexExtensionHandler(kexExtensionHandler);
         return client;
     }
 
