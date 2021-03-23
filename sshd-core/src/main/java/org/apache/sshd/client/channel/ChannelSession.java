@@ -94,7 +94,7 @@ public class ChannelSession extends AbstractClientChannel {
                 CloseableExecutorService service = getExecutorService();
                 if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor(
-                            "ClientInputStreamPump[" + this + "]");
+                            "ClientInputStreamPump[" + Math.abs(System.nanoTime() & 0xFFFF) + "]");
                 } else {
                     pumperService = ThreadUtils.noClose(service);
                 }

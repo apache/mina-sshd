@@ -68,7 +68,8 @@ public abstract class AbstractCommandSupport
             String poolName = GenericUtils.isEmpty(command)
                     ? getClass().getSimpleName()
                     : command.replace(' ', '_').replace('/', ':');
-            this.executorService = ThreadUtils.newSingleThreadExecutor(poolName);
+            this.executorService = ThreadUtils.newSingleThreadExecutor(
+                    poolName + "-" + Math.abs(System.nanoTime() & 0xFFFF));
         } else {
             this.executorService = executorService;
         }

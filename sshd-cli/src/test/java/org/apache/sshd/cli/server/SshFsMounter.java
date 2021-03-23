@@ -162,7 +162,8 @@ public final class SshFsMounter extends SshServerCliSupport {
 
         @Override
         public void start(ChannelSession channel, Environment env) throws IOException {
-            executor = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
+            executor = ThreadUtils.newSingleThreadExecutor(
+                    getClass().getSimpleName() + "-" + Math.abs(System.nanoTime() & 0xFFFF));
             future = executor.submit(this);
         }
 

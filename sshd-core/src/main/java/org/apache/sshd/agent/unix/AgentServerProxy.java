@@ -83,7 +83,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             }
 
             pipeService = (executor == null)
-                    ? ThreadUtils.newSingleThreadExecutor("sshd-AgentServerProxy-PIPE-" + authSocket)
+                    ? ThreadUtils.newSingleThreadExecutor("AgentServerProxy-PIPE-" + authSocket)
                     : ThreadUtils.noClose(executor);
             piper = pipeService.submit(() -> {
                 try {
