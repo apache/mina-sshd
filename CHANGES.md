@@ -30,6 +30,7 @@
 * [SSHD-1111](https://issues.apache.org/jira/browse/SSHD-1111) Fixed SshClientCliSupport compression option detection
 * [SSHD-1125](https://issues.apache.org/jira/browse/SSHD-1125) Added option to require immediate close of channel in command `ExitCallback` invocation
 * [SSHD-1127](https://issues.apache.org/jira/browse/SSHD-1127) Consolidated `SftpSubsystem` support implementations into `SftpSubsystemConfigurator`
+* [SSHD-1148](https://issues.apache.org/jira/browse/SSHD-1148) Generate a unique thread name for each `SftpSubsystem` instance
 
 ## Behavioral changes and enhancements
 

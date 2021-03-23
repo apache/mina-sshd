@@ -88,7 +88,6 @@ public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
         implements Command, Runnable, FileSystemAware, ExecutorServiceCarrier,
         AsyncCommand, ChannelDataReceiver {
-
     protected static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
     protected final AtomicBoolean closed = new AtomicBoolean(false);
@@ -122,7 +121,9 @@ public class SftpSubsystem
 
         CloseableExecutorService executorService = configurator.getExecutorService();
         if (executorService == null) {
-            this.executorService = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
+            // See SSHD-1148 - use different thread name for concurrently running instances
+            this.executorService = ThreadUtils.newSingleThreadExecutor(
+                    getClass().getSimpleName() + "-" + Math.abs(System.nanoTime() & 0xFFFF));
         } else {
             this.executorService = executorService;
         }
