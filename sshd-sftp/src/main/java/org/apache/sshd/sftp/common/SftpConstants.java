@@ -250,6 +250,7 @@ public final class SftpConstants {
     public static final String EXT_TEXT_SEEK = "text-seek";
     public static final String EXT_VERSION_SELECT = "version-select";
     public static final String EXT_COPY_FILE = "copy-file";
+    public static final String EXT_FILENAME_CHARSET = "filename-charset";
 
     public static final String EXT_MD5_HASH = "md5-hash";
     public static final String EXT_MD5_HASH_HANDLE = "md5-hash-handle";
