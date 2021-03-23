@@ -50,6 +50,7 @@
 * [SSHD-1127](https://issues.apache.org/jira/browse/SSHD-1127) Added capability to register a custom receiver for SFTP STDERR channel raw or stream data
 * [SSHD-1132](https://issues.apache.org/jira/browse/SSHD-1132) Added SFTP client-side support for 'filename-charset' extension
 * [SSHD-1132](https://issues.apache.org/jira/browse/SSHD-1132) Added SFTP client-side support for 'filename-translation-control' extension
+* [SSHD-1132](https://issues.apache.org/jira/browse/SSHD-1132) Added SFTP servder-side support for non-UTF8 encoding of returned file names
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for parsing incoming commands to the `ScpShell`
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for returning environment variables related data from the `ScpShell`
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for handling the SCP protocol textual commands and responses

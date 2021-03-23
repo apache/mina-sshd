@@ -1134,30 +1134,38 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected void doReadLink(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        String l;
+        Map.Entry<Path, String> link;
         try {
             if (log.isDebugEnabled()) {
                 log.debug("doReadLink({})[id={}] SSH_FXP_READLINK path={}",
                         getServerSession(), id, path);
             }
-            l = doReadLink(id, path);
+            link = doReadLink(id, path);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READLINK, path);
             return;
         }
 
-        sendLink(prepareReply(buffer), id, l);
+        sendLink(prepareReply(buffer), id, link.getKey(), link.getValue());
     }
 
-    protected String doReadLink(int id, String path) throws IOException {
+    /**
+     *
+     * @param  id          Request identifier
+     * @param  path        Referenced path
+     * @return             A &quot;pair&quot; containing the local link {@link Path} and its referenced symbolic link
+     * @throws IOException If failed to resolve the requested data
+     */
+    protected SimpleImmutableEntry<Path, String> doReadLink(int id, String path) throws IOException {
         Path link = resolveFile(path);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
-        String target = accessor.resolveLinkTarget(getServerSession(), this, link);
+        ServerSession session = getServerSession();
+        String target = accessor.resolveLinkTarget(session, this, link);
         if (log.isDebugEnabled()) {
             log.debug("doReadLink({})[id={}] path={}[{}]: {}",
-                    getServerSession(), id, path, link, target);
+                    session, id, path, link, target);
         }
-        return target;
+        return new SimpleImmutableEntry<>(link, target);
     }
 
     protected void doRename(Buffer buffer, int id) throws IOException {
@@ -2071,14 +2079,16 @@ public abstract class AbstractSftpSubsystemHelper
         send(buffer);
     }
 
-    protected void sendLink(Buffer buffer, int id, String link) throws IOException {
+    protected void sendLink(Buffer buffer, int id, Path file, String link) throws IOException {
         // in case we are running on Windows
         String unixPath = link.replace(File.separatorChar, '/');
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        ServerSession session = getServerSession();
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1); // one response
-        buffer.putString(unixPath);
+        accessor.putRemoteFileName(session, this, file, buffer, unixPath, true);
 
         /*
          * As per the spec (https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#section-6.10):
@@ -2088,11 +2098,12 @@ public abstract class AbstractSftpSubsystemHelper
         Map<String, Object> attrs = Collections.emptyMap();
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
-            buffer.putString(SftpHelper.getLongName(unixPath, attrs));
+            String longName = SftpHelper.getLongName(unixPath, attrs);
+            accessor.putRemoteFileName(session, this, file, buffer, longName, false);
         }
 
         writeAttrs(buffer, attrs);
-        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), getServerSession());
+        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), session);
         send(buffer);
     }
 
@@ -2106,15 +2117,18 @@ public abstract class AbstractSftpSubsystemHelper
         String originalPath = f.toString();
         // in case we are running on Windows
         String unixPath = originalPath.replace(File.separatorChar, '/');
-        buffer.putString(unixPath);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        ServerSession session = getServerSession();
+        accessor.putRemoteFileName(session, this, f, buffer, unixPath, true);
 
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
-            buffer.putString(getLongName(f, getShortName(f), attrs));
+            String longName = getLongName(f, getShortName(f), attrs);
+            accessor.putRemoteFileName(session, this, f, buffer, longName, false);
         }
 
         writeAttrs(buffer, attrs);
-        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), getServerSession());
+        SftpHelper.indicateEndOfNamesList(buffer, getVersion(), session);
         send(buffer);
     }
 
@@ -2174,18 +2188,22 @@ public abstract class AbstractSftpSubsystemHelper
                 f, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
         entries.put(shortName, f);
 
-        buffer.putString(shortName);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        ServerSession session = getServerSession();
+        accessor.putRemoteFileName(session, this, f, buffer, shortName, true);
+
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
             String longName = getLongName(f, shortName, options);
-            buffer.putString(longName);
+            accessor.putRemoteFileName(session, this, f, buffer, longName, false);
+
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(" + getServerSession() + ") id=" + id + ")[" + index + "] - "
+                log.trace("writeDirEntry(" + session + ") id=" + id + ")[" + index + "] - "
                           + shortName + " [" + longName + "]: " + attrs);
             }
         } else {
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(" + getServerSession() + "(id=" + id + ")[" + index + "] - "
+                log.trace("writeDirEntry(" + session + "(id=" + id + ")[" + index + "] - "
                           + shortName + ": " + attrs);
             }
         }

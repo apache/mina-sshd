@@ -56,6 +56,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -114,6 +115,25 @@ public interface SftpFileSystemAccessor {
         String path = SelectorUtils.translateToLocalFileSystemPath(
                 remotePath, '/', rootDir.getFileSystem());
         return rootDir.resolve(path);
+    }
+
+    /**
+     * Invoked in order to encode the outgoing referenced file name/path
+     *
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  path        The associated file {@link Path} - <B>Note:</B> might be a symbolic link container
+     * @param  buf         The target {@link Buffer} for the encoded string
+     * @param  name        The string to send
+     * @param  shortName   If {@code true} then this is the &quot;pure&quot; file name/path, otherwise it also contains
+     *                     user/group/size/last-modified-time/etc.
+     * @throws IOException If failed to resolve the remote name
+     * @see                <A HREF="https://issues.apache.org/jira/browse/SSHD-1132">SSHD-1132</A>
+     */
+    default void putRemoteFileName(
+            ServerSession session, SftpSubsystemProxy subsystem, Path path, Buffer buf, String name, boolean shortName)
+            throws IOException {
+        buf.putString(name);
     }
 
     /**

@@ -51,6 +51,7 @@ based applications requiring SSH support.
     * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
     * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
     * `space-available` - [DRAFT 09 - section 9.3](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
+    * `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
     * Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 * [Endless tarpit](https://nullprogram.com/blog/2019/03/22/) - see [HOWTO(s)](./docs/howto.md) section.
 

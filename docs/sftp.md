@@ -426,6 +426,8 @@ try (ClientSession session = client.connect(...)) {
 
 ```
 
+On the server side, one can use the `SftpFileSystemAccessor#putRemoteFileName` to encode the returned file name/path using non-UTF8 encoding. However, this might break clients that expect UTF-8 - i.e., as long as both the client and server are somehow "aligned" on the encoding being used it will work. In this context, one might also need to consider implementing the `filename-charset` , `filename-translation-control` extensions as described in [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) on the server side - though it is not supported out-of-the-box in version 3 (which what most clients run).
+
 ### SFTP aware directory scanners
 
 The framework provides special SFTP aware directory scanners that look for files/folders matching specific patterns. The
@@ -484,13 +486,14 @@ Both client and server support several of the SFTP extensions specified in vario
 * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
 * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
 * `space-available` - [DRAFT 09 - section 9.3](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
+* `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
 
 Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL) are also supported:
 
 * `fsync@openssh.com`
 * `fstatvfs@openssh.com`
 * `hardlink@openssh.com`
-* `posix-rename@openssh.com`
+* `posix-rename@openssh.com` - only client side
 * `statvfs@openssh.com`
 * `lsetstat@openssh.com`
 
