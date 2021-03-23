@@ -24,9 +24,13 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -38,7 +42,6 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
-import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -52,6 +55,8 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
+
+    protected final Deque<String> currentAlgorithms = new LinkedList<>();
 
     protected Iterator<PublicKeyIdentity> keys;
     protected PublicKeyIdentity current;
@@ -93,27 +98,35 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     @Override
     protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
         boolean debugEnabled = log.isDebugEnabled();
-        try {
-            current = resolveAttemptedPublicKeyIdentity(session, service);
-        } catch (Error e) {
-            warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
-            throw new RuntimeSshException(e);
-        }
-
-        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        String currentAlgorithm = null;
         if (current == null) {
-            if (debugEnabled) {
-                log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
-            }
-
-            if (reporter != null) {
-                reporter.signalAuthenticationExhausted(session, service);
-            }
-
-            return false;
+            // Just to be safe. (Paranoia)
+            currentAlgorithms.clear();
+        } else if (!currentAlgorithms.isEmpty()) {
+            currentAlgorithm = currentAlgorithms.poll();
         }
+        PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
+        if (currentAlgorithm == null) {
+            try {
+                current = resolveAttemptedPublicKeyIdentity(session, service);
+            } catch (Error e) {
+                warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
+                        session, service, e.getClass().getSimpleName(), e.getMessage(), e);
+                throw new RuntimeSshException(e);
+            }
 
+            if (current == null) {
+                if (debugEnabled) {
+                    log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
+                }
+
+                if (reporter != null) {
+                    reporter.signalAuthenticationExhausted(session, service);
+                }
+
+                return false;
+            }
+        }
         if (log.isTraceEnabled()) {
             log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
         }
@@ -126,27 +139,40 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
-
         PublicKey pubKey = keyPair.getPublic();
-        String keyType = KeyUtils.getKeyType(pubKey);
-        NamedFactory<? extends Signature> factory;
-        // SSHD-1104 check if the key type is aliased
-        if (current instanceof SignatureFactoriesHolder) {
-            factory = SignatureFactory.resolveSignatureFactory(
-                    keyType, ((SignatureFactoriesHolder) current).getSignatureFactories());
-        } else {
-            factory = SignatureFactory.resolveSignatureFactory(keyType, getSignatureFactories());
+
+        if (currentAlgorithm == null) {
+            String keyType = KeyUtils.getKeyType(pubKey);
+            Set<String> aliases = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            aliases.addAll(KeyUtils.getAllEquivalentKeyTypes(keyType));
+            aliases.add(keyType);
+            List<NamedFactory<Signature>> existingFactories;
+            if (current instanceof SignatureFactoriesHolder) {
+                existingFactories = ((SignatureFactoriesHolder) current)
+                        .getSignatureFactories();
+            } else {
+                existingFactories = getSignatureFactories();
+            }
+            if (existingFactories != null) {
+                // Select the factories by name and in order
+                existingFactories.forEach(f -> {
+                    if (aliases.contains(f.getName())) {
+                        currentAlgorithms.add(f.getName());
+                    }
+                });
+            }
+            currentAlgorithm = currentAlgorithms.isEmpty() ? keyType
+                    : currentAlgorithms.poll();
         }
 
-        String algo = (factory == null) ? keyType : factory.getName();
         String name = getName();
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(pubKey));
+                    session, service, name, currentAlgorithm, KeyUtils.getFingerPrint(pubKey));
         }
 
         if (reporter != null) {
-            reporter.signalAuthenticationAttempt(session, service, keyPair, algo);
+            reporter.signalAuthenticationAttempt(session, service, keyPair, currentAlgorithm);
         }
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -154,7 +180,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putString(service);
         buffer.putString(name);
         buffer.putBoolean(false);
-        buffer.putString(algo);
+        buffer.putString(currentAlgorithm);
         buffer.putPublicKey(pubKey);
         session.writePacket(buffer);
         return true;
@@ -335,6 +361,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected void releaseKeys() throws IOException {
+        currentAlgorithms.clear();
+        current = null;
         try {
             if (keys instanceof Closeable) {
                 if (log.isTraceEnabled()) {

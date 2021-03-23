@@ -29,7 +29,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -388,5 +390,44 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
 
         assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
         assertEquals("Mismatched retries count", 4 /* 3 attempts + null */, attemptsCount.getAndSet(0));
+    }
+
+    @Test
+    public void testRsaAuthenticationOldServer() throws Exception {
+        KeyPair userkey = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 2048);
+        List<String> factoryNames = sshd.getSignatureFactoriesNames();
+        // Remove anything that has "rsa" in the name, except "ssh-rsa". Make sure "ssh-rsa" is there.
+        // We need to keep the others; the test server uses an EC host key, and sshd uses the same
+        // factory list for host key algorithms and public key signature algorithms. So we can't just
+        // set the list to only "ssh-rsa".
+        boolean sshRsaFound = false;
+        for (Iterator<String> i = factoryNames.iterator(); i.hasNext(); ) {
+            String name = i.next();
+            if (name.equalsIgnoreCase("ssh-rsa")) {
+                sshRsaFound = true;
+            } else if (name.toLowerCase(Locale.ROOT).contains("rsa")) {
+                i.remove();
+            }
+        }
+        if (!sshRsaFound) {
+            factoryNames.add("ssh-rsa");
+        }
+        sshd.setSignatureFactoriesNames(factoryNames);
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            return KeyUtils.compareKeys(userkey.getPublic(), key);
+        });
+        try (SshClient client = setupTestClient()) {
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPublicKeyIdentity(userkey);
+                assertTrue("Successful authentication expected", session.auth().verify(AUTH_TIMEOUT).isSuccess());
+            } finally {
+                client.stop();
+            }
+        }
     }
 }
