@@ -129,7 +129,8 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
                 SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHPosixRenameExtensionImpl(client, raw, extensions);
         }
-    };
+    },
+    ;
 
     public static final Set<BuiltinSftpClientExtensions> VALUES
             = Collections.unmodifiableSet(EnumSet.allOf(BuiltinSftpClientExtensions.class));
