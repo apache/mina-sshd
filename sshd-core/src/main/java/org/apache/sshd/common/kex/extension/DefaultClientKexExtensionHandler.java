@@ -55,6 +55,11 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      */
     public static final AttributeKey<Boolean> CLIENT_PROPOSAL_MADE = new AttributeKey<>();
 
+    /**
+     * Session {@link AttributeKey} storing the algorithms announced by the server as known.
+     */
+    public static final AttributeKey<Set<String>> SERVER_ALGORITHMS = new AttributeKey<>();
+
     public DefaultClientKexExtensionHandler() {
         super();
     }
@@ -110,7 +115,8 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     }
 
     /**
-     * Perform updates after a server-sig-algs extension has been received.
+     * Perform updates after a server-sig-algs extension has been received. The set of algorithms
+     * announced by the server is set as attribute {@link #SERVER_ALGORITHMS} of the {@code session}.
      *
      * @param session          the message was received for
      * @param serverAlgorithms signature algorithm names announced by the server
@@ -145,6 +151,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
                 log.debug("handleServerSignatureAlgorithms({}): PubkeyAcceptedAlgorithms after: {}", //$NON-NLS-1$
                         session, clientAlgorithms);
             }
+            session.setAttribute(SERVER_ALGORITHMS, known);
             session.setSignatureFactories(clientAlgorithms);
         }
     }

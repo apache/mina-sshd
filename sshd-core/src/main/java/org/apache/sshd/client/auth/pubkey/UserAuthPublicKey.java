@@ -38,6 +38,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -105,6 +106,23 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             chosenAlgorithm = null;
         } else if (!currentAlgorithms.isEmpty()) {
             currentAlgorithm = currentAlgorithms.poll();
+            if (chosenAlgorithm != null) {
+                Set<String> knownServerAlgorithms = session.getAttribute(
+                        DefaultClientKexExtensionHandler.SERVER_ALGORITHMS);
+                if (knownServerAlgorithms != null
+                        && knownServerAlgorithms.contains(chosenAlgorithm)) {
+                    // We've tried key 'current' with 'chosenAlgorithm', but it
+                    // failed. However, the server had told us it supported
+                    // 'chosenAlgorithm'. Thus it makes no sense to continue
+                    // with this key and other signature algorithms. Skip to the
+                    // next key, if any.
+                    if (log.isDebugEnabled()) {
+                        log.debug("sendAuthDataRequest({})[{}] server rejected publickey authentication with known signature algorithm {}",
+                                session, service, chosenAlgorithm);
+                    }
+                    currentAlgorithm = null;
+                }
+            }
         }
         PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (currentAlgorithm == null) {
