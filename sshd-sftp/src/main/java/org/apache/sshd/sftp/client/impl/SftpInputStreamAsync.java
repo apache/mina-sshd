@@ -63,9 +63,9 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
+        this.fileSize = client.stat(path).getSize();
         this.handle = client.open(path, mode);
         this.bufferSize = bufferSize;
-        this.fileSize = client.stat(handle).getSize();
     }
 
     public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize, long clientOffset, long fileSize,
