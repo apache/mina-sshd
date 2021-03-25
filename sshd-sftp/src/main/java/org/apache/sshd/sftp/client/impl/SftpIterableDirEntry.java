@@ -24,13 +24,14 @@ import java.util.Objects;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 
 /**
  * Provides an {@link Iterable} implementation of the {@link DirEntry}-ies for a remote directory
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpIterableDirEntry implements Iterable<DirEntry> {
+public class SftpIterableDirEntry implements SftpClientHolder, Iterable<DirEntry> {
     private final SftpClient client;
     private final String path;
 
@@ -43,11 +44,7 @@ public class SftpIterableDirEntry implements Iterable<DirEntry> {
         this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote path");
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote file
-     */
+    @Override
     public final SftpClient getClient() {
         return client;
     }

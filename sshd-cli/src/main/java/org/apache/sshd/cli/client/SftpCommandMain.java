@@ -73,6 +73,7 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.SftpVersionSelector.NamedVersionSelector;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatExtensionInfo;
@@ -89,7 +90,7 @@ import org.slf4j.Logger;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpCommandMain extends SshClientCliSupport implements Channel {
+public class SftpCommandMain extends SshClientCliSupport implements SftpClientHolder, Channel {
     /**
      * Command line option used to indicate a non-default port number
      */
@@ -135,6 +136,7 @@ public class SftpCommandMain extends SshClientCliSupport implements Channel {
         cwdLocal = System.getProperty("user.dir");
     }
 
+    @Override
     public final SftpClient getClient() {
         return client;
     }

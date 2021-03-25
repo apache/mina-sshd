@@ -17,15 +17,12 @@
  * under the License.
  */
 
-package org.apache.sshd.sftp.client.extensions;
-
-import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.sftp.client.SftpClientHolder;
+package org.apache.sshd.sftp.client;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SftpClientExtension extends NamedResource, OptionalFeature, SftpClientHolder {
-    // nothing extra
+@FunctionalInterface
+public interface SftpClientHolder {
+    SftpClient getClient();
 }

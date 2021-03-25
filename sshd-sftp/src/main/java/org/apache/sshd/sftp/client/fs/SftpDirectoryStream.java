@@ -25,13 +25,14 @@ import java.util.Iterator;
 import java.util.Objects;
 
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 
 /**
  * Implements a remote {@link DirectoryStream}
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpDirectoryStream implements DirectoryStream<Path> {
+public class SftpDirectoryStream implements SftpClientHolder, DirectoryStream<Path> {
     protected SftpPathIterator pathIterator;
 
     private final SftpPath path;
@@ -64,11 +65,7 @@ public class SftpDirectoryStream implements DirectoryStream<Path> {
         pathIterator = new SftpPathIterator(getRootPath(), iter, getFilter());
     }
 
-    /**
-     * Client instance used to access the remote directory
-     *
-     * @return The {@link SftpClient} instance used to access the remote directory
-     */
+    @Override
     public final SftpClient getClient() {
         return sftp;
     }

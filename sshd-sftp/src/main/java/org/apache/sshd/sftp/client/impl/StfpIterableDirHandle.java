@@ -23,8 +23,9 @@ import java.util.Objects;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClient.Handle;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 
-public class StfpIterableDirHandle implements Iterable<DirEntry> {
+public class StfpIterableDirHandle implements SftpClientHolder, Iterable<DirEntry> {
     private final SftpClient client;
     private final Handle handle;
 
@@ -37,11 +38,7 @@ public class StfpIterableDirHandle implements Iterable<DirEntry> {
         this.handle = handle;
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote file
-     */
+    @Override
     public final SftpClient getClient() {
         return client;
     }

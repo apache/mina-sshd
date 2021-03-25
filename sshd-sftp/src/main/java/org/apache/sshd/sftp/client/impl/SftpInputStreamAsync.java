@@ -36,14 +36,16 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.InputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SftpInputStreamAsync extends InputStreamWithChannel {
+public class SftpInputStreamAsync extends InputStreamWithChannel implements SftpClientHolder {
     protected final Logger log;
     protected final byte[] bb = new byte[1];
     protected final int bufferSize;
@@ -63,7 +65,8 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
-        this.fileSize = client.stat(path).getSize();
+        Attributes attrs = client.stat(path);
+        this.fileSize = attrs.getSize();
         this.handle = client.open(path, mode);
         this.bufferSize = bufferSize;
     }
@@ -79,11 +82,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         this.fileSize = fileSize;
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote file
-     */
+    @Override
     public final AbstractSftpClient getClient() {
         return clientInstance;
     }
@@ -184,6 +183,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel {
         return numXfered;
     }
 
+    @Override
     @SuppressWarnings("PMD.MissingOverride")
     public long transferTo(OutputStream out) throws IOException {
         if (!isOpen()) {

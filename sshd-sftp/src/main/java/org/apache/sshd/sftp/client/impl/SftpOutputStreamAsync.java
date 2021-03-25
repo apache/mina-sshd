@@ -32,6 +32,7 @@ import org.apache.sshd.common.util.io.OutputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpOutputStreamAsync extends OutputStreamWithChannel {
+public class SftpOutputStreamAsync extends OutputStreamWithChannel implements SftpClientHolder {
     protected final Logger log;
     protected final byte[] bb = new byte[1];
     protected final int bufferSize;
@@ -71,11 +72,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel {
         this.bufferSize = bufferSize;
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote file
-     */
+    @Override
     public final AbstractSftpClient getClient() {
         return clientInstance;
     }

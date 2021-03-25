@@ -32,6 +32,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClient.Handle;
+import org.apache.sshd.sftp.client.SftpClientHolder;
 
 /**
  * Iterates over the available directory entries for a given path. <B>Note:</B> if the iteration is carried out until no
@@ -40,7 +41,7 @@ import org.apache.sshd.sftp.client.SftpClient.Handle;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterator<DirEntry>, Channel {
+public class SftpDirEntryIterator extends AbstractLoggingBean implements SftpClientHolder, Iterator<DirEntry>, Channel {
     private final AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final SftpClient client;
@@ -81,11 +82,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements Iterato
         this.dirEntries = load(dirHandle);
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote folder
-     */
+    @Override
     public final SftpClient getClient() {
         return client;
     }

@@ -31,7 +31,7 @@ import org.apache.sshd.sftp.client.SftpClient.OpenMode;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpOutputStreamWithChannel extends OutputStreamWithChannel {
+public class SftpOutputStreamWithChannel extends OutputStreamWithChannel implements SftpClientHolder {
     private final SftpClient client;
     private final String path;
     private final byte[] bb = new byte[1];
@@ -48,11 +48,7 @@ public class SftpOutputStreamWithChannel extends OutputStreamWithChannel {
         handle = client.open(path, mode);
     }
 
-    /**
-     * The client instance
-     *
-     * @return {@link SftpClient} instance used to access the remote file
-     */
+    @Override
     public final SftpClient getClient() {
         return client;
     }
