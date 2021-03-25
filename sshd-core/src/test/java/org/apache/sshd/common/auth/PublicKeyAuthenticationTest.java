@@ -147,9 +147,9 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                         return new org.apache.sshd.server.auth.pubkey.UserAuthPublicKey() {
                             @Override
                             protected void sendPublicKeyResponse(
-                                ServerSession session, String username, String alg, PublicKey key,
-                                byte[] keyBlob, int offset, int blobLen, Buffer buffer)
-                                throws Exception {
+                                    ServerSession session, String username, String alg, PublicKey key,
+                                    byte[] keyBlob, int offset, int blobLen, Buffer buffer)
+                                    throws Exception {
                                 // send another key
                                 KeyPair otherPair = org.apache.sshd.util.test.CommonTestSupportUtils
                                         .generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
@@ -197,7 +197,8 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                                     ServerSession session, String username, String alg, PublicKey key,
                                     byte[] keyBlob, int offset, int blobLen, Buffer buffer)
                                     throws Exception {
-                                super.sendPublicKeyResponse(session, username, KeyPairProvider.SSH_DSS, key, keyBlob, offset, blobLen, buffer);
+                                super.sendPublicKeyResponse(session, username, KeyPairProvider.SSH_DSS, key, keyBlob, offset,
+                                        blobLen, buffer);
                             }
                         };
                     }
@@ -417,7 +418,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         // factory list for host key algorithms and public key signature algorithms. So we can't just
         // set the list to only "ssh-rsa".
         boolean sshRsaFound = false;
-        for (Iterator<String> i = factoryNames.iterator(); i.hasNext(); ) {
+        for (Iterator<String> i = factoryNames.iterator(); i.hasNext();) {
             String name = i.next();
             if (name.equalsIgnoreCase("ssh-rsa")) {
                 sshRsaFound = true;

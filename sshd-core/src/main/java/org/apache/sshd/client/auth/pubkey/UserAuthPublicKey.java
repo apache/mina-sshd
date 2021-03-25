@@ -162,7 +162,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     }
                 });
             }
-            currentAlgorithm = currentAlgorithms.isEmpty() ? keyType
+            currentAlgorithm = currentAlgorithms.isEmpty()
+                    ? keyType
                     : currentAlgorithms.poll();
         }
 
@@ -241,7 +242,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         if (!KeyUtils.compareKeys(rspKey, pubKey)) {
             throw new InvalidKeySpecException(
                     "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
-                                              + " mismatched " + rspKeyType + " keys: expected=" + KeyUtils.getFingerPrint(pubKey)
+                                              + " mismatched " + rspKeyType + " keys: expected="
+                                              + KeyUtils.getFingerPrint(pubKey)
                                               + ", actual=" + KeyUtils.getFingerPrint(rspKey));
         }
 
@@ -254,7 +256,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         String algo = chosenAlgorithm;
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
                 GenericUtils.length(username) + GenericUtils.length(service) + GenericUtils.length(name)
-                + GenericUtils.length(algo) + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE);
+                                                                             + GenericUtils.length(algo)
+                                                                             + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

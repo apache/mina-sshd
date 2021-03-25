@@ -112,10 +112,8 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     /**
      * Perform updates after a server-sig-algs extension has been received.
      *
-     * @param session
-     *            the message was received for
-     * @param serverAlgorithms
-     *            signature algorithm names announced by the server
+     * @param session          the message was received for
+     * @param serverAlgorithms signature algorithm names announced by the server
      */
     protected void handleServerSignatureAlgorithms(Session session, Collection<String> serverAlgorithms) {
         if (log.isDebugEnabled()) {
@@ -133,7 +131,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             List<NamedFactory<Signature>> unknown = new ArrayList<>();
             Set<String> known = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
             known.addAll(serverAlgorithms);
-            for (Iterator<NamedFactory<Signature>> i = clientAlgorithms.iterator(); i.hasNext(); ) {
+            for (Iterator<NamedFactory<Signature>> i = clientAlgorithms.iterator(); i.hasNext();) {
                 NamedFactory<Signature> algo = i.next();
                 if (!known.contains(algo.getName())) {
                     unknown.add(algo);
