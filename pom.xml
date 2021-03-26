@@ -109,7 +109,7 @@
         <logback.version>1.2.3</logback.version>        
         <spring.version>5.3.3</spring.version>
         <jgit.version>5.10.0.202012080955-r</jgit.version>
-        <junit.version>4.13.1</junit.version>
+        <junit.version>4.13.2</junit.version>
         <bytebuddy.version>1.10.20</bytebuddy.version>
 
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
