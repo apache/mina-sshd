@@ -125,7 +125,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             receiveStream(line, new ScpTargetStreamResolver() {
                 @Override
                 @SuppressWarnings("synthetic-access") // see
-                                                     // https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
+                                                               // https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
                 public OutputStream resolveTargetStream(
                         Session session, String name, long length,
                         Set<PosixFilePermission> perms, OpenOption... options)
@@ -144,7 +144,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
                 @Override
                 @SuppressWarnings("synthetic-access") // see
-                                                     // https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
+                                                               // https://bugs.eclipse.org/bugs/show_bug.cgi?id=537593
                 public void postProcessReceivedData(
                         String name, boolean preserve, Set<PosixFilePermission> perms,
                         ScpTimestampCommandDetails time)
