@@ -124,13 +124,9 @@ Same logic as the STDERR incoming data applies to the outgoing error I/O streams
 
 ### Symbolic links handling
 
-Whenever the server needs to execute a command that may behave differently if applied to a symbolic link instead of its target
-it consults the `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` method. By default, this method simply consults
-the value of the `sftp-auto-follow-links` configuration property (default=*true*).
+Whenever the server needs to execute a command that may behave differently if applied to a symbolic link instead of its target it consults the `AbstractSftpSubsystemHelper#resolvePathResolutionFollowLinks` method. By default, this method simply consultsthe value of the `sftp-auto-follow-links` configuration property (default=*true*).
 
-**Note:** the property is consulted only for cases where there is no clear indication in the standard how to behave for the
-specific command. E.g., the `lsetstat@openssh.com` command specifically specifies that symbolic links should not be followed,
-so the implementation does not consult the aforementioned property.
+**Note:** the property is consulted only for cases where there is no clear indication in the standard how to behave for the specific command. E.g., the `lsetstat@openssh.com` command specifically specifies that symbolic links should not be followed, so the implementation does not consult the aforementioned property. However, the final decision what `LinkOption`(s) to use is left to the `SftpFileSystemAccessor#resolveFileAccessLinkOptions` method (which by default does not interfere in the decision).
 
 ## Client-side SFTP
 

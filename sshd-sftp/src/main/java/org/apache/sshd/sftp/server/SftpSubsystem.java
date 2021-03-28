@@ -109,8 +109,9 @@ public class SftpSubsystem
     protected Path defaultDir = fileSystem.getPath("").toAbsolutePath().normalize();
     protected int version;
 
-    protected ServerSession serverSession;
     protected CloseableExecutorService executorService;
+
+    private final ServerSession serverSession;
 
     /**
      * @param channel      The {@link ChannelSession} through which the command was received
@@ -128,7 +129,8 @@ public class SftpSubsystem
             this.executorService = executorService;
         }
 
-        initializeSessionRelatedMember(channel);
+        serverSession = Objects.requireNonNull(channel.getServerSession(), "No session associated with the channel");
+        initializeSessionRelatedMember(serverSession, channel);
 
         ChannelDataReceiver errorDataChannelReceiver
                 = resolveErrorDataChannelReceiver(channel, configurator.getErrorChannelDataReceiver());
@@ -178,10 +180,8 @@ public class SftpSubsystem
         return executorService;
     }
 
-    protected void initializeSessionRelatedMember(ChannelSession channel) {
-        serverSession = Objects.requireNonNull(channel.getServerSession(), "No session associated with the channel");
-
-        FactoryManager manager = serverSession.getFactoryManager();
+    protected void initializeSessionRelatedMember(ServerSession session, ChannelSession channel) {
+        FactoryManager manager = session.getFactoryManager();
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
@@ -420,7 +420,10 @@ public class SftpSubsystem
                 throw new FileSystemLoopException(target);
             }
 
-            if (Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                    getServerSession(), this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, false);
+            if (Files.isDirectory(path, options)) {
                 throw new NotDirectoryException(path.toString());
             }
         }
@@ -443,9 +446,10 @@ public class SftpSubsystem
     protected byte[] doMD5Hash(
             int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash)
             throws Exception {
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={}",
-                    getServerSession(), targetType, target, startOffset, length,
+                    session, targetType, target, startOffset, length,
                     BufferUtils.toHex(':', quickCheckHash));
         }
 
@@ -468,7 +472,11 @@ public class SftpSubsystem
             }
         } else {
             path = resolveFile(target);
-            if (Files.isDirectory(path, IoUtils.getLinkOptions(true))) {
+
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                    session, this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, true);
+            if (Files.isDirectory(path, options)) {
                 throw new NotDirectoryException(path.toString());
             }
         }
@@ -698,7 +706,7 @@ public class SftpSubsystem
                 reply.putInt(0);
 
                 int maxDataSize = SftpModuleProperties.MAX_READDIR_DATA_SIZE.getRequired(session);
-                int count = doReadDir(id, handle, dh, reply, maxDataSize, IoUtils.getLinkOptions(false));
+                int count = doReadDir(id, handle, dh, reply, maxDataSize, false);
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     dh.markDone();
@@ -768,19 +776,24 @@ public class SftpSubsystem
         Path path = fileHandle.getFile();
         boolean followLinks = resolvePathResolutionFollowLinks(
                 SftpConstants.SSH_FXP_FSETSTAT, "", path);
-        doSetAttributes(fileHandle.getFile(), attrs, followLinks);
+        doSetAttributes(SftpConstants.SSH_FXP_FSETSTAT, "", path, attrs, followLinks);
     }
 
     @Override
     protected Map<String, Object> doFStat(int id, String handle, int flags) throws IOException {
         Handle h = handles.get(handle);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doFStat({})[id={}] SSH_FXP_FSTAT (handle={}[{}], flags=0x{})",
-                    getServerSession(), id, handle, h, Integer.toHexString(flags));
+                    session, id, handle, h, Integer.toHexString(flags));
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
-        return resolveFileAttributes(fileHandle.getFile(), flags, IoUtils.getLinkOptions(true));
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        Path file = fileHandle.getFile();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, file, SftpConstants.SSH_FXP_FSTAT, "", true);
+        return resolveFileAttributes(file, flags, options);
     }
 
     @Override

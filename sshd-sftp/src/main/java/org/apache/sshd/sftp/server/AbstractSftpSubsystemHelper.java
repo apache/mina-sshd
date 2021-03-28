@@ -617,16 +617,20 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected Map<String, Object> doLStat(int id, String path, int flags) throws IOException {
         Path p = resolveFile(path);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doLStat({})[id={}] SSH_FXP_LSTAT (path={}[{}], flags=0x{})",
-                    getServerSession(), id, path, p, Integer.toHexString(flags));
+                    session, id, path, p, Integer.toHexString(flags));
         }
 
         /*
          * SSH_FXP_STAT and SSH_FXP_LSTAT only differ in that SSH_FXP_STAT follows symbolic links on the server, whereas
          * SSH_FXP_LSTAT does not.
          */
-        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, p, SftpConstants.SSH_FXP_LSTAT, "", false);
+        return resolveFileAttributes(p, flags, options);
     }
 
     protected void doSetStat(
@@ -645,21 +649,19 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doSetStat(
-            int id, String path, int cmd, String extension, Map<String, ?> attrs, Boolean followLinks /*
-                                                                                                       * null =
-                                                                                                       * auto-resolve
-                                                                                                       */)
+            int id, String path, int cmd, String extension, Map<String, ?> attrs, Boolean followLinks)
             throws IOException {
         if (log.isDebugEnabled()) {
+            ServerSession session = getServerSession();
             log.debug("doSetStat({})[id={}, cmd={}, extension={}]  (path={}, attrs={}, followLinks={})",
-                    getServerSession(), id, cmd, extension, path, attrs, followLinks);
+                    session, id, cmd, extension, path, attrs, followLinks);
         }
 
         Path p = resolveFile(path);
         if (followLinks == null) {
             followLinks = resolvePathResolutionFollowLinks(cmd, extension, p);
         }
-        doSetAttributes(p, attrs, followLinks);
+        doSetAttributes(cmd, extension, p, attrs, followLinks);
     }
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
@@ -1348,9 +1350,10 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected Map<String, Object> doStat(int id, String path, int flags) throws IOException {
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doStat({})[id={}] SSH_FXP_STAT (path={}, flags=0x{})",
-                    getServerSession(), id, path, Integer.toHexString(flags));
+                    session, id, path, Integer.toHexString(flags));
         }
 
         /*
@@ -1358,7 +1361,10 @@ public abstract class AbstractSftpSubsystemHelper
          * SSH_FXP_LSTAT does not.
          */
         Path p = resolveFile(path);
-        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(true));
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, p, SftpConstants.SSH_FXP_STAT, "", true);
+        return resolveFileAttributes(p, flags, options);
     }
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
@@ -1513,7 +1519,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         try {
-            doRemoveDirectory(id, path, IoUtils.getLinkOptions(false));
+            doRemoveDirectory(id, path, false);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
                     SftpConstants.SSH_FXP_RMDIR, path);
@@ -1523,14 +1529,16 @@ public abstract class AbstractSftpSubsystemHelper
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doRemoveDirectory(
-            int id, String path, LinkOption... options)
-            throws IOException {
+    protected void doRemoveDirectory(int id, String path, boolean followLinks) throws IOException {
         Path p = resolveFile(path);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doRemoveDirectory({})[id={}] SSH_FXP_RMDIR (path={})[{}]",
-                    getServerSession(), id, path, p);
+            log.debug("doRemoveDirectory({})[id={}] SSH_FXP_RMDIR (path={})[{}]", session, id, path, p);
         }
+
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, p, SftpConstants.SSH_FXP_RMDIR, "", followLinks);
         if (Files.isDirectory(p, options)) {
             doRemove(id, p, true);
         } else {
@@ -1566,7 +1574,7 @@ public abstract class AbstractSftpSubsystemHelper
         String path = buffer.getString();
         Map<String, ?> attrs = readAttrs(buffer);
         try {
-            doMakeDirectory(id, path, attrs, IoUtils.getLinkOptions(false));
+            doMakeDirectory(id, path, attrs, false);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
                     SftpConstants.SSH_FXP_MKDIR, path, attrs);
@@ -1577,7 +1585,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doMakeDirectory(
-            int id, String path, Map<String, ?> attrs, LinkOption... options)
+            int id, String path, Map<String, ?> attrs, boolean followLinks)
             throws IOException {
         Path p = resolveFile(path);
         ServerSession session = getServerSession();
@@ -1586,6 +1594,9 @@ public abstract class AbstractSftpSubsystemHelper
                     session, id, path, p, attrs);
         }
 
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, p, SftpConstants.SSH_FXP_MKDIR, "", followLinks);
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
             throw new AccessDeniedException(
@@ -1604,11 +1615,9 @@ public abstract class AbstractSftpSubsystemHelper
             SftpEventListener listener = getSftpEventListenerProxy();
             listener.creating(session, p, attrs);
             try {
-                SftpFileSystemAccessor accessor = getFileSystemAccessor();
                 accessor.createDirectory(session, this, p);
-                boolean followLinks = resolvePathResolutionFollowLinks(
-                        SftpConstants.SSH_FXP_MKDIR, "", p);
-                doSetAttributes(p, attrs, followLinks);
+                followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", p);
+                doSetAttributes(SftpConstants.SSH_FXP_MKDIR, "", p, attrs, followLinks);
             } catch (IOException | RuntimeException | Error e) {
                 listener.created(session, p, attrs, e);
                 throw e;
@@ -1623,7 +1632,7 @@ public abstract class AbstractSftpSubsystemHelper
             /*
              * If 'filename' is a symbolic link, the link is removed, not the file it points to.
              */
-            doRemove(id, path, IoUtils.getLinkOptions(false));
+            doRemoveFile(id, path, false);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_REMOVE, path);
             return;
@@ -1632,13 +1641,16 @@ public abstract class AbstractSftpSubsystemHelper
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doRemove(int id, String path, LinkOption... options) throws IOException {
+    protected void doRemoveFile(int id, String path, boolean followLinks) throws IOException {
         Path p = resolveFile(path);
+        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doRemove({})[id={}] SSH_FXP_REMOVE (path={}[{}])",
-                    getServerSession(), id, path, p);
+            log.debug("doRemoveFile({})[id={}] SSH_FXP_REMOVE (path={}[{}])", session, id, path, p);
         }
 
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, p, SftpConstants.SSH_FXP_REMOVE, "", followLinks);
         Boolean status = IoUtils.checkFileExists(p, options);
         if (status == null) {
             throw signalRemovalPreConditionFailure(id, path, p,
@@ -2138,13 +2150,17 @@ public abstract class AbstractSftpSubsystemHelper
      * @param  dir         The {@link DirectoryHandle}
      * @param  buffer      The {@link Buffer} to write the results
      * @param  maxSize     Max. buffer size
-     * @param  options     The {@link LinkOption}-s to use when querying the directory contents
+     * @param  followLinks Whether to follow symbolic links when querying the directory contents
      * @return             Number of written entries
      * @throws IOException If failed to generate an entry
      */
     protected int doReadDir(
-            int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize, LinkOption... options)
+            int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize, boolean followLinks)
             throws IOException {
+        ServerSession session = getServerSession();
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                session, this, dir.getFile(), SftpConstants.SSH_FXP_READDIR, "", followLinks);
         int nb = 0;
         Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
         while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
@@ -2164,7 +2180,7 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();
-        listener.readEntries(getServerSession(), handle, dir, entries);
+        listener.readEntries(session, handle, dir, entries);
         return nb;
     }
 
@@ -2489,13 +2505,16 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doSetAttributes(
-            Path file, Map<String, ?> attributes, boolean followLinks)
+            int cmd, String extension, Path file, Map<String, ?> attributes, boolean followLinks)
             throws IOException {
         SftpEventListener listener = getSftpEventListenerProxy();
         ServerSession session = getServerSession();
         listener.modifyingAttributes(session, file, attributes);
         try {
-            setFileAttributes(file, attributes, IoUtils.getLinkOptions(followLinks));
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            LinkOption[] options = accessor.resolveFileAccessLinkOptions(
+                    session, this, file, cmd, extension, followLinks);
+            setFileAttributes(file, attributes, options);
         } catch (IOException | RuntimeException | Error e) {
             listener.modifiedAttributes(session, file, attributes, e);
             throw e;
@@ -2505,7 +2524,8 @@ public abstract class AbstractSftpSubsystemHelper
 
     protected LinkOption[] getPathResolutionLinkOption(int cmd, String extension, Path path) throws IOException {
         boolean followLinks = resolvePathResolutionFollowLinks(cmd, extension, path);
-        return IoUtils.getLinkOptions(followLinks);
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        return accessor.resolveFileAccessLinkOptions(getServerSession(), this, path, cmd, extension, followLinks);
     }
 
     protected boolean resolvePathResolutionFollowLinks(int cmd, String extension, Path path) throws IOException {

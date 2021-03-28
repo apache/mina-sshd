@@ -75,7 +75,7 @@ public class FileHandle extends Handle {
         } catch (UnsupportedOperationException e) {
             channel = accessor.openFile(
                     session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
-            subsystem.doSetAttributes(file, attrs, false);
+            subsystem.doSetAttributes(SftpConstants.SSH_FXP_OPEN, "", file, attrs, false);
         }
         this.fileChannel = channel;
 

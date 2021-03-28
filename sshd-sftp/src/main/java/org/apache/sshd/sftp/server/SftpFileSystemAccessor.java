@@ -118,6 +118,26 @@ public interface SftpFileSystemAccessor {
     }
 
     /**
+     * Invoked in order to determine the symbolic link follow options
+     *
+     * @param  session     The {@link ServerSession} through which the request was received
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  file        The referenced file
+     * @param  cmd         The SFTP command that triggered this access
+     * @param  extension   The SFTP extension that triggered this access - non-empty only for {SSH_FXP_EXTENDED} command
+     * @param  followLinks Whether to follow symbolic links
+     * @return             The {@link LinkOption}-s to use - invokes {@link IoUtils#getLinkOptions(boolean)} by default
+     * @throws IOException if failed to resolve the required options
+     * @see                <A HREF="https://issues.apache.org/jira/browse/SSHD-1137">SSHD-1137</A>
+     */
+    default LinkOption[] resolveFileAccessLinkOptions(
+            ServerSession session, SftpSubsystemProxy subsystem, Path file,
+            int cmd, String extension, boolean followLinks)
+            throws IOException {
+        return IoUtils.getLinkOptions(followLinks);
+    }
+
+    /**
      * Invoked in order to encode the outgoing referenced file name/path
      *
      * @param  session     The {@link ServerSession} through which the request was received
