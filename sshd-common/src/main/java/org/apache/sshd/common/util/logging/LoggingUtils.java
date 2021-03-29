@@ -614,7 +614,7 @@ public final class LoggingUtils {
     public static void warn(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
         if (log.isDebugEnabled() && (t != null)) {
             log.warn(message, o1, o2, o3, o4, t);
-        } else if (log.isDebugEnabled()) {
+        } else {
             log.warn(message, o1, o2, o3, o4);
         }
     }
@@ -689,7 +689,7 @@ public final class LoggingUtils {
     public static void error(Logger log, String message, Object o1, Object o2, Object o3, Object o4, Throwable t) {
         if (log.isDebugEnabled() && (t != null)) {
             log.error(message, o1, o2, o3, o4, t);
-        } else if (log.isDebugEnabled()) {
+        } else {
             log.error(message, o1, o2, o3, o4);
         }
     }
