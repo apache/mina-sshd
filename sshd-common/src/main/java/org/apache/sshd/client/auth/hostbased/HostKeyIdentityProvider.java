@@ -19,6 +19,8 @@
 
 package org.apache.sshd.client.auth.hostbased;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -27,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -35,12 +38,20 @@ import org.apache.sshd.common.util.GenericUtils;
 @FunctionalInterface
 public interface HostKeyIdentityProvider {
     /**
-     * @return The host keys as a {@link java.util.Map.Entry} of key + certificates (which can be {@code null}/empty)
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @return                          The host keys as a {@link java.util.Map.Entry} of key + certificates (which can
+     *                                  be {@code null}/empty)
+     * @throws IOException              If failed to load the keys
+     * @throws GeneralSecurityException If failed to parse the keys
      */
-    Iterable<? extends Map.Entry<KeyPair, List<X509Certificate>>> loadHostKeys();
+    Iterable<? extends Map.Entry<KeyPair, List<X509Certificate>>> loadHostKeys(SessionContext session)
+            throws IOException, GeneralSecurityException;
 
-    static Iterator<? extends Map.Entry<KeyPair, List<X509Certificate>>> iteratorOf(HostKeyIdentityProvider provider) {
-        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys());
+    static Iterator<? extends Map.Entry<KeyPair, List<X509Certificate>>> iteratorOf(
+            SessionContext session, HostKeyIdentityProvider provider)
+            throws IOException, GeneralSecurityException {
+        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadHostKeys(session));
     }
 
     static HostKeyIdentityProvider wrap(KeyPair... pairs) {
@@ -48,7 +59,7 @@ public interface HostKeyIdentityProvider {
     }
 
     static HostKeyIdentityProvider wrap(Iterable<? extends KeyPair> pairs) {
-        return () -> GenericUtils.wrapIterable(pairs,
+        return session -> GenericUtils.wrapIterable(pairs,
                 kp -> new SimpleImmutableEntry<>(kp, Collections.<X509Certificate> emptyList()));
     }
 }

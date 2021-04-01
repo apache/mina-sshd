@@ -63,7 +63,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
     @Override
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
-        keys = HostKeyIdentityProvider.iteratorOf(clientHostKeys); // in case multiple calls to the method
+        keys = HostKeyIdentityProvider.iteratorOf(session, clientHostKeys); // in case multiple calls to the method
     }
 
     @Override
