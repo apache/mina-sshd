@@ -19,6 +19,8 @@
 
 package org.apache.sshd.client.auth.password;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +46,7 @@ public class PasswordIdentityProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMultiProvider() {
+    public void testMultiProvider() throws IOException, GeneralSecurityException {
         String[][] values = {
                 { getClass().getSimpleName(), getCurrentTestName() },
                 { new Date(System.currentTimeMillis()).toString() },
@@ -61,12 +63,13 @@ public class PasswordIdentityProviderTest extends JUnitTestSupport {
             providers.add(p);
         }
 
-        PasswordIdentityProvider p = PasswordIdentityProvider.multiProvider(providers);
+        PasswordIdentityProvider p = PasswordIdentityProvider.multiProvider(null, providers);
         assertProviderContents("Multi", p, expected);
     }
 
-    private static void assertProviderContents(String message, PasswordIdentityProvider p, Iterable<String> expected) {
+    private static void assertProviderContents(String message, PasswordIdentityProvider p, Iterable<String> expected)
+            throws IOException, GeneralSecurityException {
         assertNotNull(message + ": no provider", p);
-        assertEquals(message, expected, p.loadPasswords());
+        assertEquals(message, expected, p.loadPasswords(null));
     }
 }

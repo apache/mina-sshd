@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -452,15 +453,19 @@ public interface ClientSession
      * Creates a &quot;unified&quot; {@link Iterator} of passwords out of the registered passwords and the extra
      * available ones as a single iterator of passwords
      *
-     * @param  session The {@link ClientSession} - ignored if {@code null} (i.e., empty iterator returned)
-     * @return         The wrapping iterator
-     * @see            ClientSession#getRegisteredIdentities()
-     * @see            ClientSession#getPasswordIdentityProvider()
+     * @param  session                  The {@link ClientSession} - ignored if {@code null} (i.e., empty iterator
+     *                                  returned)
+     * @return                          The wrapping iterator
+     * @throws IOException              If failed to load the passwords
+     * @throws GeneralSecurityException If some security issue with the passwords
+     * @see                             ClientSession#getRegisteredIdentities()
+     * @see                             ClientSession#getPasswordIdentityProvider()
      */
-    static Iterator<String> passwordIteratorOf(ClientSession session) {
+    static Iterator<String> passwordIteratorOf(ClientSession session)
+            throws IOException, GeneralSecurityException {
         return (session == null)
                 ? Collections.<String> emptyIterator()
                 : PasswordIdentityProvider.iteratorOf(
-                        session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
+                        session, session.getRegisteredIdentities(), session.getPasswordIdentityProvider());
     }
 }

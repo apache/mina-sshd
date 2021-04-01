@@ -330,7 +330,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         try (SshClient client = setupTestClient()) {
             List<String> passwords = Collections.singletonList(getCurrentTestName());
             AtomicInteger loadCount = new AtomicInteger(0);
-            PasswordIdentityProvider provider = () -> {
+            PasswordIdentityProvider provider = session -> {
                 loadCount.incrementAndGet();
                 outputDebugMessage("loadPasswords - count=%s", loadCount);
                 return passwords;

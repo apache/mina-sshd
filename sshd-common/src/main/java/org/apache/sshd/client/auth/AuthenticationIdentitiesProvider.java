@@ -88,7 +88,7 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
             }
 
             @Override
-            public Iterable<String> loadPasswords() {
+            public Iterable<String> loadPasswords(SessionContext session) {
                 return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, String.class);
             }
 

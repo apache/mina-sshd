@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.contrib.client.auth.password;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +51,7 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testPasswordEnumerations() {
+    public void testPasswordEnumerations() throws IOException, GeneralSecurityException {
         List<String> expected
                 = Arrays.asList(getClass().getSimpleName(), getClass().getPackage().getName(), getCurrentTestName());
         ClientSession session = Mockito.mock(ClientSession.class);
@@ -77,7 +79,7 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
         Mockito.when(session.getUserInteraction()).thenReturn(userInteraction);
 
         PasswordIdentityProvider provider = InteractivePasswordIdentityProvider.providerOf(session, prompt);
-        Iterable<String> passwords = provider.loadPasswords();
+        Iterable<String> passwords = provider.loadPasswords(session);
         int expIndex = 0;
         for (String actValue : passwords) {
             String expValue = expected.get(expIndex);
@@ -90,7 +92,7 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testInteractionAllowedConsultation() {
+    public void testInteractionAllowedConsultation() throws IOException, GeneralSecurityException {
         ClientSession session = Mockito.mock(ClientSession.class);
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
         Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.FALSE);
@@ -99,7 +101,7 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
                 .thenThrow(new UnsupportedOperationException("Unexpected call"));
         PasswordIdentityProvider provider
                 = InteractivePasswordIdentityProvider.providerOf(session, userInteraction, getCurrentTestName());
-        Iterable<String> passwords = provider.loadPasswords();
+        Iterable<String> passwords = provider.loadPasswords(session);
         for (String p : passwords) {
             fail("Unexpected password: " + p);
         }

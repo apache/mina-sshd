@@ -19,12 +19,14 @@
 
 package org.apache.sshd.client.auth.password;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -34,11 +36,12 @@ import org.apache.sshd.common.util.GenericUtils;
 public interface PasswordIdentityProvider {
 
     /**
-     * An &quot;empty&quot implementation of {@link PasswordIdentityProvider} that returns and empty group of passwords
+     * An &quot;empty&quot implementation of {@link PasswordIdentityProvider} that returns an empty group of passwords
      */
     PasswordIdentityProvider EMPTY_PASSWORDS_PROVIDER = new PasswordIdentityProvider() {
         @Override
-        public Iterable<String> loadPasswords() {
+        public Iterable<String> loadPasswords(SessionContext session)
+                throws IOException, GeneralSecurityException {
             return Collections.emptyList();
         }
 
@@ -49,37 +52,48 @@ public interface PasswordIdentityProvider {
     };
 
     /**
-     * Invokes {@link PasswordIdentityProvider#loadPasswords()} and returns the result. Ignores {@code null} providers
-     * (i.e., returns an empty iterable instance)
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @return                          The currently available passwords - ignored if {@code null}
+     * @throws IOException              If failed to load the passwords
+     * @throws GeneralSecurityException If some security issue with the passwords
      */
-    Function<PasswordIdentityProvider, Iterable<String>> LOADER
-            = p -> (p == null) ? Collections.emptyList() : p.loadPasswords();
-
-    /**
-     * @return The currently available passwords - ignored if {@code null}
-     */
-    Iterable<String> loadPasswords();
+    Iterable<String> loadPasswords(SessionContext session)
+            throws IOException, GeneralSecurityException;
 
     /**
      * Creates a &quot;unified&quot; {@link Iterator} of passwords out of 2 possible {@link PasswordIdentityProvider}
      *
-     * @param  identities The registered passwords
-     * @param  passwords  Extra available passwords
-     * @return            The wrapping iterator
-     * @see               #resolvePasswordIdentityProvider(PasswordIdentityProvider, PasswordIdentityProvider)
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @param  identities               The registered passwords
+     * @param  passwords                Extra available passwords
+     * @return                          The wrapping iterator
+     * @throws IOException              If failed to load the passwords
+     * @throws GeneralSecurityException If some security issue with the passwords
+     * @see                             #resolvePasswordIdentityProvider(SessionContext, PasswordIdentityProvider,
+     *                                  PasswordIdentityProvider)
      */
-    static Iterator<String> iteratorOf(PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
-        return iteratorOf(resolvePasswordIdentityProvider(identities, passwords));
+    static Iterator<String> iteratorOf(
+            SessionContext session, PasswordIdentityProvider identities, PasswordIdentityProvider passwords)
+            throws IOException, GeneralSecurityException {
+        return iteratorOf(session, resolvePasswordIdentityProvider(session, identities, passwords));
     }
 
     /**
      * Resolves a non-{@code null} iterator of the available passwords
      *
-     * @param  provider The {@link PasswordIdentityProvider} - ignored if {@code null} (i.e., return an empty iterator)
-     * @return          A non-{@code null} iterator - which may be empty if no provider or no passwords
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @param  provider                 The {@link PasswordIdentityProvider} - ignored if {@code null} (i.e., return an
+     *                                  empty iterator)
+     * @return                          A non-{@code null} iterator - which may be empty if no provider or no passwords
+     * @throws IOException              If failed to load the passwords
+     * @throws GeneralSecurityException If some security issue with the passwords
      */
-    static Iterator<String> iteratorOf(PasswordIdentityProvider provider) {
-        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadPasswords());
+    static Iterator<String> iteratorOf(SessionContext session, PasswordIdentityProvider provider)
+            throws IOException, GeneralSecurityException {
+        return GenericUtils.iteratorOf((provider == null) ? null : provider.loadPasswords(session));
     }
 
     /**
@@ -93,53 +107,71 @@ public interface PasswordIdentityProvider {
      * <LI>If both are the same instance then use it.</U>
      * <LI>Otherwise, returns a wrapper that groups both providers.</LI>
      * </UL>
-     * 
+     *
+     * @param  session    The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                    within a session context (e.g., offline tool).
      * @param  identities The registered passwords
      * @param  passwords  The extra available passwords
      * @return            The resolved provider
-     * @see               #multiProvider(PasswordIdentityProvider...)
+     * @see               #multiProvider(SessionContext, PasswordIdentityProvider...)
      */
     static PasswordIdentityProvider resolvePasswordIdentityProvider(
-            PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
+            SessionContext session, PasswordIdentityProvider identities, PasswordIdentityProvider passwords) {
         if ((passwords == null) || (identities == passwords)) {
             return identities;
         } else if (identities == null) {
             return passwords;
         } else {
-            return multiProvider(identities, passwords);
+            return multiProvider(session, identities, passwords);
         }
     }
 
     /**
      * Wraps a group of {@link PasswordIdentityProvider} into a single one
      *
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool).
      * @param  providers The providers - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER}
      * @return           The wrapping provider
-     * @see              #multiProvider(Collection)
+     * @see              #multiProvider(SessionContext, Collection)
      */
-    static PasswordIdentityProvider multiProvider(PasswordIdentityProvider... providers) {
-        return multiProvider(GenericUtils.asList(providers));
+    static PasswordIdentityProvider multiProvider(
+            SessionContext session, PasswordIdentityProvider... providers) {
+        return multiProvider(session, GenericUtils.asList(providers));
     }
 
     /**
      * Wraps a group of {@link PasswordIdentityProvider} into a single one
      *
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool).
      * @param  providers The providers - ignored if {@code null}/empty (i.e., returns {@link #EMPTY_PASSWORDS_PROVIDER}
      * @return           The wrapping provider
      */
-    static PasswordIdentityProvider multiProvider(Collection<? extends PasswordIdentityProvider> providers) {
-        return GenericUtils.isEmpty(providers) ? EMPTY_PASSWORDS_PROVIDER : wrapPasswords(iterableOf(providers));
+    static PasswordIdentityProvider multiProvider(
+            SessionContext session, Collection<? extends PasswordIdentityProvider> providers) {
+        return GenericUtils.isEmpty(providers) ? EMPTY_PASSWORDS_PROVIDER : wrapPasswords(iterableOf(session, providers));
     }
 
     /**
      * Wraps a group of {@link PasswordIdentityProvider} into an {@link Iterable} of their combined passwords
      *
+     * @param  session   The {@link SessionContext} for invoking this load command - may be {@code null} if not invoked
+     *                   within a session context (e.g., offline tool).
      * @param  providers The providers - ignored if {@code null}/empty (i.e., returns an empty iterable instance)
      * @return           The wrapping iterable
      */
-    static Iterable<String> iterableOf(Collection<? extends PasswordIdentityProvider> providers) {
-        Iterable<Supplier<Iterable<String>>> passwordSuppliers = GenericUtils.<PasswordIdentityProvider,
-                Supplier<Iterable<String>>> wrapIterable(providers, p -> p::loadPasswords);
+    static Iterable<String> iterableOf(
+            SessionContext session, Collection<? extends PasswordIdentityProvider> providers) {
+        Iterable<Supplier<Iterable<String>>> passwordSuppliers
+                = GenericUtils.<PasswordIdentityProvider, Supplier<Iterable<String>>> wrapIterable(
+                        providers, p -> () -> {
+                            try {
+                                return p.loadPasswords(session);
+                            } catch (IOException | GeneralSecurityException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
         return GenericUtils.multiIterableSuppliers(passwordSuppliers);
     }
 
@@ -161,6 +193,6 @@ public interface PasswordIdentityProvider {
      * @return           The provider wrapper
      */
     static PasswordIdentityProvider wrapPasswords(Iterable<String> passwords) {
-        return (passwords == null) ? EMPTY_PASSWORDS_PROVIDER : () -> passwords;
+        return (passwords == null) ? EMPTY_PASSWORDS_PROVIDER : session -> passwords;
     }
 }

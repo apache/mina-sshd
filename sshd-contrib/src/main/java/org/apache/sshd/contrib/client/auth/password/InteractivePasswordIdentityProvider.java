@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.functors.UnaryEquator;
  * Helps implement a {@link PasswordIdentityProvider} by delegating calls to
  * {@link UserInteraction#getUpdatedPassword(ClientSession, String, String)}. The way to use it would be as follows:
  * </P>
- * 
+ *
  * <pre>
  * <code>
  * try (ClientSession session = client.connect(login, host, port).await().getSession()) {
@@ -148,6 +148,6 @@ public class InteractivePasswordIdentityProvider
         Objects.requireNonNull(clientSession, "No client session provided");
         Objects.requireNonNull(userInteraction, "No user interaction instance configured");
         Iterable<String> passwords = () -> new InteractivePasswordIdentityProvider(clientSession, userInteraction, prompt);
-        return () -> passwords;
+        return s -> passwords;
     }
 }
