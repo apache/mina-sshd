@@ -274,7 +274,15 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         List<Moduli.DhGroup> groups = loadModuliGroups(session);
         List<Moduli.DhGroup> selected = selectModuliGroups(session, min, prf, max, groups);
         if (GenericUtils.isEmpty(selected)) {
-            log.warn("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found, defaulting to DHG1",
+            if (!CoreModuleProperties.ALLOW_DHG1_KEX_FALLBACK.getRequired(session)) {
+                log.error("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found - failing",
+                        this, session, prf, min, max);
+                throw new SshException(
+                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "No suitable primes found for DH group exchange");
+            }
+
+            log.warn("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found - defaulting to DHG1",
                     this, session, prf, min, max);
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }

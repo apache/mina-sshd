@@ -54,5 +54,6 @@
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for parsing incoming commands to the `ScpShell`
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for returning environment variables related data from the `ScpShell`
 * [SSHD-1133](https://issues.apache.org/jira/browse/SSHD-1133) Added capability to specify a custom charset for handling the SCP protocol textual commands and responses
+* [SSHD-1136](https://issues.apache.org/jira/browse/SSHD-1136) Use configuration property to decide whether to allow fallback to DH group exchange using SHA-1 if no suitable primes found for SHA-256
 * [SSHD-1137](https://issues.apache.org/jira/browse/SSHD-1137) Added capability to override LinkOption(s) when accessing a file/folder via SFTP
 * [SSHD-1147](https://issues.apache.org/jira/browse/SSHD-1147) SftpInputStreamAsync: get file size before SSH_FXP_OPEN

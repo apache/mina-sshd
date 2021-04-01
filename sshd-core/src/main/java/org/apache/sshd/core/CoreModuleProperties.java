@@ -131,6 +131,12 @@ public final class CoreModuleProperties {
             = Property.bool("send-immediate-kex-init", true);
 
     /**
+     * Whether allowed to fall back to DH group with SHA-1 KEX if exhausted all available primes for SHA-256
+     */
+    public static final Property<Boolean> ALLOW_DHG1_KEX_FALLBACK
+            = Property.bool("allow-dhg1-kex-fallback", false);
+
+    /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     public static final Property<Duration> HEARTBEAT_INTERVAL
