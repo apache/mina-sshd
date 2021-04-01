@@ -183,7 +183,6 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         return numXfered;
     }
 
-    @Override
     @SuppressWarnings("PMD.MissingOverride")
     public long transferTo(OutputStream out) throws IOException {
         if (!isOpen()) {
