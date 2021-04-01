@@ -19,6 +19,8 @@
 
 package org.apache.sshd.client.auth;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Comparator;
 import java.util.List;
@@ -61,9 +63,14 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
     };
 
     /**
-     * @return All the currently available identities - passwords, keys, etc...
+     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
+     *                                  if not invoked within a session context (e.g., offline tool).
+     * @return                          All the currently available identities - passwords, keys, etc...
+     * @throws IOException              If failed to load the identities
+     * @throws GeneralSecurityException If some security issue with the identities (e.g., keys)
      */
-    Iterable<?> loadIdentities();
+    Iterable<?> loadIdentities(SessionContext session)
+            throws IOException, GeneralSecurityException;
 
     static int findIdentityIndex(List<?> identities, Comparator<? super Object> comp, Object target) {
         for (int index = 0; index < identities.size(); index++) {
@@ -93,7 +100,7 @@ public interface AuthenticationIdentitiesProvider extends KeyIdentityProvider, P
             }
 
             @Override
-            public Iterable<?> loadIdentities() {
+            public Iterable<?> loadIdentities(SessionContext session) {
                 return LazyMatchingTypeIterable.lazySelectMatchingTypes(identities, Object.class);
             }
         };

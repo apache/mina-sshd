@@ -715,7 +715,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     try {
                         onConnectOperationComplete(ioSession, connectFuture, username, address, identities,
                                 useDefaultIdentities);
-                    } catch (RuntimeException e) {
+                    } catch (IOException | GeneralSecurityException | RuntimeException e) {
                         warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
                                 username, address, e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
                         connectFuture.setException(e);
@@ -734,7 +734,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void onConnectOperationComplete(
             IoSession ioSession, ConnectFuture connectFuture, String username,
-            SocketAddress address, KeyIdentityProvider identities, boolean useDefaultIdentities) {
+            SocketAddress address, KeyIdentityProvider identities, boolean useDefaultIdentities)
+            throws IOException, GeneralSecurityException {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
@@ -752,7 +753,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected void setupDefaultSessionIdentities(
-            ClientSession session, KeyIdentityProvider extraIdentities) {
+            ClientSession session, KeyIdentityProvider extraIdentities)
+            throws IOException, GeneralSecurityException {
         boolean debugEnabled = log.isDebugEnabled();
         // check if session listener intervened
         KeyIdentityProvider kpSession = session.getKeyIdentityProvider();
@@ -782,7 +784,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         AuthenticationIdentitiesProvider idsClient = getRegisteredIdentities();
         boolean traceEnabled = log.isTraceEnabled();
-        for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities());
+        for (Iterator<?> iter = GenericUtils.iteratorOf((idsClient == null) ? null : idsClient.loadIdentities(session));
              iter.hasNext();) {
             Object id = iter.next();
             if (id instanceof String) {

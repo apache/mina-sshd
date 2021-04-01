@@ -354,7 +354,7 @@ public class ScpCommandMain extends SshClientCliSupport {
                 // TODO see if there is a way to specify different password/key for target
                 // copy non-default identities from source session
                 AuthenticationIdentitiesProvider provider = srcSession.getRegisteredIdentities();
-                Iterable<?> ids = (provider == null) ? null : provider.loadIdentities();
+                Iterable<?> ids = (provider == null) ? null : provider.loadIdentities(srcSession);
                 Iterator<?> iter = (ids == null) ? null : ids.iterator();
                 while ((iter != null) && iter.hasNext()) {
                     Object v = iter.next();
