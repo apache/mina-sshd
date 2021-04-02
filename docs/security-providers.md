@@ -105,3 +105,5 @@ In any case, the values are auto-detected by the code but the user can intervene
 * The minimum must be less or equal to the maximum (enforced - if reversed then group exchange is **disabled**)
 * If a **negative** value is set in either one then group exchange is **disabled**
 * Setting a value of zero indicates a **lazy** auto-detection of the supported range the next time these values are needed.
+
+Furthermore, if all possible primes have been exhausted the code no longer falls back to DH group exchange using SHA-1 unless the `ALLOW_DHG1_KEX_FALLBACK` core module property is set.
