@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
@@ -51,9 +51,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
     private int backlog;
 
-    public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
-        super(manager, handler, group);
-        backlog = CoreModuleProperties.SOCKET_BACKLOG.getRequired(manager);
+    public Nio2Acceptor(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
+        super(propertyResolver, handler, group);
+        backlog = CoreModuleProperties.SOCKET_BACKLOG.getRequired(propertyResolver);
     }
 
     @Override
@@ -352,7 +352,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             if (log.isTraceEnabled()) {
                 log.trace("createNio2Session({}) address={}", acceptor, address);
             }
-            return new Nio2Session(acceptor, getFactoryManager(), handler, channel, address);
+            return new Nio2Session(acceptor, propertyResolver, handler, channel, address);
         }
 
         @Override

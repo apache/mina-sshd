@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -63,7 +63,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
     private final SocketAddress acceptanceAddress;
-    private final FactoryManager manager;
+    private final PropertyResolver propertyResolver;
     private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<>();
     private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
     private final AtomicLong readCyclesCounter = new AtomicLong();
@@ -75,11 +75,12 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private volatile Runnable readRunnable;
 
     public Nio2Session(
-                       Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket,
+                       Nio2Service service, PropertyResolver propertyResolver, IoHandler handler,
+                       AsynchronousSocketChannel socket,
                        SocketAddress acceptanceAddress)
                                                         throws IOException {
         this.service = Objects.requireNonNull(service, "No service instance");
-        this.manager = Objects.requireNonNull(manager, "No factory manager");
+        this.propertyResolver = Objects.requireNonNull(propertyResolver, "No property resolver");
         this.ioHandler = Objects.requireNonNull(handler, "No IoHandler");
         this.socketChannel = Objects.requireNonNull(socket, "No socket channel");
         this.localAddress = socket.getLocalAddress();
@@ -301,7 +302,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     public void startReading() {
-        startReading(CoreModuleProperties.NIO2_READ_BUFFER_SIZE.getRequired(manager));
+        startReading(CoreModuleProperties.NIO2_READ_BUFFER_SIZE.getRequired(propertyResolver));
     }
 
     public void startReading(int bufSize) {
@@ -423,7 +424,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         }
 
         AsynchronousSocketChannel socket = getSocket();
-        Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(manager);
+        Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(propertyResolver);
         readCyclesCounter.incrementAndGet();
         lastReadCycleStart.set(System.nanoTime());
         socket.read(buffer, readTimeout.toMillis(), TimeUnit.MILLISECONDS, null, completion);
@@ -459,7 +460,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     protected void doWriteCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
         AsynchronousSocketChannel socket = getSocket();
-        Duration writeTimeout = CoreModuleProperties.NIO2_MIN_WRITE_TIMEOUT.getRequired(manager);
+        Duration writeTimeout = CoreModuleProperties.NIO2_MIN_WRITE_TIMEOUT.getRequired(propertyResolver);
         writeCyclesCounter.incrementAndGet();
         lastWriteCycleStart.set(System.nanoTime());
         socket.write(buffer, writeTimeout.toMillis(), TimeUnit.MILLISECONDS, null, completion);

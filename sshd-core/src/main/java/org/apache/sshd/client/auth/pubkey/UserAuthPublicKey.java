@@ -117,7 +117,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     // with this key and other signature algorithms. Skip to the
                     // next key, if any.
                     if (log.isDebugEnabled()) {
-                        log.debug("sendAuthDataRequest({})[{}] server rejected publickey authentication with known signature algorithm {}",
+                        log.debug(
+                                "sendAuthDataRequest({})[{}] server rejected publickey authentication with known signature algorithm {}",
                                 session, service, chosenAlgorithm);
                     }
                     currentAlgorithm = null;

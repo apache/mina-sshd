@@ -24,7 +24,7 @@ import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
@@ -40,8 +40,8 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Connector extends Nio2Service implements IoConnector {
-    public Nio2Connector(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
-        super(manager, handler, group);
+    public Nio2Connector(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
+        super(propertyResolver, handler, group);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             }
             Nio2CompletionHandler<Void, Object> completionHandler = ValidateUtils.checkNotNull(
                     createConnectionCompletionHandler(
-                            future, socket, context, getFactoryManager(), getIoHandler()),
+                            future, socket, context, propertyResolver, getIoHandler()),
                     "No connection completion handler created for %s",
                     address);
             socket.connect(address, null, completionHandler);
@@ -109,24 +109,25 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
 
     protected Nio2CompletionHandler<Void, Object> createConnectionCompletionHandler(
             IoConnectFuture future, AsynchronousSocketChannel socket,
-            AttributeRepository context, FactoryManager manager, IoHandler handler) {
-        return new ConnectionCompletionHandler(future, socket, context, manager, handler);
+            AttributeRepository context, PropertyResolver propertyResolver, IoHandler handler) {
+        return new ConnectionCompletionHandler(future, socket, context, propertyResolver, handler);
     }
 
     protected class ConnectionCompletionHandler extends Nio2CompletionHandler<Void, Object> {
         protected final IoConnectFuture future;
         protected final AsynchronousSocketChannel socket;
         protected final AttributeRepository context;
-        protected final FactoryManager manager;
+        protected final PropertyResolver propertyResolver;
         protected final IoHandler handler;
 
         protected ConnectionCompletionHandler(
                                               IoConnectFuture future, AsynchronousSocketChannel socket,
-                                              AttributeRepository context, FactoryManager manager, IoHandler handler) {
+                                              AttributeRepository context, PropertyResolver propertyResolver,
+                                              IoHandler handler) {
             this.future = future;
             this.socket = socket;
             this.context = context;
-            this.manager = manager;
+            this.propertyResolver = propertyResolver;
             this.handler = handler;
         }
 
@@ -142,7 +143,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     listener.connectionEstablished(Nio2Connector.this, local, context, remote);
                 }
 
-                Nio2Session session = createSession(manager, handler, socket);
+                Nio2Session session = createSession(propertyResolver, handler, socket);
                 if (context != null) {
                     session.setAttribute(AttributeRepository.class, context);
                 }
@@ -200,9 +201,9 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     }
 
     protected Nio2Session createSession(
-            FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket)
+            PropertyResolver propertyResolver, IoHandler handler, AsynchronousSocketChannel socket)
             throws Throwable {
-        return new Nio2Session(this, manager, handler, socket, null);
+        return new Nio2Session(this, propertyResolver, handler, socket, null);
     }
 
     public static class DefaultIoConnectFuture extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {

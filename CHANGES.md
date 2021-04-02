@@ -23,6 +23,7 @@
 
 * [SSHD-525](https://issues.apache.org/jira/browse/SSHD-525) Added support for SFTP **client-side** ["posix-rename@openssh.com"
  extension](http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/x-cvsweb-markup) - see section 3.3
+* [SSHD-1083](https://issues.apache.org/jira/browse/SSHD-1083) Relaxed required `Nio2Connector/Acceptor` required constructor arguments
 * [SSHD-1085](https://issues.apache.org/jira/browse/SSHD-1085) Added `CliLogger` + more verbosity on `SshClientMain`
 * [SSHD-1109](https://issues.apache.org/jira/browse/SSHD-1109) Route tests JUL logging via SLF4JBridgeHandler
 * [SSHD-1109](https://issues.apache.org/jira/browse/SSHD-1109) Provide full slf4j logger capabilities to CliLogger + use it in all CLI classes

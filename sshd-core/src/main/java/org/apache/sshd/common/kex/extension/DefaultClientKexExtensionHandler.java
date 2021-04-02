@@ -115,8 +115,8 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     }
 
     /**
-     * Perform updates after a server-sig-algs extension has been received. The set of algorithms
-     * announced by the server is set as attribute {@link #SERVER_ALGORITHMS} of the {@code session}.
+     * Perform updates after a server-sig-algs extension has been received. The set of algorithms announced by the
+     * server is set as attribute {@link #SERVER_ALGORITHMS} of the {@code session}.
      *
      * @param session          the message was received for
      * @param serverAlgorithms signature algorithm names announced by the server

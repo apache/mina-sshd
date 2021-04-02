@@ -35,8 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerHolder;
 import org.apache.sshd.common.Property;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.io.IoHandler;
@@ -50,7 +48,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class Nio2Service extends AbstractInnerCloseable implements IoService, FactoryManagerHolder {
+public abstract class Nio2Service extends AbstractInnerCloseable implements IoService {
     // Note: order may be important so that's why we use a LinkedHashMap
     public static final Map<Property<?>, SimpleImmutableEntry<SocketOption<?>, Object>> CONFIGURABLE_OPTIONS;
 
@@ -68,16 +66,16 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     protected final Map<Long, IoSession> sessions;
     protected final AtomicBoolean disposing = new AtomicBoolean();
-    private final FactoryManager manager;
+    protected final PropertyResolver propertyResolver;
     private final IoHandler handler;
     private final AsynchronousChannelGroup group;
     private IoServiceEventListener eventListener;
 
-    protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
+    protected Nio2Service(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
         if (log.isTraceEnabled()) {
             log.trace("Creating {}", getClass().getSimpleName());
         }
-        this.manager = Objects.requireNonNull(manager, "No factory manager provided");
+        this.propertyResolver = Objects.requireNonNull(propertyResolver, "No property resolver provided");
         this.handler = Objects.requireNonNull(handler, "No I/O handler provided");
         this.group = Objects.requireNonNull(group, "No async. channel group provided");
         this.sessions = new ConcurrentHashMap<>();
@@ -97,11 +95,6 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
         return group;
     }
 
-    @Override
-    public FactoryManager getFactoryManager() {
-        return manager;
-    }
-
     public IoHandler getIoHandler() {
         return handler;
     }
@@ -112,7 +105,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
                 log.warn("dispose({}) already disposing", this);
             }
 
-            Duration maxWait = Closeable.getMaxCloseWaitTime(getFactoryManager());
+            Duration maxWait = Closeable.getMaxCloseWaitTime(propertyResolver);
             boolean successful = close(true).await(maxWait);
             if (!successful) {
                 throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait);
@@ -169,8 +162,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     protected <T> boolean setOption(
             NetworkChannel socket, Property<?> property, SocketOption<T> option, T defaultValue)
             throws IOException {
-        PropertyResolver manager = getFactoryManager();
-        String valStr = manager.getString(property.getName());
+        String valStr = propertyResolver.getString(property.getName());
         T val = defaultValue;
         if (!GenericUtils.isEmpty(valStr)) {
             Class<T> type = option.type();
