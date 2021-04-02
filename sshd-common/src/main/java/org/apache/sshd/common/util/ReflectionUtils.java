@@ -43,6 +43,15 @@ public final class ReflectionUtils {
         return GenericUtils.selectMatchingMembers(acceptor, clazz.getDeclaredFields());
     }
 
+    /**
+     * @deprecated The preferred method is
+     *             {@link org.apache.sshd.common.util.threads.ThreadUtils#resolveDefaultClass(Class, String)}
+     *             which checks all possible ClassLoaders.
+     * @param      cl
+     * @param      className
+     * @return
+     */
+    @Deprecated
     public static boolean isClassAvailable(ClassLoader cl, String className) {
         try {
             cl.loadClass(className);

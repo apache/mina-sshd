@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
-import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -94,8 +93,8 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
                 return supported.booleanValue();
             }
 
-            ClassLoader cl = ThreadUtils.resolveDefaultClassLoader(getClass());
-            supported = ReflectionUtils.isClassAvailable(cl, "net.i2p.crypto.eddsa.EdDSAKey");
+            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), "net.i2p.crypto.eddsa.EdDSAKey");
+            supported = clazz != null;
             supportHolder.set(supported);
         }
 
