@@ -129,7 +129,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
         // Client determines order; server says what it supports. Re-order such that supported ones are
         // at the front, in client order, followed by unsupported ones, also in client order.
         if (serverAlgorithms != null && !serverAlgorithms.isEmpty()) {
-            List<NamedFactory<Signature>> clientAlgorithms = session.getSignatureFactories();
+            List<NamedFactory<Signature>> clientAlgorithms = new ArrayList<>(session.getSignatureFactories());
             if (log.isDebugEnabled()) {
                 log.debug("handleServerSignatureAlgorithms({}): PubkeyAcceptedAlgorithms before: {}", //$NON-NLS-1$
                         session, clientAlgorithms);
