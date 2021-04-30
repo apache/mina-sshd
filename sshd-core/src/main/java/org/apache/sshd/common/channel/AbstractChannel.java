@@ -547,7 +547,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
 
         try {
-            if (!isEofSent()) {
+            if (!eofSent.getAndSet(true)) {
                 if (debugEnabled) {
                     log.debug("handleClose({}) prevent sending EOF", this);
                 }
@@ -683,7 +683,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     @Override
     protected void preClose() {
         if (!isEofSent()) {
-            log.debug("close({}) prevent sending EOF", this);
+            log.debug("close({}) no EOF sent", this);
         }
 
         try {
