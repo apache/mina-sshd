@@ -76,6 +76,21 @@ public final class ThreadUtils {
         return () -> iterateDefaultClassLoaders(anchor);
     }
 
+    public static Class<?> resolveDefaultClass(Class<?> anchor, String className) {
+        return resolveDefaultClass(resolveDefaultClassLoaders(anchor), className);
+    }
+
+    public static Class<?> resolveDefaultClass(Iterable<? extends ClassLoader> cls, String className) {
+        for (ClassLoader cl : cls) {
+            try {
+                return cl.loadClass(className);
+            } catch (Throwable ignored) {
+                // Ignore
+            }
+        }
+        return null;
+    }
+
     public static <T> T createDefaultInstance(
             Class<?> anchor, Class<? extends T> targetType, String className)
             throws ReflectiveOperationException {
