@@ -20,6 +20,7 @@
 package org.apache.sshd.sftp.client.extensions.openssh.helpers;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -41,10 +42,12 @@ import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHPosixRenameExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatHandleExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
+import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.sftp.common.extensions.openssh.FstatVfsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
@@ -68,6 +71,44 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     @Before
     public void setUp() throws Exception {
         setupServer();
+    }
+
+    @Test
+    public void testPosixRename() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
+        try (SftpClient sftp = createSingleSessionClient()) {
+            OpenSSHPosixRenameExtension rename = assertExtensionCreated(sftp, OpenSSHPosixRenameExtension.class);
+
+            Path file1 = clientFolder.resolve("file-1.txt");
+            String file1Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file1);
+            try (OutputStream os = sftp.write(file1Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
+                os.write((getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
+            }
+
+            Path file2 = clientFolder.resolve("file-2.txt");
+            String file2Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file2);
+            Path file3 = clientFolder.resolve("file-3.txt");
+            String file3Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, file3);
+            try {
+                rename.posixRename(file2Path, file3Path);
+                fail("Unxpected rename success of " + file2Path + " => " + file3Path);
+            } catch (SftpException e) {
+                assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path,
+                        SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus());
+            }
+
+            try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
+                os.write("h".getBytes(StandardCharsets.UTF_8));
+            }
+
+            rename.posixRename(file1Path, file2Path);
+        }
     }
 
     @Test

@@ -99,6 +99,7 @@ import org.apache.sshd.sftp.common.extensions.openssh.AbstractOpenSSHExtensionPa
 import org.apache.sshd.sftp.common.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.LSetStatExtensionParser;
+import org.apache.sshd.sftp.common.extensions.openssh.PosixRenameExtensionParser;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -130,7 +131,8 @@ public abstract class AbstractSftpSubsystemHelper
             Arrays.asList(
                     new OpenSSHExtension(FsyncExtensionParser.NAME, "1"),
                     new OpenSSHExtension(HardLinkExtensionParser.NAME, "1"),
-                    new OpenSSHExtension(LSetStatExtensionParser.NAME, "1")));
+                    new OpenSSHExtension(LSetStatExtensionParser.NAME, "1"),
+                    new OpenSSHExtension(PosixRenameExtensionParser.NAME, "1")));
 
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES = Collections.unmodifiableList(
             NamedResource.getNameList(DEFAULT_OPEN_SSH_EXTENSIONS));
@@ -1226,6 +1228,23 @@ public abstract class AbstractSftpSubsystemHelper
         listener.moved(session, o, n, opts, null);
     }
 
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 3.3
+    protected void doPosixRename(Buffer buffer, int id) throws IOException {
+        String oldPath = buffer.getString();
+        String newPath = buffer.getString();
+        try {
+            int flags = SftpConstants.SSH_FXP_RENAME_ATOMIC | SftpConstants.SSH_FXP_RENAME_OVERWRITE;
+            doRename(id, oldPath, newPath, flags);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(prepareReply(buffer), id, e,
+                    SftpConstants.SSH_FXP_EXTENDED, SftpConstants.SSH_FXP_RENAME,
+                    oldPath, newPath);
+            return;
+        }
+
+        sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
+    }
+
     // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-7
     protected void doCopyData(Buffer buffer, int id) throws IOException {
         String readHandle = buffer.getString();
@@ -1739,6 +1758,9 @@ public abstract class AbstractSftpSubsystemHelper
                 break;
             case LSetStatExtensionParser.NAME:
                 doSetStat(buffer, id, extension, -1, Boolean.FALSE);
+                break;
+            case PosixRenameExtensionParser.NAME:
+                doPosixRename(buffer, id);
                 break;
             default:
                 doUnsupportedExtension(buffer, id, extension);
