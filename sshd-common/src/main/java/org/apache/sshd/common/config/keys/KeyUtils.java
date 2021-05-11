@@ -80,7 +80,9 @@ import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -154,6 +156,18 @@ public final class KeyUtils {
                     .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
                     .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
                     .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
+                    .build();
+
+    private static final Map<String, String> SIGNATURE_ALGORITHM_MAP
+            = MapBuilder.<String, String> builder()
+                    .put(RSA_SHA256_CERT_TYPE_ALIAS, RSA_SHA256_KEY_TYPE_ALIAS)
+                    .put(RSA_SHA512_CERT_TYPE_ALIAS, RSA_SHA512_KEY_TYPE_ALIAS)
+                    .put(KeyPairProvider.SSH_RSA_CERT, KeyPairProvider.SSH_RSA)
+                    .put(KeyPairProvider.SSH_DSS_CERT, KeyPairProvider.SSH_DSS)
+                    .put(KeyPairProvider.SSH_ED25519_CERT, KeyPairProvider.SSH_ED25519)
+                    .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT, KeyPairProvider.ECDSA_SHA2_NISTP256)
+                    .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT, KeyPairProvider.ECDSA_SHA2_NISTP384)
+                    .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT, KeyPairProvider.ECDSA_SHA2_NISTP521)
                     .build();
 
     static {
@@ -1014,7 +1028,7 @@ public final class KeyUtils {
         } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
         } else if ((k1 instanceof OpenSshCertificate) && (k2 instanceof OpenSshCertificate)) {
-            return true; // TODO: SSHD-1161 - implement proper cert public key comparison
+            return compareOpenSSHCertificateKeys(OpenSshCertificate.class.cast(k1), OpenSshCertificate.class.cast(k2));
         } else {
             return false; // either key is null or not of same class
         }
@@ -1066,6 +1080,18 @@ public final class KeyUtils {
         } else {
             return Objects.equals(k1.getModulus(), k2.getModulus())
                     && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
+        }
+    }
+
+    public static boolean compareOpenSSHCertificateKeys(OpenSshCertificate k1, OpenSshCertificate k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if (k1 == null || k2 == null) {
+            return false; // both null is covered by Objects#equals
+        } else {
+            return Objects.equals(k1.getSerial(), k2.getSerial())
+                    && Arrays.equals(k1.getSignature(), k2.getSignature())
+                    && compareKeys(k1.getCertPubKey(), k2.getCertPubKey());
         }
     }
 
@@ -1199,13 +1225,14 @@ public final class KeyUtils {
         }
     }
 
-    public static String getCertificateSignatureAlgorithm(OpenSshCertificate cert) {
-        // TODO: SSHD-1161 - implement a proper derivation/mapping of the algorithm used during signature
-        if (cert.getCertPubKey() instanceof RSAPublicKey) {
-            return "rsa-sha2-512";
-        } else if (cert.getKeyType().contains("ed25119")) {
-            return "ssh-ed25119";
+    public static String getSignatureAlgorithm(String chosenAlgorithm, PublicKey key) {
+        // check key as we know only certificates require a mapped signature algorithm currently
+        if (key instanceof OpenSshCertificate) {
+            synchronized (SIGNATURE_ALGORITHM_MAP) {
+                return SIGNATURE_ALGORITHM_MAP.get(chosenAlgorithm);
+            }
+        } else {
+            return chosenAlgorithm;
         }
-        return "FIXME";
     }
 }

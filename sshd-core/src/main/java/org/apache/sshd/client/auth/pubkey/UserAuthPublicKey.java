@@ -331,10 +331,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
-        String signatureAlgo = algo;
-        if (key instanceof OpenSshCertificate) {
-            signatureAlgo = KeyUtils.getCertificateSignatureAlgorithm(OpenSshCertificate.class.cast(key));
-        }
+        String signatureAlgo = KeyUtils.getSignatureAlgorithm(algo, key);
 
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
