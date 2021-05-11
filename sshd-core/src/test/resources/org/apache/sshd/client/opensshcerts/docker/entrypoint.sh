@@ -10,5 +10,8 @@ fi
 ln -s ${SSH_HOST_KEY} /keys/host_key
 ln -s ${SSH_HOST_KEY}.pub /keys/host_key.pub
 
+# ensure permissions for private keys
+chmod 0600 /keys/host_key
+
 # run supervisord (which runs sshd)
 /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
