@@ -38,6 +38,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
@@ -330,15 +331,20 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
+        String signatureAlgo = algo;
+        if (key instanceof OpenSshCertificate) {
+            signatureAlgo = KeyUtils.getCertificateSignatureAlgorithm(OpenSshCertificate.class.cast(key));
+        }
+
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
+                    session, service, name, signatureAlgo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
+                    session, service, name, signatureAlgo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
         }
 
         bs.clear();
-        bs.putString(algo);
+        bs.putString(signatureAlgo);
         bs.putBytes(sig);
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
         return sig;

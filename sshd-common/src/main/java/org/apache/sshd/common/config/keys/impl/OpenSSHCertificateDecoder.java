@@ -66,9 +66,6 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
         byte[] bytes = IoUtils.toByteArray(keyData);
         ByteArrayBuffer buffer = new ByteArrayBuffer(bytes);
         OpenSshCertificate cert = OpenSSHCertPublicKeyParser.INSTANCE.getRawPublicKey(keyType, buffer);
-        if (cert.getType() != OpenSshCertificate.SSH_CERT_TYPE_HOST) {
-            throw new GeneralSecurityException("The provided certificate is not a Host certificate.");
-        }
 
         return cert;
     }

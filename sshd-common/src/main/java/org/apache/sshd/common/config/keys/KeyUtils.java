@@ -1013,6 +1013,8 @@ public final class KeyUtils {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
+        } else if ((k1 instanceof OpenSshCertificate) && (k2 instanceof OpenSshCertificate)) {
+            return true; // TODO: SSHD-1161 - implement proper cert public key comparison
         } else {
             return false; // either key is null or not of same class
         }
@@ -1195,5 +1197,15 @@ public final class KeyUtils {
                     && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
                     && SecurityUtils.compareEDDSAPPublicKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
+    }
+
+    public static String getCertificateSignatureAlgorithm(OpenSshCertificate cert) {
+        // TODO: SSHD-1161 - implement a proper derivation/mapping of the algorithm used during signature
+        if (cert.getServerHostKey() instanceof RSAPublicKey) {
+            return "rsa-sha2-512";
+        } else if (cert.getKeyType().contains("ed25119")) {
+            return "ssh-ed25119";
+        }
+        return "FIXME";
     }
 }
