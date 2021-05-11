@@ -140,7 +140,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
 
         if (serverKey instanceof OpenSshCertificate) {
             OpenSshCertificate openSshKey = (OpenSshCertificate) serverKey;
-            serverPublicHostKey = openSshKey.getServerHostKey();
+            serverPublicHostKey = openSshKey.getCertPubKey();
 
             try {
                 verifyCertificate(session, openSshKey);
@@ -149,7 +149,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     throw e;
                 } else {
                     // ignore certificate
-                    serverKey = openSshKey.getServerHostKey();
+                    serverKey = openSshKey.getCertPubKey();
                     log.info("Ignoring invalid certificate {}", openSshKey.getId(), e);
                 }
             }

@@ -1201,7 +1201,7 @@ public final class KeyUtils {
 
     public static String getCertificateSignatureAlgorithm(OpenSshCertificate cert) {
         // TODO: SSHD-1161 - implement a proper derivation/mapping of the algorithm used during signature
-        if (cert.getServerHostKey() instanceof RSAPublicKey) {
+        if (cert.getCertPubKey() instanceof RSAPublicKey) {
             return "rsa-sha2-512";
         } else if (cert.getKeyType().contains("ed25119")) {
             return "ssh-ed25119";

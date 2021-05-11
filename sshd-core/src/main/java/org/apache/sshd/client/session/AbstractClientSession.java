@@ -613,7 +613,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
             if (!verified) {
                 // fallback to actual public host key
-                serverKey = ((OpenSshCertificate) serverKey).getServerHostKey();
+                serverKey = ((OpenSshCertificate) serverKey).getCertPubKey();
             }
         }
 

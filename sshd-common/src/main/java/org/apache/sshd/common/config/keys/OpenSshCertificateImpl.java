@@ -35,7 +35,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     private String keyType;
     private byte[] nonce;
-    private PublicKey serverHostKey;
+    private PublicKey certificatePublicKey;
     private long serial;
     private int type;
     private String id;
@@ -69,8 +69,8 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public PublicKey getServerHostKey() {
-        return serverHostKey;
+    public PublicKey getCertPubKey() {
+        return certificatePublicKey;
     }
 
     @Override
@@ -161,8 +161,8 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         this.nonce = nonce;
     }
 
-    public void setServerHostKey(PublicKey serverHostKey) {
-        this.serverHostKey = serverHostKey;
+    public void setCertPubKey(PublicKey certificatePublicKey) {
+        this.certificatePublicKey = certificatePublicKey;
     }
 
     public void setSerial(long serial) {

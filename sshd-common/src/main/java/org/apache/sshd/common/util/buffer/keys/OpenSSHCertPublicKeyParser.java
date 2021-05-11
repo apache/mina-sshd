@@ -57,8 +57,8 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
         certificate.setNonce(buffer.getBytes());
 
         String rawKeyType = certificate.getRawKeyType();
-        PublicKey serverHostKey = DEFAULT.getRawPublicKey(rawKeyType, buffer);
-        certificate.setServerHostKey(serverHostKey);
+        PublicKey certificatePublicKey = DEFAULT.getRawPublicKey(rawKeyType, buffer);
+        certificate.setCertPubKey(certificatePublicKey);
 
         certificate.setSerial(buffer.getLong());
         certificate.setType(buffer.getInt());

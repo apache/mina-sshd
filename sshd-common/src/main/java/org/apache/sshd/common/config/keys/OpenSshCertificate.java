@@ -41,7 +41,7 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     String getKeyType();
 
-    PublicKey getServerHostKey();
+    PublicKey getCertPubKey();
 
     long getSerial();
 
