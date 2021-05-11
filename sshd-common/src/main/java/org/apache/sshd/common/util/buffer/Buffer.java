@@ -923,7 +923,7 @@ public abstract class Buffer implements Readable {
             OpenSshCertificate cert = (OpenSshCertificate) key;
 
             putBytes(cert.getNonce());
-            putRawPublicKeyBytes(cert.getServerHostKey());
+            putRawPublicKeyBytes(cert.getCertPubKey());
             putLong(cert.getSerial());
             putInt(cert.getType());
             putString(cert.getId());
