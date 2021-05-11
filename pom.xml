@@ -27,7 +27,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.6.1-SNAPSHOT</version>
+    <version>2.7.0</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -75,7 +75,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://github.com/apache/mina-sshd/tree/${project.scm.tag}</url>
-        <tag>master</tag>
+        <tag>sshd-2.7.0</tag>
     </scm>
 
     <properties>
@@ -745,22 +745,22 @@
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-api</artifactId>
-                            <version>>${scm.plugin.version}</version>
+                            <version>&gt;${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-gitexe</artifactId>
-                            <version>>${scm.plugin.version}</version>
+                            <version>&gt;${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-svn-commons</artifactId>
-                            <version>>${scm.plugin.version}</version>
+                            <version>&gt;${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-svnexe</artifactId>
-                            <version>>${scm.plugin.version}</version>
+                            <version>&gt;${scm.plugin.version}</version>
                         </dependency>                    
                     </dependencies>
                 </plugin>                
