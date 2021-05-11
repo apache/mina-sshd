@@ -90,7 +90,7 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
                 <type>pom</type>
-                <version>1.15.2</version>
+                <version>${testcontainers.version}</version>
                 <scope>import</scope>
             </dependency>
         </dependencies>
