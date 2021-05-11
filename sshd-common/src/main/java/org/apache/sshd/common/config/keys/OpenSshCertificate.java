@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface OpenSshCertificate extends PublicKey, PrivateKey {
+
     int SSH_CERT_TYPE_USER = 1;
     int SSH_CERT_TYPE_HOST = 2;
 

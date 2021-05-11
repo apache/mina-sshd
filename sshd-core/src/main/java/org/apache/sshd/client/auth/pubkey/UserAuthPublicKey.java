@@ -330,15 +330,17 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
+        String signatureAlgo = KeyUtils.getSignatureAlgorithm(algo, key);
+
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
+                    session, service, name, signatureAlgo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(contents));
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - generated signature={}",
-                    session, service, name, algo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
+                    session, service, name, signatureAlgo, KeyUtils.getFingerPrint(key), BufferUtils.toHex(sig));
         }
 
         bs.clear();
-        bs.putString(algo);
+        bs.putString(signatureAlgo);
         bs.putBytes(sig);
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
         return sig;
