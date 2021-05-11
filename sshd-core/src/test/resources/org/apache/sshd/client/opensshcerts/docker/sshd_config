@@ -1,0 +1,16 @@
+Port 22
+ListenAddress 0.0.0.0
+Protocol 2
+#LogLevel VERBOSE
+#LogLevel DEBUG1
+#LogLevel DEBUG2
+LogLevel DEBUG3
+HostKey /keys/host_key
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication yes
+PasswordAuthentication yes
+PubkeyAuthentication yes
+PermitRootLogin no
+AllowAgentForwarding yes
+AuthorizedKeysFile /keys/user/%u/authorized_keys
+TrustedUserCAKeys /ca.pub

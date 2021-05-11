@@ -111,6 +111,9 @@
         <jgit.version>5.11.0.202103091610-r</jgit.version>
         <junit.version>4.13.2</junit.version>
         <bytebuddy.version>1.10.22</bytebuddy.version>
+        <testcontainers.version>1.15.3</testcontainers.version>
+        <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
+        <jna.version>5.8.0</jna.version>
 
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
         <maven.archiver.version>3.5.1</maven.archiver.version>

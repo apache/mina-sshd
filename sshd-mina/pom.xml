@@ -133,6 +133,8 @@
                         <exclude>**/ConcurrentConnectionTest.java</exclude>
                         <exclude>**/AsyncAuthTest.java</exclude>
                         <exclude>**/AsyncAuthInteractiveTest.java</exclude>
+                        <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
+                        <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
