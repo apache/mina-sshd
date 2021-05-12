@@ -27,9 +27,9 @@ import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
@@ -208,7 +208,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             buffer = new ByteArrayBuffer(k_s);
             PublicKey serverKey = buffer.getRawPublicKey();
 
-            String keyAlg = KeyUtils.getKeyType(serverKey);
+            String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             if (GenericUtils.isEmpty(keyAlg)) {
                 throw new SshException(
                         "Unsupported server key type: " + serverKey.getAlgorithm()
