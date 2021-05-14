@@ -44,12 +44,14 @@ public final class ReflectionUtils {
     }
 
     /**
-     * @deprecated The preferred method is
-     *             {@link org.apache.sshd.common.util.threads.ThreadUtils#resolveDefaultClass(Class, String)}
-     *             which checks all possible ClassLoaders.
-     * @param      cl
-     * @param      className
-     * @return
+     * Checks whether a given {@link ClassLoader} can load a class.
+     *
+     * @param      cl        {@link ClassLoader} to use
+     * @param      className to check
+     * @return               {@code true} if the class loader can load the class, {@code false} otherwise
+     * @deprecated           The preferred method is
+     *                       {@link org.apache.sshd.common.util.threads.ThreadUtils#resolveDefaultClass(Class, String)}
+     *                       which checks all possible ClassLoaders.
      */
     @Deprecated
     public static boolean isClassAvailable(ClassLoader cl, String className) {
