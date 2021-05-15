@@ -898,6 +898,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             List<String> valsList = parseConfigValue(value);
 
             if (HOST_CONFIG_PROP.equalsIgnoreCase(key)) {
+                // parseConfigValue may result in entries that are empty strings if > 1 space is used between values
+                valsList = GenericUtils.filterToNotBlank(valsList);
                 if (GenericUtils.isEmpty(valsList)) {
                     throw new StreamCorruptedException("Missing host pattern(s) at line " + lineNumber + ": " + line);
                 }
