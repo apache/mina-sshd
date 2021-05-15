@@ -196,6 +196,47 @@ public final class GenericUtils {
         return !isEmpty(cs);
     }
 
+    /**
+     * <p>
+     * Checks if a CharSequence is empty (""), null or whitespace only.
+     * </p>
+     *
+     * <p>
+     * Whitespace is defined by {@link Character#isWhitespace(char)}.
+     * </p>
+     *
+     * <pre>
+     * GenericUtils.isBlank(null)      = true
+     * GenericUtils.isBlank("")        = true
+     * GenericUtils.isBlank(" ")       = true
+     * GenericUtils.isBlank("bob")     = false
+     * GenericUtils.isBlank("  bob  ") = false
+     * </pre>
+     *
+     * @param  cs the CharSequence to check, may be null
+     * @return    {@code true} if the CharSequence is null, empty or whitespace only
+     */
+    public static boolean isBlank(final CharSequence cs) {
+        int strLen = cs != null ? cs.length() : 0;
+        if (cs == null || strLen == 0) {
+            return true;
+        }
+        for (int i = 0; i < strLen; i++) {
+            if (!Character.isWhitespace(cs.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean isNotBlank(final CharSequence cs) {
+        return !isBlank(cs);
+    }
+
+    public static List<String> filterToNotBlank(final List<String> values) {
+        return values.stream().filter(GenericUtils::isNotBlank).collect(Collectors.toList());
+    }
+
     public static int indexOf(CharSequence cs, char c) {
         int len = length(cs);
         for (int pos = 0; pos < len; pos++) {

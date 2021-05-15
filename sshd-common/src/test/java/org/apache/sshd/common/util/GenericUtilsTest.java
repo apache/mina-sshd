@@ -42,6 +42,32 @@ public class GenericUtilsTest extends JUnitTestSupport {
     }
 
     @Test
+    public void testIsBlank() {
+        assertTrue(GenericUtils.isBlank(null));
+        assertTrue(GenericUtils.isBlank(""));
+        assertTrue(GenericUtils.isBlank(" "));
+        assertFalse(GenericUtils.isBlank("a"));
+        assertFalse(GenericUtils.isBlank(" a "));
+    }
+
+    @Test
+    public void testFilterToNotBlank() {
+        assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList((String) null)));
+        assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList("")));
+        assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList(" ")));
+        assertEquals(Arrays.asList("a"), GenericUtils.filterToNotBlank(Arrays.asList("a")));
+        assertEquals(Arrays.asList("a", "b"), GenericUtils.filterToNotBlank(Arrays.asList("a", "b")));
+        assertEquals(Arrays.asList("a"), GenericUtils.filterToNotBlank(Arrays.asList("a", "")));
+        assertEquals(Arrays.asList("a"), GenericUtils.filterToNotBlank(Arrays.asList("a", " ")));
+        assertEquals(Arrays.asList("a"), GenericUtils.filterToNotBlank(Arrays.asList("a", "  ")));
+        assertEquals(Arrays.asList("a"), GenericUtils.filterToNotBlank(Arrays.asList("a", null)));
+        assertEquals(Arrays.asList("a", "b"), GenericUtils.filterToNotBlank(Arrays.asList("a", null, "b")));
+        assertEquals(Arrays.asList("a", "b"), GenericUtils.filterToNotBlank(Arrays.asList("a", "", "b")));
+        assertEquals(Arrays.asList("a", "b"), GenericUtils.filterToNotBlank(Arrays.asList("a", " ", "b")));
+        assertEquals(Arrays.asList("a", "b"), GenericUtils.filterToNotBlank(Arrays.asList("a", "  ", "b")));
+    }
+
+    @Test
     public void testSplitAndJoin() {
         List<String> expected = Collections.unmodifiableList(
                 Arrays.asList(
