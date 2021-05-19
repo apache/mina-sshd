@@ -169,6 +169,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
             assertFalse(client.getSignatureFactories().contains(BuiltinSignatures.rsa_cert));
         } catch (SshException e) {
             assertEquals(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, e.getDisconnectCode());
+            assertTrue("Expected error about invalid principal, got: " + e.getMessage(),
+                    e.getMessage().contains("principal"));
             thrown = true;
         }
         boolean containsCert = GenericUtils.containsAny(client.getSignatureFactories(),
