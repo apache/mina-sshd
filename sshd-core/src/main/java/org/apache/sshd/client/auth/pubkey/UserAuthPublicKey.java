@@ -38,6 +38,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
@@ -209,8 +210,29 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected PublicKeyIdentity resolveAttemptedPublicKeyIdentity(ClientSession session, String service) throws Exception {
-        if ((keys != null) && keys.hasNext()) {
-            return keys.next();
+        if (keys != null) {
+            while (keys.hasNext()) {
+                PublicKeyIdentity nextKey = keys.next();
+                PublicKey pk = nextKey.getKeyIdentity().getPublic();
+                if (pk instanceof OpenSshCertificate) {
+                    OpenSshCertificate cert = (OpenSshCertificate) pk;
+                    if (cert.getType() != OpenSshCertificate.SSH_CERT_TYPE_USER) {
+                        log.warn(
+                                "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not a user certificate",
+                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
+                                cert.getId());
+                        continue;
+                    }
+                    if (!OpenSshCertificate.isValidNow(cert)) {
+                        log.warn(
+                                "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not valid now",
+                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
+                                cert.getId());
+                        continue;
+                    }
+                }
+                return nextKey;
+            }
         }
 
         UserInteraction ui = session.getUserInteraction();

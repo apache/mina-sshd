@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.pubkey;
 
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
@@ -89,6 +91,30 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.wpos(buffer.rpos() + len);
 
         PublicKey key = buffer.getRawPublicKey();
+
+        if (key instanceof OpenSshCertificate) {
+            OpenSshCertificate cert = (OpenSshCertificate) key;
+            try {
+                if (cert.getType() != OpenSshCertificate.SSH_CERT_TYPE_USER) {
+                    throw new CertificateException("not a user certificate");
+                }
+                if (!OpenSshCertificate.isValidNow(cert)) {
+                    throw new CertificateException("expired");
+                }
+                Collection<String> principals = cert.getPrincipals();
+                if (!GenericUtils.isEmpty(principals) && !principals.contains(username)) {
+                    throw new CertificateException("not valid for the given username");
+                }
+                // TODO: cert.getCaKey() must be either in authorized_keys, marked as a CA key
+                // and not revoked, or in TrustedUserCAKeys and then also match
+                // AuthorizedPricipalsFile, if present.
+            } catch (CertificateException e) {
+                warn("doAuth({}@{}): public key certificate (id={}) is not valid: {}", username, session, cert.getId(),
+                        e.getMessage(), e);
+                throw e;
+            }
+        }
+
         Collection<NamedFactory<Signature>> factories = ValidateUtils.checkNotNullAndNotEmpty(
                 SignatureFactoriesManager.resolveSignatureFactories(this, session),
                 "No signature factories for session=%s",

@@ -384,14 +384,22 @@ public abstract class AbstractServerSession extends AbstractSession implements S
                 if (hostKeyCertificateProvider != null) {
                     Iterable<OpenSshCertificate> certificates = hostKeyCertificateProvider.loadCertificates(this);
                     for (OpenSshCertificate certificate : certificates) {
-                        // Add the certificate alg only if the corresponding keyPair type is available
-                        String rawKeyType = certificate.getRawKeyType();
-                        if (provided.contains(rawKeyType)) {
-                            provided.add(certificate.getKeyType());
+                        // Actually the HostKeyCertificateProvider is supposed to check for
+                        // SSH_CERT_TYPE_HOST. We check again because a server may be configured to use
+                        // a third-party implementation.
+                        if (certificate.getType() == OpenSshCertificate.SSH_CERT_TYPE_HOST) {
+                            // Add the certificate alg only if the corresponding keyPair type is available
+                            String rawKeyType = certificate.getRawKeyType();
+                            if (provided.contains(rawKeyType)) {
+                                provided.add(certificate.getKeyType());
+                            } else {
+                                log.info(
+                                        "resolveAvailableSignaturesProposal({}) No private key of type={} available in provided certificate",
+                                        this, rawKeyType);
+                            }
                         } else {
-                            log.info(
-                                    "resolveAvailableSignaturesProposal({}) No private key of type={} available in provided certificate",
-                                    this, rawKeyType);
+                            log.error("resolveAvailableSignaturesProposal({}) certificate {} is not a host certificate",
+                                    this, KeyUtils.getFingerPrint(certificate));
                         }
                     }
                 }

@@ -69,7 +69,9 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
             }
 
             Collection<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            int lineNumber = 0;
             for (String line : lines) {
+                lineNumber++;
                 line = GenericUtils.replaceWhitespaceAndTrim(line);
                 if (GenericUtils.isEmpty(line) || (line.charAt(0) == '#')) {
                     continue;
@@ -86,7 +88,13 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
                 }
 
                 if (!(publicKey instanceof OpenSshCertificate)) {
-                    throw new InvalidKeyException("Got unexpected key type in " + file + ". Expected OpenSSHCertificate.");
+                    throw new InvalidKeyException(
+                            "Got unexpected key type in " + file + "; line " + lineNumber
+                                                  + ". Expected OpenSSHCertificate.");
+                }
+                if (((OpenSshCertificate) publicKey).getType() != OpenSshCertificate.SSH_CERT_TYPE_HOST) {
+                    throw new InvalidKeyException(
+                            "OpenSSHCertificate in " + file + ", line " + lineNumber + ", is not a host certificate.");
                 }
 
                 certificates.add((OpenSshCertificate) publicKey);
