@@ -23,7 +23,6 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
@@ -228,15 +227,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                                                                       + openSshKey.getType() + " for key ID=" + keyId);
         }
 
-        long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-        // valid after <= current time < valid before
-        if (!((openSshKey.getValidAfter() <= now) && (now < openSshKey.getValidBefore()))) {
+        if (!OpenSshCertificate.isValidNow(openSshKey)) {
             throw new SshException(
                     SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, CA expired "
-                                                                      + openSshKey.getValidAfterDate() + " - "
-                                                                      + openSshKey.getValidBeforeDate()
-                                                                      + " for key ID=" + keyId);
+                    "KeyExchange signature verification failed, CA expired for key ID=" + keyId);
         }
 
         /*

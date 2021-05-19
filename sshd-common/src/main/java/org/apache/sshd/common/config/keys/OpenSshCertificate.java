@@ -21,7 +21,6 @@ package org.apache.sshd.common.config.keys;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -52,19 +51,23 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     Collection<String> getPrincipals();
 
-    // Seconds after epoch
+    /**
+     * Retrieves the time in number of seconds since the {@link java.time.Instant#EPOCH} at which this certificate
+     * becomes or became valid.
+     *
+     * @return the number of seconds since the Instant.EPOCH <em>as an unsigned 64bit value</em>
+     * @see    {{@link #isValidNow(OpenSshCertificate)}
+     */
     long getValidAfter();
 
-    default Date getValidAfterDate() {
-        return getValidDate(getValidAfter());
-    }
-
-    // Seconds after epoch
+    /**
+     * Retrieves the time in number of seconds since the {@link java.time.Instant#EPOCH} at which this certificate
+     * becomes or became invalid.
+     *
+     * @return the number of seconds since the Instant.EPOCH <em>as an unsigned 64bit value</em>
+     * @see    {{@link #isValidNow(OpenSshCertificate)}
+     */
     long getValidBefore();
-
-    default Date getValidBeforeDate() {
-        return getValidDate(getValidBefore());
-    }
 
     List<String> getCriticalOptions();
 
@@ -80,7 +83,15 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     String getSignatureAlg();
 
-    static Date getValidDate(long timestamp) {
-        return (timestamp == 0L) ? null : new Date(TimeUnit.SECONDS.toMillis(timestamp));
+    /**
+     * Determines whether the given {@link OpenSshCertificate} is valid at the current local system time.
+     *
+     * @param  cert to check
+     * @return      {@code true} if the certificate is valid according to its timestamps, {@code false} otherwise
+     */
+    static boolean isValidNow(OpenSshCertificate cert) {
+        long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        return Long.compareUnsigned(cert.getValidAfter(), now) <= 0
+                && Long.compareUnsigned(now, cert.getValidBefore()) < 0;
     }
 }

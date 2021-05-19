@@ -20,7 +20,9 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -213,14 +215,22 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         this.signature = signature;
     }
 
+    private static String toDate(long timestamp) {
+        if (timestamp < 0) {
+            return "infinity";
+        }
+        Date date = new Date(TimeUnit.SECONDS.toMillis(timestamp));
+        return date.toString();
+    }
+
     @Override
     public String toString() {
         return getKeyType()
                + "[id=" + getId()
                + ", serial=" + getSerial()
                + ", type=" + getType()
-               + ", validAfter=" + getValidAfterDate()
-               + ", validBefore=" + getValidBeforeDate()
+               + ", validAfter=" + toDate(getValidAfter())
+               + ", validBefore=" + toDate(getValidBefore())
                + "]";
     }
 }
