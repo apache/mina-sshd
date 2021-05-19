@@ -97,6 +97,7 @@
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
         <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
 
+        <required.java.version>[${javac.target},)</required.java.version>
         <javac.target>${javac.source}</javac.target>
         <project.build.java.target>${javac.target}</project.build.java.target>
         <maven.compiler.target>${javac.target}</maven.compiler.target>
@@ -129,6 +130,13 @@
     </properties>
 
     <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <required.java.version>[1.8,1.9)</required.java.version>
+            </properties>
+        </profile>
+
         <profile>
             <id>ci</id>
             <properties>
@@ -1256,7 +1264,7 @@
                             <version>[${min.required.maven.version},)</version>
                         </requireMavenVersion>
                         <requireJavaVersion>
-                            <version>[${javac.target},)</version>
+                            <version>${required.java.version}</version>
                         </requireJavaVersion>
                         <requireReleaseDeps>
                             <onlyWhenRelease>true</onlyWhenRelease>
