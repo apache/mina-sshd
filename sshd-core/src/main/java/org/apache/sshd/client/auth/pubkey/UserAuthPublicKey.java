@@ -216,7 +216,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                 PublicKey pk = nextKey.getKeyIdentity().getPublic();
                 if (pk instanceof OpenSshCertificate) {
                     OpenSshCertificate cert = (OpenSshCertificate) pk;
-                    if (cert.getType() != OpenSshCertificate.SSH_CERT_TYPE_USER) {
+                    if (!OpenSshCertificate.Type.USER.equals(cert.getType())) {
                         log.warn(
                                 "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not a user certificate",
                                 session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),

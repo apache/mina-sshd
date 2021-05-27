@@ -95,7 +95,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         if (key instanceof OpenSshCertificate) {
             OpenSshCertificate cert = (OpenSshCertificate) key;
             try {
-                if (cert.getType() != OpenSshCertificate.SSH_CERT_TYPE_USER) {
+                if (!OpenSshCertificate.Type.USER.equals(cert.getType())) {
                     throw new CertificateException("not a user certificate");
                 }
                 if (!OpenSshCertificate.isValidNow(cert)) {

@@ -194,7 +194,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         String keyId = openSshKey.getId();
 
         // allow sha2 signatures for legacy reasons
-        String variant = openSshKey.getSignatureAlg();
+        String variant = openSshKey.getSignatureAlgorithm();
         if ((!GenericUtils.isEmpty(variant))
                 && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
             if (log.isDebugEnabled()) {
@@ -220,7 +220,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
 
-        if (openSshKey.getType() != OpenSshCertificate.SSH_CERT_TYPE_HOST) {
+        if (!OpenSshCertificate.Type.HOST.equals(openSshKey.getType())) {
             throw new SshException(
                     SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "KeyExchange signature verification failed, not a host key (2) "

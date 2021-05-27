@@ -30,6 +30,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -61,19 +62,21 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
         certificate.setCertPubKey(certificatePublicKey);
 
         certificate.setSerial(buffer.getLong());
-        certificate.setType(buffer.getInt());
+        certificate.setType(OpenSshCertificate.Type.fromCode(buffer.getInt()));
 
         certificate.setId(buffer.getString());
 
         Collection<String> principals = new ByteArrayBuffer(buffer.getBytes()).getStringList(false);
         certificate.setPrincipals(principals);
+
         certificate.setValidAfter(buffer.getLong());
         certificate.setValidBefore(buffer.getLong());
 
-        certificate.setCriticalOptions(buffer.getNameList());
-        certificate.setExtensions(buffer.getNameList());
+        certificate.setCriticalOptions(buffer.getCertificateOptions());
+        certificate.setExtensions(buffer.getCertificateOptions());
 
-        certificate.setReserved(buffer.getString());
+        final String reserved = GenericUtils.trimToEmpty(buffer.getString());
+        certificate.setReserved(reserved.isEmpty() ? null : reserved);
 
         try {
             certificate.setCaPubKey(buffer.getPublicKey());
@@ -86,7 +89,7 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
 
         if (buffer.rpos() != buffer.wpos()) {
             throw new InvalidKeyException(
-                    "KeyExchange signature verification failed, got more data than expected: "
+                    "Cannot read OpenSSH certificate, got more data than expected: "
                                           + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: "
                                           + certificate.getId());
         }

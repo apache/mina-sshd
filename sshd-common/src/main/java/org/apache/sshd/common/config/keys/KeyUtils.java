@@ -53,8 +53,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -147,7 +147,9 @@ public final class KeyUtils {
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
             = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP = new HashMap<>();
+    // order matters here, when, for example, SkED25519PublicKeyEntryDecoder is used, it registers the PrivateKey
+    // type as java.security.PrivateKey, and all PrivateKey types are assignable to this, so it must be consulted last
+    private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP = new LinkedHashMap<>();
 
     private static final Map<String, String> KEY_TYPE_ALIASES
             = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
@@ -170,18 +172,31 @@ public final class KeyUtils {
                     .build();
 
     static {
+
+        // order matters here, when, for example, SkED25519PublicKeyEntryDecoder is used, it registers the PrivateKey
+        // type as java.security.PrivateKey, and all PrivateKey types are assignable to this, so it must be consulted last
+
         registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
 
         if (SecurityUtils.isECCSupported()) {
             registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
-            registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
         }
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
+        }
+
+        // order matters, these must be last since they register their PrivateKey type as java.security.PrivateKey
+        // there is logical code which discovers a decoder type by instance assignability to this registered type
+
+        if (SecurityUtils.isECCSupported()) {
+            registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
+        }
+        if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SkED25519PublicKeyEntryDecoder.INSTANCE);
         }
+
     }
 
     private KeyUtils() {

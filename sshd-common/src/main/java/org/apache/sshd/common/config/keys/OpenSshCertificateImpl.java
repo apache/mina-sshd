@@ -19,7 +19,9 @@
 package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -39,13 +41,16 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     private byte[] nonce;
     private PublicKey certificatePublicKey;
     private long serial;
+    // Keep storing the raw code here to not break serialization
     private int type;
     private String id;
     private Collection<String> principals;
-    private long validAfter;
-    private long validBefore;
-    private List<String> criticalOptions;
-    private List<String> extensions;
+    // match ssh-keygen behavior where the default is the epoch
+    private long validAfter = OpenSshCertificate.MIN_EPOCH;
+    // match ssh-keygen behavior where the default would be forever
+    private long validBefore = OpenSshCertificate.INFINITY;
+    private List<CertificateOption> criticalOptions;
+    private List<CertificateOption> extensions;
     private String reserved;
     private PublicKey caPubKey;
     private byte[] message;
@@ -81,8 +86,8 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public int getType() {
-        return type;
+    public Type getType() {
+        return Type.fromCode(type);
     }
 
     @Override
@@ -92,7 +97,7 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     @Override
     public Collection<String> getPrincipals() {
-        return principals;
+        return principals == null ? Collections.emptyList() : principals;
     }
 
     @Override
@@ -106,13 +111,13 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public List<String> getCriticalOptions() {
-        return criticalOptions;
+    public List<CertificateOption> getCriticalOptions() {
+        return criticalOptions == null ? Collections.emptyList() : criticalOptions;
     }
 
     @Override
-    public List<String> getExtensions() {
-        return extensions;
+    public List<CertificateOption> getExtensions() {
+        return extensions == null ? Collections.emptyList() : extensions;
     }
 
     @Override
@@ -136,7 +141,17 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public String getSignatureAlg() {
+    public byte[] getRawSignature() {
+        if (signature == null) {
+            return null;
+        }
+        ByteArrayBuffer buffer = new ByteArrayBuffer(signature);
+        buffer.getString();
+        return buffer.getBytes();
+    }
+
+    @Override
+    public String getSignatureAlgorithm() {
         return NumberUtils.isEmpty(signature) ? null : new ByteArrayBuffer(signature).getString();
     }
 
@@ -171,8 +186,8 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         this.serial = serial;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void setType(Type type) {
+        this.type = type.getCode();
     }
 
     public void setId(String id) {
@@ -187,15 +202,45 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         this.validAfter = validAfter;
     }
 
+    /**
+     * If null, uses {@link OpenSshCertificate#MIN_EPOCH}
+     *
+     * @param validAfter {@link Instant} to use for validAfter
+     */
+    public void setValidAfter(Instant validAfter) {
+        if (validAfter == null) {
+            setValidAfter(OpenSshCertificate.MIN_EPOCH);
+        } else if (Instant.EPOCH.compareTo(validAfter) <= 0) {
+            setValidAfter(validAfter.getEpochSecond());
+        } else {
+            throw new IllegalArgumentException("Valid-after cannot be < epoch");
+        }
+    }
+
     public void setValidBefore(long validBefore) {
         this.validBefore = validBefore;
     }
 
-    public void setCriticalOptions(List<String> criticalOptions) {
+    /**
+     * If null, uses {@link OpenSshCertificate#INFINITY}
+     *
+     * @param validBefore {@link Instant} to use for validBefore
+     */
+    public void setValidBefore(Instant validBefore) {
+        if (validBefore == null) {
+            setValidBefore(OpenSshCertificate.INFINITY);
+        } else if (Instant.EPOCH.compareTo(validBefore) <= 0) {
+            setValidBefore(validBefore.getEpochSecond());
+        } else {
+            throw new IllegalArgumentException("Valid-before cannot be < epoch");
+        }
+    }
+
+    public void setCriticalOptions(List<CertificateOption> criticalOptions) {
         this.criticalOptions = criticalOptions;
     }
 
-    public void setExtensions(List<String> extensions) {
+    public void setExtensions(List<CertificateOption> extensions) {
         this.extensions = extensions;
     }
 
@@ -233,4 +278,5 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
                + ", validBefore=" + toDate(getValidBefore())
                + "]";
     }
+
 }

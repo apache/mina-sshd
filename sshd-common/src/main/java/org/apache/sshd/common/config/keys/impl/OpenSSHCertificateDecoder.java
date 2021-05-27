@@ -63,8 +63,15 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
     public OpenSshCertificate decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        byte[] bytes = IoUtils.toByteArray(keyData);
-        ByteArrayBuffer buffer = new ByteArrayBuffer(bytes);
+        // keyType has already been read from keyData, but getRawPublicKey() relies on
+        // being able to use the bytes already consumed from the buffer to set the
+        // "message" of the certificate, which is supposed to be the raw data that was
+        // signed. This must include the key type. Hence create a buffer that contains
+        // this key type again, but that is positioned for reading after that key type.
+        ByteArrayBuffer buffer = new ByteArrayBuffer();
+        buffer.putString(keyType);
+        buffer.putRawBytes(IoUtils.toByteArray(keyData));
+        buffer.getString(); // Skip the key type just prepended
         OpenSshCertificate cert = OpenSSHCertPublicKeyParser.INSTANCE.getRawPublicKey(keyType, buffer);
 
         return cert;
@@ -75,7 +82,8 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
         Objects.requireNonNull(key, "No public key provided");
 
         ByteArrayBuffer buffer = new ByteArrayBuffer();
-        buffer.putRawPublicKeyBytes(key);
+        // use Buffer.putRawPublicKey so the certificate type is prepended
+        buffer.putRawPublicKey(key);
         s.write(buffer.getCompactData());
 
         return key.getKeyType();

@@ -341,6 +341,40 @@ public abstract class Buffer implements Readable {
         return GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values);
     }
 
+    public List<OpenSshCertificate.CertificateOption> getCertificateOptions() {
+        return getCertificateOptions(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * According to <A HREF=
+     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L222-L262">PROTOCOL.certkeys</A>:
+     *
+     * Critical Options is a set of bytes that is
+     *
+     * [overall length][name(string)][data(string)]...
+     *
+     * Where each Critical Option is encoded as a name (string) and data (string)
+     *
+     * Then the entire name + data strings are added as bytes (which will get a length prefix)
+     *
+     * @param  charset {@link Charset} to use for converting bytes to characters
+     * @return         the parsed result, never {@code null}, but possibly empty
+     */
+    public List<OpenSshCertificate.CertificateOption> getCertificateOptions(Charset charset) {
+        // pull out entire Critical Options section
+        final ByteArrayBuffer optionBuffer = new ByteArrayBuffer(getBytes());
+
+        List<OpenSshCertificate.CertificateOption> list = new ArrayList<>();
+
+        while (optionBuffer.available() > 0) {
+            String name = optionBuffer.getString(charset);
+            String data = GenericUtils.trimToEmpty(optionBuffer.getString(charset));
+            list.add(new OpenSshCertificate.CertificateOption(name, data.length() > 0 ? data : null));
+        }
+
+        return list;
+    }
+
     /**
      * @param  usePrependedLength If {@code true} then there is a 32-bit value indicating the number of strings to read.
      *                            Otherwise, the method will use a &quot;greedy&quot; reading of strings while more data
@@ -761,6 +795,42 @@ public abstract class Buffer implements Readable {
         }
     }
 
+    public void putCertificateOptions(List<OpenSshCertificate.CertificateOption> options) {
+        putCertificateOptions(options, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * According to <A HREF=
+     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L222-L262">PROTOCOL.certkeys</A>:
+     *
+     * Critical Options is a set of bytes that is
+     *
+     * [overall length][name(string)][data(string)]...
+     *
+     * Where each Critical Option is encoded as a name (string) and data (string)
+     *
+     * Then the entire name + data strings are added as bytes (which will get a length prefix)
+     *
+     * @param options to write into the buffer, may be {@code null} or empty but must not contain {@code null} elements
+     */
+    public void putCertificateOptions(List<OpenSshCertificate.CertificateOption> options, Charset charset) {
+        int numObjects = GenericUtils.size(options);
+
+        if (numObjects <= 0) {
+            putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
+            return;
+        }
+
+        ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
+
+        for (OpenSshCertificate.CertificateOption option : options) {
+            tmpBuffer.putString(option.getName(), charset);
+            tmpBuffer.putString(option.getData(), charset);
+        }
+
+        putBytes(tmpBuffer.getCompactData());
+    }
+
     /**
      * According to <A HREF="https://tools.ietf.org/html/rfc4251#page-10">RFC 4251</A>: <CODE>
      *      A name-list is represented as a uint32 containing its length (number of bytes
@@ -925,7 +995,7 @@ public abstract class Buffer implements Readable {
             putBytes(cert.getNonce());
             putRawPublicKeyBytes(cert.getCertPubKey());
             putLong(cert.getSerial());
-            putInt(cert.getType());
+            putInt(cert.getType().getCode());
             putString(cert.getId());
 
             ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
@@ -934,15 +1004,22 @@ public abstract class Buffer implements Readable {
 
             putLong(cert.getValidAfter());
             putLong(cert.getValidBefore());
-            putNameList(cert.getCriticalOptions());
-            putNameList(cert.getExtensions());
+
+            putCertificateOptions(cert.getCriticalOptions());
+            putCertificateOptions(cert.getExtensions());
+
+            // must always be an empty string
             putString(cert.getReserved());
 
             tmpBuffer = new ByteArrayBuffer();  // TODO tmpBuffer.clear() instead of allocate new buffer
             tmpBuffer.putRawPublicKey(cert.getCaPubKey());
             putBytes(tmpBuffer.getCompactData());
 
-            putBytes(cert.getSignature());
+            // only append signature when present, it's useful to *not* append a sig when building a buf for signing
+            if (cert.getSignature() != null) {
+                putBytes(cert.getSignature());
+            }
+
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
         }
