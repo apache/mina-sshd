@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -108,14 +109,22 @@ public class FileHandle extends Handle {
     }
 
     public int read(byte[] data, long offset) throws IOException {
-        return read(data, 0, data.length, offset);
+        return read(data, 0, data.length, offset, null);
+    }
+
+    public int read(byte[] data, int doff, int length, long offset) throws IOException {
+        return read(data, doff, length, offset, null);
     }
 
     @SuppressWarnings("resource")
-    public int read(byte[] data, int doff, int length, long offset) throws IOException {
+    public int read(byte[] data, int doff, int length, long offset, AtomicReference<Boolean> eof) throws IOException {
         SeekableByteChannel channel = getFileChannel();
         channel = channel.position(offset);
-        return channel.read(ByteBuffer.wrap(data, doff, length));
+        int l = channel.read(ByteBuffer.wrap(data, doff, length));
+        if (l > 0 && eof != null && l < length) {
+            eof.set(channel.position() >= channel.size());
+        }
+        return l;
     }
 
     public void append(byte[] data) throws IOException {

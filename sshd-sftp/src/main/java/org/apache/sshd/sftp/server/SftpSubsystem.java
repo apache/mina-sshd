@@ -44,6 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -835,7 +836,7 @@ public class SftpSubsystem
 
     @Override
     protected int doRead(
-            int id, String handle, long offset, int length, byte[] data, int doff)
+            int id, String handle, long offset, int length, byte[] data, int doff, AtomicReference<Boolean> eof)
             throws IOException {
         Handle h = handles.get(handle);
         ServerSession session = getServerSession();
@@ -850,7 +851,7 @@ public class SftpSubsystem
         int readLen;
         listener.reading(session, handle, fh, offset, data, doff, length);
         try {
-            readLen = fh.read(data, doff, length, offset);
+            readLen = fh.read(data, doff, length, offset, eof);
         } catch (IOException | RuntimeException | Error e) {
             listener.read(session, handle, fh, offset, data, doff, length, -1, e);
             throw e;
