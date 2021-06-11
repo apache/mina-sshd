@@ -574,6 +574,9 @@ public abstract class AbstractSftpSubsystemHelper
                 int version = getVersion();
                 if (version >= SftpConstants.SFTP_V6) {
                     Boolean eof = eofRef.get();
+                    if (eof != null) {
+                        buffer.putBoolean(eof);
+                    }
                 }
             }
         } catch (IOException | RuntimeException e) {

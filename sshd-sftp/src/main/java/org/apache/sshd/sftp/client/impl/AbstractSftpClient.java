@@ -772,9 +772,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     @Override
     public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        if (eofSignalled != null) {
-            eofSignalled.set(null);
-        }
         if (!isOpen()) {
             throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
         }
@@ -790,9 +787,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     protected int checkData(
             int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        if (eofSignalled != null) {
-            eofSignalled.set(null);
-        }
         int reqId = send(cmd, request);
         Buffer response = receive(reqId);
         return checkDataResponse(cmd, response, dstOffset, dst, eofSignalled);
@@ -801,10 +795,6 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
     protected int checkDataResponse(
             int cmd, Buffer buffer, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        if (eofSignalled != null) {
-            eofSignalled.set(null);
-        }
-
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
