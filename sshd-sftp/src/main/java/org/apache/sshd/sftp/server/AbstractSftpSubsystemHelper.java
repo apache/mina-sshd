@@ -63,6 +63,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.FactoryManager;
@@ -561,13 +562,23 @@ public abstract class AbstractSftpSubsystemHelper
             int lenPos = buffer.wpos();
             buffer.putInt(0);
 
+            AtomicReference<Boolean> eofRef = new AtomicReference<>();
             int startPos = buffer.wpos();
-            int len = doRead(id, handle, offset, readLen, buffer.array(), startPos);
+            int len = doRead(id, handle, offset, readLen, buffer.array(), startPos, eofRef);
             if (len < 0) {
                 throw new EOFException("Unable to read " + readLen + " bytes from offset=" + offset + " of " + handle);
             }
             buffer.wpos(startPos + len);
             BufferUtils.updateLengthPlaceholder(buffer, lenPos, len);
+            if (len < readLen) {
+                int version = getVersion();
+                if (version >= SftpConstants.SFTP_V6) {
+                    Boolean eof = eofRef.get();
+                    if (eof != null) {
+                        buffer.putBoolean(eof);
+                    }
+                }
+            }
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READ, handle, offset, requestedLength);
             return;
@@ -577,7 +588,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected abstract int doRead(
-            int id, String handle, long offset, int length, byte[] data, int doff)
+            int id, String handle, long offset, int length, byte[] data, int doff, AtomicReference<Boolean> eof)
             throws IOException;
 
     protected void doWrite(Buffer buffer, int id) throws IOException {

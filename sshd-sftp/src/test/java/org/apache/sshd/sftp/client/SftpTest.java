@@ -1335,6 +1335,19 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         sftp.remove(file);
 
+        byte[] smallBuf = "Hello world".getBytes(StandardCharsets.UTF_8);
+        try (OutputStream os = sftp.write(file)) {
+            os.write(smallBuf);
+        }
+        try (InputStream is = sftp.read(file)) {
+            int readLen = is.read(smallBuf);
+            assertEquals("Mismatched read data length", smallBuf.length, readLen);
+            assertEquals("Hello world", new String(smallBuf, StandardCharsets.UTF_8));
+
+            int i = is.read();
+            assertEquals("Unexpected read past EOF", -1, i);
+        }
+
         final int sizeFactor = Short.SIZE;
         byte[] workBuf = new byte[IoUtils.DEFAULT_COPY_SIZE * Short.SIZE];
         Factory<? extends Random> factory = manager.getRandomFactory();

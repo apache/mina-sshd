@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
@@ -125,60 +126,30 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             throw new IOException("read(" + getPath() + ") stream closed");
         }
 
-        int idx = off;
-        while ((len > 0) && (!eofIndicator)) {
-            if (hasNoData()) {
-                fillData();
-                if (eofIndicator && (hasNoData())) {
-                    break;
-                }
-                sendRequests();
-            } else {
-                int nb = Math.min(buffer.available(), len);
-                buffer.getRawBytes(b, off, nb);
-                off += nb;
-                len -= nb;
-                clientOffset += nb;
-            }
-        }
-
-        int res = off - idx;
-        if ((res == 0) && eofIndicator) {
+        AtomicInteger offset = new AtomicInteger(off);
+        int res = (int) doRead(len, buf -> {
+            int l = buf.available();
+            buf.getRawBytes(b, offset.getAndAdd(l), l);
+        });
+        if (res == 0 && eofIndicator) {
             res = -1;
         }
         return res;
     }
 
-    public long transferTo(long max, WritableByteChannel out) throws IOException {
+    public long transferTo(long len, WritableByteChannel out) throws IOException {
         if (!isOpen()) {
             throw new IOException("transferTo(" + getPath() + ") stream closed");
         }
 
-        long orgOffset = clientOffset;
-        long totalRequested = max;
-        while ((!eofIndicator) && (max > 0L)) {
-            if (hasNoData()) {
-                fillData();
-                if (eofIndicator && hasNoData()) {
-                    break;
-                }
-                sendRequests();
-            } else {
-                int nb = buffer.available();
-                int toRead = (int) Math.min(nb, max);
-                ByteBuffer bb = ByteBuffer.wrap(buffer.array(), buffer.rpos(), toRead);
-                while (bb.hasRemaining()) {
-                    out.write(bb);
-                }
-                buffer.rpos(buffer.rpos() + toRead);
-                clientOffset += toRead;
-                max -= toRead;
+        long numXfered = doRead(len, buf -> {
+            ByteBuffer bb = ByteBuffer.wrap(buf.array(), buf.rpos(), buf.available());
+            while (bb.hasRemaining()) {
+                out.write(bb);
             }
-        }
-
-        long numXfered = clientOffset - orgOffset;
+        });
         if (log.isDebugEnabled()) {
-            log.debug("transferTo({}) transferred {}/{} bytes", numXfered, totalRequested);
+            log.debug("transferTo({}) transferred {}/{} bytes", this, numXfered, len);
         }
         return numXfered;
     }
@@ -189,27 +160,41 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             throw new IOException("transferTo(" + getPath() + ") stream closed");
         }
 
-        long orgOffset = clientOffset;
-        while (!eofIndicator) {
-            if (hasNoData()) {
-                fillData();
-                if (eofIndicator && hasNoData()) {
-                    break;
-                }
-                sendRequests();
-            } else {
-                int nb = buffer.available();
-                out.write(buffer.array(), buffer.rpos(), nb);
-                buffer.rpos(buffer.rpos() + nb);
-                clientOffset += nb;
-            }
-        }
-
-        long numXfered = clientOffset - orgOffset;
+        long numXfered = doRead(Long.MAX_VALUE, buf -> {
+            out.write(buf.array(), buf.rpos(), buf.available());
+        });
         if (log.isDebugEnabled()) {
             log.debug("transferTo({}) transferred {} bytes", this, numXfered);
         }
         return numXfered;
+    }
+
+    interface BufferConsumer {
+        void consume(Buffer buffer) throws IOException;
+    }
+
+    private long doRead(long max, BufferConsumer consumer) throws IOException {
+        long orgOffset = clientOffset;
+        while (max > 0) {
+            if (hasNoData()) {
+                if (eofIndicator) {
+                    break;
+                }
+                if (!pendingReads.isEmpty()) {
+                    fillData();
+                }
+                if (!eofIndicator) {
+                    sendRequests();
+                }
+            } else {
+                int nb = (int) Math.min(max, buffer.available());
+                consumer.consume(new ByteArrayBuffer(buffer.array(), buffer.rpos(), nb));
+                buffer.rpos(buffer.rpos() + nb);
+                clientOffset += nb;
+                max -= nb;
+            }
+        }
+        return clientOffset - orgOffset;
     }
 
     @Override
@@ -234,13 +219,6 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
     }
 
     protected void sendRequests() throws IOException {
-        if (eofIndicator) {
-            if (log.isDebugEnabled()) {
-                log.debug("sendRequests({}) EOF indicator ON", this);
-            }
-            return;
-        }
-
         AbstractSftpClient client = getClient();
         Channel channel = client.getChannel();
         Window localWindow = channel.getLocalWindow();
@@ -248,10 +226,8 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         Session session = client.getSession();
         byte[] id = handle.getIdentifier();
         boolean traceEnabled = log.isTraceEnabled();
-        for (int ackIndex = 1;
-             (pendingReads.size() < (int) (windowSize / bufferSize)) && (requestOffset < (fileSize + bufferSize))
-                     || pendingReads.isEmpty();
-             ackIndex++) {
+        while (pendingReads.size() < Math.max(1, windowSize / bufferSize)
+                && (fileSize <= 0 || requestOffset < fileSize + bufferSize)) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,
                     23 /* sftp packet */ + 16 + id.length);
             buf.rpos(23);
@@ -262,7 +238,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             int reqId = client.send(SftpConstants.SSH_FXP_READ, buf);
             SftpAckData ack = new SftpAckData(reqId, requestOffset, bufferSize);
             if (traceEnabled) {
-                log.trace("sendRequests({}) enqueue pending ack #{}: {}", this, ackIndex, ack);
+                log.trace("sendRequests({}) enqueue pending ack: {}", this, ack);
             }
             pendingReads.add(ack);
             requestOffset += bufferSize;
@@ -282,9 +258,10 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         if (traceEnabled) {
             log.trace("fillData({}) process ack={}", this, ack);
         }
+        boolean alreadyEof = eofIndicator;
         pollBuffer(ack);
 
-        if ((!eofIndicator) && (clientOffset < ack.offset)) {
+        if (!alreadyEof && clientOffset < ack.offset) {
             // we are actually missing some data
             // so request is synchronously
             byte[] data = new byte[(int) (ack.offset - clientOffset + buffer.available())];
@@ -295,21 +272,27 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
 
             AtomicReference<Boolean> eof = new AtomicReference<>();
             SftpClient client = getClient();
-            for (int cur = 0; cur < nb;) {
+            int cur = 0;
+            while (cur < nb) {
                 int dlen = client.read(handle, clientOffset, data, cur, nb - cur, eof);
                 Boolean eofSignal = eof.getAndSet(null);
                 if ((dlen < 0) || ((eofSignal != null) && eofSignal.booleanValue())) {
                     eofIndicator = true;
+                    break;
                 }
                 cur += dlen;
             }
 
             if (traceEnabled) {
-                log.trace("fillData({}) read {} bytes - EOF={}", this, nb, eofIndicator);
+                log.trace("fillData({}) read {} bytes - EOF={}", this, cur, eofIndicator);
             }
 
-            buffer.getRawBytes(data, nb, buffer.available());
-            buffer = new ByteArrayBuffer(data);
+            if (cur > 0) {
+                buffer.getRawBytes(data, cur, buffer.available());
+                buffer = new ByteArrayBuffer(data);
+            } else {
+                buffer.rpos(buffer.wpos());
+            }
         }
     }
 
