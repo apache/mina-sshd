@@ -139,6 +139,47 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         assertArrayEquals("Mismatched transferred data", expected, actual);
     }
 
+    @Test // see SSHD-1182
+    public void testTransferToFileChannelWithOffset() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-src.txt");
+        Path parentPath = targetPath.getParent();
+
+        Files.deleteIfExists(srcFile);
+        try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
+            String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
+            for (long totalWritten = 0L;
+                 totalWritten <= SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault();
+                 totalWritten += seed.length()) {
+                output.append(seed).append(System.lineSeparator());
+            }
+        }
+
+        byte[] data = Files.readAllBytes(srcFile);
+        int offset = data.length / 4;
+        byte[] expected = new byte[data.length - offset];
+        System.arraycopy(data, offset, expected, 0, expected.length);
+
+        Path dstFile = srcFile.getParent().resolve(getCurrentTestName() + "-dst.txt");
+        Files.deleteIfExists(dstFile);
+
+        String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
+        try (SftpClient sftp = createSingleSessionClient();
+             FileChannel srcChannel = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(StandardOpenOption.READ));
+             FileChannel dstChannel = FileChannel.open(dstFile,
+                     StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            long numXfered = srcChannel.transferTo(offset, expected.length, dstChannel);
+            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
+        }
+
+        byte[] actual = Files.readAllBytes(dstFile);
+        assertEquals("Mismatched transferred size", expected.length, actual.length);
+        assertArrayEquals("Mismatched transferred data", expected, actual);
+    }
+
     @Test(timeout = 10000) // see SSHD-970
     public void testTransferToFileChannelLoopFile() throws IOException {
         Path targetPath = detectTargetFolder();

@@ -564,7 +564,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
+    @Test // see SSHD-1182
     public void testInputStreamSkipBeforeRead() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
