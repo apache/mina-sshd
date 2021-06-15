@@ -207,7 +207,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             if (log.isDebugEnabled()) {
                 log.debug("skip({}) virtual skip of {} bytes", this, n);
             }
-            clientOffset = n;
+            requestOffset = clientOffset = n;
             return n;
         }
 

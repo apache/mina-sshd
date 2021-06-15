@@ -543,9 +543,44 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                      CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
             byte[] expected = new byte[data.length / 4];
             int readLen = expected.length;
+            System.arraycopy(data, 0, expected, 0, readLen);
+
+            byte[] actual = new byte[readLen];
+            readLen = stream.read(actual);
+            assertEquals("Failed to read fully reset data", actual.length, readLen);
+            assertArrayEquals("Mismatched re-read data contents", expected, actual);
+
+            System.arraycopy(data, 0, expected, 0, expected.length);
+            assertArrayEquals("Mismatched original data contents", expected, actual);
+
+            long skipped = stream.skip(readLen);
+            assertEquals("Mismatched skipped forward size", readLen, skipped);
+
+            readLen = stream.read(actual);
+            assertEquals("Failed to read fully skipped forward data", actual.length, readLen);
+
+            System.arraycopy(data, expected.length + readLen, expected, 0, expected.length);
+            assertArrayEquals("Mismatched skipped forward data contents", expected, actual);
+        }
+    }
+
+    @Test
+    public void testInputStreamSkipBeforeRead() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path localFile = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Files.createDirectories(localFile.getParent());
+        byte[] data
+                = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
+        Files.write(localFile, data, StandardOpenOption.CREATE);
+        try (SftpClient sftp = createSingleSessionClient();
+             InputStream stream = sftp.read(
+                     CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+            byte[] expected = new byte[data.length / 4];
+            int readLen = expected.length;
             byte[] actual = new byte[readLen];
 
-            stream.mark(readLen * 2);
             long skipped = stream.skip(readLen);
             assertEquals("Mismatched skipped forward size", readLen, skipped);
 
@@ -554,25 +589,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             System.arraycopy(data, readLen, expected, 0, expected.length);
             assertArrayEquals("Mismatched original data contents", expected, actual);
-
-            stream.reset();
-            readLen = stream.read(actual);
-            assertEquals("Failed to read fully reset data", actual.length, readLen);
-
-            System.arraycopy(data, 0, expected, 0, readLen);
-            assertArrayEquals("Mismatched re-read data contents", expected, actual);
-
-            System.arraycopy(data, 0, expected, 0, expected.length);
-            assertArrayEquals("Mismatched original data contents", expected, actual);
-
-            skipped = stream.skip(readLen);
-            assertEquals("Mismatched skipped forward size", readLen, skipped);
-
-            readLen = stream.read(actual);
-            assertEquals("Failed to read fully skipped forward data", actual.length, readLen);
-
-            System.arraycopy(data, expected.length + readLen, expected, 0, expected.length);
-            assertArrayEquals("Mismatched skipped forward data contents", expected, actual);
         }
     }
 
