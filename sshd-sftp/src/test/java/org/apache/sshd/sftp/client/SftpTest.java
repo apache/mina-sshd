@@ -564,6 +564,36 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test // see SSHD-1182
+    public void testInputStreamSkipBeforeRead() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path localFile = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Files.createDirectories(localFile.getParent());
+        byte[] data
+                = (getClass().getName() + "#" + getCurrentTestName() + "[" + localFile + "]").getBytes(StandardCharsets.UTF_8);
+        Files.write(localFile, data, StandardOpenOption.CREATE);
+        try (SftpClient sftp = createSingleSessionClient();
+             InputStream stream = sftp.read(
+                     CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile), OpenMode.Read)) {
+            int toSkip = data.length / 4;
+            int readLen = data.length / 2;
+            byte[] expected = new byte[readLen];
+            byte[] actual = new byte[readLen];
+
+            System.arraycopy(data, toSkip, expected, 0, readLen);
+
+            long skipped = stream.skip(toSkip);
+            assertEquals("Mismatched skipped forward size", toSkip, skipped);
+
+            int actuallyRead = IoUtils.read(stream, actual);
+            assertEquals("Failed to read fully skipped forward data", readLen, actuallyRead);
+
+            assertArrayEquals("Unexpected data read after skipping", expected, actual);
+        }
+    }
+
     @Test
     public void testSftpFileSystemAccessor() throws Exception {
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();

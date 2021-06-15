@@ -79,6 +79,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         this.path = path;
         this.handle = handle;
         this.bufferSize = bufferSize;
+        this.requestOffset = clientOffset;
         this.clientOffset = clientOffset;
         this.fileSize = fileSize;
     }
@@ -207,6 +208,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             if (log.isDebugEnabled()) {
                 log.debug("skip({}) virtual skip of {} bytes", this, n);
             }
+            requestOffset = n;
             clientOffset = n;
             return n;
         }
