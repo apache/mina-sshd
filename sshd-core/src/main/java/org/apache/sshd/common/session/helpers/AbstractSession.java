@@ -1927,14 +1927,8 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("setNegotiationResult({}) Kex: server->client {} {} {}", this,
-                    guess.get(KexProposalOption.S2CENC),
-                    guess.get(KexProposalOption.S2CMAC),
-                    guess.get(KexProposalOption.S2CCOMP));
-            log.debug("setNegotiationResult({}) Kex: client->server {} {} {}", this,
-                    guess.get(KexProposalOption.C2SENC),
-                    guess.get(KexProposalOption.C2SMAC),
-                    guess.get(KexProposalOption.C2SCOMP));
+            guess.forEach((option, value) -> log.debug("setNegotiationResult({}) Kex: {} = {}", this,
+                    option.getDescription(), value));
         }
 
         return guess;
