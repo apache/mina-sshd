@@ -119,7 +119,7 @@
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
         <maven.archiver.version>3.5.1</maven.archiver.version>
         <scm.plugin.version>1.11.2</scm.plugin.version>
-        <plexus.archiver.version>4.2.4</plexus.archiver.version>
+        <plexus.archiver.version>4.2.5</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.35.0</pmd.version>
 
