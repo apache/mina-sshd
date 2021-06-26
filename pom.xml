@@ -111,7 +111,7 @@
         <spring.version>5.3.6</spring.version>
         <jgit.version>5.11.0.202103091610-r</jgit.version>
         <junit.version>4.13.2</junit.version>
-        <bytebuddy.version>1.10.22</bytebuddy.version>
+        <bytebuddy.version>1.11.5</bytebuddy.version>
         <testcontainers.version>1.15.3</testcontainers.version>
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
