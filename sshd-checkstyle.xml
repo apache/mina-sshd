@@ -238,7 +238,7 @@
         </module>
         <module name="MultipleVariableDeclarations" />
         <!--<module name="RequireThis" />-->
-        <module name="UnnecessaryParentheses" />
+        <!-- module name="UnnecessaryParentheses" / -->
 
             <!-- Checks for class design                         -->
             <!-- See http://checkstyle.sf.net/config_design.html -->
