@@ -24,17 +24,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -51,11 +48,6 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     public static final DefaultClientKexExtensionHandler INSTANCE = new DefaultClientKexExtensionHandler();
 
     /**
-     * Session {@link AttributeKey} used to store whether the extension indicator was already sent.
-     */
-    public static final AttributeKey<Boolean> CLIENT_PROPOSAL_MADE = new AttributeKey<>();
-
-    /**
      * Session {@link AttributeKey} storing the algorithms announced by the server as known.
      */
     public static final AttributeKey<Set<String>> SERVER_ALGORITHMS = new AttributeKey<>();
@@ -67,41 +59,6 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
     @Override
     public boolean isKexExtensionsAvailable(Session session, AvailabilityPhase phase) throws IOException {
         return !AvailabilityPhase.PREKEX.equals(phase);
-    }
-
-    @Override
-    public void handleKexInitProposal(
-            Session session, boolean initiator, Map<KexProposalOption, String> proposal)
-            throws IOException {
-        // If it's the very first time, we may add the marker telling the server that we are ready to
-        // handle SSH_MSG_EXT_INFO.
-        if (session == null || session.isServerSession() || !initiator) {
-            return;
-        }
-        if (session.getAttribute(CLIENT_PROPOSAL_MADE) != null) {
-            return;
-        }
-        String kexAlgorithms = proposal.get(KexProposalOption.SERVERKEYS);
-        if (GenericUtils.isEmpty(kexAlgorithms)) {
-            return;
-        }
-        List<String> algorithms = new ArrayList<>();
-        // We're a client. We mustn't send the server extension, and we should send the client extension only once.
-        for (String algo : kexAlgorithms.split(",")) { //$NON-NLS-1$
-            if (KexExtensions.CLIENT_KEX_EXTENSION.equalsIgnoreCase(algo)
-                    || KexExtensions.SERVER_KEX_EXTENSION.equalsIgnoreCase(algo)) {
-                continue;
-            }
-            algorithms.add(algo);
-        }
-        // Tell the server that we want to receive SSH_MSG_EXT_INFO
-        algorithms.add(KexExtensions.CLIENT_KEX_EXTENSION);
-        if (log.isDebugEnabled()) {
-            log.debug("handleKexInitProposal({}): proposing HostKeyAlgorithms {}", //$NON-NLS-1$
-                    session, algorithms);
-        }
-        proposal.put(KexProposalOption.SERVERKEYS, String.join(",", algorithms)); //$NON-NLS-1$
-        session.setAttribute(CLIENT_PROPOSAL_MADE, Boolean.TRUE);
     }
 
     @Override
