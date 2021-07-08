@@ -938,11 +938,11 @@ public class ScpTest extends AbstractScpTestSupport {
     protected String readFile(com.jcraft.jsch.Session session, String path, Path target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -f " + path);
-        c.connect();
 
         String fileName = Objects.toString(target.getFileName(), null);
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
 
             os.write(0);
             os.flush();
@@ -975,10 +975,10 @@ public class ScpTest extends AbstractScpTestSupport {
     protected String readDir(com.jcraft.jsch.Session session, String path, Path target) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         c.setCommand("scp -r -f " + path);
-        c.connect();
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             String header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
@@ -1017,10 +1017,10 @@ public class ScpTest extends AbstractScpTestSupport {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -f " + path;
         c.setCommand(command);
-        c.connect();
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
 
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
             assertEquals("Mismatched response for command: " + command, ScpAckInfo.ERROR, is.read());
@@ -1033,10 +1033,10 @@ public class ScpTest extends AbstractScpTestSupport {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
-        c.connect();
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
 
             assertAckReceived(is, command);
 
@@ -1072,10 +1072,10 @@ public class ScpTest extends AbstractScpTestSupport {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t " + path;
         c.setCommand(command);
-        c.connect();
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
 
             assertAckReceived(is, command);
 
@@ -1092,10 +1092,10 @@ public class ScpTest extends AbstractScpTestSupport {
         ChannelExec c = (ChannelExec) session.openChannel(Channel.CHANNEL_EXEC);
         String command = "scp -t -r " + path;
         c.setCommand(command);
-        c.connect();
 
         try (OutputStream os = c.getOutputStream();
              InputStream is = c.getInputStream()) {
+            c.connect();
 
             assertAckReceived(is, command);
             assertAckReceived(os, is, "D0755 0 " + dirName);
