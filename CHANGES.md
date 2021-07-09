@@ -22,7 +22,6 @@
 
 ## Behavioral changes and enhancements
 
-* [SSHD-1017](https://issues.apache.org/jira/browse/SSHD-1017) Add support for the chacha20-poly1305@openssh.com cipher
 * [SSHD-1161](https://issues.apache.org/jira/browse/SSHD-1161) Support OpenSSH client certificates for publickey authentication
 * [SSHD-1163](https://issues.apache.org/jira/browse/SSHD-1163) Wrong server key algorithm choose
 * [SSHD-1164](https://issues.apache.org/jira/browse/SSHD-1164) Parsing of ~/.ssh/config Host patterns fails with extra whitespace
