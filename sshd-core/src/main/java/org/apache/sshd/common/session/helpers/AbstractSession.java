@@ -1635,8 +1635,7 @@ public abstract class AbstractSession extends SessionHelper {
      *
      * @throws Exception if an error occurs
      */
-    // TODO: this method needs refactoring
-    @SuppressWarnings({ "checkstyle:VariableDeclarationUsageDistance", "checkstyle:ExecutableStatementCount" })
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     protected void receiveNewKeys() throws Exception {
         byte[] k = kex.getK();
         byte[] h = kex.getH();
@@ -1688,9 +1687,6 @@ public abstract class AbstractSession extends SessionHelper {
         Cipher s2ccipher = ValidateUtils.checkNotNull(
                 NamedFactory.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
         e_s2c = resizeKey(e_s2c, s2ccipher.getKdfSize(), hash, k, h);
-        if (s2ccipher.getAlgorithm().startsWith("ChaCha")) {
-            BufferUtils.putLong(serverSession ? seqo : seqi, iv_s2c, 0, iv_s2c.length);
-        }
         s2ccipher.init(serverSession ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         Mac s2cmac;
@@ -1716,9 +1712,6 @@ public abstract class AbstractSession extends SessionHelper {
         Cipher c2scipher = ValidateUtils.checkNotNull(
                 NamedFactory.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
         e_c2s = resizeKey(e_c2s, c2scipher.getKdfSize(), hash, k, h);
-        if (c2scipher.getAlgorithm().startsWith("ChaCha")) {
-            BufferUtils.putLong(serverSession ? seqi : seqo, iv_c2s, 0, iv_c2s.length);
-        }
         c2scipher.init(serverSession ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         Mac c2smac;

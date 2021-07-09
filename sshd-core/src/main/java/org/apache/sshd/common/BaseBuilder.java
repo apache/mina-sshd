@@ -70,7 +70,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      */
     public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
-                    BuiltinCiphers.cc20p1305_openssh,
                     BuiltinCiphers.aes128ctr,
                     BuiltinCiphers.aes192ctr,
                     BuiltinCiphers.aes256ctr,
