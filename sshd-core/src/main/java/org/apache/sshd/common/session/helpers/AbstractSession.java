@@ -1760,16 +1760,10 @@ public abstract class AbstractSession extends SessionHelper {
         // TODO add support for configurable compression level
         inCompression.init(Compression.Type.Inflater, -1);
 
-        // see https://tools.ietf.org/html/rfc4344#section-3.2
-        // select the lowest cipher size
-        int avgCipherBlockSize = Math.min(inCipherSize, outCipherSize);
-        long recommendedByteRekeyBlocks = 1L << Math.min((avgCipherBlockSize * Byte.SIZE) / 4,
-                63); // in case (block-size / 4) > 63
-        long effectiveRekeyBlocksCount = CoreModuleProperties.REKEY_BLOCKS_LIMIT.getRequired(this);
-        maxRekeyBlocks.set(effectiveRekeyBlocksCount > 0 ? effectiveRekeyBlocksCount : recommendedByteRekeyBlocks);
+        maxRekeyBlocks.set(determineRekeyBlockLimit(inCipherSize, outCipherSize));
         if (debugEnabled) {
-            log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, recommended blocks limit={}, actual={}",
-                    this, inCipher, outCipher, recommendedByteRekeyBlocks, maxRekeyBlocks);
+            log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, blocks limit={}", this, inCipher, outCipher,
+                    maxRekeyBlocks);
         }
 
         inBytesCount.set(0L);
@@ -1780,6 +1774,43 @@ public abstract class AbstractSession extends SessionHelper {
         outBlocksCount.set(0L);
         lastKeyTimeValue.set(Instant.now());
         firstKexPacketFollows = null;
+    }
+
+    /**
+     * Compute the number of blocks after which we should re-key again. See RFC 4344.
+     *
+     * @param  inCipherBlockSize  block size of the input cipher
+     * @param  outCipherBlockSize block size of the output cipher
+     * @return                    the number of block after which re-keying occur at the latest
+     * @see                       <a href= "https://tools.ietf.org/html/rfc4344#section-3.2">RFC 4344, section 3.2</a>
+     */
+    protected long determineRekeyBlockLimit(int inCipherBlockSize, int outCipherBlockSize) {
+        // see https://tools.ietf.org/html/rfc4344#section-3.2
+        // select the lowest cipher size
+        long rekeyBlocksLimit = CoreModuleProperties.REKEY_BLOCKS_LIMIT.getRequired(this);
+        if (rekeyBlocksLimit <= 0) {
+            // Default per RFC 4344
+            int minCipherBlockBytes = Math.min(inCipherSize, outCipherSize);
+            if (minCipherBlockBytes >= 16) {
+                rekeyBlocksLimit = 1L << Math.min(minCipherBlockBytes * 2, 63);
+            } else {
+                // With a block size of 8 we'd end up with 2^16. That would re-key very often.
+                // RFC 4344: "If L is less than 128 [...], then, although it may be too
+                // expensive to rekey every 2**(L/4) blocks, it is still advisable for SSH
+                // implementations to follow the original recommendation in [RFC4253]: rekey at
+                // least once for every gigabyte of transmitted data."
+                //
+                // Note that chacha20-poly1305 has a block size of 8. The OpenSSH recommendation
+                // is: "ChaCha20 must never reuse a {key, nonce} for encryption nor may it be
+                // used to encrypt more than 2^70 bytes under the same {key, nonce}. The
+                // SSH Transport protocol (RFC4253) recommends a far more conservative
+                // rekeying every 1GB of data sent or received. If this recommendation
+                // is followed, then chacha20-poly1305@openssh.com requires no special
+                // handling in this area."
+                rekeyBlocksLimit = (1L << 30) / minCipherBlockBytes; // 1GB
+            }
+        }
+        return rekeyBlocksLimit;
     }
 
     /**
