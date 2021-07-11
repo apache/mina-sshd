@@ -58,7 +58,7 @@ based applications requiring SSH support.
 ## Implemented/available support
 
 * **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc,
-aes128-gcm@openssh.com, aes256-gcm@openssh.com
+aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com
 * **Digests**: md5, sha1, sha224, sha256, sha384, sha512
 * **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
 , hmac-sha2-512-etm@openssh.com, hmac-sha1-etm@openssh.com
