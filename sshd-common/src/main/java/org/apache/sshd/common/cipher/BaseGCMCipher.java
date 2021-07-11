@@ -74,7 +74,7 @@ public class BaseGCMCipher extends BaseCipher {
     }
 
     /**
-     * Algorithm parameters for AES/GCM that assumes the IV uses an 8-byte counter field as its most significant bytes.
+     * Algorithm parameters for AES/GCM that assumes the IV uses an 8-byte counter field as its least significant bytes.
      */
     protected static class CounterGCMParameterSpec extends GCMParameterSpec {
         protected final byte[] iv;

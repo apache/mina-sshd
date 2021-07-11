@@ -102,6 +102,12 @@ public enum BuiltinCiphers implements CipherFactory {
      */
     @Deprecated
     blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
+    cc20p1305_openssh(Constants.CC20P1305_OPENSSH, 8, 16, 64, "ChaCha", 256, "ChaCha", 8) {
+        @Override
+        public Cipher create() {
+            return new ChaCha20Cipher();
+        }
+    },
     /**
      * @deprecated
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
@@ -371,6 +377,7 @@ public enum BuiltinCiphers implements CipherFactory {
         public static final String ARCFOUR128 = "arcfour128";
         public static final String ARCFOUR256 = "arcfour256";
         public static final String BLOWFISH_CBC = "blowfish-cbc";
+        public static final String CC20P1305_OPENSSH = "chacha20-poly1305@openssh.com";
         public static final String TRIPLE_DES_CBC = "3des-cbc";
 
         private Constants() {
