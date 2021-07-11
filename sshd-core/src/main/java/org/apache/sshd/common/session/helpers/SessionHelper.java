@@ -298,8 +298,12 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         timeoutStatus.set(result);
 
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                "Detected " + status + " after " + result.getExpiredValue()
-                                                                + "/" + result.getThresholdValue() + " ms.");
+                "Detected " + status + " after "
+                                                                + TimeoutIndicator
+                                                                        .toDisplayDurationValue(result.getExpiredValue())
+                                                                + "/" + TimeoutIndicator.toDisplayDurationValue(
+                                                                        result.getThresholdValue())
+                                                                + " ms.");
         return result;
     }
 

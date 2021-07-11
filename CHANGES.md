@@ -20,6 +20,8 @@
 
 ## Minor code helpers
 
+* [SSHD-1193](https://issues.apache.org/jira/browse/SSHD-1193) Provide a more user-friendly text in case disconnecting due to timeout(s).
+
 ## Behavioral changes and enhancements
 
 * [SSHD-1161](https://issues.apache.org/jira/browse/SSHD-1161) Support OpenSSH client certificates for publickey authentication

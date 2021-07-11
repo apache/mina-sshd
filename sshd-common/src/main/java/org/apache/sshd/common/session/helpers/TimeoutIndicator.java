@@ -69,8 +69,12 @@ public class TimeoutIndicator {
     public String toString() {
         return getClass().getSimpleName()
                + "[status=" + getStatus()
-               + ", threshold=" + getThresholdValue()
-               + ", expired=" + getExpiredValue()
+               + ", threshold=" + toDisplayDurationValue(getThresholdValue())
+               + ", expired=" + toDisplayDurationValue(getExpiredValue())
                + "]";
+    }
+
+    public static String toDisplayDurationValue(Duration d) {
+        return (d == null) ? null : Long.toString(d.toMillis());
     }
 }
