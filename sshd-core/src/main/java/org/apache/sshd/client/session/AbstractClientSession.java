@@ -684,13 +684,20 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
                 proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
 
-                try {
-                    synchronized (kexState) {
+                synchronized (kexState) {
+                    DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
+                    if (initFuture == null) {
+                        initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
+                        kexInitializedFuture = initFuture;
+                    }
+                    try {
                         byte[] seed = sendKexInit(proposal);
                         setKexSeed(seed);
+                        initFuture.setValue(Boolean.TRUE);
+                    } catch (Exception e) {
+                        initFuture.setValue(e);
+                        ExceptionUtils.rethrowAsIoException(e);
                     }
-                } catch (Exception e) {
-                    ExceptionUtils.rethrowAsIoException(e);
                 }
             }
 

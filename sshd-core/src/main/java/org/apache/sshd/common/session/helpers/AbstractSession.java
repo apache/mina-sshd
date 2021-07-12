@@ -151,6 +151,10 @@ public abstract class AbstractSession extends SessionHelper {
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
     protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
 
+    // The kexInitializedFuture is fulfilled when this side (client or server) has prepared its own proposal. Access is
+    // synchronized on kexState; uses kexLock as lock.
+    protected DefaultKeyExchangeFuture kexInitializedFuture;
+
     /*
      * SSH packets encoding / decoding support
      */
@@ -173,6 +177,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected int decoderLength;
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
+    protected final Object kexLock = new Object();
     protected final Object requestLock = new Object();
 
     /*
@@ -696,7 +701,22 @@ public abstract class AbstractSession extends SessionHelper {
     protected void doKexNegotiation() throws Exception {
         if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
             sendKexInit();
-        } else if (!kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
+        } else if (kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
+            DefaultKeyExchangeFuture initFuture;
+            synchronized (kexState) {
+                initFuture = kexInitializedFuture;
+                if (initFuture == null) {
+                    initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
+                    kexInitializedFuture = initFuture;
+                }
+            }
+            // requestNewKeyExchange() is running in some other thread: wait until it has set up our own proposal. The timeout
+            // is a last resort only to avoid blocking indefinitely in case something goes catastrophically wrong somewhere; it
+            // should never be hit. If it is, an exception will be thrown.
+            //
+            // See https://issues.apache.org/jira/browse/SSHD-1197
+            initFuture.await(CoreModuleProperties.KEX_PROPOSAL_SETUP_TIMEOUT.getRequired(this));
+        } else {
             throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
         }
 
@@ -720,6 +740,9 @@ public abstract class AbstractSession extends SessionHelper {
         }
         kex.init(v_s, v_c, i_s, i_c);
 
+        synchronized (kexState) {
+            kexInitializedFuture = null;
+        }
         signalSessionEvent(SessionListener.Event.KexCompleted);
     }
 
@@ -731,6 +754,10 @@ public abstract class AbstractSession extends SessionHelper {
         }
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
+
+        synchronized (kexState) {
+            kexInitializedFuture = null;
+        }
 
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
@@ -813,6 +840,12 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     protected void preClose() {
+        synchronized (kexState) {
+            DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
+            if (initFuture != null) {
+                initFuture.setValue(new SshException("Session closing while KEX in progress"));
+            }
+        }
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
             // if have any pending KEX then notify it about the closing session
@@ -2334,8 +2367,19 @@ public abstract class AbstractSession extends SessionHelper {
 
         byte[] seed;
         synchronized (kexState) {
-            seed = sendKexInit(proposal);
-            setKexSeed(seed);
+            DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
+            if (initFuture == null) {
+                initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
+                kexInitializedFuture = initFuture;
+            }
+            try {
+                seed = sendKexInit(proposal);
+                setKexSeed(seed);
+                initFuture.setValue(Boolean.TRUE);
+            } catch (Exception e) {
+                initFuture.setValue(e);
+                throw e;
+            }
         }
 
         if (traceEnabled) {

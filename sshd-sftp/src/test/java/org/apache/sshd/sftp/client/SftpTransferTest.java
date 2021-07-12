@@ -23,22 +23,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)
 public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     private static final int BUFFER_SIZE = 8192;
 
-    public SftpTransferTest() throws IOException {
-        super();
+    private final long rekeyBlockSize;
+
+    public SftpTransferTest(long rekeyBlockSize) throws IOException {
+        this.rekeyBlockSize = rekeyBlockSize;
+    }
+
+    @Parameterized.Parameters(name = "REKEY_BLOCK_SIZE {0}")
+    public static List<Long> getParameters() {
+        List<Long> params = new ArrayList<>();
+        params.add(Long.valueOf(0));
+        params.add(Long.valueOf(65536));
+        return params;
     }
 
     @Test
@@ -72,6 +88,8 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
             }
         }
 
+        CoreModuleProperties.REKEY_BLOCKS_LIMIT.set(client, Long.valueOf(rekeyBlockSize));
+        CoreModuleProperties.REKEY_BLOCKS_LIMIT.set(sshd, Long.valueOf(rekeyBlockSize));
         try (ClientSession session = createAuthenticatedClientSession();
              SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
             if (bufferSize > 0) {

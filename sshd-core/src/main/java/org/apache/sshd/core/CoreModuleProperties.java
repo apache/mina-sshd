@@ -131,10 +131,20 @@ public final class CoreModuleProperties {
             = Property.bool("send-immediate-kex-init", true);
 
     /**
-     * Whether allowed to fall back to DH group with SHA-1 KEX if exhausted all available primes for SHA-256
+     * Whether allowed to fall back to DH group with SHA-1 KEX if exhausted all available primes for SHA-256.
      */
     public static final Property<Boolean> ALLOW_DHG1_KEX_FALLBACK
             = Property.bool("allow-dhg1-kex-fallback", false);
+
+    /**
+     * If the peer initiates a key exchange, we send our own KEX_INIT message with the proposal. This is a last-resort
+     * timeout for waiting until we have prepared our own KEX proposal. This timeout should actually never be hit unless
+     * there is a serious deadlock somewhere and the session is never closed. It should be set to a reasonably high
+     * value; it must be at least 5 seconds and the default is 42 seconds. If the timeout is ever hit, the key exchange
+     * initiated by the peer will fail.
+     */
+    public static final Property<Duration> KEX_PROPOSAL_SETUP_TIMEOUT
+            = Property.durationSec("kex-proposal-setup-timeout", Duration.ofSeconds(42), Duration.ofSeconds(5));
 
     /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)

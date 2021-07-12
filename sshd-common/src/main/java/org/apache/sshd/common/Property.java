@@ -88,12 +88,20 @@ public interface Property<T> extends NamedResource {
         return new DurationProperty(name, def);
     }
 
+    static Property<Duration> duration(String name, Duration def, Duration min) {
+        return new DurationProperty(name, def, min);
+    }
+
     static Property<Duration> durationSec(String name) {
         return durationSec(name, null);
     }
 
     static Property<Duration> durationSec(String name, Duration def) {
         return new DurationInSecondsProperty(name, def);
+    }
+
+    static Property<Duration> durationSec(String name, Duration def, Duration min) {
+        return new DurationInSecondsProperty(name, def, min);
     }
 
     static Property<Charset> charset(String name) {
@@ -176,16 +184,26 @@ public interface Property<T> extends NamedResource {
     }
 
     class DurationProperty extends BaseProperty<Duration> {
+
+        protected final Duration min;
+
         public DurationProperty(String name) {
             this(name, null);
         }
 
         public DurationProperty(String name, Duration def) {
             super(name, Duration.class, def);
+            min = null;
+        }
+
+        public DurationProperty(String name, Duration def, Duration min) {
+            super(name, Duration.class, atLeast(name, def, min));
+            this.min = min;
         }
 
         @Override
         protected Object toStorage(Duration value) {
+            atLeast(getName(), value, min);
             return (value != null) ? value.toMillis() : null;
         }
 
@@ -193,6 +211,18 @@ public interface Property<T> extends NamedResource {
         protected Duration fromStorage(Object value) {
             Long val = PropertyResolverUtils.toLong(value);
             return (val != null) ? Duration.ofMillis(val) : null;
+        }
+
+        private static Long toMillis(Duration value) {
+            return value == null ? null : value.toMillis();
+        }
+
+        protected static Duration atLeast(String name, Duration value, Duration min) {
+            if (min != null) {
+                ValidateUtils.checkTrue(value != null && min.compareTo(value) <= 0,
+                        "Property %s must be at least %d ms; actual value: %d ms", name, toMillis(min), toMillis(value));
+            }
+            return value;
         }
     }
 
@@ -205,9 +235,14 @@ public interface Property<T> extends NamedResource {
             super(name, def);
         }
 
+        public DurationInSecondsProperty(String name, Duration def, Duration min) {
+            super(name, def, min);
+        }
+
         @Override
         protected Object toStorage(Duration value) {
-            return (value != null) ? (value.toMillis() / 1_000L) : null;
+            atLeast(getName(), value, min);
+            return (value != null) ? value.getSeconds() : null;
         }
 
         @Override
