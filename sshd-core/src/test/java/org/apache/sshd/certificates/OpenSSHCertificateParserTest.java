@@ -62,25 +62,27 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
                 new TestParams("rsa-sha2-512", "user01_ecdsa_521"));
     }
 
+    @SuppressWarnings("synthetic-access")
     private String getCertificateResource() {
         return USER_KEY_PATH + params.privateKey + "-cert.pub";
     }
 
     @Test
-    public void parseCertificate() throws Exception {
+    @SuppressWarnings("synthetic-access")
+    public void testParseCertificate() throws Exception {
 
         try (InputStream certInputStream
                 = Thread.currentThread().getContextClassLoader().getResourceAsStream(getCertificateResource())) {
 
-            final byte[] certBytes = IoUtils.toByteArray(certInputStream);
-            final String certLine = GenericUtils.replaceWhitespaceAndTrim(new String(certBytes, StandardCharsets.UTF_8));
+            byte[] certBytes = IoUtils.toByteArray(certInputStream);
+            String certLine = GenericUtils.replaceWhitespaceAndTrim(new String(certBytes, StandardCharsets.UTF_8));
 
-            final PublicKeyEntry certPublicKeyEntry = PublicKeyEntry.parsePublicKeyEntry(certLine);
-            final PublicKey cert = certPublicKeyEntry.resolvePublicKey(null, null, null);
+            PublicKeyEntry certPublicKeyEntry = PublicKeyEntry.parsePublicKeyEntry(certLine);
+            PublicKey cert = certPublicKeyEntry.resolvePublicKey(null, null, null);
 
             assertObjectInstanceOf("Must be OpenSshCertificate instance", OpenSshCertificate.class, cert);
 
-            final OpenSshCertificate typedCert = (OpenSshCertificate) cert;
+            OpenSshCertificate typedCert = (OpenSshCertificate) cert;
 
             assertEquals(Collections.singletonList("user01"), typedCert.getPrincipals());
             assertEquals(OpenSshCertificate.Type.USER, typedCert.getType());
@@ -116,7 +118,6 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
     }
 
     private static class TestParams {
-
         private final String sigAlgorithm;
         private final String privateKey;
 
@@ -124,7 +125,5 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
             this.sigAlgorithm = sigAlgorithm;
             this.privateKey = privateKey;
         }
-
     }
-
 }

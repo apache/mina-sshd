@@ -497,7 +497,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             resp.append("0123456789\n");
         }
         resp.append("</body></html>\n");
-        final StringBuilder sb = new StringBuilder();
+
+        StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 200 OK").append('\n');
         sb.append("Content-Type: text/HTML").append('\n');
         sb.append("Content-Length: ").append(resp.length()).append('\n');
@@ -512,25 +513,26 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         });
         acceptor.setReuseAddress(true);
         acceptor.bind(new InetSocketAddress(0));
-        final int port = acceptor.getLocalAddress().getPort();
+        int port = acceptor.getLocalAddress().getPort();
 
         Session session = createSession();
         try {
-            final int forwardedPort1 = session.setPortForwardingL(0, host, port);
-            final int forwardedPort2 = CoreTestSupportUtils.getFreePort();
+            int forwardedPort1 = session.setPortForwardingL(0, host, port);
+            int forwardedPort2 = CoreTestSupportUtils.getFreePort();
             session.setPortForwardingR(forwardedPort2, TEST_LOCALHOST, forwardedPort1);
             outputDebugMessage("URL: http://localhost %s", forwardedPort2);
 
-            final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
-            final Thread[] threads = new Thread[nbThread];
-            final List<Throwable> errors = new CopyOnWriteArrayList<>();
+            CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
+            Thread[] threads = new Thread[nbThread];
+            List<Throwable> errors = new CopyOnWriteArrayList<>();
             for (int i = 0; i < threads.length; i++) {
                 threads[i] = new Thread(getCurrentTestName() + "[" + i + "]") {
                     @Override
+                    @SuppressWarnings("synthetic-access")
                     public void run() {
                         for (int j = 0; j < nbLoops; j++) {
-                            final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-                            final HttpClient client = new HttpClient(mgr);
+                            MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+                            HttpClient client = new HttpClient(mgr);
                             client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
                             client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
                             for (int i = 0; i < nbDownloads; i++) {

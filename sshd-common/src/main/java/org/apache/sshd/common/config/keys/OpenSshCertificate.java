@@ -56,7 +56,7 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
     }
 
     /**
-     * The minimal {@link #getValidAfter()} or {@link #getValidBefore()} value, corresponding to {@link Instant#EPOCH}.
+     * The minimal {@link #getValidAfter()} or {@link #getValidBefore()} value, corresponding to {@code Instant#EPOCH}.
      */
     long MIN_EPOCH = 0L;
 

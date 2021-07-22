@@ -126,7 +126,8 @@ public class OpenSshCertificateBuilder {
     /**
      * If null, uses {@link OpenSshCertificate#MIN_EPOCH}
      *
-     * @param validAfter {@link Instant} to use for validBefore
+     * @param  validAfter {@link Instant} to use for validBefore
+     * @return            Self reference
      */
     public OpenSshCertificateBuilder validAfter(Instant validAfter) {
         if (validAfter == null) {
@@ -145,7 +146,8 @@ public class OpenSshCertificateBuilder {
     /**
      * If null, uses {@link OpenSshCertificate#INFINITY}
      *
-     * @param validBefore {@link Instant} to use for validBefore
+     * @param  validBefore {@link Instant} to use for validBefore
+     * @return             Self reference
      */
     public OpenSshCertificateBuilder validBefore(Instant validBefore) {
         if (validBefore == null) {

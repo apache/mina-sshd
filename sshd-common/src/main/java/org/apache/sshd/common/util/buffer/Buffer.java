@@ -812,6 +812,7 @@ public abstract class Buffer implements Readable {
      * Then the entire name + data strings are added as bytes (which will get a length prefix)
      *
      * @param options to write into the buffer, may be {@code null} or empty but must not contain {@code null} elements
+     * @param charset The {@link Charset} to use for string options
      */
     public void putCertificateOptions(List<OpenSshCertificate.CertificateOption> options, Charset charset) {
         int numObjects = GenericUtils.size(options);
