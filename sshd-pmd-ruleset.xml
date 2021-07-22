@@ -20,7 +20,7 @@
     <rule ref="category/java/errorprone.xml/ProperCloneImplementation" />
     <rule ref="category/java/errorprone.xml/CloneMethodMustImplementCloneable" />
     <rule ref="category/java/errorprone.xml/AssignmentInOperand" />
-    <rule ref="category/java/errorprone.xml/BadComparison" />
+    <rule ref="category/java/errorprone.xml/ComparisonWithNaN" />
     <rule ref="category/java/errorprone.xml/EqualsNull" />
     <rule ref="category/java/errorprone.xml/NonCaseLabelInSwitchStatement" />
     <rule ref="category/java/errorprone.xml/AvoidCallingFinalize" />
