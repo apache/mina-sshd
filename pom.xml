@@ -106,7 +106,7 @@
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <groovy.version>3.0.8</groovy.version>
         <bouncycastle.version>1.69</bouncycastle.version>
-        <slf4j.version>1.7.31</slf4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <logback.version>1.2.3</logback.version>        
         <spring.version>5.3.8</spring.version>
         <jgit.version>5.12.0.202106070339-r</jgit.version>
