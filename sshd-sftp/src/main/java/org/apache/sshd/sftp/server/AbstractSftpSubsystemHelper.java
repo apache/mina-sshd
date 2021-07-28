@@ -446,12 +446,9 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         int pflags = buffer.getInt();
-        if (pflags == 0) {
-            pflags = SftpConstants.SSH_FXF_READ;
-        }
 
         if (version < SftpConstants.SFTP_V5) {
-            int flags = pflags;
+            int flags = pflags == 0 ? SftpConstants.SSH_FXF_READ : pflags;
             pflags = 0;
             switch (flags & (SftpConstants.SSH_FXF_READ | SftpConstants.SSH_FXF_WRITE)) {
                 case SftpConstants.SSH_FXF_READ:

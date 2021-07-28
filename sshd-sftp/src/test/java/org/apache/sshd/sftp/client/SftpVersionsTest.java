@@ -58,6 +58,7 @@ import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.common.SftpConstants;
+import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
 import org.apache.sshd.sftp.server.AbstractSftpEventListenerAdapter;
 import org.apache.sshd.sftp.server.DefaultGroupPrincipal;
@@ -132,6 +133,28 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             }
             assertTrue("File should exist on disk: " + lclFile, Files.exists(lclFile));
             sftp.remove(remotePath);
+        }
+    }
+
+    @Test
+    public void testSftpCreateNew() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
+        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Files.write(lclFile, Collections.singleton("existing"));
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            SftpException ex = assertThrows(SftpException.class, () -> {
+                try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write, OpenMode.Exclusive)) {
+                    out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
+                }
+            });
+            assertEquals(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, ex.getStatus());
         }
     }
 
