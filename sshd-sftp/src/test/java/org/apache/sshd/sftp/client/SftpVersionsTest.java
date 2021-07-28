@@ -20,6 +20,7 @@
 package org.apache.sshd.sftp.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,6 +49,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.session.ServerSession;
@@ -55,6 +57,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
+import org.apache.sshd.sftp.client.SftpClient.CopyMode;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -155,6 +158,41 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 }
             });
             assertEquals(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, ex.getStatus());
+        }
+    }
+
+    @Test
+    public void testSftpRenameNoReplace() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
+        Path aFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + "-a.txt");
+        Files.write(aFile, Collections.singleton("a"));
+        Path bFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + "-b.txt");
+        Files.write(bFile, Collections.singleton("b"));
+
+        Path parentPath = targetPath.getParent();
+        String aPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, aFile);
+        String bPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, bFile);
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+            SftpException ex = assertThrows(SftpException.class, () -> sftp.rename(aPath, bPath));
+            assertEquals(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, ex.getStatus());
+            if (getTestedVersion() >= SftpConstants.SFTP_V5) {
+                // For CopyMode.Atomic we use StandardCopyOptions.ATOMIC_MOVE. It is implementation defined whether an
+                // atomic move overwrites an already existing file. See javadoc of Files.move().
+                sftp.rename(aPath, bPath, CopyMode.Overwrite);
+                assertTrue(Files.notExists(aFile));
+                try (InputStream in = sftp.read(bPath)) {
+                    List<String> lines = IoUtils.readAllLines(in);
+                    assertEquals(1, lines.size());
+                    assertEquals("a", lines.get(0));
+                }
+            } else {
+                assertThrows(UnsupportedOperationException.class, () -> sftp.rename(aPath, bPath, CopyMode.Atomic));
+                assertThrows(UnsupportedOperationException.class, () -> sftp.rename(aPath, bPath, CopyMode.Overwrite));
+            }
         }
     }
 
