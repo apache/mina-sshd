@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.output;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;

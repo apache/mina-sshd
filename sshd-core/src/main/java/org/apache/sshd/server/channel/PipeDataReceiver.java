@@ -26,7 +26,7 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
-import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
+import org.apache.sshd.common.util.io.output.LoggingFilterOutputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**

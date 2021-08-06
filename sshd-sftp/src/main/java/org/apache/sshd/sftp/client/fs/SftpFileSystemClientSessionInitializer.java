@@ -26,6 +26,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.common.auth.PasswordHolder;
 import org.apache.sshd.common.auth.UsernameHolder;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 
 /**
@@ -86,17 +87,20 @@ public interface SftpFileSystemClientSessionInitializer {
      * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to create the
      * {@link SftpFileSystem} once session has been authenticated.
      *
-     * @param  provider    The {@link SftpFileSystemProvider} instance requesting the session
-     * @param  context     The initialization {@link SftpFileSystemInitializationContext}
-     * @param  session     The authenticated {@link ClientSession}
-     * @param  selector    The <U>resolved</U> {@link SftpVersionSelector} to use
-     * @return             The created {@link SftpFileSystem}
-     * @throws IOException If failed to create the file-system
+     * @param  provider         The {@link SftpFileSystemProvider} instance requesting the session
+     * @param  context          The initialization {@link SftpFileSystemInitializationContext}
+     * @param  session          The authenticated {@link ClientSession}
+     * @param  selector         The <U>resolved</U> {@link SftpVersionSelector} to use
+     * @param  errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream - if
+     *                          {@code null} the data is silently ignored
+     * @return                  The created {@link SftpFileSystem}
+     * @throws IOException      If failed to create the file-system
      */
     default SftpFileSystem createSftpFileSystem(
             SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session,
-            SftpVersionSelector selector)
+            SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
             throws IOException {
-        return new SftpFileSystem(provider, context.getId(), session, provider.getSftpClientFactory(), selector);
+        return new SftpFileSystem(
+                provider, context.getId(), session, provider.getSftpClientFactory(), selector, errorDataHandler);
     }
 }

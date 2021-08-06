@@ -228,6 +228,28 @@ configuration key. The same can be achieved for the CLI SSHD code by specifying 
 
 For more advanced restrictions one needs to sub-class `SftpSubSystem` and provide a non-default `SftpSubsystemFactory` that uses the sub-classed code.
 
+### Intercepting data sent via STDERR channel data from the server
+
+According to [SFTP version 4 - section 3.1](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#section-3.1) the server MAY send error data through the STDERR pipeline.
+By default, the code ignores such data - however, users may register a `SftpErrorDataHandler` that will be invoked whenever such data is received from the server.
+
+```java
+ClientSession session = ...establish a session...
+SftpClientFactory factory = ...obtain a factory instance...
+
+try (SftpClient client = factory.createSftpClient(session, new MySftpErrorDataHandler())) {
+   ...
+}
+```
+
+The same applies to the `SftpFileSystem` - users may provide a custom error data handler that will be invoked whenever such data is received from the server.
+
+**Note:**
+
+* Error data handling must be **short** or it will cause the SSH session to hang - any long/blocking processing must be done in a separate thread.
+* The provided data buffer contents must be **copied** if they need to be used after the callback returns as the buffer contents might be re-used by the caller code.
+* Any exception thrown during handling of the data will cause the SFTP session to terminate.
+
 ### Using `SftpFileSystemProvider` to create an `SftpFileSystem`
 
 The code automatically registers the `SftpFileSystemProvider` as the handler for `sftp://` URL(s). Such URLs are

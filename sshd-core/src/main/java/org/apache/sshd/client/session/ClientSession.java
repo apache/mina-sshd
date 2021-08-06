@@ -56,8 +56,8 @@ import org.apache.sshd.common.forward.PortForwardingManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.io.NoCloseOutputStream;
-import org.apache.sshd.common.util.io.NullOutputStream;
+import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
+import org.apache.sshd.common.util.io.output.NullOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**

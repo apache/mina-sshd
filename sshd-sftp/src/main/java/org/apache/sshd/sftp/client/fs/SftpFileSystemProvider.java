@@ -91,6 +91,7 @@ import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.extensions.CopyFileExtension;
 import org.apache.sshd.sftp.client.impl.SftpRemotePathChannel;
@@ -132,6 +133,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     private final SshClient clientInstance;
     private final SftpClientFactory factory;
     private final SftpVersionSelector versionSelector;
+    private final SftpErrorDataHandler errorDataHandler;
     private final NavigableMap<String, SftpFileSystem> fileSystems = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private SftpFileSystemClientSessionInitializer fsSessionInitializer = SftpFileSystemClientSessionInitializer.DEFAULT;
 
@@ -143,23 +145,38 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         this(null, selector);
     }
 
-    /**
-     * @param client The {@link SshClient} to use - if {@code null} then a default one will be setup and started.
-     *               Otherwise, it is assumed that the client has already been started
-     * @see          SshClient#setUpDefaultClient()
-     */
     public SftpFileSystemProvider(SshClient client) {
         this(client, SftpVersionSelector.CURRENT);
     }
 
     public SftpFileSystemProvider(SshClient client, SftpVersionSelector selector) {
-        this(client, null, selector);
+        this(client, selector, SftpErrorDataHandler.EMPTY);
+    }
+
+    public SftpFileSystemProvider(SshClient client, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler) {
+        this(client, null, selector, errorDataHandler);
+
     }
 
     public SftpFileSystemProvider(SshClient client, SftpClientFactory factory, SftpVersionSelector selector) {
+        this(client, factory, selector, SftpErrorDataHandler.EMPTY);
+    }
+
+    /**
+     * @param client           The {@link SshClient} to use - if {@code null} then a default one will be setup and
+     *                         started. Otherwise, it is assumed that the client has already been started
+     * @param factory          The {@link SftpClientFactory} to use to generate SFTP client instances
+     * @param selector         The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
+     * @param errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream - if
+     *                         {@code null} the data is silently ignored
+     * @see                    SshClient#setUpDefaultClient()
+     */
+    public SftpFileSystemProvider(SshClient client, SftpClientFactory factory,
+                                  SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler) {
         this.log = LoggerFactory.getLogger(getClass());
         this.factory = factory;
         this.versionSelector = selector;
+        this.errorDataHandler = errorDataHandler;
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshClient.setUpDefaultClient();
@@ -175,6 +192,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public final SftpVersionSelector getSftpVersionSelector() {
         return versionSelector;
+    }
+
+    public SftpErrorDataHandler getSftpErrorDataHandler() {
+        return errorDataHandler;
     }
 
     public final SshClient getClientInstance() {
@@ -218,6 +239,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         context.setMaxAuthTime(SftpModuleProperties.AUTH_TIME.getRequired(resolver));
 
         SftpVersionSelector selector = resolveSftpVersionSelector(uri, getSftpVersionSelector(), resolver);
+        SftpErrorDataHandler errorHandler = resolveSftpErrorDataHandler(uri, getSftpErrorDataHandler(), resolver);
         Charset decodingCharset = SftpModuleProperties.NAME_DECODER_CHARSET.getRequired(resolver);
 
         SftpFileSystemClientSessionInitializer initializer = getSftpFileSystemClientSessionInitializer();
@@ -250,7 +272,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
                 initializer.authenticateClientSession(this, context, session);
 
-                fileSystem = initializer.createSftpFileSystem(this, context, session, selector);
+                fileSystem = initializer.createSftpFileSystem(
+                        this, context, session, selector, errorHandler);
                 fileSystems.put(id, fileSystem);
             } catch (Exception e) {
                 if (session != null) {
@@ -309,6 +332,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         } else {
             return SftpVersionSelector.resolveVersionSelector(preference);
         }
+    }
+
+    protected SftpErrorDataHandler resolveSftpErrorDataHandler(
+            URI uri, SftpErrorDataHandler errorHandler, PropertyResolver resolver) {
+        return errorHandler;
     }
 
     // NOTE: URI parameters override environment ones
@@ -395,7 +423,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             if (fileSystems.containsKey(id)) {
                 throw new FileSystemAlreadyExistsException(id);
             }
-            fileSystem = new SftpFileSystem(this, id, session, factory, getSftpVersionSelector());
+            fileSystem = new SftpFileSystem(this, id, session, factory, getSftpVersionSelector(), getSftpErrorDataHandler());
             fileSystems.put(id, fileSystem);
         }
 

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.output;
 
 import java.io.PrintStream;
 import java.util.Locale;

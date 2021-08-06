@@ -35,7 +35,7 @@ import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.InputStreamWithChannel;
+import org.apache.sshd.common.util.io.input.InputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;

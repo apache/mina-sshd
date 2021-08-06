@@ -16,32 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.io;
 
-import java.io.FilterOutputStream;
-import java.io.IOException;
+package org.apache.sshd.common.util.io.output;
+
 import java.io.OutputStream;
+import java.nio.channels.Channel;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NoCloseOutputStream extends FilterOutputStream {
-    public NoCloseOutputStream(OutputStream out) {
-        super(out);
-    }
-
-    @Override
-    public void close() throws IOException {
-        // ignored
-    }
-
-    public static OutputStream resolveOutputStream(OutputStream output, boolean okToClose) {
-        if ((output == null) || okToClose) {
-            return output;
-        } else {
-            return new NoCloseOutputStream(output);
-        }
+public abstract class OutputStreamWithChannel extends OutputStream implements Channel {
+    protected OutputStreamWithChannel() {
+        super();
     }
 }

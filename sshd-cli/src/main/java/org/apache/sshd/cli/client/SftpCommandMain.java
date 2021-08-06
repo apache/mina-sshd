@@ -29,6 +29,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.channels.Channel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +67,10 @@ import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
+import org.apache.sshd.common.util.io.output.LineLevelAppender;
+import org.apache.sshd.common.util.io.output.LineLevelAppenderStream;
+import org.apache.sshd.common.util.io.output.NullOutputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -317,6 +321,33 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         return SftpVersionSelector.resolveVersionSelector(selector);
     }
 
+    private static OutputStream resolveErrorDataHandlerStream(ClientSession session, Logger logger) {
+        String errCharset = session.getString("SftpErrorHandlerOutputCharset");
+        if (GenericUtils.safeCompare(errCharset, "NONE", false) == 0) {
+            return new NullOutputStream();
+        }
+
+        LineLevelAppender appender = new LineLevelAppender() {
+            @Override
+            public boolean isWriteEnabled() {
+                return logger.isErrorEnabled();
+            }
+
+            @Override
+            public void writeLineData(CharSequence lineData) throws IOException {
+                logger.error("errorChannel: {}", lineData);
+            }
+
+            @Override
+            public void close() throws IOException {
+                // ignored
+            }
+        };
+        return GenericUtils.isBlank(errCharset)
+                ? new LineLevelAppenderStream(StandardCharsets.US_ASCII, appender)
+                : new LineLevelAppenderStream(errCharset, appender);
+    }
+
     /* -------------------------------------------------------------------- */
 
     public static void main(String[] args) throws Exception {
@@ -356,7 +387,9 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                     logger.info("Using version selector={}", versionSelector);
                 }
 
-                try (SftpClient sftpClient = clientFactory.createSftpClient(session, versionSelector);
+                try (OutputStream errStream = resolveErrorDataHandlerStream(session, logger);
+                     SftpClient sftpClient = clientFactory.createSftpClient(
+                             session, versionSelector, errStream::write);
                      SftpCommandMain sftp = new SftpCommandMain(sftpClient)) {
                     // TODO allow injection of extra CommandExecutor(s) via command line and/or service loading
                     sftp.doInteractive(stdin, stdout, stderr);

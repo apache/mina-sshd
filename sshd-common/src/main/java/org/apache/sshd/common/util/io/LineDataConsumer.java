@@ -19,14 +19,28 @@
 
 package org.apache.sshd.common.util.io;
 
-import java.io.InputStream;
-import java.nio.channels.Channel;
+import java.io.IOException;
+import java.io.StreamCorruptedException;
+import java.util.Objects;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class InputStreamWithChannel extends InputStream implements Channel {
-    protected InputStreamWithChannel() {
-        super();
-    }
+@FunctionalInterface
+public interface LineDataConsumer {
+    /**
+     * Ignores anything provided to it
+     */
+    LineDataConsumer IGNORE = lineData -> {
+        // do nothing
+    };
+
+    /**
+     * Throws {@link StreamCorruptedException} with the invoked line data
+     */
+    LineDataConsumer FAIL = lineData -> {
+        throw new StreamCorruptedException(Objects.toString(lineData));
+    };
+
+    void consume(CharSequence lineData) throws IOException;
 }

@@ -56,9 +56,9 @@ import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.io.NoCloseOutputStream;
-import org.apache.sshd.common.util.io.NoCloseReader;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseReader;
+import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 
 /**
  * Represents an entry in the client's configuration file as defined by the

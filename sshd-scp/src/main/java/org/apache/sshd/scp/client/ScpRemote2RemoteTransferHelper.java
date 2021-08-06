@@ -35,7 +35,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.LimitInputStream;
+import org.apache.sshd.common.util.io.input.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.client.ScpClient.Option;

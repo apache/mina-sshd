@@ -35,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.io.NoCloseReader;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseReader;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**

@@ -46,7 +46,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.scp.client.ScpClient;
 import org.apache.sshd.scp.client.ScpClient.Option;

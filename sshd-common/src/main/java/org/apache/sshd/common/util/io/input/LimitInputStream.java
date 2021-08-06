@@ -17,24 +17,26 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.input;
 
-import java.io.EOFException;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A {@code /dev/null} input stream
- * 
+ * Reads from another {@link InputStream} up to specified max. length
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NullInputStream extends InputStream implements Channel {
+public class LimitInputStream extends FilterInputStream implements Channel {
     private final AtomicBoolean open = new AtomicBoolean(true);
+    private long remaining;
 
-    public NullInputStream() {
-        super();
+    public LimitInputStream(InputStream in, long length) {
+        super(in);
+        remaining = length;
     }
 
     @Override
@@ -45,44 +47,64 @@ public class NullInputStream extends InputStream implements Channel {
     @Override
     public int read() throws IOException {
         if (!isOpen()) {
-            throw new EOFException("Stream is closed for reading one value");
+            throw new IOException("read() - stream is closed (remaining=" + remaining + ")");
         }
-        return -1;
+
+        if (remaining > 0) {
+            remaining--;
+            return super.read();
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (!isOpen()) {
-            throw new EOFException("Stream is closed for reading " + len + " bytes");
+            throw new IOException("read(len=" + len + ") stream is closed (remaining=" + remaining + ")");
         }
-        return -1;
+
+        int nb = len;
+        if (nb > remaining) {
+            nb = (int) remaining;
+        }
+        if (nb > 0) {
+            int read = super.read(b, off, nb);
+            remaining -= read;
+            return read;
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public long skip(long n) throws IOException {
         if (!isOpen()) {
-            throw new EOFException("Stream is closed for skipping " + n + " bytes");
+            throw new IOException("skip(" + n + ") stream is closed (remaining=" + remaining + ")");
         }
-        return 0L;
+
+        long skipped = super.skip(n);
+        remaining -= skipped;
+        return skipped;
     }
 
     @Override
     public int available() throws IOException {
         if (!isOpen()) {
-            throw new EOFException("Stream is closed for availability query");
+            throw new IOException("available() stream is closed (remaining=" + remaining + ")");
         }
-        return 0;
-    }
 
-    @Override
-    public synchronized void reset() throws IOException {
-        if (!isOpen()) {
-            throw new EOFException("Stream is closed for reset");
+        int av = super.available();
+        if (av > remaining) {
+            return (int) remaining;
+        } else {
+            return av;
         }
     }
 
     @Override
     public void close() throws IOException {
+        // do not close the original input stream since it serves for ACK(s)
         if (open.getAndSet(false)) {
             // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint

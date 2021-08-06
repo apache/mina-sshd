@@ -51,7 +51,7 @@ import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCrypt;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.writer.KeyPairResourceWriter;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 
 /**
  * A {@link KeyPairResourceWriter} for writing keys in the modern OpenSSH format, using the OpenBSD bcrypt KDF for

@@ -17,16 +17,16 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.input;
 
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.nio.channels.Channel;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class OutputStreamWithChannel extends OutputStream implements Channel {
-    protected OutputStreamWithChannel() {
+public abstract class InputStreamWithChannel extends InputStream implements Channel {
+    protected InputStreamWithChannel() {
         super();
     }
 }

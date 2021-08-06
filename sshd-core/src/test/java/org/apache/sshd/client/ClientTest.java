@@ -90,7 +90,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;

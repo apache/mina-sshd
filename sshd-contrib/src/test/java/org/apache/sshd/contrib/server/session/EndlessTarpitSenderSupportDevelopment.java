@@ -52,7 +52,7 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.contrib.common.io.EndlessWriteFuture;
 import org.apache.sshd.contrib.common.io.ImmediateWriteFuture;

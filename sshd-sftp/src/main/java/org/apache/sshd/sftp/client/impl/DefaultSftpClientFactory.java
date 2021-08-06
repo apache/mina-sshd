@@ -26,6 +26,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
 import org.apache.sshd.sftp.client.fs.SftpFileSystemProvider;
@@ -43,8 +44,10 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
     }
 
     @Override
-    public SftpClient createSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException {
-        DefaultSftpClient client = createDefaultSftpClient(session, selector);
+    public SftpClient createSftpClient(
+            ClientSession session, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
+            throws IOException {
+        DefaultSftpClient client = createDefaultSftpClient(session, selector, errorDataHandler);
         try {
             client.negotiateVersion(selector);
         } catch (IOException | RuntimeException | Error e) {
@@ -57,17 +60,19 @@ public class DefaultSftpClientFactory extends AbstractLoggingBean implements Sft
         return client;
     }
 
-    protected DefaultSftpClient createDefaultSftpClient(ClientSession session, SftpVersionSelector selector)
+    protected DefaultSftpClient createDefaultSftpClient(
+            ClientSession session, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
             throws IOException {
-        return new DefaultSftpClient(session, selector);
+        return new DefaultSftpClient(session, selector, errorDataHandler);
     }
 
     @Override
     public SftpFileSystem createSftpFileSystem(
-            ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
+            ClientSession session, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler,
+            int readBufferSize, int writeBufferSize)
             throws IOException {
         ClientFactoryManager manager = session.getFactoryManager();
-        SftpFileSystemProvider provider = new SftpFileSystemProvider((SshClient) manager, selector);
+        SftpFileSystemProvider provider = new SftpFileSystemProvider((SshClient) manager, selector, errorDataHandler);
         SftpFileSystem fs = provider.newFileSystem(session);
         if (readBufferSize > 0) {
             fs.setReadBufferSize(readBufferSize);

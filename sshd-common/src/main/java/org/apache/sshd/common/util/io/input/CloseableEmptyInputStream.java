@@ -17,26 +17,23 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.input;
 
-import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.channels.Channel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Reads from another {@link InputStream} up to specified max. length
+ * A {@code /dev/null} stream that can be closed - in which case it will throw {@link IOException}s if invoked after
+ * being closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class LimitInputStream extends FilterInputStream implements Channel {
+public class CloseableEmptyInputStream extends EmptyInputStream implements Channel {
     private final AtomicBoolean open = new AtomicBoolean(true);
-    private long remaining;
 
-    public LimitInputStream(InputStream in, long length) {
-        super(in);
-        remaining = length;
+    public CloseableEmptyInputStream() {
+        super();
     }
 
     @Override
@@ -45,66 +42,52 @@ public class LimitInputStream extends FilterInputStream implements Channel {
     }
 
     @Override
-    public int read() throws IOException {
-        if (!isOpen()) {
-            throw new IOException("read() - stream is closed (remaining=" + remaining + ")");
+    public int available() throws IOException {
+        if (isOpen()) {
+            return super.available();
+        } else {
+            throw new IOException("available() stream is closed");
         }
+    }
 
-        if (remaining > 0) {
-            remaining--;
+    @Override
+    public int read() throws IOException {
+        if (isOpen()) {
             return super.read();
         } else {
-            return -1;
+            throw new IOException("read() stream is closed");
         }
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("read(len=" + len + ") stream is closed (remaining=" + remaining + ")");
-        }
-
-        int nb = len;
-        if (nb > remaining) {
-            nb = (int) remaining;
-        }
-        if (nb > 0) {
-            int read = super.read(b, off, nb);
-            remaining -= read;
-            return read;
+        if (isOpen()) {
+            return super.read(b, off, len);
         } else {
-            return -1;
+            throw new IOException("read([])[" + off + "," + len + "] stream is closed");
         }
     }
 
     @Override
     public long skip(long n) throws IOException {
-        if (!isOpen()) {
-            throw new IOException("skip(" + n + ") stream is closed (remaining=" + remaining + ")");
+        if (isOpen()) {
+            return super.skip(n);
+        } else {
+            throw new IOException("skip(" + n + ") stream is closed");
         }
-
-        long skipped = super.skip(n);
-        remaining -= skipped;
-        return skipped;
     }
 
     @Override
-    public int available() throws IOException {
-        if (!isOpen()) {
-            throw new IOException("available() stream is closed (remaining=" + remaining + ")");
-        }
-
-        int av = super.available();
-        if (av > remaining) {
-            return (int) remaining;
+    public synchronized void reset() throws IOException {
+        if (isOpen()) {
+            super.reset();
         } else {
-            return av;
+            throw new IOException("reset() stream is closed");
         }
     }
 
     @Override
     public void close() throws IOException {
-        // do not close the original input stream since it serves for ACK(s)
         if (open.getAndSet(false)) {
             // noinspection UnnecessaryReturnStatement
             return; // debug breakpoint

@@ -52,6 +52,7 @@ import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.impl.AbstractSftpClient;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -67,6 +68,7 @@ public class SftpFileSystem
     private final ClientSession clientSession;
     private final SftpClientFactory factory;
     private final SftpVersionSelector selector;
+    private final SftpErrorDataHandler errorDataHandler;
     private final Queue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
     private final int version;
@@ -77,12 +79,14 @@ public class SftpFileSystem
     private final List<FileStore> stores;
 
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session,
-                          SftpClientFactory factory, SftpVersionSelector selector) throws IOException {
+                          SftpClientFactory factory, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
+                                                                                                                          throws IOException {
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");
         this.factory = factory != null ? factory : SftpClientFactory.instance();
         this.selector = selector;
+        this.errorDataHandler = errorDataHandler;
         this.stores = Collections.unmodifiableList(Collections.<FileStore> singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(SftpModuleProperties.POOL_SIZE.getRequired(session));
         try (SftpClient client = getClient()) {
@@ -102,6 +106,10 @@ public class SftpFileSystem
 
     public final SftpVersionSelector getSftpVersionSelector() {
         return selector;
+    }
+
+    public SftpErrorDataHandler getSftpErrorDataHandler() {
+        return errorDataHandler;
     }
 
     public final String getId() {
@@ -171,10 +179,13 @@ public class SftpFileSystem
                 SftpClient client = pool.poll();
                 if (client == null) {
                     ClientSession session = getClientSession();
-                    client = factory.createSftpClient(session, getSftpVersionSelector());
+                    client = factory.createSftpClient(
+                            session, getSftpVersionSelector(), getSftpErrorDataHandler());
                 }
                 if (!client.isClosing()) {
-                    wrapper = new Wrapper(client, getReadBufferSize(), getWriteBufferSize());
+                    wrapper = new Wrapper(
+                            client,
+                            getSftpErrorDataHandler(), getReadBufferSize(), getWriteBufferSize());
                 }
             }
             wrappers.set(wrapper);
@@ -231,7 +242,9 @@ public class SftpFileSystem
         private final int readSize;
         private final int writeSize;
 
-        private Wrapper(SftpClient delegate, int readSize, int writeSize) {
+        private Wrapper(SftpClient delegate, SftpErrorDataHandler errorHandler, int readSize, int writeSize) {
+            super(errorHandler);
+
             this.delegate = delegate;
             this.readSize = readSize;
             this.writeSize = writeSize;

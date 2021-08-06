@@ -60,7 +60,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
+import org.apache.sshd.common.util.io.output.LoggingFilterOutputStream;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ServerFactoryManager;

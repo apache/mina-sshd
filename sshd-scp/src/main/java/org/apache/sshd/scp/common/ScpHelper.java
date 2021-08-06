@@ -44,7 +44,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.LimitInputStream;
+import org.apache.sshd.common.util.io.input.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpTransferEventListener.FileOperation;

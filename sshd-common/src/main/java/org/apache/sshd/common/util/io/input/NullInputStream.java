@@ -17,22 +17,23 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.input;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.Channel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A {@code /dev/null} stream that can be closed - in which case it will throw {@link IOException}s if invoked after
- * being closed
- *
+ * A {@code /dev/null} input stream
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CloseableEmptyInputStream extends EmptyInputStream implements Channel {
+public class NullInputStream extends InputStream implements Channel {
     private final AtomicBoolean open = new AtomicBoolean(true);
 
-    public CloseableEmptyInputStream() {
+    public NullInputStream() {
         super();
     }
 
@@ -42,47 +43,41 @@ public class CloseableEmptyInputStream extends EmptyInputStream implements Chann
     }
 
     @Override
-    public int available() throws IOException {
-        if (isOpen()) {
-            return super.available();
-        } else {
-            throw new IOException("available() stream is closed");
-        }
-    }
-
-    @Override
     public int read() throws IOException {
-        if (isOpen()) {
-            return super.read();
-        } else {
-            throw new IOException("read() stream is closed");
+        if (!isOpen()) {
+            throw new EOFException("Stream is closed for reading one value");
         }
+        return -1;
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (isOpen()) {
-            return super.read(b, off, len);
-        } else {
-            throw new IOException("read([])[" + off + "," + len + "] stream is closed");
+        if (!isOpen()) {
+            throw new EOFException("Stream is closed for reading " + len + " bytes");
         }
+        return -1;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        if (isOpen()) {
-            return super.skip(n);
-        } else {
-            throw new IOException("skip(" + n + ") stream is closed");
+        if (!isOpen()) {
+            throw new EOFException("Stream is closed for skipping " + n + " bytes");
         }
+        return 0L;
+    }
+
+    @Override
+    public int available() throws IOException {
+        if (!isOpen()) {
+            throw new EOFException("Stream is closed for availability query");
+        }
+        return 0;
     }
 
     @Override
     public synchronized void reset() throws IOException {
-        if (isOpen()) {
-            super.reset();
-        } else {
-            throw new IOException("reset() stream is closed");
+        if (!isOpen()) {
+            throw new EOFException("Stream is closed for reset");
         }
     }
 

@@ -43,7 +43,7 @@ import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**

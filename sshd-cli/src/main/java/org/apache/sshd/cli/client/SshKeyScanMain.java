@@ -82,7 +82,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.security.SecurityUtils;

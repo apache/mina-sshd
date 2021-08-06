@@ -17,30 +17,27 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.sftp.client;
 
-import java.io.FilterReader;
 import java.io.IOException;
-import java.io.Reader;
 
 /**
+ * Callback for any error stream data sent by the server
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NoCloseReader extends FilterReader {
-    public NoCloseReader(Reader in) {
-        super(in);
-    }
+@FunctionalInterface
+public interface SftpErrorDataHandler {
+    SftpErrorDataHandler EMPTY = (buf, start, len) -> {
+        /* ignored */ };
 
-    @Override
-    public void close() throws IOException {
-        // ignored
-    }
-
-    public static Reader resolveReader(Reader r, boolean okToClose) {
-        if ((r == null) || okToClose) {
-            return r;
-        } else {
-            return new NoCloseReader(r);
-        }
-    }
+    /**
+     * Receive binary data from server error stream
+     *
+     * @param  buf         The buffer of the incoming data
+     * @param  start       Offset in buffer to read the data
+     * @param  len         Available data in buffer
+     * @throws IOException If failed to receive incoming data
+     */
+    void errorData(byte[] buf, int start, int len) throws IOException;
 }

@@ -28,7 +28,7 @@ import org.apache.sshd.cli.CliLogger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.util.test.BaseTestSupport;
 
 /**

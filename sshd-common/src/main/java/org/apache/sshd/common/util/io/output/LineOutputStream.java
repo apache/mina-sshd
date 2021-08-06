@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.contrib.common.util.io;
+package org.apache.sshd.common.util.io.output;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -52,7 +52,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ProxyUtils;
-import org.apache.sshd.common.util.io.NullOutputStream;
+import org.apache.sshd.common.util.io.output.NullOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.Environment;

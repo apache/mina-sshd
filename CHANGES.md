@@ -33,3 +33,4 @@
 * [SSHD-1168](https://issues.apache.org/jira/browse/SSHD-1168) OpenSSH certificates: check certificate type
 * [SSHD-1171](https://issues.apache.org/jira/browse/SSHD-1171) OpenSSHCertificatesTest: certificates expire in 2030
 * [SSHD-1172](https://issues.apache.org/jira/browse/SSHD-1172) Expiration of OpenSshCertificates needs to compare timestamps as unsigned long
+* [SSHD-1202](https://issues.apache.org/jira/browse/SSHD-1202) Provide SftpErrorDataHandler callback support for SFTP client.

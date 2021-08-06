@@ -32,7 +32,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.LogLevelValue;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.NullPrintStream;
+import org.apache.sshd.common.util.io.output.NullPrintStream;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.logging.SimplifiedLoggerSkeleton;
 import org.slf4j.Logger;

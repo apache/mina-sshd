@@ -45,6 +45,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.FullAccessSftpClient;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtensionFactory;
@@ -56,13 +57,18 @@ import org.apache.sshd.sftp.common.extensions.ParserUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSftpClient extends AbstractSubsystemClient implements FullAccessSftpClient {
+public abstract class AbstractSftpClient
+        extends AbstractSubsystemClient
+        implements FullAccessSftpClient, SftpErrorDataHandler {
     public static final int INIT_COMMAND_SIZE = Byte.BYTES /* command */ + Integer.BYTES /* version */;
+
+    protected final SftpErrorDataHandler errorDataHandler;
 
     private final Attributes fileOpenAttributes = new Attributes();
     private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 
-    protected AbstractSftpClient() {
+    protected AbstractSftpClient(SftpErrorDataHandler delegateHandler) {
+        errorDataHandler = (delegateHandler == null) ? SftpErrorDataHandler.EMPTY : delegateHandler;
         fileOpenAttributes.setType(SftpConstants.SSH_FILEXFER_TYPE_REGULAR);
     }
 
@@ -843,6 +849,17 @@ public abstract class AbstractSftpClient extends AbstractSubsystemClient impleme
         }
 
         return 0;
+    }
+
+    @Override
+    public void errorData(byte[] buf, int start, int len) throws IOException {
+        /*
+         * The protocol does not specify how to handle such data but we are lenient and ignore it - similar to
+         * /dev/null
+         */
+        if (errorDataHandler != null) {
+            errorDataHandler.errorData(buf, start, len);
+        }
     }
 
     @Override

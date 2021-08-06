@@ -65,7 +65,34 @@ public interface SftpClientFactory {
      * @return             The created {@link SftpClient} instance
      * @throws IOException If failed to create the client
      */
-    SftpClient createSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException;
+    default SftpClient createSftpClient(ClientSession session, SftpVersionSelector selector) throws IOException {
+        return createSftpClient(session, selector, SftpErrorDataHandler.EMPTY);
+    }
+
+    /**
+     * Create an SFTP client from this session.
+     *
+     * @param  session          The {@link ClientSession} to be used for creating the SFTP client
+     * @param  errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream - if
+     *                          {@code null} the data is silently ignored
+     * @return                  The created {@link SftpClient}
+     * @throws IOException      if failed to create the client
+     */
+    default SftpClient createSftpClient(ClientSession session, SftpErrorDataHandler errorDataHandler) throws IOException {
+        return createSftpClient(session, SftpVersionSelector.CURRENT, errorDataHandler);
+    }
+
+    /**
+     * @param  session          The {@link ClientSession} to which the SFTP client should be attached
+     * @param  selector         The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
+     * @param  errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream - if
+     *                          {@code null} the data is silently ignored
+     * @return                  The created {@link SftpClient} instance
+     * @throws IOException      If failed to create the client
+     */
+    SftpClient createSftpClient(
+            ClientSession session, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
+            throws IOException;
 
     default SftpFileSystem createSftpFileSystem(ClientSession session) throws IOException {
         return createSftpFileSystem(session, SftpVersionSelector.CURRENT);
@@ -90,16 +117,25 @@ public interface SftpClientFactory {
         return createSftpFileSystem(session, SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
     }
 
+    default SftpFileSystem createSftpFileSystem(
+            ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
+            throws IOException {
+        return createSftpFileSystem(session, selector, SftpErrorDataHandler.EMPTY, readBufferSize, writeBufferSize);
+    }
+
     /**
-     * @param  session         The {@link ClientSession} to which the SFTP client backing the file system should be
-     *                         attached
-     * @param  selector        The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
-     * @param  readBufferSize  Default I/O read buffer size
-     * @param  writeBufferSize Default I/O write buffer size
-     * @return                 The created {@link SftpFileSystem} instance
-     * @throws IOException     If failed to create the instance
+     * @param  session          The {@link ClientSession} to which the SFTP client backing the file system should be
+     *                          attached
+     * @param  selector         The {@link SftpVersionSelector} to use in order to negotiate the SFTP version
+     * @param  errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream - if
+     *                          {@code null} the data is silently ignored
+     * @param  readBufferSize   Default I/O read buffer size
+     * @param  writeBufferSize  Default I/O write buffer size
+     * @return                  The created {@link SftpFileSystem} instance
+     * @throws IOException      If failed to create the instance
      */
     SftpFileSystem createSftpFileSystem(
-            ClientSession session, SftpVersionSelector selector, int readBufferSize, int writeBufferSize)
+            ClientSession session, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler,
+            int readBufferSize, int writeBufferSize)
             throws IOException;
 }

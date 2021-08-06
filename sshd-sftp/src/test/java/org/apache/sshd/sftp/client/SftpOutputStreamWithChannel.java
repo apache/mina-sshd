@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
 
-import org.apache.sshd.common.util.io.OutputStreamWithChannel;
+import org.apache.sshd.common.util.io.output.OutputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 

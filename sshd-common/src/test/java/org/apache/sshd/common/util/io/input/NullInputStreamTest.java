@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.io;
+package org.apache.sshd.common.util.io.input;
 
 import java.io.EOFException;
 import java.io.IOException;

@@ -28,7 +28,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.OutputStreamWithChannel;
+import org.apache.sshd.common.util.io.output.OutputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;

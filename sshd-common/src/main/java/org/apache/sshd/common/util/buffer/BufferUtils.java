@@ -65,6 +65,41 @@ public final class BufferUtils {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
+    /**
+     * <p>
+     * Finds the index of the given value in the array starting at the given index and checking up to specified number
+     * of elements.
+     * </p>
+     *
+     * <p>
+     * This method returns {@code -1}) for a {@code null} input array.
+     * </p>
+     *
+     * <p>
+     * A negative startIndex is treated as zero. A startIndex larger than the array length will return {@code -1}.
+     * </p>
+     *
+     * @param  array       the array to search through for the object, may be {@code null}
+     * @param  valueToFind the value to find
+     * @param  startIndex  the index to start searching at
+     * @param  len         the number of elements to search from the start index
+     * @return             the index of the value within the array, {@code -1} if not found or {@code null} array input
+     *                     or non-positive number of elements
+     */
+    public static int indexOf(byte[] array, byte valueToFind, int startIndex, int len) {
+        if (array == null) {
+            return -1;
+        }
+
+        for (int i = Math.max(startIndex, 0), l = 0; l < len; i++, l++) {
+            if (valueToFind == array[i]) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     public static void dumpHex(
             SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver, char sep, byte... data) {
         dumpHex(logger, level, prefix, resolver, sep, data, 0, NumberUtils.length(data));

@@ -43,10 +43,10 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.der.ASN1Object;
 import org.apache.sshd.common.util.io.der.ASN1Type;
 import org.apache.sshd.common.util.io.der.DERParser;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**

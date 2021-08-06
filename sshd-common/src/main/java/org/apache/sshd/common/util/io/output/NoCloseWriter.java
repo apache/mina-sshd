@@ -16,20 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.io;
 
-import java.io.FilterInputStream;
+package org.apache.sshd.common.util.io.output;
+
+import java.io.FilterWriter;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Writer;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class NoCloseInputStream extends FilterInputStream {
-    public NoCloseInputStream(InputStream in) {
-        super(in);
+public class NoCloseWriter extends FilterWriter {
+    public NoCloseWriter(Writer out) {
+        super(out);
     }
 
     @Override
@@ -37,11 +36,11 @@ public class NoCloseInputStream extends FilterInputStream {
         // ignored
     }
 
-    public static InputStream resolveInputStream(InputStream input, boolean okToClose) {
-        if ((input == null) || okToClose) {
-            return input;
+    public static Writer resolveWriter(Writer r, boolean okToClose) {
+        if ((r == null) || okToClose) {
+            return r;
         } else {
-            return new NoCloseInputStream(input);
+            return new NoCloseWriter(r);
         }
     }
 }

@@ -40,8 +40,8 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.io.NoCloseOutputStream;
+import org.apache.sshd.common.util.io.input.NoCloseInputStream;
+import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.slf4j.Logger;
 

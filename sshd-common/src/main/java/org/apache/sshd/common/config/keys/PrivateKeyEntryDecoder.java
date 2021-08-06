@@ -35,7 +35,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 
 /**
  * @param  <PUB> Type of {@link PublicKey}

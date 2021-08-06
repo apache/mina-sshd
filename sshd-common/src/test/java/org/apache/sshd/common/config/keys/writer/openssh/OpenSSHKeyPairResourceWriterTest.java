@@ -45,7 +45,7 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
-import org.apache.sshd.common.util.io.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;

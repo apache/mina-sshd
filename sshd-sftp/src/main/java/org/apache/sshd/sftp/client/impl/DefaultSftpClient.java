@@ -56,9 +56,9 @@ import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.NullOutputStream;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
@@ -84,9 +84,16 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * @param  clientSession          The {@link ClientSession}
      * @param  initialVersionSelector The initial {@link SftpVersionSelector} - if {@code null} then version 6 is
      *                                assumed.
+     * @param  errorDataHandler       The {@link SftpErrorDataHandler} to handle incoming data through the error stream
+     *                                - if {@code null} the data is silently ignored
      * @throws IOException            If failed to initialize
      */
-    public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector) throws IOException {
+    public DefaultSftpClient(
+                             ClientSession clientSession, SftpVersionSelector initialVersionSelector,
+                             SftpErrorDataHandler errorDataHandler)
+                                                                    throws IOException {
+        super(errorDataHandler);
+
         this.nameDecodingCharset = SftpModuleProperties.NAME_DECODING_CHARSET.getRequired(clientSession);
         this.clientSession = Objects.requireNonNull(clientSession, "No client session");
         this.channel = createSftpChannelSubsystem(clientSession);
@@ -161,11 +168,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     /**
-     * Receive binary data
+     * Receive binary data from server main stream
      *
-     * @param  buf         The buffer for the incoming data
-     * @param  start       Offset in buffer to place the data
-     * @param  len         Available space in buffer for the data
+     * @param  buf         The buffer containing the incoming data
+     * @param  start       Offset in buffer to read the data
+     * @param  len         Available data in buffer
      * @return             Actual size of received data
      * @throws IOException If failed to receive incoming data
      */
@@ -288,7 +295,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
             buf.putBuffer(buffer);
         }
 
-        IoOutputStream asyncIn = channel.getAsyncIn();
+        ClientChannel clientChannel = getClientChannel();
+        IoOutputStream asyncIn = clientChannel.getAsyncIn();
         IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
         writeFuture.verify();
         return id;
@@ -364,8 +372,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         buf.putInt(initialVersion);
 
         boolean traceEnabled = log.isTraceEnabled();
-        IoOutputStream asyncIn = channel.getAsyncIn();
         ClientChannel clientChannel = getClientChannel();
+        IoOutputStream asyncIn = clientChannel.getAsyncIn();
         if (traceEnabled) {
             log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
         }
@@ -592,11 +600,22 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         protected OutputStream createErrOutputStream(Session session) {
-            /*
-             * The protocol does not specify how to handle such data but we are lenient and ignore it - similar to
-             * /dev/null
-             */
-            return new NullOutputStream();
+            return new OutputStream() {
+                private final byte[] singleByte = new byte[1];
+
+                @Override
+                public void write(int b) throws IOException {
+                    synchronized (singleByte) {
+                        singleByte[0] = (byte) b;
+                        write(singleByte);
+                    }
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException {
+                    errorData(b, off, len);
+                }
+            };
         }
     }
 }
