@@ -61,7 +61,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
      *                                                       SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output stream
      *                                                       type
      * @param sendChunkIfRemoteWindowIsSmallerThanPacketSize Determines the chunking behaviour, if the remote window
-     *                                                       size is smaller than the packet size. Can be use to
+     *                                                       size is smaller than the packet size. Can be used to
      *                                                       establish compatibility with certain clients, that wait
      *                                                       until the window size is 0 before adjusting it.
      * @see                                                  <A HREF=

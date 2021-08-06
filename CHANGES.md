@@ -21,6 +21,7 @@
 ## Minor code helpers
 
 * [SSHD-1193](https://issues.apache.org/jira/browse/SSHD-1193) Provide a more user-friendly text in case disconnecting due to timeout(s).
+* [SSHD-1196](https://issues.apache.org/jira/browse/SSHD-1196) Provide configurable support for SFTP output stream chunking behavior.
 
 ## Behavioral changes and enhancements
 
