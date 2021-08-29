@@ -192,7 +192,7 @@ public final class CoreModuleProperties {
     /**
      * As per RFC-4256:
      *
-     * The submethods field is included so the user can give a hint of which actual methods he wants to use. It is a
+     * The submethods field is included so the user can give a hint of which actual methods to use. It is a
      * comma-separated list of authentication submethods (software or hardware) that the user prefers. If the client has
      * knowledge of the submethods preferred by the user, presumably through a configuration setting, it MAY use the
      * submethods field to pass this information to the server. Otherwise, it MUST send the empty string.
