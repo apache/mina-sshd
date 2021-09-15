@@ -151,7 +151,7 @@
                             </descriptors>
                             <finalName>${project.artifactId}-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <tarLongFileMode>gnu</tarLongFileMode>
+                            <tarLongFileMode>posix</tarLongFileMode>
                         </configuration>
                     </execution>
                     <execution>
@@ -178,7 +178,7 @@
                             <descriptors>
                                 <descriptor>src/main/descriptors/unix-src.xml</descriptor>
                             </descriptors>
-                            <tarLongFileMode>gnu</tarLongFileMode>
+                            <tarLongFileMode>posix</tarLongFileMode>
                         </configuration>
                     </execution>
                     <execution>
