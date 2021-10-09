@@ -58,8 +58,19 @@ public class FileHandle extends Handle {
                                                                                                                            throws IOException {
         super(subsystem, file, handle);
 
-        this.access = access;
-        this.openOptions = Collections.unmodifiableSet(getOpenOptions(flags, access));
+        Set<StandardOpenOption> options = getOpenOptions(flags, access);
+        // Java cannot do READ | WRITE | APPEND; it throws an IllegalArgumentException "READ+APPEND not allowed". So
+        // just open READ | WRITE, and use the ACE4_APPEND_DATA access flag to indicate that we need to handle "append"
+        // mode ourselves. ACE4_APPEND_DATA should only have an effect if the file is indeed opened for APPEND mode.
+        int desiredAccess = access & ~SftpConstants.ACE4_APPEND_DATA;
+        if (options.contains(StandardOpenOption.APPEND)) {
+            desiredAccess |= SftpConstants.ACE4_APPEND_DATA | SftpConstants.ACE4_WRITE_DATA
+                             | SftpConstants.ACE4_WRITE_ATTRIBUTES;
+            options.add(StandardOpenOption.WRITE);
+            options.remove(StandardOpenOption.APPEND);
+        }
+        this.access = desiredAccess;
+        this.openOptions = Collections.unmodifiableSet(options);
         this.fileAttributes = Collections.unmodifiableCollection(toFileAttributes(attrs));
         signalHandleOpening();
 
@@ -105,7 +116,7 @@ public class FileHandle extends Handle {
     }
 
     public boolean isOpenAppend() {
-        return SftpConstants.ACE4_APPEND_DATA == (getAccessMask() & SftpConstants.ACE4_APPEND_DATA);
+        return (getAccessMask() & SftpConstants.ACE4_APPEND_DATA) != 0;
     }
 
     public int read(byte[] data, long offset) throws IOException {
@@ -253,10 +264,10 @@ public class FileHandle extends Handle {
 
     public static Set<StandardOpenOption> getOpenOptions(int flags, int access) {
         Set<StandardOpenOption> options = EnumSet.noneOf(StandardOpenOption.class);
-        if (((access & SftpConstants.ACE4_READ_DATA) != 0) || ((access & SftpConstants.ACE4_READ_ATTRIBUTES) != 0)) {
+        if ((access & (SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES)) != 0) {
             options.add(StandardOpenOption.READ);
         }
-        if (((access & SftpConstants.ACE4_WRITE_DATA) != 0) || ((access & SftpConstants.ACE4_WRITE_ATTRIBUTES) != 0)) {
+        if ((access & (SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES)) != 0) {
             options.add(StandardOpenOption.WRITE);
         }
 
@@ -279,7 +290,7 @@ public class FileHandle extends Handle {
                 break;
             default: // ignored
         }
-        if ((flags & SftpConstants.SSH_FXF_APPEND_DATA) != 0) {
+        if ((flags & (SftpConstants.SSH_FXF_APPEND_DATA | SftpConstants.SSH_FXF_APPEND_DATA_ATOMIC)) != 0) {
             options.add(StandardOpenOption.APPEND);
         }
 

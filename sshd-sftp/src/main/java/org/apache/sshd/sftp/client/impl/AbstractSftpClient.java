@@ -679,6 +679,7 @@ public abstract class AbstractSftpClient
             }
             if (options.contains(OpenMode.Append)) {
                 access |= SftpConstants.ACE4_APPEND_DATA;
+                mode |= SftpConstants.SSH_FXF_APPEND_DATA;
             }
             buffer.putInt(access);
 

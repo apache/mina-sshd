@@ -175,12 +175,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
              CloseableHandle handle = sftp.open(
                      file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
             sftp.write(handle, 7365L, expectedRandom);
+            // Read one byte
+            byte[] data = new byte[1];
+            int readLen = sftp.read(handle, 0L, data);
+            assertEquals(1, readLen);
+            assertEquals(data[0], expectedRandom[0]);
+            // Write more -- should be appended
+            sftp.write(handle, 3777347L, expectedText);
+            // Read the full random data
             byte[] actualRandom = new byte[expectedRandom.length];
-            int readLen = sftp.read(handle, 0L, actualRandom);
+            readLen = sftp.read(handle, 0L, actualRandom);
             assertEquals("Incomplete random data read", expectedRandom.length, readLen);
             assertArrayEquals("Mismatched read random data", expectedRandom, actualRandom);
 
-            sftp.write(handle, 3777347L, expectedText);
+            // Read the data from the second write
             byte[] actualText = new byte[expectedText.length];
             readLen = sftp.read(handle, actualRandom.length, actualText);
             assertEquals("Incomplete text data read", actualText.length, readLen);
@@ -954,6 +962,29 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test // SSHD-1215
+    public void testWriteCreateAppend() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
+
+        String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+
+        try (SftpClient sftp = createSingleSessionClient()) {
+            sftp.mkdir(dir);
+
+            uploadAndVerifyFile(sftp, clientFolder, dir, 200000, "large.txt",
+                    EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create, SftpClient.OpenMode.Append), "Hello");
+
+            // cleanup
+            sftp.rmdir(dir);
+        }
+    }
+
     private void testInvalidParams(SftpClient sftp, Path file, String filePath) throws Exception {
         // generate random file and upload it
         String randomData = randomString(5);
@@ -1001,18 +1032,31 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private void uploadAndVerifyFile(
             SftpClient sftp, Path clientFolder, String remoteDir, int size, String filename)
             throws Exception {
+        uploadAndVerifyFile(sftp, clientFolder, remoteDir, size, filename,
+                EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create), null);
+    }
+
+    private void uploadAndVerifyFile(
+            SftpClient sftp, Path clientFolder, String remoteDir, int size, String filename,
+            EnumSet<SftpClient.OpenMode> modes, String prefixData)
+            throws Exception {
         // generate random file and upload it
         String remotePath = remoteDir + "/" + filename;
         String randomData = randomString(size);
-        try (SftpClient.CloseableHandle handle = sftp.open(
-                remotePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
+        String expectedData = randomData;
+        if (prefixData != null && !prefixData.isEmpty()) {
+            Path localFile = clientFolder.resolve(filename);
+            Files.write(localFile, prefixData.getBytes(StandardCharsets.UTF_8));
+            expectedData = prefixData + randomData;
+        }
+        try (SftpClient.CloseableHandle handle = sftp.open(remotePath, modes)) {
             sftp.write(handle, 0, randomData.getBytes(StandardCharsets.UTF_8), 0, randomData.length());
         }
 
         // verify results
         Path resultPath = clientFolder.resolve(filename);
         assertTrue("File should exist on disk: " + resultPath, Files.exists(resultPath));
-        assertTrue("Mismatched file contents: " + resultPath, randomData.equals(readFile(remotePath)));
+        assertEquals("Mismatched file contents: " + resultPath, expectedData, readFile(remotePath));
 
         // cleanup
         sftp.remove(remotePath);

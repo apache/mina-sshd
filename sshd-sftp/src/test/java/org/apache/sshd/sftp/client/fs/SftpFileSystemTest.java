@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -40,6 +41,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -93,6 +95,46 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                         .build())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
+        }
+    }
+
+    @Test
+    public void testFileSystemWriteAppend() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
+                MapBuilder.<String, Object> builder()
+                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
+                        .build())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            Path localFile = clientFolder.resolve("file.txt");
+            Files.write(localFile, "Hello".getBytes(StandardCharsets.UTF_8));
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile);
+            Path remoteFile = fs.getPath(remFilePath);
+            assertHierarchyTargetFolderExists(remoteFile.getParent());
+            byte[] buf = new byte[32000];
+            for (int i = 0; i < buf.length; i++) {
+                buf[i] = (byte) i;
+            }
+            try (OutputStream out = Files.newOutputStream(remoteFile, StandardOpenOption.APPEND, StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE)) {
+                out.write(buf);
+                out.write(buf);
+            }
+            byte[] data = Files.readAllBytes(remoteFile);
+            assertEquals("Unexpected length", 64005, data.length);
+            assertArrayEquals("Hello".getBytes(StandardCharsets.UTF_8), Arrays.copyOf(data, 5));
+            for (int i = 5; i < buf.length; i++) {
+                assertEquals("Mismatched data at " + i, (byte) (i - 5), data[i]);
+                assertEquals("Mismatched data at " + (i + buf.length), (byte) (i - 5), data[i + buf.length]);
+            }
         }
     }
 
