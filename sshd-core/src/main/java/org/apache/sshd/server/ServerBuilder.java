@@ -34,6 +34,8 @@ import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.kex.extension.DefaultServerKexExtensionHandler;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -82,6 +84,7 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                     BuiltinCompressions.none,
                     BuiltinCompressions.zlib,
                     BuiltinCompressions.delayedZlib));
+    public static final KexExtensionHandler DEFAULT_KEX_EXTENSION_HANDLER = DefaultServerKexExtensionHandler.INSTANCE;
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
@@ -114,6 +117,10 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
         if (keyExchangeFactories == null) {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);
+        }
+
+        if (kexExtensionHandler == null) {
+            kexExtensionHandler = DEFAULT_KEX_EXTENSION_HANDLER;
         }
 
         if (channelFactories == null) {

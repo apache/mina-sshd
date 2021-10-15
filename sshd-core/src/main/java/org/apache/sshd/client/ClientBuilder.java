@@ -80,15 +80,9 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     protected HostConfigEntryResolver hostConfigEntryResolver;
     protected ClientIdentityLoader clientIdentityLoader;
     protected FilePasswordProvider filePasswordProvider;
-    protected KexExtensionHandler kexExtensionHandler;
 
     public ClientBuilder() {
         super();
-    }
-
-    public ClientBuilder kexExtensionHandler(KexExtensionHandler kexExtensionHandler) {
-        this.kexExtensionHandler = kexExtensionHandler;
-        return me();
     }
 
     public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
@@ -127,6 +121,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);
         }
 
+        if (kexExtensionHandler == null) {
+            kexExtensionHandler = DEFAULT_KEX_EXTENSION_HANDLER;
+        }
+
         if (channelFactories == null) {
             channelFactories = DEFAULT_CHANNEL_FACTORIES;
         }
@@ -151,10 +149,6 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             filePasswordProvider = DEFAULT_FILE_PASSWORD_PROVIDER;
         }
 
-        if (kexExtensionHandler == null) {
-            kexExtensionHandler = DEFAULT_KEX_EXTENSION_HANDLER;
-        }
-
         if (factory == null) {
             factory = SshClient.DEFAULT_SSH_CLIENT_FACTORY;
         }
@@ -169,7 +163,6 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         client.setHostConfigEntryResolver(hostConfigEntryResolver);
         client.setClientIdentityLoader(clientIdentityLoader);
         client.setFilePasswordProvider(filePasswordProvider);
-        client.setKexExtensionHandler(kexExtensionHandler);
         return client;
     }
 

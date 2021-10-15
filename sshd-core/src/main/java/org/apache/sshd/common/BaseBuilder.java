@@ -36,6 +36,7 @@ import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
@@ -151,6 +152,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     protected ForwardingFilter forwardingFilter;
     protected ChannelStreamWriterResolver channelStreamPacketWriterResolver;
     protected UnknownChannelReferenceHandler unknownChannelReferenceHandler;
+    protected KexExtensionHandler kexExtensionHandler;
 
     public BaseBuilder() {
         super();
@@ -190,6 +192,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     public S keyExchangeFactories(List<KeyExchangeFactory> keyExchangeFactories) {
         this.keyExchangeFactories = keyExchangeFactories;
+        return me();
+    }
+
+    public S kexExtensionHandler(KexExtensionHandler kexExtensionHandler) {
+        this.kexExtensionHandler = kexExtensionHandler;
         return me();
     }
 
@@ -265,6 +272,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
         T ssh = factory.create();
 
+        ssh.setKexExtensionHandler(kexExtensionHandler);
         ssh.setKeyExchangeFactories(keyExchangeFactories);
         ssh.setSignatureFactories(signatureFactories);
         ssh.setRandomFactory(randomFactory);
