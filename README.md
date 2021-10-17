@@ -28,9 +28,8 @@ based applications requiring SSH support.
 * [RFC 8160 - IUTF8 Terminal Mode in Secure Shell (SSH)](https://tools.ietf.org/html/rfc8160)
 * [RFC 8268 - More Modular Exponentiation (MODP) Diffie-Hellman (DH) Key Exchange (KEX) Groups for Secure Shell (SSH)](https://tools.ietf.org/html/rfc8268)
 * [RFC 8308 - Extension Negotiation in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8308)
-    * **Note:** - the code contains [**hooks**](./docs/event-listeners.md#kexextensionhandler) for implementing the RFC but
-    beyond allowing convenient support for the required protocol details, it does not implement any default logic that handles
-    the messages or manages the actual extension negotiation (though some **experimental** code is available).
+    * **Note:** - the code contains [**hooks**](./docs/event-listeners.md#kexextensionhandler) for implementing the RFC and
+    also provides default client and server implementation for `server-sig-algs` extensions.
 * [RFC 8332 - Use of RSA Keys with SHA-256 and SHA-512 in the Secure Shell (SSH) Protocol](https://tools.ietf.org/html/rfc8332)
     * **Note:** - the server side supports these signatures by default. The client side requires specific
     initialization - see [section 3.3](https://tools.ietf.org/html/rfc8332#section-3.3) and also the

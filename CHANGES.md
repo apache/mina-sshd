@@ -34,3 +34,4 @@
 * [SSHD-1171](https://issues.apache.org/jira/browse/SSHD-1171) OpenSSHCertificatesTest: certificates expire in 2030
 * [SSHD-1172](https://issues.apache.org/jira/browse/SSHD-1172) Expiration of OpenSshCertificates needs to compare timestamps as unsigned long
 * [SSHD-1202](https://issues.apache.org/jira/browse/SSHD-1202) Provide SftpErrorDataHandler callback support for SFTP client.
+* [SSHD-1216](https://issues.apache.org/jira/browse/SSHD-1216) Implement RFC 8332 server-sig-algs on the server
