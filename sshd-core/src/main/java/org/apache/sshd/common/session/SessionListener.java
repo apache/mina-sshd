@@ -31,8 +31,22 @@ import org.apache.sshd.common.util.SshdEventListener;
  */
 public interface SessionListener extends SshdEventListener {
     enum Event {
+
+        /**
+         * Fired at the end of a key exchange once both parties have updated the message encoding/decoding; i.e., when
+         * both parties have handled the peer's SSH_MSG_NEWKEY message.
+         */
         KeyEstablished,
+
+        /**
+         * Fired when the session is fully authenticated.
+         */
         Authenticated,
+
+        /**
+         * Fired at the end of KEX negotiation, i.e., when both proposals have been handled and the
+         * {@link org.apache.sshd.common.kex.KeyExchange} is initialized.
+         */
         KexCompleted
     }
 

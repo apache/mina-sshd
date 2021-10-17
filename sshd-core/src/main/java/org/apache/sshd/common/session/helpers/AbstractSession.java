@@ -169,7 +169,9 @@ public abstract class AbstractSession extends SessionHelper {
     protected byte[] inMacResult;
     protected Compression outCompression;
     protected Compression inCompression;
+    /** Input packet ID. */
     protected long seqi;
+    /** Output packet ID. */
     protected long seqo;
     protected SessionWorkBuffer uncompressBuffer;
     protected final SessionWorkBuffer decoderBuffer;
@@ -195,6 +197,22 @@ public abstract class AbstractSession extends SessionHelper {
     protected long maxRekeyBytes;
     protected Duration maxRekeyInterval;
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
+
+    /**
+     * Resulting message coding settings at the end of a key exchange for incoming messages.
+     *
+     * @see #prepareNewKeys()
+     * @see #setInputEncoding()
+     */
+    protected MessageCodingSettings inSettings;
+
+    /**
+     * Resulting message coding settings at the end of a key exchange for outgoing messages.
+     *
+     * @see #prepareNewKeys()
+     * @see #setOutputEncoding()
+     */
+    protected MessageCodingSettings outSettings;
 
     protected Service currentService;
     // SSHD-968 - outgoing sequence number and request name of last sent global request
@@ -584,6 +602,9 @@ public abstract class AbstractSession extends SessionHelper {
 
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
         IoWriteFuture future = writePacket(buffer);
+        prepareNewKeys();
+        // Use the new settings from now on for any outgoing packet
+        setOutputEncoding();
         /*
          * According to https://tools.ietf.org/html/rfc8308#section-2.4:
          *
@@ -753,7 +774,11 @@ public abstract class AbstractSession extends SessionHelper {
                     this, SshConstants.getCommandMessageName(cmd));
         }
         validateKexState(cmd, KexState.KEYS);
-        receiveNewKeys();
+        // It is guaranteed that we handle the peer's SSH_MSG_NEWKEYS after having sent our own.
+        // prepareNewKeys() was already called in sendNewKeys().
+        //
+        // From now on, use the new settings for any incoming message
+        setInputEncoding();
 
         synchronized (kexState) {
             kexInitializedFuture = null;
@@ -1663,14 +1688,14 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
-     * Put new keys into use. This method will initialize the ciphers, digests, macs and compression according to the
-     * negotiated server and client proposals.
+     * Prepares the new ciphers, macs and compression algorithms according to the negotiated server and client proposals
+     * and stores them in {@link #inSettings} and {@link #outSettings}. The new settings do not take effect yet; use
+     * {@link #setInputEncoding()} or {@link #setOutputEncoding()} for that.
      *
      * @throws Exception if an error occurs
      */
-    // TODO: this method needs refactoring
-    @SuppressWarnings({ "checkstyle:VariableDeclarationUsageDistance", "checkstyle:ExecutableStatementCount" })
-    protected void receiveNewKeys() throws Exception {
+    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
+    protected void prepareNewKeys() throws Exception {
         byte[] k = kex.getK();
         byte[] h = kex.getH();
         Digest hash = kex.getHash();
@@ -1679,7 +1704,7 @@ public abstract class AbstractSession extends SessionHelper {
         if (sessionId == null) {
             sessionId = h.clone();
             if (debugEnabled) {
-                log.debug("receiveNewKeys({}) session ID={}", this, BufferUtils.toHex(':', sessionId));
+                log.debug("prepareNewKeys({}) session ID={}", this, BufferUtils.toHex(':', sessionId));
             }
         }
 
@@ -1721,10 +1746,6 @@ public abstract class AbstractSession extends SessionHelper {
         Cipher s2ccipher = ValidateUtils.checkNotNull(
                 NamedFactory.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
         e_s2c = resizeKey(e_s2c, s2ccipher.getKdfSize(), hash, k, h);
-        if (s2ccipher.getAlgorithm().startsWith("ChaCha")) {
-            BufferUtils.putLong(serverSession ? seqo : seqi, iv_s2c, 0, iv_s2c.length);
-        }
-        s2ccipher.init(serverSession ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
         Mac s2cmac;
         if (s2ccipher.getAuthenticationTagSize() == 0) {
@@ -1749,10 +1770,6 @@ public abstract class AbstractSession extends SessionHelper {
         Cipher c2scipher = ValidateUtils.checkNotNull(
                 NamedFactory.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
         e_c2s = resizeKey(e_c2s, c2scipher.getKdfSize(), hash, k, h);
-        if (c2scipher.getAlgorithm().startsWith("ChaCha")) {
-            BufferUtils.putLong(serverSession ? seqi : seqo, iv_c2s, 0, iv_c2s.length);
-        }
-        c2scipher.init(serverSession ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
         Mac c2smac;
         if (c2scipher.getAuthenticationTagSize() == 0) {
@@ -1774,26 +1791,56 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         if (serverSession) {
-            outCipher = s2ccipher;
-            outMac = s2cmac;
-            outCompression = s2ccomp;
-            inCipher = c2scipher;
-            inMac = c2smac;
-            inCompression = c2scomp;
+            outSettings = new MessageCodingSettings(s2ccipher, s2cmac, s2ccomp, Cipher.Mode.Encrypt, e_s2c, iv_s2c);
+            inSettings = new MessageCodingSettings(c2scipher, c2smac, c2scomp, Cipher.Mode.Decrypt, e_c2s, iv_c2s);
         } else {
-            outCipher = c2scipher;
-            outMac = c2smac;
-            outCompression = c2scomp;
-            inCipher = s2ccipher;
-            inMac = s2cmac;
-            inCompression = s2ccomp;
+            outSettings = new MessageCodingSettings(c2scipher, c2smac, c2scomp, Cipher.Mode.Encrypt, e_c2s, iv_c2s);
+            inSettings = new MessageCodingSettings(s2ccipher, s2cmac, s2ccomp, Cipher.Mode.Decrypt, e_s2c, iv_s2c);
         }
+    }
 
+    /**
+     * Installs the current prepared {@link #outSettings} so that they are effective and will be applied to any future
+     * outgoing packet. Clears {@link #outSettings}.
+     *
+     * @throws Exception on errors
+     */
+    protected void setOutputEncoding() throws Exception {
+        outCipher = outSettings.getCipher(seqo);
+        outMac = outSettings.getMac();
+        outCompression = outSettings.getCompression();
+        outSettings = null;
         outCipherSize = outCipher.getCipherBlockSize();
         outMacSize = outMac != null ? outMac.getBlockSize() : 0;
         // TODO add support for configurable compression level
         outCompression.init(Compression.Type.Deflater, -1);
 
+        maxRekeyBlocks.set(determineRekeyBlockLimit(inCipherSize, outCipherSize));
+
+        outBytesCount.set(0L);
+        outPacketsCount.set(0L);
+        outBlocksCount.set(0L);
+
+        lastKeyTimeValue.set(Instant.now());
+        firstKexPacketFollows = null;
+
+        if (log.isDebugEnabled()) {
+            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, outCipher, outMac,
+                    outCompression, maxRekeyBlocks);
+        }
+    };
+
+    /**
+     * Installs the current prepared {@link #inSettings} so that they are effective and will be applied to any future
+     * incoming packet. Clears {@link #inSettings}.
+     *
+     * @throws Exception on errors
+     */
+    protected void setInputEncoding() throws Exception {
+        inCipher = inSettings.getCipher(seqi);
+        inMac = inSettings.getMac();
+        inCompression = inSettings.getCompression();
+        inSettings = null;
         inCipherSize = inCipher.getCipherBlockSize();
         inMacSize = inMac != null ? inMac.getBlockSize() : 0;
         inMacResult = new byte[inMacSize];
@@ -1801,19 +1848,18 @@ public abstract class AbstractSession extends SessionHelper {
         inCompression.init(Compression.Type.Inflater, -1);
 
         maxRekeyBlocks.set(determineRekeyBlockLimit(inCipherSize, outCipherSize));
-        if (debugEnabled) {
-            log.debug("receiveNewKeys({}) inCipher={}, outCipher={}, blocks limit={}", this, inCipher, outCipher,
-                    maxRekeyBlocks);
-        }
 
         inBytesCount.set(0L);
-        outBytesCount.set(0L);
         inPacketsCount.set(0L);
-        outPacketsCount.set(0L);
         inBlocksCount.set(0L);
-        outBlocksCount.set(0L);
+
         lastKeyTimeValue.set(Instant.now());
         firstKexPacketFollows = null;
+
+        if (log.isDebugEnabled()) {
+            log.debug("setInputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, inCipher, inMac,
+                    inCompression, maxRekeyBlocks);
+        }
     }
 
     /**
@@ -2520,5 +2566,63 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         return session;
+    }
+
+    /**
+     * Message encoding or decoding settings as determined at the end of a key exchange.
+     */
+    protected static class MessageCodingSettings {
+
+        private final Cipher cipher;
+
+        private final Mac mac;
+
+        private final Compression compression;
+
+        private final Cipher.Mode mode;
+
+        private byte[] key;
+
+        private byte[] iv;
+
+        public MessageCodingSettings(Cipher cipher, Mac mac, Compression compression, Cipher.Mode mode, byte[] key, byte[] iv) {
+            this.cipher = cipher;
+            this.mac = mac;
+            this.compression = compression;
+            this.mode = mode;
+            this.key = key.clone();
+            this.iv = iv.clone();
+        }
+
+        private void initCipher(long packetSequenceNumber) throws Exception {
+            if (key != null) {
+                if (cipher.getAlgorithm().startsWith("ChaCha")) {
+                    BufferUtils.putLong(packetSequenceNumber, iv, 0, iv.length);
+                }
+                cipher.init(mode, key, iv);
+                key = null;
+            }
+        }
+
+        /**
+         * Get the {@link Cipher}.
+         *
+         * @param  packetSequenceNumber SSH packet sequence number for initializing the cipher. Pass {@link #seqo} if
+         *                              the cipher is to be used for output, {@link #seqi} otherwise.
+         * @return                      the fully initialized cipher
+         * @throws Exception            if the cipher cannot be initialized
+         */
+        public Cipher getCipher(long packetSequenceNumber) throws Exception {
+            initCipher(packetSequenceNumber);
+            return cipher;
+        }
+
+        public Mac getMac() {
+            return mac;
+        }
+
+        public Compression getCompression() {
+            return compression;
+        }
     }
 }
