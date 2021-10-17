@@ -20,11 +20,11 @@
 package org.apache.sshd.common.kex.extension;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -84,8 +84,8 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
             if (session.getAttribute(CLIENT_REQUESTED_EXT_INFO) == null) {
                 // Only the first time, not on re-KEX
                 String algorithms = proposal.get(KexProposalOption.ALGORITHMS);
-                boolean clientWantsExtInfo = Arrays.asList(GenericUtils.split(algorithms, ','))
-                        .contains(KexExtensions.CLIENT_KEX_EXTENSION);
+                boolean clientWantsExtInfo = Stream.of(GenericUtils.split(algorithms, ','))
+                        .anyMatch(KexExtensions.CLIENT_KEX_EXTENSION::equalsIgnoreCase);
                 session.setAttribute(CLIENT_REQUESTED_EXT_INFO, clientWantsExtInfo);
                 if (clientWantsExtInfo && log.isTraceEnabled()) {
                     log.trace("handleKexInitProposal({}): got ext-info-c from client", session);
@@ -98,14 +98,14 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
     public void sendKexExtensions(Session session, KexPhase phase) throws Exception {
         if (phase == KexPhase.NEWKEYS) {
             Boolean alreadySent = session.getAttribute(EXT_INFO_SENT_AT_NEWKEYS);
-            if (alreadySent != null && alreadySent.booleanValue()) {
+            if ((alreadySent != null) && alreadySent.booleanValue()) {
                 // It's not the first NEWKEYS.
                 return;
             }
             session.setAttribute(EXT_INFO_SENT_AT_NEWKEYS, Boolean.TRUE);
         }
         Boolean doExtInfo = session.getAttribute(CLIENT_REQUESTED_EXT_INFO);
-        if (doExtInfo == null || !doExtInfo.booleanValue()) {
+        if ((doExtInfo == null) || (!doExtInfo.booleanValue())) {
             if (log.isTraceEnabled()) {
                 log.trace("sendKexExtensions({})[{}]: client did not send ext-info-c; skipping sending SSH_MSG_EXT_INFO",
                         session, phase);
@@ -123,18 +123,18 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
                         numberOfExtensions);
             }
             // We must send the SSH_MSG_EXT_INFO as the next packet following our SSH_MSG_NEWKEYS message. It must be
-            // encoded with the new keys, though, which we will install only once we get the peer's SSH_MG_NEWKEYS.
+            // encoded with the new keys, though, which we will install only once we get the peer's SSH_MSG_NEWKEYS.
             // Hence delay the sending until the KeyEstablished event is fired. That event is fired before any pending
             // higher level messages are written, so this packet goes out first even if there are pending packets. Note
             // that it will never be queued since it has low command ID; SSH_MSG_EXT_INFO is 7.
             //
             // RFC 8308 recommends that "the server sends its SSH_MSG_EXT_INFO not only as the next packet after
             // SSH_MSG_NEWKEYS, but without delay". This cannot be implemented currently; it would require setting up
-            // the keys already when we send our SSH_MG_NEWKEYS so that they are already set correctly if we did a
+            // the keys already when we send our SSH_MSG_NEWKEYS so that they are already set correctly if we did a
             // session.writePacket(buffer) here directly.
             session.addSessionListener(new SessionListener() {
-
                 @Override
+                @SuppressWarnings("synthetic-access")
                 public void sessionEvent(Session session, Event event) {
                     if (event == Event.KeyEstablished) {
                         try {
@@ -170,7 +170,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
      */
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
         if (phase == KexPhase.NEWKEYS) {
-            List<String> algorithms = session.getSignatureFactoriesNames();
+            Collection<String> algorithms = session.getSignatureFactoriesNames();
             if (!GenericUtils.isEmpty(algorithms)) {
                 marshaller.accept(ServerSignatureAlgorithms.NAME, algorithms);
                 if (log.isDebugEnabled()) {
