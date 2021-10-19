@@ -120,7 +120,7 @@
 
         <surefire.plugin.version>3.0.0-M5</surefire.plugin.version>
         <maven.archiver.version>3.5.1</maven.archiver.version>
-        <scm.plugin.version>1.11.2</scm.plugin.version>
+        <scm.plugin.version>1.12.0</scm.plugin.version>
         <plexus.archiver.version>4.2.5</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.39.0</pmd.version>
@@ -758,22 +758,22 @@
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-api</artifactId>
-                            <version>&gt;${scm.plugin.version}</version>
+                            <version>${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-gitexe</artifactId>
-                            <version>&gt;${scm.plugin.version}</version>
+                            <version>${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-svn-commons</artifactId>
-                            <version>&gt;${scm.plugin.version}</version>
+                            <version>${scm.plugin.version}</version>
                         </dependency>                    
                         <dependency>
                             <groupId>org.apache.maven.scm</groupId>
                             <artifactId>maven-scm-provider-svnexe</artifactId>
-                            <version>&gt;${scm.plugin.version}</version>
+                            <version>${scm.plugin.version}</version>
                         </dependency>                    
                     </dependencies>
                 </plugin>                
