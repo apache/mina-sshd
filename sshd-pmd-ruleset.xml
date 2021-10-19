@@ -48,7 +48,6 @@
     <rule ref="category/java/documentation.xml/UncommentedEmptyMethodBody" />
     <rule ref="category/java/documentation.xml/UncommentedEmptyConstructor" />
 
-    <rule ref="category/java/performance.xml/BooleanInstantiation" />
     <rule ref="category/java/performance.xml/AppendCharacterWithChar" />
     <!-- rule ref="category/java/performance.xml/ConsecutiveLiteralAppends" / -->
     <rule ref="category/java/performance.xml/StringInstantiation" />
@@ -59,4 +58,5 @@
     <!-- rule ref="category/java/bestpractices.xml/MethodReturnsInternalArray" / -->
     <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace" />
     <rule ref="category/java/bestpractices.xml/MissingOverride" />
+    <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation" />
 </ruleset>
