@@ -198,7 +198,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>6.2.2</version>
+                        <version>6.4.1</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
