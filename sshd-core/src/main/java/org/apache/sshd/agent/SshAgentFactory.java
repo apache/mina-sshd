@@ -45,7 +45,7 @@ public interface SshAgentFactory {
      *
      * @param  session     the {@link Session} the {@link SshAgent} is to be created for; may be {@code null}
      * @param  manager     The {@link FactoryManager} instance
-     * @return             The {@link SshAgent} instance
+     * @return             The {@link SshAgent} instance, or {@code null} if no SSH agent shall be used
      * @throws IOException If failed to create the client
      */
     SshAgent createClient(Session session, FactoryManager manager) throws IOException;
