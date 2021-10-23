@@ -51,6 +51,7 @@ import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKey;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
@@ -739,6 +740,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
+        session.setAttribute(UserAuthPublicKey.USE_DEFAULT_IDENTITIES, Boolean.valueOf(useDefaultIdentities));
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session, identities);

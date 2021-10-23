@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
@@ -56,6 +57,12 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
+
+    /**
+     * Is set on a {@link ClientSession} when it is created; if {@link Boolean#FALSE}, no agent or default identities
+     * shall be used.
+     */
+    public static final AttributeKey<Boolean> USE_DEFAULT_IDENTITIES = new AttributeKey<>();
 
     protected final Deque<String> currentAlgorithms = new LinkedList<>();
 
