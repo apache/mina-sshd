@@ -113,12 +113,37 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         }
 
         Buffer buffer = createBuffer((byte) cmd);
+        String keyType = KeyUtils.getKeyType(key);
+        int flags = 0;
         if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             buffer.putString("sign");
+        } else {
+            String signatureAlgorithm;
+            if (!GenericUtils.isEmpty(algo)) {
+                if (!KeyUtils.getCanonicalKeyType(algo).equals(keyType)) {
+                    throw new IllegalArgumentException(
+                            "Bad signing request: signature algorithm '" + algo + "' not applicable to '" + keyType + "' key");
+                }
+                signatureAlgorithm = algo;
+            } else {
+                signatureAlgorithm = keyType;
+            }
+            switch (signatureAlgorithm) {
+                case KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS:
+                case KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS:
+                    flags = 4;
+                    break;
+                case KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS:
+                case KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS:
+                    flags = 2;
+                    break;
+                default:
+                    break;
+            }
         }
         buffer.putPublicKey(key);
         buffer.putBytes(data);
-        buffer.putInt(0);
+        buffer.putInt(flags);
         buffer = request(prepare(buffer));
 
         int responseType = buffer.getUByte();
@@ -128,7 +153,6 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
         byte[] signature = buffer.getBytes();
         boolean debugEnabled = log.isDebugEnabled();
-        String keyType = KeyUtils.getKeyType(key);
         if (CoreModuleProperties.AGENT_FORWARDING_TYPE_IETF.equals(channelType)) {
             if (debugEnabled) {
                 log.debug("sign({}/{})[{}] : {}",
