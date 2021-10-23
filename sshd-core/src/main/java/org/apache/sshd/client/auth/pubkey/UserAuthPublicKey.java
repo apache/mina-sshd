@@ -89,12 +89,17 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         releaseKeys(); // just making sure in case multiple calls to the method
 
         try {
-            keys = new UserAuthPublicKeyIterator(session, this);
+            keys = createPublicKeyIterator(session, this);
         } catch (Error e) {
             warn("init({})[{}] failed ({}) to initialize session keys: {}",
                     session, service, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
+    }
+
+    protected Iterator<PublicKeyIdentity> createPublicKeyIterator(ClientSession session, SignatureFactoriesManager manager)
+            throws Exception {
+        return new UserAuthPublicKeyIterator(session, manager);
     }
 
     @Override
