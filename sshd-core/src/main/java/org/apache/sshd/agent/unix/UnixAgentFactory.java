@@ -74,7 +74,7 @@ public class UnixAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public SshAgent createClient(FactoryManager manager) throws IOException {
+    public SshAgent createClient(Session session, FactoryManager manager) throws IOException {
         String authSocket = manager.getString(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(authSocket)) {
             throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");

@@ -52,7 +52,7 @@ public class UserAuthAgent extends AbstractUserAuth {
         if (agentFactory == null) {
             throw new IllegalStateException("No ssh agent factory has been configured");
         }
-        this.agent = agentFactory.createClient(factoryManager);
+        this.agent = agentFactory.createClient(session, factoryManager);
         this.keys = agent.getIdentities().iterator();
     }
 

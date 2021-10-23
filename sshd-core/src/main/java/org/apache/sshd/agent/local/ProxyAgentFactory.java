@@ -57,7 +57,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public SshAgent createClient(FactoryManager manager) throws IOException {
+    public SshAgent createClient(Session session, FactoryManager manager) throws IOException {
         String proxyId = manager.getString(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(proxyId)) {
             throw new IllegalStateException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " environment variable set");

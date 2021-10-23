@@ -63,7 +63,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             Session session = getSession();
             FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
             SshAgentFactory factory = Objects.requireNonNull(manager.getAgentFactory(), "No agent factory");
-            agent = factory.createClient(manager);
+            agent = factory.createClient(session, manager);
             client = new AgentClient();
 
             signalChannelOpenSuccess();

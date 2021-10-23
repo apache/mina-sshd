@@ -147,7 +147,7 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
             return null;
         }
 
-        agent = Objects.requireNonNull(factory.createClient(manager), "No agent created");
+        agent = Objects.requireNonNull(factory.createClient(session, manager), "No agent created");
         return new Iterable<KeyAgentIdentity>() {
             @SuppressWarnings("synthetic-access")
             private final Iterable<? extends Map.Entry<PublicKey, String>> agentIds = agent.getIdentities();

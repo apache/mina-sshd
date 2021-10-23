@@ -30,6 +30,7 @@ import org.apache.sshd.agent.common.AgentDelegate;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 
 public class LocalAgentFactory implements SshAgentFactory {
     public static final List<ChannelFactory> DEFAULT_FORWARDING_CHANNELS = Collections.unmodifiableList(
@@ -57,7 +58,7 @@ public class LocalAgentFactory implements SshAgentFactory {
     }
 
     @Override
-    public SshAgent createClient(FactoryManager manager) throws IOException {
+    public SshAgent createClient(Session session, FactoryManager manager) throws IOException {
         return new AgentDelegate(agent);
     }
 
