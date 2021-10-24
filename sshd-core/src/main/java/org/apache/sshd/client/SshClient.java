@@ -403,25 +403,23 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             setKeyIdentityProvider(idsWatcher);
         }
 
-        // Register the additional agent forwarding channel if needed
+        // Register the additional agent forwarding channel(s) if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
-            List<ChannelFactory> forwarders = ValidateUtils.checkNotNullAndNotEmpty(
-                    agentFactory.getChannelForwardingFactories(this),
-                    "No agent channel forwarding factories for %s",
-                    agentFactory);
-            List<? extends ChannelFactory> factories = getChannelFactories();
-            if (GenericUtils.isEmpty(factories)) {
-                factories = forwarders;
-            } else {
-                // create a copy in case un-modifiable original
-                List<ChannelFactory> factories2 = new ArrayList<>(factories.size() + forwarders.size());
-                factories2.addAll(factories);
-                factories2.addAll(forwarders);
-                factories = factories2;
+            List<ChannelFactory> forwarders = agentFactory.getChannelForwardingFactories(this);
+            if (!GenericUtils.isEmpty(forwarders)) {
+                List<? extends ChannelFactory> factories = getChannelFactories();
+                if (GenericUtils.isEmpty(factories)) {
+                    factories = forwarders;
+                } else {
+                    // create a copy in case un-modifiable original
+                    List<ChannelFactory> factories2 = new ArrayList<>(factories.size() + forwarders.size());
+                    factories2.addAll(factories);
+                    factories2.addAll(forwarders);
+                    factories = factories2;
+                }
+                setChannelFactories(factories);
             }
-
-            setChannelFactories(factories);
         }
 
         if (GenericUtils.isEmpty(getServiceFactories())) {

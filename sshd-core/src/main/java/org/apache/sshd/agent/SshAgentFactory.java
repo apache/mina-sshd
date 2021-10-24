@@ -33,10 +33,11 @@ public interface SshAgentFactory {
 
     /**
      * The channels are requested by the ssh server when forwarding a client request. The channel will receive agent
-     * requests and need to forward them to the agent, either local or through another proxy.
+     * requests and needs to forward them to the agent, either local or through another proxy.
      *
      * @param  manager The {@link FactoryManager} through which the request is made
-     * @return         The {@link ChannelFactory}-ies used to create channels on the client side
+     * @return         The {@link ChannelFactory}-ies used to create channels for agent forwarding on the client side.
+     *                 If {@code null} or empty, agent forwarding is not available.
      */
     List<ChannelFactory> getChannelForwardingFactories(FactoryManager manager);
 
