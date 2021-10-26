@@ -54,22 +54,37 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
+import org.apache.sshd.sftp.server.SftpEventListener;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
+import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -77,6 +92,9 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SftpFileSystemTest.class);
+
     public SftpFileSystemTest() throws IOException {
         super();
     }
@@ -134,6 +152,171 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             for (int i = 5; i < buf.length; i++) {
                 assertEquals("Mismatched data at " + i, (byte) (i - 5), data[i]);
                 assertEquals("Mismatched data at " + (i + buf.length), (byte) (i - 5), data[i + buf.length]);
+            }
+        }
+    }
+
+    private Map<String, Object> defaultOptions() {
+        return MapBuilder.<String, Object> builder()
+                .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
+                .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE).build();
+    }
+
+    private SshServer createIntermediaryServer(FileSystem fileSystem) throws IOException {
+        SshServer sshd = CoreTestSupportUtils.setupTestFullSupportServer(AbstractSftpClientTestSupport.class);
+        sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+        sshd.setFileSystemFactory(new FileSystemFactory() {
+
+            @Override
+            public Path getUserHomeDir(SessionContext session) throws IOException {
+                return null;
+            }
+
+            @Override
+            public FileSystem createFileSystem(SessionContext session) throws IOException {
+                return fileSystem;
+            }
+        });
+        sshd.start();
+        return sshd;
+    }
+
+    @Test // see SSHD-1217
+    public void testFileSystemListDirIndirect() throws Exception {
+        // Instrument the upstream server to verify what gets called there
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) NamedResource.findByName(SftpConstants.SFTP_SUBSYSTEM_NAME,
+                String.CASE_INSENSITIVE_ORDER, sshd.getSubsystemFactories());
+        AtomicInteger statCount = new AtomicInteger();
+        AtomicInteger readDirCount = new AtomicInteger();
+        factory.addSftpEventListener(new SftpEventListener() {
+            @Override
+            public void received(ServerSession session, int type, int id) throws IOException {
+                switch (type) {
+                    case SftpConstants.SSH_FXP_STAT:
+                    case SftpConstants.SSH_FXP_LSTAT:
+                        statCount.getAndIncrement();
+                        break;
+                    case SftpConstants.SSH_FXP_READDIR:
+                        readDirCount.getAndIncrement();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        FileSystem secondHop = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions());
+        assertTrue("Not an SftpFileSystem", secondHop instanceof SftpFileSystem);
+        SshServer intermediary = createIntermediaryServer(secondHop);
+
+        try (FileSystem fs = FileSystems.newFileSystem(
+                createFileSystemURI(getCurrentTestName(), intermediary.getPort(), Collections.emptyMap()), defaultOptions())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            // Create files
+            final int numberOfFiles = 2000;
+            for (int i = 1; i <= numberOfFiles; i++) {
+                Path localFile = clientFolder.resolve("file" + i + ".txt");
+                Files.createFile(localFile);
+            }
+            String remDirPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+            Path remoteDir = fs.getPath(remDirPath);
+            assertHierarchyTargetFolderExists(remoteDir);
+            // Clear counters; verifying the remote dir calls (L)STAT
+            statCount.set(0);
+            assertEquals("READ_DIR should not have been called yet", 0, readDirCount.get());
+
+            SftpPath sftpPath = (SftpPath) remoteDir;
+            SftpClient client = sftpPath.getFileSystem().getClient();
+
+            // Actual test starts here
+            int i = 0;
+            long start = System.currentTimeMillis();
+            try (CloseableHandle dir = client.openDir(remDirPath)) {
+                for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                    i++;
+                    assertNotNull(entry);
+                }
+            }
+            LOG.info(
+                    "{}: directory listing with {} files from intermediary server took {}ms, got {} entries; upstream READDIR called {} times, (L)STAT called {} times",
+                    getCurrentTestName(), numberOfFiles, System.currentTimeMillis() - start, i, readDirCount, statCount);
+            assertEquals(numberOfFiles + 2, i); // . and ..
+            assertTrue("Upstream server not called", readDirCount.get() > 0);
+            // The current implementation stats the directory three times: Files.exists(), Files.isDirectory(), and
+            // Files.isReadable().
+            MatcherAssert.assertThat(
+                    "Files.getAttributes() should have been called at most a few times for the directory itself",
+                    statCount.get(), new BaseMatcher<Integer>() {
+
+                        @Override
+                        public boolean matches(Object item) {
+                            return item instanceof Integer && ((Integer) item).intValue() < 4;
+                        }
+
+                        @Override
+                        public void describeTo(Description description) {
+                            description.appendText("smaller than 4");
+                        }
+                    });
+
+            // Repeat this a few times to get slightly more reliable timings
+            final int maxRepeats = 10;
+            long directTime = 0;
+            long indirectTime = 0;
+            for (int attempt = 0; attempt < maxRepeats; attempt++) {
+                // Now try the same directly at the upstream server
+                client = ((SftpFileSystem) secondHop).getClient();
+                statCount.set(0);
+                readDirCount.set(0);
+                i = 0;
+                start = System.currentTimeMillis();
+                try (CloseableHandle dir = client.openDir(remDirPath)) {
+                    for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                        i++;
+                        assertNotNull(entry);
+                    }
+                }
+                long elapsed = System.currentTimeMillis() - start;
+                directTime += elapsed;
+                assertTrue("Upstream server not called", readDirCount.get() > 0);
+                assertEquals("(L)STAT should not have been called on upstream server", 0, statCount.get());
+                LOG.info(
+                        "{}: directory listing with {} files from upstream server took {}ms, got {} entries: READDIR called {} times, (L)STAT called {} times",
+                        getCurrentTestName(), numberOfFiles, elapsed, i, readDirCount, statCount);
+
+                client = sftpPath.getFileSystem().getClient();
+                statCount.set(0);
+                readDirCount.set(0);
+                i = 0;
+                start = System.currentTimeMillis();
+                try (CloseableHandle dir = client.openDir(remDirPath)) {
+                    for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                        i++;
+                        assertNotNull(entry);
+                    }
+                }
+                elapsed = System.currentTimeMillis() - start;
+                indirectTime += elapsed;
+                assertTrue("Upstream server not called", readDirCount.get() > 0);
+                LOG.info(
+                        "{}: directory listing with {} files from intermediary server took {}ms, got {} entries: READDIR called {} times, (L)STAT called {} times",
+                        getCurrentTestName(), numberOfFiles, elapsed, i, readDirCount, statCount);
+            }
+            LOG.info("{}: average directory listing times: direct {}ms; indirect {}ms", getCurrentTestName(),
+                    directTime / maxRepeats, indirectTime / maxRepeats);
+        } finally {
+            if (secondHop != null) {
+                secondHop.close();
+            }
+            if (intermediary != null) {
+                intermediary.stop(true);
             }
         }
     }

@@ -76,6 +76,8 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.fs.SftpPath;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
@@ -657,6 +659,83 @@ public class SftpSubsystem
         }
     }
 
+    protected void doReadRemoteDir(ServerSession session, String handle, Buffer buffer, int id, RemoteDirectoryHandle dir)
+            throws IOException {
+        if (!dir.hasNext()) {
+            boolean atStart = dir.isAtStart();
+            dir.close();
+            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF,
+                    atStart ? "Empty directory" : "Directory reading is done");
+            return;
+        }
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.readingRemoteEntries(session, handle, dir);
+
+        // Read until buffer full or iterator exhausted
+        Buffer reply = prepareReply(buffer);
+        reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
+        reply.putInt(id);
+
+        int lenPos = reply.wpos();
+        reply.putInt(0); // Reserve space for count of entries
+        int maxDataSize = SftpModuleProperties.MAX_READDIR_DATA_SIZE.getRequired(session);
+        int numberWritten = 0;
+        boolean exhausted = false;
+        int clientVersion = getVersion();
+        int serverVersion = dir.getSftpVersion();
+        // Collect items to report to the listener
+        Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
+        Path root = dir.getFile();
+        do {
+            SftpClient.DirEntry entry = dir.next();
+            Path file = root.resolve(entry.getFilename());
+            // Write the entry
+            String shortName = entry.getFilename();
+            SftpClient.Attributes attributes = entry.getAttributes();
+            entries.put(shortName, file);
+
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            accessor.putRemoteFileName(session, this, file, buffer, shortName, true);
+
+            if (clientVersion == SftpConstants.SFTP_V3) {
+                // If upstream uses version > 3 but client wants version 3 response, synthesize the "longname" (actually
+                // a line like "ls -l" would produce) here.
+                String longName = (serverVersion == SftpConstants.SFTP_V3)
+                        ? entry.getLongFilename()
+                        : SftpHelper.getLongName(shortName, attributes);
+                accessor.putRemoteFileName(session, this, file, buffer, longName, false);
+
+                if (log.isTraceEnabled()) {
+                    log.trace("doReadRemoteDir({}) id={})[{}] - writing entry {} [{}]: {}", session, id, numberWritten,
+                            shortName, longName, attributes);
+                }
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.trace("doReadRemoteDir({}) id={})[{}] - writing entry {}: {}", session, id, numberWritten, shortName,
+                            attributes);
+                }
+            }
+            SftpHelper.writeAttributes(reply, attributes, clientVersion);
+
+            numberWritten++;
+            if (!dir.hasNext()) {
+                exhausted = true;
+                dir.close();
+                break;
+            }
+        } while (buffer.wpos() < maxDataSize);
+
+        listener.readRemoteEntries(session, handle, dir, entries);
+
+        BufferUtils.updateLengthPlaceholder(reply, lenPos, numberWritten);
+        Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, clientVersion, session, exhausted);
+        if (log.isDebugEnabled()) {
+            log.debug("doReadRemoteDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session, handle, dir,
+                    numberWritten, indicator, clientVersion);
+        }
+        send(reply);
+    }
+
     @Override
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
@@ -669,6 +748,11 @@ public class SftpSubsystem
 
         Buffer reply = null;
         try {
+            if (h instanceof RemoteDirectoryHandle) {
+                // Chained Sftp connections
+                doReadRemoteDir(session, handle, buffer, id, (RemoteDirectoryHandle) h);
+                return;
+            }
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
                 sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
@@ -713,9 +797,11 @@ public class SftpSubsystem
                     dh.markDone();
                 }
 
-                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, getVersion(), session, dh.isDone());
+                int sftpVersion = getVersion();
+                Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, sftpVersion, session, dh.isDone());
                 if (debugEnabled) {
-                    log.debug("doReadDir({})({})[{}] - seding {} entries - eol={}", session, handle, h, count, indicator);
+                    log.debug("doReadDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session, handle, h,
+                            count, indicator, sftpVersion);
                 }
             } else {
                 // empty directory
@@ -754,8 +840,13 @@ public class SftpSubsystem
             try {
                 synchronized (handles) {
                     handle = generateFileHandle(p);
-                    DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
-                    handles.put(handle, dirHandle);
+                    if (p instanceof SftpPath) {
+                        // We have chained SftpFileSystems.
+                        handles.put(handle, new RemoteDirectoryHandle(this, (SftpPath) p, handle));
+                    } else {
+                        DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
+                        handles.put(handle, dirHandle);
+                    }
                 }
             } catch (IOException e) {
                 throw signalOpenFailure(id, path, p, true, e);

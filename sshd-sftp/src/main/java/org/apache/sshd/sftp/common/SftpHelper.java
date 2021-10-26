@@ -57,12 +57,15 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.SftpClient.Attribute;
+import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.server.DefaultGroupPrincipal;
 import org.apache.sshd.sftp.server.InvalidHandleException;
 import org.apache.sshd.sftp.server.UnixDateFormat;
@@ -321,6 +324,136 @@ public final class SftpHelper {
         // TODO: bits
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
             buffer = writeExtensions(buffer, extensions);
+        }
+
+        return buffer;
+    }
+
+    public static <B extends Buffer> B writeAttributes(B buffer, Attributes attributes, int sftpVersion) {
+        int flagsMask = 0;
+        Collection<Attribute> flags = Objects.requireNonNull(attributes, "No attributes").getFlags();
+        if (sftpVersion == SftpConstants.SFTP_V3) {
+            for (Attribute a : flags) {
+                switch (a) {
+                    case Size:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_SIZE;
+                        break;
+                    case UidGid:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
+                        break;
+                    case Perms:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
+                        break;
+                    case AccessTime:
+                        if (flags.contains(Attribute.ModifyTime)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
+                        }
+                        break;
+                    case ModifyTime:
+                        if (flags.contains(Attribute.AccessTime)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
+                        }
+                        break;
+                    case Extensions:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_EXTENDED;
+                        break;
+                    default: // do nothing
+                }
+            }
+            buffer.putInt(flagsMask);
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
+                buffer.putLong(attributes.getSize());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
+                buffer.putInt(attributes.getUserId());
+                buffer.putInt(attributes.getGroupId());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                buffer.putInt(attributes.getPermissions());
+            }
+
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
+                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
+            }
+        } else if (sftpVersion >= SftpConstants.SFTP_V4) {
+            for (Attribute a : flags) {
+                switch (a) {
+                    case Size:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_SIZE;
+                        break;
+                    case OwnerGroup: {
+                        /*
+                         * According to
+                         * https://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+                         * section 7.5
+                         *
+                         * If either the owner or group field is zero length, the field should be considered absent, and no
+                         * change should be made to that specific field during a modification operation.
+                         */
+                        String owner = attributes.getOwner();
+                        String group = attributes.getGroup();
+                        if (GenericUtils.isNotEmpty(owner) && GenericUtils.isNotEmpty(group)) {
+                            flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
+                        }
+                        break;
+                    }
+                    case Perms:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
+                        break;
+                    case AccessTime:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
+                        break;
+                    case ModifyTime:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
+                        break;
+                    case CreateTime:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
+                        break;
+                    case Acl:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_ACL;
+                        break;
+                    case Extensions:
+                        flagsMask |= SftpConstants.SSH_FILEXFER_ATTR_EXTENDED;
+                        break;
+                    default: // do nothing
+                }
+            }
+            buffer.putInt(flagsMask);
+            buffer.putByte((byte) attributes.getType());
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
+                buffer.putLong(attributes.getSize());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+                String owner = attributes.getOwner();
+                buffer.putString(owner);
+
+                String group = attributes.getGroup();
+                buffer.putString(group);
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                buffer.putInt(attributes.getPermissions());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getCreateTime());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
+            }
+            if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
+                buffer = SftpHelper.writeACLs(buffer, sftpVersion, attributes.getAcl());
+            }
+
+            // TODO: for v5 ? 6? add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16 - v6)
+        } else {
+            throw new UnsupportedOperationException("writeAttributes(" + attributes + ") unsupported version: " + sftpVersion);
+        }
+
+        if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
+            buffer = SftpHelper.writeExtensions(buffer, attributes.getExtensions());
         }
 
         return buffer;
@@ -1058,6 +1191,28 @@ public final class SftpHelper {
             millis += TimeUnit.NANOSECONDS.toMillis(nanoseconds);
         }
         return FileTime.from(millis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Creates an &quot;ls -l&quot; compatible long name string
+     *
+     * @param  shortName  The short file name - can also be &quot;.&quot; or &quot;..&quot;
+     * @param  attributes The file's attributes - e.g., size, owner, permissions, etc.
+     * @return            A {@link String} representing the &quot;long&quot; file name as per
+     *                    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02">SFTP version 3 - section
+     *                    7</A>
+     */
+    public static String getLongName(String shortName, Attributes attributes) {
+        return getLongName(shortName,
+                MapBuilder.<String, Object> builder()
+                        .put("owner", attributes.getOwner())
+                        .put("group", attributes.getGroup())
+                        .put("size", attributes.getSize())
+                        .put("isDirectory", attributes.isDirectory())
+                        .put("isSymbolicLink", attributes.isSymbolicLink())
+                        .put("permissions", permissionsToAttributes(attributes.getPermissions()))
+                        .put("lastModifiedTime", attributes.getModifyTime())
+                        .build());
     }
 
     /**
