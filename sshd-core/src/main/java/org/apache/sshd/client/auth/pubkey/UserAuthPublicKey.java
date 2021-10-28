@@ -66,7 +66,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
     /**
      * Is set on a {@link ClientSession} when it is created; contains the value of the {@code IdentityAgent} SSH config
-     * setting. May be {@code null} if not specified in the
+     * setting. May be the empty string if not specified in the
      * {@link org.apache.sshd.client.config.hosts.HostConfigEntry#IDENTITY_AGENT HostConfigEntry}.
      */
     public static final AttributeKey<String> IDENTITY_AGENT = new AttributeKey<>();

@@ -739,7 +739,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         session.setConnectAddress(address);
         boolean useDefaultIdentities = !hostConfig.isIdentitiesOnly();
         session.setAttribute(UserAuthPublicKey.USE_DEFAULT_IDENTITIES, Boolean.valueOf(useDefaultIdentities));
-        session.setAttribute(UserAuthPublicKey.IDENTITY_AGENT, hostConfig.getProperty(HostConfigEntry.IDENTITY_AGENT));
+        String identityAgent = hostConfig.getProperty(HostConfigEntry.IDENTITY_AGENT);
+        session.setAttribute(UserAuthPublicKey.IDENTITY_AGENT, identityAgent == null ? "" : identityAgent);
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session, identities);
