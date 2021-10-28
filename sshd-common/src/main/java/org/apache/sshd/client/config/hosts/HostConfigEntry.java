@@ -87,6 +87,24 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final boolean DEFAULT_EXCLUSIVE_IDENTITIES = false;
 
     /**
+     * The IdentityAgent configuration. If not set in the {@link HostConfigEntry}, the value of this
+     * {@link #getProperty(String) property} is {@code null}, which means that a default SSH agent is to be used, if it
+     * is running. Other values defined by OpenSSH are:
+     * <ul>
+     * <dl>
+     * <dt>none</dt>
+     * <dd>No SHH agent is to be used at all, even if one is running.</dd>
+     * <dt>SSH_AUTH_SOCK</dt>
+     * <dd>The SSH agent listening on the Unix domain socket given by the environment variable {@code SSH_AUTH_SOCK}
+     * shall be used. If the environment variable is not set, no SSH agent is used.</dd>
+     * <dt><em>other</em></dt>
+     * <dd>For OpenSSH, the value shall resolve to the file name of a Unix domain socket to use to connect to an SSH
+     * agent.</dd>
+     * </dl>
+     */
+    public static final String IDENTITY_AGENT = "IdentityAgent";
+
+    /**
      * A case <U>insensitive</U> {@link NavigableSet} of the properties that receive special handling
      */
     public static final NavigableSet<String> EXPLICIT_PROPERTIES = Collections.unmodifiableNavigableSet(

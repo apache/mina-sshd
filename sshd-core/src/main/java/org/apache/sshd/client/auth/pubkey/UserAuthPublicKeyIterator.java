@@ -56,11 +56,9 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
 
         try {
             Collection<Iterable<? extends PublicKeyIdentity>> identities = new ArrayList<>(2);
-            if (Boolean.TRUE.equals(session.getAttribute(UserAuthPublicKey.USE_DEFAULT_IDENTITIES))) {
-                Iterable<? extends PublicKeyIdentity> agentIds = initializeAgentIdentities(session);
-                if (agentIds != null) {
-                    identities.add(agentIds);
-                }
+            Iterable<? extends PublicKeyIdentity> agentIds = initializeAgentIdentities(session);
+            if (agentIds != null) {
+                identities.add(agentIds);
             }
 
             Iterable<? extends PublicKeyIdentity> sessionIds = initializeSessionIdentities(session, signatureFactories);

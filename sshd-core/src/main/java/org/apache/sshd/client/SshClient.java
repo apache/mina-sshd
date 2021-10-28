@@ -581,7 +581,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                             .createLocalPortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, address);
                                     SshdSocketAddress bound = tracker.getBoundAddress();
                                     ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(),
-                                            context, localAddress, keys, !hostConfig.isIdentitiesOnly());
+                                            context, localAddress, keys, hostConfig);
                                     f4.addListener(f5 -> {
                                         if (f5.isConnected()) {
                                             ClientSession clientSession = f5.getClientSession();
@@ -614,14 +614,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return connectFuture;
         } else {
             return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
-                    context, localAddress, keys, !hostConfig.isIdentitiesOnly());
+                    context, localAddress, keys, hostConfig);
         }
     }
 
     protected ConnectFuture doConnect(
             String username, SocketAddress targetAddress,
             AttributeRepository context, SocketAddress localAddress,
-            KeyIdentityProvider identities, boolean useDefaultIdentities)
+            KeyIdentityProvider identities, HostConfigEntry hostConfig)
             throws IOException {
         if (connector == null) {
             throw new IllegalStateException(
@@ -630,7 +630,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
-                connectFuture, username, targetAddress, identities, useDefaultIdentities);
+                connectFuture, username, targetAddress, identities, hostConfig);
         IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
         connectingFuture.addListener(listener);
         return connectFuture;
@@ -692,7 +692,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
             ConnectFuture connectFuture, String username, SocketAddress address,
-            KeyIdentityProvider identities, boolean useDefaultIdentities) {
+            KeyIdentityProvider identities, HostConfigEntry hostConfig) {
         return new SshFutureListener<IoConnectFuture>() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -712,8 +712,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 } else {
                     IoSession ioSession = future.getSession();
                     try {
-                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities,
-                                useDefaultIdentities);
+                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities, hostConfig);
                     } catch (IOException | GeneralSecurityException | RuntimeException e) {
                         warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
                                 username, address, e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
@@ -733,12 +732,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected void onConnectOperationComplete(
             IoSession ioSession, ConnectFuture connectFuture, String username,
-            SocketAddress address, KeyIdentityProvider identities, boolean useDefaultIdentities)
+            SocketAddress address, KeyIdentityProvider identities, HostConfigEntry hostConfig)
             throws IOException, GeneralSecurityException {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
+        boolean useDefaultIdentities = !hostConfig.isIdentitiesOnly();
         session.setAttribute(UserAuthPublicKey.USE_DEFAULT_IDENTITIES, Boolean.valueOf(useDefaultIdentities));
+        session.setAttribute(UserAuthPublicKey.IDENTITY_AGENT, hostConfig.getProperty(HostConfigEntry.IDENTITY_AGENT));
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session, identities);
