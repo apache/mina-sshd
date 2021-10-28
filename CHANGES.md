@@ -36,3 +36,4 @@
 * [SSHD-1202](https://issues.apache.org/jira/browse/SSHD-1202) Provide SftpErrorDataHandler callback support for SFTP client.
 * [SSHD-1215](https://issues.apache.org/jira/browse/SSHD-1215) Treat ACE4_APPEND_DATA as a hint only in SFTP mode determination
 * [SSHD-1216](https://issues.apache.org/jira/browse/SSHD-1216) Implement RFC 8332 server-sig-algs on the server
+* [SSHD-1217](https://issues.apache.org/jira/browse/SSHD-1217) Add special handling of SFTP directory entries listing if underlying file system is also SFTP
