@@ -37,7 +37,7 @@ SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
     .withExecutorServiceProvider(() -> ThreadUtils.noClose(mySpecialExecutor))
     .build();
 server.setSubsystemFactories(Collections.singletonList(factory));
-    
+
 ```
 
 ### `SftpEventListener`
@@ -139,7 +139,7 @@ try (ClientSession session = ...obtain session...) {
     try (SftpClient client = factory.createSftpClient(session)) {
         ... use the SFTP client...
     }
-    
+
     // NOTE: session is still alive here...
 }
 
@@ -445,6 +445,95 @@ try (ClientSession session = client.connect(...)) {
 ```
 
 On the server side, one can use the `SftpFileSystemAccessor#putRemoteFileName` to encode the returned file name/path using non-UTF8 encoding. However, this might break clients that expect UTF-8 - i.e., as long as both the client and server are somehow "aligned" on the encoding being used it will work. In this context, one might also need to consider implementing the `filename-charset` , `filename-translation-control` extensions as described in [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) on the server side - though it is not supported out-of-the-box in version 3 (which what most clients run).
+
+### Listing SFTP directories
+
+Listing directories can be done in Java in various ways. With the Java NIO framework, a common approach is
+
+```java
+public void processDirectory(Path directoryPath, Consumer<Path> process) throws IOException {
+  try (DirectoryStream<Path> dir = Files.newDirectoryStream(directoryPath)) {
+    dir.iterator().forEachRemaining(path -> {
+      process.accept(path); // Do whatever needs to be done with 'path'
+    });
+  }
+}
+```
+This also works fine if the `Path` is an `SftpPath` obtained from an `SftpFileSystem`. But what if you also need the file _attributes_ ?
+
+Again, in plain Java NIO, one might do
+
+```java
+public void processDirectory(Path directoryPath, BiConsumer<Path, BasicFileAttributes> process) throws IOException {
+  try (DirectoryStream<Path> dir = Files.newDirectoryStream(directoryPath)) {
+    Iterator<Path> files = dir.iterator();
+    while (files.hasNext()) {
+      Path path = files.next();
+      BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+      process.accept(path, attributes);
+    }
+  }
+}
+```
+This gets all the Paths of the files inside the directory, then reads their attributes one-by-one.
+On Unix, there is variation using `Files.walkFileTree` that may have much better performance:
+
+```java
+public void processDirectory(Path directoryPath, BiConsumer<Path, BasicFileAttributes> process) throws IOException {
+  Files.walkFileTree(directoryPath, EnumSet.noneOf(FileVisitOption.class), 1,
+      new SimpleFileVisitor<Path>() {
+
+          @Override
+          public FileVisitResult visitFile(Path path, BasicFileAttributes attributes) {
+            // Beware this is also called for the directory itself
+            process.accept(path, attributes);
+            return FileVisitResult.CONTINUE;
+          }
+      });
+}
+```
+This typically performs better on Unix because the file system can deliver the file attributes together with the
+paths, and the standard Java implementation of `FileVisitor` takes advantage of this. On Windows you'll typically
+not see any improvement because the file system stores attributes differently and has to fetch them extra anyway.
+
+This is important when remote file systems come into play. With an `SftpFileSystem`, the call to `Files.readAttributes()`
+is a _remote call_ to the SFTP server, hence it's an expensive operation. Thus the first variant is slow, which may make
+processing a directory with many files excruciatingly slow.
+
+SFTP has a directory model similar to Unix: a request for a directory listing always returns the file names _and_ the
+file attributes. But Java's `FileVisitor` doesn't know this, and doesn't know about `SftpFileSystem` at all -- it's just
+a normal `java.nio.file.FileSystem` for it. Hence it doesn't use its internal optimization for Unix file systems and
+instead also calls `Files.readAttributes()` for each file under the hood. This makes the second variant also slow with an
+`SftpFileSystem`.
+
+To get paths and attributes in an _efficient_ way from an `SftpFileSystem`, one has to bypass the `FileSystem` abstraction
+and use SFTP commands directly:
+
+```java
+Path directoryPath = ...;
+if (directoryPath instanceof SftpPath) {
+  try (SftpClient client = ((SftpPath) directoryPath).getFileSystem().getClient();
+       CloseableHandle handle = client.openDir(directoryPath.toString())) {
+    client.listDir(handle).iterator().forEachRemaining(directoryEntry -> {
+      SftpClient.Attributes attributes = directoryEntry.getAttributes();
+      String file = directoryEntry.getFilename();
+      if (".".equals(file)) {
+        // The directory itself.
+        process(directoryPath, attributes);
+      } else if ("..".equals(file)) {
+        // The parent directory, if any
+        process(directoryPath.getParent(), attributes);
+      } else {
+        process(directoryPath.resolve(file), attributes);
+      }
+    });
+  }
+} else {
+  // Not an SFTP path -- get the directory listing in whatever other way is appropriate.
+}
+```
+So even if an `SftpFileSystem` fulfills the general contract of a `FileSystem`, a client still has to be aware that
+it is a _remote file system_ that may have quite different performance characteristics than a local file file system.
 
 ### SFTP aware directory scanners
 
