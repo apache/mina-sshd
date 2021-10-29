@@ -34,6 +34,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -41,6 +42,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -216,6 +218,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         try (FileSystem fs = FileSystems.newFileSystem(
                 createFileSystemURI(getCurrentTestName(), intermediary.getPort(), Collections.emptyMap()), defaultOptions())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -249,8 +252,8 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                     getCurrentTestName(), numberOfFiles, System.currentTimeMillis() - start, i, readDirCount, statCount);
             assertEquals(numberOfFiles + 2, i); // . and ..
             assertTrue("Upstream server not called", readDirCount.get() > 0);
-            // The current implementation stats the directory three times: Files.exists(), Files.isDirectory(), and
-            // Files.isReadable().
+            // The current implementation stats 3 times: once to detect whether the directory exists, is a directory,
+            // and is readable; once again for the "." entry, and the parent directory once for "..".
             MatcherAssert.assertThat(
                     "Files.getAttributes() should have been called at most a few times for the directory itself",
                     statCount.get(), new BaseMatcher<Integer>() {
@@ -317,6 +320,63 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             }
             if (intermediary != null) {
                 intermediary.stop(true);
+            }
+        }
+    }
+
+    @Test // SSHD-1220
+    public void testAttributeCache() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
+                MapBuilder.<String, Object> builder()
+                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
+                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE).build())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            Path localFile = clientFolder.resolve("file.txt");
+            Files.write(localFile, "Hello".getBytes(StandardCharsets.UTF_8));
+            Path localFile2 = clientFolder.resolve("file2.txt");
+            Files.write(localFile2, "World".getBytes(StandardCharsets.UTF_8));
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localFile);
+            Path remoteFile = fs.getPath(remFilePath);
+            assertHierarchyTargetFolderExists(remoteFile.getParent());
+            int n = 0;
+            for (Path p : Files.newDirectoryStream(remoteFile.getParent())) {
+                n++;
+                assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
+                assertNotNull("Path should have cached attributes", cached);
+                assertEquals("Unexpected size reported", 5, cached.getSize());
+                // Now modify the file and fetch attributes again
+                Files.write(p, "Bye".getBytes(StandardCharsets.UTF_8));
+                BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
+                assertNotEquals("Sizes should be different", attributes.size(), cached.getSize());
+                assertEquals("Unexpected size after modification", 3, attributes.size());
+                assertNull("Path should not have cached attributes anymore", ((SftpPath) p).getAttributes());
+            }
+            assertEquals("Unexpected number of files", 2, n);
+            // And again
+            List<Path> obtained = new ArrayList<>(2);
+            for (Path p : Files.newDirectoryStream(remoteFile.getParent())) {
+                assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
+                assertNotNull("Path should have cached attributes", cached);
+                assertEquals("Unexpected size reported", 3, cached.getSize());
+                obtained.add(p);
+            }
+            assertEquals("Unexpected number of files", 2, obtained.size());
+            // Now modify the files and fetch attributes again
+            for (Path p : obtained) {
+                Files.write(p, "Again".getBytes(StandardCharsets.UTF_8));
+                BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
+                // If this fails because the size is 3, we mistakenly got data from previously cached SFTP attributes
+                assertEquals("Unexpected file size reported via attributes", 5, attributes.size());
             }
         }
     }

@@ -453,9 +453,9 @@ Listing directories can be done in Java in various ways. With the Java NIO frame
 ```java
 public void processDirectory(Path directoryPath, Consumer<Path> process) throws IOException {
   try (DirectoryStream<Path> dir = Files.newDirectoryStream(directoryPath)) {
-    dir.iterator().forEachRemaining(path -> {
+    for (Path path : dir) {
       process.accept(path); // Do whatever needs to be done with 'path'
-    });
+    }
   }
 }
 ```
@@ -466,9 +466,7 @@ Again, in plain Java NIO, one might do
 ```java
 public void processDirectory(Path directoryPath, BiConsumer<Path, BasicFileAttributes> process) throws IOException {
   try (DirectoryStream<Path> dir = Files.newDirectoryStream(directoryPath)) {
-    Iterator<Path> files = dir.iterator();
-    while (files.hasNext()) {
-      Path path = files.next();
+    for (Path path : dir) {
       BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
       process.accept(path, attributes);
     }
@@ -493,7 +491,7 @@ public void processDirectory(Path directoryPath, BiConsumer<Path, BasicFileAttri
 }
 ```
 This typically performs better on Unix because the file system can deliver the file attributes together with the
-paths, and the standard Java implementation of `FileVisitor` takes advantage of this. On Windows you'll typically
+paths, and the standard Java implementation of `FileTreeWalker` takes advantage of this. On Windows you'll typically
 not see any improvement because the file system stores attributes differently and has to fetch them extra anyway.
 
 This is important when remote file systems come into play. With an `SftpFileSystem`, the call to `Files.readAttributes()`
@@ -506,15 +504,13 @@ a normal `java.nio.file.FileSystem` for it. Hence it doesn't use its internal op
 instead also calls `Files.readAttributes()` for each file under the hood. This makes the second variant also slow with an
 `SftpFileSystem`.
 
-To get paths and attributes in an _efficient_ way from an `SftpFileSystem`, one has to bypass the `FileSystem` abstraction
-and use SFTP commands directly:
+To get paths and attributes in an _efficient_ way from an `SftpFileSystem`, one has to bypass the `FileSystem` abstraction.
+One can do it all manually using SFTP commands directly:
 
 ```java
-Path directoryPath = ...;
-if (directoryPath instanceof SftpPath) {
-  try (SftpClient client = ((SftpPath) directoryPath).getFileSystem().getClient();
-       CloseableHandle handle = client.openDir(directoryPath.toString())) {
-    client.listDir(handle).iterator().forEachRemaining(directoryEntry -> {
+public void processSftpDirectory(SftpPath directoryPath, BiConsumer<Path, SftpClient.Attributes> process) throws IOException {
+  try (SftpClient client = directoryPath.getFileSystem().getClient()) {
+    for (SftpClient.DirEntry directoryEntry : client.readDir(directoryPath.toString()) {
       SftpClient.Attributes attributes = directoryEntry.getAttributes();
       String file = directoryEntry.getFilename();
       if (".".equals(file)) {
@@ -526,14 +522,40 @@ if (directoryPath instanceof SftpPath) {
       } else {
         process(directoryPath.resolve(file), attributes);
       }
-    });
+    }
   }
-} else {
-  // Not an SFTP path -- get the directory listing in whatever other way is appropriate.
 }
 ```
-So even if an `SftpFileSystem` fulfills the general contract of a `FileSystem`, a client still has to be aware that
-it is a _remote file system_ that may have quite different performance characteristics than a local file file system.
+Alternatively, one can also use the fact that Apache MINA sshd caches the SFTP file attributes it received from the server
+on the `SftpPath` objects it returns from a `DirectoryStream`:
+
+```java
+public void processSftpDirectory(SftpPath directoryPath, BiConsumer<Path, SftpClient.Attributes> process) throws IOException {
+  try (DirectoryStream<Path> dir = Files.newDirectoryStream(directoryPath)) {
+    for (Path path : dir) {
+      if (path instanceof SftpPath) {
+        SftpClient.Attributes attributes = ((SftpPath) path).getAttributes();
+        process.accept(path, attributes);
+      } else {
+        // A DirectoryStream on a directory given by an SftpPath always returns SftpPath instances as elements.
+        throw new IllegalStateException("Path " + path + " has unexpected type " + path.getClass().getName());
+      }
+    }
+  }
+}
+```
+In either case, the behavior is undefined if files in the directory or their attributes are changed during the iteration.
+
+File attributes, whether cached or not, and irrespective of the type of `FileSystem`, represent a snapshot taken at the time
+they were obtained; they do not reflect any changes made to the files after that. The cached attributes Apache MINA sshd
+provides through the `SftpFileSystem` reflect the state when the directory listing was obtained. Calling `Files.readAttributes()`
+on an `SftpPath` always is a remote call fetching a fresh snapshot.
+
+Note: the same is true for any other operation that implicitly calls `Files.readAttributes()`, like `Files.size()`, `Files.exists()`,
+`Files.getOwner()`, `Files.isDirectory()`, and so on.
+
+Even if an `SftpFileSystem` fulfills the general contract of a `FileSystem`, a client still has to be aware that
+it is a _remote file system_ that may have quite different performance characteristics than a local file system.
 
 ### SFTP aware directory scanners
 

@@ -91,6 +91,9 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
+import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.fs.SftpPath;
+import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
@@ -1614,43 +1617,43 @@ public abstract class AbstractSftpSubsystemHelper
     protected void doMakeDirectory(
             int id, String path, Map<String, ?> attrs, boolean followLinks)
             throws IOException {
-        Path p = resolveFile(path);
+        Path resolvedPath = resolveFile(path);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doMakeDirectory({})[id={}] SSH_FXP_MKDIR (path={}[{}], attrs={})",
-                    session, id, path, p, attrs);
+                    session, id, path, resolvedPath, attrs);
         }
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                session, this, p, SftpConstants.SSH_FXP_MKDIR, "", followLinks);
-        Boolean status = IoUtils.checkFileExists(p, options);
-        if (status == null) {
-            throw new AccessDeniedException(
-                    p.toString(), p.toString(), "Cannot validate make-directory existence");
-        }
+                session, this, resolvedPath, SftpConstants.SSH_FXP_MKDIR, "", followLinks);
+        SftpPathImpl.withAttributeCache(resolvedPath, p -> {
+            Boolean status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw new AccessDeniedException(p.toString(), p.toString(), "Cannot validate make-directory existence");
+            }
 
-        if (status) {
-            if (Files.isDirectory(p, options)) {
-                throw new FileAlreadyExistsException(
-                        p.toString(), p.toString(), "Target directory already exists");
-            } else {
-                throw new FileAlreadyExistsException(
-                        p.toString(), p.toString(), "Already exists as a file");
+            if (status) {
+                if (Files.isDirectory(p, options)) {
+                    throw new FileAlreadyExistsException(p.toString(), p.toString(), "Target directory already exists");
+                } else {
+                    throw new FileAlreadyExistsException(p.toString(), p.toString(), "Already exists as a file");
+                }
             }
-        } else {
-            SftpEventListener listener = getSftpEventListenerProxy();
-            listener.creating(session, p, attrs);
-            try {
-                accessor.createDirectory(session, this, p);
-                followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", p);
-                doSetAttributes(SftpConstants.SSH_FXP_MKDIR, "", p, attrs, followLinks);
-            } catch (IOException | RuntimeException | Error e) {
-                listener.created(session, p, attrs, e);
-                throw e;
-            }
-            listener.created(session, p, attrs, null);
+            return null;
+        });
+        // Directory does not exist yet
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.creating(session, resolvedPath, attrs);
+        try {
+            accessor.createDirectory(session, this, resolvedPath);
+            followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath);
+            doSetAttributes(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath, attrs, followLinks);
+        } catch (IOException | RuntimeException | Error e) {
+            listener.created(session, resolvedPath, attrs, e);
+            throw e;
         }
+        listener.created(session, resolvedPath, attrs, null);
     }
 
     protected void doRemove(Buffer buffer, int id) throws IOException {
@@ -1669,34 +1672,32 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doRemoveFile(int id, String path, boolean followLinks) throws IOException {
-        Path p = resolveFile(path);
+        Path resolvedPath = resolveFile(path);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doRemoveFile({})[id={}] SSH_FXP_REMOVE (path={}[{}])", session, id, path, p);
+            log.debug("doRemoveFile({})[id={}] SSH_FXP_REMOVE (path={}[{}])", session, id, path, resolvedPath);
         }
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                session, this, p, SftpConstants.SSH_FXP_REMOVE, "", followLinks);
-        Boolean status = IoUtils.checkFileExists(p, options);
-        if (status == null) {
-            throw signalRemovalPreConditionFailure(id, path, p,
-                    new AccessDeniedException(
-                            p.toString(), p.toString(), "Cannot determine existence of remove candidate"),
-                    false);
-        } else if (!status) {
-            throw signalRemovalPreConditionFailure(id, path, p,
-                    new NoSuchFileException(
-                            p.toString(), p.toString(), "Removal candidate not found"),
-                    false);
-        } else if (Files.isDirectory(p, options)) {
-            throw signalRemovalPreConditionFailure(id, path, p,
-                    new SftpException(
-                            SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder"),
-                    false);
-        } else {
-            doRemove(id, p, false);
-        }
+                session, this, resolvedPath, SftpConstants.SSH_FXP_REMOVE, "", followLinks);
+        SftpPathImpl.withAttributeCache(resolvedPath, p -> {
+            Boolean status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw signalRemovalPreConditionFailure(id, path, p,
+                        new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"),
+                        false);
+            } else if (!status) {
+                throw signalRemovalPreConditionFailure(id, path, p,
+                        new NoSuchFileException(p.toString(), p.toString(), "Removal candidate not found"), false);
+            } else if (Files.isDirectory(p, options)) {
+                throw signalRemovalPreConditionFailure(id, path, p,
+                        new SftpException(SftpConstants.SSH_FX_FILE_IS_A_DIRECTORY, p.toString() + " is a folder"), false);
+            }
+            return null;
+        });
+        // File exists and is not a directory
+        doRemove(id, resolvedPath, false);
     }
 
     protected <E extends IOException> E signalRemovalPreConditionFailure(
@@ -2199,11 +2200,24 @@ public abstract class AbstractSftpSubsystemHelper
                 dir.markDotSent(); // do not send it again
             } else if (dir.isSendDotDot()) {
                 Path dirPath = dir.getFile();
-                writeDirEntry(id, dir, entries, buffer, nb, dirPath.getParent(), "..", options);
+                Path parentPath = dirPath.getParent();
+                if (parentPath != null) {
+                    writeDirEntry(id, dir, entries, buffer, nb, parentPath, "..", options);
+                }
                 dir.markDotDotSent(); // do not send it again
             } else {
                 Path f = dir.next();
-                writeDirEntry(id, dir, entries, buffer, nb, f, getShortName(f), options);
+                String shortName = getShortName(f);
+                if (f instanceof SftpPath) {
+                    SftpClient.Attributes attributes = ((SftpPath) f).getAttributes();
+                    if (attributes != null) {
+                        entries.put(shortName, f);
+                        writeDirEntry(session, id, buffer, nb, f, shortName, attributes);
+                        nb++;
+                        continue;
+                    }
+                }
+                writeDirEntry(id, dir, entries, buffer, nb, f, shortName, options);
             }
 
             nb++;
@@ -2212,6 +2226,31 @@ public abstract class AbstractSftpSubsystemHelper
         SftpEventListener listener = getSftpEventListenerProxy();
         listener.readEntries(session, handle, dir, entries);
         return nb;
+    }
+
+    protected void writeDirEntry(
+            ServerSession session, int id, Buffer buffer, int index, Path f, String shortName,
+            SftpClient.Attributes attributes)
+            throws IOException {
+        int version = getVersion();
+
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        accessor.putRemoteFileName(session, this, f, buffer, shortName, true);
+
+        if (version == SftpConstants.SFTP_V3) {
+            String longName = SftpHelper.getLongName(shortName, attributes);
+            accessor.putRemoteFileName(session, this, f, buffer, longName, false);
+
+            if (log.isTraceEnabled()) {
+                log.trace("writeDirEntry({}) id={})[{}] - writing entry {} [{}]: {}", session, id, index, shortName, longName,
+                        attributes);
+            }
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace("writeDirEntry({}) id={})[{}] - writing entry {}: {}", session, id, index, shortName, attributes);
+            }
+        }
+        SftpHelper.writeAttributes(buffer, attributes, version);
     }
 
     /**
@@ -2318,16 +2357,18 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected NavigableMap<String, Object> resolveFileAttributes(
-            Path file, int flags, LinkOption... options)
+            Path path, int flags, LinkOption... options)
             throws IOException {
-        Boolean status = IoUtils.checkFileExists(file, options);
-        if (status == null) {
-            return handleUnknownStatusFileAttributes(file, flags, options);
-        } else if (!status) {
-            throw new NoSuchFileException(file.toString(), file.toString(), "Attributes N/A for target");
-        } else {
-            return getAttributes(file, flags, options);
-        }
+        return SftpPathImpl.withAttributeCache(path, file -> {
+            Boolean status = IoUtils.checkFileExists(file, options);
+            if (status == null) {
+                return handleUnknownStatusFileAttributes(file, flags, options);
+            } else if (!status) {
+                throw new NoSuchFileException(file.toString(), file.toString(), "Attributes N/A for target");
+            } else {
+                return getAttributes(file, flags, options);
+            }
+        });
     }
 
     protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) throws IOException {
@@ -2362,41 +2403,42 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     /**
-     * @param  file        The {@link Path} location for the required attributes
+     * @param  path        The {@link Path} location for the required attributes
      * @param  flags       A mask of the original required attributes - ignored by the default implementation
      * @param  options     The {@link LinkOption}s to use in order to access the file if necessary
      * @return             A {@link Map} of the retrieved attributes
      * @throws IOException If failed to access the file
      * @see                #resolveMissingFileAttributes(Path, int, Map, LinkOption...)
      */
-    protected NavigableMap<String, Object> getAttributes(Path file, int flags, LinkOption... options)
+    protected NavigableMap<String, Object> getAttributes(Path path, int flags, LinkOption... options)
             throws IOException {
-        FileSystem fs = file.getFileSystem();
-        Collection<String> supportedViews = fs.supportedFileAttributeViews();
-        NavigableMap<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        Collection<String> views;
+        return SftpPathImpl.withAttributeCache(path, file -> {
+            FileSystem fs = file.getFileSystem();
+            Collection<String> supportedViews = fs.supportedFileAttributeViews();
+            NavigableMap<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            Collection<String> views;
 
-        if (GenericUtils.isEmpty(supportedViews)) {
-            views = Collections.emptyList();
-        } else if (supportedViews.contains("unix")) {
-            views = SftpFileSystemAccessor.DEFAULT_UNIX_VIEW;
-        } else {
-            views = GenericUtils.map(supportedViews, v -> v + ":*");
-        }
-
-        for (String v : views) {
-            Map<String, ?> ta = readFileAttributes(file, v, options);
-            if (MapEntryUtils.isNotEmpty(ta)) {
-                attrs.putAll(ta);
+            if (GenericUtils.isEmpty(supportedViews)) {
+                views = Collections.emptyList();
+            } else if (supportedViews.contains("unix")) {
+                views = SftpFileSystemAccessor.DEFAULT_UNIX_VIEW;
+            } else {
+                views = GenericUtils.map(supportedViews, v -> v + ":*");
             }
-        }
 
-        Map<String, ?> completions = resolveMissingFileAttributes(file, flags, attrs, options);
-        if (MapEntryUtils.isNotEmpty(completions)) {
-            attrs.putAll(completions);
-        }
+            for (String v : views) {
+                Map<String, ?> ta = readFileAttributes(file, v, options);
+                if (MapEntryUtils.isNotEmpty(ta)) {
+                    attrs.putAll(ta);
+                }
+            }
 
-        return attrs;
+            Map<String, ?> completions = resolveMissingFileAttributes(file, flags, attrs, options);
+            if (MapEntryUtils.isNotEmpty(completions)) {
+                attrs.putAll(completions);
+            }
+            return attrs;
+        });
     }
 
     /**

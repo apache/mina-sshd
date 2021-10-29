@@ -55,6 +55,7 @@ import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.impl.AbstractSftpClient;
+import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 import org.apache.sshd.sftp.common.SftpConstants;
 
 public class SftpFileSystem
@@ -158,7 +159,7 @@ public class SftpFileSystem
 
     @Override
     protected SftpPath create(String root, List<String> names) {
-        return new SftpPath(this, root, names);
+        return new SftpPathImpl(this, root, names);
     }
 
     @Override

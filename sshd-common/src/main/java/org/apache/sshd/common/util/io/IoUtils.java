@@ -34,9 +34,11 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
@@ -372,11 +374,23 @@ public final class IoUtils {
      *                 explained above
      */
     public static Boolean checkFileExists(Path path, LinkOption... options) {
-        if (Files.exists(path, options)) {
+        boolean followLinks = true;
+        for (LinkOption opt : options) {
+            if (opt == LinkOption.NOFOLLOW_LINKS) {
+                followLinks = false;
+                break;
+            }
+        }
+        try {
+            if (followLinks) {
+                path.getFileSystem().provider().checkAccess(path);
+            } else {
+                Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            }
             return Boolean.TRUE;
-        } else if (Files.notExists(path, options)) {
+        } catch (NoSuchFileException e) {
             return Boolean.FALSE;
-        } else {
+        } catch (IOException e) {
             return null;
         }
     }

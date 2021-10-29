@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 
 /**
  * Implements and {@link Iterator} of {@link SftpPath}-s returned by a {@link DirectoryStream#iterator()} method.
@@ -106,6 +107,9 @@ public class SftpPathIterator implements Iterator<Path> {
                 dotdotIgnored = true;
             } else {
                 SftpPath candidate = root.resolve(entry.getFilename());
+                if (candidate instanceof SftpPathImpl) {
+                    ((SftpPathImpl) candidate).setAttributes(entry.getAttributes());
+                }
                 try {
                     if ((selector == null) || selector.accept(candidate)) {
                         return candidate;

@@ -27,13 +27,15 @@
 
 * [SSHD-1017](https://issues.apache.org/jira/browse/SSHD-1017) Add support for the chacha20-poly1305@openssh.com cipher
 * [SSHD-1161](https://issues.apache.org/jira/browse/SSHD-1161) Support OpenSSH client certificates for publickey authentication
-* [SSHD-1163](https://issues.apache.org/jira/browse/SSHD-1163) Wrong server key algorithm choose
+* [SSHD-1163](https://issues.apache.org/jira/browse/SSHD-1163) Wrong server key algorithm chosen in DH group key exchange
 * [SSHD-1164](https://issues.apache.org/jira/browse/SSHD-1164) Parsing of ~/.ssh/config Host patterns fails with extra whitespace
 * [SSHD-1166](https://issues.apache.org/jira/browse/SSHD-1166) Support creating signed OpenSSH certificates
 * [SSHD-1168](https://issues.apache.org/jira/browse/SSHD-1168) OpenSSH certificates: check certificate type
-* [SSHD-1171](https://issues.apache.org/jira/browse/SSHD-1171) OpenSSHCertificatesTest: certificates expire in 2030
 * [SSHD-1172](https://issues.apache.org/jira/browse/SSHD-1172) Expiration of OpenSshCertificates needs to compare timestamps as unsigned long
 * [SSHD-1202](https://issues.apache.org/jira/browse/SSHD-1202) Provide SftpErrorDataHandler callback support for SFTP client.
-* [SSHD-1215](https://issues.apache.org/jira/browse/SSHD-1215) Treat ACE4_APPEND_DATA as a hint only in SFTP mode determination
+* [SSHD-1215](https://issues.apache.org/jira/browse/SSHD-1215) Treat ACE4_APPEND_DATA as a hint only in SFTP write mode determination
 * [SSHD-1216](https://issues.apache.org/jira/browse/SSHD-1216) Implement RFC 8332 server-sig-algs on the server
 * [SSHD-1217](https://issues.apache.org/jira/browse/SSHD-1217) Add special handling of SFTP directory entries listing if underlying file system is also SFTP
+* [SSHD-1218](https://issues.apache.org/jira/browse/SSHD-1218) SshAgentFactory.createClient() gets passed the session
+* [SSHD-1219](https://issues.apache.org/jira/browse/SSHD-1219) Obtaining rsa-sha2-256 or rsa-sha2-512 signatures from an SSH agent
+* [SSHD-1220](https://issues.apache.org/jira/browse/SSHD-1220) Reduce number of L(STAT) calls made by the SftpFileSystem

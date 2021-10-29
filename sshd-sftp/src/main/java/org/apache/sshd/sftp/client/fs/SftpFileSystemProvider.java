@@ -94,6 +94,7 @@ import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpErrorDataHandler;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.extensions.CopyFileExtension;
+import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 import org.apache.sshd.sftp.client.impl.SftpRemotePathChannel;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
@@ -959,9 +960,17 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public SftpClient.Attributes readRemoteAttributes(SftpPath path, LinkOption... options) throws IOException {
-        SftpFileSystem fs = path.getFileSystem();
-        try (SftpClient client = fs.getClient()) {
-            try {
+        // Use the cache here. The cache scope clears cached attributes at the beginning and at the end of the outermost
+        // SftpPathImpl.withAttributeCache() invocation. So we ensure here that if we are already within a caching
+        // scope, we do use the cached attributes, but if we are not, we clear any possibly cached attributes and
+        // do actually read them from the remote.
+        return SftpPathImpl.withAttributeCache(path, p -> {
+            SftpClient.Attributes attributes = path.getAttributes();
+            if (attributes != null) {
+                return attributes;
+            }
+            SftpFileSystem fs = path.getFileSystem();
+            try (SftpClient client = fs.getClient()) {
                 SftpClient.Attributes attrs;
                 if (IoUtils.followLinks(options)) {
                     attrs = client.stat(path.toString());
@@ -971,14 +980,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 if (log.isTraceEnabled()) {
                     log.trace("readRemoteAttributes({})[{}]: {}", fs, path, attrs);
                 }
+                if (path instanceof SftpPathImpl) {
+                    ((SftpPathImpl) path).cacheAttributes(attrs);
+                }
                 return attrs;
             } catch (SftpException e) {
                 if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
-                    throw new NoSuchFileException(path.toString());
+                    NoSuchFileException toThrow = new NoSuchFileException(path.toString());
+                    toThrow.initCause(e);
+                    throw toThrow;
                 }
                 throw e;
             }
-        }
+        });
     }
 
     protected NavigableMap<String, Object> readPosixViewAttributes(

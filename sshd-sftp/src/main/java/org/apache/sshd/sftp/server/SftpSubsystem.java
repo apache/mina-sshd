@@ -76,8 +76,8 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
-import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.fs.SftpPath;
+import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
@@ -659,83 +659,6 @@ public class SftpSubsystem
         }
     }
 
-    protected void doReadRemoteDir(ServerSession session, String handle, Buffer buffer, int id, RemoteDirectoryHandle dir)
-            throws IOException {
-        if (!dir.hasNext()) {
-            boolean atStart = dir.isAtStart();
-            dir.close();
-            sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF,
-                    atStart ? "Empty directory" : "Directory reading is done");
-            return;
-        }
-        SftpEventListener listener = getSftpEventListenerProxy();
-        listener.readingRemoteEntries(session, handle, dir);
-
-        // Read until buffer full or iterator exhausted
-        Buffer reply = prepareReply(buffer);
-        reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
-        reply.putInt(id);
-
-        int lenPos = reply.wpos();
-        reply.putInt(0); // Reserve space for count of entries
-        int maxDataSize = SftpModuleProperties.MAX_READDIR_DATA_SIZE.getRequired(session);
-        int numberWritten = 0;
-        boolean exhausted = false;
-        int clientVersion = getVersion();
-        int serverVersion = dir.getSftpVersion();
-        // Collect items to report to the listener
-        Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
-        Path root = dir.getFile();
-        do {
-            SftpClient.DirEntry entry = dir.next();
-            Path file = root.resolve(entry.getFilename());
-            // Write the entry
-            String shortName = entry.getFilename();
-            SftpClient.Attributes attributes = entry.getAttributes();
-            entries.put(shortName, file);
-
-            SftpFileSystemAccessor accessor = getFileSystemAccessor();
-            accessor.putRemoteFileName(session, this, file, buffer, shortName, true);
-
-            if (clientVersion == SftpConstants.SFTP_V3) {
-                // If upstream uses version > 3 but client wants version 3 response, synthesize the "longname" (actually
-                // a line like "ls -l" would produce) here.
-                String longName = (serverVersion == SftpConstants.SFTP_V3)
-                        ? entry.getLongFilename()
-                        : SftpHelper.getLongName(shortName, attributes);
-                accessor.putRemoteFileName(session, this, file, buffer, longName, false);
-
-                if (log.isTraceEnabled()) {
-                    log.trace("doReadRemoteDir({}) id={})[{}] - writing entry {} [{}]: {}", session, id, numberWritten,
-                            shortName, longName, attributes);
-                }
-            } else {
-                if (log.isTraceEnabled()) {
-                    log.trace("doReadRemoteDir({}) id={})[{}] - writing entry {}: {}", session, id, numberWritten, shortName,
-                            attributes);
-                }
-            }
-            SftpHelper.writeAttributes(reply, attributes, clientVersion);
-
-            numberWritten++;
-            if (!dir.hasNext()) {
-                exhausted = true;
-                dir.close();
-                break;
-            }
-        } while (buffer.wpos() < maxDataSize);
-
-        listener.readRemoteEntries(session, handle, dir, entries);
-
-        BufferUtils.updateLengthPlaceholder(reply, lenPos, numberWritten);
-        Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, clientVersion, session, exhausted);
-        if (log.isDebugEnabled()) {
-            log.debug("doReadRemoteDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session, handle, dir,
-                    numberWritten, indicator, clientVersion);
-        }
-        send(reply);
-    }
-
     @Override
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
@@ -748,11 +671,6 @@ public class SftpSubsystem
 
         Buffer reply = null;
         try {
-            if (h instanceof RemoteDirectoryHandle) {
-                // Chained Sftp connections
-                doReadRemoteDir(session, handle, buffer, id, (RemoteDirectoryHandle) h);
-                return;
-            }
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
                 sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
@@ -760,19 +678,34 @@ public class SftpSubsystem
             }
 
             Path file = dh.getFile();
-            LinkOption[] options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_READDIR, "", file);
-            Boolean status = IoUtils.checkFileExists(file, options);
-            if (status == null) {
-                throw new AccessDeniedException(
-                        file.toString(), file.toString(), "Cannot determine existence of read-dir");
-            }
+            // If it's an SftpPath, don't re-check accessibily or existence. The underlying DirectoryHandle iterator
+            // contacts the upstream server, which should check. This repeated check here is questionable anyway.
+            // We did check in doOpenDir(). If access to the directory has changed in the meantime; it's undefined
+            // anyway what happens. If the directory is local, it depends on what the Java library would do with
+            // the DirectoryStream in that case if it reads the directory lazily. And if it is remote, it may well
+            // be that the upstream server has read the whole list from the local file system and buffered it, so
+            // it could serve the listing even if some other concurrent operation had removed the directory in the
+            // meantime, or had changed its access. It is entirely unspecified what shall happen if files inside
+            // the directory are changed while the directory is listed, and likewise it's entirely unspecified what
+            // shall happen if the directory itself is deleted while being listed.
+            //
+            // As long as the file system is local, this check here is local operations only, but if the directory
+            // is remote; this incurs several (up to three) remote LSTAT calls. We really can skip this here and let
+            // the upstream server decide.
+            if (!(file instanceof SftpPath)) {
+                LinkOption[] options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_READDIR, "", file);
+                Boolean status = IoUtils.checkFileExists(file, options);
+                if (status == null) {
+                    throw new AccessDeniedException(file.toString(), file.toString(), "Cannot determine existence of read-dir");
+                }
 
-            if (!status) {
-                throw new NoSuchFileException(file.toString(), file.toString(), "Non-existent directory");
-            } else if (!Files.isDirectory(file, options)) {
-                throw new NotDirectoryException(file.toString());
-            } else if (!Files.isReadable(file)) {
-                throw new AccessDeniedException(file.toString(), file.toString(), "Not readable");
+                if (!status) {
+                    throw new NoSuchFileException(file.toString(), file.toString(), "Non-existent directory");
+                } else if (!Files.isDirectory(file, options)) {
+                    throw new NotDirectoryException(file.toString());
+                } else if (!Files.isReadable(file)) {
+                    throw new AccessDeniedException(file.toString(), file.toString(), "Not readable");
+                }
             }
 
             SftpEventListener listener = getSftpEventListenerProxy();
@@ -820,40 +753,38 @@ public class SftpSubsystem
     }
 
     @Override
-    protected String doOpenDir(int id, String path, Path p, LinkOption... options) throws IOException {
-        Boolean status = IoUtils.checkFileExists(p, options);
-        if (status == null) {
-            throw signalOpenFailure(id, path, p, true,
-                    new AccessDeniedException(p.toString(), p.toString(), "Cannot determine open-dir existence"));
-        }
-
-        if (!status) {
-            throw signalOpenFailure(id, path, p, true,
-                    new NoSuchFileException(path, path, "Referenced target directory N/A"));
-        } else if (!Files.isDirectory(p, options)) {
-            throw signalOpenFailure(id, path, p, true, new NotDirectoryException(path));
-        } else if (!Files.isReadable(p)) {
-            throw signalOpenFailure(id, path, p, true,
-                    new AccessDeniedException(p.toString(), p.toString(), "Not readable"));
-        } else {
-            String handle;
-            try {
-                synchronized (handles) {
-                    handle = generateFileHandle(p);
-                    if (p instanceof SftpPath) {
-                        // We have chained SftpFileSystems.
-                        handles.put(handle, new RemoteDirectoryHandle(this, (SftpPath) p, handle));
-                    } else {
-                        DirectoryHandle dirHandle = new DirectoryHandle(this, p, handle);
-                        handles.put(handle, dirHandle);
-                    }
-                }
-            } catch (IOException e) {
-                throw signalOpenFailure(id, path, p, true, e);
+    protected String doOpenDir(int id, String path, Path dir, LinkOption... options) throws IOException {
+        SftpPathImpl.withAttributeCache(dir, p -> {
+            Boolean status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw signalOpenFailure(id, path, p, true,
+                        new AccessDeniedException(p.toString(), p.toString(), "Cannot determine open-dir existence"));
             }
 
-            return handle;
+            if (!status) {
+                throw signalOpenFailure(id, path, p, true,
+                        new NoSuchFileException(path, path, "Referenced target directory N/A"));
+            } else if (!Files.isDirectory(p, options)) {
+                throw signalOpenFailure(id, path, p, true, new NotDirectoryException(path));
+            } else if (!Files.isReadable(p)) {
+                throw signalOpenFailure(id, path, p, true,
+                        new AccessDeniedException(p.toString(), p.toString(), "Not readable"));
+            }
+            return null;
+        });
+        // Directory exists and is readable
+        String handle;
+        try {
+            synchronized (handles) {
+                handle = generateFileHandle(dir);
+                DirectoryHandle dirHandle = new DirectoryHandle(this, dir, handle);
+                handles.put(handle, dirHandle);
+            }
+        } catch (IOException e) {
+            throw signalOpenFailure(id, path, dir, true, e);
         }
+
+        return handle;
     }
 
     @Override
