@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentKeyConstraint;
 import org.apache.sshd.common.session.SessionContext;
 
 public class AgentDelegate implements SshAgent {
@@ -55,8 +56,8 @@ public class AgentDelegate implements SshAgent {
     }
 
     @Override
-    public void addIdentity(KeyPair key, String comment) throws IOException {
-        agent.addIdentity(key, comment);
+    public void addIdentity(KeyPair key, String comment, SshAgentKeyConstraint... constraints) throws IOException {
+        agent.addIdentity(key, comment, constraints);
     }
 
     @Override

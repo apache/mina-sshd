@@ -65,9 +65,10 @@ public final class SshAgentConstants {
     public static final byte SSH2_AGENT_IDENTITIES_ANSWER = 12;
     public static final byte SSH2_AGENT_SIGN_RESPONSE = 14;
 
-    // Key constraint identifiers
+    // OpenSSH key constraint identifiers
     public static final byte SSH_AGENT_CONSTRAIN_LIFETIME = 1;
     public static final byte SSH_AGENT_CONSTRAIN_CONFIRM = 2;
+    public static final byte SSH_AGENT_CONSTRAIN_EXTENSION = (byte) 0xFF;
 
     // Packet types defined by IETF (https://tools.ietf.org/html/draft-ietf-secsh-agent-02)
     // Messages sent by the client

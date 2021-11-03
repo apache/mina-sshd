@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
+import org.apache.sshd.agent.SshAgentKeyConstraint;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
@@ -172,10 +173,19 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     }
 
     @Override
-    public void addIdentity(KeyPair kp, String comment) throws IOException {
-        Buffer buffer = createBuffer(SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY);
+    public void addIdentity(KeyPair kp, String comment, SshAgentKeyConstraint... constraints) throws IOException {
+        byte cmd = SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
+        if (!GenericUtils.isEmpty(constraints)) {
+            cmd = SshAgentConstants.SSH2_AGENTC_ADD_ID_CONSTRAINED;
+        }
+        Buffer buffer = createBuffer(cmd);
         buffer.putKeyPair(kp);
         buffer.putString(comment);
+        if (!GenericUtils.isEmpty(constraints)) {
+            for (SshAgentKeyConstraint constraint : constraints) {
+                constraint.put(buffer);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug("addIdentity({})[{}]: {}", KeyUtils.getKeyType(kp), comment, KeyUtils.getFingerPrint(kp.getPublic()));
         }

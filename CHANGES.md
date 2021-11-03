@@ -27,7 +27,7 @@
 
 * [SSHD-1017](https://issues.apache.org/jira/browse/SSHD-1017) Add support for the chacha20-poly1305@openssh.com cipher
 * [SSHD-1161](https://issues.apache.org/jira/browse/SSHD-1161) Support OpenSSH client certificates for publickey authentication
-* [SSHD-1163](https://issues.apache.org/jira/browse/SSHD-1163) Wrong server key algorithm chosen in DH group key exchange
+* [SSHD-1163](https://issues.apache.org/jira/browse/SSHD-1163) Wrong server key signature algorithm chosen in DH group key exchange
 * [SSHD-1164](https://issues.apache.org/jira/browse/SSHD-1164) Parsing of ~/.ssh/config Host patterns fails with extra whitespace
 * [SSHD-1166](https://issues.apache.org/jira/browse/SSHD-1166) Support creating signed OpenSSH certificates
 * [SSHD-1168](https://issues.apache.org/jira/browse/SSHD-1168) OpenSSH certificates: check certificate type
@@ -39,3 +39,4 @@
 * [SSHD-1218](https://issues.apache.org/jira/browse/SSHD-1218) SshAgentFactory.createClient() gets passed the session
 * [SSHD-1219](https://issues.apache.org/jira/browse/SSHD-1219) Obtaining rsa-sha2-256 or rsa-sha2-512 signatures from an SSH agent
 * [SSHD-1220](https://issues.apache.org/jira/browse/SSHD-1220) Reduce number of L(STAT) calls made by the SftpFileSystem
+* [SSHD-1221](https://issues.apache.org/jira/browse/SSHD-1221) Support key constraints when adding a key to an SSH agent

@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentKeyConstraint;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -39,11 +40,16 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A local SSH agent implementation
  */
 public class AgentImpl implements SshAgent {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AgentImpl.class);
+
     private final List<Map.Entry<KeyPair, String>> keys = new ArrayList<>();
     private final AtomicBoolean open = new AtomicBoolean(true);
 
@@ -97,9 +103,13 @@ public class AgentImpl implements SshAgent {
     }
 
     @Override
-    public void addIdentity(KeyPair key, String comment) throws IOException {
+    public void addIdentity(KeyPair key, String comment, SshAgentKeyConstraint... constraints) throws IOException {
         if (!isOpen()) {
             throw new SshException("Agent closed");
+        }
+        if (!GenericUtils.isEmpty(constraints) && LOG.isDebugEnabled()) {
+            LOG.debug("addIdentity({})[{}] {}: local agent does not implement key constraints; ignoring",
+                    KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key.getPublic()));
         }
         keys.add(new SimpleImmutableEntry<>(Objects.requireNonNull(key, "No key"), comment));
     }

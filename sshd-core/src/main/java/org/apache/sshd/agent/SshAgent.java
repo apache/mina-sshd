@@ -57,7 +57,16 @@ public interface SshAgent extends java.nio.channels.Channel {
         return null;
     }
 
-    void addIdentity(KeyPair key, String comment) throws IOException;
+    /**
+     * Adds a key to the agent.
+     *
+     * @param  key         {@link KeyPair} to add
+     * @param  comment     to associate with the key
+     * @param  constraints {@link SshAgentKeyConstraint}s for this key to pass on to the agent
+     * @throws IOException if an error in the communication with the agent occurred, or the agent did not return a reply
+     *                     indicating successful addition of the key
+     */
+    void addIdentity(KeyPair key, String comment, SshAgentKeyConstraint... constraints) throws IOException;
 
     void removeIdentity(PublicKey key) throws IOException;
 
