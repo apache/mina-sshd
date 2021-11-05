@@ -22,6 +22,7 @@ import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Base class for the Diffie-Hellman key agreement.
@@ -61,6 +62,16 @@ public abstract class AbstractDH {
         }
 
         return e_array;
+    }
+
+    public void putE(Buffer buffer, byte[] e) {
+        // RFC 4253, section 8: e and f are encoded as mpints.
+        buffer.putMPInt(e);
+    }
+
+    public void putF(Buffer buffer, byte[] f) {
+        // RFC 4253, section 8: e and f are encoded as mpints.
+        buffer.putMPInt(f);
     }
 
     public boolean isSharedSecretAvailable() {

@@ -121,9 +121,9 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putBytes(i_c);
         buffer.putBytes(i_s);
         buffer.putBytes(k_s);
-        buffer.putMPInt(e);
+        dh.putE(buffer, e);
         byte[] f = getF();
-        buffer.putMPInt(f);
+        dh.putF(buffer, f);
         buffer.putMPInt(k);
 
         hash.update(buffer.array(), 0, buffer.available());
@@ -149,7 +149,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEXDH_REPLY, BufferUtils.clear(buffer));
         buffer.putBytes(k_s);
-        buffer.putBytes(f);
+        dh.putF(buffer, f);
         buffer.putBytes(sigH);
         session.writePacket(buffer);
         return true;

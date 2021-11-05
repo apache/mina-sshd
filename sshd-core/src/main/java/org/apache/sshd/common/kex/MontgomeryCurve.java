@@ -16,12 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.sshd.common.kex;
 
-import java.io.IOException;
-import java.io.StreamCorruptedException;
-import java.io.UncheckedIOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -30,6 +26,7 @@ import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 
 import javax.crypto.KeyAgreement;
 
@@ -38,8 +35,6 @@ import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.keyprovider.KeySizeIndicator;
-import org.apache.sshd.common.util.io.der.ASN1Object;
-import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -47,16 +42,59 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * Curve448/X448 specified in RFC 7748 and RFC 8731. Montgomery curves provide improved security and flexibility over
  * Weierstrass curves used in ECDH.
  *
- * @see <a href="https://www.rfc-editor.org/info/rfc7748">RFC 7748</a>
- * @see <a href="https://www.rfc-editor.org/info/rfc8731">RFC 8731</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7748">RFC 7748</a>
+ * @see <a href="https://tools.ietf.org/html/rfc8731">RFC 8731</a>
  */
 public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
+
+    /**
+     * The "magic" bytes below are the beginning of a DER encoding of the ASN.1 of the SubjectPublicKeyInfo as specified
+     * in <a href="https://tools.ietf.org/html/rfc8410">RFC 8410</a>, sections 3 and 4.
+     *
+     * <pre>
+     * AlgorithmIdentifier  ::=  SEQUENCE  {
+     *   algorithm   OBJECT IDENTIFIER,
+     *   parameters  ANY DEFINED BY algorithm OPTIONAL -- absent for these keys
+     * }
+     * SubjectPublicKeyInfo ::= SEQUENCE {
+     *   algorithm AlgorithmIdentifier,
+     *   subjectPublicKey BIT STRING
+     * }
+     * </pre>
+     * <p>
+     * If we take it apart the first one for x25519:
+     * </p>
+     *
+     * <pre>
+     *   0x30  - SEQUENCE (start of SubjectPublicKeyInfo)
+     *   0x2a  -  of 42 bytes
+     *     0x30  - SEQUENCE (start of AlgorithmIdentifier)
+     *     0x05  -  of 5 bytes
+     *       0x06  - OID
+     *       0x03  -  of 3 bytes
+     *         0x2b  -  1 3 (encoded as 1*40 + 3 = 43 = 0x2b)
+     *         0x65  -  101
+     *         0x6e  -  110
+     *     0x03  - BIT STRING
+     *     0x21  -  of 33 bytes
+     *         0x00  -  NUL byte
+     * </pre>
+     * <p>
+     * If one appends now the 32 public key bytes, the DER encoding for the x25519 public key is complete. The NUL byte
+     * at the end ensures that the raw key bytes appended are always interpreted as unsigned, even if the most
+     * significant bit is set.
+     * </p>
+     * <p>
+     * The OID for x25519 is { 1 3 101 110 }, for x448 { 1 3 101 111 }.
+     * </p>
+     */
 
     /**
      * X25519 uses Curve25519 and SHA-256 with a 32-byte key size.
      */
     x25519("X25519", 32, BuiltinDigests.sha256,
            new byte[] { 0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x03, 0x21, 0x00 }),
+
     /**
      * X448 uses Curve448 and SHA-512 with a 56-byte key size.
      */
@@ -70,14 +108,12 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     private final KeyPairGenerator keyPairGenerator;
     private final KeyFactory keyFactory;
     private final byte[] encodedPublicKeyPrefix;
-    private final int encodedKeySize;
 
     MontgomeryCurve(String algorithm, int keySize, DigestFactory digestFactory, byte[] encodedPublicKeyPrefix) {
         this.algorithm = algorithm;
         this.keySize = keySize;
         this.digestFactory = digestFactory;
         this.encodedPublicKeyPrefix = encodedPublicKeyPrefix;
-        encodedKeySize = keySize + encodedPublicKeyPrefix.length;
         boolean supported;
         KeyPairGenerator generator = null;
         KeyFactory factory = null;
@@ -121,38 +157,31 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     }
 
     public byte[] encode(PublicKey key) throws InvalidKeyException {
-        return extractSubjectPublicKey(key.getEncoded());
+        // Per the ASN.1 of SubjectPublicKeyInfo, the key must be the last keySize bytes of the X.509 encoding
+        byte[] subjectPublicKeyInfo = key.getEncoded();
+        byte[] result = Arrays.copyOfRange(subjectPublicKeyInfo, subjectPublicKeyInfo.length - getKeySize(),
+                subjectPublicKeyInfo.length);
+        return result;
     }
 
     public PublicKey decode(byte[] key) throws InvalidKeySpecException {
-        if (key.length < getKeySize()) {
-            throw new InvalidKeySpecException("Provided key is too small for " + getAlgorithm());
+        int size = getKeySize();
+        int offset = key.length - size;
+        // We're lenient here and accept a key prefixed by a zero byte.
+        if (offset < 0 || offset > 1) {
+            throw new InvalidKeySpecException("Provided key has wrong length (" + key.length + " bytes) for " + getAlgorithm());
+        } else if (offset == 1) {
+            if (key[0] != 0) {
+                throw new InvalidKeySpecException(
+                        "Provided key for " + getAlgorithm()
+                                                  + " has extra byte, but it's non-zero: 0x"
+                                                  + Integer.toHexString(key[0] & 0xFF));
+            }
         }
-        // ideally, we'd just parse the key as a BigInteger and then create a XECPublicKeySpec in Java 11
-        // BouncyCastle supports a separate API, so we can use the generic X.509 encoding scheme supported by both
-        byte[] encoded = new byte[encodedKeySize];
-        System.arraycopy(encodedPublicKeyPrefix, 0, encoded, 0, encodedPublicKeyPrefix.length);
-        // note that key can be either the raw key data or it may be prefixed by a padding byte and the key length.
-        // these two bytes are already present as the last two bytes in encodedPublicKeyPrefix, thus there is no harm
-        // in potentially overwriting it
-        System.arraycopy(key, 0, encoded, encodedKeySize - key.length, key.length);
+        // Ideally, we'd just parse the key as a BigInteger and then create a XECPublicKeySpec in Java 11
+        // BouncyCastle supports a separate API, but we can use the generic X.509 encoding scheme supported by both
+        byte[] encoded = Arrays.copyOf(encodedPublicKeyPrefix, encodedPublicKeyPrefix.length + size);
+        System.arraycopy(key, offset, encoded, encodedPublicKeyPrefix.length, size);
         return keyFactory.generatePublic(new X509EncodedKeySpec(encoded));
     }
-
-    private static byte[] extractSubjectPublicKey(byte[] subjectPublicKeyInfo) throws InvalidKeyException {
-        try {
-            //  SubjectPublicKeyInfo ::= SEQUENCE {
-            //   algorithm AlgorithmIdentifier,
-            //   subjectPublicKey BIT STRING }
-            ASN1Object spki = new DERParser(subjectPublicKeyInfo).readObject();
-            DERParser parser = spki.createParser();
-            parser.readObject();
-            return parser.readObject().getValue();
-        } catch (StreamCorruptedException e) {
-            throw new InvalidKeyException(e);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
 }

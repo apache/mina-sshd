@@ -87,6 +87,9 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      */
     public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE = Collections.unmodifiableList(
             Arrays.asList(
+                    BuiltinDHFactories.curve25519,
+                    BuiltinDHFactories.curve25519_libssh,
+                    BuiltinDHFactories.curve448,
                     BuiltinDHFactories.ecdhp521,
                     BuiltinDHFactories.ecdhp384,
                     BuiltinDHFactories.ecdhp256,

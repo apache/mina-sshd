@@ -32,6 +32,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -98,6 +99,20 @@ public class ECDH extends AbstractDH {
         Objects.requireNonNull(params, "No ECParameterSpec(s)");
         Objects.requireNonNull(f, "No 'f' value specified");
         this.f = ECCurves.octetStringToEcPoint(f);
+    }
+
+    @Override
+    public void putE(Buffer buffer, byte[] e) {
+        // RFC 5656, section 4: Q_C and Q_S, which take the place of e and f, are written as "strings", i.e., byte
+        // arrays.
+        buffer.putBytes(e);
+    }
+
+    @Override
+    public void putF(Buffer buffer, byte[] f) {
+        // RFC 5656, section 4: Q_C and Q_S, which take the place of e and f, are written as "strings", i.e., byte
+        // arrays.
+        buffer.putBytes(f);
     }
 
     @Override

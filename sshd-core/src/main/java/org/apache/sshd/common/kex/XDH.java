@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.util.Objects;
 
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Provides Diffie-Hellman SSH key exchange algorithms for the Montgomery curves specified in RFC 8731.
@@ -49,6 +50,24 @@ public class XDH extends AbstractDH {
     @Override
     public void setF(byte[] f) {
         this.f = Objects.requireNonNull(f, "No 'f' value provided");
+    }
+
+    @Override
+    public void putE(Buffer buffer, byte[] e) {
+        // RFC 5656, section 4: Q_C and Q_S, which take the place of e and f, are written as "strings", i.e., byte
+        // arrays.
+        // RFC 8731, section 3: Public ephemeral keys are encoded for transmission as standard SSH strings. (Q_C and Q_S
+        // are the client's and server's ephemeral public keys.)
+        buffer.putBytes(e);
+    }
+
+    @Override
+    public void putF(Buffer buffer, byte[] f) {
+        // RFC 5656, section 4: Q_C and Q_S, which take the place of e and f, are written as "strings", i.e., byte
+        // arrays.
+        // RFC 8731, section 3: Public ephemeral keys are encoded for transmission as standard SSH strings. (Q_C and Q_S
+        // are the client's and server's ephemeral public keys.)
+        buffer.putBytes(f);
     }
 
     @Override

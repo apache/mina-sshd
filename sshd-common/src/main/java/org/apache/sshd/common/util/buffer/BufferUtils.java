@@ -444,7 +444,7 @@ public final class BufferUtils {
         }
 
         if ((mpInt[0] & 0x80) != 0) {
-            return new BigInteger(0, mpInt);
+            return new BigInteger(1, mpInt);
         } else {
             return new BigInteger(mpInt);
         }

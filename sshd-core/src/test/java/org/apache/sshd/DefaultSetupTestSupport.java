@@ -75,7 +75,8 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
     @Test
     public void testDefaultKeyExchangeList() {
         assertSameNamedResourceListNames(KeyExchange.class.getSimpleName(),
-                BaseBuilder.DEFAULT_KEX_PREFERENCE, factory.getKeyExchangeFactories());
+                BaseBuilder.DEFAULT_KEX_PREFERENCE.stream().filter(dh -> dh.isSupported()).collect(Collectors.toList()),
+                factory.getKeyExchangeFactories());
     }
 
     @Test   // SSHD-1004
