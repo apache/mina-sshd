@@ -32,6 +32,11 @@ or via `SecurityUtils#setKeyPairResourceParser` for **global** usage - even with
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
     </dependency>
+    <!-- SecurityProvider -->
+    <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+    </dependency>
 
 ```
 
@@ -96,7 +101,7 @@ order to be included in the classpath:
 
 ```xml
 
-        <!-- For ed25519 support -->
+    <!-- For ed25519 support -->
     <dependency>
         <groupId>net.i2p.crypto</groupId>
         <artifactId>eddsa</artifactId>
