@@ -122,17 +122,17 @@
     </supplement>
     <supplement>
         <project>
-            <groupId>org.eclipse.jgt</groupId>
+            <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <name>Java Git</name>
+            <name>JGit</name>
             <organization>
-                <name>Eclipse foundation</name>
-                <url>https://github.com/eclipse/jgit</url>
+                <name>Eclipse Foundation</name>
+                <url>https://git.eclipse.org/r/plugins/gitiles/jgit/jgit/</url>
             </organization>
             <licenses>
                 <license>
                     <name>Eclipse Distribution License v1.0</name>
-                    <url>https://github.com/eclipse/jgit/blob/master/LICENSE</url>
+                    <url>https://git.eclipse.org/r/plugins/gitiles/jgit/jgit/+/refs/heads/master/LICENSE</url>
                 </license>
             </licenses>
         </project>
@@ -186,7 +186,7 @@
                     <url>https://raw.githubusercontent.com/justinludwig/jpgpj/master/LICENSE</url>
                 </license>
             </licenses>
-        </project>    
+        </project>
     </supplement>
     <supplement>
         <project>
@@ -203,6 +203,6 @@
                     <url>https://github.com/kruton/jbcrypt/blob/master/LICENSE</url>
                 </license>
             </licenses>
-        </project>    
+        </project>
     </supplement>
 </supplementalDataModels>
