@@ -79,6 +79,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -2238,7 +2239,7 @@ public abstract class AbstractSftpSubsystemHelper
         accessor.putRemoteFileName(session, this, f, buffer, shortName, true);
 
         if (version == SftpConstants.SFTP_V3) {
-            String longName = SftpHelper.getLongName(shortName, attributes);
+            String longName = getLongName(f, shortName, attributes);
             accessor.putRemoteFileName(session, this, f, buffer, longName, false);
 
             if (log.isTraceEnabled()) {
@@ -2318,6 +2319,18 @@ public abstract class AbstractSftpSubsystemHelper
             Path f, String shortName, Map<String, ?> attributes)
             throws IOException {
         return SftpHelper.getLongName(shortName, attributes);
+    }
+
+    protected String getLongName(Path f, String shortName, SftpClient.Attributes attributes) throws IOException {
+        return getLongName(f, shortName,
+                MapBuilder.<String, Object> builder()
+                        .put("owner", attributes.getOwner())
+                        .put("group", attributes.getGroup())
+                        .put("size", attributes.getSize())
+                        .put("isDirectory", attributes.isDirectory())
+                        .put("isSymbolicLink", attributes.isSymbolicLink())
+                        .put("permissions", SftpHelper.permissionsToAttributes(attributes.getPermissions()))
+                        .put("lastModifiedTime", attributes.getModifyTime()).build());
     }
 
     protected String getShortName(Path f) throws IOException {

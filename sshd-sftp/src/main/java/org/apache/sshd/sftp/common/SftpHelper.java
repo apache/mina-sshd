@@ -57,7 +57,6 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
-import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -1191,28 +1190,6 @@ public final class SftpHelper {
             millis += TimeUnit.NANOSECONDS.toMillis(nanoseconds);
         }
         return FileTime.from(millis, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Creates an &quot;ls -l&quot; compatible long name string
-     *
-     * @param  shortName  The short file name - can also be &quot;.&quot; or &quot;..&quot;
-     * @param  attributes The file's attributes - e.g., size, owner, permissions, etc.
-     * @return            A {@link String} representing the &quot;long&quot; file name as per
-     *                    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02">SFTP version 3 - section
-     *                    7</A>
-     */
-    public static String getLongName(String shortName, Attributes attributes) {
-        return getLongName(shortName,
-                MapBuilder.<String, Object> builder()
-                        .put("owner", attributes.getOwner())
-                        .put("group", attributes.getGroup())
-                        .put("size", attributes.getSize())
-                        .put("isDirectory", attributes.isDirectory())
-                        .put("isSymbolicLink", attributes.isSymbolicLink())
-                        .put("permissions", permissionsToAttributes(attributes.getPermissions()))
-                        .put("lastModifiedTime", attributes.getModifyTime())
-                        .build());
     }
 
     /**
