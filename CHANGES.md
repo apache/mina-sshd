@@ -44,3 +44,4 @@
 * [SSHD-1219](https://issues.apache.org/jira/browse/SSHD-1219) Obtaining rsa-sha2-256 or rsa-sha2-512 signatures from an SSH agent
 * [SSHD-1220](https://issues.apache.org/jira/browse/SSHD-1220) Reduce number of L(STAT) calls made by the SftpFileSystem
 * [SSHD-1221](https://issues.apache.org/jira/browse/SSHD-1221) Support key constraints when adding a key to an SSH agent
+* [SSHD-1226](https://issues.apache.org/jira/browse/SSHD-1226) Added SFTP server-side capability to provide file/folder custom extension attributes

@@ -601,7 +601,11 @@ Collection<ScanDirEntry> matches = ds.scan(client);
 
 ```
 
-## Extensions
+## Extensions & custom file/folder attributes
+
+Extending the SFTP protocol and/or the reported file/folder attributes
+
+### SFTP protocol extensions
 
 Both client and server support several of the SFTP extensions specified in various drafts:
 
@@ -685,7 +689,7 @@ try (ClientSession session = client.connect(username, host, port).verify(timeout
 
 ```
 
-### Contributing support for a new extension
+#### Contributing support for a new SFTP extension
 
 * Add the code to handle the new extension in `AbstractSftpSubsystemHelper#executeExtendedCommand`
 
@@ -697,6 +701,55 @@ for sending and receiving the newly added extension.
 * Add a relevant parser for reported extension data initial report (if necessary) in `ParserUtils#BUILT_IN_PARSERS`
 
 See how other extensions are implemented and follow their example
+
+### Providing/processing file/folder custom attributes
+
+According to [SFTP - File Attributes](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-02#section-5) it is possible to provide
+custom attributes for a referenced file/folder. The client-side code supports this via the `Attributes#getExtensions` call. On the server-side
+one needs to provide a custom `SftpFileSystemAccessor` that overrides the `resolveReportedFileAttributes` method (which by default
+simply returns the original attrbiutes as-is. A similar hook method has been provided in case a client attempts to apply custom attributes - simply
+need to provide a implementation that obverrides `applyExtensionFileAttributes` (which by default ignores the attributes).
+
+```java
+class MyCustomSftpFileSystemAccessor implements SftpFileSystemAccessor {
+    @Override
+    public NavigableMap<String, Object> resolveReportedFileAttributes(
+            SftpSubsystemProxy subsystem, Path file, int flags, NavigableMap<String, Object> attrs, LinkOption... options)
+                throws IOException {
+        Map<String, Object> extra = (Map<String, Object>) attrs.get(IoUtils.EXTENDED_VIEW_ATTR);
+        if (extra == null) {
+            extra = new HashMap<>();
+            attrs.put(IoUtils.EXTENDED_VIEW_ATTR, extra)
+        }
+        extra.put("custom1", ...some string...);
+        extra.put("custom", ...some byte[]...)
+    }
+    
+    @Override
+    public void applyExtensionFileAttributes(
+            SftpSubsystemProxy subsystem, Path file, Map<String, byte[]> extensions, LinkOption... options)
+                throws IOException {
+        if (MapEntryUtils.isNotEmpty(extensions)) {
+            ...process the extensions...
+        }
+    }
+}
+
+SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
+    .withFileSystemAccessor(new MyCustomSftpFileSystemAccessor())
+    .build();
+
+SshdServer sshd = ...setup...
+sshd.setSubsystemFactories(Collections.singletonList(factory));
+```
+
+
+
+**Note:**
+
+* The code assumes that the extension name is a **string** - the draft specification actually allows an array of bytes as well, but we chose simplicity.
+
+* The value can be either a string or an array of bytes. If the value is neither (e.g., an integer) then the value's *toString()* will be used.
 
 ## References
 

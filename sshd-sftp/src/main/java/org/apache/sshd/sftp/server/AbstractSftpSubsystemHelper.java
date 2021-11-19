@@ -2418,7 +2418,10 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected NavigableMap<String, Object> getAttributes(Path path, int flags, LinkOption... options)
             throws IOException {
-        return SftpPathImpl.withAttributeCache(path, file -> resolveReportedFileAttributes(file, flags, options));
+        NavigableMap<String, Object> attrs
+                = SftpPathImpl.withAttributeCache(path, file -> resolveReportedFileAttributes(file, flags, options));
+        SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        return accessor.resolveReportedFileAttributes(this, path, flags, attrs, options);
     }
 
     protected NavigableMap<String, Object> resolveReportedFileAttributes(Path file, int flags, LinkOption... options)
@@ -2780,10 +2783,6 @@ public abstract class AbstractSftpSubsystemHelper
     protected void setFileExtensions(
             Path file, Map<String, byte[]> extensions, LinkOption... options)
             throws IOException {
-        if (MapEntryUtils.isEmpty(extensions)) {
-            return;
-        }
-
         /*
          * According to v3,4,5:
          *
@@ -2794,10 +2793,17 @@ public abstract class AbstractSftpSubsystemHelper
          */
         int version = getVersion();
         if (version < SftpConstants.SFTP_V6) {
-            if (log.isDebugEnabled()) {
-                log.debug("setFileExtensions({})[{}]: {}", getServerSession(), file, extensions);
+            if (MapEntryUtils.isNotEmpty(extensions) && log.isDebugEnabled()) {
+                log.debug("setFileExtensions({})[{}]: {}", getServerSession(), file, extensions.keySet());
             }
+
+            SftpFileSystemAccessor accessor = getFileSystemAccessor();
+            accessor.applyExtensionFileAttributes(this, file, extensions, options);
         } else {
+            if (MapEntryUtils.isEmpty(extensions)) {
+                return;
+            }
+
             throw new UnsupportedOperationException("File extensions not supported");
         }
     }

@@ -134,6 +134,40 @@ public interface SftpFileSystemAccessor {
     }
 
     /**
+     * Invoked in order to allow intervention to the reported file attributes - e.g., add custom/extended properties
+     *
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  file        The referenced file
+     * @param  flags       A mask of the original required attributes
+     * @param  attrs       The default resolved attributes map
+     * @param  options     The {@link LinkOption}-s that were used to access the file's attributes
+     * @return             The updated attributes map
+     * @throws IOException If failed to resolve the attributes
+     * @see                <A HREF="https://issues.apache.org/jira/browse/SSHD-1226">SSHD-1226</A>
+     */
+    default NavigableMap<String, Object> resolveReportedFileAttributes(
+            SftpSubsystemProxy subsystem, Path file, int flags,
+            NavigableMap<String, Object> attrs, LinkOption... options)
+            throws IOException {
+        return attrs;
+    }
+
+    /**
+     * Invoked in order to allow processing of custom file attributes
+     *
+     * @param  subsystem   The SFTP subsystem instance that manages the session
+     * @param  file        The referenced file
+     * @param  extensions  The received extensions - may be {@code null}/empty
+     * @param  options     The {@link LinkOption}-s that were used to access the file's standard attributes
+     * @throws IOException If failed to apply the attributes
+     */
+    default void applyExtensionFileAttributes(
+            SftpSubsystemProxy subsystem, Path file, Map<String, byte[]> extensions, LinkOption... options)
+            throws IOException {
+        // ignored
+    }
+
+    /**
      * Invoked in order to encode the outgoing referenced file name/path
      *
      * @param  subsystem   The SFTP subsystem instance that manages the session
