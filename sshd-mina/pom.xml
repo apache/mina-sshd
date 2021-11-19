@@ -127,6 +127,7 @@
                         <exclude>**/CompressionTest.java</exclude>
                         <exclude>**/NoServerNoClientTest.java</exclude>
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
+                        <exclude>**/FileHostKeyCertificateProviderTest.java</exclude>
                         <!-- exclude>**/PortForwardingTest.java</exclude -->
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
