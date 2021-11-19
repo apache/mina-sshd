@@ -59,7 +59,6 @@ import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -98,7 +97,6 @@ public interface SftpFileSystemAccessor {
     /**
      * Invoked in order to resolve remote file paths reference by the client into ones accessible by the server
      *
-     * @param  session              The {@link ServerSession} through which the request was received
      * @param  subsystem            The SFTP subsystem instance that manages the session
      * @param  rootDir              The default root directory used to resolve relative paths - a.k.a. the
      *                              {@code chroot} location
@@ -110,7 +108,7 @@ public interface SftpFileSystemAccessor {
      *                              SftpSubsystemEnvironment#getDefaultDirectory()
      */
     default Path resolveLocalFilePath(
-            ServerSession session, SftpSubsystemProxy subsystem, Path rootDir, String remotePath)
+            SftpSubsystemProxy subsystem, Path rootDir, String remotePath)
             throws IOException, InvalidPathException {
         String path = SelectorUtils.translateToLocalFileSystemPath(
                 remotePath, '/', rootDir.getFileSystem());
@@ -120,7 +118,6 @@ public interface SftpFileSystemAccessor {
     /**
      * Invoked in order to determine the symbolic link follow options
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  file        The referenced file
      * @param  cmd         The SFTP command that triggered this access
@@ -131,8 +128,7 @@ public interface SftpFileSystemAccessor {
      * @see                <A HREF="https://issues.apache.org/jira/browse/SSHD-1137">SSHD-1137</A>
      */
     default LinkOption[] resolveFileAccessLinkOptions(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file,
-            int cmd, String extension, boolean followLinks)
+            SftpSubsystemProxy subsystem, Path file, int cmd, String extension, boolean followLinks)
             throws IOException {
         return IoUtils.getLinkOptions(followLinks);
     }
@@ -140,7 +136,6 @@ public interface SftpFileSystemAccessor {
     /**
      * Invoked in order to encode the outgoing referenced file name/path
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  path        The associated file {@link Path} - <B>Note:</B> might be a symbolic link container
      * @param  buf         The target {@link Buffer} for the encoded string
@@ -151,7 +146,7 @@ public interface SftpFileSystemAccessor {
      * @see                <A HREF="https://issues.apache.org/jira/browse/SSHD-1132">SSHD-1132</A>
      */
     default void putRemoteFileName(
-            ServerSession session, SftpSubsystemProxy subsystem, Path path, Buffer buf, String name, boolean shortName)
+            SftpSubsystemProxy subsystem, Path path, Buffer buf, String name, boolean shortName)
             throws IOException {
         buf.putString(name);
     }
@@ -159,13 +154,11 @@ public interface SftpFileSystemAccessor {
     /**
      * Called whenever a new file is opened
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  fileHandle  The {@link FileHandle} representing the created channel - may be {@code null} if not invoked
      *                     within the context of such a handle (special cases)
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned file handle through which the remote peer references this file. May be
      *                     {@code null}/empty if the request is due to some internal functionality instead of due to
      *                     peer requesting a handle to a file.
@@ -175,8 +168,8 @@ public interface SftpFileSystemAccessor {
      * @throws IOException If failed to open
      */
     default SeekableByteChannel openFile(
-            ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle,
-            Path file, String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+            SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file,
+            String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
             throws IOException {
         /*
          * According to https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-33
@@ -193,15 +186,13 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when locking a section of a file is requested
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  fileHandle  The {@link FileHandle} representing the created channel
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned file handle through which the remote peer references this file
      * @param  channel     The original {@link Channel} that was returned by
-     *                     {@link #openFile(ServerSession, SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
+     *                     {@link #openFile(SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
      * @param  position    The position at which the locked region is to start - must be non-negative
      * @param  size        The size of the locked region; must be non-negative, and the sum
      *                     <tt>position</tt>&nbsp;+&nbsp;<tt>size</tt> must be non-negative
@@ -213,8 +204,8 @@ public interface SftpFileSystemAccessor {
      */
     @SuppressWarnings("checkstyle:ParameterNumber")
     default FileLock tryLock(
-            ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle,
-            Path file, String handle, Channel channel, long position, long size, boolean shared)
+            SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file, String handle,
+            Channel channel, long position, long size, boolean shared)
             throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to lock: " + channel);
@@ -226,23 +217,20 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when file meta-data re-synchronization is required
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  fileHandle  The {@link FileHandle} representing the created channel
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned file handle through which the remote peer references this file
      * @param  channel     The original {@link Channel} that was returned by
-     *                     {@link #openFile(ServerSession, SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
+     *                     {@link #openFile(SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
      * @throws IOException If failed to execute the request
      * @see                FileChannel#force(boolean)
      * @see                <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section
      *                     10</A>
      */
     default void syncFileData(
-            ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file, String handle,
-            Channel channel)
+            SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file, String handle, Channel channel)
             throws IOException {
         if (!(channel instanceof FileChannel)) {
             throw new StreamCorruptedException("Non file channel to sync: " + channel);
@@ -254,22 +242,20 @@ public interface SftpFileSystemAccessor {
     /**
      * Called to inform the accessor that it should close the file
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  fileHandle  The {@link FileHandle} representing the created channel - may be {@code null} if not invoked
      *                     within the context of such a handle (special cases)
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned file handle through which the remote peer references this file
      * @param  channel     The original {@link Channel} that was returned by
-     *                     {@link #openFile(ServerSession, SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
+     *                     {@link #openFile(SftpSubsystemProxy, FileHandle, Path, String, Set, FileAttribute...)}
      * @param  options     The original options used to open the channel
      * @throws IOException If failed to execute the request
      */
     default void closeFile(
-            ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle,
-            Path file, String handle, Channel channel, Set<? extends OpenOption> options)
+            SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file,
+            String handle, Channel channel, Set<? extends OpenOption> options)
             throws IOException {
         if ((channel == null) || (!channel.isOpen())) {
             return;
@@ -278,7 +264,7 @@ public interface SftpFileSystemAccessor {
         if ((channel instanceof FileChannel)
                 && GenericUtils.containsAny(options, IoUtils.WRITEABLE_OPEN_OPTIONS)
                 && PropertyResolverUtils.getBooleanProperty(
-                        session, PROP_AUTO_SYNC_FILE_ON_CLOSE, DEFAULT_AUTO_SYNC_FILE_ON_CLOSE)) {
+                        subsystem.getSession(), PROP_AUTO_SYNC_FILE_ON_CLOSE, DEFAULT_AUTO_SYNC_FILE_ON_CLOSE)) {
             ((FileChannel) channel).force(true);
         }
 
@@ -288,18 +274,16 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when a new directory stream is requested
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  dirHandle   The {@link DirectoryHandle} representing the stream
      * @param  dir         The requested <U>local</U> directory {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned directory handle through which the remote peer references this directory
      * @return             The opened {@link DirectoryStream}
      * @throws IOException If failed to open
      */
     default DirectoryStream<Path> openDirectory(
-            ServerSession session, SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+            SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
             throws IOException {
         return Files.newDirectoryStream(dir);
     }
@@ -307,19 +291,17 @@ public interface SftpFileSystemAccessor {
     /**
      * Called when a directory stream is no longer required
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  dirHandle   The {@link DirectoryHandle} representing the stream - may be {@code null} if not invoked
      *                     within the context of such a handle (special cases)
      * @param  dir         The requested <U>local</U> directory {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned directory handle through which the remote peer references this directory
      * @param  ds          The disposed {@link DirectoryStream}
      * @throws IOException If failed to open
      */
     default void closeDirectory(
-            ServerSession session, SftpSubsystemProxy subsystem, DirectoryHandle dirHandle,
+            SftpSubsystemProxy subsystem, DirectoryHandle dirHandle,
             Path dir, String handle, DirectoryStream<Path> ds)
             throws IOException {
         if (ds == null) {
@@ -332,11 +314,9 @@ public interface SftpFileSystemAccessor {
     /**
      * Invoked when required to retrieve file attributes for a specific file system view
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  view        The required view name
      * @param  options     The access {@link LinkOption}-s
      * @return             A {@link Map} of all the attributes available for the file in the view
@@ -344,8 +324,7 @@ public interface SftpFileSystemAccessor {
      * @see                Files#readAttributes(Path, String, LinkOption...)
      */
     default Map<String, ?> readFileAttributes(
-            ServerSession session, SftpSubsystemProxy subsystem,
-            Path file, String view, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, String view, LinkOption... options)
             throws IOException {
         return Files.readAttributes(file, view, options);
     }
@@ -353,11 +332,9 @@ public interface SftpFileSystemAccessor {
     /**
      * Sets a view attribute for a local file
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  file        The requested <U>local</U> file {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  view        The required view name
      * @param  attribute   The attribute name
      * @param  value       The attribute value
@@ -365,8 +342,8 @@ public interface SftpFileSystemAccessor {
      * @throws IOException If failed to set the attribute
      */
     default void setFileAttribute(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file,
-            String view, String attribute, Object value, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, String view,
+            String attribute, Object value, LinkOption... options)
             throws IOException {
         if (value == null) {
             return;
@@ -376,7 +353,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default UserPrincipal resolveFileOwner(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file, UserPrincipal name)
+            SftpSubsystemProxy subsystem, Path file, UserPrincipal name)
             throws IOException {
         FileSystem fileSystem = file.getFileSystem();
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
@@ -390,8 +367,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void setFileOwner(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file,
-            Principal value, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, Principal value, LinkOption... options)
             throws IOException {
         if (value == null) {
             return;
@@ -411,7 +387,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default GroupPrincipal resolveGroupOwner(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file, GroupPrincipal name)
+            SftpSubsystemProxy subsystem, Path file, GroupPrincipal name)
             throws IOException {
         FileSystem fileSystem = file.getFileSystem();
         UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
@@ -424,8 +400,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void setGroupOwner(
-            ServerSession session, SftpSubsystemProxy subsystem,
-            Path file, Principal value, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, Principal value, LinkOption... options)
             throws IOException {
         if (value == null) {
             return;
@@ -445,8 +420,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void setFilePermissions(
-            ServerSession session, SftpSubsystemProxy subsystem, Path file,
-            Set<PosixFilePermission> perms, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, Set<PosixFilePermission> perms, LinkOption... options)
             throws IOException {
         if (OsUtils.isWin32()) {
             IoUtils.setPermissionsToFile(file.toFile(), perms);
@@ -462,8 +436,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void setFileAccessControl(
-            ServerSession session, SftpSubsystemProxy subsystem,
-            Path file, List<AclEntry> acl, LinkOption... options)
+            SftpSubsystemProxy subsystem, Path file, List<AclEntry> acl, LinkOption... options)
             throws IOException {
         AclFileAttributeView view = Files.getFileAttributeView(file, AclFileAttributeView.class, options);
         if (view == null) {
@@ -473,20 +446,16 @@ public interface SftpFileSystemAccessor {
         view.setAcl(acl);
     }
 
-    default void createDirectory(
-            ServerSession session, SftpSubsystemProxy subsystem, Path path)
-            throws IOException {
+    default void createDirectory(SftpSubsystemProxy subsystem, Path path) throws IOException {
         Files.createDirectory(path);
     }
 
     /**
      * Invoked in order to create a link to a path
      *
-     * @param  session     The {@link ServerSession} through which the request was received
      * @param  subsystem   The SFTP subsystem instance that manages the session
      * @param  link        The requested <U>link</U> {@link Path} - same one returned by
-     *                     {@link #resolveLocalFilePath(ServerSession, SftpSubsystemProxy, Path, String)
-     *                     resolveLocalFilePath}
+     *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  existing    The <U>existing</U> {@link Path} that the link should reference
      * @param  symLink     {@code true} if this should be a symbolic link
      * @throws IOException If failed to create the link
@@ -494,7 +463,7 @@ public interface SftpFileSystemAccessor {
      * @see                Files#createSymbolicLink(Path, Path, FileAttribute...)
      */
     default void createLink(
-            ServerSession session, SftpSubsystemProxy subsystem, Path link, Path existing, boolean symLink)
+            SftpSubsystemProxy subsystem, Path link, Path existing, boolean symLink)
             throws IOException {
         if (symLink) {
             Files.createSymbolicLink(link, existing);
@@ -503,16 +472,13 @@ public interface SftpFileSystemAccessor {
         }
     }
 
-    default String resolveLinkTarget(
-            ServerSession session, SftpSubsystemProxy subsystem, Path link)
-            throws IOException {
+    default String resolveLinkTarget(SftpSubsystemProxy subsystem, Path link) throws IOException {
         Path target = Files.readSymbolicLink(link);
         return target.toString();
     }
 
     default void renameFile(
-            ServerSession session, SftpSubsystemProxy subsystem,
-            Path oldPath, Path newPath, Collection<CopyOption> opts)
+            SftpSubsystemProxy subsystem, Path oldPath, Path newPath, Collection<CopyOption> opts)
             throws IOException {
         Files.move(oldPath, newPath,
                 GenericUtils.isEmpty(opts)
@@ -521,8 +487,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void copyFile(
-            ServerSession session, SftpSubsystemProxy subsystem,
-            Path src, Path dst, Collection<CopyOption> opts)
+            SftpSubsystemProxy subsystem, Path src, Path dst, Collection<CopyOption> opts)
             throws IOException {
         Files.copy(src, dst,
                 GenericUtils.isEmpty(opts)
@@ -531,7 +496,7 @@ public interface SftpFileSystemAccessor {
     }
 
     default void removeFile(
-            ServerSession session, SftpSubsystemProxy subsystem, Path path, boolean isDirectory)
+            SftpSubsystemProxy subsystem, Path path, boolean isDirectory)
             throws IOException {
         Files.delete(path);
     }

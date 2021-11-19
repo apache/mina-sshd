@@ -618,21 +618,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             factory.setFileSystemAccessor(new SftpFileSystemAccessor() {
                 @Override
                 public SeekableByteChannel openFile(
-                        ServerSession session, SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file,
+                        SftpSubsystemProxy subsystem, FileHandle fileHandle, Path file,
                         String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
                         throws IOException {
                     fileHolder.set(file);
                     return SftpFileSystemAccessor.super.openFile(
-                            session, subsystem, fileHandle, file, handle, options, attrs);
+                            subsystem, fileHandle, file, handle, options, attrs);
                 }
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        ServerSession session, SftpSubsystemProxy subsystem,
-                        DirectoryHandle dirHandle, Path dir, String handle)
+                        SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
                         throws IOException {
                     dirHolder.set(dir);
-                    return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dirHandle, dir, handle);
+                    return SftpFileSystemAccessor.super.openDirectory(subsystem, dirHandle, dir, handle);
                 }
 
                 @Override

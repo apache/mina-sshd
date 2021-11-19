@@ -23,8 +23,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-import org.apache.sshd.server.session.ServerSession;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -40,9 +38,8 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
         super(subsystem, dir, handle);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-        ServerSession session = subsystem.getServerSession();
         signalHandleOpening();
-        ds = accessor.openDirectory(session, subsystem, this, dir, handle);
+        ds = accessor.openDirectory(subsystem, this, dir, handle);
 
         Path parent = dir.getParent();
         if (parent == null) {
@@ -104,8 +101,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
         try {
             SftpSubsystem subsystem = getSubsystem();
             SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-            ServerSession session = subsystem.getServerSession();
-            accessor.closeDirectory(session, subsystem, this, getFile(), getFileHandle(), ds);
+            accessor.closeDirectory(subsystem, this, getFile(), getFileHandle(), ds);
         } finally {
             super.close();
             markDone(); // just making sure

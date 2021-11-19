@@ -346,7 +346,7 @@ public class SftpSubsystem
         listener.linking(session, link, existing, symLink);
         try {
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
-            accessor.createLink(session, this, link, existing, symLink);
+            accessor.createLink(this, link, existing, symLink);
         } catch (IOException | RuntimeException | Error e) {
             listener.linked(session, link, existing, symLink, e);
             throw e;
@@ -369,15 +369,14 @@ public class SftpSubsystem
     @Override
     protected void doOpenSSHFsync(int id, String handle) throws IOException {
         Handle h = handles.get(handle);
-        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doOpenSSHFsync({})[id={}] {}[{}]", session, id, handle, h);
+            log.debug("doOpenSSHFsync({})[id={}] {}[{}]", getServerSession(), id, handle, h);
         }
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         accessor.syncFileData(
-                session, this, fileHandle, fileHandle.getFile(),
+                this, fileHandle, fileHandle.getFile(),
                 fileHandle.getFileHandle(), fileHandle.getFileChannel());
     }
 
@@ -425,7 +424,7 @@ public class SftpSubsystem
 
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                    getServerSession(), this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, false);
+                    this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, false);
             if (Files.isDirectory(path, options)) {
                 throw new NotDirectoryException(path.toString());
             }
@@ -449,10 +448,9 @@ public class SftpSubsystem
     protected byte[] doMD5Hash(
             int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash)
             throws Exception {
-        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})({})[{}] offset={}, length={}, quick-hash={}",
-                    session, targetType, target, startOffset, length,
+                    getServerSession(), targetType, target, startOffset, length,
                     BufferUtils.toHex(':', quickCheckHash));
         }
 
@@ -478,7 +476,7 @@ public class SftpSubsystem
 
             SftpFileSystemAccessor accessor = getFileSystemAccessor();
             LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                    session, this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, true);
+                    this, path, SftpConstants.SSH_FXP_EXTENDED, targetType, true);
             if (Files.isDirectory(path, options)) {
                 throw new NotDirectoryException(path.toString());
             }
@@ -805,17 +803,16 @@ public class SftpSubsystem
     @Override
     protected Map<String, Object> doFStat(int id, String handle, int flags) throws IOException {
         Handle h = handles.get(handle);
-        ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doFStat({})[id={}] SSH_FXP_FSTAT (handle={}[{}], flags=0x{})",
-                    session, id, handle, h, Integer.toHexString(flags));
+                    getServerSession(), id, handle, h, Integer.toHexString(flags));
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         Path file = fileHandle.getFile();
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                session, this, file, SftpConstants.SSH_FXP_FSTAT, "", true);
+                this, file, SftpConstants.SSH_FXP_FSTAT, "", true);
         return resolveFileAttributes(file, flags, options);
     }
 

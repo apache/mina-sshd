@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 
@@ -79,14 +78,13 @@ public class FileHandle extends Handle {
                 : fileAttributes.toArray(new FileAttribute<?>[fileAttributes.size()]);
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-        ServerSession session = subsystem.getServerSession();
         SeekableByteChannel channel;
         try {
             channel = accessor.openFile(
-                    session, subsystem, this, file, handle, openOptions, fileAttrs);
+                    subsystem, this, file, handle, openOptions, fileAttrs);
         } catch (UnsupportedOperationException e) {
             channel = accessor.openFile(
-                    session, subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
+                    subsystem, this, file, handle, openOptions, IoUtils.EMPTY_FILE_ATTRIBUTES);
             subsystem.doSetAttributes(SftpConstants.SSH_FXP_OPEN, "", file, attrs, false);
         }
         this.fileChannel = channel;
@@ -163,8 +161,7 @@ public class FileHandle extends Handle {
 
         SftpSubsystem subsystem = getSubsystem();
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-        ServerSession session = subsystem.getServerSession();
-        accessor.closeFile(session, subsystem, this, getFile(), getFileHandle(), getFileChannel(), getOpenOptions());
+        accessor.closeFile(subsystem, this, getFile(), getFileHandle(), getFileChannel(), getOpenOptions());
     }
 
     public void lock(long offset, long length, int mask) throws IOException {
@@ -172,9 +169,8 @@ public class FileHandle extends Handle {
         long size = (length == 0L) ? channel.size() - offset : length;
         SftpSubsystem subsystem = getSubsystem();
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-        ServerSession session = subsystem.getServerSession();
         FileLock lock = accessor.tryLock(
-                session, subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
+                subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
         if (lock == null) {
             throw new SftpException(
                     SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,

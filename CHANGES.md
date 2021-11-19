@@ -18,6 +18,8 @@
 
 ## Potential compatibility issues
 
+* Removed `ServerSession` argument from `SftpFileSystemAccessor` invocations since it can be retrieved from the provided `SftpSubsystemProxy` instance
+
 ## Minor code helpers
 
 * [SSHD-1193](https://issues.apache.org/jira/browse/SSHD-1193) Provide a more user-friendly text in case disconnecting due to timeout(s).
