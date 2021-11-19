@@ -937,18 +937,20 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         boolean traceEnabled = log.isTraceEnabled();
         for (String attr : attrValues) {
             switch (attr) {
-                case "acl":
+                case IoUtils.ACL_VIEW_ATTR: {
                     List<AclEntry> acl = attributes.getAcl();
                     if (acl != null) {
                         map.put(attr, acl);
                     }
                     break;
-                case "owner":
+                }
+                case IoUtils.OWNER_VIEW_ATTR: {
                     String owner = attributes.getOwner();
                     if (GenericUtils.length(owner) > 0) {
                         map.put(attr, new SftpFileSystem.DefaultUserPrincipal(owner));
                     }
                     break;
+                }
                 default:
                     if (traceEnabled) {
                         log.trace("readAclViewAttributes({})[{}] unknown attribute: {}", fs, attrs, attr);
@@ -964,35 +966,37 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         // SftpPathImpl.withAttributeCache() invocation. So we ensure here that if we are already within a caching
         // scope, we do use the cached attributes, but if we are not, we clear any possibly cached attributes and
         // do actually read them from the remote.
-        return SftpPathImpl.withAttributeCache(path, p -> {
-            SftpClient.Attributes attributes = path.getAttributes();
-            if (attributes != null) {
-                return attributes;
+        return SftpPathImpl.withAttributeCache(path, p -> resolveRemoteFileAttributes(path, options));
+    }
+
+    protected SftpClient.Attributes resolveRemoteFileAttributes(SftpPath path, LinkOption... options) throws IOException {
+        SftpClient.Attributes attributes = path.getAttributes();
+        if (attributes != null) {
+            return attributes;
+        }
+        SftpFileSystem fs = path.getFileSystem();
+        try (SftpClient client = fs.getClient()) {
+            SftpClient.Attributes attrs;
+            if (IoUtils.followLinks(options)) {
+                attrs = client.stat(path.toString());
+            } else {
+                attrs = client.lstat(path.toString());
             }
-            SftpFileSystem fs = path.getFileSystem();
-            try (SftpClient client = fs.getClient()) {
-                SftpClient.Attributes attrs;
-                if (IoUtils.followLinks(options)) {
-                    attrs = client.stat(path.toString());
-                } else {
-                    attrs = client.lstat(path.toString());
-                }
-                if (log.isTraceEnabled()) {
-                    log.trace("readRemoteAttributes({})[{}]: {}", fs, path, attrs);
-                }
-                if (path instanceof SftpPathImpl) {
-                    ((SftpPathImpl) path).cacheAttributes(attrs);
-                }
-                return attrs;
-            } catch (SftpException e) {
-                if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
-                    NoSuchFileException toThrow = new NoSuchFileException(path.toString());
-                    toThrow.initCause(e);
-                    throw toThrow;
-                }
-                throw e;
+            if (log.isTraceEnabled()) {
+                log.trace("resolveRemoteFileAttributes({})[{}]: {}", fs, path, attrs);
             }
-        });
+            if (path instanceof SftpPathImpl) {
+                ((SftpPathImpl) path).cacheAttributes(attrs);
+            }
+            return attrs;
+        } catch (SftpException e) {
+            if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
+                NoSuchFileException toThrow = new NoSuchFileException(path.toString());
+                toThrow.initCause(e);
+                throw toThrow;
+            }
+            throw e;
+        }
     }
 
     protected NavigableMap<String, Object> readPosixViewAttributes(
@@ -1000,7 +1004,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             throws IOException {
         PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
         if ("*".equals(attrs)) {
-            attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
+            attrs = IoUtils.LASTMOD_TIME_VIEW_ATTR
+                    + "," + IoUtils.LASTACC_TIME_VIEW_ATTR
+                    + "," + IoUtils.CREATE_TIME_VIEW_ATTR
+                    + "," + IoUtils.SIZE_VIEW_ATTR
+                    + "," + IoUtils.REGFILE_VIEW_ATTR
+                    + "," + IoUtils.DIRECTORY_VIEW_ATTR
+                    + "," + IoUtils.SYMLINK_VIEW_ATTR
+                    + "," + IoUtils.OTHERFILE_VIEW_ATTR
+                    + "," + IoUtils.FILEKEY_VIEW_ATTR
+                    + "," + IoUtils.OWNER_VIEW_ATTR
+                    + "," + IoUtils.GROUP_VIEW_ATTR
+                    + "," + IoUtils.PERMISSIONS_VIEW_ATTR
+                    + "," + IoUtils.FILEKEY_VIEW_ATTR;
         }
 
         NavigableMap<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -1008,40 +1024,40 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String[] attrValues = GenericUtils.split(attrs, ',');
         for (String attr : attrValues) {
             switch (attr) {
-                case "lastModifiedTime":
+                case IoUtils.LASTMOD_TIME_VIEW_ATTR:
                     map.put(attr, v.lastModifiedTime());
                     break;
-                case "lastAccessTime":
+                case IoUtils.LASTACC_TIME_VIEW_ATTR:
                     map.put(attr, v.lastAccessTime());
                     break;
-                case "creationTime":
+                case IoUtils.CREATE_TIME_VIEW_ATTR:
                     map.put(attr, v.creationTime());
                     break;
-                case "size":
+                case IoUtils.SIZE_VIEW_ATTR:
                     map.put(attr, v.size());
                     break;
-                case "isRegularFile":
+                case IoUtils.REGFILE_VIEW_ATTR:
                     map.put(attr, v.isRegularFile());
                     break;
-                case "isDirectory":
+                case IoUtils.DIRECTORY_VIEW_ATTR:
                     map.put(attr, v.isDirectory());
                     break;
-                case "isSymbolicLink":
+                case IoUtils.SYMLINK_VIEW_ATTR:
                     map.put(attr, v.isSymbolicLink());
                     break;
-                case "isOther":
+                case IoUtils.OTHERFILE_VIEW_ATTR:
                     map.put(attr, v.isOther());
                     break;
-                case "fileKey":
+                case IoUtils.FILEKEY_VIEW_ATTR:
                     map.put(attr, v.fileKey());
                     break;
-                case "owner":
+                case IoUtils.OWNER_VIEW_ATTR:
                     map.put(attr, v.owner());
                     break;
-                case "permissions":
+                case IoUtils.PERMISSIONS_VIEW_ATTR:
                     map.put(attr, v.permissions());
                     break;
-                case "group":
+                case IoUtils.GROUP_VIEW_ATTR:
                     map.put(attr, v.group());
                     break;
                 default:
@@ -1081,42 +1097,42 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         SftpClient.Attributes attributes = new SftpClient.Attributes();
         switch (attr) {
-            case "lastModifiedTime":
+            case IoUtils.LASTMOD_TIME_VIEW_ATTR:
                 attributes.modifyTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
-            case "lastAccessTime":
+            case IoUtils.LASTACC_TIME_VIEW_ATTR:
                 attributes.accessTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
-            case "creationTime":
+            case IoUtils.CREATE_TIME_VIEW_ATTR:
                 attributes.createTime((int) ((FileTime) value).to(TimeUnit.SECONDS));
                 break;
-            case "size":
+            case IoUtils.SIZE_VIEW_ATTR:
                 attributes.size(((Number) value).longValue());
                 break;
-            case "permissions": {
+            case IoUtils.PERMISSIONS_VIEW_ATTR: {
                 @SuppressWarnings("unchecked")
                 Set<PosixFilePermission> attrSet = (Set<PosixFilePermission>) value;
                 attributes.perms(attributesToPermissions(path, attrSet));
                 break;
             }
-            case "owner":
+            case IoUtils.OWNER_VIEW_ATTR:
                 attributes.owner(((UserPrincipal) value).getName());
                 break;
-            case "group":
+            case IoUtils.GROUP_VIEW_ATTR:
                 attributes.group(((GroupPrincipal) value).getName());
                 break;
-            case "acl": {
+            case IoUtils.ACL_VIEW_ATTR: {
                 ValidateUtils.checkTrue("acl".equalsIgnoreCase(view), "ACL cannot be set via view=%s", view);
                 @SuppressWarnings("unchecked")
                 List<AclEntry> acl = (List<AclEntry>) value;
                 attributes.acl(acl);
                 break;
             }
-            case "isRegularFile":
-            case "isDirectory":
-            case "isSymbolicLink":
-            case "isOther":
-            case "fileKey":
+            case IoUtils.REGFILE_VIEW_ATTR:
+            case IoUtils.DIRECTORY_VIEW_ATTR:
+            case IoUtils.SYMLINK_VIEW_ATTR:
+            case IoUtils.OTHERFILE_VIEW_ATTR:
+            case IoUtils.FILEKEY_VIEW_ATTR:
                 throw new UnsupportedOperationException(
                         "setAttribute(" + path + ")[" + view + ":" + attr + "=" + value + "] modification N/A");
             default:

@@ -28,6 +28,7 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
 
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.impl.AbstractSftpFileAttributeView;
 
@@ -47,7 +48,7 @@ public class SftpAclFileAttributeView extends AbstractSftpFileAttributeView impl
 
     @Override
     public void setOwner(UserPrincipal owner) throws IOException {
-        provider.setAttribute(path, "posix", "owner", owner, options);
+        provider.setAttribute(path, "posix", IoUtils.OWNER_VIEW_ATTR, owner, options);
     }
 
     @Override

@@ -62,6 +62,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient.Attribute;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
@@ -220,17 +221,17 @@ public final class SftpHelper {
     public static <B extends Buffer> B writeAttrsV3(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version == SftpConstants.SFTP_V3, "Illegal version: %d", version);
 
-        boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
-        boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
-        boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
+        boolean isReg = getBool((Boolean) attributes.get(IoUtils.REGFILE_VIEW_ATTR));
+        boolean isDir = getBool((Boolean) attributes.get(IoUtils.DIRECTORY_VIEW_ATTR));
+        boolean isLnk = getBool((Boolean) attributes.get(IoUtils.SYMLINK_VIEW_ATTR));
         @SuppressWarnings("unchecked")
-        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) attributes.get("permissions");
-        Number size = (Number) attributes.get("size");
-        FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
-        FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
-        Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
+        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) attributes.get(IoUtils.PERMISSIONS_VIEW_ATTR);
+        Number size = (Number) attributes.get(IoUtils.SIZE_VIEW_ATTR);
+        FileTime lastModifiedTime = (FileTime) attributes.get(IoUtils.LASTMOD_TIME_VIEW_ATTR);
+        FileTime lastAccessTime = (FileTime) attributes.get(IoUtils.LASTACC_TIME_VIEW_ATTR);
+        Map<?, ?> extensions = (Map<?, ?>) attributes.get(IoUtils.EXTENDED_VIEW_ATTR);
         int flags = ((isReg || isLnk) && (size != null) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
-                    | (attributes.containsKey("uid") && attributes.containsKey("gid")
+                    | (attributes.containsKey(IoUtils.USERID_VIEW_ATTR) && attributes.containsKey(IoUtils.GROUPID_VIEW_ATTR)
                             ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
                     | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
                     | (((lastModifiedTime != null) && (lastAccessTime != null)) ? SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME : 0)
@@ -240,8 +241,8 @@ public final class SftpHelper {
             buffer.putLong(size.longValue());
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            buffer.putInt(((Number) attributes.get("uid")).intValue());
-            buffer.putInt(((Number) attributes.get("gid")).intValue());
+            buffer.putInt(((Number) attributes.get(IoUtils.USERID_VIEW_ATTR)).intValue());
+            buffer.putInt(((Number) attributes.get(IoUtils.GROUPID_VIEW_ATTR)).intValue());
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
@@ -269,20 +270,20 @@ public final class SftpHelper {
     public static <B extends Buffer> B writeAttrsV4(B buffer, int version, Map<String, ?> attributes) {
         ValidateUtils.checkTrue(version >= SftpConstants.SFTP_V4, "Illegal version: %d", version);
 
-        boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
-        boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
-        boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
+        boolean isReg = getBool((Boolean) attributes.get(IoUtils.REGFILE_VIEW_ATTR));
+        boolean isDir = getBool((Boolean) attributes.get(IoUtils.DIRECTORY_VIEW_ATTR));
+        boolean isLnk = getBool((Boolean) attributes.get(IoUtils.SYMLINK_VIEW_ATTR));
         @SuppressWarnings("unchecked")
-        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) attributes.get("permissions");
-        Number size = (Number) attributes.get("size");
-        FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
-        FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
-        FileTime creationTime = (FileTime) attributes.get("creationTime");
+        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) attributes.get(IoUtils.PERMISSIONS_VIEW_ATTR);
+        Number size = (Number) attributes.get(IoUtils.SIZE_VIEW_ATTR);
+        FileTime lastModifiedTime = (FileTime) attributes.get(IoUtils.LASTMOD_TIME_VIEW_ATTR);
+        FileTime lastAccessTime = (FileTime) attributes.get(IoUtils.LASTACC_TIME_VIEW_ATTR);
+        FileTime creationTime = (FileTime) attributes.get(IoUtils.CREATE_TIME_VIEW_ATTR);
         @SuppressWarnings("unchecked")
-        Collection<AclEntry> acl = (Collection<AclEntry>) attributes.get("acl");
-        Map<?, ?> extensions = (Map<?, ?>) attributes.get("extended");
+        Collection<AclEntry> acl = (Collection<AclEntry>) attributes.get(IoUtils.ACL_VIEW_ATTR);
+        Map<?, ?> extensions = (Map<?, ?>) attributes.get(IoUtils.EXTENDED_VIEW_ATTR);
         int flags = (((isReg || isLnk) && (size != null)) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
-                    | ((attributes.containsKey("owner") && attributes.containsKey("group"))
+                    | ((attributes.containsKey(IoUtils.OWNER_VIEW_ATTR) && attributes.containsKey(IoUtils.GROUP_VIEW_ATTR))
                             ? SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP : 0)
                     | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
                     | ((lastModifiedTime != null) ? SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME : 0)
@@ -299,8 +300,10 @@ public final class SftpHelper {
             buffer.putLong(size.longValue());
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-            buffer.putString(Objects.toString(attributes.get("owner"), SftpUniversalOwnerAndGroup.Owner.getName()));
-            buffer.putString(Objects.toString(attributes.get("group"), SftpUniversalOwnerAndGroup.Group.getName()));
+            buffer.putString(
+                    Objects.toString(attributes.get(IoUtils.OWNER_VIEW_ATTR), SftpUniversalOwnerAndGroup.Owner.getName()));
+            buffer.putString(
+                    Objects.toString(attributes.get(IoUtils.GROUP_VIEW_ATTR), SftpUniversalOwnerAndGroup.Group.getName()));
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
@@ -664,32 +667,32 @@ public final class SftpHelper {
             int type = buffer.getUByte();
             switch (type) {
                 case SftpConstants.SSH_FILEXFER_TYPE_REGULAR:
-                    attrs.put("isRegular", Boolean.TRUE);
+                    attrs.put(IoUtils.REGFILE_VIEW_ATTR, Boolean.TRUE);
                     break;
                 case SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY:
-                    attrs.put("isDirectory", Boolean.TRUE);
+                    attrs.put(IoUtils.DIRECTORY_VIEW_ATTR, Boolean.TRUE);
                     break;
                 case SftpConstants.SSH_FILEXFER_TYPE_SYMLINK:
-                    attrs.put("isSymbolicLink", Boolean.TRUE);
+                    attrs.put(IoUtils.SYMLINK_VIEW_ATTR, Boolean.TRUE);
                     break;
                 case SftpConstants.SSH_FILEXFER_TYPE_SOCKET:
                 case SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE:
                 case SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE:
                 case SftpConstants.SSH_FILEXFER_TYPE_FIFO:
-                    attrs.put("isOther", Boolean.TRUE);
+                    attrs.put(IoUtils.OTHERFILE_VIEW_ATTR, Boolean.TRUE);
                     break;
                 default: // ignored
             }
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
-            attrs.put("size", buffer.getLong());
+            attrs.put(IoUtils.SIZE_VIEW_ATTR, buffer.getLong());
         }
 
         if (version == SftpConstants.SFTP_V3) {
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) != 0) {
-                attrs.put("uid", buffer.getInt());
-                attrs.put("gid", buffer.getInt());
+                attrs.put(IoUtils.USERID_VIEW_ATTR, buffer.getInt());
+                attrs.put(IoUtils.GROUPID_VIEW_ATTR, buffer.getInt());
             }
         } else {
             if ((version >= SftpConstants.SFTP_V6) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0)) {
@@ -698,36 +701,37 @@ public final class SftpHelper {
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-                attrs.put("owner", new DefaultGroupPrincipal(buffer.getString()));
-                attrs.put("group", new DefaultGroupPrincipal(buffer.getString()));
+                attrs.put(IoUtils.OWNER_VIEW_ATTR, new DefaultGroupPrincipal(buffer.getString()));
+                attrs.put(IoUtils.GROUP_VIEW_ATTR, new DefaultGroupPrincipal(buffer.getString()));
             }
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            attrs.put("permissions", permissionsToAttributes(buffer.getInt()));
+            attrs.put(IoUtils.PERMISSIONS_VIEW_ATTR, permissionsToAttributes(buffer.getInt()));
         }
 
         if (version == SftpConstants.SFTP_V3) {
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                attrs.put("lastAccessTime", readTime(buffer, version, flags));
-                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
+                attrs.put(IoUtils.LASTACC_TIME_VIEW_ATTR, readTime(buffer, version, flags));
+                attrs.put(IoUtils.LASTMOD_TIME_VIEW_ATTR, readTime(buffer, version, flags));
             }
         } else if (version >= SftpConstants.SFTP_V4) {
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                attrs.put("lastAccessTime", readTime(buffer, version, flags));
+                attrs.put(IoUtils.LASTACC_TIME_VIEW_ATTR, readTime(buffer, version, flags));
             }
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                attrs.put("creationTime", readTime(buffer, version, flags));
+                attrs.put(IoUtils.CREATE_TIME_VIEW_ATTR, readTime(buffer, version, flags));
             }
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                attrs.put("lastModifiedTime", readTime(buffer, version, flags));
+                attrs.put(IoUtils.LASTMOD_TIME_VIEW_ATTR, readTime(buffer, version, flags));
             }
+            // modification time sub-seconds
             if ((version >= SftpConstants.SFTP_V6) && (flags & SftpConstants.SSH_FILEXFER_ATTR_CTIME) != 0) {
                 attrs.put("ctime", readTime(buffer, version, flags));
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
-                attrs.put("acl", readACLs(buffer, version));
+                attrs.put(IoUtils.ACL_VIEW_ATTR, readACLs(buffer, version));
             }
 
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_BITS) != 0) {
@@ -762,7 +766,7 @@ public final class SftpHelper {
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            attrs.put("extended", readExtensions(buffer));
+            attrs.put(IoUtils.EXTENDED_VIEW_ATTR, readExtensions(buffer));
         }
 
         return attrs;
@@ -1202,38 +1206,38 @@ public final class SftpHelper {
      *                    7</A>
      */
     public static String getLongName(String shortName, Map<String, ?> attributes) {
-        String owner = Objects.toString(attributes.get("owner"), null);
+        String owner = Objects.toString(attributes.get(IoUtils.OWNER_VIEW_ATTR), null);
         String username = OsUtils.getCanonicalUser(owner);
         if (GenericUtils.isEmpty(username)) {
             username = SftpUniversalOwnerAndGroup.Owner.getName();
         }
 
-        String group = Objects.toString(attributes.get("group"), null);
+        String group = Objects.toString(attributes.get(IoUtils.GROUP_VIEW_ATTR), null);
         group = OsUtils.resolveCanonicalGroup(group, owner);
         if (GenericUtils.isEmpty(group)) {
             group = SftpUniversalOwnerAndGroup.Group.getName();
         }
 
-        Number length = (Number) attributes.get("size");
+        Number length = (Number) attributes.get(IoUtils.SIZE_VIEW_ATTR);
         if (length == null) {
             length = 0L;
         }
 
         String lengthString = String.format("%1$8s", length);
-        String linkCount = Objects.toString(attributes.get("nlink"), null);
+        String linkCount = Objects.toString(attributes.get(IoUtils.NUMLINKS_VIEW_ATTR), null);
         if (GenericUtils.isEmpty(linkCount)) {
             linkCount = "1";
         }
 
-        Boolean isDirectory = (Boolean) attributes.get("isDirectory");
-        Boolean isLink = (Boolean) attributes.get("isSymbolicLink");
+        Boolean isDirectory = (Boolean) attributes.get(IoUtils.DIRECTORY_VIEW_ATTR);
+        Boolean isLink = (Boolean) attributes.get(IoUtils.SYMLINK_VIEW_ATTR);
         @SuppressWarnings("unchecked")
-        Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
+        Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get(IoUtils.PERMISSIONS_VIEW_ATTR);
         if (perms == null) {
             perms = EnumSet.noneOf(PosixFilePermission.class);
         }
         String permsString = PosixFilePermissions.toString(perms);
-        String timeStamp = UnixDateFormat.getUnixDate((FileTime) attributes.get("lastModifiedTime"));
+        String timeStamp = UnixDateFormat.getUnixDate((FileTime) attributes.get(IoUtils.LASTMOD_TIME_VIEW_ATTR));
         StringBuilder sb = new StringBuilder(
                 GenericUtils.length(linkCount) + GenericUtils.length(username) + GenericUtils.length(group)
                                              + GenericUtils.length(timeStamp) + GenericUtils.length(lengthString)

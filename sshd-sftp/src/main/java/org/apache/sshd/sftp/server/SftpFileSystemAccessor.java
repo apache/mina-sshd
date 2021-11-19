@@ -74,12 +74,12 @@ public interface SftpFileSystemAccessor {
      */
     NavigableMap<String, FileInfoExtractor<?>> FILEATTRS_RESOLVERS
             = NavigableMapBuilder.<String, FileInfoExtractor<?>> builder(String.CASE_INSENSITIVE_ORDER)
-                    .put("isRegularFile", FileInfoExtractor.ISREG)
-                    .put("isDirectory", FileInfoExtractor.ISDIR)
-                    .put("isSymbolicLink", FileInfoExtractor.ISSYMLINK)
-                    .put("permissions", FileInfoExtractor.PERMISSIONS)
-                    .put("size", FileInfoExtractor.SIZE)
-                    .put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED)
+                    .put(IoUtils.REGFILE_VIEW_ATTR, FileInfoExtractor.ISREG)
+                    .put(IoUtils.DIRECTORY_VIEW_ATTR, FileInfoExtractor.ISDIR)
+                    .put(IoUtils.SYMLINK_VIEW_ATTR, FileInfoExtractor.ISSYMLINK)
+                    .put(IoUtils.PERMISSIONS_VIEW_ATTR, FileInfoExtractor.PERMISSIONS)
+                    .put(IoUtils.SIZE_VIEW_ATTR, FileInfoExtractor.SIZE)
+                    .put(IoUtils.LASTMOD_TIME_VIEW_ATTR, FileInfoExtractor.LASTMODIFIED)
                     .immutable();
 
     /** Whether to invoke {@link FileChannel#force(boolean)} on files open for write when closing */

@@ -30,6 +30,7 @@ import java.nio.file.attribute.UserPrincipal;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.impl.AbstractSftpFileAttributeView;
 
@@ -75,12 +76,12 @@ public class SftpPosixFileAttributeView extends AbstractSftpFileAttributeView im
 
     @Override
     public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-        provider.setAttribute(path, "permissions", perms, options);
+        provider.setAttribute(path, IoUtils.PERMISSIONS_VIEW_ATTR, perms, options);
     }
 
     @Override
     public void setGroup(GroupPrincipal group) throws IOException {
-        provider.setAttribute(path, "group", group, options);
+        provider.setAttribute(path, IoUtils.GROUP_VIEW_ATTR, group, options);
     }
 
     @Override
@@ -90,6 +91,6 @@ public class SftpPosixFileAttributeView extends AbstractSftpFileAttributeView im
 
     @Override
     public void setOwner(UserPrincipal owner) throws IOException {
-        provider.setAttribute(path, "owner", owner, options);
+        provider.setAttribute(path, IoUtils.OWNER_VIEW_ATTR, owner, options);
     }
 }

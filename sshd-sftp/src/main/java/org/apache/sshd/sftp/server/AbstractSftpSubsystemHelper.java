@@ -2324,13 +2324,14 @@ public abstract class AbstractSftpSubsystemHelper
     protected String getLongName(Path f, String shortName, SftpClient.Attributes attributes) throws IOException {
         return getLongName(f, shortName,
                 MapBuilder.<String, Object> builder()
-                        .put("owner", attributes.getOwner())
-                        .put("group", attributes.getGroup())
-                        .put("size", attributes.getSize())
-                        .put("isDirectory", attributes.isDirectory())
-                        .put("isSymbolicLink", attributes.isSymbolicLink())
-                        .put("permissions", SftpHelper.permissionsToAttributes(attributes.getPermissions()))
-                        .put("lastModifiedTime", attributes.getModifyTime()).build());
+                        .put(IoUtils.OWNER_VIEW_ATTR, attributes.getOwner())
+                        .put(IoUtils.GROUP_VIEW_ATTR, attributes.getGroup())
+                        .put(IoUtils.SIZE_VIEW_ATTR, attributes.getSize())
+                        .put(IoUtils.DIRECTORY_VIEW_ATTR, attributes.isDirectory())
+                        .put(IoUtils.SYMLINK_VIEW_ATTR, attributes.isSymbolicLink())
+                        .put(IoUtils.PERMISSIONS_VIEW_ATTR, SftpHelper.permissionsToAttributes(attributes.getPermissions()))
+                        .put(IoUtils.LASTMOD_TIME_VIEW_ATTR, attributes.getModifyTime())
+                        .build());
     }
 
     protected String getShortName(Path f) throws IOException {
@@ -2421,37 +2422,40 @@ public abstract class AbstractSftpSubsystemHelper
      * @param  options     The {@link LinkOption}s to use in order to access the file if necessary
      * @return             A {@link Map} of the retrieved attributes
      * @throws IOException If failed to access the file
-     * @see                #resolveMissingFileAttributes(Path, int, Map, LinkOption...)
+     * @see                #resolveReportedFileAttributes(Path, int, LinkOption...)
      */
     protected NavigableMap<String, Object> getAttributes(Path path, int flags, LinkOption... options)
             throws IOException {
-        return SftpPathImpl.withAttributeCache(path, file -> {
-            FileSystem fs = file.getFileSystem();
-            Collection<String> supportedViews = fs.supportedFileAttributeViews();
-            NavigableMap<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            Collection<String> views;
+        return SftpPathImpl.withAttributeCache(path, file -> resolveReportedFileAttributes(file, flags, options));
+    }
 
-            if (GenericUtils.isEmpty(supportedViews)) {
-                views = Collections.emptyList();
-            } else if (supportedViews.contains("unix")) {
-                views = SftpFileSystemAccessor.DEFAULT_UNIX_VIEW;
-            } else {
-                views = GenericUtils.map(supportedViews, v -> v + ":*");
-            }
+    protected NavigableMap<String, Object> resolveReportedFileAttributes(Path file, int flags, LinkOption... options)
+            throws IOException {
+        FileSystem fs = file.getFileSystem();
+        Collection<String> supportedViews = fs.supportedFileAttributeViews();
+        NavigableMap<String, Object> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Collection<String> views;
 
-            for (String v : views) {
-                Map<String, ?> ta = readFileAttributes(file, v, options);
-                if (MapEntryUtils.isNotEmpty(ta)) {
-                    attrs.putAll(ta);
-                }
-            }
+        if (GenericUtils.isEmpty(supportedViews)) {
+            views = Collections.emptyList();
+        } else if (supportedViews.contains("unix")) {
+            views = SftpFileSystemAccessor.DEFAULT_UNIX_VIEW;
+        } else {
+            views = GenericUtils.map(supportedViews, v -> v + ":*");
+        }
 
-            Map<String, ?> completions = resolveMissingFileAttributes(file, flags, attrs, options);
-            if (MapEntryUtils.isNotEmpty(completions)) {
-                attrs.putAll(completions);
+        for (String v : views) {
+            Map<String, ?> ta = readFileAttributes(file, v, options);
+            if (MapEntryUtils.isNotEmpty(ta)) {
+                attrs.putAll(ta);
             }
-            return attrs;
-        });
+        }
+
+        Map<String, ?> completions = resolveMissingFileAttributes(file, flags, attrs, options);
+        if (MapEntryUtils.isNotEmpty(completions)) {
+            attrs.putAll(completions);
+        }
+        return attrs;
     }
 
     /**
@@ -2628,7 +2632,7 @@ public abstract class AbstractSftpSubsystemHelper
             Object value = ae.getValue();
             String view = null;
             switch (attribute) {
-                case "size": {
+                case IoUtils.SIZE_VIEW_ATTR: {
                     long newSize = ((Number) value).longValue();
                     SftpFileSystemAccessor accessor = getFileSystemAccessor();
                     ServerSession session = getServerSession();
@@ -2639,36 +2643,36 @@ public abstract class AbstractSftpSubsystemHelper
                     }
                     continue;
                 }
-                case "uid":
+                case IoUtils.USERID_VIEW_ATTR:
                     view = "unix";
                     break;
-                case "gid":
+                case IoUtils.GROUPID_VIEW_ATTR:
                     view = "unix";
                     break;
-                case "owner":
+                case IoUtils.OWNER_VIEW_ATTR:
                     view = "posix";
                     value = toUser(file, (UserPrincipal) value);
                     break;
-                case "group":
+                case IoUtils.GROUP_VIEW_ATTR:
                     view = "posix";
                     value = toGroup(file, (GroupPrincipal) value);
                     break;
-                case "permissions":
+                case IoUtils.PERMISSIONS_VIEW_ATTR:
                     view = "posix";
                     break;
-                case "acl":
+                case IoUtils.ACL_VIEW_ATTR:
                     view = "acl";
                     break;
-                case "creationTime":
+                case IoUtils.CREATE_TIME_VIEW_ATTR:
                     view = "basic";
                     break;
-                case "lastModifiedTime":
+                case IoUtils.LASTMOD_TIME_VIEW_ATTR:
                     view = "basic";
                     break;
-                case "lastAccessTime":
+                case IoUtils.LASTACC_TIME_VIEW_ATTR:
                     view = "basic";
                     break;
-                case "extended":
+                case IoUtils.EXTENDED_VIEW_ATTR:
                     view = "extended";
                     break;
                 default: // ignored
@@ -2715,21 +2719,22 @@ public abstract class AbstractSftpSubsystemHelper
                     getServerSession(), file, view, attribute, value);
         }
 
-        if ("acl".equalsIgnoreCase(attribute) && "acl".equalsIgnoreCase(view)) {
+        if (IoUtils.ACL_VIEW_ATTR.equalsIgnoreCase(attribute) && "acl".equalsIgnoreCase(view)) {
             @SuppressWarnings("unchecked")
             List<AclEntry> acl = (List<AclEntry>) value;
             setFileAccessControl(file, acl, options);
-        } else if ("permissions".equalsIgnoreCase(attribute)) {
+        } else if (IoUtils.PERMISSIONS_VIEW_ATTR.equalsIgnoreCase(attribute)) {
             @SuppressWarnings("unchecked")
             Set<PosixFilePermission> perms = (Set<PosixFilePermission>) value;
             setFilePermissions(file, perms, options);
-        } else if ("owner".equalsIgnoreCase(attribute) || "group".equalsIgnoreCase(attribute)) {
+        } else if (IoUtils.OWNER_VIEW_ATTR.equalsIgnoreCase(attribute)
+                || IoUtils.GROUP_VIEW_ATTR.equalsIgnoreCase(attribute)) {
             setFileOwnership(file, attribute, (Principal) value, options);
-        } else if ("creationTime".equalsIgnoreCase(attribute)
-                || "lastModifiedTime".equalsIgnoreCase(attribute)
-                || "lastAccessTime".equalsIgnoreCase(attribute)) {
+        } else if (IoUtils.CREATE_TIME_VIEW_ATTR.equalsIgnoreCase(attribute)
+                || IoUtils.LASTMOD_TIME_VIEW_ATTR.equalsIgnoreCase(attribute)
+                || IoUtils.LASTACC_TIME_VIEW_ATTR.equalsIgnoreCase(attribute)) {
             setFileTime(file, view, attribute, (FileTime) value, options);
-        } else if ("extended".equalsIgnoreCase(view) && "extended".equalsIgnoreCase(attribute)) {
+        } else if (IoUtils.EXTENDED_VIEW_ATTR.equalsIgnoreCase(attribute) && "extended".equalsIgnoreCase(view)) {
             @SuppressWarnings("unchecked")
             Map<String, byte[]> extensions = (Map<String, byte[]>) value;
             setFileExtensions(file, extensions, options);
@@ -2776,9 +2781,9 @@ public abstract class AbstractSftpSubsystemHelper
          * used to set the file owner to a user principal that is not a group.
          */
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
-        if ("owner".equalsIgnoreCase(attribute)) {
+        if (IoUtils.OWNER_VIEW_ATTR.equalsIgnoreCase(attribute)) {
             accessor.setFileOwner(serverSession, this, file, value, options);
-        } else if ("group".equalsIgnoreCase(attribute)) {
+        } else if (IoUtils.GROUP_VIEW_ATTR.equalsIgnoreCase(attribute)) {
             accessor.setGroupOwner(serverSession, this, file, value, options);
         } else {
             throw new UnsupportedOperationException("Unknown ownership attribute: " + attribute);

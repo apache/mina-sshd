@@ -727,36 +727,36 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             }
 
             StringBuilder sb = new StringBuilder(abbrev.length() + 64);
-            if (is("isDirectory")) {
+            if (is(IoUtils.DIRECTORY_VIEW_ATTR)) {
                 sb.append('d');
-            } else if (is("isSymbolicLink")) {
+            } else if (is(IoUtils.SYMLINK_VIEW_ATTR)) {
                 sb.append('l');
-            } else if (is("isOther")) {
+            } else if (is(IoUtils.OTHERFILE_VIEW_ATTR)) {
                 sb.append('o');
             } else {
                 sb.append('-');
             }
 
             @SuppressWarnings("unchecked")
-            Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
+            Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get(IoUtils.PERMISSIONS_VIEW_ATTR);
             if (perms == null) {
                 perms = EnumSet.noneOf(PosixFilePermission.class);
             }
             sb.append(PosixFilePermissions.toString(perms));
 
-            Object nlinkValue = attributes.get("nlink");
+            Object nlinkValue = attributes.get(IoUtils.NUMLINKS_VIEW_ATTR);
             sb.append(' ').append(String.format("%3s", (nlinkValue != null) ? nlinkValue : "1"));
 
-            appendOwnerInformation(sb, "owner", "owner");
-            appendOwnerInformation(sb, "group", "group");
+            appendOwnerInformation(sb, IoUtils.OWNER_VIEW_ATTR, "owner");
+            appendOwnerInformation(sb, IoUtils.GROUP_VIEW_ATTR, "group");
 
-            Number length = (Number) attributes.get("size");
+            Number length = (Number) attributes.get(IoUtils.SIZE_VIEW_ATTR);
             if (length == null) {
                 length = 0L;
             }
             sb.append(' ').append(String.format("%1$8s", length));
 
-            String timeValue = toString((FileTime) attributes.get("lastModifiedTime"), optFullTime);
+            String timeValue = toString((FileTime) attributes.get(IoUtils.LASTMOD_TIME_VIEW_ATTR), optFullTime);
             sb.append(' ').append(timeValue);
 
             sb.append(' ').append(abbrev);
@@ -830,8 +830,8 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                 }
             }
             if (!attrs.isEmpty()) {
-                attrs.computeIfAbsent("isExecutable", s -> Files.isExecutable(path));
-                attrs.computeIfAbsent("permissions", s -> IoUtils.getPermissionsFromFile(path.toFile()));
+                attrs.computeIfAbsent(IoUtils.EXECUTABLE_VIEW_ATTR, s -> Files.isExecutable(path));
+                attrs.computeIfAbsent(IoUtils.PERMISSIONS_VIEW_ATTR, s -> IoUtils.getPermissionsFromFile(path.toFile()));
             }
             return attrs;
         }

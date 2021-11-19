@@ -299,7 +299,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                         }
 
                         @SuppressWarnings("unchecked")
-                        List<AclEntry> aclActual = (List<AclEntry>) attrs.put("acl", aclExpected);
+                        List<AclEntry> aclActual = (List<AclEntry>) attrs.put(IoUtils.ACL_VIEW_ATTR, aclExpected);
                         if (aclActual != null) {
                             log.info("resolveFileAttributes(" + file + ") replaced ACL: " + aclActual);
                         }
@@ -330,7 +330,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             @Override
             public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
                 @SuppressWarnings("unchecked")
-                List<AclEntry> aclActual = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                List<AclEntry> aclActual
+                        = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modifying ACL for file=" + path, aclExpected, aclActual);
                 } else {
@@ -342,7 +343,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifiedAttributes(
                     ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
                 @SuppressWarnings("unchecked")
-                List<AclEntry> aclActual = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get("acl");
+                List<AclEntry> aclActual
+                        = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
                 } else {
@@ -418,7 +420,8 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                         }
 
                         @SuppressWarnings("unchecked")
-                        Map<String, String> actExtensions = (Map<String, String>) attrs.put("extended", expExtensions);
+                        Map<String, String> actExtensions
+                                = (Map<String, String>) attrs.put(IoUtils.EXTENDED_VIEW_ATTR, expExtensions);
                         if (actExtensions != null) {
                             log.info("resolveFileAttributes(" + file + ") replaced extensions: " + actExtensions);
                         }
@@ -458,7 +461,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
                 @SuppressWarnings("unchecked")
                 Map<String, byte[]> actExtensions
-                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get(IoUtils.EXTENDED_VIEW_ATTR);
                 assertExtensionsMapEquals("modifying(" + path + ")", expExtensions, actExtensions);
             }
 
@@ -466,7 +469,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
                 @SuppressWarnings("unchecked")
                 Map<String, byte[]> actExtensions
-                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get("extended");
+                        = MapEntryUtils.isEmpty(attrs) ? null : (Map<String, byte[]>) attrs.get(IoUtils.EXTENDED_VIEW_ATTR);
                 assertExtensionsMapEquals("modified(" + path + ")", expExtensions, actExtensions);
             }
         });

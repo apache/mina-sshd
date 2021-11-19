@@ -41,6 +41,7 @@ import java.util.Map;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
@@ -165,10 +166,10 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
 
         Map<String, ?> attrs = Files.readAttributes(file, "acl:*", LinkOption.NOFOLLOW_LINKS);
         outputDebugMessage("readAttributes(%s) %s", file, attrs);
-        assertEquals("Mismatched owner for " + file, aclView.getOwner(), attrs.get("owner"));
+        assertEquals("Mismatched owner for " + file, aclView.getOwner(), attrs.get(IoUtils.OWNER_VIEW_ATTR));
 
         @SuppressWarnings("unchecked")
-        List<AclEntry> acl = (List<AclEntry>) attrs.get("acl");
+        List<AclEntry> acl = (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
         outputDebugMessage("acls(%s) %s", file, acl);
         assertListEquals("Mismatched ACLs for " + file, aclView.getAcl(), acl);
 

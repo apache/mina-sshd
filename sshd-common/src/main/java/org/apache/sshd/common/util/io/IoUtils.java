@@ -70,6 +70,26 @@ public final class IoUtils {
     public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS
             = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
 
+    /* File view attributes names */
+    public static final String REGFILE_VIEW_ATTR = "isRegularFile";
+    public static final String DIRECTORY_VIEW_ATTR = "isDirectory";
+    public static final String SYMLINK_VIEW_ATTR = "isSymbolicLink";
+    public static final String NUMLINKS_VIEW_ATTR = "nlink";
+    public static final String OTHERFILE_VIEW_ATTR = "isOther";
+    public static final String EXECUTABLE_VIEW_ATTR = "isExecutable";
+    public static final String SIZE_VIEW_ATTR = "size";
+    public static final String OWNER_VIEW_ATTR = "owner";
+    public static final String GROUP_VIEW_ATTR = "group";
+    public static final String USERID_VIEW_ATTR = "uid";
+    public static final String GROUPID_VIEW_ATTR = "gid";
+    public static final String PERMISSIONS_VIEW_ATTR = "permissions";
+    public static final String ACL_VIEW_ATTR = "acl";
+    public static final String FILEKEY_VIEW_ATTR = "fileKey";
+    public static final String CREATE_TIME_VIEW_ATTR = "creationTime";
+    public static final String LASTMOD_TIME_VIEW_ATTR = "lastModifiedTime";
+    public static final String LASTACC_TIME_VIEW_ATTR = "lastAccessTime";
+    public static final String EXTENDED_VIEW_ATTR = "extended";
+
     /**
      * Size of preferred work buffer when reading / writing data to / from streams
      */
