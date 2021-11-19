@@ -72,7 +72,10 @@ public final class MapEntryUtils {
         }
 
         public GenericMapPopulator<K, V, M> put(K k, V v) {
-            map.put(k, v);
+            if (v == null) {
+                return remove(k);
+            }
+            map.put(Objects.requireNonNull(k, "No key provided"), v);
             return this;
         }
 
@@ -82,7 +85,9 @@ public final class MapEntryUtils {
         }
 
         public GenericMapPopulator<K, V, M> putAll(Map<? extends K, ? extends V> other) {
-            map.putAll(other);
+            if (isNotEmpty(other)) {
+                other.forEach(this::put);
+            }
             return this;
         }
 
