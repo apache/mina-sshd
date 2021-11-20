@@ -87,7 +87,7 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
         Path localFile = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Files.createDirectories(localFile.getParent());
-        Files.writeString(localFile, getClass().getName() + "#" + getCurrentTestName() + "@" + new Date(),
+        Files.write(localFile, Collections.singleton(getClass().getName() + "#" + getCurrentTestName() + "@" + new Date()),
                 StandardCharsets.UTF_8);
 
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
