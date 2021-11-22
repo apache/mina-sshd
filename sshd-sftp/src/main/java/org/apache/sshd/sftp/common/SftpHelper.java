@@ -40,6 +40,8 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -375,8 +377,8 @@ public final class SftpHelper {
             }
 
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
-                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
+                buffer = writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
+                buffer = writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
             }
         } else if (sftpVersion >= SftpConstants.SFTP_V4) {
             for (Attribute a : flags) {
@@ -437,16 +439,16 @@ public final class SftpHelper {
                 buffer.putInt(attributes.getPermissions());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
+                buffer = writeTime(buffer, sftpVersion, flagsMask, attributes.getAccessTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getCreateTime());
+                buffer = writeTime(buffer, sftpVersion, flagsMask, attributes.getCreateTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                buffer = SftpHelper.writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
+                buffer = writeTime(buffer, sftpVersion, flagsMask, attributes.getModifyTime());
             }
             if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_ACL) != 0) {
-                buffer = SftpHelper.writeACLs(buffer, sftpVersion, attributes.getAcl());
+                buffer = writeACLs(buffer, sftpVersion, attributes.getAcl());
             }
 
             // TODO: for v5 ? 6? add CTIME (see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16 - v6)
@@ -455,7 +457,7 @@ public final class SftpHelper {
         }
 
         if ((flagsMask & SftpConstants.SSH_FILEXFER_ATTR_EXTENDED) != 0) {
-            buffer = SftpHelper.writeExtensions(buffer, attributes.getExtensions());
+            buffer = writeExtensions(buffer, attributes.getExtensions());
         }
 
         return buffer;
@@ -1165,9 +1167,7 @@ public final class SftpHelper {
         if (version >= SftpConstants.SFTP_V4) {
             buffer.putLong(time.to(TimeUnit.SECONDS));
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
-                long nanos = time.to(TimeUnit.NANOSECONDS);
-                nanos = nanos % TimeUnit.SECONDS.toNanos(1);
-                buffer.putInt((int) nanos);
+                buffer.putInt(time.toInstant().getNano());
             }
         } else {
             buffer.putInt(time.to(TimeUnit.SECONDS));
@@ -1187,13 +1187,23 @@ public final class SftpHelper {
     public static FileTime readTime(Buffer buffer, int version, int flags) {
         // for v3 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-02#page-8
         // for v6 see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-16
-        long secs = (version >= SftpConstants.SFTP_V4) ? buffer.getLong() : buffer.getUInt();
-        long millis = TimeUnit.SECONDS.toMillis(secs);
-        if ((version >= SftpConstants.SFTP_V4) && ((flags & SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0)) {
-            long nanoseconds = buffer.getUInt();
-            millis += TimeUnit.NANOSECONDS.toMillis(nanoseconds);
+        long secs;
+        if (version >= SftpConstants.SFTP_V4) {
+            secs = buffer.getLong();
+            if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+                long nanos = buffer.getUInt();
+                if (nanos != 0) {
+                    try {
+                        return FileTime.from(Instant.ofEpochSecond(secs, nanos));
+                    } catch (DateTimeException | ArithmeticException e) {
+                        // Beyond Instant range; drop nanos
+                    }
+                }
+            }
+        } else {
+            secs = buffer.getUInt();
         }
-        return FileTime.from(millis, TimeUnit.MILLISECONDS);
+        return FileTime.from(secs, TimeUnit.SECONDS);
     }
 
     /**
