@@ -61,6 +61,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
@@ -990,6 +991,9 @@ public abstract class Buffer implements Readable {
             putBytes(ecPoint);
         } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm())) {
             SecurityUtils.putRawEDDSAPublicKey(this, key);
+        } else if (key instanceof SecurityKeyPublicKey) {
+            putRawPublicKeyBytes(((SecurityKeyPublicKey<?>) key).getDelegatePublicKey());
+            putString(((SecurityKeyPublicKey<?>) key).getAppName());
         } else if (key instanceof OpenSshCertificate) {
             OpenSshCertificate cert = (OpenSshCertificate) key;
 

@@ -651,7 +651,7 @@ public final class KeyUtils {
             buffer.putRawPublicKey(key);
             return DigestUtils.getFingerPrint(d, buffer.array(), 0, buffer.wpos());
         } catch (Exception e) {
-            return e.getClass().getSimpleName();
+            return e.toString();
         }
     }
 
@@ -841,8 +841,12 @@ public final class KeyUtils {
             } else {
                 return curve.getKeyType();
             }
+        } else if (key instanceof SkEcdsaPublicKey) {
+            return SkECDSAPublicKeyEntryDecoder.KEY_TYPE;
         } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
             return KeyPairProvider.SSH_ED25519;
+        } else if (key instanceof SkED25519PublicKey) {
+            return SkED25519PublicKeyEntryDecoder.KEY_TYPE;
         } else if (key instanceof OpenSshCertificate) {
             return ((OpenSshCertificate) key).getKeyType();
         }
