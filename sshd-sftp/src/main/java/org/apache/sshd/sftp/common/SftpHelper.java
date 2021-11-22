@@ -314,7 +314,7 @@ public final class SftpHelper {
         }
 
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-            buffer = writeTime(buffer, version, flags, lastAccessTime);
+            buffer = writeTime(buffer, version, flags, creationTime);
         }
         if ((flags & SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
             buffer = writeTime(buffer, version, flags, lastModifiedTime);
