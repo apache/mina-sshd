@@ -56,6 +56,9 @@ import org.apache.sshd.common.util.GenericUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
+    // Shared across all acceptors
+    private static final LoggingHandler LOGGING_TRACE = new LoggingHandler(NettyIoAcceptor.class, LogLevel.TRACE);
+
     protected final ServerBootstrap bootstrap = new ServerBootstrap();
     protected final Map<SocketAddress, Channel> boundAddresses = new ConcurrentHashMap<>();
 
@@ -66,7 +69,7 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
         bootstrap.group(factory.eventLoopGroup)
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 100) // TODO make this configurable
-                .handler(new LoggingHandler(LogLevel.INFO)) // TODO make this configurable
+                .handler(LOGGING_TRACE) // TODO make this configurable
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     @SuppressWarnings("synthetic-access")

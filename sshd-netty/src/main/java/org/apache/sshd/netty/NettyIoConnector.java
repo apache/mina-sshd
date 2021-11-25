@@ -47,6 +47,9 @@ import org.apache.sshd.common.io.IoSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoConnector extends NettyIoService implements IoConnector {
+    // Shared across all connectors
+    private static final LoggingHandler LOGGING_TRACE = new LoggingHandler(NettyIoConnector.class, LogLevel.TRACE);
+
     protected final Bootstrap bootstrap = new Bootstrap();
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
@@ -83,7 +86,7 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                             }
 
                             ChannelPipeline p = ch.pipeline();
-                            p.addLast(new LoggingHandler(LogLevel.INFO)); // TODO make this configurable
+                            p.addLast(LOGGING_TRACE); // TODO make this configurable
                             p.addLast(session.adapter);
                         } catch (Exception e) {
                             if (listener != null) {
