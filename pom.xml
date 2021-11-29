@@ -83,7 +83,7 @@
     <properties>
         <projectRoot>${project.basedir}</projectRoot>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2020-01-01T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2021-01-01T00:00:00Z</project.build.outputTimestamp>
 
         <!-- NOTE: actual value updated by gmavenplus-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
@@ -780,7 +780,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>3.0.0-M4</version>
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                     </configuration>
@@ -788,7 +788,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
+                    <version>3.0.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -824,12 +824,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.2</version>
+                    <version>3.0.0-M1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.1</version>
                     <configuration>
                         <additionalOptions>-Xdoclint:-missing</additionalOptions>
                         <encoding>${project.build.sourceEncoding}</encoding>
@@ -854,7 +854,7 @@
                 <plugin>
                     <groupId>org.codehaus.gmavenplus</groupId>
                     <artifactId>gmavenplus-plugin</artifactId>
-                    <version>1.12.1</version>
+                    <version>1.13.0</version>
                     <dependencies>
                           <!-- referenced indirectly by groovy-ant -->
                         <dependency>
@@ -1022,7 +1022,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.14.0</version>
+                   <version>3.15.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
@@ -1068,7 +1068,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.2</version>
+                    <version>3.2.0</version>
                     <dependencies>
                         <dependency>
                             <groupId>org.codehaus.plexus</groupId>
@@ -1103,7 +1103,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.14.0</version>
+                    <version>2.17.0</version>
                     <configuration>
                         <skipXmlFormatting>true</skipXmlFormatting>
                         <skipHtmlFormatting>true</skipHtmlFormatting>
@@ -1116,7 +1116,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.6.2</version>
                     <configuration>
                         <lineEnding>LF</lineEnding>
                         <groups>java.,javax.,org.w3c.,org.xml.,junit.</groups>
@@ -1124,6 +1124,11 @@
                         <staticAfter>true</staticAfter>
                         <staticGroups>java.,javax.,org.w3c.,org.xml.,junit.</staticGroups>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${build-helper-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -1251,30 +1256,30 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
-                        <id>enforce-versions</id>
+                        <id>enforce-maven-version</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>${min.required.maven.version}</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>${required.java.version}</version>
+                                </requireJavaVersion>
+                                <requireReleaseDeps>
+                                    <onlyWhenRelease>true</onlyWhenRelease>
+                                    <message>No Snapshot Dependencies Allowed</message>
+                                </requireReleaseDeps>
+                                <dependencyConvergence />
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <rules>
-                        <requireMavenVersion>
-                            <version>[${min.required.maven.version},)</version>
-                        </requireMavenVersion>
-                        <requireJavaVersion>
-                            <version>${required.java.version}</version>
-                        </requireJavaVersion>
-                        <requireReleaseDeps>
-                            <onlyWhenRelease>true</onlyWhenRelease>
-                            <message>No Snapshot Dependencies Allowed</message>
-                        </requireReleaseDeps>
-                        <dependencyConvergence />
-                    </rules>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1410,7 +1415,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.1</version>
+                <version>5.1.2</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
@@ -1551,7 +1556,7 @@
            <plugin>    <!-- used by PMD to create a source XREF -->
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jxr-plugin</artifactId>
-               <version>3.0.0</version>
+               <version>3.1.1</version>
            </plugin>
        </plugins>
     </reporting>

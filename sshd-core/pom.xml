@@ -219,6 +219,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>jce</id>
@@ -252,6 +253,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire.plugin.version}</version>
                         <configuration>
                             <excludes>
                                 <exclude>foo</exclude>
@@ -275,6 +277,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire.plugin.version}</version>
                         <configuration>
                             <excludedGroups>org.apache.sshd.util.test.ContainerTestCase</excludedGroups>
                         </configuration>

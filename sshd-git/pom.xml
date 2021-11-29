@@ -48,6 +48,16 @@
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit.pgm</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.osgi</groupId>
+                    <artifactId>org.osgi.core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.sshd</groupId>
+                    <artifactId>sshd-osgi</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
             <!--  Test dependencies -->
@@ -141,6 +151,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>mina</id>
@@ -184,6 +195,7 @@
 		            <plugin>
 		                <groupId>org.apache.maven.plugins</groupId>
 		                <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>netty</id>
