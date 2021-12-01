@@ -154,6 +154,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                         session, service, e.getClass().getSimpleName(), e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
+            currentAlgorithms.clear();
             chosenAlgorithm = null;
             if (current == null) {
                 if (debugEnabled) {
