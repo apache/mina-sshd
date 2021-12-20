@@ -23,3 +23,6 @@
 ## Minor code helpers
 
 ## Behavioral changes and enhancements
+
+* [SSHD-1231](https://issues.apache.org/jira/browse/SSHD-1231) Public key authentication: wrong signature algorithm used (ed25519 key with ssh-rsa signature)
+
