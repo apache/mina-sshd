@@ -1828,7 +1828,7 @@ public abstract class AbstractSession extends SessionHelper {
             log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, outCipher, outMac,
                     outCompression, maxRekeyBlocks);
         }
-    };
+    }
 
     /**
      * Installs the current prepared {@link #inSettings} so that they are effective and will be applied to any future

@@ -28,7 +28,7 @@ import org.apache.sshd.common.file.util.BasePath;
 import org.apache.sshd.sftp.client.SftpClient;
 
 /**
- * A {@link Path} on an {@link SftpFileSystem}.
+ * A {@link java.nio.file.Path} on an {@link SftpFileSystem}.
  */
 public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
 

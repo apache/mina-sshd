@@ -57,7 +57,7 @@ public class SftpPathImpl extends SftpPath {
      *
      * @param doCache whether to start caching (increasing the cache level) or to stop caching (decreasing the cache
      *                level)
-     * @see           {@link #withAttributeCache(Path, IOFunction)}
+     * @see           #withAttributeCache(Path, IOFunction)
      */
     protected void cacheAttributes(boolean doCache) {
         if (doCache) {
@@ -133,7 +133,7 @@ public class SftpPathImpl extends SftpPath {
      * @return             the result of the {@code operation}
      * @throws IOException if thrown by the {@code operation}
      *
-     * @see                {@link #withAttributeCache(IOFunction)}
+     * @see                #withAttributeCache(IOFunction)
      */
     public static <T> T withAttributeCache(Path path, IOFunction<Path, T> operation) throws IOException {
         if (path instanceof SftpPathImpl) {

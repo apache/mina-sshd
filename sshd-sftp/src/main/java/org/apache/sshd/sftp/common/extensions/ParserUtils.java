@@ -42,6 +42,7 @@ import org.apache.sshd.sftp.common.extensions.openssh.FstatVfsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.LSetStatExtensionParser;
+import org.apache.sshd.sftp.common.extensions.openssh.LimitsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.PosixRenameExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 
@@ -65,7 +66,8 @@ public final class ParserUtils {
                     FstatVfsExtensionParser.INSTANCE,
                     HardLinkExtensionParser.INSTANCE,
                     FsyncExtensionParser.INSTANCE,
-                    LSetStatExtensionParser.INSTANCE));
+                    LSetStatExtensionParser.INSTANCE,
+                    LimitsExtensionParser.INSTANCE));
 
     private static final NavigableMap<String, ExtensionParser<?>> PARSERS_MAP = Collections.unmodifiableNavigableMap(
             BUILT_IN_PARSERS.stream()

@@ -212,8 +212,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
-        byte[] expected = new byte[1024];
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        byte[] expected = new byte[(SftpModuleProperties.MIN_READDATA_PACKET_LENGTH + 16) * 4];
 
         Factory<? extends Random> factory = sshd.getRandomFactory();
         Random rnd = factory.create();

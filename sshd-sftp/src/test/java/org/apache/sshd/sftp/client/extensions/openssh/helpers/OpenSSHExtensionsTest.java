@@ -22,8 +22,6 @@ package org.apache.sshd.sftp.client.extensions.openssh.helpers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +40,8 @@ import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHPosixRenameExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatHandleExtension;
@@ -144,8 +144,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         String srcPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, srcFile);
 
-        final AtomicReference<String> extensionHolder = new AtomicReference<>(null);
-        final OpenSSHStatExtensionInfo expected = new OpenSSHStatExtensionInfo();
+        OpenSSHStatExtensionInfo expected = new OpenSSHStatExtensionInfo();
         expected.f_bavail = Short.MAX_VALUE;
         expected.f_bfree = Integer.MAX_VALUE;
         expected.f_blocks = Short.MAX_VALUE;
@@ -158,6 +157,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
         expected.f_fsid = 1L;
         expected.f_namemax = 256;
 
+        AtomicReference<String> extensionHolder = new AtomicReference<>(null);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory() {
             @Override
             public Command createSubsystem(ChannelSession channel) throws IOException {
@@ -206,32 +206,25 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
             String invokedExtension = extensionHolder.getAndSet(null);
             assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
-            assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
+            assertFieldsEqual(invokedExtension, expected, actual);
 
             try (CloseableHandle handle = sftp.open(srcPath)) {
                 OpenSSHStatHandleExtension handleStat = assertExtensionCreated(sftp, OpenSSHStatHandleExtension.class);
                 actual = handleStat.stat(handle);
                 invokedExtension = extensionHolder.getAndSet(null);
                 assertEquals("Mismatched invoked extension", handleStat.getName(), invokedExtension);
-                assertOpenSSHStatExtensionInfoEquals(invokedExtension, expected, actual);
+                assertFieldsEqual(invokedExtension, expected, actual);
             }
         }
     }
 
-    private static void assertOpenSSHStatExtensionInfoEquals(
-            String extension, OpenSSHStatExtensionInfo expected, OpenSSHStatExtensionInfo actual)
-            throws Exception {
-        Field[] fields = expected.getClass().getFields();
-        for (Field f : fields) {
-            String name = f.getName();
-            int mod = f.getModifiers();
-            if (Modifier.isStatic(mod)) {
-                continue;
-            }
-
-            Object expValue = f.get(expected);
-            Object actValue = f.get(actual);
-            assertEquals(extension + "[" + name + "]", expValue, actValue);
+    @Test   // see SSHD-1233
+    public void testLimits() throws Exception {
+        try (SftpClient sftp = createSingleSessionClient()) {
+            OpenSSHLimitsExtension ext = assertExtensionCreated(sftp, OpenSSHLimitsExtension.class);
+            OpenSSHLimitsExtensionInfo expected = new OpenSSHLimitsExtensionInfo(sftp.getClientChannel());
+            OpenSSHLimitsExtensionInfo actual = ext.limits();
+            assertFieldsEqual(ext.getName(), expected, actual);
         }
     }
 }

@@ -93,6 +93,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtensionInfo;
 import org.apache.sshd.sftp.client.fs.SftpPath;
 import org.apache.sshd.sftp.client.impl.SftpPathImpl;
 import org.apache.sshd.sftp.common.SftpConstants;
@@ -104,6 +105,7 @@ import org.apache.sshd.sftp.common.extensions.openssh.AbstractOpenSSHExtensionPa
 import org.apache.sshd.sftp.common.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.HardLinkExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.LSetStatExtensionParser;
+import org.apache.sshd.sftp.common.extensions.openssh.LimitsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.PosixRenameExtensionParser;
 
 /**
@@ -137,7 +139,8 @@ public abstract class AbstractSftpSubsystemHelper
                     new OpenSSHExtension(FsyncExtensionParser.NAME, "1"),
                     new OpenSSHExtension(HardLinkExtensionParser.NAME, "1"),
                     new OpenSSHExtension(LSetStatExtensionParser.NAME, "1"),
-                    new OpenSSHExtension(PosixRenameExtensionParser.NAME, "1")));
+                    new OpenSSHExtension(PosixRenameExtensionParser.NAME, "1"),
+                    new OpenSSHExtension(LimitsExtensionParser.NAME, "1")));
 
     public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES = Collections.unmodifiableList(
             NamedResource.getNameList(DEFAULT_OPEN_SSH_EXTENSIONS));
@@ -790,7 +793,7 @@ public abstract class AbstractSftpSubsystemHelper
             int id, String existingPath, String linkPath, boolean symLink)
             throws IOException;
 
-    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 10
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 4.5
     protected void doOpenSSHHardLink(Buffer buffer, int id) throws IOException {
         String srcFile = buffer.getString();
         String dstFile = buffer.getString();
@@ -804,6 +807,21 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
+    }
+
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 4.8
+    protected void doOpenSSHLimits(Buffer buffer, int id) throws IOException {
+        OpenSSHLimitsExtensionInfo info = getOpenSSHLimitsExtensionInfo(id, getServerChannelSession());
+        buffer = prepareReply(buffer);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
+        buffer.putInt(id);
+        info.encode(buffer);
+        send(buffer);
+
+    }
+
+    protected OpenSSHLimitsExtensionInfo getOpenSSHLimitsExtensionInfo(int id, ChannelSession channel) throws IOException {
+        return new OpenSSHLimitsExtensionInfo(channel);
     }
 
     protected void doOpenSSHHardLink(int id, String srcFile, String dstFile) throws IOException {
@@ -1766,6 +1784,9 @@ public abstract class AbstractSftpSubsystemHelper
             case PosixRenameExtensionParser.NAME:
                 doPosixRename(buffer, id);
                 break;
+            case LimitsExtensionParser.NAME:
+                doOpenSSHLimits(buffer, id);
+                break;
             default:
                 doUnsupportedExtension(buffer, id, extension);
         }
@@ -1866,6 +1887,10 @@ public abstract class AbstractSftpSubsystemHelper
             return extList;
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("appendOpenSSHExtensions({}): {}", session, extList);
+        }
+
         for (OpenSSHExtension ext : extList) {
             buffer.putString(ext.getName());
             buffer.putString(ext.getVersion());
@@ -1943,15 +1968,16 @@ public abstract class AbstractSftpSubsystemHelper
      * Appends the &quot;versions&quot; extension to the buffer. <B>Note:</B> if overriding this method make sure you
      * either do not append anything or use the correct extension name
      *
-     * @param buffer  The {@link Buffer} to append to
-     * @param value   The recommended value - ignored if {@code null}/empty
-     * @param session The {@link ServerSession} for which this extension is added
-     * @see           SftpConstants#EXT_VERSIONS
+     * @param  buffer  The {@link Buffer} to append to
+     * @param  value   The recommended value - ignored if {@code null}/empty
+     * @param  session The {@link ServerSession} for which this extension is added
+     * @return         The apended value
+     * @see            SftpConstants#EXT_VERSIONS
      */
-    protected void appendVersionsExtension(
+    protected String appendVersionsExtension(
             Buffer buffer, String value, ServerSession session) {
         if (GenericUtils.isEmpty(value)) {
-            return;
+            return value;
         }
 
         if (log.isDebugEnabled()) {
@@ -1960,30 +1986,33 @@ public abstract class AbstractSftpSubsystemHelper
 
         buffer.putString(SftpConstants.EXT_VERSIONS);
         buffer.putString(value);
+        return value;
     }
 
     /**
      * Appends the &quot;newline&quot; extension to the buffer. <B>Note:</B> if overriding this method make sure you
      * either do not append anything or use the correct extension name
      *
-     * @param buffer  The {@link Buffer} to append to
-     * @param session The {@link ServerSession} for which this extension is added
-     * @see           SftpConstants#EXT_NEWLINE
-     * @see           #resolveNewlineValue(ServerSession)
+     * @param  buffer  The {@link Buffer} to append to
+     * @param  session The {@link ServerSession} for which this extension is added
+     * @return         The appended value
+     * @see            SftpConstants#EXT_NEWLINE
+     * @see            #resolveNewlineValue(ServerSession)
      */
-    protected void appendNewlineExtension(Buffer buffer, ServerSession session) {
+    protected String appendNewlineExtension(Buffer buffer, ServerSession session) {
         String value = resolveNewlineValue(session);
         if (GenericUtils.isEmpty(value)) {
-            return;
+            return value;
         }
 
         if (log.isDebugEnabled()) {
             log.debug("appendNewlineExtension({}) value={}",
-                    getServerSession(), BufferUtils.toHex(':', value.getBytes(StandardCharsets.UTF_8)));
+                    session, BufferUtils.toHex(':', value.getBytes(StandardCharsets.UTF_8)));
         }
 
         buffer.putString(SftpConstants.EXT_NEWLINE);
         buffer.putString(value);
+        return value;
     }
 
     protected String resolveNewlineValue(ServerSession session) {
@@ -1994,24 +2023,25 @@ public abstract class AbstractSftpSubsystemHelper
      * Appends the &quot;vendor-id&quot; extension to the buffer. <B>Note:</B> if overriding this method make sure you
      * either do not append anything or use the correct extension name
      *
-     * @param buffer            The {@link Buffer} to append to
-     * @param versionProperties The currently available version properties - ignored if {@code null}/empty. The code
-     *                          expects the following values:
-     *                          <UL>
-     *                          <LI>{@code groupId} - as the vendor name</LI>
-     *                          <LI>{@code artifactId} - as the product name</LI>
-     *                          <LI>{@code version} - as the product version</LI>
-     *                          </UL>
-     * @param session           The {@link ServerSession} for which these properties are added
-     * @see                     SftpConstants#EXT_VENDOR_ID
-     * @see                     <A HREF=
-     *                          "http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT
-     *                          09 - section 4.4</A>
+     * @param  buffer            The {@link Buffer} to append to
+     * @param  versionProperties The currently available version properties - ignored if {@code null}/empty. The code
+     *                           expects the following values:
+     *                           <UL>
+     *                           <LI>{@code groupId} - as the vendor name</LI>
+     *                           <LI>{@code artifactId} - as the product name</LI>
+     *                           <LI>{@code version} - as the product version</LI>
+     *                           </UL>
+     * @param  session           The {@link ServerSession} for which these properties are added
+     * @return                   The version properties
+     * @see                      SftpConstants#EXT_VENDOR_ID
+     * @see                      <A HREF=
+     *                           "http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT
+     *                           09 - section 4.4</A>
      */
-    protected void appendVendorIdExtension(
+    protected Map<String, ?> appendVendorIdExtension(
             Buffer buffer, Map<String, ?> versionProperties, ServerSession session) {
         if (MapEntryUtils.isEmpty(versionProperties)) {
-            return;
+            return versionProperties;
         }
 
         if (log.isDebugEnabled()) {
@@ -2029,6 +2059,7 @@ public abstract class AbstractSftpSubsystemHelper
         buffer.putString(resolver.getStringProperty("version", FactoryManager.DEFAULT_VERSION)); // product-version
         buffer.putLong(0L); // product-build-number
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+        return versionProperties;
     }
 
     /**

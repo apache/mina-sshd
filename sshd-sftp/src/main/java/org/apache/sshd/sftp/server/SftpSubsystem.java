@@ -822,9 +822,10 @@ public class SftpSubsystem
             throws IOException {
         Handle h = handles.get(handle);
         ServerSession session = getServerSession();
+        int maxAllowed = SftpModuleProperties.MAX_WRITEDATA_PACKET_LENGTH.getRequired(session);
         if (log.isTraceEnabled()) {
-            log.trace("doWrite({})[id={}] SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
-                    session, id, handle, h, offset, length);
+            log.trace("doWrite({})[id={}] SSH_FXP_WRITE (handle={}[{}], offset={}, length={}, maxAllowed={})",
+                    session, id, handle, h, offset, length, maxAllowed);
         }
 
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
@@ -836,6 +837,10 @@ public class SftpSubsystem
             throw new IllegalStateException(
                     "Not enough buffer data for writing to " + fh
                                             + ": required=" + length + ", available=" + remaining);
+        }
+
+        if (length > maxAllowed) {
+            throw new IOException("Reuested write size (" + length + ") exceeds max. allowed (" + maxAllowed + ")");
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();

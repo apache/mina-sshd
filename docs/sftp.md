@@ -629,6 +629,7 @@ Furthermore several [OpenSSH SFTP extensions](https://github.com/openssh/openssh
 * `posix-rename@openssh.com` - only client side
 * `statvfs@openssh.com`
 * `lsetstat@openssh.com`
+* `limits@openssh.com`
 
 On the server side, the reported standard extensions are configured via the `SftpModuleProperties.CLIENT_EXTENSIONS` configuration
 key, and the _OpenSSH_ ones via the `SftpModuleProperties.OPENSSH_EXTENSIONS`.
@@ -693,7 +694,7 @@ try (ClientSession session = client.connect(username, host, port).verify(timeout
 
 * Add the code to handle the new extension in `AbstractSftpSubsystemHelper#executeExtendedCommand`
 
-* Declare the extension name in `DEFAULT_SUPPORTED_CLIENT_EXTENSIONS` (same class)
+* Declare the extension name in `DEFAULT_SUPPORTED_CLIENT_EXTENSIONS` or `DEFAULT_OPEN_SSH_EXTENSIONS` (same class) - according to the extension type (generic or *OpenSSH* one).
 
 * In the `org.apache.sshd.sftp.client.extensions.helpers` package implement an extension of `AbstractSftpClientExtension`
 for sending and receiving the newly added extension.
@@ -742,7 +743,6 @@ SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
 SshdServer sshd = ...setup...
 sshd.setSubsystemFactories(Collections.singletonList(factory));
 ```
-
 
 
 **Note:**

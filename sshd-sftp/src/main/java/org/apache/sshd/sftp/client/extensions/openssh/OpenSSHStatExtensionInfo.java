@@ -26,9 +26,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * Response for the &quot;statvfs@openssh.com&quot; and &quot;fstatvfs@openssh.com&quot; extension commands.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see    <A HREF=
- *         "http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH
- *         section 3.4</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.4</A>
  */
 public class OpenSSHStatExtensionInfo implements Cloneable {
     // The values of the f_flag bitmask
@@ -55,6 +53,10 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
 
     public OpenSSHStatExtensionInfo(Buffer buffer) {
         decode(buffer, this);
+    }
+
+    public <B extends Buffer> B encode(B buffer) {
+        return encode(buffer, this);
     }
 
     @Override
@@ -115,7 +117,7 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
                + ",f_namemax=" + f_namemax;
     }
 
-    public static void encode(Buffer buffer, OpenSSHStatExtensionInfo info) {
+    public static <B extends Buffer> B encode(B buffer, OpenSSHStatExtensionInfo info) {
         buffer.putLong(info.f_bsize);
         buffer.putLong(info.f_frsize);
         buffer.putLong(info.f_blocks);
@@ -127,15 +129,14 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
         buffer.putLong(info.f_fsid);
         buffer.putLong(info.f_flag);
         buffer.putLong(info.f_namemax);
+        return buffer;
     }
 
     public static OpenSSHStatExtensionInfo decode(Buffer buffer) {
-        OpenSSHStatExtensionInfo info = new OpenSSHStatExtensionInfo();
-        decode(buffer, info);
-        return info;
+        return decode(buffer, new OpenSSHStatExtensionInfo());
     }
 
-    public static void decode(Buffer buffer, OpenSSHStatExtensionInfo info) {
+    public static <I extends OpenSSHStatExtensionInfo> I decode(Buffer buffer, I info) {
         info.f_bsize = buffer.getLong();
         info.f_frsize = buffer.getLong();
         info.f_blocks = buffer.getLong();
@@ -147,5 +148,6 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
         info.f_fsid = buffer.getLong();
         info.f_flag = buffer.getLong();
         info.f_namemax = buffer.getLong();
+        return info;
     }
 }

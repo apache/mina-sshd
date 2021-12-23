@@ -80,7 +80,7 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test   // see SSHD-1266
+    @Test   // see SSHD-1166
     public void testCustomFileExtensionAttributes() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();

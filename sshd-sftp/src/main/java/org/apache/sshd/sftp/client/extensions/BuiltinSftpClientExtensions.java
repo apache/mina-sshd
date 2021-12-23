@@ -35,10 +35,12 @@ import org.apache.sshd.sftp.client.extensions.helpers.MD5FileExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.helpers.MD5HandleExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.helpers.SpaceAvailableExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHPosixRenameExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatHandleExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHFsyncExtensionImpl;
+import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHLimitsExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHPosixRenameExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHStatHandleExtensionImpl;
 import org.apache.sshd.sftp.client.extensions.openssh.helpers.OpenSSHStatPathExtensionImpl;
@@ -46,6 +48,7 @@ import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
 import org.apache.sshd.sftp.common.extensions.openssh.FstatVfsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.sftp.common.extensions.openssh.LimitsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.PosixRenameExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 
@@ -128,6 +131,13 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
         public OpenSSHPosixRenameExtension create(
                 SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
             return new OpenSSHPosixRenameExtensionImpl(client, raw, extensions);
+        }
+    },
+    OPENSSH_LIMITS(LimitsExtensionParser.NAME, OpenSSHLimitsExtension.class) {
+        @Override // co-variant return
+        public OpenSSHLimitsExtension create(
+                SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed) {
+            return new OpenSSHLimitsExtensionImpl(client, raw, extensions);
         }
     },
     ;

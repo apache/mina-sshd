@@ -17,17 +17,16 @@
  * under the License.
  */
 
-package org.apache.sshd.sftp.common.extensions.openssh;
+package org.apache.sshd.sftp.client.extensions.openssh;
+
+import java.io.IOException;
+
+import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.6</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.8</A>
  */
-public class FsyncExtensionParser extends AbstractOpenSSHExtensionParser {
-    public static final String NAME = "fsync@openssh.com";
-    public static final FsyncExtensionParser INSTANCE = new FsyncExtensionParser();
-
-    public FsyncExtensionParser() {
-        super(NAME);
-    }
+public interface OpenSSHLimitsExtension extends SftpClientExtension {
+    OpenSSHLimitsExtensionInfo limits() throws IOException;
 }

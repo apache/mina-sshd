@@ -21,6 +21,7 @@ package org.apache.sshd.sftp.common.extensions.openssh;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.4</A>
  */
 public class FstatVfsExtensionParser extends AbstractOpenSSHExtensionParser {
     public static final String NAME = "fstatvfs@openssh.com";

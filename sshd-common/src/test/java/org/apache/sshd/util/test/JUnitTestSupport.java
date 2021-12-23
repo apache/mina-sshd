@@ -22,6 +22,8 @@ package org.apache.sshd.util.test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -346,6 +348,21 @@ public abstract class JUnitTestSupport extends Assert {
 
         // once expected is exhausted make sure no more actual items left
         assertFalse(message + "[non-empty-actual]", actual.hasNext());
+    }
+
+    public static <T> void assertFieldsEqual(String extension, T expected, T actual) throws Exception {
+        Field[] fields = expected.getClass().getFields();
+        for (Field f : fields) {
+            String name = f.getName();
+            int mod = f.getModifiers();
+            if (Modifier.isStatic(mod)) {
+                continue;
+            }
+
+            Object expValue = f.get(expected);
+            Object actValue = f.get(actual);
+            assertEquals(extension + "[" + name + "]", expValue, actValue);
+        }
     }
 
     public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption... options) throws IOException {

@@ -23,7 +23,7 @@ package org.apache.sshd.sftp.common.extensions.openssh;
  * Replicates the functionality of the existing {@code SSH_FXP_SETSTAT} operation but does not follow symbolic links
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see    <A HREF="https://www.openssh.com/txt/release-8.0">OpenSSH v8.0 release notes</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.7</A>
  */
 public class LSetStatExtensionParser extends AbstractOpenSSHExtensionParser {
     public static final String NAME = "lsetstat@openssh.com";

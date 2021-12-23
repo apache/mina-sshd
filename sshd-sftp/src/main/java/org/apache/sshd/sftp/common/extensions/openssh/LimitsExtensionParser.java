@@ -21,13 +21,13 @@ package org.apache.sshd.sftp.common.extensions.openssh;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.6</A>
+ * @see    <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH - section 4.8</A>
  */
-public class FsyncExtensionParser extends AbstractOpenSSHExtensionParser {
-    public static final String NAME = "fsync@openssh.com";
-    public static final FsyncExtensionParser INSTANCE = new FsyncExtensionParser();
+public class LimitsExtensionParser extends AbstractOpenSSHExtensionParser {
+    public static final String NAME = "limits@openssh.com";
+    public static final LimitsExtensionParser INSTANCE = new LimitsExtensionParser();
 
-    public FsyncExtensionParser() {
+    public LimitsExtensionParser() {
         super(NAME);
     }
 }

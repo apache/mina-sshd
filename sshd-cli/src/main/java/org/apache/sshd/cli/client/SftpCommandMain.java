@@ -80,12 +80,15 @@ import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpClientHolder;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.SftpVersionSelector.NamedVersionSelector;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtension;
+import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.sftp.client.fs.SftpFileSystemProvider;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
+import org.apache.sshd.sftp.common.extensions.openssh.LimitsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 import org.slf4j.Logger;
 
@@ -132,6 +135,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                 new GetCommandExecutor(),
                 new PutCommandExecutor(),
                 new ProgressCommandExecutor(),
+                new LimitsCommandExecutor(),
                 new HelpCommandExecutor())) {
             String name = e.getName();
             ValidateUtils.checkTrue(map.put(name, e) == null, "Multiple commands named '%s'", name);
@@ -781,7 +785,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             } else if (Files.isRegularFile(local)) {
                 displayLocalPathInfo(local, stdout);
             } else {
-                stderr.println("Unsupported special file");
+                stderr.println("[" + flags + "] Unsupported special file");
             }
 
             return false;
@@ -941,6 +945,35 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
+    private class LimitsCommandExecutor implements SftpCommandExecutor {
+        LimitsCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return LimitsExtensionParser.NAME;
+        }
+
+        @Override
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                throws Exception {
+            String[] comps = GenericUtils.split(args, ' ');
+            int numArgs = GenericUtils.length(comps);
+            ValidateUtils.checkTrue(numArgs <= 1, "Invalid number of arguments: %s", args);
+
+            SftpClient sftp = getClient();
+            OpenSSHLimitsExtension ext = sftp.getExtension(OpenSSHLimitsExtension.class);
+            ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
+            OpenSSHLimitsExtensionInfo info = ext.limits();
+            printFieldsValues(info, stdout);
+            return false;
+        }
+    }
+
+    /* -------------------------------------------------------------------- */
+
     private class StatVfsCommandExecutor implements SftpCommandExecutor {
         StatVfsCommandExecutor() {
             super();
@@ -966,18 +999,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             String remPath = resolveRemotePath(
                     (numArgs >= 1) ? GenericUtils.trimToEmpty(comps[0]) : GenericUtils.trimToEmpty(args));
             OpenSSHStatExtensionInfo info = ext.stat(remPath);
-            Field[] fields = info.getClass().getFields();
-            for (Field f : fields) {
-                String name = f.getName();
-                int mod = f.getModifiers();
-                if (Modifier.isStatic(mod)) {
-                    continue;
-                }
-
-                Object value = f.get(info);
-                stdout.append("    ").append(name).append(": ").println(value);
-            }
-
+            printFieldsValues(info, stdout);
             return false;
         }
     }
@@ -1321,6 +1343,22 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             }
 
             return false;
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static void printFieldsValues(Object info, PrintStream stdout) throws Exception {
+        Field[] fields = info.getClass().getFields();
+        for (Field f : fields) {
+            String name = f.getName();
+            int mod = f.getModifiers();
+            if (Modifier.isStatic(mod)) {
+                continue;
+            }
+
+            Object value = f.get(info);
+            stdout.append("    ").append(name).append(": ").println(value);
         }
     }
 }

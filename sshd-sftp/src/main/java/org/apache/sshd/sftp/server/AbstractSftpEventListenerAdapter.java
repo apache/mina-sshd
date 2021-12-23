@@ -42,9 +42,16 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
-    public void initialized(ServerSession session, int version) throws IOException {
+    public void receivedExtension(ServerSession session, String extension, int id) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("initialized(" + session + ") version: " + version);
+            log.trace("receivedExtension({}) id={}, extension={}", session, id, extension);
+        }
+    }
+
+    @Override
+    public void initialized(ServerSession session, int version) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("initialized(" + session + ") version=" + version);
         }
     }
 
@@ -65,11 +72,29 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
+    public void openFailed(
+            ServerSession session, String remotePath, Path localPath, boolean isDirectory, Throwable thrown)
+            throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("openFailed({}) remotePath={}, localPath={}, isDir={}, thrown={}",
+                    session, remotePath, localPath, isDirectory, thrown);
+        }
+    }
+
+    @Override
     public void open(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
         if (log.isTraceEnabled()) {
             Path path = localHandle.getFile();
             log.trace("open(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " "
                       + path);
+        }
+    }
+
+    @Override
+    public void readingEntries(ServerSession session, String remoteHandle, DirectoryHandle localHandle)
+            throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("readingEntries({}) handle={}[{}]", session, remoteHandle, localHandle.getFile());
         }
     }
 
@@ -181,6 +206,14 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
     }
 
     @Override
+    public void closed(ServerSession session, String remoteHandle, Handle localHandle, Throwable thrown)
+            throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("closed({}) handle={}[{}], thrown={}", session, remoteHandle, localHandle.getFile(), thrown);
+        }
+    }
+
+    @Override
     public void creating(ServerSession session, Path path, Map<String, ?> attrs)
             throws IOException {
         if (log.isTraceEnabled()) {
@@ -262,6 +295,13 @@ public abstract class AbstractSftpEventListenerAdapter extends AbstractLoggingBe
         if (log.isTraceEnabled()) {
             log.trace("modifiedAttributes(" + session + ") " + path
                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+        }
+    }
+
+    @Override
+    public void exiting(ServerSession session, Handle handle) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("exiting({}) handle={}[{}]", session, handle.getFile(), handle.getFileHandle());
         }
     }
 }

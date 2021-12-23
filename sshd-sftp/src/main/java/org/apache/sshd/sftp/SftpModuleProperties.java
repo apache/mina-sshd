@@ -156,18 +156,30 @@ public final class SftpModuleProperties {
     public static final Property<String> NEWLINE_VALUE
             = Property.string("sftp-newline", IoUtils.EOL);
 
+    public static final int MIN_READDATA_PACKET_LENGTH = 32768;
     /**
      * Force the use of a max. packet length for {@link AbstractSftpSubsystemHelper#doRead(Buffer, int)} protection
      * against malicious packets
      */
     public static final Property<Integer> MAX_READDATA_PACKET_LENGTH
-            = Property.integer("sftp-max-readdata-packet-length", 63 * 1024);
+            = Property.validating(Property.integer("sftp-max-readdata-packet-length", 63 * 1024),
+                    l -> ValidateUtils.checkTrue(l >= MIN_READDATA_PACKET_LENGTH, "Length is below min.: %d", l));
+
+    public static final int MIN_WRITEDATA_PACKET_LENGTH = 32768;
+    /**
+     * Force the use of a max. packet length for {@link AbstractSftpSubsystemHelper#doWrite(Buffer, int)} protection
+     * against malicious packets
+     */
+    public static final Property<Integer> MAX_WRITEDATA_PACKET_LENGTH
+            = Property.validating(Property.integer("sftp-max-writedata-packet-length", 256 * 1024),
+                    l -> ValidateUtils.checkTrue(l >= MIN_WRITEDATA_PACKET_LENGTH, "Length is below min.: %d", l));
 
     /**
-     * Properties key for the maximum of available open handles per session.
+     * Properties key for the maximum of available open handles per session. By default we impose virtually no limit and
+     * relay on the O/S.
      */
     public static final Property<Integer> MAX_OPEN_HANDLES_PER_SESSION
-            = Property.integer("max-open-handles-per-session", Integer.MAX_VALUE);
+            = Property.integer("max-open-handles-per-session", Integer.MAX_VALUE - 1);
 
     public static final int MIN_FILE_HANDLE_SIZE = 4; // ~uint32
     public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
