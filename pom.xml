@@ -113,7 +113,7 @@
         <spring.version>5.3.11</spring.version>
         <jgit.version>5.13.0.202109080827-r</jgit.version>
         <junit.version>4.13.2</junit.version>
-        <bytebuddy.version>1.11.21</bytebuddy.version>
+        <bytebuddy.version>1.12.6</bytebuddy.version>
         <testcontainers.version>1.16.1</testcontainers.version>
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
@@ -544,6 +544,14 @@
                 <artifactId>mockito-core</artifactId>
                 <version>4.0.0</version>
             </dependency>
+            
+                <!-- Referenced indirectly by Bytebuddy -->
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>3.0.2</version>
+            </dependency>
+
                 <!-- Used by mockito -->
             <dependency>
                 <groupId>net.bytebuddy</groupId>
