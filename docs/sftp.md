@@ -259,13 +259,6 @@ standard [java.nio](https://docs.oracle.com/javase/8/docs/api/java/nio/package-f
 system.
 
 ```java
-// Direct URI
-Path remotePath = Paths.get(new URI("sftp://user:password@host/some/remote/path"));
-// Releasing the file-system once no longer necessary
-try (FileSystem fs = remotePath.getFileSystem()) {
-    ... work with the remote path...
-}
-
 // "Mounting" a file system
 URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password);
 try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
