@@ -28,7 +28,7 @@ import org.apache.sshd.sftp.client.fs.SftpFileSystem;
 import org.apache.sshd.sftp.client.fs.SftpPath;
 
 /**
- * An {@link SftpPath} that can cache {@link SftpClient.Attributes}.
+ * An {@link SftpPath} that can cache {@code SftpClient.Attributes}.
  */
 public class SftpPathImpl extends SftpPath {
 
@@ -41,7 +41,7 @@ public class SftpPathImpl extends SftpPath {
     }
 
     /**
-     * {@link SftpPath} instances can cache SFTP {@link SftpClient.Attributes}. Caching can be enabled by passing
+     * {@link SftpPath} instances can cache SFTP {@code SftpClient.Attributes}. Caching can be enabled by passing
      * {@code true}. If the {@link SftpPath} instance is already caching attributes, a counter is increased only. To
      * disable caching, pass {@code false}, which decreases the counter. The cache is cleared when the counter reaches
      * zero again.
@@ -81,7 +81,7 @@ public class SftpPathImpl extends SftpPath {
      * Sets the cached attributes to the argument if this {@link SftpPath} instance is currently caching attributes.
      * Otherwise a no-op.
      *
-     * @param attributes the {@link SftpClient.Attributes} to cache
+     * @param attributes the {@code SftpClient.Attributes} to cache
      */
     public void cacheAttributes(SftpClient.Attributes attributes) {
         if (cachingLevel > 0) {
@@ -92,7 +92,7 @@ public class SftpPathImpl extends SftpPath {
     /**
      * Unconditionally set the cached attributes, whether or not this instance's attribute cache is enabled.
      *
-     * @param attributes the {@link SftpClient.Attributes} to cache
+     * @param attributes the {@code SftpClient.Attributes} to cache
      */
     public void setAttributes(SftpClient.Attributes attributes) {
         this.attributes = attributes;
@@ -104,7 +104,7 @@ public class SftpPathImpl extends SftpPath {
     }
 
     /**
-     * Performs the given operation with attribute caching. If {@link SftpClient.Attributes} are fetched by the
+     * Performs the given operation with attribute caching. If {@code SftpClient.Attributes} are fetched by the
      * operation, they will be cached and subsequently these cached attributes will be re-used for this {@link SftpPath}
      * instance throughout the operation. Calls to {@link #withAttributeCache(IOFunction)} may be nested. The cache is
      * cleared at the start and at the end of the outermost invocation.

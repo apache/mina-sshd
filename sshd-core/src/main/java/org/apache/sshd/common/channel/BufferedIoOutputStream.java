@@ -43,7 +43,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 /**
  * An {@link IoOutputStream} capable of queuing write requests.
  */
-public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
+public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream, ChannelIdentifier {
     protected final Object id;
     protected final long channelId;
     protected final int maxPendingBytesCount;
@@ -71,6 +71,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         this.maxWaitForPendingWrites = Objects.requireNonNull(maxWaitForPendingWrites, "No max. pending time value provided");
     }
 
+    @Override
     public long getChannelId() {
         return channelId;
     }

@@ -17,35 +17,15 @@
  * under the License.
  */
 
-package org.apache.sshd.common.channel.exception;
-
-import java.io.IOException;
-
-import org.apache.sshd.common.channel.ChannelIdentifier;
+package org.apache.sshd.common.channel;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class SshChannelException extends IOException implements ChannelIdentifier {
-    private static final long serialVersionUID = 7355720478400167933L;
-
-    private final long channelId;
-
-    protected SshChannelException(long channelId, String message) {
-        this(channelId, message, null);
-    }
-
-    protected SshChannelException(long channelId, Throwable cause) {
-        this(channelId, cause.getMessage(), cause);
-    }
-
-    protected SshChannelException(long channelId, String message, Throwable cause) {
-        super(message, cause);
-        this.channelId = channelId;
-    }
-
-    @Override
-    public long getChannelId() {
-        return channelId;
-    }
+@FunctionalInterface
+public interface ChannelIdentifier {
+    /**
+     * @return Local channel UINT32 identifier
+     */
+    long getChannelId();
 }

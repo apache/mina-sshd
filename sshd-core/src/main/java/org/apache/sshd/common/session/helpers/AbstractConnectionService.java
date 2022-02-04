@@ -430,7 +430,7 @@ public abstract class AbstractConnectionService
      */
     @Override
     public void unregisterChannel(Channel channel) {
-        long channelId = channel.getId();
+        long channelId = channel.getChannelId();
         Channel result;
         synchronized (channels) {
             result = channels.remove(channelId);
@@ -550,7 +550,7 @@ public abstract class AbstractConnectionService
             return; // debug breakpoint
         }
 
-        long id = channel.getId();
+        long id = channel.getChannelId();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("channelOpenFailure({}) Received SSH_MSG_CHANNEL_OPEN_FAILURE", channel);

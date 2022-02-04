@@ -28,16 +28,15 @@ import org.apache.sshd.sftp.common.extensions.SupportedParser.Supported;
 
 /**
  * Parses the &quot;supported&quot; extension as defined in
- * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.txt">DRAFT 05 -
- * section 4.4</A>
+ * <A HREF="https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-05#section-4.4">DRAFT 05 - section 4.4</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SupportedParser extends AbstractParser<Supported> {
     /**
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see    <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05">DRAFT 05
-     *         - section 4.4</A>
+     * @see    <A HREF="https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-05#section-4.4">DRAFT 05 -
+     *         section 4.4</A>
      */
     public static class Supported {
         // CHECKSTYLE:OFF

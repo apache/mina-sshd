@@ -44,6 +44,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public interface Channel
         extends SessionHolder<Session>,
+        ChannelIdentifier,
         ChannelListenerManager,
         PropertyResolver,
         AttributeStore,
@@ -53,11 +54,6 @@ public interface Channel
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";
     String CHANNEL_SUBSYSTEM = "subsystem";
-
-    /**
-     * @return Local channel UINT32 identifier
-     */
-    long getId();
 
     /**
      * @return Remote channel UITN32 identifier

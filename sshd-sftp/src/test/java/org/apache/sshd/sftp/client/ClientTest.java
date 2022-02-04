@@ -158,7 +158,7 @@ public class ClientTest extends BaseTestSupport {
 
                             @Override
                             public String toString() {
-                                return "ChannelSession" + "[id=" + getId() + ", recipient=" + getRecipient() + "]";
+                                return "ChannelSession" + "[id=" + getChannelId() + ", recipient=" + getRecipient() + "]";
                             }
                         };
                     }
@@ -280,7 +280,7 @@ public class ClientTest extends BaseTestSupport {
 
             Set<Long> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
-                long id = c.getId();
+                long id = c.getChannelId();
                 assertTrue("Channel ID repeated: " + id, ids.add(id));
             }
         } finally {

@@ -52,7 +52,7 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
 
     @Override
     public void channelInitialized(Channel channel) {
-        long channelId = channel.getId();
+        long channelId = channel.getChannelId();
         Session session = channel.getSession();
         Long lastTracked = session.setAttribute(LAST_CHANNEL_ID_KEY, channelId);
         if (log.isDebugEnabled()) {

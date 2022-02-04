@@ -155,7 +155,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     }
 
     @Override
-    public long getId() {
+    public long getChannelId() {
         return id;
     }
 
@@ -1019,7 +1019,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[id=" + getId() + ", recipient=" + getRecipient() + "]" + "-"
+        return getClass().getSimpleName() + "[id=" + getChannelId() + ", recipient=" + getRecipient() + "]" + "-"
                + getSession();
     }
 }

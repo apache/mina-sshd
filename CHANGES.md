@@ -39,7 +39,7 @@ this value (though the choice of 256KB should be compatible with the vast majori
 ### SSH channel identifiers have been changed to use *long* instead of *int* in order to align them with the standard that required them to be *UINT32* values.
 
 The relevant API(s) have been modified accordingly - which may cause a few incompatibility issues with code that extends/implements existing `Channel` classes
-and interfaces.
+and interfaces. In this context, the *Channel* interface now extends *ChannelIdentifier* where *getId()* has been renamed to *getChannelId()*
 
 ### *long* used instead of *int* in most encoded/decoded packets that are specified as being *UINT32*
 

@@ -129,7 +129,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         Channel channel = getChannel();
         if (!isOpen()) {
             throw new SshChannelClosedException(
-                    channel.getId(),
+                    channel.getChannelId(),
                     "write(" + this + ") len=" + l + " - channel already closed");
         }
 
@@ -196,7 +196,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         Channel channel = getChannel();
         if (!isOpen()) {
             throw new SshChannelClosedException(
-                    channel.getId(),
+                    channel.getChannelId(),
                     "flush(" + this + ") length=" + bufferLength + " - stream is already closed");
         }
 

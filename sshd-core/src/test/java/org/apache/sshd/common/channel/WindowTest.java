@@ -121,7 +121,7 @@ public class WindowTest extends BaseTestSupport {
 
                             @Override
                             public String toString() {
-                                return "ChannelSession" + "[id=" + getId() + ", recipient=" + getRecipient() + "]";
+                                return "ChannelSession" + "[id=" + getChannelId() + ", recipient=" + getRecipient() + "]";
                             }
                         };
                     }

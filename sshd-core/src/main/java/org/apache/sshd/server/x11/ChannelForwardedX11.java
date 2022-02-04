@@ -67,7 +67,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                 remoteHost.length() + type.length() + Integer.SIZE);
         buffer.putString(type);
-        buffer.putUInt(getId());
+        buffer.putUInt(getChannelId());
         buffer.putUInt(wLocal.getSize());
         buffer.putUInt(wLocal.getPacketSize());
         buffer.putString(remoteHost);

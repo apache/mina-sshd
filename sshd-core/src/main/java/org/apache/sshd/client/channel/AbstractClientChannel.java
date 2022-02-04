@@ -329,7 +329,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         Window wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
-        buffer.putUInt(getId());
+        buffer.putUInt(getChannelId());
         buffer.putUInt(wLocal.getSize());
         buffer.putUInt(wLocal.getPacketSize());
         writePacket(buffer);
@@ -385,7 +385,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.openFailureReason = reason;
         this.openFailureMsg = msg;
         this.openFailureLang = lang;
-        this.openFuture.setException(new SshChannelOpenException(getId(), reason, msg));
+        this.openFuture.setException(new SshChannelOpenException(getChannelId(), reason, msg));
         this.closeFuture.setClosed();
         this.doCloseImmediately();
         notifyStateChanged("SSH_MSG_CHANNEL_OPEN_FAILURE");

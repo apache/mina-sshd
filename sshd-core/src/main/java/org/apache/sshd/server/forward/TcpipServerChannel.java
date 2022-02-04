@@ -201,7 +201,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
                 }
                 try {
                     f.setException(new SshChannelOpenException(
-                            getId(),
+                            getChannelId(),
                             SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
                 } finally {
                     super.close(true);
@@ -215,7 +215,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         }
 
         if (streaming == Streaming.Async) {
-            long channelId = getId();
+            long channelId = getChannelId();
             out = new BufferedIoOutputStream(
                     "aysnc-tcpip-channel@" + channelId, channelId,
                     new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
@@ -343,7 +343,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         try {
             if (problem instanceof ConnectException) {
                 f.setException(new SshChannelOpenException(
-                        getId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+                        getChannelId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
             } else {
                 f.setException(problem);
             }
