@@ -250,7 +250,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         });
 
         Buffer buffer = new ByteArrayBuffer(Long.SIZE + Byte.MAX_VALUE);
-        buffer.putInt(Byte.MAX_VALUE + 1); // bad message length
+        buffer.putUInt(Byte.MAX_VALUE + 1L); // bad message length
         for (int index = 0; index < Byte.MAX_VALUE; index++) {
             buffer.putByte((byte) index);
             session.handleIgnore(buffer);
@@ -272,7 +272,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         buffer.putBoolean(true);
         session.handleDebug(buffer); // no message field
 
-        buffer.putInt(Byte.MAX_VALUE + 1); // bad message field length
+        buffer.putUInt(Byte.MAX_VALUE + 1L); // bad message field length
         for (int index = 0; index < Byte.MAX_VALUE; index++) {
             buffer.putByte((byte) index);
             session.handleDebug(buffer);
@@ -293,7 +293,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         buffer.putString(getCurrentTestName());
         session.handleDebug(buffer); // no language tag
 
-        buffer.putInt(Byte.SIZE + 1); // bad language tag length
+        buffer.putUInt(Byte.SIZE + 1L); // bad language tag length
         for (int index = 0; index < Byte.SIZE; index++) {
             buffer.putByte((byte) index);
             session.handleDebug(buffer);

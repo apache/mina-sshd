@@ -253,7 +253,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
 
     protected Buffer createBuffer(byte cmd, int extraLen) {
         Buffer buffer = new ByteArrayBuffer((extraLen <= 0) ? ByteArrayBuffer.DEFAULT_SIZE : extraLen + Byte.SIZE, false);
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         buffer.putByte(cmd);
         return buffer;
     }
@@ -261,7 +261,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     protected Buffer prepare(Buffer buffer) {
         int wpos = buffer.wpos();
         buffer.wpos(0);
-        buffer.putInt(wpos - 4);
+        buffer.putUInt(wpos - 4);
         buffer.wpos(wpos);
         return buffer;
     }

@@ -660,7 +660,7 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
-        buffer.putInt(len);
+        buffer.putUInt(len);
         return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst, eofSignalled);
     }
 
@@ -795,7 +795,7 @@ public abstract class AbstractSftpClient
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer = putReferencedName(SftpConstants.SSH_FXP_MKDIR, buffer, path, 0);
-        buffer.putInt(0);
+        buffer.putUInt(0L);
 
         int version = getVersion();
         if (version != SftpConstants.SFTP_V3) {

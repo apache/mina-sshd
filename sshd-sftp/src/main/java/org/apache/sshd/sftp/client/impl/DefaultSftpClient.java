@@ -282,14 +282,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
             int s = buffer.rpos() - hdr;
             buffer.rpos(s);
             buffer.wpos(s);
-            buffer.putInt(1 /* cmd */ + Integer.BYTES /* id */ + len); // length
+            buffer.putUInt(1 /* cmd */ + Integer.BYTES /* id */ + len); // length
             buffer.putByte((byte) (cmd & 0xFF)); // cmd
-            buffer.putInt(id); // id
+            buffer.putInt(id);
             buffer.wpos(wpos);
             buf = buffer;
         } else {
             buf = new ByteArrayBuffer(hdr + len);
-            buf.putInt(1 /* cmd */ + Integer.BYTES /* id */ + len);
+            buf.putUInt(1 /* cmd */ + Integer.BYTES /* id */ + len);
             buf.putByte((byte) (cmd & 0xFF));
             buf.putInt(id);
             buf.putBuffer(buffer);
@@ -367,9 +367,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         // Send init packet
         Buffer buf = new ByteArrayBuffer(INIT_COMMAND_SIZE + SshConstants.SSH_PACKET_HEADER_LEN);
-        buf.putInt(INIT_COMMAND_SIZE);
+        buf.putUInt(INIT_COMMAND_SIZE);
         buf.putByte((byte) SftpConstants.SSH_FXP_INIT);
-        buf.putInt(initialVersion);
+        buf.putUInt(initialVersion);
 
         boolean traceEnabled = log.isTraceEnabled();
         ClientChannel clientChannel = getClientChannel();

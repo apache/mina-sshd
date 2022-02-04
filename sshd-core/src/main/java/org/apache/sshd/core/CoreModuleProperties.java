@@ -265,11 +265,13 @@ public final class CoreModuleProperties {
     public static final Property<Integer> PROP_DHGEX_CLIENT_PRF_KEY
             = Property.integer("dhgex-client-prf");
 
+    public static final long DEFAULT_WINDOW_SIZE = 0x200000L;
+
     /**
      * Key used to retrieve the value of the channel window size in the configuration properties map.
      */
     public static final Property<Long> WINDOW_SIZE
-            = Property.long_("window-size", 0x200000L);
+            = Property.long_("window-size", DEFAULT_WINDOW_SIZE);
 
     /**
      * Key used to retrieve timeout (msec.) to wait for data to become available when reading from a channel. If not set
@@ -296,17 +298,19 @@ public final class CoreModuleProperties {
     public static final Property<Duration> BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT
             = Property.duration("buffered-io-output-max-pending-write-wait", Duration.ofSeconds(30L));
 
+    public static final long DEFAULT_MAX_PACKET_SIZE = 0x8000L;
     /**
      * Key used to retrieve the value of the maximum packet size in the configuration properties map.
      */
     public static final Property<Long> MAX_PACKET_SIZE
-            = Property.long_("packet-size", 0x8000L);
+            = Property.long_("packet-size", DEFAULT_MAX_PACKET_SIZE);
 
+    public static final long DEFAULT_LIMIT_PACKET_SIZE = Integer.MAX_VALUE / 4L;
     /**
      * A safety value that is designed to avoid an attack that uses large channel packet sizes
      */
     public static final Property<Long> LIMIT_PACKET_SIZE
-            = Property.long_("max-packet-size", Integer.MAX_VALUE / 4L);
+            = Property.long_("max-packet-size", DEFAULT_LIMIT_PACKET_SIZE);
 
     /**
      * Number of NIO worker threads to use.

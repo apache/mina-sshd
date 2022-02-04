@@ -1013,7 +1013,7 @@ public abstract class AbstractSession extends SessionHelper {
         int ignoreDataLen = resolveIgnoreBufferDataLength();
         if (ignoreDataLen > 0) {
             ignoreBuf = createBuffer(SshConstants.SSH_MSG_IGNORE, ignoreDataLen + Byte.SIZE);
-            ignoreBuf.putInt(ignoreDataLen);
+            ignoreBuf.putUInt(ignoreDataLen);
 
             int wpos = ignoreBuf.wpos();
             synchronized (random) {
@@ -1315,7 +1315,7 @@ public abstract class AbstractSession extends SessionHelper {
 
             // Write 5 header bytes
             buffer.wpos(off);
-            buffer.putInt(len);
+            buffer.putUInt(len);
             buffer.putByte((byte) pad);
             // Make sure enough room for padding and then fill it
             buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
@@ -1600,7 +1600,7 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         buffer.putBoolean(false); // first kex packet follows
-        buffer.putInt(0); // reserved (FFU)
+        buffer.putUInt(0L); // reserved (FFU)
 
         ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
         IoWriteFuture future = (handler == null) ? null : handler.sendKexInitRequest(this, proposal, buffer);

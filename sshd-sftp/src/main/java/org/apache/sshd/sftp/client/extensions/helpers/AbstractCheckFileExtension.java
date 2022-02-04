@@ -48,7 +48,7 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
         buffer.putString(GenericUtils.join(algorithms, ','));
         buffer.putLong(offset);
         buffer.putLong(length);
-        buffer.putInt(blockSize);
+        buffer.putUInt(blockSize);
 
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, block-size={}",

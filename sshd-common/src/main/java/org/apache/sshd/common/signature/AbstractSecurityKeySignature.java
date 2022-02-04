@@ -94,7 +94,7 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         byte[] appNameDigest = md.digest(publicKey.getAppName().getBytes(StandardCharsets.UTF_8));
         byte[] challengeDigest = this.challengeDigest.digest();
         ByteArrayBuffer counterData = new ByteArrayBuffer(Integer.BYTES, false);
-        counterData.putInt(counter);
+        counterData.putUInt(counter);
 
         Signature delegate = getDelegateSignature();
         delegate.initVerifier(session, publicKey.getDelegatePublicKey());

@@ -155,6 +155,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         return numXfered;
     }
 
+    @Override
     @SuppressWarnings("PMD.MissingOverride")
     public long transferTo(OutputStream out) throws IOException {
         if (!isOpen()) {
@@ -236,7 +237,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             buf.wpos(23);
             buf.putBytes(id);
             buf.putLong(requestOffset);
-            buf.putInt(bufferSize);
+            buf.putUInt(bufferSize);
             int reqId = client.send(SftpConstants.SSH_FXP_READ, buf);
             SftpAckData ack = new SftpAckData(reqId, requestOffset, bufferSize);
             if (traceEnabled) {

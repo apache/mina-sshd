@@ -281,7 +281,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             if (numModes > 0) {
                 ptyModes.forEach((mode, value) -> {
                     modes.putByte((byte) mode.toInt());
-                    modes.putInt(value.longValue());
+                    modes.putUInt(value.longValue());
                 });
             }
             modes.putByte(PtyMode.TTY_OP_END);

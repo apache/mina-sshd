@@ -1847,7 +1847,7 @@ public abstract class AbstractSftpSubsystemHelper
 
             // placeholder for length
             int lenPos = buffer.wpos();
-            buffer.putInt(0);
+            buffer.putUInt(0L);
             buffer.putInt(mask);
             BufferUtils.updateLengthPlaceholder(buffer, lenPos);
         }
@@ -2053,7 +2053,7 @@ public abstract class AbstractSftpSubsystemHelper
                 Collections.unmodifiableMap(versionProperties));
         // placeholder for length
         int lenPos = buffer.wpos();
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         buffer.putString(resolver.getStringProperty("groupId", getClass().getPackage().getName())); // vendor-name
         buffer.putString(resolver.getStringProperty("artifactId", getClass().getSimpleName())); // product-name
         buffer.putString(resolver.getStringProperty("version", FactoryManager.DEFAULT_VERSION)); // product-version
@@ -2073,21 +2073,21 @@ public abstract class AbstractSftpSubsystemHelper
         buffer.putString(SftpConstants.EXT_SUPPORTED);
 
         int lenPos = buffer.wpos();
-        buffer.putInt(0); // length placeholder
+        buffer.putUInt(0L); // length placeholder
         // supported-attribute-mask
         buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_SIZE | SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS
                       | SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME | SftpConstants.SSH_FILEXFER_ATTR_CREATETIME
                       | SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME | SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP
                       | SftpConstants.SSH_FILEXFER_ATTR_BITS);
         // TODO: supported-attribute-bits
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // supported-open-flags
         buffer.putInt(SftpConstants.SSH_FXF_READ | SftpConstants.SSH_FXF_WRITE | SftpConstants.SSH_FXF_APPEND
                       | SftpConstants.SSH_FXF_CREAT | SftpConstants.SSH_FXF_TRUNC | SftpConstants.SSH_FXF_EXCL);
         // TODO: supported-access-mask
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // max-read-size
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // supported extensions
         buffer.putStringList(extras, false);
 
@@ -2108,20 +2108,20 @@ public abstract class AbstractSftpSubsystemHelper
         buffer.putString(SftpConstants.EXT_SUPPORTED2);
 
         int lenPos = buffer.wpos();
-        buffer.putInt(0); // length placeholder
+        buffer.putUInt(0L); // length placeholder
         // supported-attribute-mask
         buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_SIZE | SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS
                       | SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME | SftpConstants.SSH_FILEXFER_ATTR_CREATETIME
                       | SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME | SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP
                       | SftpConstants.SSH_FILEXFER_ATTR_BITS);
         // TODO: supported-attribute-bits
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // supported-open-flags
         buffer.putInt(SftpConstants.SSH_FXF_ACCESS_DISPOSITION | SftpConstants.SSH_FXF_APPEND_DATA);
         // TODO: supported-access-mask
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // max-read-size
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         // supported-open-block-vector
         buffer.putShort(0);
         // supported-block-vector
@@ -2151,7 +2151,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected void sendLink(Buffer buffer, int id, Path file, String link) throws IOException {
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
-        buffer.putInt(1); // one response
+        buffer.putUInt(1L); // one response
 
         // in case we are running on Windows
         String unixPath = link.replace(File.separatorChar, '/');

@@ -704,7 +704,14 @@ public abstract class Buffer implements Readable {
      * @param i The 32-bit value
      */
     public void putInt(long i) {
-        BufferUtils.validateInt32Value(i, "Invalid 32-bit value: %d");
+        BufferUtils.validateInt32Value(i, "Invalid INT32 value: %d");
+        ensureCapacity(Integer.BYTES);
+        BufferUtils.putUInt(i, workBuf, 0, Integer.BYTES);
+        putRawBytes(workBuf, 0, Integer.BYTES);
+    }
+
+    public void putUInt(long i) {
+        BufferUtils.validateUint32Value(i, "Invalid UINT32 value: %d");
         ensureCapacity(Integer.BYTES);
         BufferUtils.putUInt(i, workBuf, 0, Integer.BYTES);
         putRawBytes(workBuf, 0, Integer.BYTES);
@@ -755,7 +762,7 @@ public abstract class Buffer implements Readable {
     }
 
     public void putBytes(byte[] b, int off, int len) {
-        putInt(len);
+        putUInt(len);
         putRawBytes(b, off, len);
     }
 
@@ -783,7 +790,7 @@ public abstract class Buffer implements Readable {
     public void putStringList(Collection<?> objects, Charset charset, boolean prependLength) {
         int numObjects = GenericUtils.size(objects);
         if (prependLength) {
-            putInt(numObjects);
+            putUInt(numObjects);
         }
 
         if (numObjects <= 0) {
@@ -933,7 +940,7 @@ public abstract class Buffer implements Readable {
 
     public void putMPInt(byte[] mpInt) {
         if ((mpInt[0] & 0x80) != 0) {
-            putInt(mpInt.length + 1 /* padding */);
+            putUInt(mpInt.length + 1 /* padding */);
             putByte((byte) 0);
         } else {
             putInt(mpInt.length);
@@ -949,7 +956,7 @@ public abstract class Buffer implements Readable {
 
     public void putPublicKey(PublicKey key) {
         int ow = wpos();
-        putInt(0);
+        putUInt(0L);
         int ow1 = wpos();
         putRawPublicKey(key);
         int ow2 = wpos();

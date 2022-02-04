@@ -174,7 +174,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         int numResponses = rep.length;
         buffer = session.createBuffer(
                 SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, numResponses * Long.SIZE + Byte.SIZE);
-        buffer.putInt(numResponses);
+        buffer.putUInt(numResponses);
         for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
             if (traceEnabled) {

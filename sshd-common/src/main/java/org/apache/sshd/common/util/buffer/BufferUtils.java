@@ -644,7 +644,7 @@ public final class BufferUtils {
         // NOTE: although data length is defined as UINT32, we do not expected sizes above Integer.MAX_VALUE
         ValidateUtils.checkTrue(dataLength >= 0, "Illegal data length: %d", dataLength);
         buffer.wpos(lenPos);
-        buffer.putInt(dataLength);
+        buffer.putUInt(dataLength);
         buffer.wpos(endPos);
         return dataLength;
     }
@@ -661,7 +661,7 @@ public final class BufferUtils {
     public static void updateLengthPlaceholder(Buffer buffer, int lenPos, int dataLength) {
         int curPos = buffer.wpos();
         buffer.wpos(lenPos);
-        buffer.putInt(dataLength);
+        buffer.putUInt(dataLength);
         buffer.wpos(curPos);
     }
 

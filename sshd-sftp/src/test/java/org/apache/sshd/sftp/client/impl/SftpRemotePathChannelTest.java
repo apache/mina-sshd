@@ -309,7 +309,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                 Buffer requestBuffer = new ByteArrayBuffer(id.length + Long.SIZE, false);
                 requestBuffer.putBytes(id);
                 requestBuffer.putLong(curPos);
-                requestBuffer.putInt(readLength);
+                requestBuffer.putUInt(readLength);
                 ((RawSftpClient) sftp).send(SftpConstants.SSH_FXP_READ, requestBuffer);
 
                 Thread.sleep(1L);

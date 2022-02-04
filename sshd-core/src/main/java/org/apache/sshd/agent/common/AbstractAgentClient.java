@@ -71,7 +71,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         }
 
         Buffer rep = new ByteArrayBuffer();
-        rep.putInt(0);
+        rep.putUInt(0L);
         rep.rpos(rep.wpos());
 
         Buffer req = new ByteArrayBuffer(buffer.getBytes());
@@ -83,9 +83,9 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
             debug("Failed ({}) to handle command={}: {}",
                     e.getClass().getSimpleName(), cmd, e.getMessage(), e);
             rep.clear();
-            rep.putInt(0);
+            rep.putUInt(0L);
             rep.rpos(rep.wpos());
-            rep.putInt(1);
+            rep.putUInt(1L);
             rep.putByte(SshAgentConstants.SSH2_AGENT_FAILURE);
         }
         reply(prepare(rep));
@@ -111,7 +111,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 }
 
                 rep.putByte(SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER);
-                rep.putInt(keys.size());
+                rep.putUInt(keys.size());
                 for (Map.Entry<PublicKey, String> key : keys) {
                     rep.putPublicKey(key.getKey());
                     rep.putString(key.getValue());
@@ -178,7 +178,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         int wpos = buf.wpos();
         buf.rpos(rpos - 4);
         buf.wpos(rpos - 4);
-        buf.putInt(len);
+        buf.putUInt(len);
         buf.wpos(wpos);
         return buf;
     }

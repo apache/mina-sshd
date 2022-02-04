@@ -172,7 +172,7 @@ public final class KexExtensions {
      */
     public static void putExtensions(Collection<? extends Map.Entry<String, ?>> exts, Buffer buffer) throws IOException {
         int count = GenericUtils.size(exts);
-        buffer.putInt(count);
+        buffer.putUInt(count);
         if (count <= 0) {
             return;
         }

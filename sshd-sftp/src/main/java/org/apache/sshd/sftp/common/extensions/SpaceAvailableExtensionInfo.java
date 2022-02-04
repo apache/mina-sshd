@@ -121,6 +121,6 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
         buffer.putLong(info.unusedBytesOnDevice);
         buffer.putLong(info.bytesAvailableToUser);
         buffer.putLong(info.unusedBytesAvailableToUser);
-        buffer.putInt(info.bytesPerAllocationUnit & 0xFFFFFFFFL);
+        buffer.putUInt(info.bytesPerAllocationUnit & 0xFFFFFFFFL);
     }
 }

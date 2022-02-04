@@ -292,7 +292,7 @@ public class DefaultForwarder
         buffer.putString("tcpip-forward");
         buffer.putBoolean(true); // want reply
         buffer.putString(remoteHost);
-        buffer.putInt(remotePort);
+        buffer.putUInt(remotePort);
 
         Duration timeout = CoreModuleProperties.FORWARD_REQUEST_TIMEOUT.getRequired(session);
         Buffer result;
@@ -358,7 +358,7 @@ public class DefaultForwarder
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false); // want reply
             buffer.putString(remoteHost);
-            buffer.putInt(port);
+            buffer.putUInt(port);
 
             signalTearingDownExplicitTunnel(bound, false, remote);
             try {

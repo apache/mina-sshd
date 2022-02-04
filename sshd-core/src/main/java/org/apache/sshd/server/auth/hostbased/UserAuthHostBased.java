@@ -164,7 +164,7 @@ public class UserAuthHostBased extends AbstractUserAuth implements SignatureFact
         buf.putString(getService());
         buf.putString(getName());
         buf.putString(keyType);
-        buf.putInt(keyLen);
+        buf.putUInt(keyLen);
         // copy the key + certificates
         buf.putRawBytes(buffer.array(), keyOffset, keyLen);
         buf.putString(clientHostName);

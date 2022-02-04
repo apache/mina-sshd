@@ -795,7 +795,7 @@ public final class SftpHelper {
 
     public static <B extends Buffer> B writeExtensions(B buffer, Map<?, ?> extensions) {
         int numExtensions = MapEntryUtils.size(extensions);
-        buffer.putInt(numExtensions);
+        buffer.putUInt(numExtensions);
         if (numExtensions <= 0) {
             return buffer;
         }
@@ -1005,7 +1005,7 @@ public final class SftpHelper {
 
     public static <B extends Buffer> B writeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         int lenPos = buffer.wpos();
-        buffer.putInt(0); // length placeholder
+        buffer.putUInt(0L); // length placeholder
         buffer = encodeACLs(buffer, version, acl);
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
         return buffer;
@@ -1014,7 +1014,7 @@ public final class SftpHelper {
     public static <B extends Buffer> B encodeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
         Objects.requireNonNull(acl, "No ACL");
         if (version >= SftpConstants.SFTP_V6) {
-            buffer.putInt(0); // TODO handle ACL flags
+            buffer.putUInt(0L); // TODO handle ACL flags
         }
 
         int numEntries = GenericUtils.size(acl);

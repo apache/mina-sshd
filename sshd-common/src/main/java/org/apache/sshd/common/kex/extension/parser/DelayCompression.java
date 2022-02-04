@@ -48,7 +48,7 @@ public class DelayCompression extends AbstractKexExtensionParser<DelayedCompress
     @Override
     protected void encode(DelayedCompressionAlgorithms algos, Buffer buffer) throws IOException {
         int lenPos = buffer.wpos();
-        buffer.putInt(0); // total length placeholder
+        buffer.putUInt(0L); // total length placeholder
         buffer.putNameList(algos.getClient2Server());
         buffer.putNameList(algos.getServer2Client());
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);

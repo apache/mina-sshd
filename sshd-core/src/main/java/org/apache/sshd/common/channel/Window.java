@@ -119,8 +119,8 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void expand(int window) {
-        ValidateUtils.checkTrue(window >= 0, "Negative window size: %d", window);
+    public void expand(long window) {
+        BufferUtils.validateUint32Value(window, "Invalid expansion window size: %d");
         checkInitialized("expand");
 
         long expandedSize;
@@ -128,8 +128,8 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             /*
              * See RFC-4254 section 5.2:
              *
-             * "Implementations MUST correctly handle window sizes of up to 2^32 - 1 bytes. The window MUST NOT be
-             * increased above 2^32 - 1 bytes.
+             * "Implementations MUST correctly handle window sizes of up to 2^32 - 1 bytes.
+             * The window MUST NOT be increased above 2^32 - 1 bytes.
              */
             expandedSize = size + window;
             if (expandedSize > BufferUtils.MAX_UINT32_VALUE) {

@@ -991,7 +991,7 @@ public class SftpSubsystem
         buffer = prepareReply(buffer);
 
         buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
-        buffer.putInt(version);
+        buffer.putUInt(version);
         appendExtensions(buffer, negotiated.getValue());
 
         SftpEventListener listener = getSftpEventListenerProxy();
@@ -1003,7 +1003,7 @@ public class SftpSubsystem
     @Override
     protected Buffer prepareReply(Buffer buffer) {
         buffer.clear();
-        buffer.putInt(0); // reserve space for actual packet length
+        buffer.putUInt(0L); // reserve space for actual packet length
         return buffer;
     }
 

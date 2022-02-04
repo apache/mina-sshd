@@ -98,7 +98,7 @@ public class InteractiveChallenge implements Cloneable {
 
         List<PromptEntry> entries = getPrompts();
         int numEntries = GenericUtils.size(entries);
-        buffer.putInt(numEntries);
+        buffer.putUInt(numEntries);
 
         for (int index = 0; index < numEntries; index++) {
             PromptEntry e = entries.get(index);

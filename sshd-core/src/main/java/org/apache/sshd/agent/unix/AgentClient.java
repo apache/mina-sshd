@@ -195,7 +195,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable, Factory
     protected synchronized Buffer request(Buffer buffer) throws IOException {
         int wpos = buffer.wpos();
         buffer.wpos(0);
-        buffer.putInt(wpos - 4);
+        buffer.putUInt(wpos - 4);
         buffer.wpos(wpos);
         synchronized (messages) {
             int result = Socket.send(handle, buffer.array(), buffer.rpos(), buffer.available());

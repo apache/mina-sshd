@@ -230,7 +230,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
                 int pos = buf.wpos();
                 buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
-                buf.putInt(length);
+                buf.putUInt(length);
                 buf.wpos(buf.wpos() + (int) length);
                 if (total == length) {
                     newBuffer((int) length);

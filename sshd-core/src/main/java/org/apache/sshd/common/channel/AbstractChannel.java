@@ -885,7 +885,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     @Override
     public void handleWindowAdjust(Buffer buffer) throws IOException {
-        int window = buffer.getInt();
+        long window = buffer.getUInt();
         if (log.isDebugEnabled()) {
             log.debug("handleWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST window={}", this, window);
         }
@@ -1013,7 +1013,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, Short.SIZE);
         buffer.putInt(getRecipient());
-        buffer.putInt(len);
+        buffer.putUInt(len);
         writePacket(buffer);
     }
 

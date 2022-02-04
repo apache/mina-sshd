@@ -96,7 +96,7 @@ public abstract class SshAgentKeyConstraint {
         @Override
         public void put(Buffer buffer) {
             super.put(buffer);
-            buffer.putInt(secondsToLive);
+            buffer.putUInt(secondsToLive);
         }
     }
 

@@ -109,7 +109,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     }
 
                     buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE);
-                    buffer.putInt(rep.length);
+                    buffer.putUInt(rep.length);
                     for (String r : rep) {
                         buffer.putString(r);
                     }

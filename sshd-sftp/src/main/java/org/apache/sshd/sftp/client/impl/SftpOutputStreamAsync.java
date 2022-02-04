@@ -194,7 +194,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
             buffer.wpos(buffer.rpos());
             buffer.putBytes(id);
             buffer.putLong(offset);
-            buffer.putInt(avail);
+            buffer.putUInt(avail);
             buffer.wpos(wpos);
             buf = buffer;
         } else {

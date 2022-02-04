@@ -38,7 +38,9 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
@@ -109,7 +111,7 @@ public class ChannelSessionTest extends BaseTestSupport {
     @Test
     public void testHandleWindowAdjust() throws Exception {
         Buffer buffer = new ByteArrayBuffer();
-        buffer.putInt(1234);
+        buffer.putUInt(1234L);
 
         try (ChannelSession channelSession = new ChannelSession() {
             {
@@ -147,5 +149,28 @@ public class ChannelSessionTest extends BaseTestSupport {
         }
 
         assertEquals("Close listener not called", 1, closeCount.get());
+    }
+
+    @Test   // SSHD-1244
+    public void testLargeWindowSizeAdjust() throws Exception {
+        try (ChannelSession session = new ChannelSession() {
+            {
+                Window wRemote = getRemoteWindow();
+                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
+            }
+        }) {
+            Window wRemote = session.getRemoteWindow();
+            long initialSize = wRemote.getSize();
+            assertTrue("Bad initial window size: " + initialSize,
+                    (initialSize >= CoreModuleProperties.DEFAULT_WINDOW_SIZE)
+                            && (initialSize < BufferUtils.MAX_UINT32_VALUE));
+
+            Buffer buffer = new ByteArrayBuffer();
+            buffer.putUInt(BufferUtils.MAX_UINT32_VALUE);
+            session.handleWindowAdjust(buffer);
+
+            long updatedSize = wRemote.getSize();
+            assertEquals("Mismatched updated window size", BufferUtils.MAX_UINT32_VALUE, updatedSize);
+        }
     }
 }
