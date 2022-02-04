@@ -41,16 +41,16 @@ based applications requiring SSH support.
 * [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
 * [SSH proxy jumps](./docs/internals.md#ssh-jumps)
 * SFTP version 3-6 + extensions
-    * `supported` - [DRAFT 05 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.tx)
-    * `supported2` - [DRAFT 13 section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10)
-    * `versions` - [DRAFT 09 Section 4.6](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
-    * `vendor-id` - [DRAFT 09 - section 4.4](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
-    * `acl-supported` - [DRAFT 11 - section 5.4](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-11)
-    * `newline` - [DRAFT 09 Section 4.3](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
-    * `md5-hash`, `md5-hash-handle` - [DRAFT 09 - section 9.1.1](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
-    * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
+    * `supported` - [DRAFT 05 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-05#section-4.4)
+    * `supported2` - [DRAFT 13 section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-13#section-5.4)
+    * `versions` - [DRAFT 09 Section 4.6](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.6)
+    * `vendor-id` - [DRAFT 09 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.4)
+    * `acl-supported` - [DRAFT 11 - section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-11#section-5.4)
+    * `newline` - [DRAFT 09 Section 4.3](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.3)
+    * `md5-hash`, `md5-hash-handle` - [DRAFT 09 - section 9.1.1](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.1)
+    * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.2)
     * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
-    * `space-available` - [DRAFT 09 - section 9.3](http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt)
+    * `space-available` - [DRAFT 09 - section 9.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.2)
     * `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
     * Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 * [Endless tarpit](https://nullprogram.com/blog/2019/03/22/) - see [HOWTO(s)](./docs/howto.md) section.
@@ -147,6 +147,20 @@ implementation of the logging API can be selected from the many existing adaptor
 # [Optional dependencies](./docs/dependencies.md)
 
 # Quick reference
+
+## Building the code
+
+Including tests
+
+```
+mvn clean install
+```
+
+Without tests
+
+```
+mvn -Pquick clean install
+```
 
 ## [Set up an SSH client in 5 minutes](./docs/client-setup.md)
 
