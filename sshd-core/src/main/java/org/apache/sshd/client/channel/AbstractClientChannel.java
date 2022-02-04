@@ -329,21 +329,21 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         Window wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
-        buffer.putInt(getId());
-        buffer.putInt(wLocal.getSize());
-        buffer.putInt(wLocal.getPacketSize());
+        buffer.putUInt(getId());
+        buffer.putUInt(wLocal.getSize());
+        buffer.putUInt(wLocal.getPacketSize());
         writePacket(buffer);
         return openFuture;
     }
 
     @Override
-    public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
+    public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
         throw new UnsupportedOperationException(
                 "open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) {
+    public void handleOpenSuccess(long recipient, long rwSize, long packetSize, Buffer buffer) {
         setRecipient(recipient);
 
         Session session = getSession();

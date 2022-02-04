@@ -51,7 +51,7 @@ public class ChannelShell extends PtyCapableChannelSession {
         Session session = getSession();
         boolean wantReply = CoreModuleProperties.REQUEST_SHELL_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Integer.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         buffer.putString(Channel.CHANNEL_SHELL);
         buffer.putBoolean(wantReply);
         addPendingRequest(Channel.CHANNEL_SHELL, wantReply);

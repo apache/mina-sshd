@@ -656,9 +656,9 @@ public final class BufferUtils {
      * @param buffer     The {@link Buffer}
      * @param lenPos     The offset in the buffer where the length placeholder is to be update - <B>Note:</B> assumption
      *                   is that the encoded data starts <U>immediately</U> after the placeholder
-     * @param dataLength The length to update
+     * @param dataLength The length to update - a UINT32 value as a {@code long}
      */
-    public static void updateLengthPlaceholder(Buffer buffer, int lenPos, int dataLength) {
+    public static void updateLengthPlaceholder(Buffer buffer, int lenPos, long dataLength) {
         int curPos = buffer.wpos();
         buffer.wpos(lenPos);
         buffer.putUInt(dataLength);

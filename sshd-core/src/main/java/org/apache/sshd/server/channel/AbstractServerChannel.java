@@ -56,7 +56,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     @Override
-    public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
+    public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
         setRecipient(recipient);
 
         Session s = getSession();
@@ -69,7 +69,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
     @Override
     public void handleOpenSuccess(
-            int recipient, long rwSize, long packetSize, Buffer buffer)
+            long recipient, long rwSize, long packetSize, Buffer buffer)
             throws IOException {
         throw new UnsupportedOperationException(
                 "handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
@@ -114,7 +114,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         Session session = getSession();
         Buffer buffer = session.createBuffer(
                 SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         buffer.putString("exit-status");
         // want-reply - must be FALSE - see https://tools.ietf.org/html/rfc4254 section 6.10
         buffer.putBoolean(false);

@@ -25,15 +25,15 @@ package org.apache.sshd.common.channel.exception;
 public class SshChannelNotFoundException extends SshChannelException {
     private static final long serialVersionUID = 6235323779982884257L;
 
-    public SshChannelNotFoundException(int channelId, String message) {
+    public SshChannelNotFoundException(long channelId, String message) {
         this(channelId, message, null);
     }
 
-    public SshChannelNotFoundException(int channelId, Throwable cause) {
+    public SshChannelNotFoundException(long channelId, Throwable cause) {
         this(channelId, cause.getMessage(), cause);
     }
 
-    public SshChannelNotFoundException(int channelId, String message, Throwable cause) {
+    public SshChannelNotFoundException(long channelId, String message, Throwable cause) {
         super(channelId, message, cause);
     }
 }

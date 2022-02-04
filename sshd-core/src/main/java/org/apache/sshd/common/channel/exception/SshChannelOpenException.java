@@ -28,11 +28,11 @@ public class SshChannelOpenException extends SshChannelException {
 
     private final int code;
 
-    public SshChannelOpenException(int channelId, int code, String message) {
+    public SshChannelOpenException(long channelId, int code, String message) {
         this(channelId, code, message, null);
     }
 
-    public SshChannelOpenException(int channelId, int code, String message, Throwable cause) {
+    public SshChannelOpenException(long channelId, int code, String message, Throwable cause) {
         super(channelId, message, cause);
         this.code = code;
     }

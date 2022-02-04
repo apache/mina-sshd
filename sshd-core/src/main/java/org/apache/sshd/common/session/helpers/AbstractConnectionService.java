@@ -31,7 +31,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
@@ -90,11 +89,11 @@ public abstract class AbstractConnectionService
     /**
      * Map of channels keyed by the identifier
      */
-    protected final Map<Integer, Channel> channels = new ConcurrentHashMap<>();
+    protected final Map<Long, Channel> channels = new ConcurrentHashMap<>();
     /**
-     * Next channel identifier
+     * Next channel identifier - a UINT32 represented as a long
      */
-    protected final AtomicInteger nextChannelId = new AtomicInteger(0);
+    protected final AtomicLong nextChannelId = new AtomicLong(0L);
     protected final AtomicLong heartbeatCount = new AtomicLong(0L);
     private ScheduledFuture<?> heartBeat;
 
@@ -392,12 +391,12 @@ public abstract class AbstractConnectionService
                 .build();
     }
 
-    protected int getNextChannelId() {
+    protected long getNextChannelId() {
         return nextChannelId.getAndIncrement();
     }
 
     @Override
-    public int registerChannel(Channel channel) throws IOException {
+    public long registerChannel(Channel channel) throws IOException {
         Session session = getSession();
         int maxChannels = CoreModuleProperties.MAX_CONCURRENT_CHANNELS.getRequired(this);
         int curSize = channels.size();
@@ -405,7 +404,7 @@ public abstract class AbstractConnectionService
             throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);
         }
 
-        int channelId = getNextChannelId();
+        long channelId = getNextChannelId();
         channel.init(this, session, channelId);
 
         boolean registered = false;
@@ -431,7 +430,7 @@ public abstract class AbstractConnectionService
      */
     @Override
     public void unregisterChannel(Channel channel) {
-        int channelId = channel.getId();
+        long channelId = channel.getId();
         Channel result;
         synchronized (channels) {
             result = channels.remove(channelId);
@@ -551,7 +550,7 @@ public abstract class AbstractConnectionService
             return; // debug breakpoint
         }
 
-        int id = channel.getId();
+        long id = channel.getId();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("channelOpenFailure({}) Received SSH_MSG_CHANNEL_OPEN_FAILURE", channel);
@@ -698,10 +697,10 @@ public abstract class AbstractConnectionService
      * @throws IOException if the channel does not exists
      */
     protected Channel getChannel(byte cmd, Buffer buffer) throws IOException {
-        return getChannel(cmd, buffer.getInt(), buffer);
+        return getChannel(cmd, buffer.getUInt(), buffer);
     }
 
-    protected Channel getChannel(byte cmd, int recipient, Buffer buffer) throws IOException {
+    protected Channel getChannel(byte cmd, long recipient, Buffer buffer) throws IOException {
         Channel channel = channels.get(recipient);
         if (channel != null) {
             return channel;
@@ -732,7 +731,7 @@ public abstract class AbstractConnectionService
 
     protected void channelOpen(Buffer buffer) throws Exception {
         String type = buffer.getString();
-        int sender = buffer.getInt();
+        long sender = buffer.getUInt();
         long rwsize = buffer.getUInt();
         long rmpsize = buffer.getUInt();
         /*
@@ -767,7 +766,7 @@ public abstract class AbstractConnectionService
             return;
         }
 
-        int channelId = registerChannel(channel);
+        long channelId = registerChannel(channel);
         OpenFuture openFuture = channel.open(sender, rwsize, rmpsize, buffer);
         openFuture.addListener(future -> {
             try {
@@ -779,10 +778,10 @@ public abstract class AbstractConnectionService
                                 channel, sender, channelId, window.getSize(), window.getPacketSize());
                     }
                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
-                    buf.putInt(sender); // remote (server side) identifier
-                    buf.putInt(channelId); // local (client side) identifier
-                    buf.putInt(window.getSize());
-                    buf.putInt(window.getPacketSize());
+                    buf.putUInt(sender); // remote (server side) identifier
+                    buf.putUInt(channelId); // local (client side) identifier
+                    buf.putUInt(window.getSize());
+                    buf.putUInt(window.getPacketSize());
                     session.writePacket(buf);
                 } else {
                     int reasonCode = 0;
@@ -811,7 +810,7 @@ public abstract class AbstractConnectionService
     }
 
     protected IoWriteFuture sendChannelOpenFailure(
-            Buffer buffer, int sender, int reasonCode, String message, String lang)
+            Buffer buffer, long sender, int reasonCode, String message, String lang)
             throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("sendChannelOpenFailure({}) sender={}, reason={}, lang={}, message='{}'",
@@ -821,8 +820,8 @@ public abstract class AbstractConnectionService
         Session session = getSession();
         Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE,
                 Long.SIZE + GenericUtils.length(message) + GenericUtils.length(lang));
-        buf.putInt(sender);
-        buf.putInt(reasonCode);
+        buf.putUInt(sender);
+        buf.putUInt(reasonCode);
         buf.putString(message);
         buf.putString(lang);
         return session.writePacket(buf);

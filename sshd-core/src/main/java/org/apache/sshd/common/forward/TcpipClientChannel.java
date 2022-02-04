@@ -150,13 +150,13 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                 type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
         buffer.putString(type);
-        buffer.putInt(getId());
-        buffer.putInt(wLocal.getSize());
-        buffer.putInt(wLocal.getPacketSize());
+        buffer.putUInt(getId());
+        buffer.putUInt(wLocal.getSize());
+        buffer.putUInt(wLocal.getPacketSize());
         buffer.putString(dstHost);
-        buffer.putInt(dst.getPort());
+        buffer.putUInt(dst.getPort());
         buffer.putString(srcHost);
-        buffer.putInt(src.getPort());
+        buffer.putUInt(src.getPort());
         writePacket(buffer);
         return openFuture;
     }

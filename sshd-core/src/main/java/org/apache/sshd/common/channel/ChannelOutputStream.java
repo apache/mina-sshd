@@ -302,11 +302,11 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         Channel channel = getChannel();
         Session session = channel.getSession();
         buffer = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
-        buffer.putInt(channel.getRecipient());
+        buffer.putUInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-            buffer.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
+            buffer.putUInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
         }
-        buffer.putInt(0);
+        buffer.putUInt(0L);
         bufferLength = 0;
     }
 

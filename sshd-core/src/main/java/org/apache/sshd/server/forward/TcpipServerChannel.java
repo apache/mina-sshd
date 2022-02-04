@@ -215,7 +215,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         }
 
         if (streaming == Streaming.Async) {
-            int channelId = getId();
+            long channelId = getId();
             out = new BufferedIoOutputStream(
                     "aysnc-tcpip-channel@" + channelId, channelId,
                     new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {

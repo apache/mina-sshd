@@ -41,7 +41,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class ChannelIdTrackingUnknownChannelReferenceHandler
         extends DefaultUnknownChannelReferenceHandler
         implements ChannelListener {
-    public static final AttributeKey<Integer> LAST_CHANNEL_ID_KEY = new AttributeKey<>();
+    public static final AttributeKey<Long> LAST_CHANNEL_ID_KEY = new AttributeKey<>();
 
     public static final ChannelIdTrackingUnknownChannelReferenceHandler TRACKER
             = new ChannelIdTrackingUnknownChannelReferenceHandler();
@@ -52,9 +52,9 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
 
     @Override
     public void channelInitialized(Channel channel) {
-        int channelId = channel.getId();
+        long channelId = channel.getId();
         Session session = channel.getSession();
-        Integer lastTracked = session.setAttribute(LAST_CHANNEL_ID_KEY, channelId);
+        Long lastTracked = session.setAttribute(LAST_CHANNEL_ID_KEY, channelId);
         if (log.isDebugEnabled()) {
             log.debug("channelInitialized({}) updated last tracked channel ID {} => {}",
                     channel, lastTracked, channelId);
@@ -63,11 +63,11 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
 
     @Override
     public Channel handleUnknownChannelCommand(
-            ConnectionService service, byte cmd, int channelId, Buffer buffer)
+            ConnectionService service, byte cmd, long channelId, Buffer buffer)
             throws IOException {
         Session session = service.getSession();
-        Integer lastTracked = session.getAttribute(LAST_CHANNEL_ID_KEY);
-        if ((lastTracked != null) && (channelId <= lastTracked.intValue())) {
+        Long lastTracked = session.getAttribute(LAST_CHANNEL_ID_KEY);
+        if ((lastTracked != null) && (channelId <= lastTracked.longValue())) {
             // Use TRACE level in order to avoid messages flooding
             if (log.isTraceEnabled()) {
                 log.trace("handleUnknownChannelCommand({}) apply default handling for {} on channel={} (lastTracked={})",

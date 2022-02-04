@@ -45,7 +45,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  */
 public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
     protected final Object id;
-    protected final int channelId;
+    protected final long channelId;
     protected final int maxPendingBytesCount;
     protected final Duration maxWaitForPendingWrites;
     protected final IoOutputStream out;
@@ -55,13 +55,13 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
     protected final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<>();
     protected final AtomicReference<SshChannelBufferedOutputException> pendingException = new AtomicReference<>();
 
-    public BufferedIoOutputStream(Object id, int channelId, IoOutputStream out, PropertyResolver resolver) {
+    public BufferedIoOutputStream(Object id, long channelId, IoOutputStream out, PropertyResolver resolver) {
         this(id, channelId, out, CoreModuleProperties.BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_SIZE.getRequired(resolver),
              CoreModuleProperties.BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT.getRequired(resolver));
     }
 
     public BufferedIoOutputStream(
-                                  Object id, int channelId, IoOutputStream out, int maxPendingBytesCount,
+                                  Object id, long channelId, IoOutputStream out, int maxPendingBytesCount,
                                   Duration maxWaitForPendingWrites) {
         this.id = Objects.requireNonNull(id, "No stream identifier provided");
         this.channelId = channelId;
@@ -69,6 +69,10 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         this.maxPendingBytesCount = maxPendingBytesCount;
         ValidateUtils.checkTrue(maxPendingBytesCount > 0, "Invalid max. pending bytes count: %d", maxPendingBytesCount);
         this.maxWaitForPendingWrites = Objects.requireNonNull(maxWaitForPendingWrites, "No max. pending time value provided");
+    }
+
+    public long getChannelId() {
+        return channelId;
     }
 
     public Object getId() {
@@ -259,6 +263,6 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "(" + getId() + ")[" + out + "]";
+        return getClass().getSimpleName() + "(" + getId() + "@" + channelId + ")[" + out + "]";
     }
 }

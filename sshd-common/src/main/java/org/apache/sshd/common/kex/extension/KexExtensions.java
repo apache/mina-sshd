@@ -143,6 +143,8 @@ public final class KexExtensions {
      */
     public static List<Map.Entry<String, ?>> parseExtensions(Buffer buffer) throws IOException {
         int count = buffer.getInt();
+        // Protect agains malicious packets
+        ValidateUtils.checkTrue(count >= 0, "Invalid extensions count: %d", count);
         if (count == 0) {
             return Collections.emptyList();
         }

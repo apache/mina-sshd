@@ -30,6 +30,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -255,11 +256,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
+        SessionContext.validateSessionPayloadSize(length, "Invalid send buffer length: %d");
+
         Session s = channel.getSession();
         Buffer buf = s.createBuffer(cmd, (int) length + 12);
-        buf.putInt(channel.getRecipient());
+        buf.putUInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-            buf.putInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
+            buf.putUInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
         }
         buf.putUInt(length);
         buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);

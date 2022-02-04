@@ -24,25 +24,25 @@ import java.io.IOException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshChannelException extends IOException {
+public abstract class SshChannelException extends IOException {
     private static final long serialVersionUID = 7355720478400167933L;
 
-    private final int channelId;
+    private final long channelId;
 
-    public SshChannelException(int channelId, String message) {
+    protected SshChannelException(long channelId, String message) {
         this(channelId, message, null);
     }
 
-    public SshChannelException(int channelId, Throwable cause) {
+    protected SshChannelException(long channelId, Throwable cause) {
         this(channelId, cause.getMessage(), cause);
     }
 
-    public SshChannelException(int channelId, String message, Throwable cause) {
+    protected SshChannelException(long channelId, String message, Throwable cause) {
         super(message, cause);
         this.channelId = channelId;
     }
 
-    public int getChannelId() {
+    public long getChannelId() {
         return channelId;
     }
 }

@@ -556,6 +556,7 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         try {
+            // protected against malicious packets
             ValidateUtils.checkTrue(readLen >= 0, "Illegal requested read length: %d", readLen);
 
             buffer = prepareReply(buffer);
@@ -564,7 +565,7 @@ public abstract class AbstractSftpSubsystemHelper
             buffer.putByte((byte) SftpConstants.SSH_FXP_DATA);
             buffer.putInt(id);
             int lenPos = buffer.wpos();
-            buffer.putInt(0);
+            buffer.putUInt(0L); // save room for length
 
             AtomicReference<Boolean> eofRef = new AtomicReference<>();
             int startPos = buffer.wpos();
@@ -2180,7 +2181,7 @@ public abstract class AbstractSftpSubsystemHelper
             throws IOException {
         buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
-        buffer.putInt(1); // one reply
+        buffer.putUInt(1L); // one reply
 
         String originalPath = f.toString();
         // in case we are running on Windows

@@ -478,6 +478,11 @@ public abstract class Buffer implements Readable {
     }
 
     public byte[] getBytes() {
+        /*
+         * NOTE: technically we should support UINT32 but
+         * we cannot support them since an array of bytes
+         * can be allocated only with and integer value
+         */
         int reqLen = getInt();
         int len = ensureAvailable(reqLen);
         byte[] b = new byte[len];
@@ -698,11 +703,6 @@ public abstract class Buffer implements Readable {
         putRawBytes(workBuf, 0, Short.BYTES);
     }
 
-    /**
-     * Writes 32 bits
-     *
-     * @param i The 32-bit value
-     */
     public void putInt(long i) {
         BufferUtils.validateInt32Value(i, "Invalid INT32 value: %d");
         ensureCapacity(Integer.BYTES);
@@ -710,6 +710,11 @@ public abstract class Buffer implements Readable {
         putRawBytes(workBuf, 0, Integer.BYTES);
     }
 
+    /**
+     * Writes 32 bits
+     *
+     * @param i The 32-bit value
+     */
     public void putUInt(long i) {
         BufferUtils.validateUint32Value(i, "Invalid UINT32 value: %d");
         ensureCapacity(Integer.BYTES);
@@ -943,7 +948,7 @@ public abstract class Buffer implements Readable {
             putUInt(mpInt.length + 1 /* padding */);
             putByte((byte) 0);
         } else {
-            putInt(mpInt.length);
+            putUInt(mpInt.length);
         }
         putRawBytes(mpInt);
     }
@@ -961,7 +966,7 @@ public abstract class Buffer implements Readable {
         putRawPublicKey(key);
         int ow2 = wpos();
         wpos(ow);
-        putInt(ow2 - ow1);
+        putUInt(ow2 - ow1);
         wpos(ow2);
     }
 
@@ -1007,7 +1012,7 @@ public abstract class Buffer implements Readable {
             putBytes(cert.getNonce());
             putRawPublicKeyBytes(cert.getCertPubKey());
             putLong(cert.getSerial());
-            putInt(cert.getType().getCode());
+            putUInt(cert.getType().getCode());
             putString(cert.getId());
 
             ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();

@@ -44,10 +44,10 @@ public interface ConnectionService
      * Register a newly created channel with a new unique identifier
      *
      * @param  channel     The {@link Channel} to register
-     * @return             The assigned id of this channel
+     * @return             The assigned id of this channel - a UINT32 represented as a {@code long}
      * @throws IOException If failed to initialize and register the channel
      */
-    int registerChannel(Channel channel) throws IOException;
+    long registerChannel(Channel channel) throws IOException;
 
     /**
      * Remove this channel from the list of managed channels

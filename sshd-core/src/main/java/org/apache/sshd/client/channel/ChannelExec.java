@@ -55,7 +55,7 @@ public class ChannelExec extends PtyCapableChannelSession {
         Session session = getSession();
         boolean wantReply = CoreModuleProperties.REQUEST_EXEC_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, command.length() + Integer.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         buffer.putString(Channel.CHANNEL_EXEC);
         buffer.putBoolean(wantReply);
         buffer.putString(command);

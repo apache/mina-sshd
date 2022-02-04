@@ -147,7 +147,7 @@ public class ClientTest extends BaseTestSupport {
                         return new ChannelSession() {
                             @SuppressWarnings("synthetic-access")
                             @Override
-                            public OpenFuture open(int recipient, long rwsize, long rmpsize, Buffer buffer) {
+                            public OpenFuture open(long recipient, long rwsize, long rmpsize, Buffer buffer) {
                                 try {
                                     channelLatch.await();
                                 } catch (InterruptedException e) {
@@ -278,9 +278,9 @@ public class ClientTest extends BaseTestSupport {
             channels.add(session.createChannel(Channel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(Channel.CHANNEL_SHELL, getClass().getSimpleName()));
 
-            Set<Integer> ids = new HashSet<>(channels.size());
+            Set<Long> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
-                int id = c.getId();
+                long id = c.getId();
                 assertTrue("Channel ID repeated: " + id, ids.add(id));
             }
         } finally {
@@ -300,7 +300,7 @@ public class ClientTest extends BaseTestSupport {
     /**
      * Makes sure that the {@link ChannelListener}s added to the client, session and channel are <U>cumulative</U> -
      * i.e., all of them invoked
-     * 
+     *
      * @throws Exception If failed
      */
     @Test

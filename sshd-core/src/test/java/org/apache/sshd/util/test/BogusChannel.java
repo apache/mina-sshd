@@ -50,12 +50,12 @@ public class BogusChannel extends AbstractChannel {
     }
 
     @Override
-    public OpenFuture open(int recipient, long rwsize, long rmpsize, Buffer buffer) {
+    public OpenFuture open(long recipient, long rwsize, long rmpsize, Buffer buffer) {
         return new DefaultOpenFuture(this, this.futureLock);
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, long rwsize, long rmpsize, Buffer buffer) throws IOException {
+    public void handleOpenSuccess(long recipient, long rwsize, long rmpsize, Buffer buffer) throws IOException {
         // ignored
     }
 

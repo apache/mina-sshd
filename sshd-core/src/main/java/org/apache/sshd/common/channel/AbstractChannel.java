@@ -98,8 +98,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
-    private int id = -1;
-    private int recipient = -1;
+    private long id = -1L;
+    private long recipient = -1L;
     private Session sessionInstance;
     private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
@@ -155,16 +155,16 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     }
 
     @Override
-    public int getId() {
+    public long getId() {
         return id;
     }
 
     @Override
-    public int getRecipient() {
+    public long getRecipient() {
         return recipient;
     }
 
-    protected void setRecipient(int recipient) {
+    protected void setRecipient(long recipient) {
         if (log.isDebugEnabled()) {
             log.debug("setRecipient({}) recipient={}", this, recipient);
         }
@@ -355,12 +355,12 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         Session session = getSession();
         Buffer rsp = session.createBuffer(cmd, Integer.BYTES);
-        rsp.putInt(recipient);
+        rsp.putUInt(recipient);
         return session.writePacket(rsp);
     }
 
     @Override
-    public void init(ConnectionService service, Session session, int id) throws IOException {
+    public void init(ConnectionService service, Session session, long id) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("init() service={} session={} id={}", service, session, id);
         }
@@ -436,7 +436,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     @Override
     public void handleChannelRegistrationResult(
-            ConnectionService service, Session session, int channelId,
+            ConnectionService service, Session session, long channelId,
             boolean registered) {
         notifyStateChanged("registered=" + registered);
         if (registered) {
@@ -624,7 +624,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
                 Session s = getSession();
                 Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
-                buffer.putInt(getRecipient());
+                buffer.putUInt(getRecipient());
 
                 try {
                     Duration timeout = CoreModuleProperties.CHANNEL_CLOSE_TIMEOUT.getRequired(channel);
@@ -811,7 +811,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             }
             Session s = getSession();
             Buffer rsp = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, Integer.BYTES);
-            rsp.putInt(getRecipient());
+            rsp.putUInt(getRecipient());
             writePacket(rsp);
             return;
         }
@@ -944,7 +944,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         /*
          * The default "writePacket" does not send packets if state is not open
          * so we need to bypass it.
@@ -1012,7 +1012,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, Short.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         buffer.putUInt(len);
         writePacket(buffer);
     }

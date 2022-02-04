@@ -41,5 +41,5 @@ public interface UnknownChannelReferenceHandler {
      *                     ignored.
      * @throws IOException If failed to handle the request
      */
-    Channel handleUnknownChannelCommand(ConnectionService service, byte cmd, int channelId, Buffer buffer) throws IOException;
+    Channel handleUnknownChannelCommand(ConnectionService service, byte cmd, long channelId, Buffer buffer) throws IOException;
 }

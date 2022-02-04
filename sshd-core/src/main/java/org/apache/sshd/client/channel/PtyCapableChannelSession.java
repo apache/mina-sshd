@@ -232,7 +232,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
 
         Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
-        buffer.putInt(getRecipient());
+        buffer.putUInt(getRecipient());
         buffer.putString("window-change");
         buffer.putBoolean(false); // want-reply
         buffer.putInt(getPtyColumns());

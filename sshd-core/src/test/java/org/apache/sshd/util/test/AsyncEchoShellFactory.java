@@ -112,7 +112,7 @@ public class AsyncEchoShellFactory implements ShellFactory {
                 return (BufferedIoOutputStream) stream;
             }
 
-            int channelId = session.getId();
+            long channelId = session.getId();
             return new BufferedIoOutputStream(prefix + "@" + channelId, channelId, stream, session);
         }
 

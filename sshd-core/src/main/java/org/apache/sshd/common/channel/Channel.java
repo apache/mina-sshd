@@ -55,14 +55,14 @@ public interface Channel
     String CHANNEL_SUBSYSTEM = "subsystem";
 
     /**
-     * @return Local channel identifier
+     * @return Local channel UINT32 identifier
      */
-    int getId();
+    long getId();
 
     /**
-     * @return Remote channel identifier
+     * @return Remote channel UITN32 identifier
      */
-    int getRecipient();
+    long getRecipient();
 
     Window getLocalWindow();
 
@@ -147,10 +147,10 @@ public interface Channel
      *
      * @param  service     The {@link ConnectionService} through which the channel is initialized
      * @param  session     The {@link Session} associated with the channel
-     * @param  id          The locally assigned channel identifier
+     * @param  id          The locally assigned channel identifier (UINT32 represented as a {@code long})
      * @throws IOException If failed to process the initialization
      */
-    void init(ConnectionService service, Session session, int id) throws IOException;
+    void init(ConnectionService service, Session session, long id) throws IOException;
 
     /**
      * Invoked after being successfully registered by the connection service - should throw a {@link RuntimeException}
@@ -158,10 +158,10 @@ public interface Channel
      *
      * @param service    The {@link ConnectionService} through which the channel is registered
      * @param session    The {@link Session} associated with the channel
-     * @param id         The locally assigned channel identifier
+     * @param id         The locally assigned channel identifier (UINT32 represented as a {@code long})
      * @param registered Whether registration was successful or not
      */
-    void handleChannelRegistrationResult(ConnectionService service, Session session, int id, boolean registered);
+    void handleChannelRegistrationResult(ConnectionService service, Session session, long id, boolean registered);
 
     /**
      * Called by the connection service to inform the channel that it has bee unregistered.
@@ -171,7 +171,7 @@ public interface Channel
     void handleChannelUnregistration(ConnectionService service);
 
     /**
-     * @return {@code true} if call to {@link #init(ConnectionService, Session, int)} was successfully completed
+     * @return {@code true} if call to {@link #init(ConnectionService, Session, long)} was successfully completed
      */
     boolean isInitialized();
 
@@ -185,27 +185,27 @@ public interface Channel
     /**
      * For a server channel, this method will actually open the channel
      *
-     * @param  recipient  Recipient identifier
+     * @param  recipient  Recipient identifier (UINT32 represented as a {@code long})
      * @param  rwSize     Read/Write window size ({@code uint32})
      * @param  packetSize Preferred maximum packet size ({@code uint32})
      * @param  buffer     Incoming {@link Buffer} that triggered the call. <B>Note:</B> the buffer's read position is
      *                    exactly <U>after</U> the information that read to this call was decoded
      * @return            An {@link OpenFuture} for the channel open request
      */
-    OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer);
+    OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer);
 
     /**
      * For a client channel, this method will be called internally by the session when the confirmation has been
      * received.
      *
-     * @param  recipient   Recipient identifier
+     * @param  recipient   Recipient identifier (UINT32 represented as a {@code long})
      * @param  rwSize      Read/Write window size ({@code uint32})
      * @param  packetSize  Preferred maximum packet size ({@code uint32})
      * @param  buffer      Incoming {@link Buffer} that triggered the call. <B>Note:</B> the buffer's read position is
      *                     exactly <U>after</U> the information that read to this call was decoded
      * @throws IOException If failed to handle the success
      */
-    void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException;
+    void handleOpenSuccess(long recipient, long rwSize, long packetSize, Buffer buffer) throws IOException;
 
     /**
      * For a client channel, this method will be called internally by the session when the server has rejected this

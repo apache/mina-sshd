@@ -429,7 +429,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      */
     protected IoWriteFuture sendNotImplemented(long seqNoValue) throws IOException {
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED, Byte.SIZE);
-        buffer.putInt(seqNoValue);
+        buffer.putUInt(seqNoValue);
         return writePacket(buffer);
     }
 

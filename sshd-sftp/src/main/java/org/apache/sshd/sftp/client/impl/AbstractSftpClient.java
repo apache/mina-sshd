@@ -682,6 +682,7 @@ public abstract class AbstractSftpClient
 
         if (type == SftpConstants.SSH_FXP_DATA) {
             int len = buffer.getInt();
+            ValidateUtils.checkTrue(len >= 0, "Invalid response data len: %d", len);
             buffer.getRawBytes(dst, dstoff, len);
             Boolean indicator = SftpHelper.getEndOfFileIndicatorValue(buffer, getVersion());
             if (log.isTraceEnabled()) {

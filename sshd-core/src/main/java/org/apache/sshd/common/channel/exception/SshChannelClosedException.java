@@ -25,15 +25,15 @@ package org.apache.sshd.common.channel.exception;
 public class SshChannelClosedException extends SshChannelException {
     private static final long serialVersionUID = 4201656251593797929L;
 
-    public SshChannelClosedException(int channelId, String message) {
+    public SshChannelClosedException(long channelId, String message) {
         this(channelId, message, null);
     }
 
-    public SshChannelClosedException(int channelId, Throwable cause) {
+    public SshChannelClosedException(long channelId, Throwable cause) {
         this(channelId, cause.getMessage(), cause);
     }
 
-    public SshChannelClosedException(int channelId, String message, Throwable cause) {
+    public SshChannelClosedException(long channelId, String message, Throwable cause) {
         super(channelId, message, cause);
     }
 }

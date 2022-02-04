@@ -27,15 +27,15 @@ package org.apache.sshd.common.channel.exception;
 public class SshChannelBufferedOutputException extends SshChannelException {
     private static final long serialVersionUID = -8663890657820958046L;
 
-    public SshChannelBufferedOutputException(int channelId, String message) {
+    public SshChannelBufferedOutputException(long channelId, String message) {
         this(channelId, message, null);
     }
 
-    public SshChannelBufferedOutputException(int channelId, Throwable cause) {
+    public SshChannelBufferedOutputException(long channelId, Throwable cause) {
         this(channelId, cause.getMessage(), cause);
     }
 
-    public SshChannelBufferedOutputException(int channelId, String message, Throwable cause) {
+    public SshChannelBufferedOutputException(long channelId, String message, Throwable cause) {
         super(channelId, message, cause);
     }
 }

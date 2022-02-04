@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherInformation;
@@ -31,6 +32,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.ConnectionEndpointsIndicator;
 
 /**
@@ -206,5 +208,14 @@ public interface SessionContext
         }
 
         return true;
+    }
+
+    static boolean isValidSessionPayloadSize(long value) {
+        return (value >= 0L) && (value < (Integer.MAX_VALUE - SshConstants.SSH_PACKET_HEADER_LEN - 8 /* some padding */));
+    }
+
+    static long validateSessionPayloadSize(long value, String format) {
+        ValidateUtils.checkTrue(isValidSessionPayloadSize(value), format, value);
+        return value;
     }
 }

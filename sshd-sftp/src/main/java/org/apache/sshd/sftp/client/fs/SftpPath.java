@@ -41,6 +41,7 @@ public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
      *
      * @return the cached {@link SftpClient.Attributes} or {@code null} if there are none cached
      */
+    @SuppressWarnings("javadoc")
     public SftpClient.Attributes getAttributes() {
         // Subclasses may override
         return null;

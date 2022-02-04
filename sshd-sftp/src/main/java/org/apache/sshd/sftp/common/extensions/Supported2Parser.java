@@ -28,14 +28,15 @@ import org.apache.sshd.sftp.common.extensions.Supported2Parser.Supported2;
 
 /**
  * Parses the &quot;supported2&quot; extension as defined in
- * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
+ * <A HREF="https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-13#section-5.4">DRAFT 13 section 5.4</A>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Supported2Parser extends AbstractParser<Supported2> {
     /**
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
+     * @see    <A HREF="https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-13#section-5.4">DRAFT 13 section
+     *         5.4</A>
      */
     public static class Supported2 {
         // CHECKSTYLE:OFF
@@ -43,7 +44,8 @@ public class Supported2Parser extends AbstractParser<Supported2> {
         public int supportedAttributeBits;
         public int supportedOpenFlags;
         public int supportedAccessMask;
-        public int maxReadSize;
+        // Actually UINT32
+        public long maxReadSize;
         public short supportedOpenBlockVector;
         public short supportedBlock;
         //        uint32 attrib-extension-count
@@ -87,7 +89,7 @@ public class Supported2Parser extends AbstractParser<Supported2> {
         sup2.supportedAttributeBits = buffer.getInt();
         sup2.supportedOpenFlags = buffer.getInt();
         sup2.supportedAccessMask = buffer.getInt();
-        sup2.maxReadSize = buffer.getInt();
+        sup2.maxReadSize = buffer.getUInt();
         sup2.supportedOpenBlockVector = buffer.getShort();
         sup2.supportedBlock = buffer.getShort();
         sup2.attribExtensionNames = buffer.getStringList(true);

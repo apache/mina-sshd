@@ -56,12 +56,12 @@ public class WindowTimeoutTest extends BaseTestSupport {
     public void setUp() throws Exception {
         channel = new AbstractChannel(getCurrentTestName(), true) {
             @Override
-            public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
+            public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
+            public void handleOpenSuccess(long recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
                 throw new UnsupportedOperationException();
             }
 

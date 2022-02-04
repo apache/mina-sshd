@@ -20,7 +20,9 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -37,21 +39,25 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
     /**
      * {@link OpenSshCertificate}s have a type indicating whether the certificate if for a host key (certifying a host
-     * identity) or for a user key (certifying a user identity).
+     * identity) or for a user key (certifying a user identity). <B>Note:</B> values order is significant
      */
     enum Type {
-
         /** User key certificate. */
         USER,
         /** Host key certificate. */
-        HOST;
+        HOST,
+        ;
+
+        public static final List<Type> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
 
         public int getCode() {
             return ordinal() + 1;
         }
 
         public static Type fromCode(int code) {
-            return Type.values()[code - 1];
+            ValidateUtils.checkTrue((code > 0) && (code <= VALUES.size()),
+                    "Invalid type code: %d", code);
+            return VALUES.get(code - 1);
         }
     }
 

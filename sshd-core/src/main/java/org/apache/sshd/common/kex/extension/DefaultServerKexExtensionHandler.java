@@ -69,6 +69,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
      * <dd>The EXT_INFO message at {@link KexPhase#NEWKEYS} was done.</dd>
      * </dl>
      */
+    @SuppressWarnings("javadoc")
     public static final AttributeKey<Boolean> EXT_INFO_SENT_AT_NEWKEYS = new AttributeKey<>();
 
     public DefaultServerKexExtensionHandler() {
@@ -141,6 +142,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
      * @param phase      {@link KexPhase} of the SSH protocol
      * @param marshaller {@link BiConsumer} writing the extensions into an SSH message
      */
+    @SuppressWarnings("javadoc")
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
         if (phase == KexPhase.NEWKEYS) {
             Collection<String> algorithms = session.getSignatureFactoriesNames();

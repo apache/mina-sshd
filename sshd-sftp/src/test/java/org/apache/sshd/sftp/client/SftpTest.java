@@ -519,7 +519,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS);
         buffer.putByte((byte) SftpConstants.SSH_FILEXFER_TYPE_REGULAR);
 
-        buffer.putInt(0);
+        buffer.putUInt(0L);
 
         int reqId = sftp.send(SftpConstants.SSH_FXP_OPEN, buffer);
         Buffer response = sftp.receive(reqId);
@@ -528,7 +528,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     private byte[] getRawFileHandle(Buffer buffer) {
-        buffer.getInt(); // length
+        buffer.getUInt(); // length
         int type = buffer.getUByte();
         assertEquals("Mismatched response type", SftpConstants.SSH_FXP_HANDLE, type);
         buffer.getInt(); // id

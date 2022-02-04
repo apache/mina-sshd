@@ -38,7 +38,7 @@ public interface ChannelListener extends SshdEventListener {
 
     /**
      * Called to inform about initial setup of a channel via the
-     * {@link Channel#init(org.apache.sshd.common.session.ConnectionService, org.apache.sshd.common.session.Session, int)}
+     * {@link Channel#init(org.apache.sshd.common.session.ConnectionService, org.apache.sshd.common.session.Session, long)}
      * method. <B>Note:</B> this method is guaranteed to be called before either of the
      * {@link #channelOpenSuccess(Channel)} or {@link #channelOpenFailure(Channel, Throwable)} will be called
      *

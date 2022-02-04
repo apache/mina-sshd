@@ -36,8 +36,8 @@ import org.apache.sshd.sftp.common.extensions.SupportedParser.Supported;
 public class SupportedParser extends AbstractParser<Supported> {
     /**
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
-     * @see    <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.txt">DRAFT
-     *         05 - section 4.4</A>
+     * @see    <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05">DRAFT 05
+     *         - section 4.4</A>
      */
     public static class Supported {
         // CHECKSTYLE:OFF
@@ -45,7 +45,8 @@ public class SupportedParser extends AbstractParser<Supported> {
         public int supportedAttributeBits;
         public int supportedOpenFlags;
         public int supportedAccessMask;
-        public int maxReadSize;
+        // Actually UINT32
+        public long maxReadSize;
         public Collection<String> extensionNames;
         // CHECKSTYLE:ON
 
@@ -81,7 +82,7 @@ public class SupportedParser extends AbstractParser<Supported> {
         sup.supportedAttributeBits = buffer.getInt();
         sup.supportedOpenFlags = buffer.getInt();
         sup.supportedAccessMask = buffer.getInt();
-        sup.maxReadSize = buffer.getInt();
+        sup.maxReadSize = buffer.getUInt();
         sup.extensionNames = buffer.getStringList(false);
         return sup;
     }

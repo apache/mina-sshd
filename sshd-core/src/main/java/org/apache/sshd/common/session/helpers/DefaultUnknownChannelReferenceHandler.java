@@ -46,7 +46,7 @@ public class DefaultUnknownChannelReferenceHandler
 
     @Override
     public Channel handleUnknownChannelCommand(
-            ConnectionService service, byte cmd, int channelId, Buffer buffer)
+            ConnectionService service, byte cmd, long channelId, Buffer buffer)
             throws IOException {
         Session session = service.getSession();
         // Use DEBUG level to avoid log overflow due to invalid messages flood
@@ -97,7 +97,7 @@ public class DefaultUnknownChannelReferenceHandler
     }
 
     protected IoWriteFuture sendFailureResponse(
-            ConnectionService service, byte cmd, int channelId)
+            ConnectionService service, byte cmd, long channelId)
             throws IOException {
         Session session = service.getSession();
         // Use DEBUG level to avoid log overflow due to invalid messages flood
@@ -107,7 +107,7 @@ public class DefaultUnknownChannelReferenceHandler
         }
 
         Buffer rsp = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, Integer.BYTES);
-        rsp.putInt(channelId);
+        rsp.putUInt(channelId);
         return session.writePacket(rsp);
     }
 }

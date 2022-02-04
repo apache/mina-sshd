@@ -49,12 +49,12 @@ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 public class WindowInitTest extends BaseTestSupport {
     private static final AbstractChannel MOCK_CHANNEL = new AbstractChannel(true) {
         @Override
-        public OpenFuture open(int recipient, long rwSize, long packetSize, Buffer buffer) {
+        public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
             return null;
         }
 
         @Override
-        public void handleOpenSuccess(int recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
+        public void handleOpenSuccess(long recipient, long rwSize, long packetSize, Buffer buffer) throws IOException {
             // ignored
         }
 

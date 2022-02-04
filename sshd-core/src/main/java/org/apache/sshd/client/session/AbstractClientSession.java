@@ -383,7 +383,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             throws IOException {
         ChannelExec channel = new ChannelExec(command, ptyConfig, env);
         ConnectionService service = getConnectionService();
-        int id = service.registerChannel(channel);
+        long id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
             log.debug("createExecChannel({})[{}] created id={} - PTY={}", this, command, id, ptyConfig);
         }
@@ -394,7 +394,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     public ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException {
         ChannelSubsystem channel = new ChannelSubsystem(subsystem);
         ConnectionService service = getConnectionService();
-        int id = service.registerChannel(channel);
+        long id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
             log.debug("createSubsystemChannel({})[{}] created id={}", this, subsystem, id);
         }
@@ -406,7 +406,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             throws IOException {
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
         ConnectionService service = getConnectionService();
-        int id = service.registerChannel(channel);
+        long id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
             log.debug("createDirectTcpipChannel({})[{} => {}] created id={}", this, local, remote, id);
         }
@@ -496,7 +496,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
         ChannelShell channel = new ChannelShell(ptyConfig, env);
         ConnectionService service = getConnectionService();
-        int id = service.registerChannel(channel);
+        long id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
             log.debug("createShellChannel({}) created id={} - PTY={}", this, id, ptyConfig);
         }

@@ -241,7 +241,7 @@ public class SftpSubsystem
     @Override
     public void setIoOutputStream(IoOutputStream out) {
         ChannelSession channel = getServerChannelSession();
-        int channelId = channel.getId();
+        long channelId = channel.getId();
         this.out = new BufferedIoOutputStream("sftp-out@" + channelId, channelId, out, channel);
     }
 
@@ -274,7 +274,7 @@ public class SftpSubsystem
             int msglen = buffer.getInt();
             if (buffer.available() >= msglen) {
                 Buffer b = new ByteArrayBuffer(msglen + Integer.BYTES + Long.SIZE /* a bit extra */, false);
-                b.putInt(msglen);
+                b.putUInt(msglen);
                 b.putRawBytes(buffer.array(), buffer.rpos(), msglen);
                 requests.add(b);
                 buffer.rpos(rpos + msglen + Integer.BYTES);
@@ -719,7 +719,7 @@ public class SftpSubsystem
                 reply.putInt(id);
 
                 int lenPos = reply.wpos();
-                reply.putInt(0);
+                reply.putUInt(0L);  // save room for actual length
 
                 int maxDataSize = SftpModuleProperties.MAX_READDIR_DATA_SIZE.getRequired(session);
                 int count = doReadDir(id, handle, dh, reply, maxDataSize, false);
