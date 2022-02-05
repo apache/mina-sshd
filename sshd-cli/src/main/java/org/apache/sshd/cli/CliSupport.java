@@ -20,10 +20,14 @@ package org.apache.sshd.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -340,5 +344,73 @@ public abstract class CliSupport {
         }
 
         return new ArrayList<>(available);
+    }
+
+    public static String[] splitCommandLineArguments(String line) {
+        line = GenericUtils.trimToEmpty(line);
+        if (GenericUtils.isBlank(line)) {
+            return GenericUtils.EMPTY_STRING_ARRAY;
+        }
+
+        Collection<String> args = Collections.emptyList();
+        for (int index = 0; index < GenericUtils.QUOTES.length(); index++) {
+            char delim = GenericUtils.QUOTES.charAt(index);
+            int startPos = line.indexOf(delim);
+            int endPos = -1;
+            if (startPos >= 0) {
+                endPos = line.indexOf(delim, startPos + 1);
+            }
+
+            if ((startPos >= 0) && (endPos > startPos)) {
+                if (GenericUtils.isEmpty(args)) {
+                    args = new LinkedList<>();
+                }
+
+                String prefix = (startPos > 0) ? line.substring(0, startPos).trim() : "";
+                String[] extra = GenericUtils.split(prefix, ' ');
+                if (!GenericUtils.isEmpty(extra)) {
+                    args.addAll(Arrays.asList(extra));
+                }
+
+                String value = line.substring(startPos + 1, endPos);
+                args.add(value);
+
+                line = (endPos < (line.length() - 1)) ? line.substring(endPos + 1).trim() : "";
+                if (GenericUtils.isBlank(line)) {
+                    break;
+                }
+
+                index = -1; // start delimiters again
+            }
+        }
+
+        // see if any leftovers
+        String[] extra = GenericUtils.split(line, ' ');
+        if (GenericUtils.isEmpty(args)) {
+            return extra;
+        }
+
+        if (!GenericUtils.isEmpty(extra)) {
+            if (GenericUtils.isEmpty(args)) {
+                args = new LinkedList<>();
+            }
+            args.addAll(Arrays.asList(extra));
+        }
+
+        return args.toArray(GenericUtils.EMPTY_STRING_ARRAY);
+    }
+
+    public static void printFieldsValues(Object info, PrintStream stdout) throws Exception {
+        Field[] fields = info.getClass().getFields();
+        for (Field f : fields) {
+            String name = f.getName();
+            int mod = f.getModifiers();
+            if (Modifier.isStatic(mod)) {
+                continue;
+            }
+
+            Object value = f.get(info);
+            stdout.append("    ").append(name).append(": ").println(value);
+        }
     }
 }

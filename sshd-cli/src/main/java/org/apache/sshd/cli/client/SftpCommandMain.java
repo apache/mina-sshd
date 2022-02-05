@@ -26,8 +26,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -44,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.apache.sshd.cli.CliLogger;
+import org.apache.sshd.cli.CliSupport;
 import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
@@ -719,7 +718,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numComps = GenericUtils.length(comps);
             String pathArg = (numComps <= 0) ? null : GenericUtils.trimToEmpty(comps[numComps - 1]);
             String flags = (numComps >= 2) ? GenericUtils.trimToEmpty(comps[0]) : null;
@@ -763,7 +762,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numComps = GenericUtils.length(comps);
             String pathArg = (numComps <= 0) ? null : GenericUtils.trimToEmpty(comps[numComps - 1]);
             String flags = (numComps >= 2) ? GenericUtils.trimToEmpty(comps[0]) : null;
@@ -818,7 +817,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue(numArgs >= 1, "No arguments");
             ValidateUtils.checkTrue(numArgs <= 2, "Too many arguments: %s", args);
@@ -932,7 +931,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             ValidateUtils.checkTrue(GenericUtils.length(comps) == 2, "Invalid number of arguments: %s", args);
 
             String oldPath = resolveRemotePath(GenericUtils.trimToEmpty(comps[0]));
@@ -959,7 +958,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue(numArgs <= 1, "Invalid number of arguments: %s", args);
 
@@ -967,7 +966,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             OpenSSHLimitsExtension ext = sftp.getExtension(OpenSSHLimitsExtension.class);
             ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
             OpenSSHLimitsExtensionInfo info = ext.limits();
-            printFieldsValues(info, stdout);
+            CliSupport.printFieldsValues(info, stdout);
             return false;
         }
     }
@@ -988,7 +987,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue(numArgs <= 1, "Invalid number of arguments: %s", args);
 
@@ -999,7 +998,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             String remPath = resolveRemotePath(
                     (numArgs >= 1) ? GenericUtils.trimToEmpty(comps[0]) : GenericUtils.trimToEmpty(args));
             OpenSSHStatExtensionInfo info = ext.stat(remPath);
-            printFieldsValues(info, stdout);
+            CliSupport.printFieldsValues(info, stdout);
             return false;
         }
     }
@@ -1020,7 +1019,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             ValidateUtils.checkTrue(GenericUtils.length(comps) <= 1, "Invalid number of arguments: %s", args);
 
             String path = GenericUtils.trimToEmpty(resolveRemotePath(args));
@@ -1046,7 +1045,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         @Override
         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             ValidateUtils.checkTrue(GenericUtils.length(comps) <= 1, "Invalid number of arguments: %s", args);
 
             String path = GenericUtils.trimToEmpty(resolveRemotePath(args));
@@ -1202,7 +1201,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         }
 
         protected void executeCommand(String args, boolean upload, PrintStream stdout) throws IOException {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numArgs = GenericUtils.length(comps);
             ValidateUtils.checkTrue((numArgs >= 1) && (numArgs <= 3), "Invalid number of arguments: %s", args);
 
@@ -1325,7 +1324,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            String[] comps = GenericUtils.split(args, ' ');
+            String[] comps = CliSupport.splitCommandLineArguments(args);
             int numArgs = GenericUtils.length(comps);
             if (numArgs <= 0) {
                 stdout.append("    ").append(getName()).append(' ').println(isShowProgress() ? "on" : "off");
@@ -1343,22 +1342,6 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             }
 
             return false;
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static void printFieldsValues(Object info, PrintStream stdout) throws Exception {
-        Field[] fields = info.getClass().getFields();
-        for (Field f : fields) {
-            String name = f.getName();
-            int mod = f.getModifiers();
-            if (Modifier.isStatic(mod)) {
-                continue;
-            }
-
-            Object value = f.get(info);
-            stdout.append("    ").append(name).append(": ").println(value);
         }
     }
 }
