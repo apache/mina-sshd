@@ -53,7 +53,7 @@ There are several exceptions to this rule:
 
 * Cases where the value serves as argument for allocation of other data structures based on its value - e.g., arrays, lists. This was
 done for *convenience* reasons since Java does not support unsigned array/list sizes. In such cases, special validation code was applied
-to make sure the requested value does not exceed `Integer#MAX_VALUE` (sometimes even less) in order to protected the code from malicious
+to make sure the requested value does not exceed `Integer#MAX_VALUE` (sometimes even less) in order to protect the code from malicious
 or malformed packets. It is important to bear in mind that in the vast majority of the cases we do not want to be able to allocate arrays
 or lists having billions of elements as it would almost definitely cause out-of-memory issues.
 
