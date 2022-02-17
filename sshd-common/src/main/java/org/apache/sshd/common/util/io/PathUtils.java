@@ -19,11 +19,14 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.functors.UnaryEquator;
 
 /**
@@ -42,6 +45,19 @@ public final class PathUtils {
 
     public static final UnaryEquator<Path> EQ_CASE_SENSITIVE_FILENAME
             = (p1, p2) -> BY_CASE_SENSITIVE_FILENAME.compare(p1, p2) == 0;
+
+    private static final class LazyDefaultUserHomeFolderHolder {
+        private static final Path PATH
+                = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
+                        .toAbsolutePath()
+                        .normalize();
+
+        private LazyDefaultUserHomeFolderHolder() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+    }
+
+    public static final char HOME_TILDE_CHAR = '~';
 
     /**
      * Private Constructor
@@ -72,5 +88,62 @@ public final class PathUtils {
         String n1 = Objects.toString(p1.getFileName(), null);
         String n2 = Objects.toString(p2.getFileName(), null);
         return GenericUtils.safeCompare(n1, n2, caseSensitive);
+    }
+
+    /**
+     * <UL>
+     *      <LI>Replaces <U>leading</U> '~' with user's HOME directory</LI>
+     *      <LI>Replaces any forward slashes with the O/S directory separator</LI>
+     * </UL>
+     *
+     * @param path Input path - ignored if {@code null}/empty/blank
+     * @return Adjusted path
+     */
+    public static String normalizePath(String path) {
+        if (GenericUtils.isBlank(path)) {
+            return path;
+        }
+
+        if (path.charAt(0) == HOME_TILDE_CHAR) {
+            Path homeDir = Objects.requireNonNull(getUserHomeFolder(), "No user home folder available");
+            if (path.length() > 1) {
+                path = homeDir + path.substring(1);
+            } else {
+                path = homeDir.toString();
+            }
+        }
+
+        return path.replace('/', File.separatorChar);
+    }
+
+    /**
+     * @return The {@link Path} to the currently running user home
+     */
+    @SuppressWarnings("synthetic-access")
+    public static Path getUserHomeFolder() {
+        return LazyDefaultUserHomeFolderHolder.PATH;
+    }
+
+    public static StringBuilder appendUserHome(StringBuilder sb) {
+        return appendUserHome(sb, getUserHomeFolder());
+    }
+
+    public static StringBuilder appendUserHome(StringBuilder sb, Path userHome) {
+        return appendUserHome(sb, Objects.requireNonNull(userHome, "No user home folder").toString());
+    }
+
+    public static StringBuilder appendUserHome(StringBuilder sb, String userHome) {
+        if (GenericUtils.isEmpty(userHome)) {
+            return sb;
+        }
+
+        sb.append(userHome);
+        // strip any ending separator since we add our own
+        int len = sb.length();
+        if (sb.charAt(len - 1) == File.separatorChar) {
+            sb.setLength(len - 1);
+        }
+
+        return sb;
     }
 }

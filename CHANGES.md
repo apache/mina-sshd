@@ -57,6 +57,10 @@ to make sure the requested value does not exceed `Integer#MAX_VALUE` (sometimes 
 or malformed packets. It is important to bear in mind that in the vast majority of the cases we do not want to be able to allocate arrays
 or lists having billions of elements as it would almost definitely cause out-of-memory issues.
 
+## User HOME directory resolution and usage have been moved to *PathUtils*
+
+Was originally in *HostConfigEntry*.
+
 ## Minor code helpers
 
 ## Behavioral changes and enhancements

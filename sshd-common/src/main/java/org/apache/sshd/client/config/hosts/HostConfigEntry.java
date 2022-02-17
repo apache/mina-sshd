@@ -48,7 +48,6 @@ import java.util.TreeMap;
 
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
-import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -56,6 +55,7 @@ import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.PathUtils;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.io.input.NoCloseReader;
 import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
@@ -114,7 +114,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public static final String MULTI_VALUE_SEPARATORS = " ,";
 
-    public static final char HOME_TILDE_CHAR = '~';
     public static final char PATH_MACRO_CHAR = '%';
     public static final char LOCAL_HOME_MACRO = 'd';
     public static final char LOCAL_USER_MACRO = 'u';
@@ -1148,9 +1147,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
             for (int curPos = 0; curPos < elem.length(); curPos++) {
                 char ch = elem.charAt(curPos);
-                if (ch == HOME_TILDE_CHAR) {
+                if (ch == PathUtils.HOME_TILDE_CHAR) {
                     ValidateUtils.checkTrue((curPos == 0) && (index == 0), "Home tilde must be first: %s", id);
-                    appendUserHome(sb);
+                    PathUtils.appendUserHome(sb);
                 } else if (ch == PATH_MACRO_CHAR) {
                     curPos++;
                     ValidateUtils.checkTrue(curPos < elem.length(), "Missing macro modifier in %s", id);
@@ -1161,7 +1160,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             break;
                         case LOCAL_HOME_MACRO:
                             ValidateUtils.checkTrue((curPos == 1) && (index == 0), "Home macro must be first: %s", id);
-                            appendUserHome(sb);
+                            PathUtils.appendUserHome(sb);
                             break;
                         case LOCAL_USER_MACRO:
                             sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(),
@@ -1192,29 +1191,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
 
         return sb.toString();
-    }
-
-    public static StringBuilder appendUserHome(StringBuilder sb) {
-        return appendUserHome(sb, IdentityUtils.getUserHomeFolder());
-    }
-
-    public static StringBuilder appendUserHome(StringBuilder sb, Path userHome) {
-        return appendUserHome(sb, Objects.requireNonNull(userHome, "No user home folder").toString());
-    }
-
-    public static StringBuilder appendUserHome(StringBuilder sb, String userHome) {
-        if (GenericUtils.isEmpty(userHome)) {
-            return sb;
-        }
-
-        sb.append(userHome);
-        // strip any ending separator since we add our own
-        int len = sb.length();
-        if (sb.charAt(len - 1) == File.separatorChar) {
-            sb.setLength(len - 1);
-        }
-
-        return sb;
     }
 
     /**

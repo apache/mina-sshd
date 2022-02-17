@@ -42,6 +42,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.PathUtils;
 
 /**
  * <P>
@@ -498,7 +499,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
     }
 
     private static final class LazyDefaultKeysFolderHolder {
-        private static final Path PATH = IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
+        private static final Path PATH = PathUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
 
         private LazyDefaultKeysFolderHolder() {
             throw new UnsupportedOperationException("No instance allowed");

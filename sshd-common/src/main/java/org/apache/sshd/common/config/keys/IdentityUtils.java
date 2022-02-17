@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.Collections;
@@ -46,25 +45,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public final class IdentityUtils {
     private IdentityUtils() {
         throw new UnsupportedOperationException("No instance");
-    }
-
-    private static final class LazyDefaultUserHomeFolderHolder {
-        private static final Path PATH
-                = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
-                        .toAbsolutePath()
-                        .normalize();
-
-        private LazyDefaultUserHomeFolderHolder() {
-            throw new UnsupportedOperationException("No instance allowed");
-        }
-    }
-
-    /**
-     * @return The {@link Path} to the currently running user home
-     */
-    @SuppressWarnings("synthetic-access")
-    public static Path getUserHomeFolder() {
-        return LazyDefaultUserHomeFolderHolder.PATH;
     }
 
     /**

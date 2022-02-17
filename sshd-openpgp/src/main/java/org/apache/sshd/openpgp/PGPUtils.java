@@ -28,10 +28,10 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.PropertyResolverUtils;
-import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.PathUtils;
 import org.c02e.jpgpj.CompressionAlgorithm;
 import org.c02e.jpgpj.EncryptionAlgorithm;
 import org.c02e.jpgpj.Key;
@@ -161,7 +161,7 @@ public final class PGPUtils {
     }
 
     private static final class LazyDefaultPgpKeysFolderHolder {
-        private static final Path PATH = IdentityUtils.getUserHomeFolder()
+        private static final Path PATH = PathUtils.getUserHomeFolder()
                 .resolve(OsUtils.isUNIX() ? STD_LINUX_PGP_FOLDER_NAME : STD_WINDOWS_PGP_FOLDER_NAME);
 
         private LazyDefaultPgpKeysFolderHolder() {
