@@ -50,11 +50,10 @@ public class PathUtilsTest extends JUnitTestSupport {
     public void testNormalizeLeadingUserHomePath() {
         Path expected = PathUtils.getUserHomeFolder()
                 .resolve(getClass().getSimpleName())
-                .resolve(getCurrentTestName())
-                ;
+                .resolve(getCurrentTestName());
         String actual = PathUtils.normalizePath(PathUtils.HOME_TILDE_CHAR
-            + File.separator + getClass().getSimpleName()
-            + File.separator + getCurrentTestName());
+                                                + File.separator + getClass().getSimpleName()
+                                                + File.separator + getCurrentTestName());
         assertEquals(expected.toString(), actual);
     }
 

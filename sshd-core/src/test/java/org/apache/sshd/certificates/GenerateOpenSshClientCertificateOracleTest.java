@@ -72,11 +72,11 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
     }
 
     protected String getClientPublicKeyResource() {
-        return getClientPrivateKeyResource() + ".pub";
+        return getClientPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected String getOracle() {
-        return getClientPrivateKeyResource() + "-cert.pub";
+        return getClientPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected PublicKey readPublicKeyFromResource(String resource) throws Exception {

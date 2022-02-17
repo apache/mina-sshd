@@ -30,6 +30,7 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -80,7 +81,7 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
             throw e;
         }
 
-        URL urlPubKey = getClass().getResource(resourceKey + ".pub");
+        URL urlPubKey = getClass().getResource(resourceKey + PublicKeyEntry.PUBKEY_FILE_SUFFIX);
         assertNotNull("Missing public key resource: " + resourceKey, urlPubKey);
 
         List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(urlPubKey);

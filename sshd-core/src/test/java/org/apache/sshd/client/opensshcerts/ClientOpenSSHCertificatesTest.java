@@ -88,10 +88,13 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
                     .withFileFromClasspath("user02_authorized_keys",
                             "org/apache/sshd/client/opensshcerts/user/user02_authorized_keys")
                     .withFileFromClasspath("host01", "org/apache/sshd/client/opensshcerts/host/host01")
-                    .withFileFromClasspath("host01.pub", "org/apache/sshd/client/opensshcerts/host/host01.pub")
+                    .withFileFromClasspath("host01" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
+                            "org/apache/sshd/client/opensshcerts/host/host01" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
                     .withFileFromClasspath("host02", "org/apache/sshd/client/opensshcerts/host/host02")
-                    .withFileFromClasspath("host02.pub", "org/apache/sshd/client/opensshcerts/host/host02.pub")
-                    .withFileFromClasspath("ca.pub", "org/apache/sshd/client/opensshcerts/ca/ca.pub")
+                    .withFileFromClasspath("host02" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
+                            "org/apache/sshd/client/opensshcerts/host/host02" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
+                    .withFileFromClasspath("ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
+                            "org/apache/sshd/client/opensshcerts/ca/ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
                     .withFileFromClasspath("Dockerfile", "org/apache/sshd/client/opensshcerts/docker/Dockerfile"))
                             // must be set to "/keys/host/host01" or "/keys/host/host02"
                             .withEnv("SSH_HOST_KEY", "/keys/host/host01")
@@ -111,7 +114,7 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    @Parameterized.Parameters(name = "key: {0}, cert: {0}-cert.pub")
+    @Parameterized.Parameters(name = "key: {0}, cert: {0}-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
     public static Iterable<? extends String> privateKeyParams() {
         return Arrays.asList(
                 "user01_rsa_sha2_256_2048",
@@ -129,7 +132,7 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
     }
 
     private String getCertificateResource() {
-        return getPrivateKeyResource() + "-cert.pub";
+        return getPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     @Test

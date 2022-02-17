@@ -92,12 +92,12 @@ public final class PathUtils {
 
     /**
      * <UL>
-     *      <LI>Replaces <U>leading</U> '~' with user's HOME directory</LI>
-     *      <LI>Replaces any forward slashes with the O/S directory separator</LI>
+     * <LI>Replaces <U>leading</U> '~' with user's HOME directory</LI>
+     * <LI>Replaces any forward slashes with the O/S directory separator</LI>
      * </UL>
      *
-     * @param path Input path - ignored if {@code null}/empty/blank
-     * @return Adjusted path
+     * @param  path Input path - ignored if {@code null}/empty/blank
+     * @return      Adjusted path
      */
     public static String normalizePath(String path) {
         if (GenericUtils.isBlank(path)) {

@@ -64,7 +64,7 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
 
     @SuppressWarnings("synthetic-access")
     private String getCertificateResource() {
-        return USER_KEY_PATH + params.privateKey + "-cert.pub";
+        return USER_KEY_PATH + params.privateKey + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     @Test

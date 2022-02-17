@@ -30,6 +30,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.keyprovider.FileHostKeyCertificateProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -103,8 +104,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         List<Object[]> list = new ArrayList<>();
 
         String key = "ssh_host_rsa_key";
-        String certificate = "ssh_host_rsa_key_sha1-cert.pub";
-        String certificateSha512 = "ssh_host_rsa_key-cert.pub";
+        String certificate = "ssh_host_rsa_key_sha1-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
+        String certificateSha512 = "ssh_host_rsa_key-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
 
         // default client
         list.add(new Object[] {

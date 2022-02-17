@@ -50,6 +50,57 @@ and presenting them to the server as part of the authentication process. Reading
 for the standard keys and formats. Using additional non-standard special features requires that the [Bouncy Castle](https://www.bouncycastle.org/) supporting
 artifacts be available in the code's classpath.
 
+#### Loading key files
+
+In order to use password-less authentication the user needs to provide one or more `KeyPair`-s that are used to "prove" the client's identity for
+the server. The code supports most if not all of the currently used key file formats. See `SshKeyDumpMain` class for example of how to load files - basically:
+
+```java
+    KeyPairResourceLoader loader = SecurityUtils.getKeyPairResourceParser();
+    Collection<KeyPair> keys = loader.loadKeyPairs(null, filePath, passwordProvider);
+```
+
+For *PUTTY* key files one needs to include the *sshd-putty* module and use a different loader:
+
+```java
+    Collection<KeyPair> keys = PuttyKeyUtils.DEFAULT_INSTANCE.loadKeyPairs(null, filePath, passwordProvider);
+```
+
+**Note:** reminder - a user's "identity" is the file that contains the **private** key - there is no need to provide the public key file since the
+private key either already contains the public key in it, or it can be easily calculated from the private one.
+
+Once the keys are loaded, one simply needs to provide them to the client session:
+
+```java
+    try (ClientSession session = ...estblish initial session...) {
+        for (KeyPair kp : keys) {
+            session.addKeyIdentity(kp);
+        }
+        
+        session.auth().await(...);
+    }
+```
+
+Instead of doing this on every session, it is possible to load the keys only **once** and then wrap them inside a `KeyIdentityProvider`
+that is setup during *SshClient* setup:
+
+```java
+    Collection<KeyPair> keys = ...load the keys ...
+    SshClient client = ...setup client...
+    client.setKeyIdentityProvider(KeyIdentityProvider.wrapKeyPairs(keys));
+    client.start();
+```
+
+The provided keys will be used for **all* the sessions - *Note:*
+
+* One can **add** key identities to specific sessions.
+
+* A similar effect can be achiveved for **passwords**  by registering a `PasswordIdentityProvider` with the *SshClient*, and
+thus forego the need to provide the password repeatedly for each session. In this context, one can go even one step forward
+and provide a **combined** `AuthenticationIdentitiesProvider` that provides **both** passwords and key pairs. Both type of providers
+are invoked with the established `SessionContext` so the user can actually pick which mechanism to use, what password/key to
+use according to the server's identity.
+
 #### Providing passwords for encrypted key files
 
 The `FilePasswordProvider` is required for all private key files that are encrypted and being loaded (not just the "identity" ones). If the user
@@ -100,7 +151,7 @@ This interface is required for full support of `keyboard-interactive` authentica
 The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
 provided - including support for `SSH_MSG_USERAUTH_PASSWD_CHANGEREQ` as described in [RFC 4252 section 8](https://tools.ietf.org/html/rfc4252#section-8).
 
-While ]RFC-4256](https://tools.ietf.org/html/rfc4256) support is the primary purpose of this interface, it can also be used to retrieve the server's
+While [RFC-4256](https://tools.ietf.org/html/rfc4256) support is the primary purpose of this interface, it can also be used to retrieve the server's
 welcome banner as described in [RFC 4252 section 5.4](https://tools.ietf.org/html/rfc4252#section-5.4) as well as its initial identification string
 as described in [RFC 4253 section 4.2](https://tools.ietf.org/html/rfc4253#section-4.2).
 

@@ -103,7 +103,7 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     @Test
     @Ignore("Used to test specific files")
     public void testSpecificFile() throws Exception {
-        Path path = Paths.get("C:" + File.separator + "Temp", "id_ed25519.pub");
+        Path path = Paths.get("C:" + File.separator + "Temp", "id_ed25519" + PublicKeyEntry.PUBKEY_FILE_SUFFIX);
         testReadAuthorizedKeys(AuthorizedKeyEntry.readAuthorizedKeys(path));
     }
 

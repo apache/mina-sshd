@@ -67,6 +67,11 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
      */
     public static final String STD_KEYFILE_FOLDER_NAME = ".ssh";
 
+    /**
+     * Standard suffix for SSH public key files
+     */
+    public static final String PUBKEY_FILE_SUFFIX = ".pub";
+
     private static final long serialVersionUID = -585506072687602760L;
 
     private static final NavigableMap<String, PublicKeyEntryDataResolver> KEY_DATA_RESOLVERS

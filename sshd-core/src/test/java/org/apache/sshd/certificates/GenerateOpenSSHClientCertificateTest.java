@@ -93,7 +93,7 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
     }
 
     protected String getCAPublicKeyResource() {
-        return getCAPrivateKeyResource() + ".pub";
+        return getCAPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected String getClientPrivateKeyResource() {
@@ -101,11 +101,11 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
     }
 
     protected String getClientPublicKeyResource() {
-        return getClientPrivateKeyResource() + ".pub";
+        return getClientPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected String getOracle() {
-        return getClientPrivateKeyResource() + "-cert.pub";
+        return getClientPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected PublicKey readPublicKeyFromResource(String resource) throws Exception {
