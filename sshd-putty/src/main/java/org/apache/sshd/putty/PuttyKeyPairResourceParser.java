@@ -31,6 +31,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.crypto.Cipher;
@@ -42,8 +43,12 @@ import org.apache.sshd.common.config.keys.IdentityResourceLoader;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.params.Argon2Parameters;
 
 //CHECKSTYLE:OFF
 /**
@@ -95,7 +100,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 //CHECKSTYLE:ON
 public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends PrivateKey>
         extends IdentityResourceLoader<PUB, PRV>, KeyPairResourceParser {
-    String KEY_FILE_HEADER_PREFIX = "PuTTY-User-Key-File";
+    String KEY_FILE_HEADER_PREFIX = "PuTTY-User-Key-File-";
     String PUBLIC_LINES_HEADER = "Public-Lines";
     String PRIVATE_LINES_HEADER = "Private-Lines";
     String PPK_FILE_SUFFIX = ".ppk";
@@ -110,6 +115,9 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
      * Value (case insensitive) used to denote that private key is not encrypted
      */
     String NO_PRIVATE_KEY_ENCRYPTION_VALUE = "none";
+
+    /** PUTTY key v3 MAC key length */
+    int FORMAT_3_MAC_KEY_LENGTH = 32;
 
     @Override
     default boolean canExtractKeyPairs(NamedResource resourceKey, List<String> lines)
@@ -131,7 +139,8 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     }
 
     static byte[] decodePrivateKeyBytes(
-            byte[] prvBytes, String algName, int numBits, String algMode, String password)
+            int formatVersion, byte[] prvBytes, String algName, int numBits, String algMode, String password,
+            Map<String, String> headers)
             throws GeneralSecurityException {
         Objects.requireNonNull(prvBytes, "No encrypted key bytes");
         ValidateUtils.checkNotNullAndNotEmpty(algName, "No encryption algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
@@ -143,8 +152,13 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
             throw new NoSuchAlgorithmException("decodePrivateKeyBytes(" + algName + "-" + numBits + "-" + algMode + ") N/A");
         }
 
+        if ((numBits != 128) && (numBits != 192) && (numBits != 256)) {
+            throw new InvalidKeySpecException("Requested key size (" + numBits + ") is not supported");
+        }
+
         byte[] initVector = new byte[16];
-        byte[] keyValue = toEncryptionKey(password);
+        byte[] keyValue = new byte[numBits / Byte.SIZE];
+        decodeEncryptionKey(formatVersion, password, initVector, keyValue, headers);
         try {
             return decodePrivateKeyBytes(prvBytes, algName, algMode, numBits, initVector, keyValue);
         } finally {
@@ -175,28 +189,111 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     }
 
     /**
-     * Converts a pass-phrase into a key, by following the convention that PuTTY uses. Used to decrypt the private key
+     * Converts a pass-phrase into a key, by following the conventions that PuTTY uses. Used to decrypt the private key
      * when it's encrypted.
-     * 
-     * @param  passphrase               the Password to be used as seed for the key - ignored if {@code null}/empty
-     * @return                          The encryption key bytes - {@code null/empty} if no pass-phrase
+     *
+     * @param  formatVersion            The file format version
+     * @param  passphrase               The Password to be used as seed for the key - ignored if {@code null}/empty
+     * @param  iv                       Initialization vector to be populated if necessary
+     * @param  key                      Key to be populated
+     * @param  headers                  Any extra headers found in the PPK file that might be used for KDF
+     * @throws GeneralSecurityException If cannot derive the key bytes from the password
+     */
+    static void decodeEncryptionKey(
+            int formatVersion, String passphrase, byte[] iv, byte[] key, Map<String, String> headers)
+            throws GeneralSecurityException {
+        String keyDerivationType = getStringHeaderValue(headers, "Key-Derivation");
+        if (GenericUtils.isBlank(keyDerivationType)) {
+            deriveFormat2EncryptionKey(passphrase, iv, key);
+        } else if ("Argon2id".equalsIgnoreCase(keyDerivationType)
+                || "Argon2i".equalsIgnoreCase(keyDerivationType)
+                || "Argon2d".equalsIgnoreCase(keyDerivationType)) {
+            deriveFormat3EncryptionKey(passphrase, keyDerivationType, iv, key, headers);
+        } else {
+            throw new NoSuchAlgorithmException("Unsupported KDF method: " + keyDerivationType);
+        }
+    }
+
+    static void deriveFormat3EncryptionKey(
+            String passphrase, String keyDerivationType, byte[] iv, byte[] key, Map<String, String> headers)
+            throws GeneralSecurityException {
+        ValidateUtils.checkNotNullAndNotEmpty(headers, "Mising file headers for KDF purposes");
+        Objects.requireNonNull(passphrase, "No passphrase provded");
+
+        int parallelism = getIntegerHeaderValue(headers, "Argon2-Parallelism");
+        int iterations = getIntegerHeaderValue(headers, "Argon2-Passes");
+        int memory = getIntegerHeaderValue(headers, "Argon2-Memory");
+        byte[] salt = ValidateUtils.checkNotNullAndNotEmpty(
+                getHexArrayHeaderValue(headers, "Argon2-Salt"), "No Argon2 salt value provided");
+        byte[] hashValue = new byte[key.length + iv.length + FORMAT_3_MAC_KEY_LENGTH];
+        byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
+        try {
+            Argon2Parameters.Builder builder;
+            if ("Argon2id".equalsIgnoreCase(keyDerivationType)) {
+                builder = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id);
+            } else if ("Argon2i".equalsIgnoreCase(keyDerivationType)) {
+                builder = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_i);
+            } else if ("Argon2d".equalsIgnoreCase(keyDerivationType)) {
+                builder = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_i);
+            } else {
+                throw new NoSuchAlgorithmException("Unsupported key derivation type: " + keyDerivationType);
+            }
+            Argon2Parameters params = builder
+                    .withSalt(salt)
+                    .withParallelism(parallelism)
+                    .withMemoryAsKB(memory)
+                    .withIterations(iterations)
+                    .build();
+            Argon2BytesGenerator generator = new Argon2BytesGenerator();
+            generator.init(params);
+            generator.generateBytes(passBytes, hashValue);
+        } finally {
+            Arrays.fill(passBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
+        }
+
+        try {
+            System.arraycopy(hashValue, 0, key, 0, key.length);
+            System.arraycopy(hashValue, key.length, iv, 0, iv.length);
+        } finally {
+            Arrays.fill(hashValue, (byte) 0); // eliminate sensitive data a.s.a.p.
+        }
+    }
+
+    static String getStringHeaderValue(Map<String, String> headers, String key) {
+        return MapEntryUtils.isEmpty(headers) ? null : headers.get(key);
+    }
+
+    static byte[] getHexArrayHeaderValue(Map<String, String> headers, String key) {
+        String value = getStringHeaderValue(headers, key);
+        return BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, value);
+    }
+
+    static int getIntegerHeaderValue(Map<String, String> headers, String key) {
+        String value
+                = ValidateUtils.checkNotNullAndNotEmpty(getStringHeaderValue(headers, key), "Missing %s header value", key);
+        return Integer.parseInt(value);
+    }
+
+    /**
+     * Uses the &quot;legacy&quot; KDF via SHA-1
+     *
+     * @param  passphrase               The Password to be used as seed for the key - ignored if {@code null}/empty
+     * @param  iv                       Initialization vector to be populated if necessary
+     * @param  key                      Key to be populated
      * @throws GeneralSecurityException If cannot retrieve SHA-1 digest
      * @see                             <A HREF=
      *                                  "http://security.stackexchange.com/questions/71341/how-does-putty-derive-the-encryption-key-in-its-ppk-format">
      *                                  How does Putty derive the encryption key in its .ppk format ?</A>
      */
-    static byte[] toEncryptionKey(String passphrase) throws GeneralSecurityException {
-        if (GenericUtils.isEmpty(passphrase)) {
-            return GenericUtils.EMPTY_BYTE_ARRAY;
-        }
+    static void deriveFormat2EncryptionKey(String passphrase, byte[] iv, byte[] key) throws GeneralSecurityException {
+        Objects.requireNonNull(passphrase, "No passphrase provded");
 
         byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
         try {
             MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.sha1.getAlgorithm());
             byte[] stateValue = { 0, 0, 0, 0 };
-            byte[] keyValue = new byte[32];
             try {
-                for (int i = 0, remLen = keyValue.length; i < 2; i++) {
+                for (int i = 0, remLen = key.length; remLen > 0; i++) {
                     hash.reset(); // just making sure
 
                     stateValue[3] = (byte) i;
@@ -205,7 +302,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
 
                     byte[] digest = hash.digest();
                     try {
-                        System.arraycopy(digest, 0, keyValue, i * 20, Math.min(20, remLen));
+                        System.arraycopy(digest, 0, key, i * 20, Math.min(20, remLen));
                     } finally {
                         Arrays.fill(digest, (byte) 0); // eliminate sensitive data a.s.a.p.
                     }
@@ -215,7 +312,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
                 Arrays.fill(stateValue, (byte) 0); // eliminate sensitive data a.s.a.p.
             }
 
-            return keyValue;
+            Arrays.fill(iv, (byte) 0);
         } finally {
             Arrays.fill(passBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
         }

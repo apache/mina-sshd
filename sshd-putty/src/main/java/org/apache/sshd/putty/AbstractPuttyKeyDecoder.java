@@ -28,6 +28,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -96,6 +97,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         List<String> prvLines = Collections.emptyList();
         Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String prvEncryption = null;
+        int formatVersion = -1;
         for (int index = 0, numLines = lines.size(); index < numLines; index++) {
             String l = lines.get(index);
             l = GenericUtils.trimToEmpty(l);
@@ -107,6 +109,16 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             String hdrName = l.substring(0, pos).trim();
             String hdrValue = l.substring(pos + 1).trim();
             headers.put(hdrName, hdrValue);
+            if (hdrName.startsWith(KEY_FILE_HEADER_PREFIX)) {
+                String versionValue = hdrName.substring(KEY_FILE_HEADER_PREFIX.length());
+                int fileVersion = Integer.parseInt(versionValue);
+                if ((formatVersion >= 0) && (fileVersion != formatVersion)) {
+                    throw new InvalidKeySpecException(
+                            "Inconsistent key file version specification: " + formatVersion + " and " + fileVersion);
+                }
+                formatVersion = fileVersion;
+            }
+
             switch (hdrName) {
                 case ENCRYPTION_HEADER:
                     if (prvEncryption != null) {
@@ -126,7 +138,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             }
         }
 
-        return loadKeyPairs(session, resourceKey, pubLines, prvLines, prvEncryption, passwordProvider, headers);
+        return loadKeyPairs(session, resourceKey, formatVersion, pubLines, prvLines, prvEncryption, passwordProvider, headers);
     }
 
     public static List<String> extractDataLines(
@@ -154,17 +166,17 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, NamedResource resourceKey,
+            SessionContext session, NamedResource resourceKey, int formatVersion,
             List<String> pubLines, List<String> prvLines, String prvEncryption,
             FilePasswordProvider passwordProvider, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        return loadKeyPairs(session, resourceKey,
+        return loadKeyPairs(session, resourceKey, formatVersion,
                 KeyPairResourceParser.joinDataLines(pubLines), KeyPairResourceParser.joinDataLines(prvLines),
                 prvEncryption, passwordProvider, headers);
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            SessionContext session, NamedResource resourceKey,
+            SessionContext session, NamedResource resourceKey, int formatVersion,
             String pubData, String prvData, String prvEncryption,
             FilePasswordProvider passwordProvider, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
@@ -176,7 +188,7 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             prvBytes = b64Decoder.decode(prvData);
             if (GenericUtils.isEmpty(prvEncryption)
                     || NO_PRIVATE_KEY_ENCRYPTION_VALUE.equalsIgnoreCase(prvEncryption)) {
-                return loadKeyPairs(resourceKey, pubBytes, prvBytes, headers);
+                return loadKeyPairs(resourceKey, formatVersion, pubBytes, prvBytes, headers);
             }
 
             // format is "<cipher><bits>-<mode>" - e.g., "aes256-cbc"
@@ -211,9 +223,9 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                     }
 
                     byte[] decBytes = PuttyKeyPairResourceParser.decodePrivateKeyBytes(
-                            prvBytes, algName, numBits, mode, password);
+                            formatVersion, prvBytes, algName, numBits, mode, password, headers);
                     try {
-                        keys = loadKeyPairs(resourceKey, pubBytes, decBytes, headers);
+                        keys = loadKeyPairs(resourceKey, formatVersion, pubBytes, decBytes, headers);
                     } finally {
                         Arrays.fill(decBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
                     }
@@ -250,28 +262,30 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, byte[] pubData, byte[] prvData, Map<String, String> headers)
+            NamedResource resourceKey, int formatVersion, byte[] pubData, byte[] prvData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         ValidateUtils.checkNotNullAndNotEmpty(pubData, "No public key data in %s", resourceKey);
         ValidateUtils.checkNotNullAndNotEmpty(prvData, "No private key data in %s", resourceKey);
         try (InputStream pubStream = new ByteArrayInputStream(pubData);
              InputStream prvStream = new ByteArrayInputStream(prvData)) {
-            return loadKeyPairs(resourceKey, pubStream, prvStream, headers);
+            return loadKeyPairs(resourceKey, formatVersion, pubStream, prvStream, headers);
         }
     }
 
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, InputStream pubData, InputStream prvData, Map<String, String> headers)
+            NamedResource resourceKey, int formatVersion,
+            InputStream pubData, InputStream prvData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         try (PuttyKeyReader pubReader
                 = new PuttyKeyReader(ValidateUtils.checkNotNull(pubData, "No public key data in %s", resourceKey));
              PuttyKeyReader prvReader
                      = new PuttyKeyReader(ValidateUtils.checkNotNull(prvData, "No private key data in %s", resourceKey))) {
-            return loadKeyPairs(resourceKey, pubReader, prvReader, headers);
+            return loadKeyPairs(resourceKey, formatVersion, pubReader, prvReader, headers);
         }
     }
 
     public abstract Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
+            NamedResource resourceKey, int formatVersion, PuttyKeyReader pubReader, PuttyKeyReader prvReader,
+            Map<String, String> headers)
             throws IOException, GeneralSecurityException;
 }

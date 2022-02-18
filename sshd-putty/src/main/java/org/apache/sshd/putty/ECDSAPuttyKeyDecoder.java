@@ -57,7 +57,8 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
+            NamedResource resourceKey, int formatVersion, PuttyKeyReader pubReader, PuttyKeyReader prvReader,
+            Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         if (!SecurityUtils.isECCSupported()) {
             throw new NoSuchAlgorithmException("ECC not supported for " + resourceKey);

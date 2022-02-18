@@ -52,7 +52,8 @@ public class RSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<RSAPublicKey, RS
 
     @Override
     public Collection<KeyPair> loadKeyPairs(
-            NamedResource resourceKey, PuttyKeyReader pubReader, PuttyKeyReader prvReader, Map<String, String> headers)
+            NamedResource resourceKey, int formatVersion, PuttyKeyReader pubReader, PuttyKeyReader prvReader,
+            Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         pubReader.skip(); // skip version
 
