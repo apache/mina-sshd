@@ -99,8 +99,8 @@
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
         <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
 
-        <required.java.version>[${javac.target},)</required.java.version>
         <javac.target>${javac.source}</javac.target>
+        <required.java.version>[${javac.target},)</required.java.version>
         <project.build.java.target>${javac.target}</project.build.java.target>
         <maven.compiler.target>${javac.target}</maven.compiler.target>
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
@@ -717,7 +717,7 @@
                             <exclude>*findbugs*</exclude>
                             <exclude>*suppressions*</exclude>
                             <exclude>**/big-msg.txt</exclude>
-                            <!-- Special file imported from another project that we want to keep as-is -->
+                            <!-- Special files imported from another project that we want to keep as-is -->
                             <exclude>**/BCrypt.java</exclude>
                             <exclude>LICENSE*</exclude>
                             <exclude>NOTICE*</exclude>
