@@ -134,6 +134,7 @@
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
+                        <exclude>**/HostBoundPubKeyAuthTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
                     </excludes>

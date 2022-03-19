@@ -29,6 +29,7 @@ import java.util.TreeSet;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -52,6 +53,11 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      */
     public static final AttributeKey<Set<String>> SERVER_ALGORITHMS = new AttributeKey<>();
 
+    /**
+     * Session {@link AttributeKey} storing the version if the server supports host-bound public key authentication.
+     */
+    public static final AttributeKey<Integer> HOSTBOUND_AUTHENTICATION = new AttributeKey<>();
+
     public DefaultClientKexExtensionHandler() {
         super();
     }
@@ -67,6 +73,21 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             throws IOException {
         if (ServerSignatureAlgorithms.NAME.equals(name)) {
             handleServerSignatureAlgorithms(session, ServerSignatureAlgorithms.INSTANCE.parseExtension(data));
+        } else if (HostBoundPubkeyAuthentication.NAME.equals(name)) {
+            Integer version = HostBoundPubkeyAuthentication.INSTANCE.parseExtension(data);
+            if (version == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleKexExtensionRequest({}) : ignoring unknown {} extension", session,
+                            HostBoundPubkeyAuthentication.NAME);
+                }
+            } else if (version.intValue() != 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleKexExtensionRequest({}) : ignoring unknown {} version {}", session,
+                            HostBoundPubkeyAuthentication.NAME, version);
+                }
+            } else {
+                session.setAttribute(HOSTBOUND_AUTHENTICATION, version);
+            }
         }
         return true;
     }

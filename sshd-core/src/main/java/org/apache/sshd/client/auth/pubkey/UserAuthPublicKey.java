@@ -41,6 +41,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
+import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesHolder;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -208,6 +209,11 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         String name = getName();
+        Integer hostBoundPubKeyVersion = session.getAttribute(DefaultClientKexExtensionHandler.HOSTBOUND_AUTHENTICATION);
+        boolean doHostBoundAuth = hostBoundPubKeyVersion != null && hostBoundPubKeyVersion.intValue() == 0;
+        if (doHostBoundAuth) {
+            name = HostBoundPubkeyAuthentication.AUTH_NAME;
+        }
         if (debugEnabled) {
             log.debug("sendAuthDataRequest({})[{}] send SSH_MSG_USERAUTH_REQUEST request {} type={} - fingerprint={}",
                     session, service, name, currentAlgorithm, KeyUtils.getFingerPrint(pubKey));
@@ -225,6 +231,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putBoolean(false);
         buffer.putString(currentAlgorithm);
         buffer.putPublicKey(pubKey);
+        if (doHostBoundAuth) {
+            buffer.putPublicKey(session.getServerKey());
+        }
         session.writePacket(buffer);
         return true;
     }
@@ -271,6 +280,13 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     @Override
     protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
         String name = getName();
+        PublicKey serverKey = null;
+        Integer hostBoundPubKeyVersion = session.getAttribute(DefaultClientKexExtensionHandler.HOSTBOUND_AUTHENTICATION);
+        boolean doHostBoundAuth = hostBoundPubKeyVersion != null && hostBoundPubKeyVersion.intValue() == 0;
+        if (doHostBoundAuth) {
+            name = HostBoundPubkeyAuthentication.AUTH_NAME;
+            serverKey = session.getServerKey();
+        }
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             throw new IllegalStateException(
@@ -325,13 +341,16 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.putBoolean(true);
         buffer.putString(algo);
         buffer.putPublicKey(pubKey);
+        if (serverKey != null) {
+            buffer.putPublicKey(serverKey);
+        }
 
         if (debugEnabled) {
             log.debug(
                     "processAuthDataRequest({})[{}][{}]: signing with algorithm {}", //$NON-NLS-1$
                     session, service, name, algo);
         }
-        byte[] sig = appendSignature(session, service, name, username, algo, pubKey, buffer);
+        byte[] sig = appendSignature(session, service, name, username, algo, pubKey, serverKey, buffer);
         PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (reporter != null) {
             reporter.signalSignatureAttempt(session, service, keyPair, algo, sig);
@@ -342,7 +361,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected byte[] appendSignature(
-            ClientSession session, String service, String name, String username, String algo, PublicKey key, Buffer buffer)
+            ClientSession session, String service, String name, String username, String algo, PublicKey key,
+            PublicKey serverKey, Buffer buffer)
             throws Exception {
         byte[] id = session.getSessionId();
         Buffer bs = new ByteArrayBuffer(
@@ -357,6 +377,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         bs.putBoolean(true);
         bs.putString(algo);
         bs.putPublicKey(key);
+        if (serverKey != null) {
+            bs.putPublicKey(serverKey);
+        }
 
         byte[] contents = bs.getCompactData();
         byte[] sig;
