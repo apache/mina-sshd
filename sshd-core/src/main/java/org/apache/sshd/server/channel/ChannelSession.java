@@ -908,7 +908,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (!isClosing()) {
             if (out != null) {
-                out.flush();
+                out.close();
             }
             sendEof();
             sendExitStatus(exitValue);
