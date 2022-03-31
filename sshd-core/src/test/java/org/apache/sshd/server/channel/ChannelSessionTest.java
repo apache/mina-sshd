@@ -58,6 +58,60 @@ public class ChannelSessionTest extends BaseTestSupport {
         super();
     }
 
+    /**
+     * Testing a command closing output stream when it completes
+     */
+    @Test // see SSHD-1257
+    public void closeOutputStream() throws Exception {
+        try (SshServer server = setupTestServer();
+             SshClient client = setupTestClient()) {
+
+            server.setShellFactory(session -> new CommandExecutionHelper(null) {
+                @Override
+                protected boolean handleCommandLine(String command) throws Exception {
+                    OutputStream out = getOutputStream();
+                    out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
+                    boolean more = !"exit".equals(command);
+                    if (!more) {
+                        out.close();
+                    }
+                    return more;
+                }
+            });
+            server.start();
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(AUTH_TIMEOUT);
+
+                try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                    channel.open().verify(OPEN_TIMEOUT);
+
+                    OutputStream invertedIn = channel.getInvertedIn();
+                    String cmdSent = "echo foo\nexit\n";
+                    invertedIn.write(cmdSent.getBytes());
+                    invertedIn.flush();
+
+                    long waitStart = System.currentTimeMillis();
+                    Collection<ClientChannelEvent> result
+                            = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
+                    long waitEnd = System.currentTimeMillis();
+                    assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
+                            result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+
+                    byte[] b = new byte[1024];
+                    InputStream invertedOut = channel.getInvertedOut();
+                    int l = invertedOut.read(b);
+                    String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
+
+                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
+                }
+            }
+        }
+    }
+
     @Test
     public void testNoFlush() throws Exception {
         try (SshServer server = setupTestServer();

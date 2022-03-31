@@ -195,9 +195,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     public synchronized void flush() throws IOException {
         Channel channel = getChannel();
         if (!isOpen()) {
-            throw new SshChannelClosedException(
-                    channel.getChannelId(),
-                    "flush(" + this + ") length=" + bufferLength + " - stream is already closed");
+            return;
         }
 
         try {
