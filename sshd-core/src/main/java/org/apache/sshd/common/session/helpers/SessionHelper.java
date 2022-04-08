@@ -81,8 +81,6 @@ import org.apache.sshd.core.CoreModuleProperties;
  * Contains split code in order to make {@link AbstractSession} class smaller
  */
 public abstract class SessionHelper extends AbstractKexFactoryManager implements Session {
-    /** Session level lock for regulating access to sensitive data */
-    protected final Object sessionLock = new Object();
 
     // Session timeout measurements
     protected Instant authStart = Instant.now();

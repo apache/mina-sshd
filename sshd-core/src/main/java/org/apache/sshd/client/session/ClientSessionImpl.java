@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.ClientFactoryManager;
@@ -40,6 +41,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.session.helpers.CurrentService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -63,16 +65,12 @@ public class ClientSessionImpl extends AbstractClientSession {
     /** Also guards setting an earlyError and the authFuture together. */
     private final AtomicReference<Throwable> authErrorHolder = new AtomicReference<>();
 
+    private final AtomicBoolean initialServiceRequestSent = new AtomicBoolean();
+
     /**
      * For clients to store their own metadata
      */
     private Map<Object, Object> metadataMap = new HashMap<>();
-
-    // TODO: clean service support a bit
-    private boolean initialServiceRequestSent;
-    private ServiceFactory currentServiceFactory;
-    private Service nextService;
-    private ServiceFactory nextServiceFactory;
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession ioSession) throws Exception {
         super(client, ioSession);
@@ -82,19 +80,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established. For instance, to
         // set the authPassword.
-        List<? extends ServiceFactory> factories = client.getServiceFactories();
-        int numFactories = GenericUtils.size(factories);
-        ValidateUtils.checkTrue((numFactories > 0) && (numFactories <= 2), "One or two services must be configured: %d",
-                numFactories);
-
-        currentServiceFactory = factories.get(0);
-        currentService = currentServiceFactory.create(this);
-        if (numFactories > 1) {
-            nextServiceFactory = factories.get(1);
-            nextService = nextServiceFactory.create(this);
-        } else {
-            nextServiceFactory = null;
-        }
+        getCurrentServices().initialize(client.getServiceFactories());
 
         signalSessionCreated(ioSession);
 
@@ -115,9 +101,20 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     @Override
+    protected CurrentService initializeCurrentService() {
+        return new Services(this);
+    }
+
+    private Services getCurrentServices() {
+        return (Services) currentService;
+    }
+
+    @Override
     protected List<Service> getServices() {
+        Services services = getCurrentServices();
+        Service nextService = services.getNext();
         if (nextService != null) {
-            return Arrays.asList(currentService, nextService);
+            return Arrays.asList(services.getService(), nextService);
         } else {
             return super.getServices();
         }
@@ -206,22 +203,11 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     protected String nextServiceName() {
-        synchronized (sessionLock) {
-            return nextServiceFactory.getName();
-        }
+        return getCurrentServices().getNextName();
     }
 
     public void switchToNextService() throws IOException {
-        synchronized (sessionLock) {
-            if (nextService == null) {
-                throw new IllegalStateException("No service available");
-            }
-            currentServiceFactory = nextServiceFactory;
-            currentService = nextService;
-            nextServiceFactory = null;
-            nextService = null;
-            currentService.start();
-        }
+        getCurrentServices().switchServices();
     }
 
     @Override
@@ -236,11 +222,11 @@ public class ClientSessionImpl extends AbstractClientSession {
     }
 
     protected void sendInitialServiceRequest() throws IOException {
-        if (initialServiceRequestSent) {
+        if (initialServiceRequestSent.getAndSet(true)) {
             return;
         }
-        initialServiceRequestSent = true;
-        String serviceName = currentServiceFactory.getName();
+        Services services = getCurrentServices();
+        String serviceName = services.getName();
         if (log.isDebugEnabled()) {
             log.debug("sendInitialServiceRequest({}) Send SSH_MSG_SERVICE_REQUEST for {}", this, serviceName);
         }
@@ -252,7 +238,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         // for the client's service to start sending data before the service-accept has been received.
         // If "implicit authentication" were to ever be supported, then this would need to be
         // called after service-accept comes back. See SSH-TRANSPORT.
-        currentService.start();
+        services.start();
     }
 
     @Override
@@ -356,5 +342,53 @@ public class ClientSessionImpl extends AbstractClientSession {
     @Override
     public Map<Object, Object> getMetadataMap() {
         return metadataMap;
+    }
+
+    /**
+     * Encapsulates and protects against concurrent access the service switching.
+     */
+    private static class Services extends CurrentService {
+
+        private String nextName;
+
+        private Service next;
+
+        Services(ClientSessionImpl session) {
+            super(session);
+        }
+
+        synchronized void initialize(List<? extends ServiceFactory> factories) throws IOException {
+            int numFactories = GenericUtils.size(factories);
+            ValidateUtils.checkTrue((numFactories > 0) && (numFactories <= 2), "One or two services must be configured: %d",
+                    numFactories);
+            ServiceFactory currentFactory = factories.get(0);
+            // Delay starting the service until after the initial request has been sent.
+            set(currentFactory.create(session), currentFactory.getName(), false);
+            if (numFactories > 1) {
+                ServiceFactory nextFactory = factories.get(1);
+                nextName = nextFactory.getName();
+                next = nextFactory.create(session);
+            }
+        }
+
+        synchronized void switchServices() throws IOException {
+            if (next == null) {
+                throw new IllegalStateException("No service available");
+            }
+            try {
+                set(next, nextName, true);
+            } finally {
+                next = null;
+                nextName = null;
+            }
+        }
+
+        synchronized String getNextName() {
+            return nextName;
+        }
+
+        synchronized Service getNext() {
+            return next;
+        }
     }
 }

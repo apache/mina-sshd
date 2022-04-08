@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -241,11 +242,13 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             return false;
         }
 
-        if (AbstractUserAuthServiceFactory.DEFAULT_NAME.equals(serviceName)
-                && (currentService instanceof ServerUserAuthService)) {
-            ServerUserAuthService authService = (ServerUserAuthService) currentService;
-            if (WelcomeBannerPhase.IMMEDIATE.equals(authService.getWelcomePhase())) {
-                authService.sendWelcomeBanner(this);
+        if (AbstractUserAuthServiceFactory.DEFAULT_NAME.equals(serviceName)) {
+            Service service = currentService.getService();
+            if (service instanceof ServerUserAuthService) {
+                ServerUserAuthService authService = (ServerUserAuthService) service;
+                if (WelcomeBannerPhase.IMMEDIATE.equals(authService.getWelcomePhase())) {
+                    authService.sendWelcomeBanner(this);
+                }
             }
         }
 
@@ -254,18 +257,19 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     public void startService(String name, Buffer buffer) throws Exception {
+        ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified");
         FactoryManager factoryManager = getFactoryManager();
-        currentService = ServiceFactory.create(
-                factoryManager.getServiceFactories(),
-                ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified"),
-                this);
+        ServiceFactory factory = NamedResource.findByName(name, String.CASE_INSENSITIVE_ORDER,
+                factoryManager.getServiceFactories());
+        Service service = factory == null ? null : factory.create(this);
+
         /*
          * According to RFC4253:
          *
          * If the server rejects the service request, it SHOULD send an appropriate SSH_MSG_DISCONNECT message and MUST
          * disconnect.
          */
-        if (currentService == null) {
+        if (service == null) {
             try {
                 SessionDisconnectHandler handler = getSessionDisconnectHandler();
                 if ((handler != null)
@@ -283,6 +287,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
             throw new SshException(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unknown service: " + name);
         }
+        currentService.set(service, factory.getName(), false);
     }
 
     @Override

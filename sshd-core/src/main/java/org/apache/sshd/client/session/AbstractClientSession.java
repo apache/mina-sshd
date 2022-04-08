@@ -48,6 +48,7 @@ import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -632,8 +633,9 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     @Override
     public KeyExchangeFuture switchToNoneCipher() throws IOException {
-        if (!(currentService instanceof AbstractConnectionService)
-                || !GenericUtils.isEmpty(((AbstractConnectionService) currentService).getChannels())) {
+        Service service = currentService.getService();
+        if (!(service instanceof AbstractConnectionService)
+                || !GenericUtils.isEmpty(((AbstractConnectionService) service).getChannels())) {
             throw new IllegalStateException(
                     "The switch to the none cipher must be done immediately after authentication");
         }

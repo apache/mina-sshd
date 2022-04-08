@@ -214,7 +214,8 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected MessageCodingSettings outSettings;
 
-    protected Service currentService;
+    protected final CurrentService currentService;
+
     // SSHD-968 - outgoing sequence number and request name of last sent global request
     protected final AtomicLong globalRequestSeqo = new AtomicLong(-1L);
     protected final AtomicReference<String> pendingGlobalRequest = new AtomicReference<>();
@@ -250,6 +251,8 @@ public abstract class AbstractSession extends SessionHelper {
 
         this.decoderBuffer = new SessionWorkBuffer(this);
 
+        currentService = Objects.requireNonNull(initializeCurrentService(), "No CurrentService set on the session");
+
         attachSession(ioSession, this);
 
         Factory<? extends Random> factory = ValidateUtils.checkNotNull(
@@ -275,6 +278,19 @@ public abstract class AbstractSession extends SessionHelper {
                 throw new RuntimeSshException(e);
             }
         }
+    }
+
+    /**
+     * Creates a new {@link CurrentService} instance managing this session's current SSH service.
+     * <p>
+     * This initialization method is invoked once from the {@link AbstractSession} constructor. Do not rely on subclass
+     * fields being initialized.
+     * </p>
+     *
+     * @return a new {@link CurrentService} instance for the session
+     */
+    protected CurrentService initializeCurrentService() {
+        return new CurrentService(this);
     }
 
     /**
@@ -448,9 +464,7 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected void handleMessage(Buffer buffer) throws Exception {
         try {
-            synchronized (sessionLock) {
-                doHandleMessage(buffer);
-            }
+            doHandleMessage(buffer);
         } catch (Throwable e) {
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
             // if have any ongoing KEX notify it about the failure
@@ -522,8 +536,7 @@ public abstract class AbstractSession extends SessionHelper {
                     }
 
                     handleKexMessage(cmd, buffer);
-                } else if (currentService != null) {
-                    currentService.process(cmd, buffer);
+                } else if (currentService.process(cmd, buffer)) {
                     resetIdleTimeout();
                 } else {
                     /*
@@ -899,8 +912,9 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected List<Service> getServices() {
-        return (currentService != null)
-                ? Collections.singletonList(currentService)
+        Service service = currentService.getService();
+        return (service != null)
+                ? Collections.singletonList(service)
                 : Collections.emptyList();
     }
 
