@@ -469,12 +469,7 @@ public abstract class AbstractSession extends SessionHelper {
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
             // if have any ongoing KEX notify it about the failure
             if (kexFuture != null) {
-                synchronized (kexFuture) {
-                    Object value = kexFuture.getValue();
-                    if (value == null) {
-                        kexFuture.setValue(e);
-                    }
-                }
+                kexFuture.setValue(e);
             }
 
             if (e instanceof Exception) {
@@ -799,12 +794,7 @@ public abstract class AbstractSession extends SessionHelper {
 
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
-            synchronized (kexFuture) {
-                Object value = kexFuture.getValue();
-                if (value == null) {
-                    kexFuture.setValue(Boolean.TRUE);
-                }
-            }
+            kexFuture.setValue(Boolean.TRUE);
         }
 
         signalSessionEvent(SessionListener.Event.KeyEstablished);
@@ -887,12 +877,7 @@ public abstract class AbstractSession extends SessionHelper {
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
             // if have any pending KEX then notify it about the closing session
-            synchronized (kexFuture) {
-                Object value = kexFuture.getValue();
-                if (value == null) {
-                    kexFuture.setValue(new SshException("Session closing while KEX in progress"));
-                }
-            }
+            kexFuture.setValue(new SshException("Session closing while KEX in progress"));
         }
 
         // if anyone waiting for global response notify them about the closing session
@@ -2288,12 +2273,7 @@ public abstract class AbstractSession extends SessionHelper {
         DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(toString(), null);
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(newFuture);
         if (kexFuture != null) {
-            synchronized (kexFuture) {
-                Object value = kexFuture.getValue();
-                if (value == null) {
-                    kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
-                }
-            }
+            kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
         }
 
         return newFuture;

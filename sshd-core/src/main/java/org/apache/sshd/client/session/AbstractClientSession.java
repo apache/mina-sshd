@@ -644,12 +644,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(toString(), null);
             DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
             if (prev != null) {
-                synchronized (prev) {
-                    Object value = prev.getValue();
-                    if (value == null) {
-                        prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
-                    }
-                }
+                prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
             }
 
             String c2sEncServer;
