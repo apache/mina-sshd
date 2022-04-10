@@ -608,11 +608,18 @@ public abstract class AbstractSession extends SessionHelper {
             log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
         }
 
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
-        IoWriteFuture future = writePacket(buffer);
         prepareNewKeys();
-        // Use the new settings from now on for any outgoing packet
-        setOutputEncoding();
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
+        IoWriteFuture future;
+        synchronized (encodeLock) {
+            // writePacket() would also work since it would never try to queue the packet, and would never try to
+            // initiate a new KEX, and thus would never try to get the kexLock monitor. If it did, we might get a
+            // deadlock due to lock inversion. It seems safer to push this out directly, though.
+            future = doWritePacket(buffer);
+            // Use the new settings from now on for any outgoing packet
+            setOutputEncoding();
+        }
+        resetIdleTimeout();
         /*
          * According to https://tools.ietf.org/html/rfc8308#section-2.4:
          *
@@ -625,12 +632,9 @@ public abstract class AbstractSession extends SessionHelper {
          * + As the next packet following the server's first SSH_MSG_NEWKEYS.
          */
         KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null)
-                || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.NEWKEYS))) {
-            return future;
+        if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.NEWKEYS)) {
+            extHandler.sendKexExtensions(this, KexPhase.NEWKEYS);
         }
-
-        extHandler.sendKexExtensions(this, KexPhase.NEWKEYS);
         return future;
     }
 
