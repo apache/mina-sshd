@@ -27,6 +27,7 @@ import java.util.function.Function;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * @param  <T> Type of future
@@ -156,7 +157,11 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
 
     protected void notifyListener(SshFutureListener<T> l) {
         try {
-            l.operationComplete(asT());
+            T arg = asT();
+            ThreadUtils.runAsInternal(() -> {
+                l.operationComplete(arg);
+                return null;
+            });
         } catch (Throwable t) {
             warn("notifyListener({}) failed ({}) to invoke {}: {}",
                     this, t.getClass().getSimpleName(), l, t.getMessage(), t);

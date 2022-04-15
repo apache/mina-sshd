@@ -27,17 +27,17 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -59,8 +59,8 @@ import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
+import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -87,6 +87,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
@@ -148,11 +149,14 @@ public abstract class AbstractSession extends SessionHelper {
 
     protected KeyExchange kex;
     protected Boolean firstKexPacketFollows;
+    /**
+     * Holds the current key exchange state.
+     */
     protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
     protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
 
     // The kexInitializedFuture is fulfilled when this side (client or server) has prepared its own proposal. Access is
-    // synchronized on kexState; uses kexLock as lock.
+    // synchronized on kexState.
     protected DefaultKeyExchangeFuture kexInitializedFuture;
 
     /*
@@ -179,8 +183,13 @@ public abstract class AbstractSession extends SessionHelper {
     protected int decoderLength;
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
-    protected final Object kexLock = new Object();
     protected final Object requestLock = new Object();
+
+    /**
+     * The {@link KeyExchangeMessageHandler} instance also serves as lock protecting {@link #kexState} changes from DONE
+     * to INIT or RUN, and from KEYS to DONE.
+     */
+    protected final KeyExchangeMessageHandler kexHandler;
 
     /*
      * Rekeying
@@ -196,7 +205,6 @@ public abstract class AbstractSession extends SessionHelper {
     protected long maxRekyPackets;
     protected long maxRekeyBytes;
     protected Duration maxRekeyInterval;
-    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     /**
      * Resulting message coding settings at the end of a key exchange for incoming messages.
@@ -251,6 +259,8 @@ public abstract class AbstractSession extends SessionHelper {
 
         this.decoderBuffer = new SessionWorkBuffer(this);
 
+        kexHandler = Objects.requireNonNull(initializeKeyExchangeMessageHandler(),
+                "No KeyExchangeMessageHandler set on the session");
         currentService = Objects.requireNonNull(initializeCurrentService(), "No CurrentService set on the session");
 
         attachSession(ioSession, this);
@@ -278,6 +288,19 @@ public abstract class AbstractSession extends SessionHelper {
                 throw new RuntimeSshException(e);
             }
         }
+    }
+
+    /**
+     * Creates a new {@link KeyExchangeMessageHandler} instance managing packet sending for this session.
+     * <p>
+     * This initialization method is invoked once from the {@link AbstractSession} constructor. Do not rely on subclass
+     * fields being initialized.
+     * </p>
+     *
+     * @return a new {@link KeyExchangeMessageHandler} instance for the session
+     */
+    protected KeyExchangeMessageHandler initializeKeyExchangeMessageHandler() {
+        return new KeyExchangeMessageHandler(this, log);
     }
 
     /**
@@ -464,7 +487,10 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected void handleMessage(Buffer buffer) throws Exception {
         try {
-            doHandleMessage(buffer);
+            ThreadUtils.runAsInternal(() -> {
+                doHandleMessage(buffer);
+                return null;
+            });
         } catch (Throwable e) {
             DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
             // if have any ongoing KEX notify it about the failure
@@ -619,6 +645,8 @@ public abstract class AbstractSession extends SessionHelper {
             // Use the new settings from now on for any outgoing packet
             setOutputEncoding();
         }
+        kexHandler.updateState(() -> kexState.set(KexState.KEYS));
+
         resetIdleTimeout();
         /*
          * According to https://tools.ietf.org/html/rfc8308#section-2.4:
@@ -649,7 +677,6 @@ public abstract class AbstractSession extends SessionHelper {
             }
             checkKeys();
             sendNewKeys();
-            kexState.set(KexState.KEYS);
         } else {
             if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}",
@@ -731,26 +758,45 @@ public abstract class AbstractSession extends SessionHelper {
         doKexNegotiation();
     }
 
+    private enum KexStart {
+        PEER,
+        BOTH,
+        ONGOING
+    }
+
     protected void doKexNegotiation() throws Exception {
-        if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
-            sendKexInit();
-        } else if (kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
-            DefaultKeyExchangeFuture initFuture;
-            synchronized (kexState) {
-                initFuture = kexInitializedFuture;
-                if (initFuture == null) {
-                    initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
-                    kexInitializedFuture = initFuture;
-                }
+        KexStart starting = kexHandler.updateState(() -> {
+            if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
+                kexHandler.initNewKeyExchange();
+                return KexStart.PEER;
+            } else if (kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
+                return KexStart.BOTH;
             }
-            // requestNewKeyExchange() is running in some other thread: wait until it has set up our own proposal. The timeout
-            // is a last resort only to avoid blocking indefinitely in case something goes catastrophically wrong somewhere; it
-            // should never be hit. If it is, an exception will be thrown.
-            //
-            // See https://issues.apache.org/jira/browse/SSHD-1197
-            initFuture.await(CoreModuleProperties.KEX_PROPOSAL_SETUP_TIMEOUT.getRequired(this));
-        } else {
-            throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
+            return KexStart.ONGOING;
+        });
+
+        switch (starting) {
+            case PEER:
+                sendKexInit();
+                break;
+            case BOTH:
+                DefaultKeyExchangeFuture initFuture;
+                synchronized (kexState) {
+                    initFuture = kexInitializedFuture;
+                    if (initFuture == null) {
+                        initFuture = new DefaultKeyExchangeFuture(toString(), null);
+                        kexInitializedFuture = initFuture;
+                    }
+                }
+                // requestNewKeyExchange() is running in some other thread: wait until it has set up our own proposal.
+                // The timeout is a last resort only to avoid blocking indefinitely in case something goes
+                // catastrophically wrong somewhere; it should never be hit. If it is, an exception will be thrown.
+                //
+                // See https://issues.apache.org/jira/browse/SSHD-1197
+                initFuture.await(CoreModuleProperties.KEX_PROPOSAL_SETUP_TIMEOUT.getRequired(this));
+                break;
+            default:
+                throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
         }
 
         Map<KexProposalOption, String> result = negotiate();
@@ -759,9 +805,6 @@ public abstract class AbstractSession extends SessionHelper {
         KeyExchangeFactory kexFactory = NamedResource.findByName(
                 kexAlgorithm, String.CASE_INSENSITIVE_ORDER, kexFactories);
         ValidateUtils.checkNotNull(kexFactory, "Unknown negotiated KEX algorithm: %s", kexAlgorithm);
-        synchronized (pendingPackets) {
-            kex = kexFactory.createKeyExchange(this);
-        }
 
         byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
         byte[] v_c = clientVersion.getBytes(StandardCharsets.UTF_8);
@@ -771,6 +814,8 @@ public abstract class AbstractSession extends SessionHelper {
             i_s = getServerKexData();
             i_c = getClientKexData();
         }
+
+        kex = kexFactory.createKeyExchange(this);
         kex.init(v_s, v_c, i_s, i_c);
 
         synchronized (kexState) {
@@ -789,7 +834,7 @@ public abstract class AbstractSession extends SessionHelper {
         // It is guaranteed that we handle the peer's SSH_MSG_NEWKEYS after having sent our own.
         // prepareNewKeys() was already called in sendNewKeys().
         //
-        // From now on, use the new settings for any incoming message
+        // From now on, use the new settings for any incoming message.
         setInputEncoding();
 
         synchronized (kexState) {
@@ -803,52 +848,30 @@ public abstract class AbstractSession extends SessionHelper {
 
         signalSessionEvent(SessionListener.Event.KeyEstablished);
 
-        Collection<? extends Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture>> pendingWrites;
-        synchronized (pendingPackets) {
-            pendingWrites = sendPendingPackets(pendingPackets);
+        kexHandler.updateState(() -> {
             kex = null; // discard and GC since KEX is completed
             kexState.set(KexState.DONE);
-        }
+        });
 
-        int pendingCount = pendingWrites.size();
-        if (pendingCount > 0) {
-            if (debugEnabled) {
-                log.debug("handleNewKeys({}) sent {} pending packets", this, pendingCount);
-            }
+        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> flushDone = kexHandler.terminateKeyExchange();
 
-            for (Map.Entry<? extends SshFutureListener<IoWriteFuture>, IoWriteFuture> pe : pendingWrites) {
-                SshFutureListener<IoWriteFuture> listener = pe.getKey();
-                IoWriteFuture future = pe.getValue();
-                if (listener != null) {
-                    future.addListener(listener);
-                }
+        // Flush the queue asynchronously.
+        int numPending = flushDone.getKey().intValue();
+        if (numPending == 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleNewKeys({}) No pending packets to flush at end of KEX", this);
             }
+            flushDone.getValue().setValue(Boolean.TRUE);
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("handleNewKeys({}) {} pending packets to flush at end of KEX", this, numPending);
+            }
+            kexHandler.flushQueue(flushDone.getValue());
         }
 
         synchronized (futureLock) {
             futureLock.notifyAll();
         }
-    }
-
-    protected List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> sendPendingPackets(
-            Queue<PendingWriteFuture> packetsQueue)
-            throws IOException {
-        if (GenericUtils.isEmpty(packetsQueue)) {
-            return Collections.emptyList();
-        }
-
-        int numPending = packetsQueue.size();
-        List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> pendingWrites = new ArrayList<>(numPending);
-        synchronized (encodeLock) {
-            for (PendingWriteFuture future = packetsQueue.poll();
-                 future != null;
-                 future = packetsQueue.poll()) {
-                IoWriteFuture writeFuture = doWritePacket(future.getBuffer());
-                pendingWrites.add(new SimpleImmutableEntry<>(future, writeFuture));
-            }
-        }
-
-        return pendingWrites;
     }
 
     protected void validateKexState(int cmd, KexState expected) {
@@ -872,17 +895,19 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     protected void preClose() {
+        DefaultKeyExchangeFuture initFuture;
         synchronized (kexState) {
-            DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
-            if (initFuture != null) {
-                initFuture.setValue(new SshException("Session closing while KEX in progress"));
-            }
+            initFuture = kexInitializedFuture;
+        }
+        if (initFuture != null) {
+            initFuture.setValue(new SshException("Session closing while KEX in progress"));
         }
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
             // if have any pending KEX then notify it about the closing session
             kexFuture.setValue(new SshException("Session closing while KEX in progress"));
         }
+        kexHandler.shutdown();
 
         // if anyone waiting for global response notify them about the closing session
         signalRequestFailure();
@@ -939,75 +964,51 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        // While exchanging key, queue high level packets
-        PendingWriteFuture future = enqueuePendingPacket(buffer);
-        if (future != null) {
-            return future;
-        }
-
-        try {
-            return doWritePacket(buffer);
-        } finally {
-            resetIdleTimeout();
-            try {
-                checkRekey();
-            } catch (GeneralSecurityException e) {
-                debug("writePacket({}) failed ({}) to check re-key: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage(), e);
-                throw ValidateUtils.initializeExceptionCause(
-                        new ProtocolException(
-                                "Failed (" + e.getClass().getSimpleName() + ")"
-                                              + " to check re-key necessity: " + e.getMessage()),
-                        e);
-            } catch (Exception e) {
-                ExceptionUtils.rethrowAsIoException(e);
-            }
-        }
+        return kexHandler.writePacket(buffer, 0, null);
     }
 
-    /**
-     * Checks if key-exchange is done - if so, or the packet is related to the key-exchange protocol, then allows the
-     * packet to go through, otherwise enqueues it to be sent when key-exchange completed
-     *
-     * @param  buffer The {@link Buffer} containing the packet to be sent
-     * @return        A {@link PendingWriteFuture} if enqueued, {@code null} if packet can go through.
-     */
-    protected PendingWriteFuture enqueuePendingPacket(Buffer buffer) {
-        if (KexState.DONE.equals(kexState.get())) {
-            return null;
-        }
-
-        byte[] bufData = buffer.array();
-        int cmd = bufData[buffer.rpos()] & 0xFF;
-        if (cmd <= SshConstants.SSH_MSG_KEX_LAST) {
-            return null;
-        }
-
-        String cmdName = SshConstants.getCommandMessageName(cmd);
-        PendingWriteFuture future;
-        int numPending;
-        synchronized (pendingPackets) {
-            if (KexState.DONE.equals(kexState.get())) {
-                return null;
-            }
-
-            future = new PendingWriteFuture(cmdName, buffer);
-            pendingPackets.add(future);
-            numPending = pendingPackets.size();
-        }
-
-        if (log.isDebugEnabled()) {
-            if (numPending == 1) {
-                log.debug("enqueuePendingPacket({})[{}] Start flagging packets as pending until key exchange is done", this,
-                        cmdName);
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+        long timeoutMillis = unit.toMillis(timeout);
+        IoWriteFuture writeFuture;
+        try {
+            long start = System.currentTimeMillis();
+            writeFuture = kexHandler.writePacket(buffer, timeout, unit);
+            long elapsed = System.currentTimeMillis() - start;
+            if (elapsed >= timeoutMillis) {
+                // We just barely made it. Give it a tiny grace period.
+                timeoutMillis = 1;
             } else {
-                log.debug("enqueuePendingPacket({})[{}] enqueued until key exchange is done (pending={})", this, cmdName,
-                        numPending);
-
+                timeoutMillis -= elapsed;
             }
+        } catch (InterruptedIOException e) {
+            // Already timed out
+            PendingWriteFuture timedOut = new PendingWriteFuture(this, buffer);
+            Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
+            t.initCause(e);
+            if (log.isDebugEnabled()) {
+                log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
+            }
+            timedOut.setValue(t);
+            return timedOut;
         }
-
-        return future;
+        @SuppressWarnings("unchecked")
+        DefaultSshFuture<?> future = (DefaultSshFuture<?>) writeFuture;
+        FactoryManager factoryManager = getFactoryManager();
+        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
+        if (writeFuture.isDone()) {
+            // No need to schedule anything.
+            return writeFuture;
+        }
+        ScheduledFuture<?> sched = executor.schedule(() -> {
+            Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
+            if (log.isDebugEnabled()) {
+                log.debug("writePacket({}): {}", AbstractSession.this, t.getMessage());
+            }
+            future.setValue(t);
+        }, timeoutMillis, TimeUnit.MILLISECONDS);
+        future.addListener(f -> sched.cancel(false));
+        return writeFuture;
     }
 
     // NOTE: must acquire encodeLock when calling this method
@@ -2263,7 +2264,15 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception If failed to load/generate the keys or send the request
      */
     protected KeyExchangeFuture requestNewKeysExchange() throws Exception {
-        if (!kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
+        boolean kexRunning = kexHandler.updateState(() -> {
+            boolean isRunning = !kexState.compareAndSet(KexState.DONE, KexState.INIT);
+            if (!isRunning) {
+                kexHandler.initNewKeyExchange();
+            }
+            return Boolean.valueOf(isRunning);
+        }).booleanValue();
+
+        if (kexRunning) {
             if (log.isDebugEnabled()) {
                 log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState);
             }
@@ -2272,14 +2281,16 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         log.info("requestNewKeysExchange({}) Initiating key re-exchange", this);
-        sendKexInit();
 
         DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(toString(), null);
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(newFuture);
         if (kexFuture != null) {
+            // Should actually never do anything. We don't reset the kexFuture at the end of KEX, and we do check for a
+            // running KEX above. The old future should in all cases be fulfilled already.
             kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
         }
-
+        
+        sendKexInit();
         return newFuture;
     }
 
@@ -2391,7 +2402,7 @@ public abstract class AbstractSession extends SessionHelper {
         synchronized (kexState) {
             DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
             if (initFuture == null) {
-                initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
+                initFuture = new DefaultKeyExchangeFuture(toString(), null);
                 kexInitializedFuture = initFuture;
             }
             try {

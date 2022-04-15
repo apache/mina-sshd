@@ -20,6 +20,7 @@ package org.apache.sshd.common.util.threads;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -36,8 +37,44 @@ import org.apache.sshd.common.util.ReflectionUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ThreadUtils {
+
+    /**
+     * Marks framework-internal threads.
+     */
+    private static final ThreadLocal<Boolean> IS_INTERNAL_THREAD = new ThreadLocal<>();
+
     private ThreadUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * Runs a piece of code given as a {@link Callable} with a flag set indicating that the executing thread is an
+     * Apache MINA sshd framework-internal thread.
+     *
+     * @param  <V>       return type
+     * @param  code      code to run
+     * @return           the result of {@code code}
+     * @throws Exception propagated from {@code code.call()}
+     * @see              {@link #isInternal()}
+     */
+    public static <V> V runAsInternal(Callable<V> code) throws Exception {
+        Boolean initial = IS_INTERNAL_THREAD.get();
+        try {
+            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+            return code.call();
+        } finally {
+            IS_INTERNAL_THREAD.set(initial);
+        }
+    }
+
+    /**
+     * Tells whether the calling thread is an Apache MINA sshd framework-internal thread.
+     *
+     * @return {@code true} if the thread is considered internal to the framework; {@code false} if not
+     * @see    #runAsInternal(Callable)
+     */
+    public static boolean isInternalThread() {
+        return Boolean.TRUE.equals(IS_INTERNAL_THREAD.get());
     }
 
     /**

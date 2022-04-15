@@ -684,7 +684,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 synchronized (kexState) {
                     DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
                     if (initFuture == null) {
-                        initFuture = new DefaultKeyExchangeFuture(toString(), kexLock);
+                        initFuture = new DefaultKeyExchangeFuture(toString(), null);
                         kexInitializedFuture = initFuture;
                     }
                     try {

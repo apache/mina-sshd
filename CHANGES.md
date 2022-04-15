@@ -65,6 +65,7 @@ Was originally in *HostConfigEntry*.
 
 ## Behavioral changes and enhancements
 
+* [SSHD-966](https://issues.apache.org/jira/browse/SSHD-966) Deadlock on disconnection at the end of key-exchange
 * [SSHD-1231](https://issues.apache.org/jira/browse/SSHD-1231) Public key authentication: wrong signature algorithm used (ed25519 key with ssh-rsa signature)
 * [SSHD-1233](https://issues.apache.org/jira/browse/SSHD-1233) Added support for "limits@openssh.com" SFTP extension
 * [SSHD-1244](https://issues.apache.org/jira/browse/SSHD-1244) Fixed channel window adjustment handling of large UINT32 values

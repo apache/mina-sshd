@@ -35,10 +35,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -53,7 +49,6 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.Forwarder;
-import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -556,24 +551,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_IGNORE, data.length + Byte.SIZE);
         buffer.putBytes(data);
         return writePacket(buffer);
-    }
-
-    @Override
-    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
-        IoWriteFuture writeFuture = writePacket(buffer);
-        @SuppressWarnings("unchecked")
-        DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
-        FactoryManager factoryManager = getFactoryManager();
-        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
-        ScheduledFuture<?> sched = executor.schedule(() -> {
-            Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
-            if (log.isDebugEnabled()) {
-                log.debug("writePacket({}): {}", SessionHelper.this, t.getMessage());
-            }
-            future.setValue(t);
-        }, timeout, unit);
-        future.addListener(f -> sched.cancel(false));
-        return writeFuture;
     }
 
     protected void signalSessionEstablished(IoSession ioSession) throws Exception {
