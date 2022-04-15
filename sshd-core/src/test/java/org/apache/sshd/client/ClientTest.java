@@ -75,6 +75,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -1063,7 +1064,7 @@ public class ClientTest extends BaseTestSupport {
 
         KeyPairProvider keys = createTestHostKeyProvider();
         KeyPair pair = keys.loadKey(null, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
-        sshd.setPublickeyAuthenticator((username, key, session) -> key.equals(pair.getPublic()));
+        sshd.setPublickeyAuthenticator((username, key, session) -> KeyUtils.compareKeys(key, pair.getPublic()));
         client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
