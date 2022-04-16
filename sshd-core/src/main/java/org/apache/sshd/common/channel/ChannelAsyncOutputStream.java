@@ -22,8 +22,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoOutputStream;
@@ -125,6 +127,28 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     @Override
     protected CloseFuture doCloseGracefully() {
         return builder().when(pendingWrite.get()).build().close(false);
+    }
+
+    @Override
+    protected void doCloseImmediately() {
+        Channel channel = getChannel();
+        long channelId = (channel == null) ? -1L : channel.getChannelId();
+        abortCurrentWrite(() -> new SshChannelClosedException(channelId, "Channel closed before pending write completed"));
+
+        super.doCloseImmediately();
+    }
+
+    protected synchronized IoWriteFutureImpl abortCurrentWrite(Supplier<? extends Exception> errorProvider) {
+        IoWriteFutureImpl future = pendingWrite.get();
+        if ((future != null) && (!future.isDone())) {
+            Exception error = errorProvider.get();
+            log.debug("abortCurrentWrite({}) aborting pending write={} - {} : {}",
+                    this, future, error == null ? null : error.getClass().getSimpleName(),
+                    error == null ? null : error.getMessage());
+            future.setValue(error);
+        }
+
+        return future;
     }
 
     protected synchronized void doWriteIfPossible(boolean resume) {
