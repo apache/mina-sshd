@@ -21,7 +21,6 @@ package org.apache.sshd.common.channel;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
@@ -36,11 +35,18 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
+
+    /**
+     * Encapsulates the state of the current write operation. Access is always under lock (on writeState's monitor), the
+     * lock is held only shortly and never while writing.
+     */
+    protected final WriteState writeState = new WriteState();
+
     private final Channel channelInstance;
     private final ChannelStreamWriter packetWriter;
     private final byte cmd;
-    private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
     private final Object packetWriteId;
+
     private boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize;
 
     /**
@@ -90,19 +96,36 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         return cmd;
     }
 
-    public void onWindowExpanded() throws IOException {
-        doWriteIfPossible(true);
-    }
-
+    /**
+     * {@inheritDoc}
+     *
+     * This write operation is <em>asynchronous</em>: if there is not enough window space, it may keep the write pending
+     * or write only part of the buffer and keep the rest pending. Concurrent writes are not allowed and will throw a
+     * {@link WritePendingException}. Any subsequent write <em>must</em> occur only once the returned future is
+     * fulfilled; for instance triggered via a listener on the returned future. Try to avoid doing a subsequent write
+     * directly in a future listener, though; doing so may lead to deep chains of nested listener calls with deep stack
+     * traces, and may ultimately lead to a stack overflow.
+     *
+     * @throws WritePendingException if a concurrent write is attempted
+     */
     @Override
-    public synchronized IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
+    public IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         if (isClosing()) {
-            throw new EOFException("Closing: " + state);
+            throw new EOFException("Closing: " + writeState);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);
-        if (!pendingWrite.compareAndSet(null, future)) {
-            throw new WritePendingException("A write operation is already pending");
+        synchronized (writeState) {
+            if (!State.Opened.equals(writeState.openState)) { // Double check.
+                throw new EOFException("Closing: " + writeState);
+            }
+            if (writeState.writeInProgress) {
+                throw new WritePendingException("A write operation is already pending");
+            }
+            writeState.lastWrite = future;
+            writeState.pendingWrite = future;
+            writeState.writeInProgress = true;
+            writeState.waitingOnIo = false;
         }
         doWriteIfPossible(false);
         return future;
@@ -110,32 +133,137 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     @Override
     protected void preClose() {
-        if (!(packetWriter instanceof Channel)) {
-            try {
-                packetWriter.close();
-            } catch (IOException e) {
-                error("preClose({}) Failed ({}) to pre-close packet writer: {}",
-                        this, e.getClass().getSimpleName(), e.getMessage(), e);
-            }
+        synchronized (writeState) {
+            writeState.openState = state.get();
         }
-
         super.preClose();
     }
 
     @Override
-    protected CloseFuture doCloseGracefully() {
-        return builder().when(pendingWrite.get()).build().close(false);
+    protected void doCloseImmediately() {
+        try {
+            // Can't close this in preClose(); a graceful close waits for the currently pending write to finish and thus
+            // still needs the packet writer.
+            if (!(packetWriter instanceof Channel)) {
+                try {
+                    packetWriter.close();
+                } catch (IOException e) {
+                    error("preClose({}) Failed ({}) to pre-close packet writer: {}",
+                            this, e.getClass().getSimpleName(), e.getMessage(), e);
+                }
+            }
+            super.doCloseImmediately();
+        } finally {
+            shutdown();
+        }
     }
 
-    protected synchronized void doWriteIfPossible(boolean resume) {
-        IoWriteFutureImpl future = pendingWrite.get();
-        if (future == null) {
-            if (log.isTraceEnabled()) {
-                log.trace("doWriteIfPossible({})[resume={}] no pending write future", this, resume);
-            }
-            return;
+    protected void shutdown() {
+        IoWriteFutureImpl current = null;
+        synchronized (writeState) {
+            writeState.openState = State.Closed;
+            current = writeState.pendingWrite;
+            writeState.pendingWrite = null;
+            writeState.waitingOnIo = false;
         }
+        if (current != null) {
+            terminateFuture(current);
+        }
+    }
 
+    protected void terminateFuture(IoWriteFutureImpl future) {
+        if (!future.isDone()) {
+            if (future.getBuffer().available() > 0) {
+                future.setValue(new EOFException("Channel closing"));
+            } else {
+                future.setValue(Boolean.TRUE);
+            }
+        }
+    }
+
+    @Override
+    protected CloseFuture doCloseGracefully() {
+        IoWriteFutureImpl last;
+        synchronized (writeState) {
+            last = writeState.lastWrite;
+        }
+        if (last == null) {
+            return builder().build().close(false);
+        }
+        return builder().when(last).build().close(false);
+    }
+
+    public void onWindowExpanded() throws IOException {
+        doWriteIfPossible(true);
+    }
+
+    protected void doWriteIfPossible(boolean resume) {
+        IoWriteFutureImpl currentWrite = null;
+        State openState;
+        synchronized (writeState) {
+            writeState.windowExpanded = resume;
+            openState = writeState.openState;
+            if (writeState.pendingWrite == null || resume && writeState.waitingOnIo) {
+                // Just set the flag if there's nothing to write, or a writePacket() call is in progress.
+                // In the latter case, we'll check again below. Also set the flag only if there is a chained
+                // future waiting on some I/O to finish. In that case, that future will execute the next write
+                // anyway.
+                return;
+            } else {
+                currentWrite = writeState.pendingWrite;
+                writeState.pendingWrite = null;
+                writeState.windowExpanded = false;
+                writeState.waitingOnIo = false;
+            }
+        }
+        while (currentWrite != null) {
+            if (State.Immediate.equals(openState) || State.Closed.equals(openState)) {
+                // For gracefully closing, allow the write to proceed. We'll terminate the write only if it should block
+                // because of not enough window space.
+                terminateFuture(currentWrite);
+                break;
+            }
+            IoWriteFutureImpl nextWrite = writePacket(currentWrite, resume);
+            if (nextWrite == null) {
+                // We're either done, or we hooked up a listener to write the next chunk.
+                break;
+            }
+            // We're waiting on the window to be expanded. If it already was expanded, try again, otherwise just record
+            // the future; it'll be run via onWindowExpanded().
+            synchronized (writeState) {
+                writeState.waitingOnIo = false;
+                openState = writeState.openState;
+                if (writeState.windowExpanded) {
+                    writeState.windowExpanded = false;
+                    currentWrite = nextWrite; // Try again.
+                } else {
+                    if (State.Opened.equals(openState)) {
+                        writeState.pendingWrite = nextWrite;
+                    } else {
+                        writeState.writeInProgress = false;
+                    }
+                    currentWrite = null;
+                }
+            }
+            // If the channel is closing, we can't wait for the window to be expanded anymore. Just abort.
+            if (currentWrite == null && !State.Opened.equals(openState)) {
+                terminateFuture(nextWrite);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Try to write as much of the current buffer as possible. If the buffer is larger than the packet size split it in
+     * packets, writing one after the other by chaining futures. If there is not enough window space, stop writing.
+     * Writing will be resumed once the window has been enlarged again.
+     *
+     * @param  future {@link IoWriteFutureImpl} for the current write
+     * @param  resume whether being called in response to a remote window adjustment
+     * @return        {@code null} if all written, or if the rest will be written via a future listener. Otherwise a
+     *                future for the remaining writes.
+     */
+    protected IoWriteFutureImpl writePacket(IoWriteFutureImpl future, boolean resume) {
         Buffer buffer = future.getBuffer();
         int total = buffer.available();
         if (total > 0) {
@@ -155,31 +283,31 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                         length = remoteWindowSize;
                     } else {
                         // do not chunk when the window is smaller than the packet size
-                        length = 0L;
+                        if (future instanceof BufferedFuture) {
+                            return future;
+                        }
                         // do a defensive copy in case the user reuses the buffer
                         IoWriteFutureImpl f
-                                = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                                = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
                         f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                        pendingWrite.set(f);
                         if (log.isTraceEnabled()) {
                             log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
                                     this, resume, remoteWindowSize);
                         }
+                        return f;
                     }
                 }
             } else if (total > packetSize) {
-                if (buffer.rpos() > 0) {
+                if (buffer.rpos() > 0 && !(future instanceof BufferedFuture)) {
                     // do a defensive copy in case the user reuses the buffer
-                    IoWriteFutureImpl f = new IoWriteFutureImpl(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+                    IoWriteFutureImpl f = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
                     f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                    pendingWrite.set(f);
                     length = packetSize;
                     if (log.isTraceEnabled()) {
                         log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}",
                                 this, resume, length, total);
                     }
-                    doWriteIfPossible(resume);
-                    return;
+                    return writePacket(f, resume);
                 } else {
                     length = packetSize;
                 }
@@ -190,7 +318,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 }
             }
 
-            if (length > 0L) {
+            if (length > 0) {
                 if (resume) {
                     if (log.isDebugEnabled()) {
                         log.debug("Resuming {} write due to more space ({}) available in the remote window", this, length);
@@ -206,24 +334,38 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 Buffer buf = createSendBuffer(buffer, channel, length);
                 remoteWindow.consume(length);
 
+                IoWriteFuture writeFuture;
                 try {
-                    IoWriteFuture writeFuture = packetWriter.writeData(buf);
-                    writeFuture.addListener(f -> onWritten(future, total, length, f));
+                    writeFuture = packetWriter.writeData(buf);
                 } catch (IOException e) {
+                    synchronized (writeState) {
+                        writeState.writeInProgress = false;
+                    }
                     future.setValue(e);
+                    return null;
                 }
-            } else if (!resume) {
-                if (log.isDebugEnabled()) {
+                synchronized (writeState) {
+                    writeState.pendingWrite = future;
+                    writeState.waitingOnIo = true;
+                }
+                writeFuture.addListener(f -> onWritten(future, total, length, f));
+            } else {
+                // remote window has zero size?
+                if (!resume && log.isDebugEnabled()) {
                     log.debug("doWriteIfPossible({}) delaying write until space is available in the remote window", this);
                 }
+                return future;
             }
         } else {
-            boolean nullified = pendingWrite.compareAndSet(future, null);
             if (log.isTraceEnabled()) {
-                log.trace("doWriteIfPossible({}) current buffer sent - more={}", this, !nullified);
+                log.trace("doWriteIfPossible({}) current buffer sent", this);
+            }
+            synchronized (writeState) {
+                writeState.writeInProgress = false;
             }
             future.setValue(Boolean.TRUE);
         }
+        return null;
     }
 
     protected void onWritten(IoWriteFutureImpl future, int total, long length, IoWriteFuture f) {
@@ -235,10 +377,17 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 }
                 doWriteIfPossible(false);
             } else {
-                boolean nullified = pendingWrite.compareAndSet(future, null);
+                synchronized (writeState) {
+                    if (writeState.pendingWrite == future) {
+                        writeState.pendingWrite = null;
+                        writeState.writeInProgress = false;
+                        writeState.waitingOnIo = false;
+                    } else {
+                        log.error("onWritten({}) future changed", this);
+                    }
+                }
                 if (log.isTraceEnabled()) {
-                    log.trace("onWritten({}) completed write len={}, more={}",
-                            this, total, !nullified);
+                    log.trace("onWritten({}) completed write len={}, more={}", this, total);
                 }
                 future.setValue(Boolean.TRUE);
             }
@@ -246,10 +395,17 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             Throwable reason = f.getException();
             debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
                     this, reason.getClass().getSimpleName(), length, total, reason.getMessage(), reason);
-            boolean nullified = pendingWrite.compareAndSet(future, null);
+            synchronized (writeState) {
+                if (writeState.pendingWrite == future) {
+                    writeState.pendingWrite = null;
+                    writeState.writeInProgress = false;
+                    writeState.waitingOnIo = false;
+                } else {
+                    log.error("onWritten({}) future changed", this);
+                }
+            }
             if (log.isTraceEnabled()) {
-                log.trace("onWritten({}) failed write len={}, more={}",
-                        this, total, !nullified);
+                log.trace("onWritten({}) failed write len={}, more={}", this, total);
             }
             future.setValue(reason);
         }
@@ -281,5 +437,63 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     public void setSendChunkIfRemoteWindowIsSmallerThanPacketSize(boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
+    }
+
+    /**
+     * Marker type to avoid repeated buffering in
+     * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)}.
+     */
+    protected static class BufferedFuture extends IoWriteFutureImpl {
+
+        BufferedFuture(Object id, Buffer buffer) {
+            super(id, buffer);
+        }
+    }
+
+    /**
+     * Collects state variables; access is always synchronized on the single instance per stream.
+     */
+    protected static class WriteState {
+
+        /**
+         * The future describing the last executed *buffer* write {@link ChannelAsyncOutputStream#writeBuffer(Buffer)}.
+         * Used for graceful closing.
+         */
+        protected IoWriteFutureImpl lastWrite;
+
+        /**
+         * The future describing the current packet write; if {@code null}, there is nothing to write or
+         * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} is running.
+         */
+        protected IoWriteFutureImpl pendingWrite;
+
+        /**
+         * Flag to throw an exception if non-sequential {@link ChannelAsyncOutputStream#writeBuffer(Buffer)} calls
+         * should occur.
+         */
+        protected boolean writeInProgress;
+
+        /**
+         * Set to true when there was a remote window expansion while
+         * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} was in progress. If set,
+         * {@link ChannelAsyncOutputStream#doWriteIfPossible(boolean)} will run a
+         * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} again...
+         */
+        protected boolean windowExpanded;
+
+        /**
+         * ...unless the current {@link #pendingWrite} is waiting on I/O (which will either finish or continue the write
+         * anyway).
+         */
+        protected boolean waitingOnIo;
+
+        /**
+         * A copy of the channel state.
+         */
+        protected State openState = State.Opened;
+
+        protected WriteState() {
+            super();
+        }
     }
 }
