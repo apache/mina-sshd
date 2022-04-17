@@ -24,7 +24,9 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -42,6 +44,21 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelOutputStream extends OutputStream implements java.nio.channels.Channel, ChannelHolder {
+
+    protected enum WriteState {
+        BUFFERED,
+        NEED_FLUSH,
+        NEED_SPACE
+    }
+
+    protected enum OpenState {
+        OPEN,
+        CLOSING,
+        CLOSED
+    }
+
+    protected final AtomicReference<OpenState> openState = new AtomicReference<>(OpenState.OPEN);
+
     protected final Logger log;
 
     private final AbstractChannel channelInstance;
@@ -50,12 +67,13 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     private final Duration maxWaitTimeout;
     private final byte cmd;
     private final boolean eofOnClose;
-    private final byte[] b = new byte[1];
-    private final AtomicBoolean closedState = new AtomicBoolean(false);
+    private final AtomicBoolean noDelay = new AtomicBoolean();
+
+    private final Object bufferLock = new Object();
     private Buffer buffer;
     private int bufferLength;
     private int lastSize;
-    private boolean noDelay;
+    private boolean isFlushing;
 
     public ChannelOutputStream(
                                AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
@@ -84,7 +102,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         this.log = Objects.requireNonNull(log, "No logger");
         this.cmd = cmd;
         this.eofOnClose = eofOnClose;
-        newBuffer(0);
+        buffer = newBuffer(0);
     }
 
     @Override // co-variant return
@@ -106,50 +124,89 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     }
 
     public boolean isNoDelay() {
-        return noDelay;
+        return noDelay.get();
     }
 
     public void setNoDelay(boolean noDelay) {
-        this.noDelay = noDelay;
+        this.noDelay.set(noDelay);
     }
 
     @Override
     public boolean isOpen() {
-        return !closedState.get();
+        return OpenState.OPEN == openState.get();
     }
 
     @Override
-    public synchronized void write(int w) throws IOException {
-        b[0] = (byte) w;
-        write(b, 0, 1);
+    public void write(int w) throws IOException {
+        write(new byte[] { (byte) w }, 0, 1);
     }
 
     @Override
     public synchronized void write(byte[] buf, int s, int l) throws IOException {
+        // This is the only use of this instance's monitor; it's used exclusively to synchronize concurrent writes.
         Channel channel = getChannel();
         if (!isOpen()) {
             throw new SshChannelClosedException(
                     channel.getChannelId(),
                     "write(" + this + ") len=" + l + " - channel already closed");
         }
-
         Session session = channel.getSession();
         boolean debugEnabled = log.isDebugEnabled();
         boolean traceEnabled = log.isTraceEnabled();
+        boolean flushed = false;
+        WriteState state;
+        int nanos = maxWaitTimeout.getNano();
+        long millisInSecond = TimeUnit.NANOSECONDS.toMillis(nanos);
+        long millis = TimeUnit.SECONDS.toMillis(maxWaitTimeout.getSeconds()) + millisInSecond;
+        nanos -= TimeUnit.MILLISECONDS.toNanos(millisInSecond);
         while (l > 0) {
-            // The maximum amount we should admit without flushing again
-            // is enough to make up one full packet within our allowed
-            // window size. We give ourselves a credit equal to the last
-            // packet we sent to allow the producer to race ahead and fill
-            // out the next packet before we block and wait for space to
-            // become available again.
-            long minReqLen = Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize());
-            long l2 = Math.min(l, minReqLen - bufferLength);
-            if (l2 <= 0) {
-                if (bufferLength > 0) {
+            flushed = false;
+            state = WriteState.BUFFERED;
+            synchronized (bufferLock) {
+                while (isFlushing) {
+                    try {
+                        bufferLock.wait(millis, nanos);
+                    } catch (InterruptedException e) {
+                        InterruptedIOException interrupted = new InterruptedIOException(
+                                channel.getChannelId() + ": write interrupted waiting for flush()");
+                        interrupted.initCause(e);
+                        Thread.currentThread().interrupt();
+                        throw interrupted;
+                    }
+                }
+                while (l > 0) {
+                    // The maximum amount we should admit without flushing again
+                    // is enough to make up one full packet within our allowed
+                    // window size. We give ourselves a credit equal to the last
+                    // packet we sent to allow the producer to race ahead and fill
+                    // out the next packet before we block and wait for space to
+                    // become available again.
+                    long minReqLen = Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize());
+                    long l2 = Math.min(l, minReqLen - bufferLength);
+                    if (l2 <= 0) {
+                        if (bufferLength > 0) {
+                            state = WriteState.NEED_FLUSH;
+                        } else {
+                            state = WriteState.NEED_SPACE;
+                        }
+                        session.resetIdleTimeout();
+                        break;
+                    }
+
+                    ValidateUtils.checkTrue(l2 <= Integer.MAX_VALUE, "Accumulated bytes length exceeds int boundary: %d", l2);
+                    buffer.putRawBytes(buf, s, (int) l2);
+                    bufferLength += l2;
+                    s += l2;
+                    l -= l2;
+                }
+            }
+            switch (state) {
+                case NEED_FLUSH:
                     flush();
-                } else {
+                    flushed = true;
                     session.resetIdleTimeout();
+                    break;
+                case NEED_SPACE:
                     try {
                         long available = remoteWindow.waitForSpace(maxWaitTimeout);
                         if (traceEnabled) {
@@ -159,7 +216,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                         LoggingUtils.debug(log, "write({}) failed ({}) to wait for space of len={}: {}",
                                 this, e.getClass().getSimpleName(), l, e.getMessage(), e);
 
-                        if ((e instanceof WindowClosedException) && (!closedState.getAndSet(true))) {
+                        if ((e instanceof WindowClosedException) && (OpenState.OPEN == openState.getAndSet(OpenState.CLOSED))) {
                             if (debugEnabled) {
                                 log.debug("write({})[len={}] closing due to window closed", this, l);
                             }
@@ -171,20 +228,15 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                                 "Interrupted while waiting for remote space on write len=" + l + " to " + this)
                                         .initCause(e);
                     }
-                }
-                session.resetIdleTimeout();
-                continue;
+                    session.resetIdleTimeout();
+                    break;
+                default:
+                    // BUFFERED implies l == 0; outer loop will terminate
+                    break;
             }
-
-            ValidateUtils.checkTrue(l2 <= Integer.MAX_VALUE,
-                    "Accumulated bytes length exceeds int boundary: %d", l2);
-            buffer.putRawBytes(buf, s, (int) l2);
-            bufferLength += l2;
-            s += l2;
-            l -= l2;
         }
 
-        if (isNoDelay()) {
+        if (isNoDelay() && !flushed) {
             flush();
         } else {
             session.resetIdleTimeout();
@@ -192,22 +244,40 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     }
 
     @Override
-    public synchronized void flush() throws IOException {
+    public void flush() throws IOException {
+        // Concurrent flushes are OK. We choose the simple way: if a flush is already going on, the second flush is
+        // simply a no-op.
+        //
+        // The framework may flush concurrently when it closes the stream if there is an exception at an inopportune
+        // moment, for instance during KEX.
         Channel channel = getChannel();
-        if (!isOpen()) {
+        if (OpenState.CLOSED.equals(openState.get())) {
             throw new SshChannelClosedException(
                     channel.getChannelId(),
                     "flush(" + this + ") length=" + bufferLength + " - stream is already closed");
         }
 
+        Session session = channel.getSession();
+        boolean traceEnabled = log.isTraceEnabled();
+        Buffer buf;
+        int remaining;
+        synchronized (bufferLock) {
+            remaining = bufferLength;
+            if (isFlushing) {
+                return;
+            }
+            if (remaining == 0) {
+                bufferLock.notifyAll();
+                return;
+            }
+            isFlushing = true;
+            buf = buffer;
+        }
         try {
-            Session session = channel.getSession();
-            boolean traceEnabled = log.isTraceEnabled();
-            while (bufferLength > 0) {
+            while (remaining > 0) {
                 session.resetIdleTimeout();
 
-                Buffer buf = buffer;
-                long total = bufferLength;
+                long total = remaining;
                 long available;
                 try {
                     available = remoteWindow.waitForSpace(maxWaitTimeout);
@@ -232,15 +302,21 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
                 buf.putUInt(length);
                 buf.wpos(buf.wpos() + (int) length);
+                Buffer freshBuffer;
                 if (total == length) {
-                    newBuffer((int) length);
+                    freshBuffer = newBuffer((int) length);
+                    remaining = 0;
                 } else {
                     long leftover = total - length;
-                    newBuffer((int) Math.max(leftover, length));
-                    buffer.putRawBytes(buf.array(), pos - (int) leftover, (int) leftover);
-                    bufferLength = (int) leftover;
+                    freshBuffer = newBuffer((int) Math.max(leftover, length));
+                    freshBuffer.putRawBytes(buf.array(), pos - (int) leftover, (int) leftover);
+                    remaining = (int) leftover;
                 }
-                lastSize = (int) length;
+                synchronized (bufferLock) {
+                    buffer = freshBuffer;
+                    bufferLength = remaining;
+                    lastSize = (int) length;
+                }
 
                 session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
@@ -249,30 +325,33 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                             channel, SshConstants.getCommandMessageName(cmd), length);
                 }
                 packetWriter.writeData(buf);
+                buf = freshBuffer;
             }
         } catch (WindowClosedException e) {
-            if (!closedState.getAndSet(true)) {
+            if (OpenState.OPEN == openState.getAndSet(OpenState.CLOSED)) {
                 if (log.isDebugEnabled()) {
                     log.debug("flush({}) closing due to window closed", this);
                 }
             }
             throw e;
+        } catch (InterruptedException e) {
+            throw (IOException) new InterruptedIOException(
+                    "Interrupted while waiting for remote space flush len=" + bufferLength + " to " + this).initCause(e);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
-            } else if (e instanceof InterruptedException) {
-                throw (IOException) new InterruptedIOException(
-                        "Interrupted while waiting for remote space flush len=" + bufferLength + " to " + this)
-                                .initCause(e);
-            } else {
-                throw new SshException(e);
+            throw new SshException(e);
+        } finally {
+            synchronized (bufferLock) {
+                isFlushing = false;
+                bufferLock.notifyAll();
             }
         }
     }
 
     @Override
-    public synchronized void close() throws IOException {
-        if (!isOpen()) {
+    public void close() throws IOException {
+        if (!openState.compareAndSet(OpenState.OPEN, OpenState.CLOSING)) {
             return;
         }
 
@@ -293,21 +372,21 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     packetWriter.close();
                 }
             } finally {
-                closedState.set(true);
+                openState.set(OpenState.CLOSED);
             }
         }
     }
 
-    protected void newBuffer(int size) {
+    protected Buffer newBuffer(int size) {
         Channel channel = getChannel();
         Session session = channel.getSession();
-        buffer = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
-        buffer.putUInt(channel.getRecipient());
+        Buffer buf = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
+        buf.putUInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-            buffer.putUInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
+            buf.putUInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
         }
-        buffer.putUInt(0L);
-        bufferLength = 0;
+        buf.putUInt(0L);
+        return buf;
     }
 
     @Override
