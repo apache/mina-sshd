@@ -74,11 +74,13 @@ public class CurrentService {
      * @param name    Name of the service (the name of the {@link ServiceFactory} that created it)
      * @param start   whether to start the service
      */
-    public synchronized void set(Service service, String name, boolean start) {
+    public void set(Service service, String name, boolean start) {
         ValidateUtils.checkNotNullAndNotEmpty(name, "No service name specified");
         Objects.requireNonNull(service, "No service specified");
-        currentName = name;
-        currentService = service;
+        synchronized (this) {
+            currentName = name;
+            currentService = service;
+        }
         if (start) {
             service.start();
         }
@@ -87,9 +89,10 @@ public class CurrentService {
     /**
      * Starts the current service.
      */
-    public synchronized void start() {
-        ValidateUtils.checkState(currentService != null, "No current SSH service; cannot start");
-        currentService.start();
+    public void start() {
+        Service current = getService();
+        ValidateUtils.checkState(current != null, "No current SSH service; cannot start");
+        current.start();
     }
 
     /**
@@ -100,9 +103,10 @@ public class CurrentService {
      * @return           {@code true} if a current service is set, {@code false} if no current service exists
      * @throws Exception when the current service fails
      */
-    public synchronized boolean process(int cmd, Buffer buffer) throws Exception {
-        if (currentService != null) {
-            currentService.process(cmd, buffer);
+    public boolean process(int cmd, Buffer buffer) throws Exception {
+        Service current = getService();
+        if (current != null) {
+            current.process(cmd, buffer);
             return true;
         }
         return false;
