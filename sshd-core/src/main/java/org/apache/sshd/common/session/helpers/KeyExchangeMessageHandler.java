@@ -75,23 +75,34 @@ public class KeyExchangeMessageHandler {
      * We need the flushing thread to have priority over writing threads. So we use a lock that favors writers over
      * readers, and any state updates and the flushing thread are writers, while writePacket() is a reader.
      */
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
+    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
 
-    private final ExecutorService flushRunner = Executors.newSingleThreadExecutor();
+    /**
+     * An {@link ExecutorService} used to flush the queue asynchronously.
+     *
+     * @see {@link #flushQueue(DefaultKeyExchangeFuture)}
+     */
+    protected final ExecutorService flushRunner = Executors.newSingleThreadExecutor();
 
-    private final AbstractSession session;
+    /**
+     * The {@link AbstractSession} this {@link KeyExchangeMessageHandler} belongs to.
+     */
+    protected final AbstractSession session;
 
-    private final Logger log;
+    /**
+     * The {@link Logger} to use.
+     */
+    protected final Logger log;
 
     /**
      * Queues up high-level packets written during an ongoing key exchange.
      */
-    private final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
+    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     /**
      * Indicates that all pending packets have been flushed.
      */
-    private boolean kexFlushed = true;
+    protected boolean kexFlushed = true;
 
     /**
      * Never {@code null}. Used to block some threads when writing packets while pending packets are still being flushed
@@ -99,7 +110,7 @@ public class KeyExchangeMessageHandler {
      * of a KEX a new future is installed, which is fulfilled at the end of the KEX once there are no more pending
      * packets to be flushed.
      */
-    private DefaultKeyExchangeFuture kexFlushedFuture;
+    protected DefaultKeyExchangeFuture kexFlushedFuture;
 
     /**
      * Creates a new {@link KeyExchangeMessageHandler} for the given {@code session}, using the given {@code Logger}.
@@ -189,6 +200,9 @@ public class KeyExchangeMessageHandler {
      * calling thread will be blocked with the given timeout until all packets have been flushed. Whether a write will
      * be blocked is determined by {@link #isBlockAllowed(int)}.
      * <p>
+     * If a packet was written, a key exchange may be triggered via {@link AbstractSession#checkRekey()}.
+     * </p>
+     * <p>
      * If {@code timeout <= 0} or {@code unit == null}, a time-out of "forever" is assumed. Note that a timeout applies
      * only if the calling thread is blocked.
      * </p>
@@ -204,8 +218,10 @@ public class KeyExchangeMessageHandler {
         byte[] bufData = buffer.array();
         int cmd = bufData[buffer.rpos()] & 0xFF;
         boolean enqueued = false;
+        boolean isLowLevelMessage = cmd <= SshConstants.SSH_MSG_KEX_LAST && cmd != SshConstants.SSH_MSG_SERVICE_REQUEST
+                && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT;
         try {
-            if (cmd <= SshConstants.SSH_MSG_KEX_LAST) {
+            if (isLowLevelMessage) {
                 // Low-level messages can always be sent.
                 return session.doWritePacket(buffer);
             }
@@ -232,7 +248,25 @@ public class KeyExchangeMessageHandler {
         }
     }
 
-    private IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+    /**
+     * Writes an SSH packet. If no KEX is ongoing and there are no pending packets queued to be written after KEX, the
+     * buffer is written directly. Otherwise, the write is enqueued or the calling thread is blocked until all pending
+     * packets have been written, depending on the result of {@link #isBlockAllowed(int)}. If the calling thread holds
+     * the monitor of the session's {@link AbstractSession#getFutureLock()}, it is never blocked and the write is
+     * queued.
+     * <p>
+     * If {@code timeout <= 0} or {@code unit == null}, a time-out of "forever" is assumed. Note that a timeout applies
+     * only if the calling thread is blocked.
+     * </p>
+     *
+     * @param  cmd         SSH command from the buffer
+     * @param  buffer      {@link Buffer} containing the packet to write
+     * @param  timeout     number of {@link TimeUnit}s to wait at most if the calling thread is blocked
+     * @param  unit        {@link TimeUnit} of {@code timeout}
+     * @return             an {@link IoWriteFuture} that will be fulfilled once the packet has indeed been written.
+     * @throws IOException if an error occurs
+     */
+    protected IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
         boolean holdsFutureLock = Thread.holdsLock(session.getFutureLock());
         for (;;) {
             DefaultKeyExchangeFuture block = null;
@@ -244,7 +278,8 @@ public class KeyExchangeMessageHandler {
             // Use the readLock here to give KEX state updates and the flushing thread priority.
             lock.readLock().lock();
             try {
-                boolean kexDone = KexState.DONE.equals(session.kexState.get());
+                KexState state = session.kexState.get();
+                boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
                 if (kexDone && kexFlushed) {
                     // Not in KEX, no pending packets: out it goes.
                     return session.doWritePacket(buffer);
@@ -320,7 +355,7 @@ public class KeyExchangeMessageHandler {
      * message, not even disconnections or another key exchange triggered by having lots of data queued.
      * </p>
      *
-     * @param  cmd
+     * @param  cmd SSH command of the buffer to be written
      * @return     {@code true} if the thread may be blocked; {@code false} if the packet written <em>must</em> be
      *             queued without blocking the thread
      */

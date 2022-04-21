@@ -149,6 +149,7 @@ public abstract class AbstractSession extends SessionHelper {
 
     protected KeyExchange kex;
     protected Boolean firstKexPacketFollows;
+    protected boolean initialKexDone;
     /**
      * Holds the current key exchange state.
      */
@@ -663,6 +664,23 @@ public abstract class AbstractSession extends SessionHelper {
         if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.NEWKEYS)) {
             extHandler.sendKexExtensions(this, KexPhase.NEWKEYS);
         }
+
+        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> flushDone = kexHandler.terminateKeyExchange();
+
+        // Flush the queue asynchronously.
+        int numPending = flushDone.getKey().intValue();
+        if (numPending == 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleNewKeys({}) No pending packets to flush at end of KEX", this);
+            }
+            flushDone.getValue().setValue(Boolean.TRUE);
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("handleNewKeys({}) {} pending packets to flush at end of KEX", this, numPending);
+            }
+            kexHandler.flushQueue(flushDone.getValue());
+        }
+
         return future;
     }
 
@@ -717,7 +735,12 @@ public abstract class AbstractSession extends SessionHelper {
         if (debugEnabled) {
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
-        validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
+        KexState state = kexState.get();
+        if (!validateServiceKexState(state)) {
+            throw new IllegalStateException(
+                    "Received " + SshConstants.getCommandMessageName(SshConstants.SSH_MSG_SERVICE_REQUEST)
+                                            + " while in KEX state=" + state);
+        }
 
         try {
             startService(serviceName, buffer);
@@ -739,6 +762,17 @@ public abstract class AbstractSession extends SessionHelper {
         return true;
     }
 
+    protected boolean validateServiceKexState(KexState state) {
+        if (KexState.DONE.equals(state)) {
+            return true;
+        } else if (KexState.INIT.equals(state)) {
+            // Allow service requests that were "in flight" when we sent our own KEX_INIT. We will send back the accept
+            // only after KEX is done. However, we will refuse a service request before the initial KEX.
+            return initialKexDone;
+        }
+        return false;
+    }
+
     protected void handleServiceAccept(Buffer buffer) throws Exception {
         handleServiceAccept(buffer.getString(), buffer);
     }
@@ -747,7 +781,12 @@ public abstract class AbstractSession extends SessionHelper {
         if (log.isDebugEnabled()) {
             log.debug("handleServiceAccept({}) SSH_MSG_SERVICE_ACCEPT service={}", this, serviceName);
         }
-        validateKexState(SshConstants.SSH_MSG_SERVICE_ACCEPT, KexState.DONE);
+        KexState state = kexState.get();
+        if (!validateServiceKexState(state)) {
+            throw new IllegalStateException(
+                    "Received " + SshConstants.getCommandMessageName(SshConstants.SSH_MSG_SERVICE_REQUEST)
+                                            + " while in KEX state=" + state);
+        }
     }
 
     protected void handleKexInit(Buffer buffer) throws Exception {
@@ -841,6 +880,7 @@ public abstract class AbstractSession extends SessionHelper {
             kexInitializedFuture = null;
         }
 
+        initialKexDone = true;
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
             kexFuture.setValue(Boolean.TRUE);
@@ -852,22 +892,6 @@ public abstract class AbstractSession extends SessionHelper {
             kex = null; // discard and GC since KEX is completed
             kexState.set(KexState.DONE);
         });
-
-        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> flushDone = kexHandler.terminateKeyExchange();
-
-        // Flush the queue asynchronously.
-        int numPending = flushDone.getKey().intValue();
-        if (numPending == 0) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleNewKeys({}) No pending packets to flush at end of KEX", this);
-            }
-            flushDone.getValue().setValue(Boolean.TRUE);
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("handleNewKeys({}) {} pending packets to flush at end of KEX", this, numPending);
-            }
-            kexHandler.flushQueue(flushDone.getValue());
-        }
 
         synchronized (futureLock) {
             futureLock.notifyAll();
@@ -2289,7 +2313,7 @@ public abstract class AbstractSession extends SessionHelper {
             // running KEX above. The old future should in all cases be fulfilled already.
             kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
         }
-        
+
         sendKexInit();
         return newFuture;
     }

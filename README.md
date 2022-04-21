@@ -191,3 +191,7 @@ mvn -Pquick clean install
 ## [Extension modules](./docs/extensions.md)
 
 # [HOWTO(s)](./docs/howto.md)
+
+# Technical Doumentation
+
+## [SSH Key Exchange](./docs/technical/kex.md)

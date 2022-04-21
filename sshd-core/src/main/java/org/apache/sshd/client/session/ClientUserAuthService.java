@@ -70,6 +70,10 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     private UserAuth userAuth;
     private int currentMethod;
 
+    private final Object initLock = new Object();
+    private boolean started;
+    private Runnable initialRequestSender;
+
     public ClientUserAuthService(Session s) {
         clientSession = ValidateUtils.checkInstanceOf(
                 s, ClientSessionImpl.class, "Client side service used on server side: %s", s);
@@ -124,7 +128,15 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     public void start() {
-        // ignored
+        Runnable initial;
+        synchronized (initLock) {
+            started = true;
+            initial = initialRequestSender;
+            initialRequestSender = null;
+        }
+        if (initial != null) {
+            initial.run();
+        }
     }
 
     public String getCurrentServiceName() {
@@ -148,7 +160,22 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             }
         }
 
-        sendInitialAuthRequest(session, service);
+        Runnable sender = () -> {
+            try {
+                sendInitialAuthRequest(session, service);
+            } catch (Exception e) {
+                authFuture.setException(e);
+            }
+        };
+        synchronized (initLock) {
+            if (!started) {
+                initialRequestSender = sender;
+                sender = null;
+            }
+        }
+        if (sender != null) {
+            sender.run();
+        }
         return authFuture;
     }
 
