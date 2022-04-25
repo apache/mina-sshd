@@ -72,5 +72,6 @@ Was originally in *HostConfigEntry*.
 * [SSHD-1246](https://issues.apache.org/jira/browse/SSHD-1246) Added SshKeyDumpMain utility
 * [SSHD-1247](https://issues.apache.org/jira/browse/SSHD-1247) Added support for Argon2id encrypted PUTTY keys
 * [SSHD-1257](https://issues.apache.org/jira/browse/SSHD-1257) ChannelSession: don't flush out stream if already closed
+* [SSHD-1264](https://issues.apache.org/jira/browse/SSHD-1264) Create KEX negotiation proposal only once per session, not on every re-KEX
 
 

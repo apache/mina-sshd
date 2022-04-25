@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -57,6 +58,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
@@ -85,6 +87,12 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     // Session timeout measurements
     protected Instant authStart = Instant.now();
     protected Instant idleStart = Instant.now();
+
+    /**
+     * Stores the initial KEX proposal after it has been run through the hooks allowing client code to modify it; see
+     * {@link #getKexProposal()}. The same proposal is then used for the initial KEX and for any re-KEX.
+     */
+    protected Map<KexProposalOption, String> initialKexProposal;
 
     /** Client or server side */
     private final boolean serverSession;
@@ -961,6 +969,70 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     protected String resolveSessionKexProposal(String hostKeyTypes) throws IOException {
         return NamedResource.getNames(
                 ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "No KEX factories"));
+    }
+
+    /**
+     * Computes the list of available host key signature algorithms supported.
+     *
+     * @return                          A comma-separated list of all the signature protocols to be included in the
+     *                                  proposal - {@code null}/empty if no proposal
+     * @throws IOException              If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
+     * @see                             #getFactoryManager()
+     * @see                             #resolveAvailableSignaturesProposal(FactoryManager)
+     */
+    protected String resolveAvailableSignaturesProposal() throws IOException, GeneralSecurityException {
+        return resolveAvailableSignaturesProposal(getFactoryManager());
+    }
+
+    /**
+     * Computes the list of available host key signature algorithms supported.
+     *
+     * @param  manager                  The {@link FactoryManager}
+     * @return                          A comma-separated list of all the signature protocols to be included in the
+     *                                  proposal - {@code null}/empty if no proposal
+     * @throws IOException              If failed to read/parse the keys data
+     * @throws GeneralSecurityException If failed to generate the keys
+     */
+    protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager)
+            throws IOException, GeneralSecurityException;
+
+    /**
+     * Retrieves this side's initial proposal for KEX negotiation. If no proposal exists yet, one is created and passed
+     * though the {@link KexExtensionHandler} and the {@link SessionListener} for customization, otherwise the
+     * previously created proposal for the session is returned.
+     *
+     * @return           the proposal {@link Map}
+     * @throws Exception when no proposal can be created
+     */
+    protected Map<KexProposalOption, String> getKexProposal() throws Exception {
+        if (initialKexProposal == null) {
+            String resolvedAlgorithms = resolveAvailableSignaturesProposal();
+            if (GenericUtils.isEmpty(resolvedAlgorithms)) {
+                throw new SshException(
+                        SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
+                        "getKexProposal() no resolved signatures available");
+            }
+
+            Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
+            KexExtensionHandler extHandler = getKexExtensionHandler();
+            boolean traceEnabled = log.isTraceEnabled();
+            if (extHandler != null) {
+                if (traceEnabled) {
+                    log.trace("getKexProposal({}) options before handler: {}", this, proposal);
+                }
+
+                extHandler.handleKexInitProposal(this, true, proposal);
+
+                if (traceEnabled) {
+                    log.trace("getKexProposal({}) options after handler: {}", this, proposal);
+                }
+            }
+
+            signalNegotiationOptionsCreated(proposal);
+            initialKexProposal = new EnumMap<>(proposal);
+        }
+        return initialKexProposal;
     }
 
     /**

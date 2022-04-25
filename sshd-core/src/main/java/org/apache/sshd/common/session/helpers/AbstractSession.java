@@ -2385,29 +2385,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected byte[] sendKexInit() throws Exception {
-        String resolvedAlgorithms = resolveAvailableSignaturesProposal();
-        if (GenericUtils.isEmpty(resolvedAlgorithms)) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
-                    "sendKexInit() no resolved signatures available");
-        }
-
-        Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
-        KexExtensionHandler extHandler = getKexExtensionHandler();
-        boolean traceEnabled = log.isTraceEnabled();
-        if (extHandler != null) {
-            if (traceEnabled) {
-                log.trace("sendKexInit({}) options before handler: {}", this, proposal);
-            }
-
-            extHandler.handleKexInitProposal(this, true, proposal);
-
-            if (traceEnabled) {
-                log.trace("sendKexInit({}) options after handler: {}", this, proposal);
-            }
-        }
-
-        signalNegotiationOptionsCreated(proposal);
+        Map<KexProposalOption, String> proposal = getKexProposal();
 
         byte[] seed;
         synchronized (kexState) {
@@ -2426,7 +2404,7 @@ public abstract class AbstractSession extends SessionHelper {
             }
         }
 
-        if (traceEnabled) {
+        if (log.isTraceEnabled()) {
             log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
         }
         return seed;
@@ -2462,29 +2440,6 @@ public abstract class AbstractSession extends SessionHelper {
      * @param seed The result of the KEXINIT handshake - required for correct session key establishment
      */
     protected abstract void setKexSeed(byte... seed);
-
-    /**
-     * @return                          A comma-separated list of all the signature protocols to be included in the
-     *                                  proposal - {@code null}/empty if no proposal
-     * @throws IOException              If failed to read/parse the keys data
-     * @throws GeneralSecurityException If failed to generate the keys
-     * @see                             #getFactoryManager()
-     * @see                             #resolveAvailableSignaturesProposal(FactoryManager)
-     */
-    protected String resolveAvailableSignaturesProposal()
-            throws IOException, GeneralSecurityException {
-        return resolveAvailableSignaturesProposal(getFactoryManager());
-    }
-
-    /**
-     * @param  manager                  The {@link FactoryManager}
-     * @return                          A comma-separated list of all the signature protocols to be included in the
-     *                                  proposal - {@code null}/empty if no proposal
-     * @throws IOException              If failed to read/parse the keys data
-     * @throws GeneralSecurityException If failed to generate the keys
-     */
-    protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager)
-            throws IOException, GeneralSecurityException;
 
     /**
      * Indicates the the key exchange is completed and the exchanged keys can now be verified - e.g., client can verify
