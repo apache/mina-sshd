@@ -59,7 +59,7 @@ public interface IoSession extends ConnectionEndpointsIndicator, Closeable {
     /**
      * Sets a user defined attribute if the attribute with the specified key is not set yet. This method is same with
      * the following code except that the operation is performed atomically.
-     * 
+     *
      * <pre>
      * <code>
      * if (containsAttribute(key)) {
@@ -112,7 +112,7 @@ public interface IoSession extends ConnectionEndpointsIndicator, Closeable {
 
     /**
      * Handle received EOF.
-     * 
+     *
      * @throws IOException If failed to shutdown the stream
      */
     void shutdownOutputStream() throws IOException;

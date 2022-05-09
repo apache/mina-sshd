@@ -52,7 +52,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * Decodes a public key file encoded according to <A HREF="https://tools.ietf.org/html/rfc4716">The Secure Shell (SSH)
  * Public Key File Format</A>
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Ssh2PublicKeyEntryDecoder

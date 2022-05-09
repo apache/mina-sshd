@@ -23,7 +23,7 @@ import org.slf4j.helpers.MarkerIgnoringBase;
 
 /**
  * Provides some more default implementations for {@link org.slf4j.Logger} interface methods
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class LoggerSkeleton extends MarkerIgnoringBase {

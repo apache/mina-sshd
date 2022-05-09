@@ -66,7 +66,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * Basic support for <A HREF=
  * "http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.key?rev=1.1&content-type=text/x-cvsweb-markup">OpenSSH
  * key file(s)</A>
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser {

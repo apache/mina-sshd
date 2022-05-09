@@ -31,7 +31,7 @@ import org.junit.Ignore;
 
 /**
  * A &quot;scratch-pad&quot; class for testing signatures related code during development
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @Ignore("Used only for development")

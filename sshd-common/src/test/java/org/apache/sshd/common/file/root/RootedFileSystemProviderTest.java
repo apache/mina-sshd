@@ -52,7 +52,7 @@ import org.junit.runners.MethodSorters;
  *
  * Individual tests are form pairs (e.g. testX, testXInvalid) where testXInvalid is expected to test a parent path of
  * {@link RootedFileSystem#getRoot()}
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)

@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Represents a pattern definition in the <U>known_hosts</U> file
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF=
  *         "https://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#About_the_Contents_of_the_known_hosts_Files">

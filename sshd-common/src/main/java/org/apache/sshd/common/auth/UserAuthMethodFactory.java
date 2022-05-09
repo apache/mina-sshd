@@ -83,7 +83,7 @@ public interface UserAuthMethodFactory<S extends SessionContext, M extends UserA
 
     /**
      * According to <A HREF="https://tools.ietf.org/html/rfc4252#section-8">RFC 4252 - section 8</A>:
-     * 
+     *
      * <PRE>
      *      Both the server and the client should check whether the underlying
      *      transport layer provides confidentiality (i.e., if encryption is

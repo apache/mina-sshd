@@ -272,7 +272,7 @@ public final class NumberUtils {
 
     /**
      * Checks if optional sign and all others are '0'-'9'
-     * 
+     *
      * @param  cs The {@link CharSequence} to check
      * @return    {@code true} if valid integer number
      */

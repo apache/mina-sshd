@@ -84,7 +84,7 @@ public enum ASN1Type {
      * <P>
      * The first byte in DER encoding is made of following fields
      * </P>
-     * 
+     *
      * <pre>
      *-------------------------------------------------
      *|Bit 8|Bit 7|Bit 6|Bit 5|Bit 4|Bit 3|Bit 2|Bit 1|
@@ -92,7 +92,7 @@ public enum ASN1Type {
      *|  Class    | CF  |        Type                 |
      *-------------------------------------------------
      * </pre>
-     * 
+     *
      * @param  value The original DER encoded byte
      * @return       The {@link ASN1Type} value - {@code null} if no match found
      * @see          #fromTypeValue(int)

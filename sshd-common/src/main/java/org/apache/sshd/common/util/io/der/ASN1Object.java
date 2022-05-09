@@ -164,7 +164,7 @@ public class ASN1Object implements Serializable, Cloneable {
 
     /**
      * Get the value as {@link BigInteger}
-     * 
+     *
      * @return             BigInteger
      * @throws IOException if type not an {@link ASN1Type#INTEGER}
      */
@@ -184,7 +184,7 @@ public class ASN1Object implements Serializable, Cloneable {
 
     /**
      * Get value as string. Most strings are treated as Latin-1.
-     * 
+     *
      * @return             Java string
      * @throws IOException if
      */
