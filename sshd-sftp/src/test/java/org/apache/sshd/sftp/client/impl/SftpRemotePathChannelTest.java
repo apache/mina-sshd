@@ -32,12 +32,10 @@ import java.util.EnumSet;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.mina.MinaSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.RawSftpClient;
@@ -281,12 +279,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
             // Prevent the client from reading any packets from the server to provoke serverside buffers to fill up
             Session session = sftp.getSession();
             IoSession ioSession = session.getIoSession();
-            if (ioSession instanceof MinaSession) {
-                org.apache.mina.core.session.IoSession minaSession = ((MinaSession) ioSession).getSession();
-                minaSession.suspendRead();
-            } else {
-                ((Nio2Session) ioSession).suspendRead();
-            }
+            ioSession.suspendRead();
 
             // Always read from the same offset. Thereby one can work with a small file.
             long curPos = 0L;

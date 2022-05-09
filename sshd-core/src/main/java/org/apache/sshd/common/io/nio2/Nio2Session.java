@@ -74,6 +74,8 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private volatile boolean suspend;
     private volatile Runnable readRunnable;
 
+    private Thread readerThread;
+
     public Nio2Session(
                        Nio2Service service, PropertyResolver propertyResolver, IoHandler handler,
                        AsynchronousSocketChannel socket,
@@ -147,7 +149,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         return ioHandler;
     }
 
+    /**
+     * Intended for tests simulating a sudden connection drop only! Do not call otherwise.
+     */
     public void suspend() {
+        // Invoked reflectively in org.apache.sshd.client.ClientTest
         AsynchronousSocketChannel socket = getSocket();
         try {
             socket.shutdownInput();
@@ -333,11 +339,17 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         return new Nio2CompletionHandler<Integer, Object>() {
             @Override
             protected void onCompleted(Integer result, Object attachment) {
-                handleReadCycleCompletion(buffer, bufReader, this, result, attachment);
+                readerThread = Thread.currentThread();
+                try {
+                    handleReadCycleCompletion(buffer, bufReader, this, result, attachment);
+                } finally {
+                    readerThread = null;
+                }
             }
 
             @Override
             protected void onFailed(Throwable exc, Object attachment) {
+                readerThread = null;
                 handleReadCycleFailure(buffer, bufReader, exc, attachment);
             }
         };
@@ -358,8 +370,6 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 IoHandler handler = getIoHandler();
                 handler.messageReceived(this, bufReader);
                 if (!closeFuture.isClosed()) {
-                    // re-use reference for next iteration since we finished processing it
-                    buffer.clear();
                     doReadCycle(buffer, completionHandler);
                 } else {
                     if (debugEnabled) {
@@ -404,11 +414,26 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             synchronized (suspendLock) {
                 suspend = false;
                 runnable = readRunnable;
+                readRunnable = null;
             }
-            if (runnable != null) {
+            if (runnable != null && !Thread.currentThread().equals(readerThread)) {
                 log.debug("resumeRead({}) resuming read", this);
-                runnable.run();
+                // Must run in a separate thread. We must not synchronously call doReadCycle() here: if
+                // resumeRead() is called in a future listener, it may execute on an I/O thread handling some other
+                // read of another session. If data is available, the NIO2 library may execute the read synchronously,
+                // and will keep doing so up to a stack nesting level of completion handlers of 16 by default (system
+                // property "sun.nio.ch.maxCompletionHandlersOnStack") before forcing a truly asynchronous read. This
+                // means the original handler handling a completely different read will not return and will not try to
+                // read from its session until these 16 other reads for the resumed session are all dealt with.
+                // Completion handlers should run quickly and must not block. While it won't block, doing up to 16
+                // nested synchronous reads is not exactly "quickly".
+                service.getExecutorService().execute(runnable);
             }
+            // If we resume in the reader thread, we're still in our own completion handler, which will execute the
+            // read. So there is no need to run the runnable.
+            //
+            // If there is no runnable, we suspended and resumed without any intervening read attempt. In that case,
+            // there _must_ be a completion handler running on _some_ thread, and it will execute the next read.
         }
     }
 
@@ -427,6 +452,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         Duration readTimeout = CoreModuleProperties.NIO2_READ_TIMEOUT.getRequired(propertyResolver);
         readCyclesCounter.incrementAndGet();
         lastReadCycleStart.set(System.nanoTime());
+        buffer.clear();
         socket.read(buffer, readTimeout.toMillis(), TimeUnit.MILLISECONDS, null, completion);
     }
 

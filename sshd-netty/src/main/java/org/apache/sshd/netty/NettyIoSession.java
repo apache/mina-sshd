@@ -28,6 +28,7 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
@@ -75,6 +76,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected SocketAddress remoteAddr;
     protected ChannelFuture prev;
     protected final ChannelInboundHandlerAdapter adapter = new Adapter();
+    protected final AtomicBoolean readSuspended = new AtomicBoolean();
 
     private final SocketAddress acceptanceAddress;
 
@@ -162,6 +164,26 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     public IoService getService() {
         return service;
+    }
+
+    @Override
+    public void suspendRead() {
+        if (!readSuspended.getAndSet(true)) {
+            if (context != null) {
+                Channel ch = context.channel();
+                ch.config().setAutoRead(false);
+            }
+        }
+    }
+
+    @Override
+    public void resumeRead() {
+        if (readSuspended.getAndSet(false)) {
+            if (context != null) {
+                Channel ch = context.channel();
+                ch.config().setAutoRead(true);
+            }
+        }
     }
 
     @Override // see SSHD-902

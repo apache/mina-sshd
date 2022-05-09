@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.channel.ClientChannelPendingMessagesQueue;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -43,7 +42,6 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -78,7 +76,6 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     protected SshdSocketAddress localEntry;
 
     private final Type typeEnum;
-    private final ClientChannelPendingMessagesQueue messagesQueue;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
 
@@ -88,19 +85,10 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         this.serverSession = Objects.requireNonNull(serverSession, "No server session provided");
         this.localEntry = new SshdSocketAddress((InetSocketAddress) serverSession.getLocalAddress());
         this.remote = remote;
-        this.messagesQueue = new ClientChannelPendingMessagesQueue(this);
-    }
-
-    public OpenFuture getOpenFuture() {
-        return openFuture;
     }
 
     public Type getTcpipChannelType() {
         return typeEnum;
-    }
-
-    public ClientChannelPendingMessagesQueue getPendingMessagesQueue() {
-        return messagesQueue;
     }
 
     public void updateLocalForwardingEntry(LocalForwardingEntry entry) {
@@ -135,9 +123,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
             throw new SshException("Session has been closed");
         }
 
-        // make sure the pending messages queue is 1st in line
-        openFuture = new DefaultOpenFuture(src, futureLock)
-                .addListener(getPendingMessagesQueue());
+        openFuture = new DefaultOpenFuture(src, futureLock);
         if (log.isDebugEnabled()) {
             log.debug("open({}) send SSH_MSG_CHANNEL_OPEN", this);
         }
@@ -168,12 +154,17 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
                 @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
-                    try {
-                        sendEof();
-                    } catch (IOException e) {
-                        getSession().exceptionCaught(e);
-                    }
-                    return super.doCloseGracefully();
+                    // First get the last packets out
+                    CloseFuture result = super.doCloseGracefully();
+                    result.addListener(f -> {
+                        try {
+                            // The channel writes EOF directly through the SSH session
+                            sendEof();
+                        } catch (IOException e) {
+                            getSession().exceptionCaught(e);
+                        }
+                    });
+                    return result;
                 }
             };
             asyncOut = new ChannelAsyncInputStream(this);
@@ -185,17 +176,6 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     }
 
     @Override
-    protected void preClose() {
-        IOException err = IoUtils.closeQuietly(getPendingMessagesQueue());
-        if (err != null) {
-            debug("preClose({}) Failed ({}) to close pending messages queue: {}",
-                    this, err.getClass().getSimpleName(), err.getMessage(), err);
-        }
-
-        super.preClose();
-    }
-
-    @Override
     protected Closeable getInnerCloseable() {
         return builder()
                 .sequential(serverSession, super.getInnerCloseable())
@@ -203,7 +183,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     }
 
     @Override
-    protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
+    protected void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
                 "Data length exceeds int boundaries: %d", len);
         // Make sure we copy the data as the incoming buffer may be reused

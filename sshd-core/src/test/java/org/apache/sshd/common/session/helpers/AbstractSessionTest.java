@@ -419,7 +419,17 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         @Override
         public void shutdownOutputStream() {
-            // do nothing
+            // Do nothing
+        }
+
+        @Override
+        public void suspendRead() {
+            // Do nothing
+        }
+
+        @Override
+        public void resumeRead() {
+            // Do nothing
         }
     }
 

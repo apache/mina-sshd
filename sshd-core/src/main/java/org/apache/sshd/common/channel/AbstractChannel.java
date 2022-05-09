@@ -98,7 +98,10 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
+    // Our id for this channel
     private long id = -1L;
+    // The peer's id for the channel. For an AbstractClientChannel, set when the SSH_MSG_CHANNEL_OPEN_CONFIRMATION is
+    // received.
     private long recipient = -1L;
     private Session sessionInstance;
     private CloseableExecutorService executor;
@@ -615,7 +618,10 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             }
 
             setClosing(true);
-            if (immediately) {
+            long recipient = getRecipient();
+            if (immediately || recipient < 0) {
+                // Recipient < 0: an AbstractClientChannel never got the SSH_MSG_OPEN_CONFIRMATION -- no point in
+                // sending a SSH_MSG_CHANNEL_CLOSE
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
                 if (debugEnabled) {
@@ -624,7 +630,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
                 Session s = getSession();
                 Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
-                buffer.putUInt(getRecipient());
+                buffer.putUInt(recipient);
 
                 try {
                     Duration timeout = CoreModuleProperties.CHANNEL_CLOSE_TIMEOUT.getRequired(channel);

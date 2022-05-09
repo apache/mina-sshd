@@ -73,9 +73,14 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         return session;
     }
 
-    public void suspend() {
+    @Override
+    public void suspendRead() {
         session.suspendRead();
-        session.suspendWrite();
+    }
+
+    @Override
+    public void resumeRead() {
+        session.resumeRead();
     }
 
     @Override

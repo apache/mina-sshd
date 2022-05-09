@@ -23,7 +23,6 @@ import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -31,26 +30,19 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.BufferedIoOutputStream;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelFactory;
-import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.SimpleIoOutputStream;
-import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
@@ -62,7 +54,6 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
-import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
 
@@ -71,7 +62,7 @@ import org.apache.sshd.server.forward.TcpForwardingFilter.Type;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipServerChannel extends AbstractServerChannel implements StreamingChannel, ForwardingTunnelEndpointsProvider {
+public class TcpipServerChannel extends AbstractServerChannel implements ForwardingTunnelEndpointsProvider {
 
     public abstract static class TcpipFactory implements ChannelFactory, ExecutorServiceCarrier {
 
@@ -104,13 +95,11 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
     private final ForwardingFilter.Type type;
     private IoConnector connector;
     private IoSession ioSession;
-    private IoOutputStream out;
+    private ChannelAsyncOutputStream out;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
-    private final AtomicLong inFlightDataSize = new AtomicLong();
-    private Streaming streaming = Streaming.Sync;
 
     public TcpipServerChannel(ForwardingFilter.Type type, CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
@@ -130,16 +119,6 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
     }
 
     @Override
-    public Streaming getStreaming() {
-        return streaming;
-    }
-
-    @Override
-    public void setStreaming(Streaming streaming) {
-        this.streaming = streaming;
-    }
-
-    @Override
     public SshdSocketAddress getTunnelEntrance() {
         return tunnelEntrance;
     }
@@ -155,6 +134,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
 
     public IoSession getIoSession() {
         return ioSession;
+    }
+
+    @Override
+    public void handleWindowAdjust(Buffer buffer) throws IOException {
+        super.handleWindowAdjust(buffer);
+        if (out != null) {
+            out.onWindowExpanded();
+        }
     }
 
     @Override
@@ -214,84 +201,26 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
             throw new RuntimeSshException(e);
         }
 
-        if (streaming == Streaming.Async) {
-            long channelId = getChannelId();
-            out = new BufferedIoOutputStream(
-                    "aysnc-tcpip-channel@" + channelId, channelId,
-                    new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
-                        @Override
-                        @SuppressWarnings("synthetic-access")
-                        protected CloseFuture doCloseGracefully() {
-                            try {
-                                sendEof();
-                            } catch (IOException e) {
-                                session.exceptionCaught(e);
-                            }
-                            return super.doCloseGracefully();
-                        }
-                    }, this);
-        } else {
-            this.out = new SimpleIoOutputStream(
-                    new ChannelOutputStream(
-                            this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true));
-
-        }
-        long thresholdHigh = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_HIGH.getRequired(this);
-        long thresholdLow
-                = CoreModuleProperties.TCPIP_SERVER_CHANNEL_BUFFER_SIZE_THRESHOLD_LOW.get(this).orElse(thresholdHigh / 2);
-        IoHandler handler = new IoHandler() {
+        out = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
             @Override
             @SuppressWarnings("synthetic-access")
-            public void messageReceived(IoSession session, Readable message) throws Exception {
-                if (isClosing()) {
-                    if (debugEnabled) {
-                        log.debug("doInit({}) Ignoring write to channel in CLOSING state", TcpipServerChannel.this);
+            protected CloseFuture doCloseGracefully() {
+                // First get the last packets out
+                CloseFuture result = super.doCloseGracefully();
+                result.addListener(f -> {
+                    try {
+                        // The channel writes EOF directly through the SSH session
+                        sendEof();
+                    } catch (IOException e) {
+                        session.exceptionCaught(e);
                     }
-                } else {
-                    int length = message.available();
-                    Buffer buffer = new ByteArrayBuffer(length, false);
-                    buffer.putBuffer(message);
-                    long total = inFlightDataSize.addAndGet(length);
-                    if (total > thresholdHigh) {
-                        session.suspendRead();
-                    }
-                    IoWriteFuture ioWriteFuture = out.writeBuffer(buffer);
-                    ioWriteFuture.addListener(new SshFutureListener<IoWriteFuture>() {
-                        @Override
-                        public void operationComplete(IoWriteFuture future) {
-                            long total = inFlightDataSize.addAndGet(-length);
-                            if (total <= thresholdLow) {
-                                session.resumeRead();
-                            }
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void sessionCreated(IoSession session) throws Exception {
-                // ignored
-            }
-
-            @Override
-            public void sessionClosed(IoSession session) throws Exception {
-                close(false);
-            }
-
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-                boolean immediately = !session.isOpen();
-                if (debugEnabled) {
-                    log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]",
-                            TcpipServerChannel.this, immediately, cause.getClass().getSimpleName(), cause.getMessage());
-                }
-                close(immediately);
+                });
+                return result;
             }
         };
 
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
-        connector = ioServiceFactory.createConnector(handler);
+        connector = ioServiceFactory.createConnector(new PortIoHandler());
 
         IoConnectFuture future = connector.connect(address.toInetSocketAddress(), null, getLocalAddress());
         future.addListener(future1 -> handleChannelConnectResult(f, future1));
@@ -327,6 +256,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
         try {
             signalChannelOpenSuccess();
             f.setOpened();
+            // Now that we have sent the SSH_MSG_CHANNEL_OPEN_CONFIRMATION we may read from the port.
+            session.resumeRead();
         } catch (Throwable t) {
             Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getSimpleName();
@@ -434,6 +365,63 @@ public class TcpipServerChannel extends AbstractServerChannel implements Streami
             if (log.isDebugEnabled()) {
                 log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
             }
+        }
+    }
+
+    class PortIoHandler implements IoHandler {
+
+        PortIoHandler() {
+            super();
+        }
+
+        @Override
+        public void messageReceived(IoSession session, Readable message) throws Exception {
+            if (isClosing()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("messageReceived({}) Ignoring write to channel {} in CLOSING state", session,
+                            TcpipServerChannel.this);
+                }
+            } else {
+                int length = message.available();
+                Buffer buffer = new ByteArrayBuffer(length, false);
+                buffer.putBuffer(message);
+                session.suspendRead();
+                ThreadUtils.runAsInternal(() -> out.writeBuffer(buffer).addListener(f -> {
+                    Throwable e = f.getException();
+                    if (e != null) {
+                        log.warn("messageReceived({}) channel={} signal close immediately=true due to {}[{}]", session,
+                                TcpipServerChannel.this, e.getClass().getSimpleName(), e.getMessage());
+                        close(true);
+                    } else {
+                        if (log.isTraceEnabled()) {
+                            log.trace("messageReceived({}) channel={} message forwarded", session, TcpipServerChannel.this);
+                        }
+                        session.resumeRead();
+                    }
+                }));
+            }
+        }
+
+        @Override
+        public void sessionCreated(IoSession session) throws Exception {
+            // Delay reading until after the SSH_MSG_CHANNEL_OPEN_CONFIRMATION was sent. Otherwise we risk trying to
+            // send channel data before having confirmed the channel opening.
+            session.suspendRead();
+        }
+
+        @Override
+        public void sessionClosed(IoSession session) throws Exception {
+            close(false);
+        }
+
+        @Override
+        public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
+            boolean immediately = !session.isOpen();
+            if (log.isDebugEnabled()) {
+                log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]", TcpipServerChannel.this, immediately,
+                        cause.getClass().getSimpleName(), cause.getMessage());
+            }
+            close(immediately);
         }
     }
 }

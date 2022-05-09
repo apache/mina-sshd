@@ -155,7 +155,6 @@
                         <exclude>**/ClientTest.java</exclude>
                         <exclude>**/SpaceAvailableExtensionImplTest.java</exclude>
                         <exclude>**/BuiltinIoServiceFactoryFactoriesTest.java</exclude>
-                        <exclude>**/ConcurrentConnectionTest.java</exclude>
                         <exclude>**/SignatureFactoriesTest.java</exclude>
                         <exclude>**/Sshd1033Test.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->

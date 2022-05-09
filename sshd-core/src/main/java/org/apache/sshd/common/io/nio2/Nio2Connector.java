@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.PropertyResolver;
@@ -40,8 +41,9 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Connector extends Nio2Service implements IoConnector {
-    public Nio2Connector(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
-        super(propertyResolver, handler, group);
+    public Nio2Connector(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+                         ExecutorService resumeTasks) {
+        super(propertyResolver, handler, group, resumeTasks);
     }
 
     @Override

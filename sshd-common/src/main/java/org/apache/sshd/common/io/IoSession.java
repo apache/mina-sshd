@@ -118,20 +118,16 @@ public interface IoSession extends ConnectionEndpointsIndicator, Closeable {
     void shutdownOutputStream() throws IOException;
 
     /**
-     * Suspend read operations on this session. May do nothing if not supported by the session implementation.
+     * Suspend read operations on this session.
      *
      * If the session usage includes a graceful shutdown with messages being exchanged, the caller needs to take care of
      * resuming reading the input in order to actually be able to carry on the conversation with the peer.
      */
-    default void suspendRead() {
-        // Do nothing by default, but can be overriden by implementations
-    }
+    void suspendRead();
 
     /**
-     * Resume read operations on this session. May do nothing if not supported by the session implementation.
+     * Resume read operations on this session.
      */
-    default void resumeRead() {
-        // Do nothing by default, but can be overriden by implementations
-    }
+    void resumeRead();
 
 }

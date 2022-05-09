@@ -47,6 +47,6 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return new Nio2ServiceFactory(manager, newExecutor());
+        return new Nio2ServiceFactory(manager, newExecutor(), newExecutor());
     }
 }

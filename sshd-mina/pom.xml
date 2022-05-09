@@ -129,7 +129,6 @@
                         <!-- exclude>**/PortForwardingTest.java</exclude -->
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
-                        <exclude>**/ConcurrentConnectionTest.java</exclude>
                         <exclude>**/AsyncAuthTest.java</exclude>
                         <exclude>**/AsyncAuthInteractiveTest.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->

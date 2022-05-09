@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
@@ -69,15 +70,18 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     protected final PropertyResolver propertyResolver;
     private final IoHandler handler;
     private final AsynchronousChannelGroup group;
+    private final ExecutorService executor;
     private IoServiceEventListener eventListener;
 
-    protected Nio2Service(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
+    protected Nio2Service(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+                          ExecutorService resumeTasks) {
         if (log.isTraceEnabled()) {
             log.trace("Creating {}", getClass().getSimpleName());
         }
         this.propertyResolver = Objects.requireNonNull(propertyResolver, "No property resolver provided");
         this.handler = Objects.requireNonNull(handler, "No I/O handler provided");
         this.group = Objects.requireNonNull(group, "No async. channel group provided");
+        this.executor = Objects.requireNonNull(resumeTasks, "No executor for resuming suspended sessions provided");
         this.sessions = new ConcurrentHashMap<>();
     }
 
@@ -93,6 +97,10 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     protected AsynchronousChannelGroup getChannelGroup() {
         return group;
+    }
+
+    protected ExecutorService getExecutorService() {
+        return executor;
     }
 
     public IoHandler getIoHandler() {

@@ -20,20 +20,20 @@ package org.apache.sshd.common.forward;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.StreamingChannel.Streaming;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
@@ -101,14 +101,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
 
         protected void onMessage(Buffer buffer) throws IOException {
-            IoOutputStream asyncIn = channel.getAsyncIn();
-            if (asyncIn != null) {
-                asyncIn.writeBuffer(buffer);
-            } else {
-                OutputStream invertedIn = channel.getInvertedIn();
-                invertedIn.write(buffer.array(), buffer.rpos(), buffer.available());
-                invertedIn.flush();
-            }
+            session.suspendRead();
+            ThreadUtils.runAsInternal(channel.getAsyncIn(),
+                    out -> out.writeBuffer(buffer).addListener(f -> session.resumeRead()));
         }
 
         @Override
@@ -159,6 +154,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
+                channel.setStreaming(Streaming.Async);
+                session.suspendRead();
                 service.registerChannel(channel);
                 channel.open().addListener(this::onChannelOpened);
             } else {
@@ -168,6 +165,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
+            session.resumeRead();
             Buffer buffer = new ByteArrayBuffer(Long.SIZE, false);
             buffer.putByte((byte) 0x00);
             Throwable t = future.getException();
@@ -279,6 +277,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 }
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
+                channel.setStreaming(Streaming.Async);
+                session.suspendRead();
                 service.registerChannel(channel);
                 channel.open().addListener(this::onChannelOpened);
             } else {
@@ -291,6 +291,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
+            session.resumeRead();
             int wpos = response.wpos();
             response.rpos(0);
             response.wpos(1);

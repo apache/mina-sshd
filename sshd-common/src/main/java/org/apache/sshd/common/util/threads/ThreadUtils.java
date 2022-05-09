@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.util.threads;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.util.ReflectionUtils;
+import org.apache.sshd.common.util.io.functors.IOFunction;
 
 /**
  * Utility class for thread pools.
@@ -62,6 +64,28 @@ public final class ThreadUtils {
         try {
             IS_INTERNAL_THREAD.set(Boolean.TRUE);
             return code.call();
+        } finally {
+            IS_INTERNAL_THREAD.set(initial);
+        }
+    }
+
+    /**
+     * Runs an {@link IOFunction} with a flag set indicating that the executing thread is an Apache MINA sshd
+     * framework-internal thread.
+     *
+     * @param  <T>       parameter type
+     * @param  <V>       return type
+     * @param  param     parameter for the function
+     * @param  code      function to run
+     * @return           the result of {@code code}
+     * @throws Exception propagated from {@code code.apply()}
+     * @see              {@link #isInternal()}
+     */
+    public static <T, V> V runAsInternal(T param, IOFunction<? super T, V> code) throws IOException {
+        Boolean initial = IS_INTERNAL_THREAD.get();
+        try {
+            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+            return code.apply(param);
         } finally {
             IS_INTERNAL_THREAD.set(initial);
         }

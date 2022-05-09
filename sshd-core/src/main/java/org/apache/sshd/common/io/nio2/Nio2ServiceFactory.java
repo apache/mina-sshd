@@ -38,11 +38,16 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     private final AsynchronousChannelGroup group;
 
-    public Nio2ServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
+    private final CloseableExecutorService resuming;
+
+    public Nio2ServiceFactory(FactoryManager factoryManager, CloseableExecutorService service,
+                              CloseableExecutorService resumeTasks) {
         super(factoryManager,
               ThreadUtils.newFixedThreadPoolIf(service, factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)));
         try {
             group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.noClose(getExecutorService()));
+            resuming = ThreadUtils.newFixedThreadPoolIf(resumeTasks, factoryManager.toString() + "-nio2-resume",
+                    getNioWorkers(factoryManager));
         } catch (IOException e) {
             warn("Failed ({}) to start async. channel group: {}", e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
@@ -51,17 +56,20 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     @Override
     public IoConnector createConnector(IoHandler handler) {
-        return autowireCreatedService(new Nio2Connector(getFactoryManager(), handler, group));
+        return autowireCreatedService(new Nio2Connector(getFactoryManager(), handler, group, resuming));
     }
 
     @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return autowireCreatedService(new Nio2Acceptor(getFactoryManager(), handler, group));
+        return autowireCreatedService(new Nio2Acceptor(getFactoryManager(), handler, group, resuming));
     }
 
     @Override
     protected void doCloseImmediately() {
         try {
+            if (!resuming.isShutdown()) {
+                resuming.shutdownNow();
+            }
             if (!group.isShutdown()) {
                 log.debug("Shutdown group");
                 group.shutdownNow();

@@ -44,6 +44,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
@@ -767,14 +768,17 @@ public abstract class AbstractConnectionService
         }
 
         long channelId = registerChannel(channel);
-        OpenFuture openFuture = channel.open(sender, rwsize, rmpsize, buffer);
-        openFuture.addListener(future -> {
-            try {
-                if (future.isOpened()) {
+        channel.addChannelListener(new ChannelListener() {
+
+            @Override
+            public void channelOpenSuccess(Channel channel) {
+                // Do not rely on the OpenFuture. We must be sure that we get the SSH_MSG_CHANNEL_OPEN_CONFIRMATION out
+                // before anything else.
+                try {
                     Window window = channel.getLocalWindow();
                     if (debugEnabled) {
                         log.debug(
-                                "operationComplete({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
+                                "channelOpenSuccess({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",
                                 channel, sender, channelId, window.getSize(), window.getPacketSize());
                     }
                     Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
@@ -783,7 +787,17 @@ public abstract class AbstractConnectionService
                     buf.putUInt(window.getSize());
                     buf.putUInt(window.getPacketSize());
                     session.writePacket(buf);
-                } else {
+                } catch (IOException e) {
+                    warn("channelOpenSuccess({}) {}: {}", AbstractConnectionService.this, e.getClass().getSimpleName(),
+                            e.getMessage(), e);
+                    session.exceptionCaught(e);
+                }
+            }
+        });
+        OpenFuture openFuture = channel.open(sender, rwsize, rmpsize, buffer);
+        openFuture.addListener(future -> {
+            try {
+                if (!future.isOpened()) {
                     int reasonCode = 0;
                     String message = "Generic error while opening channel: " + channelId;
                     Throwable exception = future.getException();

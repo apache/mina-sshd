@@ -37,18 +37,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.client.channel.ClientChannelPendingMessagesQueue;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.StreamingChannel.Streaming;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoHandlerFactory;
@@ -67,6 +65,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.TcpForwardingFilter;
 
@@ -1053,7 +1052,11 @@ public class DefaultForwarder
                     ? TcpipClientChannel.Type.Forwarded
                     : TcpipClientChannel.Type.Direct;
             TcpipClientChannel channel = new TcpipClientChannel(channelType, session, remote);
+            // Set "async" streaming: use getAsyncIn() to write data; this will respect the channel window.
+            channel.setStreaming(Streaming.Async);
             session.setAttribute(TcpipClientChannel.class, channel);
+            // Suspend reading -- we'll resume (or rather, start reading) once the SSH channel is set up.
+            session.suspendRead();
 
             // Propagate original requested host name - see SSHD-792
             if (channelType == TcpipClientChannel.Type.Forwarded) {
@@ -1093,6 +1096,8 @@ public class DefaultForwarder
                             t.getClass().getSimpleName(), session, t.getMessage(), t);
                     DefaultForwarder.this.service.unregisterChannel(channel);
                     channel.close(false);
+                } else {
+                    session.resumeRead();
                 }
             });
         }
@@ -1108,70 +1113,44 @@ public class DefaultForwarder
             if (channel == null) {
                 return;
             }
-
-            if (cause != null) {
-                // If exception occurred close the channel immediately
-                channel.close(true);
-            } else {
-                /*
-                 * Make sure channel is pending messages have all been sent in case the client was very fast and sent
-                 * data + closed the connection before channel open was completed.
-                 */
-                OpenFuture openFuture = channel.getOpenFuture();
-                Throwable err = openFuture.getException();
-                ClientChannelPendingMessagesQueue queue = channel.getPendingMessagesQueue();
-                OpenFuture completedFuture = queue.getCompletedFuture();
-                if (err == null) {
-                    err = completedFuture.getException();
-                }
-                boolean immediately = err != null;
-                if (immediately) {
-                    channel.close(true);
-                } else {
-                    completedFuture.addListener(f -> {
-                        Throwable thrown = f.getException();
-                        channel.close(immediately || (thrown != null));
-                    });
-                }
-            }
+            channel.close(cause != null);
         }
 
         @Override
         public void messageReceived(IoSession session, Readable message) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
             long totalMessages = messagesCounter.incrementAndGet();
-            Buffer buffer = new ByteArrayBuffer(message.available() + Long.SIZE, false);
+            Buffer buffer = new ByteArrayBuffer(message.available(), false);
             buffer.putBuffer(message);
 
-            boolean traceEnabled = log.isTraceEnabled();
-            if (traceEnabled) {
+            if (log.isTraceEnabled()) {
                 log.trace("messageReceived({}) channel={}, count={}, handle len={}",
                         session, channel, totalMessages, message.available());
             }
-
-            ClientChannelPendingMessagesQueue messagesQueue = channel.getPendingMessagesQueue();
-            OpenFuture future = messagesQueue.getCompletedFuture();
-            Consumer<Throwable> errHandler = future.isOpened() ? null : e -> {
-                try {
-                    exceptionCaught(session, e);
-                } catch (Exception err) {
-                    warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}",
-                            session, err.getClass().getSimpleName(), e.getClass().getSimpleName(),
-                            e.getMessage(), channel, err.getMessage(), err);
+            session.suspendRead();
+            ThreadUtils.runAsInternal(() -> channel.getAsyncIn().writeBuffer(buffer).addListener(f -> {
+                Throwable e = f.getException();
+                if (e != null) {
+                    try {
+                        exceptionCaught(session, e);
+                    } catch (Exception err) {
+                        warn("messageReceived({}) failed ({}) to signal {}[{}] on channel={}: {}", session,
+                                err.getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage(), channel,
+                                err.getMessage(), err);
+                    }
+                } else {
+                    if (log.isTraceEnabled()) {
+                        log.trace("messageReceived({}) channel={} message={} forwarded", session, channel, totalMessages);
+                    }
+                    session.resumeRead();
                 }
-            };
-
-            int pendCount = messagesQueue.handleIncomingMessage(buffer, errHandler);
-            if (traceEnabled) {
-                log.trace("messageReceived({}) channel={} pend count={} after processing message",
-                        session, channel, pendCount);
-            }
+            }));
         }
 
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             session.setAttribute(TcpipForwardingExceptionMarker.class, cause);
-            warn("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage(), cause);
+            log.warn("exceptionCaught({}) {}: {}", session, cause.getClass().getSimpleName(), cause.getMessage(), cause);
             session.close(true);
         }
     }

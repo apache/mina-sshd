@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
@@ -51,8 +52,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
     private int backlog;
 
-    public Nio2Acceptor(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group) {
-        super(propertyResolver, handler, group);
+    public Nio2Acceptor(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+                        ExecutorService resumeTasks) {
+        super(propertyResolver, handler, group, resumeTasks);
         backlog = CoreModuleProperties.SOCKET_BACKLOG.getRequired(propertyResolver);
     }
 
