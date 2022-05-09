@@ -64,7 +64,7 @@ public interface RequestHandler<T> {
     /**
      * Process an SSH request. If an exception is thrown, the ConnectionService will send a failure message if needed
      * and the request will be considered handled.
-     * 
+     *
      * @param  t         The input parameter
      * @param  request   The request string
      * @param  wantReply Whether a reply is requested

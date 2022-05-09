@@ -80,7 +80,7 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
     public static final String DEFAULT_LDAP_BIND_PASSWORD_PATTERN = "{1}";
     /**
      * A list of known binary attributes
-     * 
+     *
      * @see <A HREF="http://docs.oracle.com/javase/jndi/tutorial/ldap/misc/attrs.html">LDAP Attributes</A>
      */
     public static final String DEFAULT_BINARY_ATTRIBUTES
