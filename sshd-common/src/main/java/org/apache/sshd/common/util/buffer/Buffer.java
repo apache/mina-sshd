@@ -348,29 +348,36 @@ public abstract class Buffer implements Readable {
 
     /**
      * According to <A HREF=
-     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L222-L262">PROTOCOL.certkeys</A>:
+     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L221-L319">PROTOCOL.certkeys</A>:
      *
      * Critical Options is a set of bytes that is
      *
-     * [overall length][name(string)][data(string)]...
+     * [overall length][name(string)][[length of buffer][[length of string][data(string)]]]...
      *
-     * Where each Critical Option is encoded as a name (string) and data (string)
+     * Where each Certificate Option is encoded as a name (string) and buffer of data (string packed in a buffer)
      *
-     * Then the entire name + data strings are added as bytes (which will get a length prefix)
+     * Then the entire name (string) + data (buffer) are added as bytes (which will get a length prefix)
      *
      * @param  charset {@link Charset} to use for converting bytes to characters
      * @return         the parsed result, never {@code null}, but possibly empty
      */
     public List<OpenSshCertificate.CertificateOption> getCertificateOptions(Charset charset) {
-        // pull out entire Critical Options section
-        final ByteArrayBuffer optionBuffer = new ByteArrayBuffer(getBytes());
-
         List<OpenSshCertificate.CertificateOption> list = new ArrayList<>();
 
-        while (optionBuffer.available() > 0) {
-            String name = optionBuffer.getString(charset);
-            String data = GenericUtils.trimToEmpty(optionBuffer.getString(charset));
-            list.add(new OpenSshCertificate.CertificateOption(name, data.length() > 0 ? data : null));
+        if (available() > 0) {
+            // pull out entire Certificate Options section
+            Buffer optionBuffer = new ByteArrayBuffer(getBytes());
+
+            while (optionBuffer.available() > 0) {
+                String name = optionBuffer.getString(charset);
+                String data = null;
+                Buffer dataBuffer = new ByteArrayBuffer(optionBuffer.getBytes());
+                if (dataBuffer.available() > 0) {
+                    data = GenericUtils.trimToEmpty(dataBuffer.getString(charset));
+                    data = data.length() > 0 ? data : null;
+                }
+                list.add(new OpenSshCertificate.CertificateOption(name, data));
+            }
         }
 
         return list;
@@ -814,15 +821,15 @@ public abstract class Buffer implements Readable {
 
     /**
      * According to <A HREF=
-     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L222-L262">PROTOCOL.certkeys</A>:
+     * "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L221-L319">PROTOCOL.certkeys</A>:
      *
-     * Critical Options is a set of bytes that is
+     * Certificate Options is a set of bytes that is
      *
-     * [overall length][name(string)][data(string)]...
+     * [overall length][name(string)][[length of buffer][[length of string][data(string)]]]...
      *
-     * Where each Critical Option is encoded as a name (string) and data (string)
+     * Where each Certificate Option is encoded as a name (string) and data (string packed in a buffer)
      *
-     * Then the entire name + data strings are added as bytes (which will get a length prefix)
+     * Then the entire name (string) + data (buffer) are added as bytes (which will get a length prefix)
      *
      * @param options to write into the buffer, may be {@code null} or empty but must not contain {@code null} elements
      * @param charset The {@link Charset} to use for string options
@@ -835,14 +842,20 @@ public abstract class Buffer implements Readable {
             return;
         }
 
-        ByteArrayBuffer tmpBuffer = new ByteArrayBuffer();
+        ByteArrayBuffer optionBuffer = new ByteArrayBuffer();
 
         for (OpenSshCertificate.CertificateOption option : options) {
-            tmpBuffer.putString(option.getName(), charset);
-            tmpBuffer.putString(option.getData(), charset);
+            optionBuffer.putString(option.getName(), charset);
+            if (GenericUtils.isEmpty(option.getData())) {
+                optionBuffer.putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
+            } else {
+                ByteArrayBuffer dataBuffer = new ByteArrayBuffer();
+                dataBuffer.putString(option.getData(), charset);
+                optionBuffer.putBytes(dataBuffer.getCompactData());
+            }
         }
 
-        putBytes(tmpBuffer.getCompactData());
+        putBytes(optionBuffer.getCompactData());
     }
 
     /**

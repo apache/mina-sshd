@@ -55,12 +55,12 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<? extends TestParams> privateKeyParams() {
         return Arrays.asList(
-                new TestParams("rsa-sha2-256", "user01_rsa_sha2_256_4096"),
-                new TestParams("rsa-sha2-512", "user01_rsa_sha2_512_4096"),
-                new TestParams("rsa-sha2-512", "user01_ed25519"),
-                new TestParams("rsa-sha2-512", "user01_ecdsa_256"),
-                new TestParams("rsa-sha2-512", "user01_ecdsa_384"),
-                new TestParams("rsa-sha2-512", "user01_ecdsa_521"));
+                new TestParams("rsa-sha2-256", "user_rsa_sha2_256_4096"),
+                new TestParams("rsa-sha2-512", "user_rsa_sha2_512_4096"),
+                new TestParams("rsa-sha2-512", "user_ed25519"),
+                new TestParams("rsa-sha2-512", "user_ecdsa_256"),
+                new TestParams("rsa-sha2-512", "user_ecdsa_384"),
+                new TestParams("rsa-sha2-512", "user_ecdsa_521"));
     }
 
     protected String getCAPrivateKeyResource() {
@@ -68,7 +68,7 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
     }
 
     protected String getClientPrivateKeyResource() {
-        return "org/apache/sshd/client/opensshcerts/user/" + params.privateKey;
+        return "org/apache/sshd/client/opensshcerts/user/certificateoptions/" + params.privateKey;
     }
 
     protected String getClientPublicKeyResource() {
@@ -128,12 +128,15 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
                 .id("user01")
                 .principals(Collections.singletonList("user01"))
                 .nonce(oracle.getNonce())
+                .criticalOptions(Arrays.asList(
+                        new OpenSshCertificate.CertificateOption("source-address", "127.0.0.1/32"),
+                        new OpenSshCertificate.CertificateOption("force-command", "/path/to/script.sh")))
                 .extensions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
                         new OpenSshCertificate.CertificateOption("permit-pty"),
-                        new OpenSshCertificate.CertificateOption("permit-user-rc")))
+                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
+                        new OpenSshCertificate.CertificateOption("permit-user-rc"),
+                        new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
+                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding")))
                 .sign(caKeypair, params.algorithm);
 
         // Check that they both validate

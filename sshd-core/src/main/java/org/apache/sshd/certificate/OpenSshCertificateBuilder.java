@@ -25,8 +25,13 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
@@ -62,6 +67,8 @@ public class OpenSshCertificateBuilder {
     protected long serial;
     protected String id;
     protected Collection<String> principals;
+    // criticalOptions and extensions must be lexically ordered by "name" if they appear in the
+    // sequence. Each named option may only appear once in a certificate.
     protected List<OpenSshCertificate.CertificateOption> criticalOptions;
     protected List<OpenSshCertificate.CertificateOption> extensions;
     // match ssh-keygen behavior where the default would be forever
@@ -104,12 +111,14 @@ public class OpenSshCertificateBuilder {
     }
 
     public OpenSshCertificateBuilder criticalOptions(List<OpenSshCertificate.CertificateOption> criticalOptions) {
-        this.criticalOptions = criticalOptions;
+        validateOptions(criticalOptions);
+        this.criticalOptions = lexicallyOrderOptions(criticalOptions);
         return this;
     }
 
     public OpenSshCertificateBuilder extensions(List<OpenSshCertificate.CertificateOption> extensions) {
-        this.extensions = extensions;
+        validateOptions(extensions);
+        this.extensions = lexicallyOrderOptions(extensions);
         return this;
     }
 
@@ -266,5 +275,40 @@ public class OpenSshCertificateBuilder {
         cert.setSignature(tmpBuffer.getCompactData());
 
         return cert;
+    }
+
+    /**
+     * Validates that there are no duplicate options.
+     *
+     * @param  options                  the options to check
+     * @throws IllegalArgumentException if there are duplicates
+     */
+    private void validateOptions(List<OpenSshCertificate.CertificateOption> options) {
+        if (options != null && !options.isEmpty()) {
+            // check if any duplicates
+            Set<String> names = new HashSet<>();
+            Set<String> duplicates = options.stream().filter(option -> !names.add(option.getName()))
+                    .map(OpenSshCertificate.CertificateOption::getName)
+                    .collect(Collectors.toSet());
+            if (!duplicates.isEmpty()) {
+                throw new IllegalArgumentException("Duplicate option: " + duplicates);
+            }
+        }
+    }
+
+    /**
+     * Lexically orders certificate options by name.
+     *
+     * @param  options the options to order
+     * @return         a list containing the options in lexical order
+     */
+    private List<OpenSshCertificate.CertificateOption> lexicallyOrderOptions(
+            List<OpenSshCertificate.CertificateOption> options) {
+        if (options != null && !options.isEmpty()) {
+            return options.stream()
+                    .sorted(Comparator.comparing(OpenSshCertificate.CertificateOption::getName))
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 }

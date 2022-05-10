@@ -225,15 +225,15 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
      * Certificate Options are a set of bytes that is
      *
      * <pre>
-     * [overall length][name(string)][data(string)]...
+     * [overall length][name(string)][[length of buffer][[length of string][data(string)]]]...
      * </pre>
      * <p>
-     * Where each Certificate Option is encoded as a name (string) and data (string). The entire name + data strings are
-     * added as bytes (which will get a length prefix).
+     * Where each Certificate Option is encoded as a name (string) and data (string packed in a buffer). The entire name
+     * (string) + data (buffer) are added as bytes (which will get a length prefix).
      * </p>
      *
      * @see <a href=
-     *      "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L222-L262">PROTOCOL.certkeys</a>
+     *      "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L221-L319">PROTOCOL.certkeys</a>
      */
     class CertificateOption {
 
@@ -280,7 +280,7 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
 
         @Override
         public String toString() {
-            return "CriticalOption{name='" + name + "', data='" + data + "'}";
+            return "CertificateOption{name='" + name + "', data='" + data + "'}";
         }
 
         @Override

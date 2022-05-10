@@ -104,10 +104,6 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
         return getClientPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
-    protected String getOracle() {
-        return getClientPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
-    }
-
     protected PublicKey readPublicKeyFromResource(String resource) throws Exception {
         try (InputStream clientPublicKeyInputStream
                 = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource)) {
@@ -154,7 +150,12 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
                 .publicKey(clientPublicKey)
                 .id("user01")
                 .principals(Collections.singletonList("user01"))
+                .criticalOptions(Arrays.asList(
+                        new OpenSshCertificate.CertificateOption("force-command", "/path/to/script.sh"),
+                        new OpenSshCertificate.CertificateOption("source-address", "127.0.0.1/32"),
+                        new OpenSshCertificate.CertificateOption("verify-required")))
                 .extensions(Arrays.asList(
+                        new OpenSshCertificate.CertificateOption("no-touch-required"),
                         new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
                         new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
                         new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
