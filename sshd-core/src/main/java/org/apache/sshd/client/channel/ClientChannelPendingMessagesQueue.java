@@ -121,7 +121,7 @@ public class ClientChannelPendingMessagesQueue
      * channel immediately.</li>
      * </p>
      * </ul>
-     *
+     * 
      * @param  buffer      The message {@link Buffer}
      * @param  errHandler  The error handler to invoke it had to enqueue the message and was unsuccessful in writing it.
      *                     Must be non-{@code null} if future not open yet. Otherwise, if {@code null} and exception

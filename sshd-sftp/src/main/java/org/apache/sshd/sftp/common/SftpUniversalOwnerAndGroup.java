@@ -27,7 +27,7 @@ import org.apache.sshd.common.NamedResource;
 
 /**
  * Some universal identifiers used in owner and/or group specification strings
- *
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-04#page-12">SFTP ACL</A>
  */

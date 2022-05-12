@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 /**
  * A no-op implementation of {@link ScpTransferEventListener} for those who wish to implement only a small number of
  * methods. By default, all non-overridden methods simply log at TRACE level their invocation parameters
- *
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractScpTransferEventListenerAdapter

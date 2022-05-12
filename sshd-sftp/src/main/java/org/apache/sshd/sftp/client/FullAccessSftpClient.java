@@ -23,7 +23,7 @@ import org.apache.sshd.common.util.closeable.AutoCloseableDelegateInvocationHand
 
 /**
  * Provides both structured and raw SFTP access
- *
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface FullAccessSftpClient extends SftpClient, RawSftpClient {

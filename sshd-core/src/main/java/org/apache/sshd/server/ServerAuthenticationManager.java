@@ -46,7 +46,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * Holds providers and helpers related to the server side authentication process
- *
+ * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ServerAuthenticationManager
