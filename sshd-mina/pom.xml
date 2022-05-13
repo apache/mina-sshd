@@ -126,8 +126,6 @@
                         <exclude>**/CipherTest.java</exclude>
                         <exclude>**/CompressionTest.java</exclude>
                         <exclude>**/NoServerNoClientTest.java</exclude>
-                        <exclude>**/OpenSSHCertificateTest.java</exclude>
-                        <exclude>**/FileHostKeyCertificateProviderTest.java</exclude>
                         <!-- exclude>**/PortForwardingTest.java</exclude -->
                         <exclude>**/MacTest.java</exclude>
                         <exclude>**/SpringConfigTest.java</exclude>
@@ -138,9 +136,7 @@
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
-                        <exclude>**/OpenSSHCertificateParserTest.java</exclude>
-                        <exclude>**/GenerateOpenSSHClientCertificateTest.java</exclude>
-                        <exclude>**/GenerateOpenSshClientCertificateOracleTest.java</exclude>
+                        <exclude>**/OpenSSHCertificateTest.java</exclude>
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>

@@ -163,9 +163,6 @@
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
-                        <exclude>**/OpenSSHCertificateParserTest.java</exclude>
-                        <exclude>**/GenerateOpenSSHClientCertificateTest.java</exclude>
-                        <exclude>**/GenerateOpenSshClientCertificateOracleTest.java</exclude>
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>

@@ -34,10 +34,13 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+@Category(NoIoTestCase.class)
 @RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class OpenSSHCertificateParserTest extends BaseTestSupport {
 
