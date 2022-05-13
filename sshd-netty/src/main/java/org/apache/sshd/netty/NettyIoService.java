@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.AttributeKey;
-import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
@@ -42,8 +41,6 @@ public abstract class NettyIoService extends AbstractCloseable implements IoServ
 
     public static final AttributeKey<IoConnectFuture> CONNECT_FUTURE_KEY
             = AttributeKey.valueOf(IoConnectFuture.class.getName());
-    public static final AttributeKey<AttributeRepository> CONTEXT_KEY
-            = AttributeKey.valueOf(AttributeRepository.class.getName());
 
     protected final AtomicLong sessionSeq = new AtomicLong();
     protected final Map<Long, IoSession> sessions = new ConcurrentHashMap<>();

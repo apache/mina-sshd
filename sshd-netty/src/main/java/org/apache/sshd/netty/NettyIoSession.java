@@ -212,15 +212,20 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        context.writeAndFlush(Unpooled.EMPTY_BUFFER)
-                .addListener(ChannelFutureListener.CLOSE)
-                .addListener(fut -> closeFuture.setClosed());
+        if (context != null) {
+            context.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)
+                    .addListener(fut -> closeFuture.setClosed());
+        } else {
+            closeFuture.setClosed();
+        }
         return closeFuture;
     }
 
     @Override
     protected void doCloseImmediately() {
-        context.close();
+        if (context != null) {
+            context.close();
+        }
         super.doCloseImmediately();
     }
 

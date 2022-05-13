@@ -72,6 +72,14 @@
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>reusable-tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -154,6 +162,7 @@
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
+                        <exclude>**/OpenSSHCertificateTest.java</exclude>
                         <exclude>**/OpenSSHCertificateParserTest.java</exclude>
                         <exclude>**/GenerateOpenSSHClientCertificateTest.java</exclude>
                         <exclude>**/GenerateOpenSshClientCertificateOracleTest.java</exclude>

@@ -22,10 +22,8 @@ package org.apache.sshd.netty;
 import java.net.SocketAddress;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -50,15 +48,21 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
     // Shared across all connectors
     private static final LoggingHandler LOGGING_TRACE = new LoggingHandler(NettyIoConnector.class, LogLevel.TRACE);
 
-    protected final Bootstrap bootstrap = new Bootstrap();
-
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
         super(factory, handler);
-
         channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
-        bootstrap.group(factory.eventLoopGroup)
+    }
+
+    @Override
+    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
+        if (log.isDebugEnabled()) {
+            log.debug("Connecting to {}", address);
+        }
+
+        IoConnectFuture future = new DefaultIoConnectFuture(address, null);
+        Bootstrap bootstrap = new Bootstrap().group(factory.eventLoopGroup)
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 100) // TODO make this configurable
+                .attr(CONNECT_FUTURE_KEY, future)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     @SuppressWarnings("synthetic-access")
@@ -66,9 +70,6 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                         IoServiceEventListener listener = getIoServiceEventListener();
                         SocketAddress local = ch.localAddress();
                         SocketAddress remote = ch.remoteAddress();
-                        AttributeRepository context = ch.hasAttr(CONTEXT_KEY)
-                                ? ch.attr(CONTEXT_KEY).get()
-                                : null;
                         try {
                             if (listener != null) {
                                 try {
@@ -105,33 +106,18 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                         }
                     }
                 });
-    }
 
-    @Override
-    public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
-        boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("Connecting to {}", address);
-        }
-
-        IoConnectFuture future = new DefaultIoConnectFuture(address, null);
         ChannelFuture chf;
         if (localAddress != null) {
             chf = bootstrap.connect(address, localAddress);
         } else {
             chf = bootstrap.connect(address);
         }
-        Channel channel = chf.channel();
-        channel.attr(CONNECT_FUTURE_KEY).set(future);
-        if (context != null) {
-            channel.attr(CONTEXT_KEY).set(context);
-        }
-
         chf.addListener(cf -> {
-            Throwable t = chf.cause();
+            Throwable t = cf.cause();
             if (t != null) {
                 future.setException(t);
-            } else if (chf.isCancelled()) {
+            } else if (cf.isCancelled()) {
                 future.cancel();
             }
         });
