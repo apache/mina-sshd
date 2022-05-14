@@ -192,6 +192,6 @@ mvn -Pquick clean install
 
 # [HOWTO(s)](./docs/howto.md)
 
-# Technical Doumentation
+# Technical Documentation
 
 ## [SSH Key Exchange](./docs/technical/kex.md)
