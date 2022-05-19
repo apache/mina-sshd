@@ -18,6 +18,35 @@
 
 ## Major code re-factoring
 
+### Asynchronous API for making SSH global requests
+
+A new API in `Session` is introduced for making SSH global requests and handling the reply asynchronously.
+
+```java
+public GlobalRequestFuture request(Buffer buffer, String request, ReplyHandler replyHandler) throws IOException;
+```
+
+The `Buffer` is supposed to contain the full request, including the `request` name (for
+instance, "tcpip-forward"), the `want-reply` flag, and any additional data needed. There
+are several possible ways to use it.
+
+* `want-reply=true` and `replyHandler != null`: the methods sends the request and returns a
+  future that is fulfilled when the request was actually sent. The future is fulfilled with
+  an exception if sending the request failed, or with `null` if it was sent successfully.
+  Once the reply is received, the handler is invoked with the SSH command (`SSH_MSG_REQUEST_SUCCESS`,
+  `SSH_MSG_REQUEST_FAILURE`, or `SSH_MSG_UNIMPLEMENTED`) and the buffer received.
+* `want-reply=true` and `replyHandler == null`: the method sends the request and returns a
+  future that is fulfilled with an exception if sending it failed, or if a `SSH_MSG_REQUEST_FAILURE`
+  or `SSH_MSG_UNIMPLEMENTED` reply was received. Otherwise the future is fulfilled with the received
+  Buffer once the reply has been received.
+* `want-reply=false`: the method sends the request and returns a future that is fulfilled when
+  the request was actually sent. The future is fulfilled with an exception if sending the request
+  failed, or with an empty buffer if it was sent successfully. If `replyHandler != null`, it is
+  invoked with an empty buffer once the request was sent.
+  
+If the method throws an `IOException`, the request was not sent, and the handler will not be
+invoked.
+ 
 ## Potential compatibility issues
 
 Changes that may affect existing code

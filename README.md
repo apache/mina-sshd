@@ -198,3 +198,5 @@ mvn -Pquick clean install
 ## [SSH Key Exchange](./docs/technical/kex.md)
 
 ## [TCP/IP Port Forwarding](./docs/technical/tcpip-forwarding.md)
+
+## [Global Requests](./docs/technical/global_requests.md)

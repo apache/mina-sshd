@@ -29,10 +29,13 @@ import java.time.Instant;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -40,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import java.util.logging.Level;
 
 import org.apache.sshd.common.Closeable;
@@ -60,6 +64,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.GlobalRequestFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -174,9 +179,9 @@ public abstract class AbstractSession extends SessionHelper {
     protected byte[] inMacResult;
     protected Compression outCompression;
     protected Compression inCompression;
-    /** Input packet ID. */
+    /** Input packet sequence number. */
     protected long seqi;
-    /** Output packet ID. */
+    /** Output packet sequence number. */
     protected long seqo;
     protected SessionWorkBuffer uncompressBuffer;
     protected final SessionWorkBuffer decoderBuffer;
@@ -225,10 +230,6 @@ public abstract class AbstractSession extends SessionHelper {
 
     protected final CurrentService currentService;
 
-    // SSHD-968 - outgoing sequence number and request name of last sent global request
-    protected final AtomicLong globalRequestSeqo = new AtomicLong(-1L);
-    protected final AtomicReference<String> pendingGlobalRequest = new AtomicReference<>();
-
     // SSH_MSG_IGNORE stream padding
     protected int ignorePacketDataLength;
     protected long ignorePacketsFrequency;
@@ -240,9 +241,41 @@ public abstract class AbstractSession extends SessionHelper {
             = new AtomicLong(CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.getRequiredDefault());
 
     /**
-     * Used to wait for global requests result synchronous wait
+     * Used to wait for results of global requests sent with {@code want-reply = true}. Note that per RFC 4254, global
+     * requests may be sent at any time, but success/failure replies MUST come in the order the requests were sent. Some
+     * implementations may also reply with SSH_MSG_UNIMPLEMENTED, on which RFC 4253 says they must be sent in the order
+     * the message was received.
+     * <p>
+     * This implies that it is legal to send "nested" global requests: a client or server may send two (or more) global
+     * requests, and then receives two (or more) replies in the correct order: first reply for the first request sent;
+     * second reply for the second request sent.
+     * </p>
+     * <p>
+     * We keep a FIFO list of pending global requests for which we expect a reply. We always add new global requests at
+     * the head. For success and failure replies, which don't identify the message sequence number of the global
+     * request, we apply the reply to the tail of the list. For unimplemented messages, we apply it to the request
+     * identified by the message sequence number, which normally also should be the tail.
+     * </p>
+     * <p>
+     * When a reply is received, the corresponding global request is removed from the list.
+     * </p>
+     * <p>
+     * Global requests sent with {@code want-reply = false} are never added to this list; they are fire-and-forget.
+     * According to the SSH RFCs, the peer MUST not reply on a message with {@code want-reply = false}. If it does so
+     * all the same, it is broken. We might then apply the result to the wrong pending global request if we have any.
+     * </p>
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4254#section-4">RFC 4254: Global Requests</a>
+     * @see <a href="https://tools.ietf.org/html/rfc4253#section-11.4">RFC 4254: Reserved Messages</a>
+     * @see {@link #request(Buffer, String, org.apache.sshd.common.future.GlobalRequestFuture.ReplyHandler)}
+     * @see {@link #requestSuccess(Buffer)}
+     * @see {@link #requestFailure(Buffer)}
+     * @see {@link #doInvokeUnimplementedMessageHandler(int, Buffer)}
+     * @see {@link #preClose()}
      */
-    private final AtomicReference<Object> requestResult = new AtomicReference<>();
+    private final Deque<GlobalRequestFuture> pendingGlobalRequests = new ConcurrentLinkedDeque<GlobalRequestFuture>();
+
+    private final Map<Buffer, LongConsumer> globalSequenceNumbers = new ConcurrentHashMap<>();
 
     private byte[] clientKexData; // the payload of the client's SSH_MSG_KEXINIT
     private byte[] serverKexData; // the payload of the server's SSH_MSG_KEXINIT
@@ -934,7 +967,17 @@ public abstract class AbstractSession extends SessionHelper {
         kexHandler.shutdown();
 
         // if anyone waiting for global response notify them about the closing session
-        signalRequestFailure();
+        boolean debugEnabled = log.isDebugEnabled();
+        for (;;) {
+            GlobalRequestFuture future = pendingGlobalRequests.pollLast();
+            if (future == null) {
+                break;
+            }
+            if (debugEnabled) {
+                log.debug("preClose({}): Session closing; failing still pending global request {}", this, future.getId());
+            }
+            future.fail("Session is closing");
+        }
 
         // Fire 'close' event
         try {
@@ -975,14 +1018,10 @@ public abstract class AbstractSession extends SessionHelper {
     protected Buffer preProcessEncodeBuffer(int cmd, Buffer buffer) throws IOException {
         buffer = super.preProcessEncodeBuffer(cmd, buffer);
         // SSHD-968 - remember global request outgoing sequence number
-        if (cmd == SshConstants.SSH_MSG_GLOBAL_REQUEST) {
-            long prev = globalRequestSeqo.getAndSet(seqo);
-            if (log.isDebugEnabled()) {
-                log.debug("preProcessEncodeBuffer({}) outgoing SSH_MSG_GLOBAL_REQUEST seqNo={} => {}",
-                        this, prev, globalRequestSeqo);
-            }
+        LongConsumer setter = globalSequenceNumbers.remove(buffer);
+        if (setter != null) {
+            setter.accept(seqo);
         }
-
         return buffer;
     }
 
@@ -1016,14 +1055,14 @@ public abstract class AbstractSession extends SessionHelper {
             timedOut.setValue(t);
             return timedOut;
         }
-        @SuppressWarnings("unchecked")
-        DefaultSshFuture<?> future = (DefaultSshFuture<?>) writeFuture;
-        FactoryManager factoryManager = getFactoryManager();
-        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
         if (writeFuture.isDone()) {
             // No need to schedule anything.
             return writeFuture;
         }
+        @SuppressWarnings("unchecked")
+        DefaultSshFuture<?> future = (DefaultSshFuture<?>) writeFuture;
+        FactoryManager factoryManager = getFactoryManager();
+        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
         ScheduledFuture<?> sched = executor.schedule(() -> {
             Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
             if (log.isDebugEnabled()) {
@@ -1101,123 +1140,176 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
+    private boolean wantReply(Buffer buffer) {
+        // Examine the buffer to get the want-reply flag
+        int rpos = buffer.rpos();
+        buffer.getByte(); // Skip command
+        buffer.getString(); // Skip request name
+        boolean replyFlag = buffer.getBoolean();
+        buffer.rpos(rpos); // reset buffer
+        return replyFlag;
+    }
+
     @Override
     public Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException {
-        if (maxWaitMillis <= 0L) {
-            throw new IllegalArgumentException(
-                    "Requested timeout for " + request + " below 1 msec: " + maxWaitMillis);
-        }
-
+        ValidateUtils.checkTrue(maxWaitMillis > 0,
+                "Requested timeout for " + request + " is not strictly greater than zero: " + maxWaitMillis);
         boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("request({}) request={}, timeout={}ms", this, request, maxWaitMillis);
-        }
-
+        boolean withReply = wantReply(buffer);
+        GlobalRequestFuture future = request(buffer, request, null);
         Object result;
-        boolean traceEnabled = log.isTraceEnabled();
-        long prevGlobalReqSeqNo = -1L;
-        synchronized (requestLock) {
-            try {
-                writePacket(buffer);
-
-                if (traceEnabled) {
-                    log.debug("request({})[{}] sent with seqNo={}", this, request, globalRequestSeqo);
-                }
-
-                synchronized (requestResult) {
-                    pendingGlobalRequest.set(request);
-
-                    while (isOpen() && (maxWaitMillis > 0L) && (requestResult.get() == null)) {
-                        if (traceEnabled) {
-                            log.trace("request({})[{}] remaining wait={}", this, request, maxWaitMillis);
-                        }
-
-                        long waitStart = System.nanoTime();
-                        requestResult.wait(maxWaitMillis);
-                        long waitEnd = System.nanoTime();
-                        long waitDuration = waitEnd - waitStart;
-                        long waitMillis = TimeUnit.NANOSECONDS.toMillis(waitDuration);
-                        if (waitMillis > 0L) {
-                            maxWaitMillis -= waitMillis;
-                        } else {
-                            maxWaitMillis--;
-                        }
-                    }
-
-                    result = requestResult.getAndSet(null);
-                    // SSHD-968 reset tracked request name and sequence number
-                    prevGlobalReqSeqNo = globalRequestSeqo.getAndSet(-1L);
-                    pendingGlobalRequest.set(null);
-                }
-            } catch (InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException(
-                        "Interrupted while waiting for request=" + request + " result").initCause(e);
+        boolean done = false;
+        try {
+            if (debugEnabled) {
+                log.debug("request({}) request={}, timeout={}ms", this, request, maxWaitMillis);
             }
+            done = future.await(maxWaitMillis);
+            result = future.getValue();
+        } catch (InterruptedIOException e) {
+            throw (InterruptedIOException) new InterruptedIOException(
+                    "Interrupted while waiting for request=" + request + " result").initCause(e);
         }
 
         if (!isOpen()) {
-            throw new IOException(
-                    "Session is closed or closing while awaiting reply for request=" + request);
+            throw new IOException("Session was closed or closing while awaiting reply for request=" + request);
         }
 
-        if (debugEnabled) {
-            log.debug("request({}) request={}, timeout={}ms, requestSeqNo={}, result received={}",
-                    this, request, maxWaitMillis, prevGlobalReqSeqNo, result != null);
+        if (withReply) {
+            if (debugEnabled) {
+                log.debug("request({}) request={}, timeout={}ms, requestSeqNo={}, done {}, result received={}", this, request,
+                        maxWaitMillis, future.getSequenceNumber(), done, result instanceof Buffer);
+            }
+
+            if (!done || result == null) {
+                throw new SocketTimeoutException("No response received after " + maxWaitMillis + "ms for request=" + request);
+            }
         }
 
-        if (result == null) {
-            throw new SocketTimeoutException(
-                    "No response received after " + maxWaitMillis + "ms for request=" + request);
+        if (result instanceof Throwable) {
+            throw new IOException("Exception on request " + request, (Throwable) result);
         }
-
         if (result instanceof Buffer) {
             return (Buffer) result;
         }
-
         return null;
+    }
+
+    @Override
+    public GlobalRequestFuture request(Buffer buffer, String request, GlobalRequestFuture.ReplyHandler replyHandler)
+            throws IOException {
+        GlobalRequestFuture globalRequest;
+        if (!wantReply(buffer)) {
+            if (!isOpen()) {
+                throw new IOException("Global request " + request + ": session is closing or closed.");
+            }
+            // Fire-and-forget global requests (want-reply = false) are always allowed; we don't need to register the
+            // future, nor do we have to wait for anything. Client code can wait on the returned future if it wants to
+            // be sure the message has been sent.
+            globalRequest = new GlobalRequestFuture(request, replyHandler) {
+
+                @Override
+                public void operationComplete(IoWriteFuture future) {
+                    if (future.isWritten()) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("makeGlobalRequest({})[{}] want-reply=false sent", this, getId());
+                        }
+                        setValue(new ByteArrayBuffer(new byte[0]));
+                        GlobalRequestFuture.ReplyHandler handler = getHandler();
+                        if (handler != null) {
+                            handler.accept(SshConstants.SSH_MSG_REQUEST_SUCCESS, getBuffer());
+                        }
+                    }
+                    super.operationComplete(future);
+                }
+            };
+            writePacket(buffer).addListener(globalRequest);
+            return globalRequest;
+        }
+        // We do expect a reply. The packet may get queued or otherwise delayed for an unknown time. We must
+        // consider this request pending only once its sequence number is known. If sending the message fails,
+        // the writeFuture will set an exception on the globalRequest, or will fail it.
+        globalRequest = new GlobalRequestFuture(request, replyHandler) {
+
+            @Override
+            public void operationComplete(IoWriteFuture future) {
+                if (!future.isWritten()) {
+                    // If it was not written after all, make sure it's not considered pending anymore.
+                    pendingGlobalRequests.removeFirstOccurrence(this);
+                }
+                // Super call will fulfill the future if not written
+                super.operationComplete(future);
+                if (future.isWritten() && getHandler() != null) {
+                    // Fulfill this future now. The GlobalRequestFuture can thus be used to wait for the
+                    // successful sending of the request, the framework will invoke the handler whenever
+                    // the reply arrives. The buffer cannot be obtained though the future.
+                    setValue(null);
+                }
+            }
+        };
+        if (!isOpen()) {
+            throw new IOException("Global request " + request + ": session is closing or closed.");
+        }
+        // This consumer will be invoked once before the packet actually goes out. Some servers respond to global
+        // requests with SSH_MSG_UNIMPLEMENTED instead of SSH_MSG_REQUEST_FAILURE (see SSHD-968), so we need to make
+        // sure we do know the sequence number.
+        globalSequenceNumbers.put(buffer, seqNo -> {
+            globalRequest.setSequenceNumber(seqNo);
+            if (log.isDebugEnabled()) {
+                log.debug("makeGlobalRequest({})[{}] want-reply=true with seqNo={}", this, globalRequest.getId(), seqNo);
+            }
+            // Insert at front
+            pendingGlobalRequests.push(globalRequest);
+        });
+        writePacket(buffer).addListener(f -> {
+            Throwable t = f.getException();
+            if (t != null) {
+                // Just in case we get an exception before preProcessEncodeBuffer was even called
+                globalSequenceNumbers.remove(buffer);
+            }
+        }).addListener(globalRequest); // Report errors through globalRequest, fulfilling globalRequest
+        return globalRequest;
     }
 
     @Override
     protected boolean doInvokeUnimplementedMessageHandler(int cmd, Buffer buffer) throws Exception {
         /*
          * SSHD-968 Some servers respond to global requests with SSH_MSG_UNIMPLEMENTED instead of
-         * SSH_MSG_REQUEST_FAILURE (as mandated by https://tools.ietf.org/html/rfc4254#section-4) so deal with it
+         * SSH_MSG_REQUEST_FAILURE (as mandated by https://tools.ietf.org/html/rfc4254#section-4) so deal with it.
          */
-        long reqSeqNo = -1L;
-        long msgSeqNo = -1L;
-        String reqGlobal = null;
-        boolean propagateCall = true;
-        if ((cmd == SshConstants.SSH_MSG_UNIMPLEMENTED)
-                && (globalRequestSeqo.get() >= 0L)) {
-            int rpos = buffer.rpos();
-            msgSeqNo = buffer.rawUInt(rpos);
+        if (!pendingGlobalRequests.isEmpty() && cmd == SshConstants.SSH_MSG_UNIMPLEMENTED) {
+            // We do have ongoing global requests.
+            long msgSeqNo = buffer.rawUInt(buffer.rpos());
 
-            synchronized (requestResult) {
-                // must re-fetch value under correct lock
-                reqSeqNo = globalRequestSeqo.get();
-                if (reqSeqNo == msgSeqNo) {
-                    reqGlobal = pendingGlobalRequest.get();
-                    propagateCall = false;
-                    signalRequestFailure();
+            // Find the global request this applies to
+            GlobalRequestFuture future = pendingGlobalRequests.stream().filter(f -> f.getSequenceNumber() == msgSeqNo).findAny()
+                    .orElse(null);
+            if (future != null && pendingGlobalRequests.removeFirstOccurrence(future)) {
+                // This SSH_MSG_UNIMPLEMENTED was the reply to a global request.
+                if (log.isDebugEnabled()) {
+                    log.debug("doInvokeUnimplementedMessageHandler({}) report global request={} failure for seqNo={}", this,
+                            future.getId(), msgSeqNo);
                 }
+                GlobalRequestFuture.ReplyHandler handler = future.getHandler();
+                if (handler != null) {
+                    Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
+                    handler.accept(cmd, resultBuf);
+                } else {
+                    future.fail(SshConstants.getCommandMessageName(cmd));
+                }
+                return true; // message handled internally
+            } else if (future != null) {
+                // The SSH_MSG_UNIMPLEMENTED was for a global request, but that request is no longer in the list: it
+                // got terminated otherwise.
+                return true;
             }
-        }
-
-        if (propagateCall) {
             if (log.isTraceEnabled()) {
-                log.trace("doInvokeUnimplementedMessageHandler({}) reqSeqNo={}, msgSeqNo={}, reqGlobal={}",
-                        this, reqSeqNo, msgSeqNo, reqGlobal);
+                log.trace(
+                        "doInvokeUnimplementedMessageHandler({}) SSH_MSG_UNIMPLEMENTED with message seqNo={} not for a global request",
+                        this, msgSeqNo);
             }
-
-            return super.doInvokeUnimplementedMessageHandler(cmd, buffer);
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("doInvokeUnimplementedMessageHandler({}) report global request={} failure for seqNo={}",
-                    this, reqGlobal, reqSeqNo);
-        }
-
-        return true; // message handled internally
+        return super.doInvokeUnimplementedMessageHandler(cmd, buffer);
     }
 
     @Override
@@ -2086,13 +2178,18 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception If failed to handle the message
      */
     protected void requestSuccess(Buffer buffer) throws Exception {
-        // use a copy of the original data in case it is re-used on return
-        Buffer resultBuf = ByteArrayBuffer.getCompactClone(
-                buffer.array(), buffer.rpos(), buffer.available());
-        synchronized (requestResult) {
-            requestResult.set(resultBuf);
-            resetIdleTimeout();
-            requestResult.notifyAll();
+        resetIdleTimeout();
+        // Remove at end
+        GlobalRequestFuture request = pendingGlobalRequests.pollLast();
+        if (request != null) {
+            // use a copy of the original data in case it is re-used on return
+            Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
+            GlobalRequestFuture.ReplyHandler handler = request.getHandler();
+            if (handler != null) {
+                handler.accept(SshConstants.SSH_MSG_REQUEST_SUCCESS, resultBuf);
+            } else {
+                request.setValue(resultBuf);
+            }
         }
     }
 
@@ -2103,17 +2200,17 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception If failed to handle the message
      */
     protected void requestFailure(Buffer buffer) throws Exception {
-        signalRequestFailure();
-    }
-
-    /**
-     * Marks the current pending global request result as failed
-     */
-    protected void signalRequestFailure() {
-        synchronized (requestResult) {
-            requestResult.set(GenericUtils.NULL);
-            resetIdleTimeout();
-            requestResult.notifyAll();
+        resetIdleTimeout();
+        // Remove at end
+        GlobalRequestFuture request = pendingGlobalRequests.pollLast();
+        if (request != null) {
+            GlobalRequestFuture.ReplyHandler handler = request.getHandler();
+            if (handler != null) {
+                Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
+                handler.accept(SshConstants.SSH_MSG_REQUEST_FAILURE, resultBuf);
+            } else {
+                request.fail(SshConstants.getCommandMessageName(SshConstants.SSH_MSG_REQUEST_FAILURE));
+            }
         }
     }
 

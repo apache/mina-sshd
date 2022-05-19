@@ -34,6 +34,8 @@ import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingInformationProvider;
+import org.apache.sshd.common.future.GlobalRequestFuture;
+import org.apache.sshd.common.future.GlobalRequestFuture.ReplyHandler;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -171,8 +173,7 @@ public interface Session
     IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
     /**
-     * Send a global request and wait for the response. This must only be used when sending a
-     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
      *
      * @param  request                         the request name - used mainly for logging and debugging
      * @param  buffer                          the buffer containing the global request
@@ -191,8 +192,7 @@ public interface Session
 
     /**
      *
-     * Send a global request and wait for the response. This must only be used when sending a
-     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
      *
      * @param  request                         the request name - used mainly for logging and debugging
      * @param  buffer                          the buffer containing the global request
@@ -207,17 +207,44 @@ public interface Session
     }
 
     /**
-     * Send a global request and wait for the response. This must only be used when sending a
-     * {@code SSH_MSG_GLOBAL_REQUEST} with a result expected, else it will time out
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
      *
      * @param  request                         the request name - used mainly for logging and debugging
      * @param  buffer                          the buffer containing the global request
-     * @param  maxWaitMillis                   Max. time to wait for response (millis) - must be <U>positive</U>
+     * @param  maxWaitMillis                   maximum time in milliseconds to wait for the request to finish - must be
+     *                                         <U>positive</U>
      * @return                                 the return buffer if the request was successful, {@code null} otherwise.
      * @throws IOException                     if an error occurred when encoding or sending the packet
      * @throws java.net.SocketTimeoutException If no response received within specified timeout
      */
     Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException;
+
+    /**
+     * Send a global request and handle the reply asynchronously. If {@code want-reply = true}, pass the received
+     * {@link Buffer} to the given {@link ReplyHandler}, which may execute in a different thread.
+     *
+     * <dl>
+     * <dt>want-reply == true && replyHandler != null</dt>
+     * <dd>The returned future is fulfilled with {@code null} when the request was sent, or with an exception if the
+     * request could not be sent. The {@code replyHandler} is invoked once the reply is received, with the SSH reply
+     * code and the data received.</dd>
+     * <dt>want-reply == true && replyHandler == null</dt>
+     * <dd>The returned future is fulfilled with an exception if the request could not be sent, or a failure reply was
+     * received. If a success reply was received, the future is fulfilled with the received data buffer.</dd>
+     * <dt>want-reply == false</dt>
+     * <dd>The returned future is fulfilled with an empty {@link Buffer} when the request was sent, or with an exception
+     * if the request could not be sent. If a reply handler is given, it is invoked with that empty buffer. The handler
+     * is not invoked if sending the request failed.</dd>
+     * </dl>
+     *
+     * @param  buffer       the {@link Buffer} containing the global request, with the {@code want-reply} flag set as
+     *                      appropriate
+     * @param  request      the request name
+     * @param  replyHandler {@link ReplyHandler} for handling the reply; may be {@code null}
+     * @throws IOException  if an error occurred while encoding or sending the packet
+     */
+    GlobalRequestFuture request(Buffer buffer, String request, ReplyHandler replyHandler)
+            throws IOException;
 
     /**
      * Handle any exceptions that occurred on this session. The session will be closed and a disconnect packet will be
