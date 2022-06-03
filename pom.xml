@@ -1499,7 +1499,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>

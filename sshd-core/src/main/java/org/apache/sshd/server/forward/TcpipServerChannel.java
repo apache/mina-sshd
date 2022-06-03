@@ -387,16 +387,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 buffer.putBuffer(message);
                 session.suspendRead();
                 ThreadUtils.runAsInternal(() -> out.writeBuffer(buffer).addListener(f -> {
+                    session.resumeRead();
                     Throwable e = f.getException();
                     if (e != null) {
                         log.warn("messageReceived({}) channel={} signal close immediately=true due to {}[{}]", session,
                                 TcpipServerChannel.this, e.getClass().getSimpleName(), e.getMessage());
                         close(true);
-                    } else {
-                        if (log.isTraceEnabled()) {
-                            log.trace("messageReceived({}) channel={} message forwarded", session, TcpipServerChannel.this);
-                        }
-                        session.resumeRead();
+                    } else if (log.isTraceEnabled()) {
+                        log.trace("messageReceived({}) channel={} message forwarded", session, TcpipServerChannel.this);
                     }
                 }));
             }

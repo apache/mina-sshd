@@ -1090,14 +1090,13 @@ public class DefaultForwarder
 
             service.registerChannel(channel);
             channel.open().addListener(future -> {
+                session.resumeRead();
                 Throwable t = future.getException();
                 if (t != null) {
                     warn("Failed ({}) to open channel for session={}: {}",
                             t.getClass().getSimpleName(), session, t.getMessage(), t);
                     DefaultForwarder.this.service.unregisterChannel(channel);
                     channel.close(false);
-                } else {
-                    session.resumeRead();
                 }
             });
         }
