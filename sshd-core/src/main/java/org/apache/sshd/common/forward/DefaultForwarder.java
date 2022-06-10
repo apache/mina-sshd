@@ -1128,6 +1128,7 @@ public class DefaultForwarder
             }
             session.suspendRead();
             ThreadUtils.runAsInternal(() -> channel.getAsyncIn().writeBuffer(buffer).addListener(f -> {
+                session.resumeRead();
                 Throwable e = f.getException();
                 if (e != null) {
                     try {
@@ -1137,11 +1138,8 @@ public class DefaultForwarder
                                 err.getClass().getSimpleName(), e.getClass().getSimpleName(), e.getMessage(), channel,
                                 err.getMessage(), err);
                     }
-                } else {
-                    if (log.isTraceEnabled()) {
-                        log.trace("messageReceived({}) channel={} message={} forwarded", session, channel, totalMessages);
-                    }
-                    session.resumeRead();
+                } else if (log.isTraceEnabled()) {
+                    log.trace("messageReceived({}) channel={} message={} forwarded", session, channel, totalMessages);
                 }
             }));
         }
