@@ -391,6 +391,13 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 }
                 return false;
             }
+            if (!channel.isOpen()) {
+                if (debugEnabled) {
+                    log.debug("Channel is not open ({}), stopping acceptor for {}; msg={}", exc.getClass().getSimpleName(),
+                            address, exc.getMessage());
+                }
+                return false;
+            }
 
             debug("Caught {} while accepting incoming connection from {}: {}",
                     exc.getClass().getSimpleName(), address, exc.getMessage(), exc);

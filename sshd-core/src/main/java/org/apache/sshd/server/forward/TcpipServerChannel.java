@@ -284,6 +284,15 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     }
 
     @Override
+    public void handleEof() throws IOException {
+        super.handleEof();
+        IoSession session = getIoSession();
+        if (session != null) {
+            session.shutdownOutputStream();
+        }
+    }
+
+    @Override
     protected Closeable getInnerCloseable() {
         return builder()
                 .close(out)

@@ -116,6 +116,7 @@
         <junit.version>4.13.2</junit.version>
         <bytebuddy.version>1.12.6</bytebuddy.version>
         <testcontainers.version>1.16.2</testcontainers.version>
+        <grpc.version>1.27.2</grpc.version> <!-- Used only in tests -->
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
 

@@ -38,6 +38,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.util.Attribute;
@@ -306,6 +307,13 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected class Adapter extends ChannelInboundHandlerAdapter {
         public Adapter() {
             super();
+        }
+
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+            // Could also be set via childOption() in the acceptor, and via option() in the connector. Doing it here
+            // gives us a single place to set the option for both cases.
+            ctx.channel().config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, true);
         }
 
         @Override
