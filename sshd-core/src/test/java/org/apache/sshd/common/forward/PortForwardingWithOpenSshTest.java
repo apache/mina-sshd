@@ -48,6 +48,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
@@ -68,11 +70,20 @@ import org.testcontainers.utility.MountableFile;
  * half-closing the socket (shutting down its output), otherwise the client connected to the forwarded port on localhost
  * will hang.
  * </p>
+ * <p>
+ * The test is re-run with different ways to specify the remote port forwarding, including wildcard addresses. The port
+ * is always zero, letting the server choose any unused port. With a fixed port number, the test might fail if that
+ * fixed port was already used in the CI environment.
+ * </p>
+ *
+ * @see <a href="https://issues.apache.org/jira/browse/SSHD-1055">SSHD-1055</a>
+ * @see <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
  */
+@RunWith(Parameterized.class)
 @Category(ContainerTestCase.class)
-public class Sshd1055Test extends BaseTestSupport {
+public class PortForwardingWithOpenSshTest extends BaseTestSupport {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Sshd1055Test.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PortForwardingWithOpenSshTest.class);
 
     // We re-use a key from the ClientOpenSSHCertificatesTest.
     private static final String TEST_KEYS = "org/apache/sshd/client/opensshcerts/user";
@@ -89,8 +100,21 @@ public class Sshd1055Test extends BaseTestSupport {
     private CountDownLatch forwardingSetup;
     private int forwardedPort;
 
-    public Sshd1055Test() {
-        super();
+    private final String portToForward;
+
+    public PortForwardingWithOpenSshTest(String portToForward) {
+        this.portToForward = portToForward;
+    }
+
+    /**
+     * Uses different ways to specify the remote port forwarding.
+     *
+     * @return the remote port specifications to use
+     * @see    <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
+     */
+    @Parameterized.Parameters(name = "{0}")
+    public static String[] portSpecifications() {
+        return new String[] { "127.0.0.1:0", "0.0.0.0:0", "0", "localhost:0" };
     }
 
     @Before
@@ -113,7 +137,7 @@ public class Sshd1055Test extends BaseTestSupport {
         LOG.info("gRPC running on port {}", gRpcPort);
         // sshd server
         forwardingSetup = new CountDownLatch(1);
-        sshd = CoreTestSupportUtils.setupTestServer(Sshd1055Test.class);
+        sshd = CoreTestSupportUtils.setupTestServer(PortForwardingWithOpenSshTest.class);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setForwarderFactory(new DefaultForwarderFactory() {
             @Override
@@ -148,13 +172,14 @@ public class Sshd1055Test extends BaseTestSupport {
 
     @Test
     public void forwardingWithConnectionClose() throws Exception {
-        // Write the entrypoint file
+        // Write the entrypoint file. From within the test container, the host running the container and our two servers
+        // is accessible as "host.testcontainers.internal".
         File entryPoint = tmp.newFile();
         String lines = "#!/bin/sh\n" //
                        + "\n" //
                        + "chmod 0600 /root/.ssh/*\n" //
                        + "/usr/bin/ssh -o 'ExitOnForwardFailure yes' -o 'StrictHostKeyChecking off' -vvv -p " + sshPort //
-                       + " -x -N -T -R 127.0.0.1:0:host.testcontainers.internal:" + gRpcPort //
+                       + " -x -N -T -R " + portToForward + ":host.testcontainers.internal:" + gRpcPort //
                        + " bob@host.testcontainers.internal\n";
         Files.write(entryPoint.toPath(), lines.getBytes(StandardCharsets.US_ASCII));
         // Create the container

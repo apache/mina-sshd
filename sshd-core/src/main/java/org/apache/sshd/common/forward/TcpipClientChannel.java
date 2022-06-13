@@ -93,7 +93,13 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
 
     public void updateLocalForwardingEntry(LocalForwardingEntry entry) {
         Objects.requireNonNull(entry, "No local forwarding entry provided");
-        localEntry = entry.getBoundAddress();
+        // OpenSSH requires the host string it passed in the tcpip-forward global request: it compares both host and
+        // port and refuses the forwarding request when it doesn't match in the forwarded-tcpip request.
+        //
+        // Note: Apache MINA sshd is currently more lenient in that respect and compares only the port. RFC 4254
+        // states that "Implementations MUST reject these messages unless they have previously requested a remote TCP/IP
+        // port forwarding with the given port number"; it does not require the host name to be checked.
+        localEntry = new SshdSocketAddress(entry.getLocalAddress().getHostName(), entry.getBoundAddress().getPort());
     }
 
     @Override

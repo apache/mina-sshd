@@ -161,7 +161,7 @@
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
                         <exclude>**/HostBoundPubKeyAuthTest.java</exclude>
-                        <exclude>**/Sshd1055Test.java</exclude>
+                        <exclude>**/PortForwardingWithOpenSshTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
                     </excludes>

@@ -107,3 +107,4 @@ Was originally in *HostConfigEntry*.
 * [SSHD-1262](https://issues.apache.org/jira/browse/SSHD-1262) TCP/IP port forwarding: don't buffer, and don't read from port before channel is open
 * [SSHD-1264](https://issues.apache.org/jira/browse/SSHD-1264) Create KEX negotiation proposal only once per session, not on every re-KEX
 * [SSHD-1266](https://issues.apache.org/jira/browse/SSHD-1266) Fix encoding/decoding critical options in OpenSSH certificates
+* [SSHD-1269](https://issues.apache.org/jira/browse/SSHD-1269) Fix TCP/IP remote port forwarding with wildcard addresses
