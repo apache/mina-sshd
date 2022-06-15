@@ -20,16 +20,11 @@
 package org.apache.sshd.netty;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.Socket;
 import java.net.SocketAddress;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -40,7 +35,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.nio.AbstractNioChannel;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.util.Attribute;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
@@ -49,8 +44,6 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.ExceptionUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -61,13 +54,6 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NettyIoSession extends AbstractCloseable implements IoSession {
-    public static final Method NIO_JAVA_CHANNEL_METHOD = Stream.of(AbstractNioChannel.class.getDeclaredMethods())
-            .filter(m -> "javaChannel".equals(m.getName()) && (m.getParameterCount() == 0))
-            .map(m -> {
-                m.setAccessible(true);
-                return m;
-            }).findFirst()
-            .orElse(null);
 
     protected final Map<Object, Object> attributes = new HashMap<>();
     protected final NettyIoService service;
@@ -190,46 +176,11 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override // see SSHD-902
     public void shutdownOutputStream() throws IOException {
         Channel ch = context.channel();
-        boolean debugEnabled = log.isDebugEnabled();
-        if (!(ch instanceof AbstractNioChannel)) {
-            if (debugEnabled) {
-                log.debug("shudownOutputStream({}) channel is not AbstractNioChannel: {}",
-                        this, (ch == null) ? null : ch.getClass().getSimpleName());
-            }
-            return;
-        }
-
-        if (NIO_JAVA_CHANNEL_METHOD == null) {
-            if (debugEnabled) {
-                log.debug("shudownOutputStream({}) missing channel access method", this);
-            }
-            return;
-        }
-
-        SelectableChannel channel;
-        try {
-            channel = (SelectableChannel) NIO_JAVA_CHANNEL_METHOD.invoke(ch, GenericUtils.EMPTY_OBJECT_ARRAY);
-        } catch (Exception t) {
-            Throwable e = ExceptionUtils.peelException(t);
-            log.warn("shudownOutputStream({}) failed ({}) to retrieve embedded channel: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage());
-            return;
-        }
-
-        if (!(channel instanceof SocketChannel)) {
-            if (debugEnabled) {
-                log.debug("shudownOutputStream({}) not a SocketChannel: {}",
-                        this, (channel == null) ? null : channel.getClass().getSimpleName());
-            }
-            return;
-        }
-
-        Socket socket = ((SocketChannel) channel).socket();
-        if (socket.isConnected() && (!socket.isClosed())) {
-            if (debugEnabled) {
-                log.debug("shudownOutputStream({})", this);
-            }
-            socket.shutdownOutput();
+        if (ch instanceof DuplexChannel) {
+            ((DuplexChannel) ch).shutdownOutput();
+        } else if (log.isDebugEnabled()) {
+            log.debug("shutdownOutputStream({}) channel is not DuplexChannel: {}", this,
+                    (ch == null) ? null : ch.getClass().getSimpleName());
         }
     }
 
