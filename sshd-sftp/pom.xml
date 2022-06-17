@@ -150,7 +150,6 @@
 		            <plugin>
 		                <groupId>org.apache.maven.plugins</groupId>
 		                <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>mina</id>
@@ -194,7 +193,6 @@
 		            <plugin>
 		                <groupId>org.apache.maven.plugins</groupId>
 		                <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>netty</id>
@@ -207,13 +205,6 @@
 				                    <systemProperties>
 				                        <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.netty.NettyIoServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
 				                    </systemProperties>
-				                    <excludes>
-				                            <!-- TODO (SSHD-822) need some more research as to why this fails frequently on Netty -->
-				                        <exclude>**/AbstractCheckFileExtensionTest.java</exclude>
-                                        <exclude>**/SftpFileSystemTest.java</exclude>
-                                        <exclude>**/SftpTransferTest.java</exclude>
-				                        <exclude>**/SftpVersionsTest.java</exclude>
-				                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>
