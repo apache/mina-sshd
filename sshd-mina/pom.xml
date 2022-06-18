@@ -121,15 +121,6 @@
                         <exclude>**/*LoadTest.java</exclude>
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
-                            <!-- TODO need some more research as to why this fails on MINA but not on NIO2 -->
-                        <exclude>**/CipherTest.java</exclude>
-                        <exclude>**/CompressionTest.java</exclude>
-                        <exclude>**/NoServerNoClientTest.java</exclude>
-                        <!-- exclude>**/PortForwardingTest.java</exclude -->
-                        <exclude>**/MacTest.java</exclude>
-                        <exclude>**/SpringConfigTest.java</exclude>
-                        <exclude>**/AsyncAuthTest.java</exclude>
-                        <exclude>**/AsyncAuthInteractiveTest.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>

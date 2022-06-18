@@ -211,7 +211,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     // In general these tests are flawed because one should _never_ read an expected number of bytes in a single read
     // and assume one has got it all. Data may be broken up at any layer. The correct way to read an expected number of
     // bytes is _always_ a read loop, breaking when read returns -1 (not zero).
-    private boolean isMina() {
+    protected boolean isMina() {
         return "MinaServiceFactoryFactory".equals(DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance()
                 .getIoServiceProvider().getClass().getSimpleName());
     }
