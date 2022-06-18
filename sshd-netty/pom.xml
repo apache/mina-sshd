@@ -148,11 +148,6 @@
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
 
-                        <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
-                        <exclude>**/ApacheServer*Test.java</exclude>
-                        <exclude>**/BuiltinIoServiceFactoryFactoriesTest.java</exclude>
-                        <exclude>**/SignatureFactoriesTest.java</exclude>
-                        <exclude>**/Sshd1033Test.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
