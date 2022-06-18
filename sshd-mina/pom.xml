@@ -122,7 +122,6 @@
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
                             <!-- TODO need some more research as to why this fails on MINA but not on NIO2 -->
-                        <exclude>**/ApacheServer*Test.java</exclude>
                         <exclude>**/CipherTest.java</exclude>
                         <exclude>**/CompressionTest.java</exclude>
                         <exclude>**/NoServerNoClientTest.java</exclude>

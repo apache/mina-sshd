@@ -29,9 +29,11 @@ import java.nio.channels.CompletionHandler;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -116,7 +118,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
         StringBuilder sb = new StringBuilder(PAYLOAD.length());
         try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
-            s.setSoTimeout(300);
+            s.setSoTimeout(2000); // 300ms is too low for MINA
 
             try (InputStream inputStream = s.getInputStream()) {
                 byte b[] = new byte[PAYLOAD.length() / 10];
@@ -201,6 +203,19 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
         return true;
     }
 
+    // The tests that attempt to read the payload in a single or in two buffers are fundamentally flawed; they can only
+    // work if all transport buffers are large enough to hold the full or half payload. This appears to be the case with
+    // NIO2 and Netty, but MINA manages the read buffer size dynamically, starting out with 2048 bytes. This is too
+    // small for the payload.
+    //
+    // In general these tests are flawed because one should _never_ read an expected number of bytes in a single read
+    // and assume one has got it all. Data may be broken up at any layer. The correct way to read an expected number of
+    // bytes is _always_ a read loop, breaking when read returns -1 (not zero).
+    private boolean isMina() {
+        return "MinaServiceFactoryFactory".equals(DefaultIoServiceFactoryFactory.getDefaultIoServiceFactoryFactoryInstance()
+                .getIoServiceProvider().getClass().getSimpleName());
+    }
+
     /*
      * Connect to test server via port forward and read real quick with one big buffer.
      *
@@ -208,6 +223,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      */
     @Test
     public void testRemotePortForwardOneBuffer() throws Exception {
+        Assume.assumeTrue("This test cannot work on MINA", !isMina());
         readInOneBuffer(startRemotePF());
     }
 
@@ -218,6 +234,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      */
     @Test
     public void testRemotePortForwardTwoBuffers() throws Exception {
+        Assume.assumeTrue("This test cannot work on MINA", !isMina());
         readInTwoBuffersWithPause(startRemotePF());
     }
 
@@ -228,6 +245,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     @Test
     public void testLocalPortForwardOneBuffer() throws Exception {
+        Assume.assumeTrue("This test cannot work on MINA", !isMina());
         readInOneBuffer(startLocalPF());
     }
 
@@ -238,6 +256,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      */
     @Test
     public void testLocalPortForwardTwoBuffers() throws Exception {
+        Assume.assumeTrue("This test cannot work on MINA", !isMina());
         readInTwoBuffersWithPause(startLocalPF());
     }
 
