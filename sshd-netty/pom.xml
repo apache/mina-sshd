@@ -150,7 +150,6 @@
 
                         <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
                         <exclude>**/ClientDeadlockTest.java</exclude>
-                        <exclude>**/AsyncAuthInteractiveTest.java</exclude>
                         <exclude>**/ApacheServer*Test.java</exclude>
                         <exclude>**/ClientTest.java</exclude>
                         <exclude>**/SpaceAvailableExtensionImplTest.java</exclude>
