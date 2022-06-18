@@ -33,7 +33,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.util.Attribute;
@@ -44,6 +43,7 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.helpers.MissingAttachedSessionException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
@@ -210,19 +210,44 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         service.sessions.put(id, NettyIoSession.this);
         prev = context.newPromise().setSuccess();
         remoteAddr = channel.remoteAddress();
-        handler.sessionCreated(NettyIoSession.this);
-
+        // If handler.sessionCreated() propagates an exception, we'll have a NettyIoSession without SSH session. We'll
+        // propagate the exception, exceptionCaught will be called, which won't find an SSH session to handle the
+        // exception and propagate a MissingAttachedSessionException. However, Netty will swallow and log exceptions
+        // propagated out of exceptionCaught. This will lead to follow-up exceptions.
+        //
+        // We have to close the NettyIoSession in this case.
         Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
         IoConnectFuture future = connectFuture.get();
-        if (future != null) {
-            future.setSession(NettyIoSession.this);
+        try {
+            handler.sessionCreated(NettyIoSession.this);
+            if (future != null) {
+                future.setSession(NettyIoSession.this);
+            }
+        } catch (Throwable e) {
+            log.warn("channelActive(session={}): could not create SSH session ({}); closing", this, e.getClass().getName(), e);
+            try {
+                if (future != null) {
+                    future.setException(e);
+                }
+            } finally {
+                close(true);
+            }
         }
     }
 
     protected void channelInactive(ChannelHandlerContext ctx) throws Exception {
         service.sessions.remove(id);
-        handler.sessionClosed(NettyIoSession.this);
-        context = null;
+        try {
+            handler.sessionClosed(NettyIoSession.this);
+        } catch (MissingAttachedSessionException e) {
+            // handler.sessionClosed() is supposed to close the attached SSH session. If there isn't one,
+            // we don't care anymore at this point.
+            if (log.isTraceEnabled()) {
+                log.trace("channelInactive(session={}): caught {}", this, e.getClass().getName(), e);
+            }
+        } finally {
+            context = null;
+        }
     }
 
     protected void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -258,13 +283,6 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected class Adapter extends ChannelInboundHandlerAdapter {
         public Adapter() {
             super();
-        }
-
-        @Override
-        public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-            // Could also be set via childOption() in the acceptor, and via option() in the connector. Doing it here
-            // gives us a single place to set the option for both cases.
-            ctx.channel().config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, true);
         }
 
         @Override
