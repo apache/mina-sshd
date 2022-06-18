@@ -69,6 +69,15 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         session.resumeRead();
     }
 
+    /**
+     * Intended for tests simulating a sudden connection drop only! Do not call otherwise.
+     */
+    public void suspend() {
+        // Invoked reflectively in org.apache.sshd.client.ClientTest
+        session.suspendRead();
+        session.suspendWrite();
+    }
+
     @Override
     public Object getAttribute(Object key) {
         return session.getAttribute(key);

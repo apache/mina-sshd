@@ -150,8 +150,6 @@
 
                         <!-- TODO need some more research as to why this fails on Netty but not on NIO2 or MINA -->
                         <exclude>**/ApacheServer*Test.java</exclude>
-                        <exclude>**/ClientTest.java</exclude>
-                        <exclude>**/SpaceAvailableExtensionImplTest.java</exclude>
                         <exclude>**/BuiltinIoServiceFactoryFactoriesTest.java</exclude>
                         <exclude>**/SignatureFactoriesTest.java</exclude>
                         <exclude>**/Sshd1033Test.java</exclude>

@@ -93,7 +93,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -115,9 +114,7 @@ import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -173,11 +170,6 @@ public class ClientTest extends BaseTestSupport {
 
     public ClientTest() {
         super();
-    }
-
-    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
-    public static void ensureBouncycastleRegistered() {
-        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
     }
 
     @Before
@@ -1427,8 +1419,8 @@ public class ClientTest extends BaseTestSupport {
                 buffer.putString(""); // TODO add language tag
 
                 IoWriteFuture f = session.writePacket(buffer);
+                f.addListener(f1 -> suspend(session.getIoSession()));
                 assertTrue("Packet writing not completed in time", f.await(DEFAULT_TIMEOUT));
-                suspend(session.getIoSession());
 
                 TestEchoShell.latch.await();
             } finally {

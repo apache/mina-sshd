@@ -59,7 +59,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected final NettyIoService service;
     protected final IoHandler handler;
     protected final long id;
-    protected ChannelHandlerContext context;
+    protected volatile ChannelHandlerContext context;
     protected SocketAddress remoteAddr;
     protected ChannelFuture prev;
     protected final ChannelInboundHandlerAdapter adapter = new Adapter();
@@ -133,8 +133,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         DefaultIoWriteFuture msg = new DefaultIoWriteFuture(getRemoteAddress(), null);
         ChannelPromise next = context.newPromise();
         prev.addListener(whatever -> {
-            if (context != null) {
-                context.writeAndFlush(buf, next);
+            ChannelHandlerContext ctx = context;
+            if (ctx != null) {
+                ctx.writeAndFlush(buf, next);
             }
         });
         prev = next;
@@ -156,8 +157,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     public void suspendRead() {
         if (!readSuspended.getAndSet(true)) {
-            if (context != null) {
-                Channel ch = context.channel();
+            ChannelHandlerContext ctx = context;
+            if (ctx != null) {
+                Channel ch = ctx.channel();
                 ch.config().setAutoRead(false);
             }
         }
@@ -166,8 +168,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     @Override
     public void resumeRead() {
         if (readSuspended.getAndSet(false)) {
-            if (context != null) {
-                Channel ch = context.channel();
+            ChannelHandlerContext ctx = context;
+            if (ctx != null) {
+                Channel ch = ctx.channel();
                 ch.config().setAutoRead(true);
             }
         }
@@ -175,7 +178,11 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override // see SSHD-902
     public void shutdownOutputStream() throws IOException {
-        Channel ch = context.channel();
+        ChannelHandlerContext ctx = context;
+        if (ctx == null) {
+            return;
+        }
+        Channel ch = ctx.channel();
         if (ch instanceof DuplexChannel) {
             ((DuplexChannel) ch).shutdownOutput();
         } else if (log.isDebugEnabled()) {
@@ -184,10 +191,25 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         }
     }
 
+    /**
+     * Intended for tests simulating a sudden connection drop only! Do not call otherwise.
+     */
+    public void suspend() {
+        // Invoked reflectively in org.apache.sshd.client.ClientTest
+        ChannelHandlerContext ctx = context;
+        if (ctx != null) {
+            Channel ch = ctx.channel();
+            if (ch != null) {
+                ch.disconnect();
+            }
+        }
+    }
+
     @Override
     protected CloseFuture doCloseGracefully() {
-        if (context != null) {
-            context.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)
+        ChannelHandlerContext ctx = context;
+        if (ctx != null) {
+            ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE)
                     .addListener(fut -> closeFuture.setClosed());
         } else {
             closeFuture.setClosed();
@@ -197,8 +219,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
     @Override
     protected void doCloseImmediately() {
-        if (context != null) {
-            context.close();
+        ChannelHandlerContext ctx = context;
+        if (ctx != null) {
+            ctx.close();
         }
         super.doCloseImmediately();
     }
