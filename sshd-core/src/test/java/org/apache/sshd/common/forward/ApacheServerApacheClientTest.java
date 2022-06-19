@@ -47,6 +47,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     private static int sshServerPort;
     private static SshServer server;
 
+    private SshClient client;
     private ClientSession session;
 
     public ApacheServerApacheClientTest() {
@@ -74,7 +75,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
 
     @Before
     public void createClient() throws IOException {
-        SshClient client = SshClient.setUpDefaultClient();
+        client = SshClient.setUpDefaultClient();
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
         LOG.info("Connecting...");
@@ -92,23 +93,32 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
             assertTrue("Failed to close session", session.close(true).await(TIMEOUT));
         } finally {
             session = null;
+            client.stop();
         }
     }
 
     @Override
-    protected int startRemotePF() throws Exception {
+    protected SshdSocketAddress startRemotePF() throws Exception {
         SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, 0);
         SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
-        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
-        return bound.getPort();
+        return session.startRemotePortForwarding(remote, local);
     }
 
     @Override
-    protected int startLocalPF() throws Exception {
+    protected SshdSocketAddress startLocalPF() throws Exception {
         SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, 0);
         SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
-        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
-        return bound.getPort();
+        return session.startLocalPortForwarding(local, remote);
+    }
+
+    @Override
+    protected void stopRemotePF(SshdSocketAddress bound) throws Exception {
+        session.stopRemotePortForwarding(bound);
+    }
+
+    @Override
+    protected void stopLocalPF(SshdSocketAddress bound) throws Exception {
+        session.stopLocalPortForwarding(bound);
     }
 
     @Override

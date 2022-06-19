@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -106,16 +107,26 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     }
 
     @Override
-    protected int startRemotePF() throws Exception {
+    protected SshdSocketAddress startRemotePF() throws Exception {
         int port = findFreePort();
         session.setPortForwardingR(TEST_LOCALHOST, port, TEST_LOCALHOST, testServerPort);
-        return port;
+        return new SshdSocketAddress(TEST_LOCALHOST, port);
     }
 
     @Override
-    protected int startLocalPF() throws Exception {
+    protected SshdSocketAddress startLocalPF() throws Exception {
         int port = findFreePort();
         session.setPortForwardingL(TEST_LOCALHOST, port, TEST_LOCALHOST, testServerPort);
-        return port;
+        return new SshdSocketAddress(TEST_LOCALHOST, port);
+    }
+
+    @Override
+    protected void stopRemotePF(SshdSocketAddress bound) throws Exception {
+        session.delPortForwardingR(bound.getPort());
+    }
+
+    @Override
+    protected void stopLocalPF(SshdSocketAddress bound) throws Exception {
+        session.delPortForwardingL(bound.getPort());
     }
 }

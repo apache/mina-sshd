@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Assert;
@@ -103,7 +104,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                     @SuppressWarnings("synthetic-access")
                     public void failed(Throwable exc, AsynchronousServerSocketChannel serverSock) {
                         log.error("Failed ({}) to accept incoming connection: {}", exc.getClass().getSimpleName(),
-                                exc.getMessage());
+                                exc.getMessage(), exc);
                     }
                 });
     }
@@ -115,6 +116,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     private void readInLoop(int serverPort) throws Exception {
         outputDebugMessage("readInLoop(port=%d)", serverPort);
+        outputDebugMessage("expecting %d bytes", PAYLOAD.length());
 
         StringBuilder sb = new StringBuilder(PAYLOAD.length());
         try (Socket s = new Socket(TEST_LOCALHOST, serverPort)) {
@@ -143,6 +145,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     private void readInOneBuffer(int serverPort) throws Exception {
         outputDebugMessage("readInOneBuffer(port=%d)", serverPort);
+        outputDebugMessage("expecting %d bytes", PAYLOAD.length());
         try (Socket s = new Socket()) {
             s.setSoTimeout(300);
             s.setReceiveBufferSize(65536);
@@ -162,6 +165,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
 
     private void readInTwoBuffersWithPause(int serverPort) throws Exception {
         outputDebugMessage("readInTwoBuffersWithPause(port=%d)", serverPort);
+        outputDebugMessage("expecting %d bytes", PAYLOAD.length());
         try (Socket s = new Socket()) {
             s.setSoTimeout(300);
             s.setReceiveBufferSize(65536);
@@ -191,9 +195,13 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
         }
     }
 
-    protected abstract int startRemotePF() throws Exception;
+    protected abstract SshdSocketAddress startRemotePF() throws Exception;
 
-    protected abstract int startLocalPF() throws Exception;
+    protected abstract SshdSocketAddress startLocalPF() throws Exception;
+
+    protected abstract void stopRemotePF(SshdSocketAddress bound) throws Exception;
+
+    protected abstract void stopLocalPF(SshdSocketAddress bound) throws Exception;
 
     protected boolean hasLocalPFStarted(int port) {
         return true;
@@ -224,7 +232,12 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     @Test
     public void testRemotePortForwardOneBuffer() throws Exception {
         Assume.assumeTrue("This test cannot work on MINA", !isMina());
-        readInOneBuffer(startRemotePF());
+        SshdSocketAddress pf = startRemotePF();
+        try {
+            readInOneBuffer(pf.getPort());
+        } finally {
+            stopRemotePF(pf);
+        }
     }
 
     /*
@@ -235,18 +248,33 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     @Test
     public void testRemotePortForwardTwoBuffers() throws Exception {
         Assume.assumeTrue("This test cannot work on MINA", !isMina());
-        readInTwoBuffersWithPause(startRemotePF());
+        SshdSocketAddress pf = startRemotePF();
+        try {
+            readInTwoBuffersWithPause(pf.getPort());
+        } finally {
+            stopRemotePF(pf);
+        }
     }
 
     @Test
     public void testRemotePortForwardLoop() throws Exception {
-        readInLoop(startRemotePF());
+        SshdSocketAddress pf = startRemotePF();
+        try {
+            readInLoop(pf.getPort());
+        } finally {
+            stopRemotePF(pf);
+        }
     }
 
     @Test
     public void testLocalPortForwardOneBuffer() throws Exception {
         Assume.assumeTrue("This test cannot work on MINA", !isMina());
-        readInOneBuffer(startLocalPF());
+        SshdSocketAddress pf = startLocalPF();
+        try {
+            readInOneBuffer(pf.getPort());
+        } finally {
+            stopLocalPF(pf);
+        }
     }
 
     /*
@@ -257,24 +285,42 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     @Test
     public void testLocalPortForwardTwoBuffers() throws Exception {
         Assume.assumeTrue("This test cannot work on MINA", !isMina());
-        readInTwoBuffersWithPause(startLocalPF());
+        SshdSocketAddress pf = startLocalPF();
+        try {
+            readInTwoBuffersWithPause(pf.getPort());
+        } finally {
+            stopLocalPF(pf);
+        }
     }
 
     @Test
     public void testLocalPortForwardLoop() throws Exception {
-        readInLoop(startLocalPF());
+        SshdSocketAddress pf = startLocalPF();
+        try {
+            readInLoop(pf.getPort());
+        } finally {
+            stopLocalPF(pf);
+        }
     }
 
     @Test
     public void testHasLocalPortForwardingStarted() throws Exception {
-        int port = startLocalPF();
-        Assert.assertTrue(hasLocalPFStarted(port));
+        SshdSocketAddress pf = startLocalPF();
+        try {
+            Assert.assertTrue(hasLocalPFStarted(pf.getPort()));
+        } finally {
+            stopLocalPF(pf);
+        }
     }
 
     @Test
     public void testHasRemotePortForwardingStarted() throws Exception {
-        int port = startRemotePF();
-        Assert.assertTrue(hasRemotePFStarted(port));
+        SshdSocketAddress pf = startRemotePF();
+        try {
+            Assert.assertTrue(hasRemotePFStarted(pf.getPort()));
+        } finally {
+            stopRemotePF(pf);
+        }
     }
 
 }

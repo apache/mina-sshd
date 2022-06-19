@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.forward;
 
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -31,12 +32,22 @@ public class NoServerNoClientTest extends AbstractServerCloseTestSupport {
     }
 
     @Override
-    protected int startRemotePF() throws Exception {
-        return testServerPort;
+    protected SshdSocketAddress startRemotePF() throws Exception {
+        return new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
     }
 
     @Override
-    protected int startLocalPF() throws Exception {
-        return testServerPort;
+    protected SshdSocketAddress startLocalPF() throws Exception {
+        return new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
+    }
+
+    @Override
+    protected void stopRemotePF(SshdSocketAddress bound) throws Exception {
+        // Nothing to do
+    }
+
+    @Override
+    protected void stopLocalPF(SshdSocketAddress bound) throws Exception {
+        // Nothing to do
     }
 }
