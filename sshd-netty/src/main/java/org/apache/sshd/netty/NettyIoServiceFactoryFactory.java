@@ -46,7 +46,7 @@ public class NettyIoServiceFactoryFactory extends AbstractIoServiceFactoryFactor
     @Override
     public IoServiceFactory create(FactoryManager manager) {
         Objects.requireNonNull(manager, "No factory manager provided");
-        IoServiceFactory factory = new NettyIoServiceFactory(eventLoopGroup);
+        IoServiceFactory factory = new NettyIoServiceFactory(manager, eventLoopGroup);
         factory.setIoServiceEventListener(manager.getIoServiceEventListener());
         return factory;
     }

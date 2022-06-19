@@ -48,6 +48,7 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * The Netty based IoAcceptor implementation.
@@ -65,11 +66,14 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
     public NettyIoAcceptor(NettyIoServiceFactory factory, IoHandler handler) {
         super(factory, handler);
 
+        Boolean reuseaddr = CoreModuleProperties.SOCKET_REUSEADDR.getRequired(factory.manager);
         channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
                 .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 100) // TODO make this configurable
-                .handler(LOGGING_TRACE) // TODO make this configurable
+                .option(ChannelOption.SO_BACKLOG, CoreModuleProperties.SOCKET_BACKLOG.getRequired(factory.manager))
+                .option(ChannelOption.SO_REUSEADDR, reuseaddr) //
+                .childOption(ChannelOption.SO_REUSEADDR, reuseaddr)
+                .handler(LOGGING_TRACE) // TODO make this configurable?
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     @SuppressWarnings("synthetic-access")

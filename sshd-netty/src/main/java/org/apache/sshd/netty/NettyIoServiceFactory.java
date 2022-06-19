@@ -19,9 +19,12 @@
 
 package org.apache.sshd.netty;
 
+import java.util.Objects;
+
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
@@ -38,14 +41,16 @@ public class NettyIoServiceFactory extends AbstractCloseable implements IoServic
 
     protected final EventLoopGroup eventLoopGroup;
     protected final boolean closeEventLoopGroup;
+    protected final FactoryManager manager;
 
     private IoServiceEventListener eventListener;
 
-    public NettyIoServiceFactory() {
-        this(null);
+    public NettyIoServiceFactory(FactoryManager manager) {
+        this(manager, null);
     }
 
-    public NettyIoServiceFactory(EventLoopGroup group) {
+    public NettyIoServiceFactory(FactoryManager manager, EventLoopGroup group) {
+        this.manager = Objects.requireNonNull(manager, "FactoryManager must be set");
         this.eventLoopGroup = (group != null) ? group : new NioEventLoopGroup();
         this.closeEventLoopGroup = group == null;
     }

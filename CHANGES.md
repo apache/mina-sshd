@@ -32,3 +32,4 @@
 
 ## Behavioral changes and enhancements
 
+* Netty I/O back-end: respect configurations for `CoreModuleProperties.SOCKET_BACKLOG` and `CoreModuleProperties.SOCKET_REUSEADDR`.
