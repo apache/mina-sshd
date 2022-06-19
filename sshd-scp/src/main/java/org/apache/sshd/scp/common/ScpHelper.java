@@ -372,10 +372,10 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         try (InputStream is = new LimitInputStream(this.in, length);
              OutputStream os = resolver.resolveTargetStream(session, name, length, perms,
                      IoUtils.EMPTY_OPEN_OPTIONS)) {
-            sendOk();
-
             file = resolver.getEventListenerFilePath();
             listener.startFileEvent(session, FileOperation.RECEIVE, file, length, perms);
+            sendOk();
+
             try {
                 IoUtils.copy(is, os, bufSize);
             } catch (IOException | RuntimeException e) {
