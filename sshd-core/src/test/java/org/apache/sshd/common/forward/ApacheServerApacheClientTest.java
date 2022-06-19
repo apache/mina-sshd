@@ -24,6 +24,7 @@ import java.time.Duration;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -61,6 +62,14 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         server.setPasswordAuthenticator((u, p, s) -> true);
         server.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
+        // Some tests expect to be able to read the whole data with a single or with two read() calls.
+        // This can only work if read buffers at all levels are large enough. With MINA, this is not case
+        // by default: it uses an adaptive algorithm that adjusts the read buffer size between 64 bytes
+        // and 64 kB, and starts out with 2kB. This is too small for these tests to pass.
+        //
+        // So ensure that MINA uses at least 32kB read buffers
+        CoreModuleProperties.NIO2_READ_BUFFER_SIZE.set(server, 32 * 1024);
+        CoreModuleProperties.MIN_READ_BUFFER_SIZE.set(server, 32 * 1024);
         server.start();
         sshServerPort = server.getPort();
         LOG.info("SSHD Running on port {}", server.getPort());
@@ -77,6 +86,8 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     public void createClient() throws IOException {
         client = SshClient.setUpDefaultClient();
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
+        CoreModuleProperties.NIO2_READ_BUFFER_SIZE.set(client, 32 * 1024);
+        CoreModuleProperties.MIN_READ_BUFFER_SIZE.set(client, 32 * 1024);
         client.start();
         LOG.info("Connecting...");
         session = client.connect("user", TEST_LOCALHOST, sshServerPort).verify(TIMEOUT).getSession();

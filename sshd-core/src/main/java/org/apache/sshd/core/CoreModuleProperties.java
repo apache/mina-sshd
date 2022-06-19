@@ -407,10 +407,34 @@ public final class CoreModuleProperties {
             = Property.bool("tcp-nodelay", false);
 
     /**
-     * Read buffer size for NIO2 sessions See {@link org.apache.sshd.common.io.nio2.Nio2Session}
+     * Read buffer size in bytes. Has no effect on the Netty transport. The NIO2 transport uses this setting as
+     * fixed-size read buffer for all sessions. The MINA transport uses it as the initial read buffer size, MINA
+     * requires this to be in the range [64 .. 65536]; if larger, MINA uses 64kB. If not set explicitly on the
+     * {@link org.apache.sshd.client.SshClient} or {@link org.apache.sshd.server.SshServer}, or if smaller than 64, MINA
+     * will use its built-in default of 2kB.
      */
     public static final Property<Integer> NIO2_READ_BUFFER_SIZE
-            = Property.integer("nio2-read-buf-size", 32 * 1024);
+            = Property.validating(Property.integer("nio2-read-buf-size", 32 * 1024),
+                    p -> {
+                        if (p != null) {
+                            ValidateUtils.checkTrue(p > 0, "Read buffer size must be > 0: %d", p);
+                        }
+                    });
+
+    /**
+     * Minimum read buffer size in bytes. Has an effect only on the MINA transport and must be in the range [64..65536].
+     * If not set, MINA by default uses 64 bytes as minimal read buffer size.
+     * <p>
+     * If larger than {@link #NIO2_READ_BUFFER_SIZE}, MINA will use this value also as the initial read buffer size.
+     */
+    public static final Property<Integer> MIN_READ_BUFFER_SIZE
+            = Property.validating(Property.integer("min-read-buf-size"),
+                    p -> {
+                        if (p != null) {
+                            ValidateUtils.checkTrue(p >= 64 && p <= 64 * 1024,
+                                    "Minimum read buffer size must be in the range [64..65536]: %d", p);
+                        }
+                    });
 
     /**
      * Maximum allowed size of the initial identification text sent during the handshake

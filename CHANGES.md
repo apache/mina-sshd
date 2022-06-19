@@ -33,3 +33,6 @@
 ## Behavioral changes and enhancements
 
 * Netty I/O back-end: respect configurations for `CoreModuleProperties.SOCKET_BACKLOG` and `CoreModuleProperties.SOCKET_REUSEADDR`.
+* MINA I/O back-end: use `CoreModuleProperties.NIO2_READ_BUFFER_SIZE` for the initial read buffer size, if set.
+  A new `CoreModuleProperties.MIN_READ_BUFFER_SIZE` can be set to control the minimum read buffer size (64
+  bytes by default in Apache MINA).

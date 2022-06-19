@@ -206,6 +206,30 @@ public abstract class MinaService extends AbstractCloseable
             }
         }
 
+        int defaultMinReadBufferSize = config.getMinReadBufferSize();
+        intVal = getInteger(CoreModuleProperties.MIN_READ_BUFFER_SIZE);
+        if (intVal != null) {
+            int readBufferSize = intVal.intValue();
+            if (readBufferSize > defaultMinReadBufferSize) {
+                readBufferSize = Math.min(readBufferSize, config.getMaxReadBufferSize());
+                config.setMinReadBufferSize(readBufferSize);
+                int defaultReadBufferSize = config.getReadBufferSize();
+                if (defaultReadBufferSize < readBufferSize) {
+                    config.setReadBufferSize(readBufferSize);
+                }
+            }
+        }
+
+        intVal = getInteger(CoreModuleProperties.NIO2_READ_BUFFER_SIZE);
+        if (intVal != null) {
+            int readBufferSize = intVal.intValue();
+            if (readBufferSize >= defaultMinReadBufferSize) {
+                readBufferSize = Math.max(readBufferSize, config.getMinReadBufferSize());
+                readBufferSize = Math.min(readBufferSize, config.getMaxReadBufferSize());
+                config.setReadBufferSize(readBufferSize);
+            }
+        }
+
         if (sessionConfig != null) {
             config.setAll(sessionConfig);
         }

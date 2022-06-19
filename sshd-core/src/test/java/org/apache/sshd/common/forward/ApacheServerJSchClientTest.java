@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -73,6 +74,8 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
         server.setPasswordAuthenticator((u, p, s) -> true);
         server.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
+        CoreModuleProperties.NIO2_READ_BUFFER_SIZE.set(server, 32 * 1024);
+        CoreModuleProperties.MIN_READ_BUFFER_SIZE.set(server, 32 * 1024);
         server.start();
         sshServerPort = server.getPort();
         LOG.info("SSHD Running on port {}", server.getPort());
