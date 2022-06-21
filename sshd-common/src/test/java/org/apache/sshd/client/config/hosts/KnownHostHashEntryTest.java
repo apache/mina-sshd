@@ -27,7 +27,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -92,9 +91,8 @@ public class KnownHostHashEntryTest extends JUnitTestSupport {
 
     @Test
     public void testHostHashMatchOnDefaultPort() {
-        Assume.assumeTrue("No-default port used", port == SshConstants.DEFAULT_PORT);
         KnownHostEntry entry = KnownHostEntry.parseKnownHostEntry(line);
-        assertTrue(entry.isHostMatch(host, 0));
+        assertEquals(port == SshConstants.DEFAULT_PORT, entry.isHostMatch(host, 0));
     }
 
     @Override

@@ -40,7 +40,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -123,21 +122,23 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
     /*
      * See https://gist.github.com/briansmith/2ee42439923d8e65a266994d0f70180b
      *
-     * openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 -out pkcs8-rsa-1024.pem
-     * openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -out pkcs8-ecdsa-256.pem
+     * openssl dsaparam -out dsaparam.pem 1024 openssl gendsa -out privkey.pem dsaparam.pem openssl pkcs8 -topk8 -in
+     * privkey.pem -out pkcs8-dsa-1024.pem -nocrypt
      *
-     * openssl ecparam -genkey -name prime256v1 -noout -out pkcs8-ec-256.key
-     * openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in pkcs8-ec-256.key -out pkcs8-ec-256.pem
+     * openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:1024 -out pkcs8-rsa-1024.pem openssl genpkey -algorithm
+     * EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -out pkcs8-ecdsa-256.pem
      *
-     * openssl genpkey -algorithm ed25519 -out pkcs8-ed25519.pem
-     * openssl asn1parse -inform PEM -in ...file... -dump
+     * openssl ecparam -genkey -name prime256v1 -noout -out pkcs8-ec-256.key openssl pkcs8 -topk8 -inform PEM -outform
+     * PEM -nocrypt -in pkcs8-ec-256.key -out pkcs8-ec-256.pem
+     *
+     * openssl genpkey -algorithm ed25519 -out pkcs8-ed25519.pem openssl asn1parse -inform PEM -in ...file... -dump
      */
     @Test // see SSHD-989
     public void testPKCS8FileParsing() throws Exception {
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".pem";
         URL url = getClass().getResource(resourceKey);
-        Assume.assumeTrue("No test file=" + resourceKey, url != null);
+        assertNotNull("No test file=" + resourceKey, url);
 
         Collection<KeyPair> pairs = PKCS8PEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
         assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));

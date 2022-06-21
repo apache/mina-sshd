@@ -136,7 +136,7 @@ public class SelectorUtilsTest extends JUnitTestSupport {
 
     @Test
     public void testAbsoluteWindowsPathTranslation() {
-        Assume.assumeTrue("Not tested on Windows", OsUtils.isWin32());
+        Assume.assumeTrue("Windows-specific test skipped", OsUtils.isWin32());
         String expected = detectTargetFolder().toString();
         for (String prefix : new String[] { "", "/" }) {
             String actual = SelectorUtils.translateToLocalPath(prefix + expected.replace('/', File.separatorChar));

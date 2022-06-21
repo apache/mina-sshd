@@ -26,7 +26,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -54,24 +53,17 @@ public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
 
     @Parameters(name = "value={0}, expected={1}")
     public static List<Object[]> parameters() {
-        return new ArrayList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
+        List<Object[]> result = new ArrayList<>();
+        result.add(new Object[] { null, null });
+        result.add(new Object[] { "", null });
+        for (String v : PropertyResolverUtils.TRUE_VALUES) {
+            result.add(new Object[] { v, Boolean.TRUE });
+        }
 
-            {
-                for (String v : new String[] { null, "" }) {
-                    add(new Object[] { v, null });
-                }
-
-                for (String v : PropertyResolverUtils.TRUE_VALUES) {
-                    add(new Object[] { v, Boolean.TRUE });
-                }
-
-                for (String v : PropertyResolverUtils.FALSE_VALUES) {
-                    add(new Object[] { v, Boolean.FALSE });
-                }
-            }
-        };
+        for (String v : PropertyResolverUtils.FALSE_VALUES) {
+            result.add(new Object[] { v, Boolean.FALSE });
+        }
+        return result;
     }
 
     @Test
@@ -82,13 +74,13 @@ public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
 
     @Test
     public void testCaseInsensitiveParseBoolean() {
-        Assume.assumeFalse("Skip empty value", GenericUtils.isEmpty(value));
-
-        String v = value;
-        for (int index = 1, count = v.length(); index <= (2 * count); index++) {
-            v = shuffleCase(v);
-            Boolean actual = PropertyResolverUtils.parseBoolean(v);
-            assertSame("Mismatched result for '" + v + "'", expected, actual);
+        if (!GenericUtils.isEmpty(value)) {
+            String v = value;
+            for (int index = 1, count = v.length(); index <= (2 * count); index++) {
+                v = shuffleCase(v);
+                Boolean actual = PropertyResolverUtils.parseBoolean(v);
+                assertSame("Mismatched result for '" + v + "'", expected, actual);
+            }
         }
     }
 
