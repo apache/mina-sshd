@@ -29,10 +29,8 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.TreeSet;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
@@ -90,15 +88,15 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
     }
 
     @Parameters(name = "{0}")
-    public static List<Object[]> parameters() {
-        return parameterize(Arrays.asList(
+    public static String[] parameters() {
+        return new String[] {
                 "EC-256-gpg2-public.asc",
                 "EC-348-v1p0-public.asc",
                 "EC-521-gpg2-public.asc",
                 "RSA-2048-v1p0-public.asc",
                 "RSA-2048-v1p6p1-public.asc",
                 "RSA-4096-vp2p0p8-public.asc",
-                "DSA-2048-gpg4win-3.1.3.asc"));
+                "DSA-2048-gpg4win-3.1.3.asc" };
     }
 
     @BeforeClass

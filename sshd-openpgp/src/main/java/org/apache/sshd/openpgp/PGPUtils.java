@@ -162,7 +162,7 @@ public final class PGPUtils {
 
     private static final class LazyDefaultPgpKeysFolderHolder {
         private static final Path PATH = PathUtils.getUserHomeFolder()
-                .resolve(OsUtils.isUNIX() ? STD_LINUX_PGP_FOLDER_NAME : STD_WINDOWS_PGP_FOLDER_NAME);
+                .resolve(OsUtils.isWin32() ? STD_WINDOWS_PGP_FOLDER_NAME : STD_LINUX_PGP_FOLDER_NAME);
 
         private LazyDefaultPgpKeysFolderHolder() {
             throw new UnsupportedOperationException("No instance allowed");
