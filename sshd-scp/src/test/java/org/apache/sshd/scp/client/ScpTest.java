@@ -49,7 +49,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
-import org.apache.sshd.common.io.BuiltinIoServiceFactoryFactories;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -99,9 +98,6 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testNormalizedScpRemotePaths() throws Exception {
-        // see SSHD-822
-        assumeNotIoServiceProvider(
-                EnumSet.of(BuiltinIoServiceFactoryFactories.NETTY, BuiltinIoServiceFactoryFactories.MINA));
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -275,9 +271,6 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnSingleFile() throws Exception {
-        // see SSHD-822
-        assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.NETTY));
-
         String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
         Path targetPath = detectTargetFolder();
@@ -327,9 +320,6 @@ public class ScpTest extends AbstractScpTestSupport {
 
     @Test
     public void testScpNativeOnMultipleFiles() throws Exception {
-        // see SSHD-822
-        assumeNotIoServiceProvider(EnumSet.of(BuiltinIoServiceFactoryFactories.MINA, BuiltinIoServiceFactoryFactories.NETTY));
-
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
