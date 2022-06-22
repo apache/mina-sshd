@@ -1517,7 +1517,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @Test
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
-        Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
+        Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX() || OsUtils.isOSX());
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
 
