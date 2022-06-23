@@ -147,66 +147,83 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             }
         }
         PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
-        if (currentAlgorithm == null) {
+        KeyPair keyPair;
+        PublicKey pubKey;
+        do {
+            if (currentAlgorithm == null) {
+                try {
+                    current = resolveAttemptedPublicKeyIdentity(session, service, reporter);
+                } catch (Error e) {
+                    warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}", session, service,
+                            e.getClass().getSimpleName(), e.getMessage(), e);
+                    throw new RuntimeSshException(e);
+                }
+                currentAlgorithms.clear();
+                chosenAlgorithm = null;
+                if (current == null) {
+                    if (debugEnabled) {
+                        log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
+                    }
+
+                    if (reporter != null) {
+                        reporter.signalAuthenticationExhausted(session, service);
+                    }
+
+                    return false;
+                }
+            }
+            if (log.isTraceEnabled()) {
+                log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
+            }
+
             try {
-                current = resolveAttemptedPublicKeyIdentity(session, service);
+                keyPair = current.getKeyIdentity();
             } catch (Error e) {
-                warn("sendAuthDataRequest({})[{}] failed ({}) to get next key: {}",
+                warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve key identity: {}",
                         session, service, e.getClass().getSimpleName(), e.getMessage(), e);
                 throw new RuntimeSshException(e);
             }
-            currentAlgorithms.clear();
-            chosenAlgorithm = null;
-            if (current == null) {
-                if (debugEnabled) {
-                    log.debug("resolveAttemptedPublicKeyIdentity({})[{}] no more keys to send", session, service);
+            pubKey = keyPair.getPublic();
+
+            if (currentAlgorithm == null) {
+                String keyType = KeyUtils.getKeyType(pubKey);
+                Set<String> aliases = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                aliases.addAll(KeyUtils.getAllEquivalentKeyTypes(keyType));
+                aliases.add(keyType);
+                List<NamedFactory<Signature>> existingFactories = null;
+                if (current instanceof SignatureFactoriesHolder) {
+                    existingFactories = ((SignatureFactoriesHolder) current).getSignatureFactories();
                 }
-
-                if (reporter != null) {
-                    reporter.signalAuthenticationExhausted(session, service);
+                if (GenericUtils.isEmpty(existingFactories)) {
+                    existingFactories = getSignatureFactories();
                 }
-
-                return false;
-            }
-        }
-        if (log.isTraceEnabled()) {
-            log.trace("sendAuthDataRequest({})[{}] current key details: {}", session, service, current);
-        }
-
-        KeyPair keyPair;
-        try {
-            keyPair = current.getKeyIdentity();
-        } catch (Error e) {
-            warn("sendAuthDataRequest({})[{}] failed ({}) to retrieve key identity: {}",
-                    session, service, e.getClass().getSimpleName(), e.getMessage(), e);
-            throw new RuntimeSshException(e);
-        }
-        PublicKey pubKey = keyPair.getPublic();
-
-        if (currentAlgorithm == null) {
-            String keyType = KeyUtils.getKeyType(pubKey);
-            Set<String> aliases = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            aliases.addAll(KeyUtils.getAllEquivalentKeyTypes(keyType));
-            aliases.add(keyType);
-            List<NamedFactory<Signature>> existingFactories;
-            if (current instanceof SignatureFactoriesHolder) {
-                existingFactories = ((SignatureFactoriesHolder) current)
-                        .getSignatureFactories();
-            } else {
-                existingFactories = getSignatureFactories();
-            }
-            if (existingFactories != null) {
-                // Select the factories by name and in order
-                existingFactories.forEach(f -> {
-                    if (aliases.contains(f.getName())) {
-                        currentAlgorithms.add(f.getName());
+                if (GenericUtils.isEmpty(existingFactories)) {
+                    existingFactories = session.getSignatureFactories();
+                }
+                if (existingFactories != null) {
+                    // Select the factories by name and in order
+                    existingFactories.forEach(f -> {
+                        if (aliases.contains(f.getName())) {
+                            currentAlgorithms.add(f.getName());
+                        }
+                    });
+                }
+                currentAlgorithm = currentAlgorithms.poll();
+                if (GenericUtils.isEmpty(currentAlgorithm)) {
+                    currentAlgorithm = getDefaultSignatureAlgorithm(session, service, current, keyPair, keyType);
+                    if (GenericUtils.isEmpty(currentAlgorithm)) {
+                        currentAlgorithm = null;
+                        if (debugEnabled) {
+                            log.debug("sendAuthDataRequest({})[{}] skipping {} key {}; no signature algorithm", session,
+                                    service, keyType, KeyUtils.getFingerPrint(pubKey));
+                        }
+                        if (reporter != null) {
+                            reporter.signalIdentitySkipped(session, service, keyPair);
+                        }
                     }
-                });
+                }
             }
-            currentAlgorithm = currentAlgorithms.isEmpty()
-                    ? keyType
-                    : currentAlgorithms.poll();
-        }
+        } while (currentAlgorithm == null);
 
         String name = getName();
         Integer hostBoundPubKeyVersion = session.getAttribute(DefaultClientKexExtensionHandler.HOSTBOUND_AUTHENTICATION);
@@ -239,10 +256,18 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected PublicKeyIdentity resolveAttemptedPublicKeyIdentity(ClientSession session, String service) throws Exception {
+        return resolveAttemptedPublicKeyIdentity(session, service, null);
+    }
+
+    protected PublicKeyIdentity resolveAttemptedPublicKeyIdentity(
+            ClientSession session, String service,
+            PublicKeyAuthenticationReporter reporter)
+            throws Exception {
         if (keys != null) {
             while (keys.hasNext()) {
                 PublicKeyIdentity nextKey = keys.next();
-                PublicKey pk = nextKey.getKeyIdentity().getPublic();
+                KeyPair identity = nextKey.getKeyIdentity();
+                PublicKey pk = identity.getPublic();
                 if (pk instanceof OpenSshCertificate) {
                     OpenSshCertificate cert = (OpenSshCertificate) pk;
                     if (!OpenSshCertificate.Type.USER.equals(cert.getType())) {
@@ -250,6 +275,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                                 "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not a user certificate",
                                 session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
                                 cert.getId());
+                        if (reporter != null) {
+                            reporter.signalIdentitySkipped(session, service, identity);
+                        }
                         continue;
                     }
                     if (!OpenSshCertificate.isValidNow(cert)) {
@@ -257,6 +285,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                                 "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not valid now",
                                 session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
                                 cert.getId());
+                        if (reporter != null) {
+                            reporter.signalIdentitySkipped(session, service, identity);
+                        }
                         continue;
                     }
                 }
@@ -275,6 +306,38 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         return new KeyPairIdentity(this, session, kp);
+    }
+
+    /**
+     * Determines a signature algorithm name to use for the authentication request if none could be determined from the
+     * installed signature factories. If a non-{@code null} non-empty string is returned, it is used <em>as is</em> in
+     * the authentication.
+     * <p>
+     * This is mainly intended for use with identities from an SSH agent, where the SSH agent may be able to sign the
+     * request even if there is no appropriate signature factory present in Java. Whether it makes sense to allow this
+     * depends on the application logic and how it handles e.g. SSH config {@code PubkeyAcceptedKeyTypes} (or
+     * {@code PubkeyAcceptedAlgorithms}}.
+     * </p>
+     * <p>
+     * This default implementation always returns {@code null}, skipping the key.
+     * </p>
+     *
+     * @param  session   {@link ClientSession} trying to authenticate
+     * @param  service   SSH service name
+     * @param  identity  {@link PublicKeyIdentity} considered to be used for authentication
+     * @param  keyPair   {@link KeyPair} from {@code identity}
+     * @param  keyType   the key type of {@code keyPair}
+     * @return           {@code null} or an empty string to skip this key and consider another key, if any, to use for
+     *                   authentication, or a non-empty signature algorithm name to use for the authentication attempt
+     *                   using the given {@code identity}
+     * @throws Exception if an error occurs
+     * @see              KeyAgentIdentity
+     */
+    protected String getDefaultSignatureAlgorithm(
+            ClientSession session, String service, PublicKeyIdentity identity,
+            KeyPair keyPair, String keyType)
+            throws Exception {
+        return null;
     }
 
     @Override
