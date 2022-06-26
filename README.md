@@ -58,7 +58,7 @@ based applications requiring SSH support.
 ## Implemented/available support
 
 * **Authentication methods**: hostbased, publickey, [OpenSSH host-based public-key](https://github.com/openssh/openssh-portable/blob/1781f507c11/PROTOCOL#L349), keyboard-interactive, password
-* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc, tripledescbc,
+* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfishcbc,
 aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3des-cbc
 * **Digests**: md5, sha1, sha224, sha256, sha384, sha512
 * **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
