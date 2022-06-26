@@ -57,18 +57,38 @@ based applications requiring SSH support.
 
 ## Implemented/available support
 
-* **Authentication methods**: hostbased, publickey, [OpenSSH host-based public-key](https://github.com/openssh/openssh-portable/blob/1781f507c11/PROTOCOL#L349), keyboard-interactive, password
-* **Ciphers**: aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfish-cbc,
+### Authentication methods
+
+* hostbased, publickey, [OpenSSH host-based public-key](https://github.com/openssh/openssh-portable/blob/1781f507c11/PROTOCOL#L349), keyboard-interactive, password
+
+### Ciphers
+
+* aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfish-cbc,
 aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3des-cbc
-* **Digests**: md5, sha1, sha224, sha256, sha384, sha512
-* **Macs**: hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
+
+### Digests
+
+* md5, sha1, sha224, sha256, sha384, sha512
+
+### Macs
+
+* hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
 , hmac-sha2-512-etm@openssh.com, hmac-sha1-etm@openssh.com
-* **Key exchange**: diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
+
+### Key exchange
+
+* diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
 , diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
 , ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@libssh.org, curve448-sha512
     * On Java versions before Java 11, [Bouncy Castle](./docs/dependencies.md#bouncy-castle) is required for curve25519-sha256, curve25519-sha256@libssh.org, or curve448-sha512.
-* **Compressions**: none, zlib, zlib@openssh.com
-* **Signatures/Keys**: ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
+
+### Compressions
+
+* none, zlib, zlib@openssh.com
+
+### Signatures/Keys
+
+* ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
 , ssh-ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
 , ssh-rsa-cert-v01@openssh.com, ssh-dss-cert-v01@openssh.com, ssh-ed25519-cert-v01@openssh.com
 , ecdsa-sha2-nistp256-cert-v01@openssh.com, ecdsa-sha2-nistp384-cert-v01@openssh.com, ecdsa-sha2-nistp521-cert-v01@openssh.com
