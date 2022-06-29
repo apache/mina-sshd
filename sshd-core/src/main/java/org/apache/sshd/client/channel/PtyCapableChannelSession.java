@@ -20,9 +20,7 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
@@ -32,7 +30,6 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -85,7 +82,6 @@ import org.apache.sshd.core.CoreModuleProperties;
 public class PtyCapableChannelSession extends ChannelSession implements PtyChannelConfigurationMutator {
     private boolean agentForwarding;
     private boolean usePty;
-    private final Map<String, Object> env = new LinkedHashMap<>();
     private final PtyChannelConfiguration config;
 
     public PtyCapableChannelSession(
@@ -200,21 +196,6 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         config.setPtyModes((ptyModes == null) ? Collections.emptyMap() : ptyModes);
     }
 
-    /**
-     * @param  key   The (never {@code null}) key (Note: may be empty...)
-     * @param  value The value to set - if {@code null} then the pre-existing value for the key (if any) is
-     *               <U>removed</U>.
-     * @return       The replaced/removed previous value - {@code null} if no previous value set for the key.
-     */
-    public Object setEnv(String key, Object value) {
-        ValidateUtils.checkNotNull(key, "No key provided");
-        if (value == null) {
-            return env.remove(key);
-        } else {
-            return env.put(key, value);
-        }
-    }
-
     public void sendWindowChange(int columns, int lines) throws IOException {
         sendWindowChange(columns, lines, getPtyHeight(), getPtyWidth());
     }
@@ -289,25 +270,6 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             writePacket(buffer);
         }
 
-        if (MapEntryUtils.size(env) > 0) {
-            if (debugEnabled) {
-                log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST env: {}", this, env);
-            }
-
-            // Cannot use forEach because of the IOException being thrown by writePacket
-            for (Map.Entry<String, ?> entry : env.entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                String str = Objects.toString(value);
-                Buffer buffer = session.createBuffer(
-                        SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + GenericUtils.length(str) + Integer.SIZE);
-                buffer.putInt(getRecipient());
-                buffer.putString("env");
-                buffer.putBoolean(false); // want-reply
-                buffer.putString(key);
-                buffer.putString(str);
-                writePacket(buffer);
-            }
-        }
+        sendEnvVariables(session);
     }
 }
