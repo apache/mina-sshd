@@ -61,6 +61,9 @@ public class ChannelSubsystem extends ChannelSession {
         }
 
         Session session = getSession();
+
+        sendEnvVariables(session);
+
         boolean wantReply = CoreModuleProperties.REQUEST_SUBSYSTEM_REPLY.getRequired(this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST,
                 Channel.CHANNEL_SUBSYSTEM.length() + systemName.length() + Integer.SIZE);
