@@ -109,3 +109,4 @@ Was originally in *HostConfigEntry*.
 * [SSHD-1266](https://issues.apache.org/jira/browse/SSHD-1266) Fix encoding/decoding critical options in OpenSSH certificates
 * [SSHD-1269](https://issues.apache.org/jira/browse/SSHD-1269) Fix TCP/IP remote port forwarding with wildcard addresses
 * [SSHD-1272](https://issues.apache.org/jira/browse/SSHD-1272) Use correct signature for RSA keys from SSH agent, and by default ignore keys for which there is no signature algorithm
+* [SSHD-1273](https://issues.apache.org/jira/browse/SSHD-1273) Add support to use env vars together with subsystem channels
