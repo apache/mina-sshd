@@ -51,8 +51,8 @@ import org.apache.sshd.core.CoreModuleProperties;
  */
 public class ChannelSession extends AbstractClientChannel {
 
-    private CloseableExecutorService pumperService;
-    private Future<?> pumper;
+    protected CloseableExecutorService pumperService;
+    protected Future<?> pumper;
     private final Map<String, Object> env = new LinkedHashMap<>();
 
     public ChannelSession() {
@@ -76,7 +76,11 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             };
             asyncOut = new ChannelAsyncInputStream(this);
-            asyncErr = new ChannelAsyncInputStream(this);
+            if (redirectErrorStream) {
+                asyncErr = asyncOut;
+            } else {
+                asyncErr = new ChannelAsyncInputStream(this);
+            }
         } else {
             invertedIn = new ChannelOutputStream(
                     this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
@@ -88,11 +92,17 @@ public class ChannelSession extends AbstractClientChannel {
                 out = pos;
                 invertedOut = pis;
             }
+
             if (err == null) {
-                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, wLocal);
-                ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
-                err = pos;
-                invertedErr = pis;
+                if (redirectErrorStream) {
+                    err = out;
+                    invertedErr = invertedOut;
+                } else {
+                    ChannelPipedInputStream pis = new ChannelPipedInputStream(this, wLocal);
+                    ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
+                    err = pos;
+                    invertedErr = pis;
+                }
             }
 
             if (in != null) {

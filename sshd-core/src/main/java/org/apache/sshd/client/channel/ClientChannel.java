@@ -86,6 +86,14 @@ public interface ClientChannel extends Channel, StreamingChannel, ClientSessionH
 
     void setErr(OutputStream err);
 
+    /**
+     * @param redirectErrorStream If {@code true} then STDERR stream is set to be the same as STDOUT unless
+     *                            {@link #setErr(OutputStream)} was called. <B>Note:</B> the call must occur
+     *                            <U>before</U> channel is opened. Calling it afterwards has no effect - i.e., the last
+     *                            state before opening the stream determines the channel's behavior.
+     */
+    void setRedirectErrorStream(boolean redirectErrorStream);
+
     OpenFuture open() throws IOException;
 
     /**

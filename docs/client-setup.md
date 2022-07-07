@@ -334,17 +334,40 @@ the `ClientSession` (for specific session configuration).
 
 ## Running a command or opening a shell
 
-When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the
-reported environment variables. By default, unless specific instructions are provided, the code uses some internal
-defaults - which however, might not be adequate for the specific client/server.
+### Running a single non-interactive command
 
 ```java
-// Assuming one has obtained a ClientSession as already shown
+try (OutputStream stdout = ...create/obtain output stream...;
+     OutputStream stderr = ...create/obtain output stream...;
+     ClientChannel channel = session.createExecChannel(command)) {
+    channel.setOut(stdout);
+    channel.setErr(stderr);
+    channel.open().verify(...some timeout...);
+    // Wait (forever) for the channel to close - signalling command finished
+    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+}
+
+// Parse/handle the command's output/error streams
+```
+
+If all one needs is to run a non-interactive command and then look at its string output, one can use several of the
+available *ClientSession#executeRemoteCommand* overloaded methods.
+
+### Running an interactive command/shell
+
+If one needs to parse the command/shell output and then respond by sending the correct input, the code must use **separate** thread(s)
+to read the STDOUT/STDERR and provide STDIN input. These threads must be up and running *before* opening the channel since data may start
+to pour in even before the *await/verify* call returns. If this data is not consumed at a reasonable pace, then channel may block and eventually
+even disconnect. Thus the thread(s) using the streams must be ready beforehand.
+
+
+```java
+// The same code can be used when opening a ChannelExec in order to run a single interactive command
 try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
     channel.setIn(...stdin...);
     channel.setOut(...stdout...);
     channel.setErr(...stderr...);
-    // ... spawn the thread(s) that will pump the STDIN/OUT/ERR
+    ...spawn the servicing thread(s)....
     try {
         channel.open().verify(...some timeout...);
         // Wait (forever) for the channel to close - signalling shell exited
@@ -354,16 +377,86 @@ try (ClientChannel channel = session.createShellChannel(/* use internal defaults
     }
 }
 
+```
+
+In such cases it is recommended to use the inverted streams in the relevant threads
+
+
+```java
+// The same code can be used when opening a ChannelExec in order to run a single interactive command
+try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
+    try {
+        channel.open().verify(...some timeout...);
+        
+        spawnStdinThread(channel.getInvertedIn());
+        spawnStdoutThread(channel.getInvertedOut());
+        spawnStderrThread(channel.getInvertedErr());
+
+        // Wait (forever) for the channel to close - signalling shell exited
+        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+    } finally {
+        // ... stop the pumping threads ...
+    }
+}
+
+```
+
+### Redirecting STDERR stream to STDOUT
+
+One can use a combined STDOUT/STDERR stream instead of separate ones:
+
+```java
+
+///////////////////////// Non-interactive ///////////////////////////////
+
+try (OutputStream mergedOutput = ...create/obtain output stream...;
+     ClientChannel channel = session.createExecChannel(command)) {
+    channel.setOut(mergedOutput);
+    channel.redirectErrorStream(true);
+    channel.open().verify(...some timeout...);
+    // Wait (forever) for the channel to close - signalling command finished
+    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+}
+
+// Parse/handle the combined output/error streams
+
+////////////////////////// Interactive ////////////////////////////////////
+
+try (ClientChannel channel = session.createShellChannel(/* use internal defaults */)) {
+    try {
+        channel.redirectErrorStream(true);
+        
+        channel.open().verify(...some timeout...);
+        
+        spawnStdinThread(channel.getInvertedIn());
+        spawnCombinedOutputThread(channel.getInvertedOut());
+
+        // Wait (forever) for the channel to close - signalling shell exited
+        channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 0L);
+    } finally {
+        // ... stop the pumping threads ...
+    }
+}
+```
+
+**Note:** the call to *redirectErrorStream* must occur **before** channel is opened. Calling it afterwards has no effect - i.e.,
+the last state before opening the stream determines the channel's behavior.
+
+### PTY configuration
+
+When running a command or opening a shell, there is an extra concern regarding the PTY configuration and/or the
+reported environment variables. By default, unless specific instructions are provided, the code uses some internal
+defaults - which however, might not be adequate for the specific client/server.
+
+```java
 // In order to override the PTY and/or environment
 Map<String, ?> env = ...some environment...
 PtyChannelConfiguration ptyConfig = ...some configuration...
 try (ClientChannel channel = session.createShellChannel(ptyConfig, env)) {
     ... same code as before ...
 }
-
-// the same code can be used when opening a ChannelExec in order to run a single command
-
 ```
+
 
 One possible source of PTY configuration is code that provides some default initializations based on the detected O/S
 type - `PtyChannelConfigurationMutator#setupSensitiveDefaultPtyConfiguration`. Of course, the user may use whatever other

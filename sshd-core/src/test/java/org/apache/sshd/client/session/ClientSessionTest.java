@@ -19,18 +19,27 @@
 
 package org.apache.sshd.client.session;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -297,5 +306,67 @@ public class ClientSessionTest extends BaseTestSupport {
         } finally {
             CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd, null);
         }
+    }
+
+    @Test   // SSHD-1276
+    public void testRedirectCommandErrorStream() throws Exception {
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedStdout = getCurrentTestName() + "-STDOUT";
+        String expectedStderr = getCurrentTestName() + "-STDERR";
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                writeResponse(getOutputStream(), expectedStdout);
+                writeResponse(getErrorStream(), expectedStderr);
+                cmdProcessed = true;
+                return false;
+            }
+
+            private void writeResponse(OutputStream out, String rsp) throws IOException {
+                out.write(rsp.getBytes(StandardCharsets.US_ASCII));
+                out.write((byte) '\n');
+                out.flush();
+            }
+        });
+
+        String response;
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
+                try (ClientChannel channel = session.createExecChannel(expectedCommand + "\n")) {
+                    channel.setOut(baos);
+                    channel.setRedirectErrorStream(true);
+
+                    channel.open().verify(OPEN_TIMEOUT);
+                    // Wait (forever) for the channel to close - signalling command finished
+                    channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
+                }
+
+                byte[] bytes = baos.toByteArray();
+                response = new String(bytes, StandardCharsets.US_ASCII);
+            }
+        }
+
+        String[] lines = GenericUtils.split(response, '\n');
+        assertEquals("Mismatched response lines count", 2, lines.length);
+
+        Collection<String> values = new ArrayList<>(Arrays.asList(lines));
+        // We don't rely on the order the strings were written
+        for (String expected : new String[] { expectedStdout, expectedStderr }) {
+            if (!values.remove(expected)) {
+                fail(expected + " not in response=" + values);
+            }
+        }
+
+        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
     }
 }
