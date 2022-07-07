@@ -75,6 +75,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected InputStream invertedOut;
     protected OutputStream err;
     protected InputStream invertedErr;
+    protected boolean redirectErrorStream;
     protected final AtomicReference<Integer> exitStatusHolder = new AtomicReference<>(null);
     protected final AtomicReference<String> exitSignalHolder = new AtomicReference<>(null);
     protected int openFailureReason;
@@ -176,6 +177,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public void setErr(OutputStream err) {
         this.err = err;
+    }
+
+    public boolean isRedirectErrorStream() {
+        return redirectErrorStream;
+    }
+
+    @Override
+    public void setRedirectErrorStream(boolean redirectErrorStream) {
+        this.redirectErrorStream = redirectErrorStream;
     }
 
     @Override
