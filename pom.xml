@@ -104,7 +104,7 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
-        <groovy.version>3.0.10</groovy.version>
+        <groovy.version>3.0.11</groovy.version>
         <bouncycastle.version>1.70</bouncycastle.version>
         <slf4j.version>1.7.32</slf4j.version>
         <logback.version>1.2.9</logback.version>
