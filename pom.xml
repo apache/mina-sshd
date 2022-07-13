@@ -107,7 +107,7 @@
         <groovy.version>3.0.11</groovy.version>
         <bouncycastle.version>1.70</bouncycastle.version>
         <slf4j.version>1.7.32</slf4j.version>
-        <logback.version>1.2.9</logback.version>
+        <logback.version>1.2.11</logback.version>
         <spring.version>5.3.20</spring.version>
             <!-- NOTE: upgrading to 6.x requires Java 11 -->
         <jgit.version>5.13.0.202109080827-r</jgit.version>
