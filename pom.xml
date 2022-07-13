@@ -118,7 +118,7 @@
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
 
-        <surefire.plugin.version>3.0.0-M6</surefire.plugin.version>
+        <surefire.plugin.version>3.0.0-M7</surefire.plugin.version>
         <maven.archiver.version>3.5.1</maven.archiver.version>
         <scm.plugin.version>1.12.0</scm.plugin.version>
         <plexus.archiver.version>4.2.6</plexus.archiver.version>
