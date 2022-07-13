@@ -919,7 +919,8 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>9.2</version>
+                                <!-- Version 10+ requires Java 11 -->
+                            <version>9.3</version>
                             <exclusions>
                                 <!-- MCHECKSTYLE-156 -->
                                 <exclusion>
