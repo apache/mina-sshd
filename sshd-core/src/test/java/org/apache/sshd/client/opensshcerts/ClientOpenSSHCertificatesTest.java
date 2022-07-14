@@ -51,6 +51,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.utility.MountableFile;
 
 @RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Category(ContainerTestCase.class)
@@ -79,25 +80,60 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
      **/
     @ClassRule
     public static GenericContainer<?> sshdContainer = new GenericContainer<>(
-            new ImageFromDockerfile("clientopensshcertificatestest", true)
-                    .withFileFromClasspath("entrypoint.sh", "org/apache/sshd/client/opensshcerts/docker/entrypoint.sh")
-                    .withFileFromClasspath("sshd_config", "org/apache/sshd/client/opensshcerts/docker/sshd_config")
-                    .withFileFromClasspath("supervisord.conf", "org/apache/sshd/client/opensshcerts/docker/supervisord.conf")
-                    .withFileFromClasspath("user01_authorized_keys",
-                            "org/apache/sshd/client/opensshcerts/user/user01_authorized_keys")
-                    .withFileFromClasspath("user02_authorized_keys",
-                            "org/apache/sshd/client/opensshcerts/user/user02_authorized_keys")
-                    .withFileFromClasspath("host01", "org/apache/sshd/client/opensshcerts/host/host01")
-                    .withFileFromClasspath("host01" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
-                            "org/apache/sshd/client/opensshcerts/host/host01" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
-                    .withFileFromClasspath("host02", "org/apache/sshd/client/opensshcerts/host/host02")
-                    .withFileFromClasspath("host02" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
-                            "org/apache/sshd/client/opensshcerts/host/host02" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
-                    .withFileFromClasspath("ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX,
-                            "org/apache/sshd/client/opensshcerts/ca/ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
-                    .withFileFromClasspath("Dockerfile", "org/apache/sshd/client/opensshcerts/docker/Dockerfile"))
+            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.13") //
+                    .run("apk --update add supervisor openssh openssh-server bash") // Install
+                    .run("rm -rf /var/cache/apk/*") // Clear cache
+                    .run("mkdir /var/run/sshd") // For privilege separation
+                    .run("addgroup customusers") // Give our users a group
+                    .run("adduser -D user01 -G customusers") // Create a user
+                    .run("adduser -D user02 -G customusers") // Create another one
+                    .run("passwd -u user01") // Unlock, but...
+                    .run("passwd -u user02") // ... don't set passwords
+                    .run("mkdir -p /keys/user/user01") // Directories for...
+                    .run("mkdir -p /keys/user/user02") // ... the authorized keys
+                    .run("echo 'user01:password01' | chpasswd") // Passwords for...
+                    .run("echo 'user02:password02' | chpasswd") // ...both users
+                    .entryPoint("/entrypoint.sh") // Sets up supervisor to run sshd
+                    .build())) //
+                            .withCopyFileToContainer(MountableFile.forClasspathResource(
+                                    "org/apache/sshd/client/opensshcerts/docker/sshd_config"), "/etc/ssh/sshd_config")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(
+                                            "org/apache/sshd/client/opensshcerts/docker/supervisord.conf"),
+                                    "/etc/supervisor/supervisord.conf")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(
+                                            "org/apache/sshd/client/opensshcerts/user/user01_authorized_keys"),
+                                    "/keys/user/user01/authorized_keys")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(
+                                            "org/apache/sshd/client/opensshcerts/user/user02_authorized_keys"),
+                                    "/keys/user/user02/authorized_keys")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource("org/apache/sshd/client/opensshcerts/host/host01"),
+                                    "/keys/host/host01")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource("org/apache/sshd/client/opensshcerts/host/host01"
+                                                                       + PublicKeyEntry.PUBKEY_FILE_SUFFIX),
+                                    "/keys/host/host01" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource("org/apache/sshd/client/opensshcerts/host/host02"),
+                                    "/keys/host/host02")
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource("org/apache/sshd/client/opensshcerts/host/host02"
+                                                                       + PublicKeyEntry.PUBKEY_FILE_SUFFIX),
+                                    "/keys/host/host02" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(
+                                            "org/apache/sshd/client/opensshcerts/ca/ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX),
+                                    "/ca" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
+                            // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(
+                                            "org/apache/sshd/client/opensshcerts/docker/entrypoint.sh", 0x1ff),
+                                    "/entrypoint.sh")
                             // must be set to "/keys/host/host01" or "/keys/host/host02"
-                            .withEnv("SSH_HOST_KEY", "/keys/host/host01")
+                            .withEnv("SSH_HOST_KEY", "/keys/host/host01") //
                             .withExposedPorts(22);
 
     private static final String USER_KEY_PATH = "org/apache/sshd/client/opensshcerts/user/";
