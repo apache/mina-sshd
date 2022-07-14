@@ -70,7 +70,9 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
                             .withCopyFileToContainer(
                                     MountableFile.forClasspathResource(TEST_KEYS + "/user01_authorized_keys"),
                                     "/home/bob/.ssh/authorized_keys")
-                            .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_RESOURCES + "/entrypoint.sh"),
+                            // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex
+                            .withCopyFileToContainer(
+                                    MountableFile.forClasspathResource(TEST_RESOURCES + "/entrypoint.sh", 0x1ff),
                                     "/entrypoint.sh")
                             .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1))
                             .withExposedPorts(22) //
