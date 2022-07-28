@@ -22,3 +22,13 @@
 
 * [SSHD-1281](https://issues.apache.org/jira/browse/SSHD-1281) ClientSession.auth().verify() is terminated with timeout
 * [SSHD-1285](https://issues.apache.org/jira/browse/SSHD-1285) 2.9.0 release broken on Java 8
+
+## Major code re-factoring
+
+## Potential compatibility issues
+
+## Minor code helpers
+
+## Behavioral changes and enhancements
+
+* [SSHD-1283](https://issues.apache.org/jira/browse/SSHD-1283) Added configuration property to control whether *ScpShell* is enabled (default=true).
