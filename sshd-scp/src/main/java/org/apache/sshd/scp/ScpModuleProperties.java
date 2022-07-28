@@ -67,6 +67,15 @@ public final class ScpModuleProperties {
             = Property.bool("scp-auto-sync-on-write", true);
 
     /**
+     * Whether to provide an {@code ScpShell} instance if <I>WinSCP</I> client detected or at all
+     *
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-1009">SSHD-1009</A>
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-1283">SSHD-1283</A>
+     */
+    public static final Property<Boolean> ENABLE_SCP_SHELL
+            = Property.bool("scp-enable-scp-shell", true);
+
+    /**
      * Used to indicate the {@link Charset} (or its name) for encoding returned textual responses from the
      * {@code ScpShell} - extracted from the channel session when shell initialized.
      */

@@ -29,6 +29,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ManagedExecutorServiceSupplier;
+import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpFileOpenerHolder;
 import org.apache.sshd.scp.common.ScpHelper;
@@ -251,8 +252,8 @@ public class ScpCommandFactory
     public ShellFactory selectShellFactory(ChannelSession channelSession) throws IOException {
         SessionContext session = channelSession.getSessionContext();
         String clientVersion = session.getClientVersion();
-        // SSHD-1009
-        if (clientVersion.contains("WinSCP")) {
+        // SSHD-1009 + SSHD-1283
+        if (ScpModuleProperties.ENABLE_SCP_SHELL.getRequired(channelSession) && clientVersion.contains("WinSCP")) {
             return this;
         }
 
@@ -263,6 +264,10 @@ public class ScpCommandFactory
     public Command createShell(ChannelSession channel) throws IOException {
         ShellFactory factory = selectShellFactory(channel);
         if ((factory == this) || (factory == null)) {
+            if (!ScpModuleProperties.ENABLE_SCP_SHELL.getRequired(channel)) {
+                throw new IOException("SCP shell is disabled");
+            }
+
             return new ScpShell(
                     channel,
                     resolveExecutorService(),
