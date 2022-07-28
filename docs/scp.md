@@ -202,7 +202,9 @@ sshd.setShellFactory(factory);
 
 ```
 
-**Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`
+**Note:** a similar result can be achieved if activating SSHD from the command line by specifying `-o ShellFactory=scp`. In any case, even if the
+shell is configured, it can be enabled/disabled via setting the `scp-enable-scp-shell` property to the desired value (default=*true*) - on the server,
+the session or even the specific channel (as with any other property). This way, one can control the shell's availability per-session.
 
 ### Text encoding/decoding
 
