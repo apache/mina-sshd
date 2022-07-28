@@ -14,4 +14,6 @@
 
 # [Version 2.7.0 to 2.8.0](./docs/changes/2.8.0.md)
 
+# [Version 2.8.0 to 2.9.0](./docs/changes/2.9.0.md)
+
 # Planned for next version
