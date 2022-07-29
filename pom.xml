@@ -263,6 +263,24 @@
         </profile>
 
         <profile>
+            <id>javac-jdk9+</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <release>${java.sdk.version}</release>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>only-eclipse</id>
             <activation>
                 <property>
