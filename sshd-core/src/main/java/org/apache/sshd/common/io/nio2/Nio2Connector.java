@@ -179,20 +179,24 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     }
                 }
 
-                debug("onCompleted - failed {} to start session: {}",
-                        t.getClass().getSimpleName(), t.getMessage(), t);
+                log.debug("onCompleted - failed to start session: {} {}", t.getClass().getSimpleName(), t.getMessage(), t);
 
-                try {
-                    socket.close();
-                } catch (IOException err) {
-                    if (debugEnabled) {
-                        log.debug("onCompleted - failed {} to close socket: {}",
-                                err.getClass().getSimpleName(), err.getMessage());
+                IoSession session = future.getSession();
+                if (session != null) {
+                    session.close(true);
+                } else {
+                    try {
+                        socket.close();
+                    } catch (IOException err) {
+                        if (debugEnabled) {
+                            log.debug("onCompleted - failed to close socket: {} {}", err.getClass().getSimpleName(),
+                                    err.getMessage());
+                        }
                     }
-                }
 
-                future.setException(t);
-                unmapSession(sessionId);
+                    future.setException(t);
+                    unmapSession(sessionId);
+                }
             }
         }
 

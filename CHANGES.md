@@ -17,3 +17,8 @@
 # [Version 2.8.0 to 2.9.0](./docs/changes/2.9.0.md)
 
 # Planned for next version
+
+## Bug fixes
+
+* [SSHD-1281](https://issues.apache.org/jira/browse/SSHD-1281) ClientSession.auth().verify() is terminated with timeout
+* [SSHD-1285](https://issues.apache.org/jira/browse/SSHD-1285) 2.9.0 release broken on Java 8
