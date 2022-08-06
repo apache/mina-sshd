@@ -21,7 +21,101 @@ In order to use this CLI code as part of another project, one needs to include t
 
 In general, the CLI clients accept most of their Linux counterpart arguments. Furthermore, one can use the `-o Option=Value`
 argument in order to provide **internal** SSHD code configurations (in addition to the ones specified as system
-properties via `-Dprop=value` JVM option.
+properties via `-Dprop=value` JVM option. **Note:** not all options listed in [ssh_config](https://www.freebsd.org/cgi/man.cgi?query=ssh_config)
+or [sshd_config](https://linux.die.net/man/5/sshd_config) are supported, some of the `-o Option=Value` options have extra
+or special meaning, or are new altogether. Here are a few worth mentioning:
+
+#### `Ciphers`
+
+Comma-separated list of allowed/supported ciphers in their **order** of preference.
+
+#### `MACs`
+
+Comma-separated list of allowed/supported message authentication code algorithms in their **order** of preference.
+
+#### `KexAlgorithms`
+
+Comma-separated list of allowed/supported key exchange algorithms in their **order** of preference.
+
+#### `HostKeyAlgorithms`
+
+Comma-separated list of allowed/supported signature algorithms in their **order** of preference.
+
+#### `Compression`
+
+Whether to use compression, and if so which.
+
+#### `LogLevel`
+
+The verbosity level that is used when logging messages - **Note:** this is not the same as the internal logging configuration but rather
+an extra verbosity level of the CLI code itself - instructing it what extra data to display in STDOUT/STDERR. Each specific CLI (scp, sftp, ssh, sshd)
+has its own interpretation of this value.
+
+#### `PreferredAuthentications`
+
+The preferred user authentications factory names and their **order**:
+
+```
+# Allow only public key authentication
+-o PreferredAuthentications=publickey
+
+# Prefer keyboard-interactive BEFORE publickey
+-o PreferredAuthentications=keyboard-interactive,publickey
+```
+
+#### `ShellFactory`
+
+One can use it specify a non-default shell factory - including disabling it altogether - or *add* the SCP shell to an existing one:
+
+```
+# Disable shell entirely
+-o ShellFactory=none
+
+# Add the SCP shell to the default factory
+-o ShellFactory=+scp
+
+# Use ONLY the SCP shell
+-o ShellFactory=scp
+
+# Use a custom factory
+-o ShellFactory=com.demo.MyShellFactory
+
+# Add the SCP shell to a custom factory
+-o ShellFactory=scp+com.demo.MyShellFactory
+```
+
+#### `Subsystem`
+
+Can be used to specify built-in or custom subsystems to use in the server - or disable them altogether:
+
+```
+# Disable all subsystems
+-o Subsystem=none
+
+# Use the built-in SFTP subsystem
+-o Subsystem=sftp
+
+# Use one or more custom subsystems
+-o Subsystem=Sub1,Sub2,Sub3
+```
+
+**Note:** Subsystems are automatically detected via `ServiceLoader#load(SubsystemFactory.class)` call - the option value simply states which ones to use - according to their *logical* name.
+
+#### Server/Client heartbeat
+
+Controlled by a combination of the `ServerAliveInterval`, `ClientAliveInterval`, `ClientAliveUseNullPackets` and `ClientAliveReplyWait` properties.
+
+#### Host keys and certificate
+
+`HostKey` and `HostCertificate` properties - enable specifying multiple paths to key files/certificates.
+
+#### `Banner` / `VisualHostKey`
+
+Controls the server's banner display.
+
+#### `AllowTcpForwarding` / `AllowAgentForwarding` / `X11Forwarding`
+
+Control server forwarding capabilities.
 
 ### `SftpCommandMain`
 
