@@ -228,8 +228,11 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         Session session = client.getSession();
         byte[] id = handle.getIdentifier();
         boolean traceEnabled = log.isTraceEnabled();
-        while (pendingReads.size() < Math.max(1, windowSize / bufferSize)
-                && (fileSize <= 0 || requestOffset < fileSize + bufferSize)) {
+        if (fileSize > 0 && requestOffset > fileSize && !pendingReads.isEmpty()) {
+            // We'd be issuing requests for reading beyond the expected EOF. Do that only one by one.
+            return;
+        }
+        while (pendingReads.size() < Math.max(1, windowSize / bufferSize)) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,
                     23 /* sftp packet */ + 16 + id.length);
             buf.rpos(23);
@@ -244,6 +247,9 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             }
             pendingReads.add(ack);
             requestOffset += bufferSize;
+            if (fileSize > 0 && requestOffset > fileSize) {
+                break;
+            }
         }
     }
 

@@ -244,6 +244,51 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test // see SSHD-1288
+    public void testReadWriteDownload() throws Exception {
+        Assume.assumeTrue("Not sure appending to a file opened for reading works on Windows",
+                OsUtils.isUNIX() || OsUtils.isOSX());
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        byte[] expected = new byte[1024 * 1024];
+
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            byte[] actual;
+            try (InputStream in = sftp.read(file); ByteArrayOutputStream buf = new ByteArrayOutputStream(2 * expected.length)) {
+                Files.write(testFile, expected, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
+                byte[] data = new byte[4096];
+                for (int n = 0; n >= 0;) {
+                    n = in.read(data, 0, data.length);
+                    if (n > 0) {
+                        buf.write(data, 0, n);
+                    }
+                }
+                actual = buf.toByteArray();
+            }
+            assertEquals("Short read", 2 * expected.length, actual.length);
+            for (int i = 0, j = 0; i < actual.length; i++, j++) {
+                if (j >= expected.length) {
+                    j = 0;
+                }
+                byte expByte = expected[j];
+                byte actByte = actual[i];
+                if (expByte != actByte) {
+                    fail("Mismatched values at index=" + i + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
+                         + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
+                }
+            }
+        }
+    }
+
     @Test // see extra fix for SSHD-538
     public void testNavigateBeyondRootFolder() throws Exception {
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
