@@ -1172,7 +1172,7 @@ public abstract class AbstractSftpClient
         if (bufferSize <= 0) {
             bufferSize = getReadBufferSize();
         }
-        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+        if (bufferSize < MIN_READ_BUFFER_SIZE) {
             throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.="
                                                + MIN_READ_BUFFER_SIZE);
         }
@@ -1182,12 +1182,6 @@ public abstract class AbstractSftpClient
         }
 
         return new SftpInputStreamAsync(this, bufferSize, path, mode);
-    }
-
-    @Override
-    public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
-        int packetSize = (int) getChannel().getRemoteWindow().getPacketSize();
-        return read(path, packetSize, mode);
     }
 
     @Override
@@ -1207,18 +1201,12 @@ public abstract class AbstractSftpClient
         return new SftpOutputStreamAsync(this, bufferSize, path, mode);
     }
 
-    @Override
-    public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
-        int packetSize = (int) getChannel().getRemoteWindow().getPacketSize();
-        return write(path, packetSize, mode);
-    }
-
     protected int getReadBufferSize() {
         return (int) getClientChannel().getLocalWindow().getPacketSize() - 13;
     }
 
     protected int getWriteBufferSize() {
-        return (int) getClientChannel().getLocalWindow().getPacketSize() - 13;
+        return (int) getClientChannel().getRemoteWindow().getPacketSize() - 13;
     }
 
 }

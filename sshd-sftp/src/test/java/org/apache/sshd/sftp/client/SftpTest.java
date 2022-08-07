@@ -233,14 +233,54 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             for (int index = 0; index < readLen; index++) {
                 byte expByte = expected[index];
                 byte actByte = actual[index];
-                if (expByte != actByte) {
-                    fail("Mismatched values at index=" + index
-                         + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
-                         + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
-                }
+                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF));
             }
         } finally {
             SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.remove(sshd);
+        }
+    }
+
+    @Test // see SSHD-1287
+    public void testReadWithLargeBuffer() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        byte[] expected = new byte[1024 * 1024];
+
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            byte[] actual = new byte[expected.length];
+            try (InputStream in = sftp.read(file,
+                    2 * SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.getRequiredDefault() + 2048)) {
+                int off = 0;
+                int n = 0;
+                while (off < actual.length) {
+                    n = in.read(actual, off, actual.length - off);
+                    if (n < 0) {
+                        break;
+                    }
+                    off += n;
+                }
+                assertEquals("Short read", actual.length, off);
+                if (n >= 0) {
+                    n = in.read();
+                    assertTrue("Stream not at eof", n < 0);
+                }
+            }
+            for (int index = 0; index < actual.length; index++) {
+                byte expByte = expected[index];
+                byte actByte = actual[index];
+                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF));
+            }
         }
     }
 
@@ -281,10 +321,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
                 byte expByte = expected[j];
                 byte actByte = actual[i];
-                if (expByte != actByte) {
-                    fail("Mismatched values at index=" + i + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
-                         + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
-                }
+                assertEquals("Mismatched values at index=" + i, Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF));
             }
         }
     }

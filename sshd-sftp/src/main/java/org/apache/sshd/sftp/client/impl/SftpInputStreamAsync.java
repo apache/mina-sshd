@@ -281,13 +281,15 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             SftpClient client = getClient();
             int cur = 0;
             while (cur < nb) {
-                int dlen = client.read(handle, clientOffset, data, cur, nb - cur, eof);
+                int dlen = client.read(handle, clientOffset + cur, data, cur, nb - cur, eof);
+                if (dlen > 0) {
+                    cur += dlen;
+                }
                 Boolean eofSignal = eof.getAndSet(null);
                 if ((dlen < 0) || ((eofSignal != null) && eofSignal.booleanValue())) {
                     eofIndicator = true;
                     break;
                 }
-                cur += dlen;
             }
 
             if (traceEnabled) {
