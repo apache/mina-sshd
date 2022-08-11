@@ -22,3 +22,4 @@
 
 * [SSHD-1281](https://issues.apache.org/jira/browse/SSHD-1281) ClientSession.auth().verify() is terminated with timeout
 * [SSHD-1285](https://issues.apache.org/jira/browse/SSHD-1285) 2.9.0 release broken on Java 8
+* [SSHD-1289](https://issues.apache.org/jira/browse/SSHD-1289) Deadlock during session exit

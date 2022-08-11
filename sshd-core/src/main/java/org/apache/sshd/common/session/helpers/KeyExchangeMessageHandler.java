@@ -23,10 +23,10 @@ import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -97,12 +97,12 @@ public class KeyExchangeMessageHandler {
     /**
      * Queues up high-level packets written during an ongoing key exchange.
      */
-    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
+    protected final Queue<PendingWriteFuture> pendingPackets = new ConcurrentLinkedQueue<>();
 
     /**
      * Indicates that all pending packets have been flushed.
      */
-    protected boolean kexFlushed = true;
+    protected volatile boolean kexFlushed = true;
 
     /**
      * Never {@code null}. Used to block some threads when writing packets while pending packets are still being flushed
@@ -110,7 +110,7 @@ public class KeyExchangeMessageHandler {
      * of a KEX a new future is installed, which is fulfilled at the end of the KEX once there are no more pending
      * packets to be flushed.
      */
-    protected DefaultKeyExchangeFuture kexFlushedFuture;
+    protected volatile DefaultKeyExchangeFuture kexFlushedFuture;
 
     /**
      * Creates a new {@link KeyExchangeMessageHandler} for the given {@code session}, using the given {@code Logger}.
@@ -127,20 +127,29 @@ public class KeyExchangeMessageHandler {
     }
 
     public void updateState(Runnable update) {
-        lock.writeLock().lock();
-        try {
+        updateState(() -> {
             update.run();
-        } finally {
-            lock.writeLock().unlock();
-        }
+            return null;
+        });
     }
 
     public <V> V updateState(Supplier<V> update) {
-        lock.writeLock().lock();
+        boolean locked = false;
+        // If we already have 'lock' as a reader, don't try to get the write lock -- the flushing thread is blocked
+        // currently anyway, and lock promotion from a readlock to a writelock is not possible. Contention between
+        // multiple readers is the business of the caller!
+        //
+        // See also writeOrEnqueue() below.
+        if (lock.getReadHoldCount() == 0) {
+            lock.writeLock().lock();
+            locked = true;
+        }
         try {
             return update.get();
         } finally {
-            lock.writeLock().unlock();
+            if (locked) {
+                lock.writeLock().unlock();
+            }
         }
     }
 
