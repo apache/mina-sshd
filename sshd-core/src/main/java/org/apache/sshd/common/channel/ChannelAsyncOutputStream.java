@@ -378,16 +378,24 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 doWriteIfPossible(false);
             } else {
                 synchronized (writeState) {
-                    if (writeState.pendingWrite == future) {
+                    IoWriteFutureImpl storedFuture = writeState.pendingWrite;
+                    if (storedFuture == future) {
                         writeState.pendingWrite = null;
                         writeState.writeInProgress = false;
                         writeState.waitingOnIo = false;
+                    } else if (storedFuture == null) {
+                        writeState.writeInProgress = false;
+                        writeState.waitingOnIo = false;
+                        if (log.isDebugEnabled()) {
+                            log.debug("onWritten({}) future already reset to null after successful write (stream closed)",
+                                    this);
+                        }
                     } else {
-                        log.error("onWritten({}) future changed", this);
+                        log.error("onWritten({}) future changed during write", this);
                     }
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("onWritten({}) completed write len={}, more={}", this, total);
+                    log.trace("onWritten({}) completed write len={}", this, total);
                 }
                 future.setValue(Boolean.TRUE);
             }
@@ -396,16 +404,24 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
                     this, reason.getClass().getSimpleName(), length, total, reason.getMessage(), reason);
             synchronized (writeState) {
-                if (writeState.pendingWrite == future) {
+                IoWriteFutureImpl storedFuture = writeState.pendingWrite;
+                if (storedFuture == future) {
                     writeState.pendingWrite = null;
                     writeState.writeInProgress = false;
                     writeState.waitingOnIo = false;
+                } else if (storedFuture == null) {
+                    writeState.writeInProgress = false;
+                    writeState.waitingOnIo = false;
+                    if (log.isDebugEnabled()) {
+                        log.debug("onWritten({}) future already reset to null after exception (stream closed): {}", this,
+                                reason.toString());
+                    }
                 } else {
-                    log.error("onWritten({}) future changed", this);
+                    log.error("onWritten({}) future changed during failed write; exception {}", this, reason.toString());
                 }
             }
             if (log.isTraceEnabled()) {
-                log.trace("onWritten({}) failed write len={}, more={}", this, total);
+                log.trace("onWritten({}) failed write len={}", this, total);
             }
             future.setValue(reason);
         }
