@@ -16,15 +16,11 @@
 
 # [Version 2.8.0 to 2.9.0](./docs/changes/2.9.0.md)
 
+# [Version 2.9.0 to 2.9.1](./docs/changes/2.9.1.md)
+
 # Planned for next version
 
 ## Bug fixes
-
-* [SSHD-1281](https://issues.apache.org/jira/browse/SSHD-1281) ClientSession.auth().verify() is terminated with timeout
-* [SSHD-1285](https://issues.apache.org/jira/browse/SSHD-1285) 2.9.0 release broken on Java 8
-* [SSHD-1288](https://issues.apache.org/jira/browse/SSHD-1288) SFTP: fix reading files that are being written
-* [SSHD-1289](https://issues.apache.org/jira/browse/SSHD-1289) Deadlock during session exit
-* [SSHD-1290](https://issues.apache.org/jira/browse/SSHD-1290) Better logging in ChannelAsyncOutputStream
 
 ## Major code re-factoring
 
@@ -34,4 +30,3 @@
 
 ## Behavioral changes and enhancements
 
-* [SSHD-1283](https://issues.apache.org/jira/browse/SSHD-1283) Added configuration property to control whether *ScpShell* is enabled (default=true).
