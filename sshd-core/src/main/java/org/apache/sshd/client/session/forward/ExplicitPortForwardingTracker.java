@@ -56,7 +56,7 @@ public class ExplicitPortForwardingTracker extends PortForwardingTracker impleme
         if (open.getAndSet(false)) {
             PortForwardingManager manager = getClientSession();
             if (isLocalForwarding()) {
-                manager.stopLocalPortForwarding(getLocalAddress());
+                manager.stopLocalPortForwarding(getBoundAddress());
             } else {
                 manager.stopRemotePortForwarding(getRemoteAddress());
             }

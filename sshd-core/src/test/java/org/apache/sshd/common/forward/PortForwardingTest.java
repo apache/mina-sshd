@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -551,6 +552,7 @@ public class PortForwardingTest extends BaseTestSupport {
         AtomicReference<SshdSocketAddress> remoteAddressHolder = new AtomicReference<>();
         AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
         AtomicInteger tearDownSignal = new AtomicInteger(0);
+        AtomicBoolean tearDownSignalInvoked = new AtomicBoolean();
         @SuppressWarnings("checkstyle:anoninnerlength")
         PortForwardingEventListener listener = new PortForwardingEventListener() {
             @Override
@@ -560,6 +562,7 @@ public class PortForwardingTest extends BaseTestSupport {
                     throws IOException {
                 assertTrue("Unexpected remote tunnel has been torn down: address=" + address, localForwarding);
                 assertEquals("Tear down indication not invoked", 1, tearDownSignal.get());
+                tearDownSignalInvoked.set(true);
             }
 
             @Override
@@ -659,6 +662,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 tracker.close();
             }
             assertFalse("Tracker not marked as closed", tracker.isOpen());
+            assertTrue("Tear down signal did not occur", tearDownSignalInvoked.get());
         } finally {
             client.removePortForwardingEventListener(listener);
         }
