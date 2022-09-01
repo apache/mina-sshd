@@ -23,6 +23,7 @@
 ## Bug fixes
 
 * [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
+* [SSHD-1295](https://issues.apache.org/jira/browse/SSHD-1295) Close sessions when ConnectFuture.verify() timed out
 
 ## Major code re-factoring
 

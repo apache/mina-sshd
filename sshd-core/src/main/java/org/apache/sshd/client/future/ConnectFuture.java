@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.future;
 
+import java.util.concurrent.TimeoutException;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.future.SshFuture;
@@ -78,4 +80,13 @@ public interface ConnectFuture
      * Cancels the connection attempt and notifies all threads waiting for this future.
      */
     void cancel();
+
+    /**
+     * Like {@link #setSession(ClientSession)} but sets the session only if there has been no time-out on the future
+     * yet. This method is invoked by SSHD internally. Please do not call this method directly.
+     *
+     * @param  session          The {@link ClientSession}
+     * @throws TimeoutException if a {@link #verify(long)} has already timed out on the future
+     */
+    void setSessionIfNotTimeout(ClientSession session) throws TimeoutException;
 }

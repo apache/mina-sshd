@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,6 +63,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
@@ -1524,6 +1527,48 @@ public class ClientTest extends BaseTestSupport {
                                 e.getClass().getSimpleName(), inetAddress, e.getMessage());
                     }
                 }
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectTimeout() throws Exception {
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                // Delay a little bit to ensure that verify(1) does time out below
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                sessions.add(session);
+            }
+        });
+
+        client.start();
+        try {
+            ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
+            try {
+                future.verify(1);
+                fail("Timeout expected");
+            } catch (InterruptedIOException | SshException e) {
+                ClientSession session = null;
+                try {
+                    session = future.verify(CONNECT_TIMEOUT).getSession();
+                } catch (SshException e2) {
+                    assertTrue("Expected a timeout, got " + e2, e2.getMessage().contains("timeout"));
+                }
+
+                for (Session created : sessions) {
+                    assertTrue("Created session should be closed", created.isClosed() || created.isClosing());
+                }
+
+                assertNull("Session should not set since client timed out", session);
             }
         } finally {
             client.stop();

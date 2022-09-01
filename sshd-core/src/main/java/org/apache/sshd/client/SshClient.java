@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -586,9 +587,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                         if (f5.isConnected()) {
                                             ClientSession clientSession = f5.getClientSession();
                                             clientSession.setAttribute(TARGET_SERVER, address);
-                                            connectFuture.setSession(clientSession);
-                                            proxySession.addCloseFutureListener(f6 -> clientSession.close(true));
-                                            clientSession.addCloseFutureListener(f6 -> proxySession.close(true));
+                                            try {
+                                                connectFuture.setSessionIfNotTimeout(clientSession);
+                                                proxySession.addCloseFutureListener(f6 -> clientSession.close(true));
+                                                clientSession.addCloseFutureListener(f6 -> proxySession.close(true));
+                                            } catch (TimeoutException e) {
+                                                clientSession.close(true);
+                                                proxySession.close(true);
+                                                connectFuture.setException(e);
+                                            }
                                         } else {
                                             proxySession.close(true);
                                             connectFuture.setException(f5.getException());
@@ -750,8 +757,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
                             : identities);
         }
-
-        connectFuture.setSession(session);
+        try {
+            connectFuture.setSessionIfNotTimeout(session);
+        } catch (TimeoutException e) {
+            session.close();
+        }
     }
 
     protected void setupDefaultSessionIdentities(

@@ -20,6 +20,7 @@ package org.apache.sshd.client.future;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
@@ -89,5 +90,11 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
     public void setException(Throwable exception) {
         Objects.requireNonNull(exception, "No exception provided");
         setValue(exception);
+    }
+
+    @Override
+    public void setSessionIfNotTimeout(ClientSession session) throws TimeoutException {
+        Objects.requireNonNull(session, "No client session provided");
+        setValueIfNotTimedOut(session);
     }
 }

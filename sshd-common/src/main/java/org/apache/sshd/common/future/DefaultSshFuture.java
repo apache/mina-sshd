@@ -21,6 +21,7 @@ package org.apache.sshd.common.future;
 import java.io.InterruptedIOException;
 import java.lang.reflect.Array;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -38,6 +39,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
     private final Object lock;
     private Object listeners;
     private Object result;
+    private boolean timeout;
 
     /**
      * Creates a new instance.
@@ -69,6 +71,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
                     lock.wait(endTime - curTime);
                 } catch (InterruptedException e) {
                     if (interruptable) {
+                        setTimeout();
                         curTime = System.currentTimeMillis();
                         throw formatExceptionMessage(msg -> {
                             InterruptedIOException exc = new InterruptedIOException(msg);
@@ -79,6 +82,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
                 }
 
                 curTime = System.currentTimeMillis();
+                if (curTime >= endTime) {
+                    setTimeout();
+                }
                 if ((result != null) || (curTime >= endTime)) {
                     return result;
                 }
@@ -105,6 +111,27 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
                 return;
             }
 
+            result = (newValue != null) ? newValue : GenericUtils.NULL;
+            lock.notifyAll();
+        }
+
+        notifyListeners();
+    }
+
+    /**
+     * Like {@link #setValue(Object)}; but sets the value only if there has been no time-out on this future yet.
+     *
+     * @param  newValue         The operation result
+     * @throws TimeoutException If a {@link #isTimeout()} is {@code true}
+     */
+    public void setValueIfNotTimedOut(Object newValue) throws TimeoutException {
+        synchronized (lock) {
+            if (result != null) {
+                return;
+            }
+            if (isTimeout()) {
+                throw new TimeoutException();
+            }
             result = (newValue != null) ? newValue : GenericUtils.NULL;
             lock.notifyAll();
         }
@@ -219,12 +246,35 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> 
         }
     }
 
+    /**
+     * Tells whether this future was canceled.
+     *
+     * @return {@code true} if the future is canceled, {@code false} otherwise
+     */
     public boolean isCanceled() {
         return getValue() == CANCELED;
     }
 
+    /**
+     * Cancels this future.
+     */
     public void cancel() {
         setValue(CANCELED);
+    }
+
+    /**
+     * Tells whether a {@link #await0(long, boolean)} on this future timed out already.
+     *
+     * @return {@code true} if there was a time-out, {@code false} otherwise
+     */
+    public boolean isTimeout() {
+        synchronized (lock) {
+            return timeout;
+        }
+    }
+
+    private void setTimeout() {
+        this.timeout = true;
     }
 
     @Override
