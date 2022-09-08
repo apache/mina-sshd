@@ -22,6 +22,8 @@
 
 ## Bug fixes
 
+* [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
+
 ## Major code re-factoring
 
 ## Potential compatibility issues

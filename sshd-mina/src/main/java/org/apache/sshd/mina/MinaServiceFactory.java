@@ -54,4 +54,15 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
     public IoAcceptor createAcceptor(IoHandler handler) {
         return autowireCreatedService(new MinaAcceptor(getFactoryManager(), handler, ioProcessor));
     }
+
+    @Override
+    protected void doCloseImmediately() {
+        try {
+            ioProcessor.dispose();
+        } catch (Exception e) {
+            log.debug("Exception caught while disposing IoProcessor pool", e);
+        } finally {
+            super.doCloseImmediately();
+        }
+    }
 }
