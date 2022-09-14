@@ -91,6 +91,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.mina</groupId>
+            <artifactId>mina-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
             <scope>test</scope>
@@ -143,8 +148,6 @@
                     <reportsDirectory>${project.build.directory}/surefire-reports-netty</reportsDirectory>
                     <excludes>
                         <!-- These tests use NIO and/or MINA explicitly -->
-                        <exclude>**/*LoadTest.java</exclude>
-                        <exclude>**/PortForwarding*Test.java</exclude>
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
 
