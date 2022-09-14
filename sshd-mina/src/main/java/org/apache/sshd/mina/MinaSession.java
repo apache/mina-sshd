@@ -21,6 +21,7 @@ package org.apache.sshd.mina;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.IoFutureListener;
@@ -47,6 +48,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
     private final org.apache.mina.core.session.IoSession session;
     private final Object sessionWriteId;
     private final SocketAddress acceptanceAddress;
+    private final AtomicBoolean readSuspended = new AtomicBoolean();
 
     public MinaSession(MinaService service, org.apache.mina.core.session.IoSession session, SocketAddress acceptanceAddress) {
         this.service = service;
@@ -61,12 +63,16 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
     @Override
     public void suspendRead() {
-        session.suspendRead();
+        if (!readSuspended.getAndSet(true)) {
+            session.suspendRead();
+        }
     }
 
     @Override
     public void resumeRead() {
-        session.resumeRead();
+        if (readSuspended.getAndSet(false)) {
+            session.resumeRead();
+        }
     }
 
     /**

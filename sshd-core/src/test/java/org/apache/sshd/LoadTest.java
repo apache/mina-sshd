@@ -33,14 +33,11 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -53,11 +50,6 @@ public class LoadTest extends BaseTestSupport {
 
     public LoadTest() {
         super();
-    }
-
-    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
-    public static void ensureBouncycastleRegistered() {
-        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
     }
 
     @Before

@@ -118,7 +118,6 @@
                     <reuseForks>false</reuseForks>
                     <excludes>
                             <!-- These tests use NIO explicitly -->
-                        <exclude>**/*LoadTest.java</exclude>
                         <exclude>**/ProxyTest.java</exclude>
                         <exclude>**/Nio2ServiceTest.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->

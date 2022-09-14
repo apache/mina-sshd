@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.mina;
 
+import java.nio.channels.spi.SelectorProvider;
+import java.util.concurrent.Executor;
+
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.transport.socket.nio.NioProcessor;
@@ -31,7 +34,7 @@ import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
- * TODO Add javadoc
+ * A factory for creating Apache MINA I/O service ({@link MinaAcceptor} and {@link MinaConnector}) instances.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -42,7 +45,7 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
     public MinaServiceFactory(FactoryManager factoryManager, CloseableExecutorService service) {
         super(factoryManager, ThreadUtils.newCachedThreadPoolIf(service, factoryManager.toString() + "-mina"));
         ioProcessor
-                = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
+                = new SimpleIoProcessorPool<>(MinaProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 
     @Override
@@ -64,5 +67,28 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
         } finally {
             super.doCloseImmediately();
         }
+    }
+
+    protected static class MinaProcessor extends NioProcessor {
+
+        public MinaProcessor(Executor executor) {
+            super(executor);
+        }
+
+        public MinaProcessor(Executor executor, SelectorProvider selectorProvider) {
+            super(executor, selectorProvider);
+        }
+
+        @Override
+        protected void setInterestedInRead(NioSession session, boolean isInterested) throws Exception {
+            boolean startReading = isInterested && !isInterestedInRead(session);
+            super.setInterestedInRead(session, isInterested);
+            if (startReading) {
+                // Make sure the socket gets added to the selector right away, and not just once the
+                // current select() call times out after a second.
+                wakeup();
+            }
+        }
+
     }
 }
