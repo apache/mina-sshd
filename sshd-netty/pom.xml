@@ -131,26 +131,13 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <testExcludes>
-                            <!-- These tests use MINA explicitly -->
-                        <testExclude>**/PortForwarding*Test.java</testExclude>
-                        <testExclude>**/ProxyTest.java</testExclude>
-                    </testExcludes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-netty</reportsDirectory>
                     <excludes>
-                        <!-- These tests use NIO and/or MINA explicitly -->
-                        <exclude>**/ProxyTest.java</exclude>
+                        <!-- These tests use NIO2 explicitly -->
                         <exclude>**/Nio2ServiceTest.java</exclude>
-
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
