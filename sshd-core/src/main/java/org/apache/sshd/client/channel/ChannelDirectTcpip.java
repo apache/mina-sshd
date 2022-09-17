@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -32,6 +33,8 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -110,6 +113,27 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             in = pis;
             invertedOut = in;
         }
+    }
+
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+        if (asyncIn == null || !Streaming.Async.equals(streaming)) {
+            return super.writePacket(buffer);
+        }
+        // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
+        if (!asyncIn.isClosed()) {
+            Session s = getSession();
+            return s.writePacket(buffer);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
+                    state);
+        }
+        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
+        };
+        errorFuture.setValue(new EOFException("Channel is closed"));
+        return errorFuture;
     }
 
     @Override

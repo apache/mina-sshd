@@ -271,7 +271,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                                             }
                                             sockOut.write(buf, 0, l);
                                             writeSize += l;
-                                            if ((writeSize - lastReport) >= reportPhase) {
+                                            if ((writeSize - lastReport) >= reportPhase || writeSize == outBytes.length) {
                                                 log.info("Written {}/{} bytes of iteration #{}", writeSize, dataBytes.length,
                                                         i);
                                                 lastReport = writeSize;
