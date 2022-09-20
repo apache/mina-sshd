@@ -141,6 +141,9 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     @Override
     protected void doCloseImmediately() {
+        synchronized (writeState) {
+            writeState.openState = state.get();
+        }
         try {
             // Can't close this in preClose(); a graceful close waits for the currently pending write to finish and thus
             // still needs the packet writer.
@@ -217,9 +220,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
         }
         while (currentWrite != null) {
-            if (State.Immediate.equals(openState) || State.Closed.equals(openState)) {
-                // For gracefully closing, allow the write to proceed. We'll terminate the write only if it should block
-                // because of not enough window space.
+            if (abortWrite(openState)) {
                 terminateFuture(currentWrite);
                 break;
             }
@@ -237,7 +238,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     writeState.windowExpanded = false;
                     currentWrite = nextWrite; // Try again.
                 } else {
-                    if (State.Opened.equals(openState)) {
+                    if (!abortWrite(openState)) {
                         writeState.pendingWrite = nextWrite;
                     } else {
                         writeState.writeInProgress = false;
@@ -245,12 +246,18 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     currentWrite = null;
                 }
             }
-            // If the channel is closing, we can't wait for the window to be expanded anymore. Just abort.
-            if (currentWrite == null && !State.Opened.equals(openState)) {
+            if (currentWrite == null && abortWrite(openState)) {
                 terminateFuture(nextWrite);
                 break;
             }
         }
+    }
+
+    private boolean abortWrite(State openState) {
+        // Allow writing if the stream is open or being gracefully closed. Note: the Session will still exist,
+        // and the window may still be expanded. If the packet writer is the channel itself, the channel must
+        // allow writing even if closing (until it finally is closed).
+        return State.Immediate.equals(openState) || State.Closed.equals(openState);
     }
 
     /**
@@ -504,7 +511,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         protected boolean waitingOnIo;
 
         /**
-         * A copy of the channel state.
+         * A copy of this stream's state as set by the superclass.
          */
         protected State openState = State.Opened;
 

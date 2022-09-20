@@ -126,8 +126,9 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(new CommandCloseable(), super.getInnerCloseable())
+                .close(new CommandCloseable())
                 .parallel(asyncOut, asyncErr)
+                .close(super.getInnerCloseable())
                 .run(toString(), this::closeImmediately0)
                 .build();
     }
