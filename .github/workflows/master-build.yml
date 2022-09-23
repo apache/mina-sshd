@@ -74,3 +74,11 @@ jobs:
 
       - name: Build with maven
         run: mvn --errors --activate-profiles ci --no-transfer-progress package
+
+      - name: Archive test results and logs
+        # if: success() || failure() to also get the test results on successful runs.
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.java }}-${{ matrix.os }}
+          path: sshd-*/target/surefire-*
