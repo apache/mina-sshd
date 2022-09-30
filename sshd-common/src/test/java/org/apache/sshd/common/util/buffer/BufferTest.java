@@ -100,4 +100,14 @@ public class BufferTest extends JUnitTestSupport {
             assertEquals("Value not wiped at index=" + index, 0, bytes[index]);
         }
     }
+
+    @Test
+    public void testGetPublicKeyCorrupted() {
+        ByteArrayBuffer buffer = new ByteArrayBuffer(8);
+        buffer.putInt(Integer.MAX_VALUE - 10000);
+        buffer.putInt(0);
+        Throwable e = assertThrows(Throwable.class, () -> buffer.getPublicKey());
+        assertFalse(e instanceof OutOfMemoryError);
+        assertEquals(8, buffer.array().length);
+    }
 }

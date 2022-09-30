@@ -513,11 +513,7 @@ public abstract class Buffer implements Readable {
      */
     public PublicKey getPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
         int ow = wpos();
-        int len = getInt();
-        if (len < 0) {
-            throw new SshException("Illogical public key length: " + len);
-        }
-
+        int len = ensureAvailable(getInt());
         wpos(rpos() + len);
         try {
             return getRawPublicKey(parser);

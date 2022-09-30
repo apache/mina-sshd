@@ -24,6 +24,7 @@
 
 * [SSHD-1293](https://issues.apache.org/jira/browse/SSHD-1293) ExplicitPortForwardingTracker does not unbind auto-allocated port
 * [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
+* [SSHD-1297](https://issues.apache.org/jira/browse/SSHD-1297) Avoid OutOfMemoryError when reading a public key from a corrupted Buffer
 
 ## Major code re-factoring
 
