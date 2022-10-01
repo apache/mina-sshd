@@ -32,6 +32,8 @@
 
 ## Minor code helpers
 
+* New utility method `KeyUtils.loadPublicKey()` to read a public key file.
+
 ## Behavioral changes and enhancements
 
 * Netty I/O back-end: respect configurations for `CoreModuleProperties.SOCKET_BACKLOG` and `CoreModuleProperties.SOCKET_REUSEADDR`.

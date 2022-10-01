@@ -319,6 +319,25 @@ public final class KeyUtils {
     }
 
     /**
+     * Reads a single {@link PublicKey} from a public key file.
+     *
+     * @param  path                     {@link Path} of the file to read; must not be {@code null}
+     * @return                          the {@link PublicKey}, may be {@code null} if the file is empty
+     * @throws IOException              if the file cannot be read or parsed
+     * @throws GeneralSecurityException if the file contents cannot be read as a single {@link PublicKey}
+     */
+    public static PublicKey loadPublicKey(Path path) throws IOException, GeneralSecurityException {
+        List<AuthorizedKeyEntry> keys = AuthorizedKeyEntry.readAuthorizedKeys(Objects.requireNonNull(path));
+        if (GenericUtils.isEmpty(keys)) {
+            return null;
+        }
+        if (keys.size() > 1) {
+            throw new InvalidKeySpecException("Public key file contains multiple entries: " + path);
+        }
+        return keys.get(0).resolvePublicKey(null, PublicKeyEntryResolver.IGNORING);
+    }
+
+    /**
      * @param  keyType                  The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
      * @param  keySize                  The key size (in bits)
      * @return                          A {@link KeyPair} of the specified type and size

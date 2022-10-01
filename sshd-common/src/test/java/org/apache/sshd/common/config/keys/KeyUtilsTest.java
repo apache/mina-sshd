@@ -19,13 +19,19 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.DigestException;
+import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -42,8 +48,10 @@ import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runners.MethodSorters;
 
 /**
@@ -52,6 +60,10 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Category({ NoIoTestCase.class })
 public class KeyUtilsTest extends JUnitTestSupport {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     public KeyUtilsTest() {
         super();
     }
@@ -170,5 +182,59 @@ public class KeyUtilsTest extends JUnitTestSupport {
             assertEquals("Mismatched canonical name for " + alias, KeyPairProvider.SSH_RSA,
                     KeyUtils.getCanonicalKeyType(alias));
         }
+    }
+
+    @Test
+    public void testLoadPublicKey() throws Exception {
+        Path testFile = testDir.newFile().toPath();
+        try (InputStream testContent = this.getClass().getClassLoader().getResourceAsStream(
+                this.getClass().getPackage().getName().replace('.', '/') + "/loader/openssh/RSA-KeyPair.pub")) {
+            Files.copy(testContent, testFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        PublicKey key = KeyUtils.loadPublicKey(testFile);
+        assertNotNull(key);
+        assertEquals("ssh-rsa", KeyUtils.getKeyType(key));
+    }
+
+    @Test
+    public void testLoadPublicKeyNonExisting() throws Exception {
+        Path testFile = testDir.getRoot().toPath().resolve("does_not_exist");
+        assertFalse(Files.exists(testFile, LinkOption.NOFOLLOW_LINKS));
+        assertThrows(IOException.class, () -> KeyUtils.loadPublicKey(testFile));
+    }
+
+    @Test
+    public void testLoadPublicKeyEmpty() throws Exception {
+        Path testFile = testDir.newFile().toPath();
+        PublicKey key = KeyUtils.loadPublicKey(testFile);
+        assertNull(key);
+    }
+
+    @Test
+    public void testLoadPublicKeyMultiple() throws Exception {
+        Path testFile = testDir.newFile().toPath();
+        byte[] data;
+        try (InputStream testContent = this.getClass().getClassLoader().getResourceAsStream(
+                this.getClass().getPackage().getName().replace('.', '/') + "/loader/openssh/RSA-KeyPair.pub")) {
+            data = IoUtils.toByteArray(testContent);
+        }
+        int size = data.length;
+        data = Arrays.copyOf(data, 2 * size + 1);
+        data[size] = '\n';
+        System.arraycopy(data, 0, data, size + 1, size);
+        try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+            Files.copy(in, testFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        assertThrows(Exception.class, () -> KeyUtils.loadPublicKey(testFile));
+    }
+
+    @Test
+    public void testLoadPublicKeyCorrupt() throws Exception {
+        Path testFile = testDir.newFile().toPath();
+        byte[] data = new byte[42];
+        Arrays.fill(data, (byte) 'a');
+        Files.write(testFile, data);
+        assertEquals(42, Files.size(testFile));
+        assertThrows(Exception.class, () -> KeyUtils.loadPublicKey(testFile));
     }
 }
