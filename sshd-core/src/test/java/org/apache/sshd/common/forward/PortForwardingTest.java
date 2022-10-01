@@ -81,6 +81,7 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -327,8 +328,14 @@ public class PortForwardingTest extends BaseTestSupport {
         }
     }
 
+    private boolean isMina() {
+        return "MinaServiceFactoryFactory".equals(getIoServiceProvider().getClass().getSimpleName());
+    }
+
     @Test
     public void testRemoteForwardingSecondTimeInSameSession() throws Exception {
+        // TODO: remove assumption once DIRMINA-1169 is fixed in the MINA version we are using
+        Assume.assumeFalse("Skipped for MINA transport; can work reliably only once DIRMINS-1169 is fixed", isMina());
         Session session = createSession();
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
