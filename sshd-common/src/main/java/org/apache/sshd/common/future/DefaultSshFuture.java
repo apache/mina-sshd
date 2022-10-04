@@ -31,7 +31,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @param  <T> Type of future
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> {
+public class DefaultSshFuture<T extends SshFuture<T>> extends AbstractSshFuture<T> {
     /**
      * A lock used by the wait() method
      */

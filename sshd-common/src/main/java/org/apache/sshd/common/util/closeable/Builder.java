@@ -52,22 +52,19 @@ public final class Builder implements ObjectBuilder<Closeable> {
         });
     }
 
-    @SuppressWarnings("rawtypes")
-    public <T extends SshFuture> Builder when(SshFuture<T> future) {
+    public <T extends SshFuture<T>> Builder when(SshFuture<T> future) {
         if (future != null) {
             when(future.getId(), Collections.singleton(future));
         }
         return this;
     }
 
-    @SuppressWarnings("rawtypes")
     @SafeVarargs
-    public final <T extends SshFuture> Builder when(SshFuture<T>... futures) {
+    public final <T extends SshFuture<T>> Builder when(SshFuture<T>... futures) {
         return when(getClass().getSimpleName(), Arrays.asList(futures));
     }
 
-    @SuppressWarnings("rawtypes")
-    public <T extends SshFuture> Builder when(Object id, Iterable<? extends SshFuture<T>> futures) {
+    public <T extends SshFuture<T>> Builder when(Object id, Iterable<? extends SshFuture<T>> futures) {
         return close(new FuturesCloseable<>(id, lock, futures));
     }
 

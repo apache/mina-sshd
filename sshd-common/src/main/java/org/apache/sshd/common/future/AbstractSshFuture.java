@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @param  <T> Type of future
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLoggingBean implements SshFuture<T> {
+public abstract class AbstractSshFuture<T extends SshFuture<T>> extends AbstractLoggingBean implements SshFuture<T> {
     /**
      * A default value to indicate the future has been canceled
      */

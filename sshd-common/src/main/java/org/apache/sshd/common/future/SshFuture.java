@@ -25,7 +25,7 @@ package org.apache.sshd.common.future;
  * @param  <T> Type of future
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SshFuture<T extends SshFuture> extends WaitableFuture {
+public interface SshFuture<T extends SshFuture<T>> extends WaitableFuture {
     /**
      * Adds an event <tt>listener</tt> which is notified when this future is completed. If the listener is added after
      * the completion, the listener is directly notified.
