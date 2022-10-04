@@ -20,6 +20,7 @@ package org.apache.sshd.agent.unix;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.tomcat.jni.Library;
@@ -124,10 +125,7 @@ public final class AprLibrary {
             // the socket in a temporary directory that is visible only
             // to the owner.
             //
-            File dir = File.createTempFile("mina", "apr");
-            if (!dir.delete() || !dir.mkdir()) {
-                throw new IOException("Cannot create secure temp directory");
-            }
+            File dir = Files.createTempDirectory("mina" + "apr").toFile();
             chmodOwner(dir.getAbsolutePath(), true);
 
             File socket = File.createTempFile("mina", "apr", dir);
