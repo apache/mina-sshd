@@ -254,8 +254,14 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         try {
             signalChannelOpenSuccess();
             f.setOpened();
-            // Now that we have sent the SSH_MSG_CHANNEL_OPEN_CONFIRMATION we may read from the port.
-            session.resumeRead();
+            if (f.isCanceled()) {
+                close(false).addListener(cf -> {
+                    f.getCancellation().setCanceled();
+                });
+            } else {
+                // Now that we have sent the SSH_MSG_CHANNEL_OPEN_CONFIRMATION we may read from the port.
+                session.resumeRead();
+            }
         } catch (Throwable t) {
             Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getSimpleName();

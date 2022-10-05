@@ -36,6 +36,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.util.Attribute;
+import org.apache.sshd.common.future.CancelFuture;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -247,6 +248,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
             handler.sessionCreated(NettyIoSession.this);
             if (future != null) {
                 future.setSession(NettyIoSession.this);
+                if (future.getSession() != NettyIoSession.this) {
+                    close(true);
+                }
             }
         } catch (Throwable e) {
             log.warn("channelActive(session={}): could not create SSH session ({}); closing", this, e.getClass().getName(), e);
@@ -271,6 +275,16 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
                 log.trace("channelInactive(session={}): caught {}", this, e.getClass().getName(), e);
             }
         } finally {
+            Channel channel = ctx.channel();
+            Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
+            IoConnectFuture future = connectFuture.get();
+            if (future != null) {
+                // If the future wasn't fulfilled already cancel it.
+                CancelFuture cancellation = future.cancel();
+                if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
+            }
             context = null;
         }
     }

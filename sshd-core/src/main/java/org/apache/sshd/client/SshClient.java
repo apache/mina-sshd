@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgentFactory;
@@ -81,6 +82,8 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.future.Cancellable;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -569,11 +572,34 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
             HostConfigEntry jump = jumps.remove(0);
             ConnectFuture f1 = doConnect(jump, jumps, context, null);
+            AtomicReference<Cancellable> toCancel = new AtomicReference<>(f1);
+            connectFuture.addListener(c -> {
+                if (!c.isCanceled()) {
+                    return;
+                }
+                Cancellable inner = toCancel.get();
+                if (inner == null) {
+                    return;
+                }
+                CancelFuture cancellation = inner.cancel();
+                if (cancellation == null) {
+                    return;
+                }
+                cancellation.addListener(cf -> {
+                    if (cf.isDone()) {
+                        c.getCancellation().setCanceled();
+                    }
+                });
+            });
             f1.addListener(f2 -> {
                 if (f2.isConnected()) {
                     ClientSession proxySession = f2.getClientSession();
                     try {
+                        if (connectFuture.isCanceled()) {
+                            proxySession.close(true);
+                        }
                         AuthFuture auth = proxySession.auth();
+                        toCancel.set(auth);
                         auth.addListener(f3 -> {
                             if (f3.isSuccess()) {
                                 try {
@@ -584,6 +610,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                     SshdSocketAddress bound = tracker.getBoundAddress();
                                     ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(),
                                             context, localAddress, keys, hostConfig);
+                                    toCancel.set(f4);
+                                    if (connectFuture.isCanceled()) {
+                                        f4.cancel();
+                                    }
                                     f4.addListener(f5 -> {
                                         if (f5.isConnected()) {
                                             ClientSession clientSession = f5.getClientSession();
@@ -633,6 +663,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
                 connectFuture, username, targetAddress, identities, hostConfig);
         IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
+        connectFuture.addListener(c -> {
+            if (c.isCanceled()) {
+                connectingFuture.cancel();
+            }
+        });
         connectingFuture.addListener(listener);
         return connectFuture;
     }
@@ -699,7 +734,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             @SuppressWarnings("synthetic-access")
             public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
-                    connectFuture.cancel();
+                    CancelFuture cancellation = connectFuture.cancel();
+                    if (cancellation != null) {
+                        future.getCancellation().addListener(f -> cancellation.setCanceled(f.getBackTrace()));
+                    }
                     return;
                 }
 
@@ -752,6 +790,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         connectFuture.setSession(session);
+        if (session != connectFuture.getSession()) {
+            // Must have been canceled before
+            try {
+                session.close(true);
+            } finally {
+                CancelFuture cancellation = connectFuture.cancel();
+                if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
+            }
+        }
     }
 
     /**

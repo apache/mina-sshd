@@ -382,7 +382,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
             signalChannelOpenSuccess();
             this.opened.set(true);
-            this.openFuture.setOpened();
+            OpenFuture opened = this.openFuture;
+            opened.setOpened();
+            if (opened.isCanceled()) {
+                close(false).addListener(f -> {
+                    opened.getCancellation().setCanceled();
+                });
+            }
         } catch (Throwable t) {
             Throwable e = ExceptionUtils.peelException(t);
             changeEvent = e.getClass().getName();

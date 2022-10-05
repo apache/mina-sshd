@@ -33,6 +33,7 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
     private final String name;
     private ClientSession clientSession;
     private String service;
+    private boolean cancellable;
 
     protected AbstractUserAuth(String name) {
         this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name");
@@ -55,6 +56,20 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     public String getService() {
         return service;
+    }
+
+    @Override
+    public boolean isCancellable() {
+        return cancellable;
+    }
+
+    /**
+     * Sets whether the authentication protocol is currently cancellable.
+     *
+     * @param cancellable {@code true} if the protocol may be canceled in its current state; {@code false} if not
+     */
+    protected void setCancellable(boolean cancellable) {
+        this.cancellable = cancellable;
     }
 
     @Override

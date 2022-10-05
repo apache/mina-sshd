@@ -16,28 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.future;
-
-import org.apache.sshd.common.future.Cancellable;
-import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.future.VerifiableFuture;
+package org.apache.sshd.common.future;
 
 /**
- * An {@link SshFuture} for asynchronous channel opening requests.
+ * Something that may carry a failure exception.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface OpenFuture extends SshFuture<OpenFuture>, VerifiableFuture<OpenFuture>, Cancellable {
+public interface WithException {
 
     /**
-     * @return <code>true</code> if the connect operation is finished successfully.
+     * Returns the cause of the failure.
+     *
+     * @return the {@link Throwable} of the failure, or {@code null} if not failed (yet).
      */
-    boolean isOpened();
+    Throwable getException();
 
     /**
-     * Sets the newly connected session and notifies all threads waiting for this future. This method is invoked by SSHD
-     * internally. Please do not call this method directly.
+     * Sets the exception that caused the operation to fail.
+     *
+     * @param exception The {@link Throwable} to set; must be non-{@code null}
      */
-    void setOpened();
-
+    void setException(Throwable exception);
 }

@@ -19,24 +19,41 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
-import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.future.CancelOption;
+import org.apache.sshd.common.future.DefaultCancellableSshFuture;
 
 /**
  * A default implementation of {@link AuthFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> implements AuthFuture {
+public class DefaultAuthFuture extends DefaultCancellableSshFuture<AuthFuture> implements AuthFuture {
+
+    private final CancelFuture cancellation;
+
+    private AtomicBoolean cancellable = new AtomicBoolean(true);
+
     public DefaultAuthFuture(Object id, Object lock) {
         super(id, lock);
+        cancellation = createCancellation();
+        addListener(self -> {
+            if (isDone()) {
+                Object value = getValue();
+                if (!(value instanceof CancelFuture)) {
+                    cancellation.setNotCanceled();
+                }
+            }
+        });
     }
 
     @Override
-    public AuthFuture verify(long timeoutMillis) throws IOException {
-        Boolean result = verifyResult(Boolean.class, timeoutMillis);
+    public AuthFuture verify(long timeoutMillis, CancelOption... options) throws IOException {
+        Boolean result = verifyResult(Boolean.class, timeoutMillis, options);
         if (!result) {
             throw formatExceptionMessage(
                     SshException::new,
@@ -45,16 +62,6 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         }
 
         return this;
-    }
-
-    @Override
-    public Throwable getException() {
-        Object v = getValue();
-        if (v instanceof Throwable) {
-            return (Throwable) v;
-        } else {
-            return null;
-        }
     }
 
     @Override
@@ -78,9 +85,45 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
         setValue(authed);
     }
 
+    // Authentication is not always cancellable. It's an exchange of multiple requests and replies. Per
+    // RFC 4254 https://www.rfc-editor.org/rfc/rfc4252#section-5.1, "A client MUST NOT send a subsequent
+    // request if it has not received a response from the server for a previous request." This implies
+    // that an authentication is only cancellable if we're not potentially expecting an SSH_MSG_USERAUTH_SUCCESS,
+    // and cancellation can take only effect once we have received an outstanding intermediate reply.
+
+    /**
+     * {@inheritDoc}
+     *
+     * Note that returned {@link CancelFuture} may also be fulfilled unsuccessfully (i.e., ({@link #isDone()}
+     * {@code && !}{@link #isCanceled()}{@code ) == true}.
+     *
+     * @return A {@link CancelFuture} that can be used to wait until the cancellation has been effected or the
+     *         {@link AuthFuture} has been fulfilled; never {@code null}.
+     */
     @Override
-    public void setException(Throwable exception) {
-        Objects.requireNonNull(exception, "No exception provided");
-        setValue(exception);
+    public CancelFuture cancel() {
+        cancellation.setBackTrace(new CancellationException("Programmatically canceled"));
+        if (cancellable.get()) {
+            setValue(cancellation);
+        }
+        return cancellation;
+    }
+
+    @Override
+    public CancelFuture getCancellation() {
+        return wasCanceled() ? cancellation : null;
+    }
+
+    @Override
+    public boolean wasCanceled() {
+        return cancellation.getBackTrace() != null;
+    }
+
+    @Override
+    public void setCancellable(boolean cancellable) {
+        this.cancellable.set(cancellable);
+        if (wasCanceled() && this.cancellable.get()) {
+            setValue(cancellation);
+        }
     }
 }

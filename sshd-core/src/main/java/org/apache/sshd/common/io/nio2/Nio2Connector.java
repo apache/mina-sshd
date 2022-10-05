@@ -19,14 +19,21 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.io.DefaultIoConnectFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
@@ -34,6 +41,7 @@ import org.apache.sshd.common.io.IoServiceEventListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * TODO Add javadoc
@@ -69,7 +77,59 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                             future, socket, context, propertyResolver, getIoHandler()),
                     "No connection completion handler created for %s",
                     address);
-            socket.connect(address, null, completionHandler);
+            // With a completion handler there is no way to cancel an ongoing connection attempt. We could only let
+            // the attempt proceed to failure or success, and if successful, close the established channel again. With a
+            // future, we can cancel the future to abort the connection attempt, but we need to use our own thread pool
+            // for waiting on the future and invoking the completion handler.
+            Future<Void> cf = socket.connect(address);
+            Long connectTimeout = CoreModuleProperties.IO_CONNECT_TIMEOUT.get(propertyResolver).map(d -> {
+                if (d.isZero() || d.isNegative()) {
+                    return null;
+                }
+                long millis;
+                try {
+                    millis = d.toMillis();
+                } catch (ArithmeticException e) {
+                    millis = Long.MAX_VALUE;
+                }
+                return Long.valueOf(millis);
+            }).orElse(null);
+
+            Future<?> rf = getExecutorService().submit(() -> {
+                try {
+                    if (connectTimeout != null) {
+                        log.debug("connect({}): waiting for connection (timeout={}ms)", address, connectTimeout);
+                        cf.get(connectTimeout.longValue(), TimeUnit.MILLISECONDS);
+                    } else {
+                        log.debug("connect({}): waiting for connection", address);
+                        cf.get();
+                    }
+                    completionHandler.onCompleted(null, null);
+                } catch (CancellationException e) {
+                    CancelFuture cancellation = future.cancel();
+                    if (cancellation != null) {
+                        cancellation.setCanceled(e);
+                    }
+                } catch (TimeoutException e) {
+                    cf.cancel(true);
+                    ConnectException c = new ConnectException("I/O connection time-out of " + connectTimeout + "ms expired");
+                    c.initCause(e);
+                    completionHandler.onFailed(c, null);
+                } catch (ExecutionException e) {
+                    completionHandler.onFailed(e, null);
+                } catch (InterruptedException e) {
+                    completionHandler.onFailed(e, null);
+                    Thread.currentThread().interrupt();
+                }
+            });
+            future.addListener(f -> {
+                if (f.isCanceled()) {
+                    // Don't interrupt if already running; if inside completionHandler.onCompleted() it might cause
+                    // general confusion.
+                    rf.cancel(false);
+                    cf.cancel(true);
+                }
+            });
         } catch (Throwable exc) {
             Throwable t = ExceptionUtils.peelException(exc);
             debug("connect({}) failed ({}) to schedule connection: {}",
@@ -153,7 +213,10 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                 sessionId = session.getId();
                 sessions.put(sessionId, session);
                 future.setSession(session);
-                if (session.isClosing()) {
+                if (session != future.getSession()) {
+                    session.close(true);
+                    throw new CancellationException();
+                } else if (session.isClosing()) {
                     try {
                         handler.sessionClosed(session);
                     } finally {
@@ -162,6 +225,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                 } else {
                     session.startReading();
                 }
+            } catch (CancellationException e) {
+                throw e;
             } catch (Throwable exc) {
                 Throwable t = ExceptionUtils.peelException(exc);
                 boolean debugEnabled = log.isDebugEnabled();
@@ -182,7 +247,11 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
 
                 IoSession session = future.getSession();
                 if (session != null) {
-                    session.close(true);
+                    try {
+                        session.close(true);
+                    } finally {
+                        future.setException(t);
+                    }
                 } else {
                     try {
                         socket.close();
@@ -192,7 +261,6 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                                     err.getMessage());
                         }
                     }
-
                     future.setException(t);
                     unmapSession(sessionId);
                 }
@@ -211,36 +279,4 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         return new Nio2Session(this, propertyResolver, handler, socket, null);
     }
 
-    public static class DefaultIoConnectFuture extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
-        public DefaultIoConnectFuture(Object id, Object lock) {
-            super(id, lock);
-        }
-
-        @Override
-        public IoSession getSession() {
-            Object v = getValue();
-            return v instanceof IoSession ? (IoSession) v : null;
-        }
-
-        @Override
-        public Throwable getException() {
-            Object v = getValue();
-            return v instanceof Throwable ? (Throwable) v : null;
-        }
-
-        @Override
-        public boolean isConnected() {
-            return getValue() instanceof IoSession;
-        }
-
-        @Override
-        public void setSession(IoSession session) {
-            setValue(session);
-        }
-
-        @Override
-        public void setException(Throwable exception) {
-            setValue(exception);
-        }
-    }
 }

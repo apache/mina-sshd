@@ -20,7 +20,10 @@ package org.apache.sshd.common.future;
 
 import java.io.InterruptedIOException;
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -53,37 +56,81 @@ public class DefaultSshFuture<T extends SshFuture<T>> extends AbstractSshFuture<
     }
 
     @Override
-    protected Object await0(long timeoutMillis, boolean interruptable) throws InterruptedIOException {
+    protected Object await0(long timeoutMillis, boolean interruptable, CancelOption... options)
+            throws InterruptedIOException {
         ValidateUtils.checkTrue(timeoutMillis >= 0L, "Negative timeout N/A: %d", timeoutMillis);
         long startTime = System.currentTimeMillis();
         long curTime = startTime;
         long endTime = ((Long.MAX_VALUE - timeoutMillis) < curTime) ? Long.MAX_VALUE : (curTime + timeoutMillis);
 
-        synchronized (lock) {
-            if ((result != null) || (timeoutMillis <= 0)) {
-                return result;
-            }
-
-            for (;;) {
-                try {
-                    lock.wait(endTime - curTime);
-                } catch (InterruptedException e) {
-                    if (interruptable) {
-                        curTime = System.currentTimeMillis();
-                        throw formatExceptionMessage(msg -> {
-                            InterruptedIOException exc = new InterruptedIOException(msg);
-                            exc.initCause(e);
-                            return exc;
-                        }, "Interrupted after %d msec.", curTime - startTime);
-                    }
-                }
-
-                curTime = System.currentTimeMillis();
-                if ((result != null) || (curTime >= endTime)) {
+        boolean canceled = false;
+        try {
+            synchronized (lock) {
+                if (result != null) {
                     return result;
                 }
+                if (timeoutMillis <= 0) {
+                    result = cancelOnTimeout(timeoutMillis, options);
+                    canceled = result != null;
+                    return null;
+                }
+
+                for (;;) {
+                    try {
+                        lock.wait(endTime - curTime);
+                    } catch (InterruptedException e) {
+                        if (interruptable) {
+                            curTime = System.currentTimeMillis();
+                            InterruptedIOException interrupted = formatExceptionMessage(msg -> {
+                                InterruptedIOException exc = new InterruptedIOException(msg);
+                                exc.initCause(e);
+                                return exc;
+                            }, "Interrupted after %d msec.", curTime - startTime);
+                            if (result == null && Arrays.asList(options).contains(CancelOption.CANCEL_ON_INTERRUPT)) {
+                                CancelFuture future = createCancellation();
+                                if (future != null) {
+                                    CancellationException cancellation = new CancellationException("Canceled on interrupt");
+                                    cancellation.initCause(interrupted);
+                                    future.setBackTrace(cancellation);
+                                    result = future;
+                                    canceled = true;
+                                }
+                            }
+                            throw interrupted;
+                        }
+                    }
+
+                    if (result != null) {
+                        return result;
+                    }
+                    curTime = System.currentTimeMillis();
+                    if (curTime >= endTime) {
+                        result = cancelOnTimeout(timeoutMillis, options);
+                        canceled = result != null;
+                        return null;
+                    }
+                }
+            }
+        } finally {
+            // Notify listeners outside the monitor
+            if (canceled) {
+                notifyListeners();
             }
         }
+    }
+
+    private CancelFuture cancelOnTimeout(long timeoutMillis, CancelOption... options) {
+        if (Arrays.asList(options).contains(CancelOption.CANCEL_ON_TIMEOUT)) {
+            CancelFuture future = createCancellation();
+            if (future != null) {
+                TimeoutException cause = new TimeoutException("Timed out after " + timeoutMillis + "msec");
+                CancellationException cancellation = new CancellationException(cause.getMessage());
+                cancellation.initCause(cause);
+                future.setBackTrace(cancellation);
+                return future;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -106,6 +153,7 @@ public class DefaultSshFuture<T extends SshFuture<T>> extends AbstractSshFuture<
             }
 
             result = (newValue != null) ? newValue : GenericUtils.NULL;
+            onValueSet(newValue);
             lock.notifyAll();
         }
 
@@ -219,12 +267,34 @@ public class DefaultSshFuture<T extends SshFuture<T>> extends AbstractSshFuture<
         }
     }
 
-    public boolean isCanceled() {
-        return getValue() == CANCELED;
+    /**
+     * Creates a {@link CancelFuture} if this future can be canceled.
+     * <p>
+     * This doesn't cancel this future yet.
+     * </p>
+     *
+     * @return A {@link CancelFuture} that can be used to wait for the cancellation to have been effected, or
+     *         {@code null} if the future cannot be canceled.
+     */
+    protected CancelFuture createCancellation() {
+        return null;
     }
 
-    public void cancel() {
-        setValue(CANCELED);
+    /**
+     * Callback that is invoked under lock when the future's value is set.
+     * <p>
+     * As this is called under lock, subclasses should not do any elaborate processing. It is intended to give
+     * subclasses a safe and convenient way to update local state before any listeners are invoked or callers waiting in
+     * {@link #await0(long, boolean, CancelOption...)} are woken up.
+     * </p>
+     * <p>
+     * The default implementation does nothing.
+     * </p>
+     *
+     * @param value that was just set
+     */
+    protected void onValueSet(Object value) {
+        // Do nothing
     }
 
     @Override

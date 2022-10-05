@@ -18,9 +18,10 @@
  */
 package org.apache.sshd.common.io;
 
+import org.apache.sshd.common.future.Cancellable;
 import org.apache.sshd.common.future.SshFuture;
 
-public interface IoConnectFuture extends SshFuture<IoConnectFuture> {
+public interface IoConnectFuture extends SshFuture<IoConnectFuture>, Cancellable {
 
     /**
      * @return The current {@link IoSession} - may be {@code null} if connect operation not finished yet or attempt has
@@ -30,22 +31,9 @@ public interface IoConnectFuture extends SshFuture<IoConnectFuture> {
     IoSession getSession();
 
     /**
-     * Returns the cause of the connection failure.
-     *
-     * @return {@code null} if the connect operation is not finished yet, or if the connection attempt is successful.
-     * @see    #getSession()
-     */
-    Throwable getException();
-
-    /**
      * @return <tt>true</tt> if the connect operation is finished successfully.
      */
     boolean isConnected();
-
-    /**
-     * @return {@code true} if the connect operation has been canceled by {@link #cancel()} method.
-     */
-    boolean isCanceled();
 
     /**
      * Sets the newly connected session and notifies all threads waiting for this future. This method is invoked by SSHD
@@ -55,16 +43,4 @@ public interface IoConnectFuture extends SshFuture<IoConnectFuture> {
      */
     void setSession(IoSession session);
 
-    /**
-     * Sets the exception caught due to connection failure and notifies all threads waiting for this future. This method
-     * is invoked by SSHD internally. Please do not call this method directly.
-     *
-     * @param exception The caught {@link Throwable}
-     */
-    void setException(Throwable exception);
-
-    /**
-     * Cancels the connection attempt and notifies all threads waiting for this future.
-     */
-    void cancel();
 }

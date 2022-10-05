@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -32,12 +33,13 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.sshd.common.AttributeRepository;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.io.DefaultIoConnectFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
-import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * The Netty based IoConnector implementation.
@@ -107,54 +109,47 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
                     }
                 });
 
+        CoreModuleProperties.IO_CONNECT_TIMEOUT.get(factory.manager).ifPresent(d -> {
+            if (d.isZero() || d.isNegative()) {
+                return;
+            }
+            long millis;
+            try {
+                millis = d.toMillis();
+            } catch (ArithmeticException e) {
+                millis = Integer.MAX_VALUE;
+            }
+            if (millis > Integer.MAX_VALUE) {
+                millis = Integer.MAX_VALUE;
+            }
+            bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, Integer.valueOf((int) millis));
+        });
+
         ChannelFuture chf;
         if (localAddress != null) {
             chf = bootstrap.connect(address, localAddress);
         } else {
             chf = bootstrap.connect(address);
         }
+        future.addListener(f -> {
+            if (f.isCanceled()) {
+                if (chf.cancel(true) || chf.isCancelled()) {
+                    f.getCancellation().setCanceled();
+                }
+            }
+        });
         chf.addListener(cf -> {
             Throwable t = cf.cause();
             if (t != null) {
                 future.setException(t);
             } else if (cf.isCancelled()) {
-                future.cancel();
+                CancelFuture cancellation = future.cancel();
+                if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
             }
         });
+        // The future is completed when the session gets a channelActivated event.
         return future;
-    }
-
-    public static class DefaultIoConnectFuture extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
-        public DefaultIoConnectFuture(Object id, Object lock) {
-            super(id, lock);
-        }
-
-        @Override
-        public IoSession getSession() {
-            Object v = getValue();
-            return (v instanceof IoSession) ? (IoSession) v : null;
-        }
-
-        @Override
-        public Throwable getException() {
-            Object v = getValue();
-            return (v instanceof Throwable) ? (Throwable) v : null;
-        }
-
-        @Override
-        public boolean isConnected() {
-            Object v = getValue();
-            return v instanceof IoSession;
-        }
-
-        @Override
-        public void setSession(IoSession session) {
-            setValue(session);
-        }
-
-        @Override
-        public void setException(Throwable exception) {
-            setValue(exception);
-        }
     }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 
 /**
@@ -36,7 +37,7 @@ public abstract class AbstractIoWriteFuture
     }
 
     @Override
-    public IoWriteFuture verify(long timeout) throws IOException {
+    public IoWriteFuture verify(long timeout, CancelOption... options) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
             throw formatExceptionMessage(
