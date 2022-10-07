@@ -47,8 +47,6 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     private final byte cmd;
     private final Object packetWriteId;
 
-    private boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize;
-
     /**
      * @param channel The {@link Channel} through which the stream is communicating
      * @param cmd     Either {@link SshConstants#SSH_MSG_CHANNEL_DATA SSH_MSG_CHANNEL_DATA} or
@@ -56,27 +54,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
      *                output stream type
      */
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
-        this(channel, cmd, false);
-    }
-
-    /**
-     * @param channel                                        The {@link Channel} through which the stream is
-     *                                                       communicating
-     * @param cmd                                            Either {@link SshConstants#SSH_MSG_CHANNEL_DATA
-     *                                                       SSH_MSG_CHANNEL_DATA} or
-     *                                                       {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA
-     *                                                       SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output stream
-     *                                                       type
-     * @param sendChunkIfRemoteWindowIsSmallerThanPacketSize Determines the chunking behaviour, if the remote window
-     *                                                       size is smaller than the packet size. Can be used to
-     *                                                       establish compatibility with certain clients, that wait
-     *                                                       until the window size is 0 before adjusting it.
-     * @see                                                  <A HREF=
-     *                                                       "https://issues.apache.org/jira/browse/SSHD-1123">SSHD-1123</A>
-     */
-    public ChannelAsyncOutputStream(Channel channel, byte cmd, boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
-        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
         this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.cmd = cmd;
         this.packetWriteId = channel.toString() + "[" + SshConstants.getCommandMessageName(cmd) + "]";
@@ -120,12 +98,14 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 throw new EOFException("Closing: " + writeState);
             }
             if (writeState.writeInProgress) {
-                throw new WritePendingException("A write operation is already pending");
+                throw new WritePendingException(
+                        "A write operation is already pending; cannot write " + buffer.available() + " bytes");
             }
+            writeState.totalLength = buffer.available();
+            writeState.toSend = writeState.totalLength;
             writeState.lastWrite = future;
             writeState.pendingWrite = future;
             writeState.writeInProgress = true;
-            writeState.waitingOnIo = false;
         }
         doWriteIfPossible(false);
         return future;
@@ -163,14 +143,20 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     protected void shutdown() {
         IoWriteFutureImpl current = null;
+        int total;
+        int notSent;
         synchronized (writeState) {
             writeState.openState = State.Closed;
             current = writeState.pendingWrite;
             writeState.pendingWrite = null;
-            writeState.waitingOnIo = false;
+            total = writeState.totalLength;
+            notSent = writeState.toSend;
         }
         if (current != null) {
             terminateFuture(current);
+        }
+        if (notSent > 0) {
+            log.warn("doCloseImmediately({}): still have {} bytes of {} on closing channel", this, notSent, total);
         }
     }
 
@@ -186,12 +172,17 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        IoWriteFutureImpl last;
+        IoWriteFuture last;
+        IoWriteFutureImpl current;
         synchronized (writeState) {
             last = writeState.lastWrite;
+            current = writeState.pendingWrite;
         }
         if (last == null) {
             return builder().build().close(false);
+        }
+        if (log.isDebugEnabled() && (current instanceof BufferedFuture) && ((BufferedFuture) current).waitOnWindow) {
+            log.debug("doCloseGracefully({}): writing last data (waiting on window expansion)", this);
         }
         return builder().when(last).build().close(false);
     }
@@ -204,19 +195,16 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         IoWriteFutureImpl currentWrite = null;
         State openState;
         synchronized (writeState) {
-            writeState.windowExpanded = resume;
-            openState = writeState.openState;
-            if (writeState.pendingWrite == null || resume && writeState.waitingOnIo) {
+            writeState.windowExpanded |= resume;
+            if (writeState.pendingWrite == null) {
                 // Just set the flag if there's nothing to write, or a writePacket() call is in progress.
-                // In the latter case, we'll check again below. Also set the flag only if there is a chained
-                // future waiting on some I/O to finish. In that case, that future will execute the next write
-                // anyway.
+                // In the latter case, we'll check again below.
                 return;
             } else {
+                openState = writeState.openState;
                 currentWrite = writeState.pendingWrite;
                 writeState.pendingWrite = null;
                 writeState.windowExpanded = false;
-                writeState.waitingOnIo = false;
             }
         }
         while (currentWrite != null) {
@@ -232,10 +220,10 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             // We're waiting on the window to be expanded. If it already was expanded, try again, otherwise just record
             // the future; it'll be run via onWindowExpanded().
             synchronized (writeState) {
-                writeState.waitingOnIo = false;
                 openState = writeState.openState;
                 if (writeState.windowExpanded) {
                     writeState.windowExpanded = false;
+                    resume = true;
                     currentWrite = nextWrite; // Try again.
                 } else {
                     if (!abortWrite(openState)) {
@@ -272,134 +260,111 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
      */
     protected IoWriteFutureImpl writePacket(IoWriteFutureImpl future, boolean resume) {
         Buffer buffer = future.getBuffer();
-        int total = buffer.available();
-        if (total > 0) {
-            Channel channel = getChannel();
-            Window remoteWindow = channel.getRemoteWindow();
-            long length;
-            long remoteWindowSize = remoteWindow.getSize();
-            long packetSize = remoteWindow.getPacketSize();
-            if (total > remoteWindowSize) {
-                // if we have a big message and there is enough space, send the next chunk
-                if (remoteWindowSize >= packetSize) {
-                    // send the first chunk as we have enough space in the window
-                    length = packetSize;
-                } else {
-                    // Window size is even smaller than packet size. Determine how to handle this.
-                    if (isSendChunkIfRemoteWindowIsSmallerThanPacketSize()) {
-                        length = remoteWindowSize;
-                    } else {
-                        // do not chunk when the window is smaller than the packet size
-                        if (future instanceof BufferedFuture) {
-                            return future;
-                        }
-                        // do a defensive copy in case the user reuses the buffer
-                        IoWriteFutureImpl f
-                                = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
-                        f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                        if (log.isTraceEnabled()) {
-                            log.trace("doWriteIfPossible({})[resume={}] waiting for window space {}",
-                                    this, resume, remoteWindowSize);
-                        }
-                        return f;
-                    }
-                }
-            } else if (total > packetSize) {
-                if (buffer.rpos() > 0 && !(future instanceof BufferedFuture)) {
-                    // do a defensive copy in case the user reuses the buffer
-                    IoWriteFutureImpl f = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
-                    f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
-                    length = packetSize;
-                    if (log.isTraceEnabled()) {
-                        log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}",
-                                this, resume, length, total);
-                    }
-                    return writePacket(f, resume);
-                } else {
-                    length = packetSize;
-                }
-            } else {
-                length = total;
-                if (log.isTraceEnabled()) {
-                    log.trace("doWriteIfPossible({})[resume={}] attempting to write {} bytes", this, resume, length);
-                }
-            }
-
-            if (length > 0) {
-                if (resume) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Resuming {} write due to more space ({}) available in the remote window", this, length);
-                    }
-                }
-
-                if (length >= (Integer.MAX_VALUE - 12)) {
-                    throw new IllegalArgumentException(
-                            "Command " + SshConstants.getCommandMessageName(cmd) + " length (" + length
-                                                       + ") exceeds int boundaries");
-                }
-
-                Buffer buf = createSendBuffer(buffer, channel, length);
-                remoteWindow.consume(length);
-
-                IoWriteFuture writeFuture;
-                try {
-                    writeFuture = packetWriter.writeData(buf);
-                } catch (IOException e) {
-                    synchronized (writeState) {
-                        writeState.writeInProgress = false;
-                    }
-                    future.setValue(e);
-                    return null;
-                }
-                synchronized (writeState) {
-                    writeState.pendingWrite = future;
-                    writeState.waitingOnIo = true;
-                }
-                writeFuture.addListener(f -> onWritten(future, total, length, f));
-            } else {
-                // remote window has zero size?
-                if (!resume && log.isDebugEnabled()) {
-                    log.debug("doWriteIfPossible({}) delaying write until space is available in the remote window", this);
-                }
-                return future;
-            }
-        } else {
+        int stillToSend = buffer.available();
+        if (stillToSend <= 0) {
             if (log.isTraceEnabled()) {
-                log.trace("doWriteIfPossible({}) current buffer sent", this);
+                log.trace("writePacket({}) current buffer sent", this);
             }
             synchronized (writeState) {
                 writeState.writeInProgress = false;
             }
             future.setValue(Boolean.TRUE);
+            return null;
         }
+        Channel channel = getChannel();
+        Window remoteWindow = channel.getRemoteWindow();
+        // An erratum on RFC 4254 at https://www.rfc-editor.org/errata/rfc4254 claims that the 4 bytes for the data
+        // length had to be included in window computations. Which raises the question of what should happen if the
+        // remaining window size is < 4. If the peer waits for the window size to drop to zero before sending its window
+        // adjustment, the channel would block, since we cannot even send a zero-sized data chunk to consume the last
+        // bytes. Probably that erratum is itself erroneous?
+        //
+        // At least OpenSSH does appear *not* to include the 4 bytes for the data length in the window computations. It
+        // does do so _partially_ for "datagram" (TunnelForward) channels, but there it appears to do it (as of OpenSSH
+        // 9.1) inconsistently: when writing to the channel, it decreases the remote window size by the data length; but
+        // when reading from the channel, it decreases the local window size by the data length + 4. That appears to be
+        // a bug?
+        //
+        // PuTTY also does not include these 4 bytes.
+        long remoteWindowSize = remoteWindow.getSize();
+        long packetSize = remoteWindow.getPacketSize();
+        int chunkLength = (int) Math.min(stillToSend, Math.min(packetSize, remoteWindowSize));
+
+        IoWriteFutureImpl f = future;
+        if (chunkLength < stillToSend && !(f instanceof BufferedFuture)) {
+            // We can send only part of the data remaining: copy the buffer (if it hasn't been copied before) because
+            // the original may be re-used, then send the bit we can send, and queue up a future for sending the rest.
+            f = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+            f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
+        }
+        if (chunkLength <= 0) {
+            // Cannot send anything now -- we have to wait for a window adjustment.
+            if (log.isTraceEnabled()) {
+                log.trace("writePacket({})[resume={}] waiting for window space {}", this, resume, remoteWindowSize);
+            }
+            ((BufferedFuture) f).waitOnWindow = true;
+            return f;
+        }
+        if (f instanceof BufferedFuture) {
+            ((BufferedFuture) f).waitOnWindow = false;
+        }
+        buffer = f.getBuffer();
+        // Write the chunk
+        if (log.isTraceEnabled()) {
+            log.trace("writePacket({})[resume={}] attempting to write {} out of {}", this, resume, chunkLength,
+                    stillToSend);
+        }
+        if (chunkLength >= (Integer.MAX_VALUE - 12)) {
+            // This check is a bit pointless. We allocate a buffer in createSendBuffer of chunkLength + 12 bytes, but:
+            // 1. session.createBuffer() will add more for SSH protocol overheads like the header and padding.
+            // 2. Some Java VMs may have a limit that is actually a few bytes short of Integer.MAX_VALUE.
+            // 3. The channel's packet size should never be that large.
+            IllegalArgumentException error = new IllegalArgumentException(
+                    "Command " + SshConstants.getCommandMessageName(cmd) + " length (" + chunkLength
+                                                                          + ") exceeds int boundaries");
+            synchronized (writeState) {
+                writeState.writeInProgress = false;
+            }
+            f.setValue(error);
+            throw error;
+        }
+
+        remoteWindow.consume(chunkLength);
+
+        IoWriteFuture writeFuture;
+        try {
+            writeFuture = packetWriter.writeData(createSendBuffer(buffer, channel, chunkLength));
+        } catch (Throwable e) {
+            synchronized (writeState) {
+                writeState.writeInProgress = false;
+            }
+            f.setValue(e);
+            return null;
+        }
+        IoWriteFutureImpl thisFuture = f;
+        writeFuture.addListener(w -> onWritten(thisFuture, stillToSend, chunkLength, w));
+        // If something remains it will be written via the listener we just added.
         return null;
     }
 
-    protected void onWritten(IoWriteFutureImpl future, int total, long length, IoWriteFuture f) {
+    protected void onWritten(IoWriteFutureImpl future, int total, int length, IoWriteFuture f) {
         if (f.isWritten()) {
             if (total > length) {
                 if (log.isTraceEnabled()) {
                     log.trace("onWritten({}) completed write of {} out of {}",
                             this, length, total);
                 }
+                synchronized (writeState) {
+                    writeState.toSend -= length;
+                    writeState.pendingWrite = future;
+                }
+
                 doWriteIfPossible(false);
             } else {
                 synchronized (writeState) {
-                    IoWriteFutureImpl storedFuture = writeState.pendingWrite;
-                    if (storedFuture == future) {
-                        writeState.pendingWrite = null;
-                        writeState.writeInProgress = false;
-                        writeState.waitingOnIo = false;
-                    } else if (storedFuture == null) {
-                        writeState.writeInProgress = false;
-                        writeState.waitingOnIo = false;
-                        if (log.isDebugEnabled()) {
-                            log.debug("onWritten({}) future already reset to null after successful write (stream closed)",
-                                    this);
-                        }
-                    } else {
-                        log.error("onWritten({}) future changed during write", this);
-                    }
+                    writeState.toSend = 0;
+                    writeState.pendingWrite = null;
+                    writeState.writeInProgress = false;
                 }
                 if (log.isTraceEnabled()) {
                     log.trace("onWritten({}) completed write len={}", this, total);
@@ -411,41 +376,25 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
                     this, reason.getClass().getSimpleName(), length, total, reason.getMessage(), reason);
             synchronized (writeState) {
-                IoWriteFutureImpl storedFuture = writeState.pendingWrite;
-                if (storedFuture == future) {
-                    writeState.pendingWrite = null;
-                    writeState.writeInProgress = false;
-                    writeState.waitingOnIo = false;
-                } else if (storedFuture == null) {
-                    writeState.writeInProgress = false;
-                    writeState.waitingOnIo = false;
-                    if (log.isDebugEnabled()) {
-                        log.debug("onWritten({}) future already reset to null after exception (stream closed): {}", this,
-                                reason.toString());
-                    }
-                } else {
-                    log.error("onWritten({}) future changed during failed write; exception {}", this, reason.toString());
-                }
-            }
-            if (log.isTraceEnabled()) {
-                log.trace("onWritten({}) failed write len={}", this, total);
+                writeState.pendingWrite = null;
+                writeState.writeInProgress = false;
             }
             future.setValue(reason);
         }
     }
 
-    protected Buffer createSendBuffer(Buffer buffer, Channel channel, long length) {
+    protected Buffer createSendBuffer(Buffer buffer, Channel channel, int length) {
         SessionContext.validateSessionPayloadSize(length, "Invalid send buffer length: %d");
 
         Session s = channel.getSession();
-        Buffer buf = s.createBuffer(cmd, (int) length + 12);
+        Buffer buf = s.createBuffer(cmd, length + 12);
         buf.putUInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
             buf.putUInt(SshConstants.SSH_EXTENDED_DATA_STDERR);
         }
         buf.putUInt(length);
-        buf.putRawBytes(buffer.array(), buffer.rpos(), (int) length);
-        buffer.rpos(buffer.rpos() + (int) length);
+        buf.putRawBytes(buffer.array(), buffer.rpos(), length);
+        buffer.rpos(buffer.rpos() + length);
         return buf;
     }
 
@@ -454,19 +403,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         return getClass().getSimpleName() + "[" + getChannel() + "] cmd=" + SshConstants.getCommandMessageName(cmd & 0xFF);
     }
 
-    public boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize() {
-        return sendChunkIfRemoteWindowIsSmallerThanPacketSize;
-    }
-
-    public void setSendChunkIfRemoteWindowIsSmallerThanPacketSize(boolean sendChunkIfRemoteWindowIsSmallerThanPacketSize) {
-        this.sendChunkIfRemoteWindowIsSmallerThanPacketSize = sendChunkIfRemoteWindowIsSmallerThanPacketSize;
-    }
-
     /**
      * Marker type to avoid repeated buffering in
      * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)}.
      */
     protected static class BufferedFuture extends IoWriteFutureImpl {
+
+        protected boolean waitOnWindow;
 
         BufferedFuture(Object id, Buffer buffer) {
             super(id, buffer);
@@ -482,7 +425,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
          * The future describing the last executed *buffer* write {@link ChannelAsyncOutputStream#writeBuffer(Buffer)}.
          * Used for graceful closing.
          */
-        protected IoWriteFutureImpl lastWrite;
+        protected IoWriteFuture lastWrite;
 
         /**
          * The future describing the current packet write; if {@code null}, there is nothing to write or
@@ -500,20 +443,24 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
          * Set to true when there was a remote window expansion while
          * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} was in progress. If set,
          * {@link ChannelAsyncOutputStream#doWriteIfPossible(boolean)} will run a
-         * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} again...
+         * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} again.
          */
         protected boolean windowExpanded;
-
-        /**
-         * ...unless the current {@link #pendingWrite} is waiting on I/O (which will either finish or continue the write
-         * anyway).
-         */
-        protected boolean waitingOnIo;
 
         /**
          * A copy of this stream's state as set by the superclass.
          */
         protected State openState = State.Opened;
+
+        /**
+         * Number of bytes to send in total.
+         */
+        protected int totalLength;
+
+        /**
+         * Number of bytes still to send.
+         */
+        protected int toSend;
 
         protected WriteState() {
             super();

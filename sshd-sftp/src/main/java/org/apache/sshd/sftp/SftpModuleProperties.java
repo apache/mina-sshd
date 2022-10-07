@@ -229,15 +229,6 @@ public final class SftpModuleProperties {
     public static final Property<Integer> SFTP_VERSION
             = SshServerConfigFileReader.SFTP_FORCED_VERSION_PROP;
 
-    /**
-     * Determines the chunking behaviour, if the remote window size is smaller than the packet size. Can be used to
-     * establish compatibility with certain clients, that wait until the window size is 0 before adjusting it.
-     *
-     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-1123">SSHD-1123</A>
-     */
-    public static final Property<Boolean> CHUNK_IF_WINDOW_LESS_THAN_PACKET
-            = Property.bool("sftp-chunk-if-window-less-than-packet", false);
-
     private SftpModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }

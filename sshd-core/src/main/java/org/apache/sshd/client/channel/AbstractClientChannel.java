@@ -417,12 +417,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (asyncOut != null) {
             asyncOut.write(new ByteArrayBuffer(data, off, (int) len));
         } else if (out != null) {
-            out.write(data, off, (int) len);
-            out.flush();
-
-            if (invertedOut == null) {
-                Window wLocal = getLocalWindow();
-                wLocal.consumeAndCheck(len);
+            try {
+                out.write(data, off, (int) len);
+                out.flush();
+            } finally {
+                if (invertedOut == null) {
+                    Window wLocal = getLocalWindow();
+                    wLocal.consumeAndCheck(len);
+                }
             }
         } else {
             throw new IllegalStateException("No output stream for channel");
@@ -441,12 +443,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (asyncErr != null) {
             asyncErr.write(new ByteArrayBuffer(data, off, (int) len));
         } else if (err != null) {
-            err.write(data, off, (int) len);
-            err.flush();
-
-            if (invertedErr == null) {
-                Window wLocal = getLocalWindow();
-                wLocal.consumeAndCheck(len);
+            try {
+                err.write(data, off, (int) len);
+                err.flush();
+            } finally {
+                if (invertedErr == null) {
+                    Window wLocal = getLocalWindow();
+                    wLocal.consumeAndCheck(len);
+                }
             }
         } else {
             throw new IllegalStateException("No error stream for channel");

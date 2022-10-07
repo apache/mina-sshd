@@ -54,7 +54,9 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +74,9 @@ public class WindowAdjustTest extends BaseTestSupport {
 
     public static final byte END_FILE = '#';
     public static final int BIG_MSG_SEND_COUNT = 10000;
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(TimeUnit.MINUTES.toSeconds(6));
 
     private SshServer sshServer;
     private int port;
@@ -101,7 +106,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         }
     }
 
-    @Test(timeout = 6L * 60L * 1000L)
+    @Test
     public void testTrafficHeavyLoad() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -302,13 +307,14 @@ public class WindowAdjustTest extends BaseTestSupport {
             try {
                 asyncIn.writeBuffer(msg).addListener(future -> {
                     if (future.isWritten()) {
-                        if (wasPending) {
-                            pending.remove();
-                        }
-
                         try {
+                            if (wasPending) {
+                                synchronized (AsyncInPendingWrapper.this) {
+                                    pending.remove();
+                                }
+                            }
                             writePendingIfAny();
-                        } catch (IOException e) {
+                        } catch (Throwable e) {
                             log.error("Failed ({}) to re-write pending: {}", e.getClass().getSimpleName(), e.getMessage());
                         }
                     } else {
@@ -316,10 +322,16 @@ public class WindowAdjustTest extends BaseTestSupport {
                         log.warn("Failed to write message", t);
                     }
                 });
-            } catch (final WritePendingException e) {
+            } catch (WritePendingException e) {
                 if (!wasPending) {
                     queueRequest(msg);
                 }
+            } catch (Throwable t) {
+                log.error("Failed to write or queue", t);
+                if (t instanceof IOException) {
+                    throw (IOException) t;
+                }
+                throw new IOException("Failed to write or queue", t);
             }
         }
 

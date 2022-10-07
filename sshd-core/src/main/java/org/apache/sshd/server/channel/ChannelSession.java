@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.Duration;
@@ -52,6 +53,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -121,6 +123,27 @@ public class ChannelSession extends AbstractServerChannel {
         if (asyncOut != null) {
             asyncOut.onWindowExpanded();
         }
+    }
+
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+        if (asyncOut == null) {
+            return super.writePacket(buffer);
+        }
+        // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
+        if (!asyncOut.isClosed()) {
+            Session s = getSession();
+            return s.writePacket(buffer);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
+                    state);
+        }
+        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
+        };
+        errorFuture.setValue(new EOFException("Channel is closed"));
+        return errorFuture;
     }
 
     @Override
@@ -722,11 +745,9 @@ public class ChannelSession extends AbstractServerChannel {
         // If the shell wants to use non-blocking io
         if (command instanceof AsyncCommandStreamsAware) {
             asyncOut = new ChannelAsyncOutputStream(
-                    this, SshConstants.SSH_MSG_CHANNEL_DATA,
-                    isSendChunkIfRemoteWindowIsSmallerThanPacketSize(SshConstants.SSH_MSG_CHANNEL_DATA));
+                    this, SshConstants.SSH_MSG_CHANNEL_DATA);
             asyncErr = new ChannelAsyncOutputStream(
-                    this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA,
-                    isSendChunkIfRemoteWindowIsSmallerThanPacketSize(SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA));
+                    this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
             ((AsyncCommandStreamsAware) command).setIoOutputStream(asyncOut);
             ((AsyncCommandStreamsAware) command).setIoErrorStream(asyncErr);
         } else {
@@ -920,25 +941,4 @@ public class ChannelSession extends AbstractServerChannel {
         }
     }
 
-    /**
-     * Chance for specializations to vary chunking behaviour depending on the SFTP client version.
-     *
-     * @param  cmd                           Either {@link SshConstants#SSH_MSG_CHANNEL_DATA SSH_MSG_CHANNEL_DATA} or
-     *                                       {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA
-     *                                       SSH_MSG_CHANNEL_EXTENDED_DATA} indicating the output stream type
-     * @return                               {@code true} if should chunk data sent via {@link ChannelAsyncOutputStream}
-     *                                       when reported remote window size is less than its packet size
-     * @see                                  ChannelAsyncOutputStream#ChannelAsyncOutputStream(Channel, byte, boolean)
-     * @throws UnsupportedOperationException if the command is neither of the supported ones
-     */
-    protected boolean isSendChunkIfRemoteWindowIsSmallerThanPacketSize(byte cmd) {
-        if (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) {
-            return CoreModuleProperties.ASYNC_SERVER_STDOUT_CHUNK_BELOW_WINDOW_SIZE.getRequired(this);
-        } else if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-            return CoreModuleProperties.ASYNC_SERVER_STDERR_CHUNK_BELOW_WINDOW_SIZE.getRequired(this);
-        } else {
-            throw new UnsupportedOperationException(
-                    "Unsupported channel data stream command: " + SshConstants.getCommandMessageName(cmd & 0xFF));
-        }
-    }
 }

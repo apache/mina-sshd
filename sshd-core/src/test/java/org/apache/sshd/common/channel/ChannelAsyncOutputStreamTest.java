@@ -100,14 +100,8 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     }
 
     @Test
-    public void testNoChunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
-        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
-        checkChangeOfRemoteWindowSizeOnBufferWrite(channelAsyncOutputStream, 30000, 32000, 50000, 30000);
-    }
-
-    @Test
     public void testChunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
-        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0, true);
+        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
         checkChangeOfRemoteWindowSizeOnBufferWrite(channelAsyncOutputStream, 30000, 32000, 50000, 0);
     }
 

@@ -446,8 +446,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             boolean immediately = !session.isOpen();
             if (log.isDebugEnabled()) {
-                log.debug("exceptionCaught({}) signal close immediately={} due to {}[{}]", TcpipServerChannel.this, immediately,
-                        cause.getClass().getSimpleName(), cause.getMessage());
+                log.debug("exceptionCaught({}) signal close immediately={}", TcpipServerChannel.this, immediately, cause);
             }
             close(immediately);
         }

@@ -566,8 +566,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         protected ChannelAsyncOutputStream createAsyncInput(Session session) {
             return new ChannelAsyncOutputStream(
-                    this, SshConstants.SSH_MSG_CHANNEL_DATA,
-                    SftpModuleProperties.CHUNK_IF_WINDOW_LESS_THAN_PACKET.getRequired(session)) {
+                    this, SshConstants.SSH_MSG_CHANNEL_DATA) {
                 @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
