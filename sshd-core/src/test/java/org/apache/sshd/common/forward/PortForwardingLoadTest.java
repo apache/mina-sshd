@@ -57,6 +57,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.JSchUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
@@ -385,18 +386,17 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
             int sinkPort = CoreTestSupportUtils.getFreePort();
-            session.setPortForwardingR(sinkPort, TEST_LOCALHOST, forwardedPort);
-            final boolean started[] = new boolean[1];
-            started[0] = false;
+            JSchUtils.setRemotePortForwarding(session, sinkPort, TEST_LOCALHOST, forwardedPort);
+            final CountDownLatch started = new CountDownLatch(1);
             final AtomicInteger conCount = new AtomicInteger(0);
 
             Thread tWriter = new Thread(getCurrentTestName() + "Writer") {
                 @SuppressWarnings("synthetic-access")
                 @Override
                 public void run() {
-                    started[0] = true;
                     try {
                         byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+                        started.countDown();
                         for (int i = 0; i < numIterations; ++i) {
                             try (Socket s = ss.accept()) {
                                 conCount.incrementAndGet();
@@ -413,8 +413,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             };
             tWriter.start();
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
-            assertTrue("Server not started", started[0]);
+            assertTrue("Server not started", started.await(1, TimeUnit.SECONDS));
 
             final RuntimeException lenOK[] = new RuntimeException[numIterations];
             final RuntimeException dataOK[] = new RuntimeException[numIterations];
@@ -515,7 +514,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         try {
             int forwardedPort1 = session.setPortForwardingL(0, host, port);
             int forwardedPort2 = CoreTestSupportUtils.getFreePort();
-            session.setPortForwardingR(forwardedPort2, TEST_LOCALHOST, forwardedPort1);
+            JSchUtils.setRemotePortForwarding(session, forwardedPort2, TEST_LOCALHOST, forwardedPort1);
             outputDebugMessage("URL: http://localhost %s", forwardedPort2);
 
             CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);

@@ -31,6 +31,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.JSchUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -112,7 +113,7 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     @Override
     protected SshdSocketAddress startRemotePF() throws Exception {
         int port = findFreePort();
-        session.setPortForwardingR(TEST_LOCALHOST, port, TEST_LOCALHOST, testServerPort);
+        JSchUtils.setRemotePortForwarding(session, TEST_LOCALHOST, port, TEST_LOCALHOST, testServerPort);
         return new SshdSocketAddress(TEST_LOCALHOST, port);
     }
 

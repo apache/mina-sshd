@@ -79,6 +79,7 @@ import org.apache.sshd.server.global.TcpipForwardHandler;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.JSchUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -302,7 +303,7 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
-            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
+            JSchUtils.setRemotePortForwarding(session, forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
@@ -339,13 +340,13 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             int forwardedPort = CoreTestSupportUtils.getFreePort();
-            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
+            JSchUtils.setRemotePortForwarding(session, forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
             waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
-            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
+            JSchUtils.setRemotePortForwarding(session, forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
@@ -758,7 +759,7 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             // 1. Create a Port Forward
             int forwardedPort = CoreTestSupportUtils.getFreePort();
-            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
+            JSchUtils.setRemotePortForwarding(session, forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, DEFAULT_TIMEOUT);
 
             // 2. Establish a connection through it
