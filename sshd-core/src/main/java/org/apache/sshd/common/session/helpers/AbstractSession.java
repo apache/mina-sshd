@@ -1060,7 +1060,7 @@ public abstract class AbstractSession extends SessionHelper {
             return writeFuture;
         }
         @SuppressWarnings("unchecked")
-        DefaultSshFuture<?> future = (DefaultSshFuture<?>) writeFuture;
+        DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         FactoryManager factoryManager = getFactoryManager();
         ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
         ScheduledFuture<?> sched = executor.schedule(() -> {

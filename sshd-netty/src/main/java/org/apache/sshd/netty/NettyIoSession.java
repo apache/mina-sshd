@@ -44,7 +44,9 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.helpers.MissingAttachedSessionException;
+import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
@@ -273,13 +275,8 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         }
     }
 
-    protected void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf buf = (ByteBuf) msg;
-        try {
-            handler.messageReceived(NettyIoSession.this, NettySupport.asReadable(buf));
-        } finally {
-            buf.release();
-        }
+    protected void channelRead(ChannelHandlerContext ctx, Readable msg) throws Exception {
+        handler.messageReceived(NettyIoSession.this, msg);
     }
 
     protected void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
@@ -301,9 +298,21 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     }
 
     /**
-     * Simple netty adapter to use as a bridge.
+     * Netty adapter to use as a bridge, with extra handling for suspending reads. Netty may sometimes may deliver read
+     * events even after reads have been suspended. Suspending reads only removes the channel for OP_READ in the next
+     * select. But Netty's default read buffer management does not account for this, and it may deliver more events
+     * still if there are more than 64kB available on the socket.
+     * <p>
+     * There is a {@link io.netty.handler.flow.FlowControlHandler} that should be able to handle this case if inserted
+     * in the channel pipeline before this handler. But somehow this did not work reliably. Therefore this adapter
+     * manages this directly by accumulating all read events in a single buffer and delivering the whole buffer once the
+     * low-level socket read is completed.
+     * </p>
      */
     protected class Adapter extends ChannelInboundHandlerAdapter {
+
+        private ByteArrayBuffer buffer;
+
         public Adapter() {
             super();
         }
@@ -315,12 +324,32 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            buffer = null;
             NettyIoSession.this.channelInactive(ctx);
         }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            NettyIoSession.this.channelRead(ctx, msg);
+            ByteBuf buf = (ByteBuf) msg;
+            try {
+                Readable r = NettySupport.asReadable(buf);
+                if (buffer == null) {
+                    buffer = new ByteArrayBuffer(r.available(), false);
+                    buffer.putBuffer(r);
+                } else {
+                    buffer.putBuffer(r, true);
+                }
+            } finally {
+                buf.release();
+            }
+        }
+
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+            if (buffer != null) {
+                NettyIoSession.this.channelRead(ctx, buffer);
+                buffer = null;
+            }
         }
 
         @Override
