@@ -1,0 +1,24 @@
+# RFC 9116 format specifications for security contacts for Apache MINA sshd
+
+# Contact e-mail is listed on this web page. It's "security" with the Apache domain.
+Contact: https://www.apache.org/security/
+
+# The ASF policy page on dealing with security vulnerabilities
+Policy: https://www.apache.org/security/
+
+# A more detailed description of the whole process
+Policy: https://www.apache.org/security/committers.html
+
+# The canonical locations of this file
+Canonical: https://gitbox.apache.org/repos/asf?p=mina-sshd.git;a=blob_plain;f=security.txt;hb=HEAD
+Canonical: https://github.com/apache/mina-sshd/blob/master/security.txt
+Canonical: https://raw.githubusercontent.com/apache/mina-sshd/master/security.txt
+
+# OpenPGP keys
+Encryption: https://www.apache.org/security/KEYS.txt
+
+# Please use English
+Preferred-Languages: en
+
+# No expiration. All data is maintained and updated at the apache.org web site. RFC 9116 mandates this field, though.
+Expires: 2999-12-31T23:59:59Z
