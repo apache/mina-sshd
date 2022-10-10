@@ -311,7 +311,16 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
      */
     protected class Adapter extends ChannelInboundHandlerAdapter {
 
+        // Buffer for accumulating ByteBufs if we get multiple read events.
         private ByteArrayBuffer buffer;
+
+        // The ByteBuf from the first (and single) read event, if there's only one. If a second event comes in, this
+        // gets copied into buffer, released, and nulled out. This is an optimization to avoid needlessly copying
+        // buffers.
+        private ByteBuf ioBuffer;
+
+        // Invariant: !(buffer != null && ioBuffer != null) Either they're both null (initially and on read complete),
+        // or exactly one of them is non-null.
 
         public Adapter() {
             super();
@@ -325,30 +334,59 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
             buffer = null;
+            if (ioBuffer != null) {
+                ioBuffer.release();
+                ioBuffer = null;
+            }
             NettyIoSession.this.channelInactive(ctx);
         }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             ByteBuf buf = (ByteBuf) msg;
-            try {
-                Readable r = NettySupport.asReadable(buf);
-                if (buffer == null) {
-                    buffer = new ByteArrayBuffer(r.available(), false);
-                    buffer.putBuffer(r);
+            if (buffer == null) {
+                if (ioBuffer == null) {
+                    // First buffer; will be released in channelReadComplete() below, or when the second ByteBuf
+                    // arrives.
+                    ioBuffer = buf;
+                    return;
                 } else {
-                    buffer.putBuffer(r, true);
+                    // Second ByteBuf: copy the ioBuffer, release and null it. Then copy buf and release it.
+                    try {
+                        buffer = new ByteArrayBuffer(ioBuffer.readableBytes() + buf.readableBytes(), false);
+                        buffer.putBuffer(NettySupport.asReadable(ioBuffer), false);
+                        buffer.putBuffer(NettySupport.asReadable(buf), false);
+                    } finally {
+                        ioBuffer.release();
+                        ioBuffer = null;
+                        buf.release();
+                    }
                 }
-            } finally {
-                buf.release();
+            } else {
+                try {
+                    buffer.putBuffer(NettySupport.asReadable(buf), true);
+                } finally {
+                    buf.release();
+                }
             }
         }
 
         @Override
         public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+            // Clear fields before passing on the buffer, otherwise we might get into trouble if the session causes
+            // another read.
             if (buffer != null) {
-                NettyIoSession.this.channelRead(ctx, buffer);
+                ByteArrayBuffer buf = buffer;
                 buffer = null;
+                NettyIoSession.this.channelRead(ctx, buf);
+            } else if (ioBuffer != null) {
+                ByteBuf buf = ioBuffer;
+                ioBuffer = null;
+                try {
+                    NettyIoSession.this.channelRead(ctx, NettySupport.asReadable(buf));
+                } finally {
+                    buf.release();
+                }
             }
         }
 
