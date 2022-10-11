@@ -729,6 +729,7 @@
                             <exclude>**/BCrypt.java</exclude>
                             <exclude>LICENSE*</exclude>
                             <exclude>NOTICE*</exclude>
+                            <exclude>security.txt</exclude>
                                 <!-- IDE files -->
                             <exclude>*pmd*</exclude>
                             <exclude>*.ser</exclude>
