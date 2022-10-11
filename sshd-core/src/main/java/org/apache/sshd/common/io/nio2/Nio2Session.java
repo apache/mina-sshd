@@ -303,7 +303,19 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             if (log.isDebugEnabled()) {
                 log.debug("shudownOutputStream({})", this);
             }
-            socket.shutdownOutput();
+            try {
+                socket.shutdownOutput();
+            } catch (ClosedChannelException e) {
+                // This may get called on a Channel EOF in TCP/IP port forwarding. But reading and writing run
+                // asynchronously, so it is possible that the socket channel is actually closed here and the producer
+                // that wrote into this channel has already disconnected.
+                //
+                // As this is asynchronous, there is a race condition here. The isOpen() test above does not guarantee
+                // that the socket channel is indeed open when we call shutdownOutput().
+                //
+                // In any case it's safe here to ignore this exception as we're trying to shut down an external end
+                // of a TCP/IP port forwarding.
+            }
         }
     }
 

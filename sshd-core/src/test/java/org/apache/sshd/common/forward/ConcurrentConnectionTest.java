@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -119,10 +120,10 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
             s.getOutputStream().write(PAYLOAD_TO_CLIENT);
             LOG.debug("Wrote payload to client");
             s.close();
-            LOG.debug("Active Servers: {}", activeServers.decrementAndGet());
         } catch (final Throwable t) {
             LOG.error("Error", t);
         }
+        LOG.debug("Active Servers: {}", activeServers.decrementAndGet());
     }
 
     @After
@@ -193,6 +194,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
 
         final AtomicInteger success = new AtomicInteger(0);
         final AtomicInteger fail = new AtomicInteger(0);
+        final CountDownLatch threadsDone = new CountDownLatch(PORT_FORWARD_CLIENT_COUNT);
         final long[] bytesRead = new long[PORT_FORWARD_CLIENT_COUNT];
 
         for (int i = 0; i < PORT_FORWARD_CLIENT_COUNT; i++) {
@@ -207,18 +209,14 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
                     fail.incrementAndGet();
                     LOG.error("Error in client code", e);
                 }
+                threadsDone.countDown();
             });
             t.setName("Client " + i);
             t.setDaemon(true);
             t.start();
         }
 
-        while (true) {
-            if (success.get() + fail.get() == PORT_FORWARD_CLIENT_COUNT) {
-                break;
-            }
-            Thread.sleep(100);
-        }
+        assertTrue("All threads should be done after two minutes", threadsDone.await(2, TimeUnit.MINUTES));
 
         for (int i = 0; i < PORT_FORWARD_CLIENT_COUNT; i++) {
             assertEquals("Mismatched data length read from server for client " + i, PAYLOAD_TO_CLIENT.length,
