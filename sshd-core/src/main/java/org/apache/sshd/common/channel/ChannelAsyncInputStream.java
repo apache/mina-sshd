@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoInputStream;
@@ -69,12 +69,12 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
                     throw new ReadPendingException("Previous pending read not handled");
                 }
                 if (buffer.available() > 0) {
-                    Buffer fb = future.getBuffer();
+                    Buffer fb = future.buffer;
                     int nbRead = fb.putBuffer(buffer, false);
                     buffer.compact();
                     future.setValue(nbRead);
                 } else {
-                    future.setValue(new IOException("Closed"));
+                    future.setValue(new EOFException("Closed"));
                 }
             }
         } else {
@@ -94,7 +94,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
         synchronized (buffer) {
             if (buffer.available() == 0) {
                 if (pending != null) {
-                    pending.setValue(new SshException("Closed"));
+                    pending.setValue(new EOFException("Closed"));
                 }
             }
         }
@@ -153,7 +153,8 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
     }
 
     public static class IoReadFutureImpl extends DefaultVerifiableSshFuture<IoReadFuture> implements IoReadFuture {
-        private final Buffer buffer;
+
+        final Buffer buffer;
 
         public IoReadFutureImpl(Object id, Buffer buffer) {
             super(id, null);
@@ -162,7 +163,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
 
         @Override
         public Buffer getBuffer() {
-            return buffer;
+            return isDone() ? buffer : null;
         }
 
         @Override
@@ -180,14 +181,18 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
         @Override
         public int getRead() {
             Object v = getValue();
-            if (v instanceof RuntimeException) {
+            if (v == null) {
+                return 0;
+            } else if (v instanceof Number) {
+                return ((Number) v).intValue();
+            } else if (v instanceof EOFException) {
+                return -1;
+            } else if (v instanceof RuntimeException) {
                 throw (RuntimeException) v;
             } else if (v instanceof Error) {
                 throw (Error) v;
             } else if (v instanceof Throwable) {
                 throw new RuntimeSshException("Error reading from channel.", (Throwable) v);
-            } else if (v instanceof Number) {
-                return ((Number) v).intValue();
             } else {
                 throw formatExceptionMessage(
                         IllegalStateException::new,

@@ -21,6 +21,7 @@ package org.apache.sshd.client.session;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
@@ -40,6 +41,7 @@ import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
@@ -351,6 +353,69 @@ public class ClientSessionTest extends BaseTestSupport {
                     channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
                 }
 
+                byte[] bytes = baos.toByteArray();
+                response = new String(bytes, StandardCharsets.US_ASCII);
+            }
+        }
+
+        String[] lines = GenericUtils.split(response, '\n');
+        assertEquals("Mismatched response lines count", 2, lines.length);
+
+        Collection<String> values = new ArrayList<>(Arrays.asList(lines));
+        // We don't rely on the order the strings were written
+        for (String expected : new String[] { expectedStdout, expectedStderr }) {
+            if (!values.remove(expected)) {
+                fail(expected + " not in response=" + values);
+            }
+        }
+
+        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
+    }
+
+    @Test // SSHD-1303
+    public void testRedirectCommandErrorStreamIsEmpty() throws Exception {
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedStdout = getCurrentTestName() + "-STDOUT";
+        String expectedStderr = getCurrentTestName() + "-STDERR";
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                writeResponse(getOutputStream(), expectedStdout);
+                writeResponse(getErrorStream(), expectedStderr);
+                cmdProcessed = true;
+                return false;
+            }
+
+            private void writeResponse(OutputStream out, String rsp) throws IOException {
+                out.write(rsp.getBytes(StandardCharsets.US_ASCII));
+                out.write((byte) '\n');
+                out.flush();
+            }
+        });
+
+        String response;
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
+                try (ClientChannel channel = session.createExecChannel(expectedCommand + '\n')) {
+                    channel.setRedirectErrorStream(true);
+
+                    channel.open().verify(OPEN_TIMEOUT);
+                    try (InputStream stderr = channel.getInvertedErr()) {
+                        assertEquals(-1, stderr.read());
+                    }
+                    try (InputStream stdout = channel.getInvertedOut()) {
+                        IoUtils.copy(stdout, baos, 32); // Use a small buffer on purpose
+                    }
+                }
                 byte[] bytes = baos.toByteArray();
                 response = new String(bytes, StandardCharsets.US_ASCII);
             }

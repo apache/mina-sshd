@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,8 +46,12 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
+import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.EventNotifier;
 import org.apache.sshd.common.util.ExceptionUtils;
@@ -61,6 +66,15 @@ import org.apache.sshd.common.util.io.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
+
+    private static final InputStream NULL_INPUT_STREAM = new InputStream() {
+
+        @Override
+        public int read() throws IOException {
+            return -1;
+        }
+    };
+
     protected final AtomicBoolean opened = new AtomicBoolean();
 
     protected Streaming streaming;
@@ -134,6 +148,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public IoInputStream getAsyncErr() {
+        if (asyncErr == asyncOut) {
+            return NullIoInputStream.INSTANCE;
+        }
         return asyncErr;
     }
 
@@ -167,6 +184,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public InputStream getInvertedErr() {
+        if (invertedErr == invertedOut) {
+            return NULL_INPUT_STREAM;
+        }
         return invertedErr;
     }
 
@@ -473,5 +493,49 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public String getExitSignal() {
         return exitSignalHolder.get();
+    }
+
+    private enum NullIoInputStream implements IoInputStream {
+
+        INSTANCE;
+
+        private final CloseFuture closing = new DefaultCloseFuture("", null);
+
+        NullIoInputStream() {
+            closing.setClosed();
+        }
+
+        @Override
+        public CloseFuture close(boolean immediately) {
+            return closing;
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closing.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            closing.removeListener(listener);
+        }
+
+        @Override
+        public boolean isClosed() {
+            return true;
+        }
+
+        @Override
+        public boolean isClosing() {
+            return true;
+        }
+
+        @Override
+        public IoReadFuture read(Buffer buffer) {
+            ChannelAsyncInputStream.IoReadFutureImpl future = new ChannelAsyncInputStream.IoReadFutureImpl("", buffer);
+            future.setValue(new EOFException("Closed"));
+            return future;
+        }
+
     }
 }
