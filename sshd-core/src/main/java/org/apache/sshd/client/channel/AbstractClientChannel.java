@@ -218,14 +218,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     if (openFuture == null) {
                         gracefulFuture.setClosed();
                     }
-                    // Close inverted streams after
-                    // If the inverted stream is closed before, there's a small time window
-                    // in which we have:
-                    // ChannelPipedInputStream#closed = true
-                    // ChannelPipedInputStream#writerClosed = false
-                    // which leads to an IOException("Pipe closed") when reading.
                     IoUtils.closeQuietly(in, out, err);
-                    IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+                    IoUtils.closeQuietly(invertedIn);
+                    // Don't close invertedOut and invertedErr; it's the application's business to do so!
                 })
                 .parallel(asyncIn, asyncOut, asyncErr)
                 .close(super.getInnerCloseable())

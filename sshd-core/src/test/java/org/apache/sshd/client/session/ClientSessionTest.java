@@ -38,6 +38,7 @@ import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
+import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
@@ -414,6 +415,82 @@ public class ClientSessionTest extends BaseTestSupport {
                     }
                     try (InputStream stdout = channel.getInvertedOut()) {
                         IoUtils.copy(stdout, baos, 32); // Use a small buffer on purpose
+                    }
+                }
+                byte[] bytes = baos.toByteArray();
+                response = new String(bytes, StandardCharsets.US_ASCII);
+            }
+        }
+
+        String[] lines = GenericUtils.split(response, '\n');
+        assertEquals("Mismatched response lines count", 2, lines.length);
+
+        Collection<String> values = new ArrayList<>(Arrays.asList(lines));
+        // We don't rely on the order the strings were written
+        for (String expected : new String[] { expectedStdout, expectedStderr }) {
+            if (!values.remove(expected)) {
+                fail(expected + " not in response=" + values);
+            }
+        }
+
+        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
+    }
+
+    @Test // SSHD-1302
+    public void testReadInputStreamTwice() throws Exception {
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedStdout = getCurrentTestName() + "-STDOUT";
+        String expectedStderr = getCurrentTestName() + "-STDERR";
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals("Mismatched incoming command", expectedCommand, command);
+                assertFalse("Duplicated command call", cmdProcessed);
+                writeResponse(getOutputStream(), expectedStdout);
+                writeResponse(getErrorStream(), expectedStderr);
+                cmdProcessed = true;
+                return false;
+            }
+
+            private void writeResponse(OutputStream out, String rsp) throws IOException {
+                out.write(rsp.getBytes(StandardCharsets.US_ASCII));
+                out.write((byte) '\n');
+                out.flush();
+            }
+        });
+
+        String response;
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
+                try (ClientChannel channel = session.createExecChannel(expectedCommand + '\n')) {
+                    channel.setRedirectErrorStream(true);
+
+                    channel.open().verify(OPEN_TIMEOUT);
+
+                    Thread.sleep(5000);
+                    InputStream stdout = null;
+                    try {
+                        stdout = channel.getInvertedOut();
+                        assertTrue(stdout instanceof ChannelPipedInputStream);
+                        assertTrue(((ChannelPipedInputStream) stdout).isOpen());
+                        IoUtils.copy(stdout, baos, 32); // Use a small buffer on purpose
+                        // The stream isn't closed yet. Reading now again should just return -1.
+                        assertEquals(-1, stdout.read());
+                        InputStream out = channel.getInvertedOut();
+                        assertSame(out, stdout);
+                        assertEquals(-1, out.read());
+                        assertTrue(((ChannelPipedInputStream) stdout).isOpen());
+                    } finally {
+                        if (stdout != null) {
+                            stdout.close();
+                        }
                     }
                 }
                 byte[] bytes = baos.toByteArray();

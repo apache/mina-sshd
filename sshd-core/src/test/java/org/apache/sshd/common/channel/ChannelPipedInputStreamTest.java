@@ -53,6 +53,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
             assertEquals("Mismatched reported read size", b.length, stream.read(readBytes));
             assertStreamEquals(b, readBytes);
             assertEquals("Unexpected data still available", -1, stream.available());
+            assertEquals("Unexpectedly not at EOF", -1, stream.read());
         }
     }
 

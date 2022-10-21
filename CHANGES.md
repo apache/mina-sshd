@@ -26,6 +26,8 @@
 * [SSHD-1293](https://issues.apache.org/jira/browse/SSHD-1293) ExplicitPortForwardingTracker does not unbind auto-allocated port
 * [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
 * [SSHD-1297](https://issues.apache.org/jira/browse/SSHD-1297) Avoid OutOfMemoryError when reading a public key from a corrupted Buffer
+* [SSHD-1302](https://issues.apache.org/jira/browse/SSHD-1302) Reading from Channel.getInvertedOut() after EOF was reached throws IOException instead of returning -1
+* [SSHD-1303](https://issues.apache.org/jira/browse/SSHD-1303) Reading from redirected Channel.getInvertedErr() delivers stdout; should be at EOF
 
 ## Major code re-factoring
 
