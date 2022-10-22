@@ -713,6 +713,7 @@
                     <configuration>
                         <consoleOutput>true</consoleOutput>
                         <excludes>
+                            <exclude>.asf.yaml</exclude>
                             <exclude>*.md</exclude>
                             <exclude>docs/**</exclude>
                             <exclude>sshd-sources/**</exclude>

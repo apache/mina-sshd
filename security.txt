@@ -1,13 +1,13 @@
 # RFC 9116 format specifications for security contacts for Apache MINA sshd
 
-# Contact e-mail is listed on this web page. It's "security" with the Apache domain.
-Contact: https://www.apache.org/security/
-
 # The ASF policy page on dealing with security vulnerabilities
 Policy: https://www.apache.org/security/
 
 # A more detailed description of the whole process
 Policy: https://www.apache.org/security/committers.html
+
+# Where to report sensitive issues
+Contact: security@apache.org
 
 # The canonical locations of this file
 Canonical: https://gitbox.apache.org/repos/asf?p=mina-sshd.git;a=blob_plain;f=security.txt;hb=HEAD

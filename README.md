@@ -128,6 +128,13 @@ to other keys (e.g. ECDSA, ED25519) as soon as possible.
 
 # [Release notes](./CHANGES.md)
 
+# Issue reporting
+
+Bug reports and improvement or feature requests can be filed at the [GitHub issue tracker](https://github.com/apache/mina-sshd/issues)
+or at the [Apache issue tracker](https://issues.apache.org/jira/projects/SSHD).
+
+Sensitive issues such as security vulnerabilities must be reported through [private channels](./SECURITY.md), not via either issue tracker.
+
 # Core requirements
 
 * Java 8+ (as of version 1.3)
