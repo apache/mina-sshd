@@ -34,8 +34,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelFactory;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
+import org.apache.sshd.common.forward.ChannelToPortHandler;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
@@ -49,7 +49,6 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -97,7 +96,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     private final ForwardingFilter.Type type;
     private IoConnector connector;
-    private IoSession ioSession;
+    private ChannelToPortHandler port;
     private ChannelAsyncOutputStream out;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
@@ -133,10 +132,6 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     public SshdSocketAddress getOriginatorAddress() {
         return originatorAddress;
-    }
-
-    public IoSession getIoSession() {
-        return ioSession;
     }
 
     @Override
@@ -271,8 +266,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     }
 
     protected void handleChannelOpenSuccess(OpenFuture f, IoSession session) {
-        ioSession = session;
-
+        port = createChannelToPortHandler(session);
         String changeEvent = session.toString();
         try {
             signalChannelOpenSuccess();
@@ -307,9 +301,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        IoSession session = getIoSession();
-        if (session != null) {
-            session.shutdownOutputStream();
+        if (port != null) {
+            port.handleEof();
         }
     }
 
@@ -341,61 +334,17 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
-        // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        ioSession.writeBuffer(buf).addListener(future -> {
-            if (future.isWritten()) {
-                handleWriteDataSuccess(
-                        SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len);
-            } else {
-                handleWriteDataFailure(
-                        SshConstants.SSH_MSG_CHANNEL_DATA, buf.array(), 0, (int) len, future.getException());
-            }
-        });
+        port.sendToPort(SshConstants.SSH_MSG_CHANNEL_DATA, data, off, len);
     }
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(
-                getTcpipChannelType() + "Tcpip channel does not support extended data");
+                getTcpipChannelType() + " Tcpip channel does not support extended data");
     }
 
-    protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
-        Session session = getSession();
-        try {
-            Window wLocal = getLocalWindow();
-            wLocal.consumeAndCheck(len);
-        } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleWriteDataSuccess({})[{}] failed ({}) to consume len={}: {}",
-                        this, SshConstants.getCommandMessageName(cmd & 0xFF),
-                        e.getClass().getSimpleName(), len, e.getMessage());
-            }
-            session.exceptionCaught(e);
-        }
-    }
-
-    protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
-        debug("handleWriteDataFailure({})[{}] failed ({}) to write len={}: {}",
-                this, SshConstants.getCommandMessageName(cmd & 0xFF),
-                t.getClass().getSimpleName(), len, t.getMessage(), t);
-
-        if (ioSession.isOpen()) {
-            // SSHD-795 IOException (Broken pipe) on a socket local forwarding channel causes SSH client-server
-            // connection down
-            if (log.isDebugEnabled()) {
-                log.debug("handleWriteDataFailure({})[{}] closing session={}",
-                        this, SshConstants.getCommandMessageName(cmd & 0xFF), ioSession);
-            }
-            close(false);
-        } else {
-            // In case remote entity has closed the socket (the ioSession), data coming from the SSH channel should be
-            // simply discarded
-            if (log.isDebugEnabled()) {
-                log.debug("Ignoring writeDataFailure {} because ioSession {} is already closing ", t, ioSession);
-            }
-        }
+    protected ChannelToPortHandler createChannelToPortHandler(IoSession session) {
+        return new ChannelToPortHandler(session, this);
     }
 
     class PortIoHandler implements IoHandler {

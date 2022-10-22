@@ -42,9 +42,7 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 /**
@@ -75,7 +73,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     }
 
     protected final SshdSocketAddress remote;
-    protected final IoSession serverSession;
+    protected final ChannelToPortHandler port;
     protected SshdSocketAddress localEntry;
 
     private final Type typeEnum;
@@ -85,9 +83,13 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
         super(Objects.requireNonNull(type, "No type specified").getName());
         this.typeEnum = type;
-        this.serverSession = Objects.requireNonNull(serverSession, "No server session provided");
+        this.port = createChannelToPortHandler(Objects.requireNonNull(serverSession, "No server session provided"));
         this.localEntry = new SshdSocketAddress((InetSocketAddress) serverSession.getLocalAddress());
         this.remote = remote;
+    }
+
+    protected ChannelToPortHandler createChannelToPortHandler(IoSession session) {
+        return new ChannelToPortHandler(session, this);
     }
 
     public Type getTcpipChannelType() {
@@ -109,17 +111,18 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src;
         SshdSocketAddress dst;
-        InetSocketAddress loc = (InetSocketAddress) serverSession.getLocalAddress();
+        IoSession portSession = port.getPortSession();
+        InetSocketAddress loc = (InetSocketAddress) portSession.getLocalAddress();
         Type openType = getTcpipChannelType();
         switch (openType) {
             case Direct:
-                src = (InetSocketAddress) serverSession.getRemoteAddress();
+                src = (InetSocketAddress) portSession.getRemoteAddress();
                 dst = this.remote;
                 tunnelEntrance = new SshdSocketAddress(loc.getHostString(), loc.getPort());
                 tunnelExit = new SshdSocketAddress(dst.getHostName(), dst.getPort());
                 break;
             case Forwarded:
-                src = (InetSocketAddress) serverSession.getRemoteAddress();
+                src = (InetSocketAddress) portSession.getRemoteAddress();
                 dst = localEntry;
                 tunnelEntrance = new SshdSocketAddress(src.getHostString(), src.getPort());
                 tunnelExit = new SshdSocketAddress(loc.getHostString(), loc.getPort());
@@ -208,31 +211,25 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .sequential(serverSession, super.getInnerCloseable())
+                .sequential(port.getPortSession(), super.getInnerCloseable())
                 .build();
     }
 
     @Override
     protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-                "Data length exceeds int boundaries: %d", len);
-        // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        Window wLocal = getLocalWindow();
-        wLocal.consumeAndCheck(len);
-        serverSession.writeBuffer(buf);
+        port.sendToPort(SshConstants.SSH_MSG_CHANNEL_DATA, data, off, len);
     }
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
         throw new UnsupportedOperationException(
-                getChannelType() + "Tcpip channel does not support extended data");
+                getChannelType() + " Tcpip channel does not support extended data");
     }
 
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        serverSession.shutdownOutputStream();
+        port.handleEof();
     }
 
     @Override
