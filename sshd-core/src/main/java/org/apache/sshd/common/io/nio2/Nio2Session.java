@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,6 +71,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final AtomicLong lastReadCycleStart = new AtomicLong();
     private final AtomicLong writeCyclesCounter = new AtomicLong();
     private final AtomicLong lastWriteCycleStart = new AtomicLong();
+    private final AtomicBoolean outputShutDown = new AtomicBoolean();
     private final Object suspendLock = new Object();
     private volatile boolean suspend;
     private volatile Runnable readRunnable;
@@ -298,24 +300,47 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     @Override
     public void shutdownOutputStream() throws IOException {
-        AsynchronousSocketChannel socket = getSocket();
-        if (socket.isOpen()) {
-            if (log.isDebugEnabled()) {
-                log.debug("shudownOutputStream({})", this);
+        if (outputShutDown.compareAndSet(false, true)) {
+            // Schedule a "shut down the output stream" fake write packet with a null buffer. Let already pending writes
+            // finish first.
+            Nio2DefaultIoWriteFuture future = new Nio2DefaultIoWriteFuture("shutdown-" + getRemoteAddress(), null, null);
+            writes.add(future);
+            startWriting();
+        }
+    }
+
+    protected void doShutdownOutputStream(Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket)
+            throws IOException {
+        try {
+            if (socket.isOpen()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doShutdownOutputStream({})", this);
+                }
+                try {
+                    socket.shutdownOutput();
+                } catch (ClosedChannelException e) {
+                    // This may get called on a Channel EOF in TCP/IP port forwarding. But reading and writing run
+                    // asynchronously, so it is possible that the socket channel is actually closed here and the
+                    // producer that wrote into this channel has already disconnected.
+                    //
+                    // As this is asynchronous, there is a race condition here. The isOpen() test above does not
+                    // guarantee that the socket channel is indeed open when we call shutdownOutput().
+                    //
+                    // In any case it's safe here to ignore this exception as we're trying to shut down an external end
+                    // of a TCP/IP port forwarding.
+                    if (log.isTraceEnabled()) {
+                        log.trace("doShutdownOutputStream({}): socket is already closed", this);
+                    }
+                }
             }
-            try {
-                socket.shutdownOutput();
-            } catch (ClosedChannelException e) {
-                // This may get called on a Channel EOF in TCP/IP port forwarding. But reading and writing run
-                // asynchronously, so it is possible that the socket channel is actually closed here and the producer
-                // that wrote into this channel has already disconnected.
-                //
-                // As this is asynchronous, there is a race condition here. The isOpen() test above does not guarantee
-                // that the socket channel is indeed open when we call shutdownOutput().
-                //
-                // In any case it's safe here to ignore this exception as we're trying to shut down an external end
-                // of a TCP/IP port forwarding.
-            }
+            // Remove the future before fulfilling it to avoid spurious debug logging in doCloseImmediately().
+            writes.remove(future);
+            future.setWritten();
+            // Remove the future. Also tries to start a new write cycle: this will fail if there are still write
+            // requests, but there should never be any, and then startWriting() will just do nothing.
+            finishWrite(future);
+        } catch (Exception e) {
+            handleWriteCycleFailure(future, socket, null, 0, e, null);
         }
     }
 
@@ -481,10 +506,14 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         try {
             AsynchronousSocketChannel socket = getSocket();
             ByteBuffer buffer = future.getBuffer();
-            Nio2CompletionHandler<Integer, Object> handler = Objects.requireNonNull(
-                    createWriteCycleCompletionHandler(future, socket, buffer),
-                    "No write cycle completion handler created");
-            doWriteCycle(buffer, handler);
+            if (buffer == null) {
+                // Marker for shutting down the output stream
+                doShutdownOutputStream(future, socket);
+            } else {
+                Nio2CompletionHandler<Integer, Object> handler = Objects.requireNonNull(
+                        createWriteCycleCompletionHandler(future, socket, buffer), "No write cycle completion handler created");
+                doWriteCycle(buffer, handler);
+            }
         } catch (Throwable e) {
             future.setWritten();
 
@@ -551,7 +580,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket,
             ByteBuffer buffer, int writeLen, Throwable exc, Object attachment) {
         if (log.isDebugEnabled()) {
-            debug("handleWriteCycleFailure({}) failed ({}) to write {} bytes at write cycle={} afer {} nanos: {}",
+            debug("handleWriteCycleFailure({}) failed ({}) to write {} bytes at write cycle={} after {} nanos: {}",
                     this, exc.getClass().getSimpleName(), writeLen, writeCyclesCounter,
                     System.nanoTime() - lastWriteCycleStart.get(), exc.getMessage(), exc);
         }
@@ -583,4 +612,5 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                + ", remote=" + getRemoteAddress()
                + "]";
     }
+
 }
