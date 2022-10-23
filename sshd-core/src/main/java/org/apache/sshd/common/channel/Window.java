@@ -119,10 +119,11 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void expand(long window) {
-        BufferUtils.validateUint32Value(window, "Invalid expansion window size: %d");
+    public void expand(long increment) {
+        BufferUtils.validateUint32Value(increment, "Invalid window expansion size: %d");
         checkInitialized("expand");
 
+        long initialSize;
         long expandedSize;
         synchronized (lock) {
             /*
@@ -131,19 +132,16 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
              * "Implementations MUST correctly handle window sizes of up to 2^32 - 1 bytes.
              * The window MUST NOT be increased above 2^32 - 1 bytes.
              */
-            expandedSize = size + window;
-            if (expandedSize > BufferUtils.MAX_UINT32_VALUE) {
-                updateSize(BufferUtils.MAX_UINT32_VALUE);
-            } else {
-                updateSize(expandedSize);
-            }
+            initialSize = size;
+            expandedSize = Math.min(initialSize + increment, BufferUtils.MAX_UINT32_VALUE);
+            updateSize(expandedSize);
         }
 
-        if (expandedSize > Integer.MAX_VALUE) {
-            log.warn("expand({}) window={} - truncated expanded size ({}) to {}", this, window, expandedSize,
-                    Integer.MAX_VALUE);
+        if (expandedSize - initialSize != increment) {
+            log.warn("expand({}) window increase from {} by {} too large, set to {}", this, initialSize, increment,
+                    expandedSize);
         } else if (log.isDebugEnabled()) {
-            log.debug("Increase {} by {} up to {}", this, window, expandedSize);
+            log.debug("expand({}) increase window from {} by {} up to {}", this, initialSize, increment, expandedSize);
         }
     }
 
