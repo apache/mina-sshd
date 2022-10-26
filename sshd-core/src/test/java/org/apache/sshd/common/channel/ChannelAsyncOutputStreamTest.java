@@ -45,7 +45,7 @@ import org.mockito.Mockito;
 public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
 
     private static final String CLIENT_WITH_COMPATIBILITY_ISSUE = "specialClient";
-    private Window remoteWindow;
+    private RemoteWindow remoteWindow;
     private ChannelStreamWriter channelStreamWriter;
     private AbstractChannel channel;
     private Session session;
@@ -59,7 +59,7 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     public void setUp() throws Exception {
         channel = Mockito.mock(AbstractChannel.class);
         channelStreamWriter = Mockito.mock(ChannelStreamWriter.class);
-        remoteWindow = new Window(channel, null, true, true);
+        remoteWindow = new RemoteWindow(channel, true);
         ioWriteFuture = Mockito.mock(IoWriteFuture.class);
         session = Mockito.mock(Session.class);
 

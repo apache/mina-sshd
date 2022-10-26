@@ -60,9 +60,9 @@ public interface Channel
      */
     long getRecipient();
 
-    Window getLocalWindow();
+    LocalWindow getLocalWindow();
 
-    Window getRemoteWindow();
+    RemoteWindow getRemoteWindow();
 
     List<RequestHandler<Channel>> getRequestHandlers();
 

@@ -63,7 +63,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
 
     private final AbstractChannel channelInstance;
     private final ChannelStreamWriter packetWriter;
-    private final Window remoteWindow;
+    private final RemoteWindow remoteWindow;
     private final Duration maxWaitTimeout;
     private final byte cmd;
     private final boolean eofOnClose;
@@ -75,24 +75,21 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
     private int lastSize;
     private boolean isFlushing;
 
-    public ChannelOutputStream(
-                               AbstractChannel channel, Window remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
+    public ChannelOutputStream(AbstractChannel channel, RemoteWindow remoteWindow, Logger log, byte cmd, boolean eofOnClose) {
         this(channel, remoteWindow,
              CoreModuleProperties.WAIT_FOR_SPACE_TIMEOUT.getRequired(channel),
              log, cmd, eofOnClose);
     }
 
-    public ChannelOutputStream(
-                               AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd,
+    public ChannelOutputStream(AbstractChannel channel, RemoteWindow remoteWindow, long maxWaitTimeout, Logger log, byte cmd,
                                boolean eofOnClose) {
         this(channel, remoteWindow,
              Duration.ofMillis(maxWaitTimeout),
              log, cmd, eofOnClose);
     }
 
-    public ChannelOutputStream(
-                               AbstractChannel channel, Window remoteWindow, Duration maxWaitTimeout, Logger log, byte cmd,
-                               boolean eofOnClose) {
+    public ChannelOutputStream(AbstractChannel channel, RemoteWindow remoteWindow, Duration maxWaitTimeout, Logger log,
+                               byte cmd, boolean eofOnClose) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel");
         this.packetWriter = channelInstance.resolveChannelStreamWriter(channel, cmd);
         this.remoteWindow = Objects.requireNonNull(remoteWindow, "No remote window");

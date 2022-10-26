@@ -272,7 +272,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             return null;
         }
         Channel channel = getChannel();
-        Window remoteWindow = channel.getRemoteWindow();
+        RemoteWindow remoteWindow = channel.getRemoteWindow();
         // An erratum on RFC 4254 at https://www.rfc-editor.org/errata/rfc4254 claims that the 4 bytes for the data
         // length had to be included in window computations. Which raises the question of what should happen if the
         // remaining window size is < 4. If the peer waits for the window size to drop to zero before sending its window

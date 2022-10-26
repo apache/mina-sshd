@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.channel;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.Duration;
@@ -45,15 +44,15 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelRequestHandler;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -126,24 +125,12 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    protected boolean mayWrite() {
         if (asyncOut == null) {
-            return super.writePacket(buffer);
+            return super.mayWrite();
         }
         // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
-        if (!asyncOut.isClosed()) {
-            Session s = getSession();
-            return s.writePacket(buffer);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
-                    state);
-        }
-        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
-        };
-        errorFuture.setValue(new EOFException("Channel is closed"));
-        return errorFuture;
+        return !isClosed();
     }
 
     @Override
@@ -262,8 +249,8 @@ public class ChannelSession extends AbstractServerChannel {
         if (receiver != null) {
             int r = receiver.data(this, data, off, reqLen);
             if (r > 0) {
-                Window wLocal = getLocalWindow();
-                wLocal.consumeAndCheck(r);
+                LocalWindow wLocal = getLocalWindow();
+                wLocal.check();
             }
         } else {
             ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE),
@@ -751,7 +738,7 @@ public class ChannelSession extends AbstractServerChannel {
             ((AsyncCommandStreamsAware) command).setIoOutputStream(asyncOut);
             ((AsyncCommandStreamsAware) command).setIoErrorStream(asyncErr);
         } else {
-            Window wRemote = getRemoteWindow();
+            RemoteWindow wRemote = getRemoteWindow();
             out = new ChannelOutputStream(
                     this, wRemote, log, SshConstants.SSH_MSG_CHANNEL_DATA, false);
             err = new ChannelOutputStream(

@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -78,18 +78,7 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
     }
 
     protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
-        try {
-            Window wLocal = channel.getLocalWindow();
-            if (wLocal.isOpen()) {
-                wLocal.consumeAndCheck(len);
-            }
-        } catch (Throwable e) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleWriteDataSuccess({})[{}] failed ({}) to consume len={}: {}", channel,
-                        SshConstants.getCommandMessageName(cmd & 0xFF), e.getClass().getSimpleName(), len, e.getMessage());
-            }
-            channel.getSession().exceptionCaught(e);
-        }
+        checkWindow(cmd);
     }
 
     protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
@@ -103,6 +92,7 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
                 log.debug("handleWriteDataFailure({})[{}] closing session={}", channel,
                         SshConstants.getCommandMessageName(cmd & 0xFF), port);
             }
+            checkWindow(cmd);
             channel.close(false);
         } else {
             // In case remote entity has closed the socket, data coming from the SSH channel should be
@@ -112,6 +102,22 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
                         "handleWriteDataFailure({})[{}] ignoring writeDataFailure {} because ioSession {} is already closing ",
                         channel, SshConstants.getCommandMessageName(cmd & 0xFF), t, port);
             }
+            checkWindow(cmd);
+        }
+    }
+
+    private void checkWindow(byte cmd) {
+        try {
+            LocalWindow wLocal = channel.getLocalWindow();
+            if (wLocal.isOpen()) {
+                wLocal.check();
+            }
+        } catch (Throwable e) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleWriteDataSuccess({})[{}] failed ({}) to check local window: {}", channel,
+                        SshConstants.getCommandMessageName(cmd & 0xFF), e.getClass().getSimpleName(), e.getMessage());
+            }
+            channel.getSession().exceptionCaught(e);
         }
     }
 }

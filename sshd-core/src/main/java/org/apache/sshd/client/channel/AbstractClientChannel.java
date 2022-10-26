@@ -43,8 +43,9 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.channel.LocalWindow;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -351,7 +352,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
 
         Session session = getSession();
-        Window wLocal = getLocalWindow();
+        LocalWindow wLocal = getLocalWindow();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, type.length() + Integer.SIZE);
         buffer.putString(type);
         buffer.putUInt(getChannelId());
@@ -373,7 +374,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
-        Window wRemote = getRemoteWindow();
+        RemoteWindow wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
 
         String changeEvent = "SSH_MSG_CHANNEL_OPEN_CONFIRMATION";
@@ -437,8 +438,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 out.flush();
             } finally {
                 if (invertedOut == null) {
-                    Window wLocal = getLocalWindow();
-                    wLocal.consumeAndCheck(len);
+                    LocalWindow wLocal = getLocalWindow();
+                    wLocal.check();
                 }
             }
         } else {
@@ -463,8 +464,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 err.flush();
             } finally {
                 if (invertedErr == null) {
-                    Window wLocal = getLocalWindow();
-                    wLocal.consumeAndCheck(len);
+                    LocalWindow wLocal = getLocalWindow();
+                    wLocal.check();
                 }
             }
         } else {
@@ -478,6 +479,15 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (asyncIn != null) {
             asyncIn.onWindowExpanded();
         }
+    }
+
+    @Override
+    protected boolean mayWrite() {
+        if (asyncIn == null || !Streaming.Async.equals(streaming)) {
+            return super.mayWrite();
+        }
+        // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
+        return !isClosed();
     }
 
     @Override

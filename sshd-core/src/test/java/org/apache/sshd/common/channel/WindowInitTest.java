@@ -97,11 +97,10 @@ public class WindowInitTest extends BaseTestSupport {
         return params;
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testInitializationFailure() throws IOException {
-        try (Window w = new Window(MOCK_CHANNEL, null, true, true)) {
-            w.init(initialSize, packetSize, PropertyResolver.EMPTY);
-            fail("Unexpected success for initialSize=" + initialSize + ", packetSize=" + packetSize);
+        try (RemoteWindow w = new RemoteWindow(MOCK_CHANNEL, true)) {
+            assertThrows(IllegalArgumentException.class, () -> w.init(initialSize, packetSize, PropertyResolver.EMPTY));
         }
     }
 }

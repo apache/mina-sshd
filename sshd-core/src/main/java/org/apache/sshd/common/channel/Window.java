@@ -18,56 +18,54 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.io.StreamCorruptedException;
-import java.net.SocketTimeoutException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
- * A Window for a given channel. Windows are used to not overflow the client or server when sending datas. Both clients
- * and servers have a local and remote window and won't send anymore data until the window has been expanded. When the
- * local window is
+ * A {@link Channel} implements a sliding window flow control for data packets (SSH_MSG_CHANNEL_DATA and
+ * SSH_MSG_CHANNEL_EXTENDED_DATA packets). Each channel has two windows, a local window describing how much data it is
+ * prepared to receive (and the peer is allowed to send), and a remote window that reflects this side's view of the
+ * peer's local window. When the local window size is zero, no data should be received; when the remote window size is
+ * zero, no data should be sent. Peers update the other's remote window periodically, but at the latest when a window is
+ * exhausted, by sending SSH_MSG_CHANNEL_WINDOW_ADJUST messages.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see    LocalWindow
+ * @see    RemoteWindow
  */
-public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, ChannelHolder {
-    /**
-     * Default {@link Predicate} used to test if space became available
-     */
-    public static final Predicate<Window> SPACE_AVAILABLE_PREDICATE = input -> {
-        // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
-        return input.size > 0;
-    };
+public abstract class Window extends AbstractLoggingBean implements ChannelHolder, Closeable {
+
+    protected final Object lock = new Object();
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
-    private final AbstractChannel channelInstance;
-    private final Object lock;
+    private final Channel channelInstance;
     private final String suffix;
 
     private long size; // the window size
     private long maxSize; // actually uint32
     private long packetSize; // actually uint32
 
-    public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
+    protected Window(Channel channel, boolean isClient) {
         this.channelInstance = Objects.requireNonNull(channel, "No channel provided");
-        this.lock = (lock != null) ? lock : this;
-        this.suffix = (client ? "client" : "server") + "/" + (local ? "local" : "remote");
+        this.suffix = isClient ? "client" : "server";
     }
 
-    @Override // co-variant return
-    public AbstractChannel getChannel() {
+    protected static Predicate<Window> largerThan(long minSize) {
+        return window -> window.size > minSize;
+    }
+
+    @Override
+    public Channel getChannel() {
         return channelInstance;
     }
 
@@ -85,13 +83,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         return packetSize;
     }
 
-    public void init(PropertyResolver resolver) {
-        init(CoreModuleProperties.WINDOW_SIZE.getRequired(resolver),
-                CoreModuleProperties.MAX_PACKET_SIZE.getRequired(resolver),
-                resolver);
-    }
-
-    public void init(long size, long packetSize, PropertyResolver resolver) {
+    protected void init(long size, long packetSize, PropertyResolver resolver) {
         BufferUtils.validateUint32Value(size, "Illegal initial size: %d");
         BufferUtils.validateUint32Value(packetSize, "Illegal packet size: %d");
         ValidateUtils.checkTrue(packetSize > 0L, "Packet size must be positive: %d", packetSize);
@@ -119,216 +111,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void expand(long increment) {
-        BufferUtils.validateUint32Value(increment, "Invalid window expansion size: %d");
-        checkInitialized("expand");
-
-        long initialSize;
-        long expandedSize;
-        synchronized (lock) {
-            /*
-             * See RFC-4254 section 5.2:
-             *
-             * "Implementations MUST correctly handle window sizes of up to 2^32 - 1 bytes.
-             * The window MUST NOT be increased above 2^32 - 1 bytes.
-             */
-            initialSize = size;
-            expandedSize = Math.min(initialSize + increment, BufferUtils.MAX_UINT32_VALUE);
-            updateSize(expandedSize);
-        }
-
-        if (expandedSize - initialSize != increment) {
-            log.warn("expand({}) window increase from {} by {} too large, set to {}", this, initialSize, increment,
-                    expandedSize);
-        } else if (log.isDebugEnabled()) {
-            log.debug("expand({}) increase window from {} by {} up to {}", this, initialSize, increment, expandedSize);
-        }
-    }
-
-    public void consume(long len) {
-        BufferUtils.validateUint32Value(len, "Invalid consumption length: %d");
-        checkInitialized("consume");
-
-        long remainLen;
-        synchronized (lock) {
-            remainLen = size - len;
-            if (remainLen >= 0L) {
-                updateSize(remainLen);
-            }
-        }
-
-        if (remainLen < 0L) {
-            throw new IllegalStateException(
-                    "consume(" + this + ") required length (" + len + ") above available: " + (remainLen + len));
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("Consume {} by {} down to {}", this, len, remainLen);
-        }
-    }
-
-    public void consumeAndCheck(long len) throws IOException {
-        synchronized (lock) {
-            try {
-                consume(len);
-                check(maxSize);
-            } catch (RuntimeException e) {
-                throw new StreamCorruptedException(
-                        "consumeAndCheck(" + this + ")"
-                                                   + " failed (" + e.getClass().getSimpleName() + ")"
-                                                   + " to consume " + len + " bytes"
-                                                   + ": " + e.getMessage());
-            }
-        }
-    }
-
-    public void check(long maxFree) throws IOException {
-        BufferUtils.validateUint32Value(maxFree, "Invalid check size: %d");
-        checkInitialized("check");
-
-        long adjustSize = -1L;
-        AbstractChannel channel = getChannel();
-        synchronized (lock) {
-            // TODO make the adjust factor configurable via FactoryManager property
-            long size = this.size;
-            if (size < (maxFree / 2)) {
-                adjustSize = maxFree - size;
-                channel.sendWindowAdjust(adjustSize);
-                updateSize(maxFree);
-            }
-        }
-
-        if (adjustSize >= 0L) {
-            if (log.isDebugEnabled()) {
-                log.debug("Increase {} by {} up to {}", this, adjustSize, maxFree);
-            }
-        }
-    }
-
-    /**
-     * Waits for enough data to become available to consume the specified size
-     *
-     * @param  len                    Size of data to consume
-     * @param  maxWaitTime            Max. time (millis) to wait for enough data to become available
-     * @throws InterruptedException   If interrupted while waiting
-     * @throws WindowClosedException  If window closed while waiting
-     * @throws SocketTimeoutException If timeout expired before enough data became available
-     * @see                           #waitForCondition(Predicate, Duration)
-     * @see                           #consume(long)
-     */
-    public void waitAndConsume(long len, long maxWaitTime)
-            throws InterruptedException, WindowClosedException, SocketTimeoutException {
-        waitAndConsume(len, Duration.ofMillis(maxWaitTime));
-    }
-
-    /**
-     * Waits for enough data to become available to consume the specified size
-     *
-     * @param  len                    Size of data to consume
-     * @param  maxWaitTime            Max. time to wait for enough data to become available
-     * @throws InterruptedException   If interrupted while waiting
-     * @throws WindowClosedException  If window closed while waiting
-     * @throws SocketTimeoutException If timeout expired before enough data became available
-     * @see                           #waitForCondition(Predicate, Duration)
-     * @see                           #consume(long)
-     */
-    public void waitAndConsume(long len, Duration maxWaitTime)
-            throws InterruptedException, WindowClosedException, SocketTimeoutException {
-        BufferUtils.validateUint32Value(len, "Invalid wait consume length: %d", len);
-        checkInitialized("waitAndConsume");
-
-        boolean debugEnabled = log.isDebugEnabled();
-        synchronized (lock) {
-            waitForCondition(input -> {
-                // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
-                return input.size >= len;
-            }, maxWaitTime);
-
-            if (debugEnabled) {
-                log.debug("waitAndConsume({}) - requested={}, available={}", this, len, size);
-            }
-
-            consume(len);
-        }
-    }
-
-    /**
-     * Waits until some data becomes available or timeout expires
-     *
-     * @param  maxWaitTime            Max. time (millis) to wait for space to become available
-     * @return                        Amount of available data - always positive
-     * @throws InterruptedException   If interrupted while waiting
-     * @throws WindowClosedException  If window closed while waiting
-     * @throws SocketTimeoutException If timeout expired before space became available
-     * @see                           #waitForCondition(Predicate, Duration)
-     */
-    public long waitForSpace(long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
-        return waitForSpace(Duration.ofMillis(maxWaitTime));
-    }
-
-    /**
-     * Waits until some data becomes available or timeout expires
-     *
-     * @param  maxWaitTime            Max. time to wait for space to become available
-     * @return                        Amount of available data - always positive
-     * @throws InterruptedException   If interrupted while waiting
-     * @throws WindowClosedException  If window closed while waiting
-     * @throws SocketTimeoutException If timeout expired before space became available
-     * @see                           #waitForCondition(Predicate, Duration)
-     */
-    public long waitForSpace(Duration maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
-        checkInitialized("waitForSpace");
-
-        long available;
-        synchronized (lock) {
-            waitForCondition(SPACE_AVAILABLE_PREDICATE, maxWaitTime);
-            available = size;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("waitForSpace({}) available: {}", this, available);
-        }
-
-        return available;
-    }
-
-    /**
-     * Waits up to a specified amount of time for a condition to be satisfied and signaled via the lock. <B>Note:</B>
-     * assumes that lock is acquired when this method is called.
-     *
-     * @param  predicate              The {@link Predicate} to check if the condition has been satisfied - the argument
-     *                                to the predicate is {@code this} reference
-     * @param  maxWaitTime            Max. time to wait for the condition to be satisfied
-     * @throws WindowClosedException  If window closed while waiting
-     * @throws InterruptedException   If interrupted while waiting
-     * @throws SocketTimeoutException If timeout expired before condition was satisfied
-     * @see                           #isOpen()
-     */
-    protected void waitForCondition(Predicate<? super Window> predicate, Duration maxWaitTime)
-            throws WindowClosedException, InterruptedException, SocketTimeoutException {
-        Objects.requireNonNull(predicate, "No condition");
-        ValidateUtils.checkTrue(GenericUtils.isPositive(maxWaitTime), "Non-positive max. wait time: %s",
-                maxWaitTime.toString());
-
-        Instant cur = Instant.now();
-        Instant waitEnd = cur.plus(maxWaitTime);
-        // The loop takes care of spurious wakeups
-        while (isOpen() && (cur.compareTo(waitEnd) < 0)) {
-            if (predicate.test(this)) {
-                return;
-            }
-
-            Duration rem = Duration.between(cur, waitEnd);
-            lock.wait(rem.toMillis(), rem.getNano() % 1_000_000);
-            cur = Instant.now();
-        }
-
-        if (!isOpen()) {
-            throw new WindowClosedException(toString());
-        }
-
-        throw new SocketTimeoutException("waitForCondition(" + this + ") timeout exceeded: " + maxWaitTime);
-    }
+    public abstract void consume(long len) throws IOException;
 
     protected void updateSize(long size) {
         BufferUtils.validateUint32Value(size, "Invalid updated size: %d", size);
@@ -342,7 +125,6 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    @Override
     public boolean isOpen() {
         return !closed.get();
     }

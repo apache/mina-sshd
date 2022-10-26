@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.forward;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -36,11 +35,9 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -143,7 +140,7 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
         Session session = getSession();
         String srcHost = src.getHostString();
         String dstHost = dst.getHostName();
-        Window wLocal = getLocalWindow();
+        LocalWindow wLocal = getLocalWindow();
         String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                 type.length() + srcHost.length() + dstHost.length() + Long.SIZE);
@@ -185,27 +182,6 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
                     this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
             invertedIn = out;
         }
-    }
-
-    @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        if (asyncIn == null || !Streaming.Async.equals(streaming)) {
-            return super.writePacket(buffer);
-        }
-        // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
-        if (!asyncIn.isClosed()) {
-            Session s = getSession();
-            return s.writePacket(buffer);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
-                    state);
-        }
-        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
-        };
-        errorFuture.setValue(new EOFException("Channel is closed"));
-        return errorFuture;
     }
 
     @Override

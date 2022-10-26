@@ -174,11 +174,14 @@ public class WindowTest extends BaseTestSupport {
                                  new InputStreamReader(channel.getInvertedOut(), StandardCharsets.UTF_8))) {
 
                         for (int i = 0; i < nbMessages; i++) {
+                            long clientRemoteSize = clientRemote.getSize();
                             writer.write(message);
                             writer.write("\n");
                             writer.flush();
 
-                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote",
+                            assertTrue("Client remote window should have changed",
+                                    clientRemote.getSize() != clientRemoteSize);
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
                                     TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
@@ -288,10 +291,13 @@ public class WindowTest extends BaseTestSupport {
                     IoOutputStream output = channel.getAsyncIn();
                     IoInputStream input = channel.getAsyncOut();
                     for (int i = 0; i < nbMessages; i++) {
+                        long clientRemoteSize = clientRemote.getSize();
                         Buffer buffer = new ByteArrayBuffer(bytes);
                         output.writeBuffer(buffer).verify(DEFAULT_TIMEOUT);
 
-                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote",
+                        assertTrue("Client remote window should have changed",
+                                clientRemote.getSize() != clientRemoteSize);
+                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
                                 TimeUnit.SECONDS.toMillis(3L));
 
                         Buffer buf = new ByteArrayBuffer(16);

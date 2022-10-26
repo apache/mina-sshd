@@ -33,7 +33,7 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -100,8 +100,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             outputStream.write(buffer.array(), buffer.rpos(), reqLen);
             outputStream.flush();
 
-            Window wLocal = getLocalWindow();
-            wLocal.consumeAndCheck(reqLen);
+            LocalWindow wLocal = getLocalWindow();
+            wLocal.check();
             return waitForMessageBuffer();
         }
     }

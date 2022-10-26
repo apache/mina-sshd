@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.file.FileSystemAware;
@@ -292,16 +292,15 @@ public class SftpSubsystem
         long buffersCount = 0L;
         try {
             ChannelSession channel = getServerChannelSession();
-            Window localWindow = channel.getLocalWindow();
+            LocalWindow localWindow = channel.getLocalWindow();
             while (true) {
                 Buffer buffer = requests.take();
                 if (buffer == CLOSE) {
                     break;
                 }
-                int len = buffer.available();
                 buffersCount++;
                 process(buffer);
-                localWindow.consumeAndCheck(len);
+                localWindow.check();
             }
         } catch (Throwable t) {
             if (!closed.get()) { // Ignore

@@ -29,7 +29,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -62,7 +62,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
 
         InetAddress remoteAddress = remote.getAddress();
         String remoteHost = remoteAddress.getHostAddress();
-        Window wLocal = getLocalWindow();
+        LocalWindow wLocal = getLocalWindow();
         String type = getChannelType();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN,
                 remoteHost.length() + type.length() + Integer.SIZE);
@@ -97,8 +97,8 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
                 "Data length exceeds int boundaries: %d", len);
-        Window wLocal = getLocalWindow();
-        wLocal.consumeAndCheck(len);
+        LocalWindow wLocal = getLocalWindow();
+        wLocal.check();
         // use a clone in case data buffer is re-used
         Buffer packet = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         serverSession.writeBuffer(packet);

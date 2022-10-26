@@ -41,7 +41,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelPipedInputStream extends InputStream implements ChannelPipedSink {
-    private final Window localWindow;
+    private final LocalWindow localWindow;
     private final byte[] b = new byte[1];
     private final AtomicBoolean open = new AtomicBoolean(true);
 
@@ -59,15 +59,15 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
 
     private long timeout;
 
-    public ChannelPipedInputStream(PropertyResolver resolver, Window localWindow) {
+    public ChannelPipedInputStream(PropertyResolver resolver, LocalWindow localWindow) {
         this(localWindow, CoreModuleProperties.WINDOW_TIMEOUT.getRequired(resolver));
     }
 
-    public ChannelPipedInputStream(Window localWindow, Duration windowTimeout) {
+    public ChannelPipedInputStream(LocalWindow localWindow, Duration windowTimeout) {
         this(localWindow, Objects.requireNonNull(windowTimeout, "No window timeout provided").toMillis());
     }
 
-    public ChannelPipedInputStream(Window localWindow, long windowTimeout) {
+    public ChannelPipedInputStream(LocalWindow localWindow, long windowTimeout) {
         this.localWindow = Objects.requireNonNull(localWindow, "No local window provided");
         this.timeout = windowTimeout;
     }
@@ -160,7 +160,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
             lock.unlock();
         }
         if (localWindow.isOpen()) {
-            localWindow.consumeAndCheck(len);
+            localWindow.check();
         }
         return len;
     }

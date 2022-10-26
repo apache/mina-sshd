@@ -25,7 +25,7 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
@@ -80,8 +80,8 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     @Override
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
-        Window wLocal = getLocalWindow();
-        wLocal.consumeAndCheck(len);
+        LocalWindow wLocal = getLocalWindow();
+        wLocal.check();
 
         int result = Socket.send(socket, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {

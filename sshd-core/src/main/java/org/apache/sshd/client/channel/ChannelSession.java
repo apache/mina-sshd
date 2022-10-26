@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.channel;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
@@ -33,11 +32,10 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.channel.LocalWindow;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -92,7 +90,7 @@ public class ChannelSession extends AbstractClientChannel {
             invertedIn = new ChannelOutputStream(
                     this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
 
-            Window wLocal = getLocalWindow();
+            LocalWindow wLocal = getLocalWindow();
             if (out == null) {
                 ChannelPipedInputStream pis = new ChannelPipedInputStream(this, wLocal);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
@@ -128,27 +126,6 @@ public class ChannelSession extends AbstractClientChannel {
                 pumper = pumperService.submit(this::pumpInputStream);
             }
         }
-    }
-
-    @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        if (asyncIn == null || !Streaming.Async.equals(streaming)) {
-            return super.writePacket(buffer);
-        }
-        // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
-        if (!asyncIn.isClosed()) {
-            Session s = getSession();
-            return s.writePacket(buffer);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
-                    state);
-        }
-        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
-        };
-        errorFuture.setValue(new EOFException("Channel is closed"));
-        return errorFuture;
     }
 
     @Override
@@ -203,7 +180,7 @@ public class ChannelSession extends AbstractClientChannel {
         boolean debugEnabled = log.isDebugEnabled();
         try {
             Session session = getSession();
-            Window wRemote = getRemoteWindow();
+            RemoteWindow wRemote = getRemoteWindow();
             long packetSize = wRemote.getPacketSize();
             ValidateUtils.checkTrue((packetSize > 0) && (packetSize < Integer.MAX_VALUE),
                     "Invalid remote packet size int boundary: %d", packetSize);

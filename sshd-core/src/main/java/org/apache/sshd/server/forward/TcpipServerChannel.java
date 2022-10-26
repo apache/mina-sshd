@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.forward;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketAddress;
@@ -39,13 +38,11 @@ import org.apache.sshd.common.forward.ChannelToPortHandler;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
@@ -226,21 +223,9 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     }
 
     @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+    protected boolean mayWrite() {
         // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
-        if (!out.isClosed()) {
-            Session s = getSession();
-            return s.writePacket(buffer);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
-                    state);
-        }
-        AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
-        };
-        errorFuture.setValue(new EOFException("Channel is closed"));
-        return errorFuture;
+        return !isClosed();
     }
 
     protected void handleChannelConnectResult(OpenFuture f, IoConnectFuture future) {

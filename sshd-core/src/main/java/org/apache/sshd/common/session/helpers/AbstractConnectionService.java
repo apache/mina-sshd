@@ -45,8 +45,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.channel.exception.SshChannelNotFoundException;
 import org.apache.sshd.common.channel.exception.SshChannelOpenException;
 import org.apache.sshd.common.forward.Forwarder;
@@ -775,7 +775,7 @@ public abstract class AbstractConnectionService
                 // Do not rely on the OpenFuture. We must be sure that we get the SSH_MSG_CHANNEL_OPEN_CONFIRMATION out
                 // before anything else.
                 try {
-                    Window window = channel.getLocalWindow();
+                    LocalWindow window = channel.getLocalWindow();
                     if (debugEnabled) {
                         log.debug(
                                 "channelOpenSuccess({}) send SSH_MSG_CHANNEL_OPEN_CONFIRMATION recipient={}, sender={}, window-size={}, packet-size={}",

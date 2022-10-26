@@ -52,7 +52,7 @@ import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -413,7 +413,7 @@ public class ServerTest extends BaseTestSupport {
                 try (Channel channel = GenericUtils.head(channels)) {
                     final long maxTimeoutValue = idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
                     final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
-                    Window wRemote = channel.getRemoteWindow();
+                    RemoteWindow wRemote = channel.getRemoteWindow();
                     for (long totalNanoTime = 0L; wRemote.getSize() > 0;) {
                         long nanoStart = System.nanoTime();
                         Thread.sleep(1L);

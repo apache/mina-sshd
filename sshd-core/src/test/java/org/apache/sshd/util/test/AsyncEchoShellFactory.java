@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
@@ -153,8 +153,8 @@ public class AsyncEchoShellFactory implements ShellFactory {
                         Session session1 = channel.getSession();
                         if (future.isWritten()) {
                             try {
-                                Window wLocal = channel.getLocalWindow();
-                                wLocal.consumeAndCheck(bytes.length);
+                                LocalWindow wLocal = channel.getLocalWindow();
+                                wLocal.check();
                             } catch (IOException e) {
                                 session1.exceptionCaught(e);
                             }

@@ -47,7 +47,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
@@ -559,6 +558,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             addPendingRequest(Channel.CHANNEL_SUBSYSTEM, wantReply);
             writePacket(buffer);
 
+            setStreaming(Streaming.Async);
             asyncIn = createAsyncInput(session);
             setOut(createStdOutputStream(session));
             setErr(createErrOutputStream(session));
@@ -583,27 +583,6 @@ public class DefaultSftpClient extends AbstractSftpClient {
                     return result;
                 }
             };
-        }
-
-        @Override
-        public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-            if (asyncIn == null) {
-                return super.writePacket(buffer);
-            }
-            // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
-            if (!asyncIn.isClosed()) {
-                Session s = getSession();
-                return s.writePacket(buffer);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("writePacket({}) Discarding output packet because channel state={}; output stream is closed", this,
-                        state);
-            }
-            AbstractIoWriteFuture errorFuture = new AbstractIoWriteFuture(toString(), null) {
-            };
-            errorFuture.setValue(new EOFException("Channel is closed"));
-            return errorFuture;
         }
 
         protected OutputStream createStdOutputStream(Session session) {

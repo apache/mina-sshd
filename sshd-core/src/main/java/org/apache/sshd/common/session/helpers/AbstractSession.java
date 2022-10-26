@@ -542,9 +542,9 @@ public abstract class AbstractSession extends SessionHelper {
 
     protected void doHandleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
-        if (log.isTraceEnabled()) {
-            log.trace("doHandleMessage({}) process {}",
-                    this, SshConstants.getCommandMessageName(cmd));
+        if (log.isDebugEnabled()) {
+            log.debug("doHandleMessage({}) process #{} {}", this, seqi - 1,
+                    SshConstants.getCommandMessageName(cmd));
         }
 
         switch (cmd) {

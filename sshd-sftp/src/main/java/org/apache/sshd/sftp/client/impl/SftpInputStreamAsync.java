@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -223,7 +223,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
     protected void sendRequests() throws IOException {
         AbstractSftpClient client = getClient();
         Channel channel = client.getChannel();
-        Window localWindow = channel.getLocalWindow();
+        LocalWindow localWindow = channel.getLocalWindow();
         long windowSize = localWindow.getMaxSize();
         Session session = client.getSession();
         byte[] id = handle.getIdentifier();

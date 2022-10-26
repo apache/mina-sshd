@@ -30,8 +30,8 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -61,7 +61,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
 
         Session s = getSession();
         FactoryManager manager = Objects.requireNonNull(s.getFactoryManager(), "No factory manager");
-        Window wRemote = getRemoteWindow();
+        RemoteWindow wRemote = getRemoteWindow();
         wRemote.init(rwSize, packetSize, manager);
         configureWindow();
         return doInit(buffer);

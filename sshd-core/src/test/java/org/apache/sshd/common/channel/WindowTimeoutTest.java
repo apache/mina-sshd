@@ -91,7 +91,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
     @Test
     public void testWindowWaitForSpaceTimeout() throws Exception {
-        try (Window window = channel.getLocalWindow()) {
+        try (RemoteWindow window = channel.getRemoteWindow()) {
             window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
                     CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
                     PropertyResolver.EMPTY);
@@ -122,7 +122,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
     @Test
     public void testWindowWaitAndConsumeTimeout() throws Exception {
-        try (Window window = channel.getLocalWindow()) {
+        try (RemoteWindow window = channel.getRemoteWindow()) {
             window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
                     CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
                     PropertyResolver.EMPTY);

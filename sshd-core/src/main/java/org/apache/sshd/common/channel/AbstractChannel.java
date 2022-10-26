@@ -107,8 +107,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
-    private final Window localWindow;
-    private final Window remoteWindow;
+    private final LocalWindow localWindow;
+    private final RemoteWindow remoteWindow;
     private ChannelStreamWriterResolver channelStreamPacketWriterResolver;
 
     /**
@@ -135,8 +135,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                               CloseableExecutorService executorService) {
         super(discriminator);
         gracefulFuture = new DefaultCloseFuture(discriminator, futureLock);
-        localWindow = new Window(this, null, client, true);
-        remoteWindow = new Window(this, null, client, false);
+        localWindow = new LocalWindow(this, client);
+        remoteWindow = new RemoteWindow(this, client);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
         executor = executorService;
         addRequestHandlers(handlers);
@@ -175,12 +175,12 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     }
 
     @Override
-    public Window getLocalWindow() {
+    public LocalWindow getLocalWindow() {
         return localWindow;
     }
 
     @Override
-    public Window getRemoteWindow() {
+    public RemoteWindow getRemoteWindow() {
         return remoteWindow;
     }
 
@@ -775,7 +775,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        if (!isClosing()) {
+        if (mayWrite()) {
             Session s = getSession();
             return s.writePacket(buffer);
         }
@@ -788,6 +788,10 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 setValue(new EOFException("Channel is being closed"));
             }
         };
+    }
+
+    protected boolean mayWrite() {
+        return !isClosing();
     }
 
     @Override
@@ -839,8 +843,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     }
 
     protected long validateIncomingDataSize(
-            int cmd,
-            long len /* actually a uint32 */) {
+            int cmd, long len /* actually a uint32 */)
+            throws IOException {
         if (!BufferUtils.isValidUint32Value(len)) {
             throw new IllegalArgumentException(
                     "Non UINT32 length (" + len + ") for command=" + SshConstants.getCommandMessageName(cmd));
@@ -855,7 +859,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
          * The local window reflects our preference - i.e., how much our peer
          * should send at most
          */
-        Window wLocal = getLocalWindow();
+        LocalWindow wLocal = getLocalWindow();
         long maxLocalSize = wLocal.getPacketSize();
 
         /*
@@ -867,6 +871,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                     "Bad length (" + len + ") " + " for cmd="
                                             + SshConstants.getCommandMessageName(cmd) + " - max. allowed=" + maxLocalSize);
         }
+
+        wLocal.consume(len);
 
         return len;
     }
@@ -896,7 +902,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             log.debug("handleWindowAdjust({}) SSH_MSG_CHANNEL_WINDOW_ADJUST window={}", this, window);
         }
 
-        Window wRemote = getRemoteWindow();
+        RemoteWindow wRemote = getRemoteWindow();
         wRemote.expand(window);
         notifyStateChanged("SSH_MSG_CHANNEL_WINDOW_ADJUST");
     }

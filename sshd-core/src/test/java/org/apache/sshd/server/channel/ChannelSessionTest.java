@@ -36,11 +36,10 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
@@ -169,8 +168,8 @@ public class ChannelSessionTest extends BaseTestSupport {
 
         try (ChannelSession channelSession = new ChannelSession() {
             {
-                Window wRemote = getRemoteWindow();
-                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
+                RemoteWindow wRemote = getRemoteWindow();
+                wRemote.init(32768, 2048, PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
             }
         }) {
             AtomicBoolean expanded = new AtomicBoolean(false);
@@ -189,12 +188,7 @@ public class ChannelSessionTest extends BaseTestSupport {
     @Test // see SSHD-652
     public void testCloseFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
-        try (ChannelSession session = new ChannelSession() {
-            {
-                Window wRemote = getRemoteWindow();
-                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
-            }
-        }) {
+        try (ChannelSession session = new ChannelSession()) {
             session.addCloseFutureListener(future -> {
                 assertTrue("Future not marted as closed", future.isClosed());
                 assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
@@ -209,15 +203,13 @@ public class ChannelSessionTest extends BaseTestSupport {
     public void testLargeWindowSizeAdjust() throws Exception {
         try (ChannelSession session = new ChannelSession() {
             {
-                Window wRemote = getRemoteWindow();
-                wRemote.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
+                RemoteWindow wRemote = getRemoteWindow();
+                wRemote.init(1024, 256, PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
             }
         }) {
-            Window wRemote = session.getRemoteWindow();
+            RemoteWindow wRemote = session.getRemoteWindow();
             long initialSize = wRemote.getSize();
-            assertTrue("Bad initial window size: " + initialSize,
-                    (initialSize >= CoreModuleProperties.DEFAULT_WINDOW_SIZE)
-                            && (initialSize < BufferUtils.MAX_UINT32_VALUE));
+            assertEquals("Bad initial window size", 1024, initialSize);
 
             Buffer buffer = new ByteArrayBuffer();
             buffer.putUInt(BufferUtils.MAX_UINT32_VALUE);
