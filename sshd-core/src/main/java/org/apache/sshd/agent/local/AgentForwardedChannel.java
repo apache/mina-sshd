@@ -132,9 +132,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             try {
                 messages.wait(idleTimeout);
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException(
-                        "Interrupted while waiting for messages at iteration #" + count)
-                                .initCause(e);
+                throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count)
+                        .initCause(e);
             }
         }
     }

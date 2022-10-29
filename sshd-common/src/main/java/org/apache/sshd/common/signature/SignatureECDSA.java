@@ -85,8 +85,7 @@ public class SignatureECDSA extends AbstractSignature {
              * least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new StreamCorruptedException(
-                        "Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();

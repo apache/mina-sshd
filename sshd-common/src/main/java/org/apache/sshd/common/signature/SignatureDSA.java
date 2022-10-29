@@ -72,8 +72,7 @@ public class SignatureDSA extends AbstractSignature {
              * least one byte of integer data (zero length is not an option)
              */
             if (remainLen < (2 * 3)) {
-                throw new StreamCorruptedException(
-                        "Invalid signature format - not enough encoded data length: " + remainLen);
+                throw new StreamCorruptedException("Invalid signature format - not enough encoded data length: " + remainLen);
             }
 
             BigInteger r = parser.readBigInteger();
@@ -113,8 +112,7 @@ public class SignatureDSA extends AbstractSignature {
         }
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
-            throw new SignatureException(
-                    "Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
+            throw new SignatureException("Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
                                          + " for " + BufferUtils.toHex(':', data));
         }
 

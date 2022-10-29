@@ -135,8 +135,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
                     this, s, min, prf, max);
         }
         if ((max < min) || (prf < min) || (max < prf)) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
         }
 
@@ -161,10 +160,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         }
 
         if (cmd != expected) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
-                                                                      + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
+                                                                                     + ", got "
+                                                                                     + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
@@ -210,8 +209,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
             String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             if (GenericUtils.isEmpty(keyAlg)) {
-                throw new SshException(
-                        "Unsupported server key type: " + serverKey.getAlgorithm()
+                throw new SshException("Unsupported server key type: " + serverKey.getAlgorithm()
                                        + " [" + serverKey.getFormat() + "]");
             }
 
@@ -238,8 +236,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             verif.initVerifier(session, serverKey);
             verif.update(session, h);
             if (!verif.verify(session, sig)) {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange signature verification failed for key type=" + keyAlg);
             }
             session.setServerKey(serverKey);

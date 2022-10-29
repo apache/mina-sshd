@@ -79,8 +79,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
     @Override
     protected synchronized void doOpen() throws IOException {
         if (Streaming.Async.equals(streaming)) {
-            throw new IllegalArgumentException(
-                    "Asynchronous streaming isn't supported yet on this channel");
+            throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
 
         out = new ChannelOutputStream(

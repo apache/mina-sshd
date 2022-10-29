@@ -127,8 +127,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(
-                "AgentForward channel does not support extended data");
+        throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }
 
     @SuppressWarnings("synthetic-access")

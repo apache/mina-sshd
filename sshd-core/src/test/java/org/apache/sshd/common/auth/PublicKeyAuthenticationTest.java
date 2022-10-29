@@ -108,8 +108,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                 try {
                     kp = ValidateUtils.checkNotNull(serverKeys.loadKey(null, keyType), "No server key for type=%s", keyType);
                 } catch (IOException | GeneralSecurityException e) {
-                    throw new RuntimeException(
-                            "Unexpected " + e.getClass().getSimpleName() + ")"
+                    throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
                                                + " keys loading exception: " + e.getMessage(),
                             e);
                 }

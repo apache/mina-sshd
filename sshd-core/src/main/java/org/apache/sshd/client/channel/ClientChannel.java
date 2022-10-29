@@ -246,8 +246,8 @@ public interface ClientChannel extends Channel, StreamingChannel, ClientSessionH
             throw new RemoteException("No exit status returned for command=" + command);
         }
         if (exitStatus.intValue() != 0) {
-            throw new RemoteException(
-                    "Remote command failed (" + exitStatus + "): " + command, new ServerException(exitStatus.toString()));
+            throw new RemoteException("Remote command failed (" + exitStatus + "): " + command,
+                    new ServerException(exitStatus.toString()));
         }
     }
 

@@ -72,8 +72,7 @@ public class ECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<ECPub
         try {
             w = ECCurves.octetStringToEcPoint(octets);
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException(
-                    "getRawECKey(" + expectedCurve + ")"
+            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
                                               + " cannot (" + e.getClass().getSimpleName() + ")"
                                               + " retrieve W value: " + e.getMessage(),
                     e);

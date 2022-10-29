@@ -129,8 +129,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
                 long remTime = expireTime - System.currentTimeMillis();
                 if (remTime <= 0L) {
                     pendingException.compareAndSet(null,
-                            new SshChannelBufferedOutputException(
-                                    channelId,
+                            new SshChannelBufferedOutputException(channelId,
                                     "Max. pending write timeout expired after " + writtenBytesCount + " bytes"));
                     throw pendingException.get();
                 }
@@ -139,8 +138,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
                     pendingBytesCount.wait(remTime);
                 } catch (InterruptedException e) {
                     pendingException.compareAndSet(null,
-                            new SshChannelBufferedOutputException(
-                                    channelId,
+                            new SshChannelBufferedOutputException(channelId,
                                     "Waiting for pending writes interrupted after " + writtenBytesCount + " bytes"));
                     throw pendingException.get();
                 }

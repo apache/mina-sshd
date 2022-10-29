@@ -88,8 +88,7 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
         certificate.setSignature(buffer.getBytes());
 
         if (buffer.rpos() != buffer.wpos()) {
-            throw new InvalidKeyException(
-                    "Cannot read OpenSSH certificate, got more data than expected: "
+            throw new InvalidKeyException("Cannot read OpenSSH certificate, got more data than expected: "
                                           + buffer.rpos() + ", actual: " + buffer.wpos() + ". ID of the ca certificate: "
                                           + certificate.getId());
         }

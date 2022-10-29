@@ -149,8 +149,7 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         int maxAllowedBits = Cipher.getMaxAllowedKeyLength(xform);
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
-            throw new InvalidKeySpecException(
-                    "applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
+            throw new InvalidKeySpecException("applyPrivateKeyCipher(" + xform + ")[encrypt=" + encryptIt + "]"
                                               + " required key length (" + numBits + ")"
                                               + " exceeds max. available: " + maxAllowedBits);
         }

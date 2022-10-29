@@ -83,14 +83,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     session, service, name, lang, subMethods);
         }
 
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                username.length() + service.length() + name.length()
-                                                                                    + GenericUtils.length(lang)
-                                                                                    + GenericUtils.length(subMethods)
-                                                                                    + Long.SIZE /*
-                                                                                                 * a bit extra for the
-                                                                                                 * lengths
-                                                                                                 */);
+        int length = username.length() + service.length() + name.length() + GenericUtils.length(lang)
+                     + GenericUtils.length(subMethods) + Long.SIZE; // A bit extra for the length
+
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, length);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);
@@ -105,8 +101,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     protected boolean processAuthDataRequest(ClientSession session, String service, Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST) {
-            throw new IllegalStateException(
-                    "processAuthDataRequest(" + session + ")[" + service + "]"
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
                                             + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 

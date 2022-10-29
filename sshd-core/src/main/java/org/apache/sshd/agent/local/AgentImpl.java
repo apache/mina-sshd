@@ -85,8 +85,7 @@ public class AgentImpl implements SshAgent {
             NamedFactory<Signature> factory = SignatureFactory.resolveSignatureFactoryByPublicKey(pubKey, algo);
             Signature verif = (factory == null) ? null : factory.create();
             if (verif == null) {
-                throw new InvalidKeySpecException(
-                        "No signer found for " + pubKey.getClass().getSimpleName()
+                throw new InvalidKeySpecException("No signer found for " + pubKey.getClass().getSimpleName()
                                                   + " when algorithm=" + algo + " requested for "
                                                   + KeyUtils.getKeyType(pubKey));
             }

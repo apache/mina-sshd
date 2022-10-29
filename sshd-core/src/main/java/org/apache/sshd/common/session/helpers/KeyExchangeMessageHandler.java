@@ -247,8 +247,9 @@ public class KeyExchangeMessageHandler {
                         log.debug("writePacket({}) failed ({}) to check re-key: {}", session, e.getClass().getSimpleName(),
                                 e.getMessage(), e);
                     }
-                    throw ValidateUtils.initializeExceptionCause(new ProtocolException(
-                            "Failed (" + e.getClass().getSimpleName() + ")" + " to check re-key necessity: " + e.getMessage()),
+                    throw ValidateUtils.initializeExceptionCause(
+                            new ProtocolException("Failed (" + e.getClass().getSimpleName() + ")"
+                                                  + " to check re-key necessity: " + e.getMessage()),
                             e);
                 } catch (Exception e) {
                     ExceptionUtils.rethrowAsIoException(e);

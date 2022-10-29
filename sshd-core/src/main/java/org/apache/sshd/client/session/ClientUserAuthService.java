@@ -317,8 +317,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (userAuth == null) {
-            throw new IllegalStateException(
-                    "Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
+            throw new IllegalStateException("Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
 
         if (log.isDebugEnabled()) {
@@ -377,16 +376,14 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
                 // also wake up anyone sitting in waitFor
                 AuthFuture authFuture = Objects.requireNonNull(authFutureHolder.get(), "No current future");
-                authFuture.setException(new SshException(
-                        SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
+                authFuture.setException(new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
                         "No more authentication methods available"));
                 return;
             }
 
             userAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
             if (userAuth == null) {
-                throw new UnsupportedOperationException(
-                        "Failed to find a user-auth factory for method=" + method);
+                throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }
 
             if (debugEnabled) {

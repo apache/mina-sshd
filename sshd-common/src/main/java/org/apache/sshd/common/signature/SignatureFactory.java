@@ -246,8 +246,7 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
 
         String name = factory.getName();
         if (!algo.equalsIgnoreCase(name)) {
-            throw new InvalidKeySpecException(
-                    "Mismatched factory name (" + name + ")"
+            throw new InvalidKeySpecException("Mismatched factory name (" + name + ")"
                                               + " for algorithm=" + algo + " when using key type"
                                               + KeyUtils.getKeyType(pubKey));
         }

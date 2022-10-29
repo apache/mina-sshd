@@ -94,8 +94,8 @@ public class AESPrivateKeyObfuscator extends AbstractPrivateKeyObfuscator {
             throw new InvalidKeySpecException(
                     "Unknown " + getCipherName() + " key length: " + cipherType + " - supported: " + sizes);
         } catch (NumberFormatException e) {
-            throw new InvalidKeySpecException(
-                    "Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(), e);
+            throw new InvalidKeySpecException("Bad " + getCipherName() + " key length (" + cipherType + "): " + e.getMessage(),
+                    e);
         }
     }
 

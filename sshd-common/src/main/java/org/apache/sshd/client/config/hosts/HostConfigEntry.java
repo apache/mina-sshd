@@ -947,8 +947,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             try {
                 curEntry.processProperty(key, valsList, false);
             } catch (RuntimeException e) {
-                throw new StreamCorruptedException(
-                        "Failed (" + e.getClass().getSimpleName() + ")"
+                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
                                                    + " to process line #" + lineNumber + " (" + line + ")"
                                                    + ": " + e.getMessage());
             }

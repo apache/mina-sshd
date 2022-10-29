@@ -391,8 +391,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             } else if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {
-                throw new IOException(
-                        "Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this
+                throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + this
                                       + " initialization: " + e.getMessage(),
                         e);
             }
@@ -867,8 +866,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
          * whether the max. packet size includes the length field or not
          */
         if (len > (maxLocalSize + 4L)) {
-            throw new IllegalStateException(
-                    "Bad length (" + len + ") " + " for cmd="
+            throw new IllegalStateException("Bad length (" + len + ") " + " for cmd="
                                             + SshConstants.getCommandMessageName(cmd) + " - max. allowed=" + maxLocalSize);
         }
 

@@ -121,8 +121,7 @@ public class UserAuthGSS extends AbstractUserAuth {
             int msg = buffer.getUByte();
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
                     || ((msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC)) && context.isEstablished())) {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                         "Packet not supported by user authentication method: " + SshConstants.getCommandMessageName(msg));
             }
 

@@ -1494,8 +1494,7 @@ public abstract class AbstractSftpSubsystemHelper
                         } else if (status) {
                             attrs = getAttributes(p, options);
                         } else {
-                            throw new NoSuchFileException(
-                                    p.toString(), p.toString(), "Real path N/A for target");
+                            throw new NoSuchFileException(p.toString(), p.toString(), "Real path N/A for target");
                         }
                         break;
                     case SftpConstants.SSH_FXP_REALPATH_NO_CHECK:
@@ -2426,8 +2425,8 @@ public abstract class AbstractSftpSubsystemHelper
             case Ignore:
                 break;
             case ThrowException:
-                throw new AccessDeniedException(
-                        file.toString(), file.toString(), "Cannot determine existence for attributes of target");
+                throw new AccessDeniedException(file.toString(), file.toString(),
+                        "Cannot determine existence for attributes of target");
             case Warn:
                 log.warn("handleUnknownStatusFileAttributes(" + getServerSession() + ")[" + file
                          + "] cannot determine existence");

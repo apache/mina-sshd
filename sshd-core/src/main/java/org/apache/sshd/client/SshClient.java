@@ -466,8 +466,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             Duration maxWait = CoreModuleProperties.STOP_WAIT_TIME.getRequired(this);
             boolean successful = close(true).await(maxWait);
             if (!successful) {
-                throw new SocketTimeoutException(
-                        "Failed to receive closure confirmation within " + maxWait + " millis");
+                throw new SocketTimeoutException("Failed to receive closure confirmation within " + maxWait + " millis");
             }
         } catch (IOException e) {
             warn("{} while stopping client: {}", e.getClass().getSimpleName(), e.getMessage(), e);
@@ -624,8 +623,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             KeyIdentityProvider identities, HostConfigEntry hostConfig)
             throws IOException {
         if (connector == null) {
-            throw new IllegalStateException(
-                    "SshClient not started. Please call start() method before connecting to a server");
+            throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
 
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);

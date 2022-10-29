@@ -487,8 +487,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
                 int numElements = len / 2; /* x, y */
                 if (len != (numElements * 2)) { // make sure length is not odd
-                    throw new IllegalArgumentException(
-                            "octetStringToEcPoint(" + name() + ") "
+                    throw new IllegalArgumentException("octetStringToEcPoint(" + name() + ") "
                                                        + " invalid remainder octets representation: "
                                                        + " expected=" + (2 * numElements) + ", actual=" + len);
                 }
@@ -539,8 +538,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 writeECPoint(baos, curveName, p);
                 return baos.toByteArray();
             } catch (IOException e) {
-                throw new RuntimeException(
-                        "ecPointToOctetString(" + curveName + ")"
+                throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
                                            + " failed (" + e.getClass().getSimpleName() + ")"
                                            + " to write data: " + e.getMessage(),
                         e);
@@ -567,8 +565,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
             }
 
             if (vLen > numElements) {
-                throw new StreamCorruptedException(
-                        "writeCoordinate(" + name() + ")[" + n + "]"
+                throw new StreamCorruptedException("writeCoordinate(" + name() + ")[" + n + "]"
                                                    + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
                                                    + " for " + v);
             }

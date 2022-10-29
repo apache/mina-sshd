@@ -223,8 +223,7 @@ public class LegacyDSASigner extends java.security.Signature {
                  * least one byte of integer data (zero length is not an option)
                  */
                 if (remainLen < (2 * 3)) {
-                    throw new SignatureException(
-                            "Invalid signature format - not enough encoded data length: " + remainLen);
+                    throw new SignatureException("Invalid signature format - not enough encoded data length: " + remainLen);
                 }
 
                 r = parser.readBigInteger();

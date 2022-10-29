@@ -88,8 +88,7 @@ public class FileHostKeyCertificateProvider extends AbstractLoggingBean implemen
                 }
 
                 if (!(publicKey instanceof OpenSshCertificate)) {
-                    throw new InvalidKeyException(
-                            "Got unexpected key type in " + file + "; line " + lineNumber
+                    throw new InvalidKeyException("Got unexpected key type in " + file + "; line " + lineNumber
                                                   + ". Expected OpenSSHCertificate.");
                 }
                 if (!OpenSshCertificate.Type.HOST.equals(((OpenSshCertificate) publicKey).getType())) {

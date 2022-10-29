@@ -264,8 +264,7 @@ public abstract class AbstractSftpClient
             throw err;
         }
 
-        throw new SshException(
-                "No handling for unexpected handle packet id=" + id
+        throw new SshException("No handling for unexpected handle packet id=" + id
                                + ", type=" + SftpConstants.getCommandMessageName(type) + ", length=" + length);
     }
 
@@ -642,8 +641,7 @@ public abstract class AbstractSftpClient
             }
             buffer.putInt(opts);
         } else if (numOptions > 0) {
-            throw new UnsupportedOperationException(
-                    "rename(" + oldPath + " => " + newPath + ")"
+            throw new UnsupportedOperationException("rename(" + oldPath + " => " + newPath + ")"
                                                     + " - copy options can not be used with this SFTP version: " + options);
         }
         checkCommandStatus(SftpConstants.SSH_FXP_RENAME, buffer);
@@ -741,14 +739,12 @@ public abstract class AbstractSftpClient
     public void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException {
         // do some bounds checking first
         if ((fileOffset < 0L) || (srcOffset < 0) || (len < 0)) {
-            throw new IllegalArgumentException(
-                    "write(" + handle + ") please ensure all parameters "
+            throw new IllegalArgumentException("write(" + handle + ") please ensure all parameters "
                                                + " are non-negative values: file-offset=" + fileOffset
                                                + ", src-offset=" + srcOffset + ", len=" + len);
         }
         if ((srcOffset + len) > src.length) {
-            throw new IllegalArgumentException(
-                    "write(" + handle + ")"
+            throw new IllegalArgumentException("write(" + handle + ")"
                                                + " cannot read bytes " + srcOffset + " to " + (srcOffset + len)
                                                + " when array is only of length " + src.length);
         }
@@ -937,8 +933,7 @@ public abstract class AbstractSftpClient
             throws IOException {
         int remaining = buffer.available();
         if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
-            throw new SshException(
-                    "Bad length (" + length + ") for remaining data (" + remaining + ")"
+            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
                                    + " in response to " + SftpConstants.getCommandMessageName(cmd)
                                    + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
         }
@@ -1178,8 +1173,7 @@ public abstract class AbstractSftpClient
             bufferSize = getReadBufferSize();
         }
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "Insufficient read buffer size: " + bufferSize + ", min.="
+            throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.="
                                                + MIN_READ_BUFFER_SIZE);
         }
 
@@ -1202,8 +1196,7 @@ public abstract class AbstractSftpClient
             bufferSize = getWriteBufferSize();
         }
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "Insufficient write buffer size: " + bufferSize + ", min.="
+            throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.="
                                                + MIN_WRITE_BUFFER_SIZE);
         }
 

@@ -182,8 +182,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                             "doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
                 }
                 try {
-                    f.setException(new SshChannelOpenException(
-                            getChannelId(),
+                    f.setException(new SshChannelOpenException(getChannelId(),
                             SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
                 } finally {
                     super.close(true);
@@ -273,8 +272,8 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         notifyStateChanged(problem.getClass().getSimpleName());
         try {
             if (problem instanceof ConnectException) {
-                f.setException(new SshChannelOpenException(
-                        getChannelId(), SshConstants.SSH_OPEN_CONNECT_FAILED, problem.getMessage(), problem));
+                f.setException(new SshChannelOpenException(getChannelId(), SshConstants.SSH_OPEN_CONNECT_FAILED,
+                        problem.getMessage(), problem));
             } else {
                 f.setException(problem);
             }
@@ -324,8 +323,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     @Override
     protected void doWriteExtendedData(byte[] data, int off, long len) throws IOException {
-        throw new UnsupportedOperationException(
-                getTcpipChannelType() + " Tcpip channel does not support extended data");
+        throw new UnsupportedOperationException(getTcpipChannelType() + " Tcpip channel does not support extended data");
     }
 
     protected ChannelToPortHandler createChannelToPortHandler(IoSession session) {

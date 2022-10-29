@@ -213,8 +213,7 @@ public class ServerTest extends BaseTestSupport {
 
                 TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
                 if (prev != TimeoutIndicator.NONE) {
-                    throw new StreamCorruptedException(
-                            "Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
             }
@@ -258,8 +257,7 @@ public class ServerTest extends BaseTestSupport {
                 outputDebugMessage("Session %s timeout reported: %s", session, timeoutStatus);
                 TimeoutIndicator prev = timeoutHolder.getAndSet(timeoutStatus);
                 if (prev != TimeoutIndicator.NONE) {
-                    throw new StreamCorruptedException(
-                            "Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
+                    throw new StreamCorruptedException("Multiple timeout disconnects: " + timeoutStatus + " / " + prev);
                 }
                 return false;
             }

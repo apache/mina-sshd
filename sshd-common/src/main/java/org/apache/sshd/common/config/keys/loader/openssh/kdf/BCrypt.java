@@ -797,8 +797,7 @@ public class BCrypt {
       if (rounds < 10)
           rs.append("0");
       if (rounds > 30) {
-          throw new IllegalArgumentException(
-              "rounds exceeds maximum (30)");
+          throw new IllegalArgumentException("rounds exceeds maximum (30)");
       }
       rs.append(Integer.toString(rounds));
       rs.append("$");
@@ -826,8 +825,7 @@ public class BCrypt {
       if (log_rounds < 10)
           rs.append("0");
       if (log_rounds > 30) {
-          throw new IllegalArgumentException(
-              "log_rounds exceeds maximum (30)");
+          throw new IllegalArgumentException("log_rounds exceeds maximum (30)");
       }
       rs.append(Integer.toString(log_rounds));
       rs.append("$");

@@ -273,8 +273,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     if (!OpenSshCertificate.Type.USER.equals(cert.getType())) {
                         log.warn(
                                 "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not a user certificate",
-                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
-                                cert.getId());
+                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert), cert.getId());
                         if (reporter != null) {
                             reporter.signalIdentitySkipped(session, service, identity);
                         }
@@ -283,8 +282,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     if (!OpenSshCertificate.isValidNow(cert)) {
                         log.warn(
                                 "resolveAttemptedPublicKeyIdentity({})[{}]: public key certificate {} {} (id={}) is not valid now",
-                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert),
-                                cert.getId());
+                                session, service, KeyUtils.getKeyType(cert), KeyUtils.getFingerPrint(cert), cert.getId());
                         if (reporter != null) {
                             reporter.signalIdentitySkipped(session, service, identity);
                         }
@@ -352,8 +350,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PK_OK) {
-            throw new IllegalStateException(
-                    "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
                                             + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
@@ -380,8 +377,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     session, service, name, rspKeyType, KeyUtils.getFingerPrint(rspKey));
         }
         if (!KeyUtils.compareKeys(rspKey, pubKey)) {
-            throw new InvalidKeySpecException(
-                    "processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
+            throw new InvalidKeySpecException("processAuthDataRequest(" + session + ")[" + service + "][" + name + "]"
                                               + " mismatched " + rspKeyType + " keys: expected="
                                               + KeyUtils.getFingerPrint(pubKey)
                                               + ", actual=" + KeyUtils.getFingerPrint(rspKey));
@@ -394,10 +390,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         String username = session.getUsername();
         String algo = chosenAlgorithm;
-        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                GenericUtils.length(username) + GenericUtils.length(service) + GenericUtils.length(name)
-                                                                             + GenericUtils.length(algo)
-                                                                             + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE);
+        int length = GenericUtils.length(username) + GenericUtils.length(service) + GenericUtils.length(name)
+                     + GenericUtils.length(algo) + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE;
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, length);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);
@@ -428,10 +423,9 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             PublicKey serverKey, Buffer buffer)
             throws Exception {
         byte[] id = session.getSessionId();
-        Buffer bs = new ByteArrayBuffer(
-                id.length + username.length() + service.length() + name.length()
-                                        + algo.length() + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE,
-                false);
+        int length = id.length + username.length() + service.length() + name.length() + algo.length()
+                     + ByteArrayBuffer.DEFAULT_SIZE + Long.SIZE;
+        Buffer bs = new ByteArrayBuffer(length, false);
         bs.putBytes(id);
         bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         bs.putString(username);

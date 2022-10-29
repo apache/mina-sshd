@@ -83,16 +83,14 @@ public class ScpCommand extends AbstractFileSystemCommand implements ServerChann
         this.channelSession = Objects.requireNonNull(channelSession, "No channel session provided");
 
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "<ScpCommmand>(" + command + ") send buffer size "
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size "
                                                + "(" + sendSize + ") below minimum required "
                                                + "(" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
         }
         sendBufferSize = sendSize;
 
         if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "<ScpCommmand>(" + command + ") receive buffer size "
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size "
                                                + "(" + sendSize + ") below minimum required "
                                                + "(" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }

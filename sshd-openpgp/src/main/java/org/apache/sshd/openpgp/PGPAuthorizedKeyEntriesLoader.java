@@ -62,8 +62,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
         try {
             keys = loadMatchingKeyFingerprints(session, Collections.singletonList(fingerprint));
         } catch (PGPException e) {
-            throw new InvalidKeyException(
-                    "Failed (" + e.getClass().getSimpleName() + ")"
+            throw new InvalidKeyException("Failed (" + e.getClass().getSimpleName() + ")"
                                           + " to load key type=" + keyType + " with fingerprint=" + fingerprint
                                           + ": " + e.getMessage(),
                     e);
@@ -71,8 +70,7 @@ public interface PGPAuthorizedKeyEntriesLoader extends PGPPublicKeyExtractor, Pu
 
         int numKeys = GenericUtils.size(keys);
         if (numKeys > 1) {
-            throw new StreamCorruptedException(
-                    "Multiple matches (" + numKeys + ")"
+            throw new StreamCorruptedException("Multiple matches (" + numKeys + ")"
                                                + " for " + keyType + " fingerprint=" + fingerprint);
         }
 

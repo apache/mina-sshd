@@ -130,8 +130,7 @@ public class PGPKeyPairResourceParser
                 switch (result) {
                     case TERMINATE:
                         if (e instanceof PGPException) {
-                            throw new StreamCorruptedException(
-                                    "Failed (" + e.getClass().getSimpleName() + ")"
+                            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
                                                                + " to decode " + resourceKey + ": " + e.getMessage());
                         } else if (e instanceof IOException) {
                             throw (IOException) e;

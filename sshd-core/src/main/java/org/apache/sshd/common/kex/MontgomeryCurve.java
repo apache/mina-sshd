@@ -172,8 +172,7 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
             throw new InvalidKeySpecException("Provided key has wrong length (" + key.length + " bytes) for " + getAlgorithm());
         } else if (offset == 1) {
             if (key[0] != 0) {
-                throw new InvalidKeySpecException(
-                        "Provided key for " + getAlgorithm()
+                throw new InvalidKeySpecException("Provided key for " + getAlgorithm()
                                                   + " has extra byte, but it's non-zero: 0x"
                                                   + Integer.toHexString(key[0] & 0xFF));
             }

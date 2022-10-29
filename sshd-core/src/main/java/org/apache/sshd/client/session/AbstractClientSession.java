@@ -518,8 +518,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         if (!SessionContext.isValidVersionPrefix(serverVersion)) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                     "Unsupported protocol version: " + serverVersion);
         }
 
@@ -636,8 +635,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         Service service = currentService.getService();
         if (!(service instanceof AbstractConnectionService)
                 || !GenericUtils.isEmpty(((AbstractConnectionService) service).getChannels())) {
-            throw new IllegalStateException(
-                    "The switch to the none cipher must be done immediately after authentication");
+            throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {

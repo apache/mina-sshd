@@ -296,8 +296,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
             throws Exception {
         KexState curState = kexState.get();
         if (!KexState.DONE.equals(curState)) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                     "Authentication success signalled though KEX state=" + curState);
         }
 
@@ -489,13 +488,11 @@ public abstract class AbstractServerSession extends AbstractSession implements S
              * beyond the version one, but we check this nevertheless
              */
             err = (numLines > 1)
-                    ? new SshException(
-                            SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                    ? new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                             "Unexpected extra " + (numLines - 1) + " lines from client=" + clientVersion)
                     : null;
         } else {
-            err = new SshException(
-                    SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
+            err = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                     "Unsupported protocol version: " + clientVersion);
         }
 

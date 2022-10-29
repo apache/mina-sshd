@@ -157,8 +157,7 @@ public class ScpCommandFactory
      */
     public void setSendBufferSize(int sendSize) {
         if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "<ScpCommandFactory>() send buffer size "
+            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size "
                                                + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE
                                                + ")");
         }
@@ -175,8 +174,7 @@ public class ScpCommandFactory
      */
     public void setReceiveBufferSize(int receiveSize) {
         if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException(
-                    "<ScpCommandFactory>() receive buffer size "
+            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size "
                                                + "(" + receiveSize + ") below minimum required ("
                                                + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }

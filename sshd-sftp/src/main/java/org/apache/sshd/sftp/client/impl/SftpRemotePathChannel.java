@@ -100,8 +100,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
         if (position < 0L) {
-            throw new IllegalArgumentException(
-                    "read(" + getRemotePath() + ")"
+            throw new IllegalArgumentException("read(" + getRemotePath() + ")"
                                                + " illegal position to read from: " + position);
         }
 
@@ -204,8 +203,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
         if (position < 0L) {
-            throw new IllegalArgumentException(
-                    "write(" + getRemotePath() + ")"
+            throw new IllegalArgumentException("write(" + getRemotePath() + ")"
                                                + " illegal position to write to: " + position);
         }
 
@@ -291,8 +289,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public FileChannel position(long newPosition) throws IOException {
         if (newPosition < 0L) {
-            throw new IllegalArgumentException(
-                    "position(" + getRemotePath() + ")"
+            throw new IllegalArgumentException("position(" + getRemotePath() + ")"
                                                + " illegal file channel position: " + newPosition);
         }
 
@@ -323,8 +320,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
         if ((position < 0L) || (count < 0L)) {
-            throw new IllegalArgumentException(
-                    "transferTo(" + getRemotePath() + ")"
+            throw new IllegalArgumentException("transferTo(" + getRemotePath() + ")"
                                                + " illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen(READ_MODES);
@@ -369,8 +365,7 @@ public class SftpRemotePathChannel extends FileChannel {
     @Override
     public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
         if ((position < 0L) || (count < 0L)) {
-            throw new IllegalArgumentException(
-                    "transferFrom(" + getRemotePath() + ")"
+            throw new IllegalArgumentException("transferFrom(" + getRemotePath() + ")"
                                                + " illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen(WRITE_MODES);
@@ -424,8 +419,7 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
-        throw new UnsupportedOperationException(
-                "map(" + getRemotePath() + ")[" + mode + "," + position + "," + size + "] N/A");
+        throw new UnsupportedOperationException("map(" + getRemotePath() + ")[" + mode + "," + position + "," + size + "] N/A");
     }
 
     @Override
@@ -522,8 +516,7 @@ public class SftpRemotePathChannel extends FileChannel {
                 }
             }
 
-            throw new IOException(
-                    "ensureOpen(" + getRemotePath() + ")"
+            throw new IOException("ensureOpen(" + getRemotePath() + ")"
                                   + " current channel modes (" + this.modes + ")"
                                   + " do contain any of the required ones: " + reqModes);
         }

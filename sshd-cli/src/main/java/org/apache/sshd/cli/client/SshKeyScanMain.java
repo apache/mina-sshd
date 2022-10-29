@@ -339,8 +339,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         ConnectFuture future = client.connect(UUID.randomUUID().toString(), host, connectPort);
         long waitTime = getTimeout();
         if (!future.await(waitTime)) {
-            throw new ConnectException(
-                    "Failed to connect to " + host + ":" + connectPort
+            throw new ConnectException("Failed to connect to " + host + ":" + connectPort
                                        + " within " + waitTime + " msec."
                                        + " to retrieve key type=" + kt);
         }

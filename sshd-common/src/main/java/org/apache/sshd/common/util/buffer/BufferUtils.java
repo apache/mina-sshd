@@ -386,8 +386,7 @@ public final class BufferUtils {
             IoUtils.readFully(input, buf, offset, Integer.BYTES);
             return getUInt(buf, offset, len);
         } catch (RuntimeException | Error e) {
-            throw new StreamCorruptedException(
-                    "Failed (" + e.getClass().getSimpleName() + ")"
+            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
                                                + " to read UINT value: " + e.getMessage());
         }
     }
@@ -511,8 +510,7 @@ public final class BufferUtils {
             int writeLen = putUInt(value, buf, off, len);
             output.write(buf, off, writeLen);
         } catch (RuntimeException | Error e) {
-            throw new StreamCorruptedException(
-                    "Failed (" + e.getClass().getSimpleName() + ")"
+            throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
                                                + " to write UINT value=" + value + ": " + e.getMessage());
         }
     }

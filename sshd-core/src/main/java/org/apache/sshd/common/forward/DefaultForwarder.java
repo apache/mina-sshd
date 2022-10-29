@@ -198,15 +198,13 @@ public class DefaultForwarder
             synchronized (localLock) {
                 SshdSocketAddress prevRemote = SshdSocketAddress.findByOptionalWildcardAddress(localToRemote, result);
                 if (prevRemote != null) {
-                    throw new IOException(
-                            "Multiple local port forwarding addressing on port=" + result
+                    throw new IOException("Multiple local port forwarding addressing on port=" + result
                                           + ": current=" + remote + ", previous=" + prevRemote);
                 }
 
                 InetSocketAddress prevBound = SshdSocketAddress.findByOptionalWildcardAddress(boundLocals, result);
                 if (prevBound != null) {
-                    throw new IOException(
-                            "Multiple local port forwarding bindings on port=" + result
+                    throw new IOException("Multiple local port forwarding bindings on port=" + result
                                           + ": current=" + bound + ", previous=" + prevBound);
                 }
 
@@ -391,8 +389,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal tearing down explicit tunnel for local=" + localForwarding
                                       + " on bound=" + boundAddress,
                         t);
@@ -427,8 +424,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal torn down explicit tunnel local=" + localForwarding
                                       + " on bound=" + boundAddress,
                         t);
@@ -466,15 +462,13 @@ public class DefaultForwarder
             synchronized (dynamicLock) {
                 SocksProxy prevProxy = dynamicLocal.get(port);
                 if (prevProxy != null) {
-                    throw new IOException(
-                            "Multiple dynamic port mappings found for port=" + port
+                    throw new IOException("Multiple dynamic port mappings found for port=" + port
                                           + ": current=" + proxy + ", previous=" + prevProxy);
                 }
 
                 InetSocketAddress prevBound = boundDynamic.get(port);
                 if (prevBound != null) {
-                    throw new IOException(
-                            "Multiple dynamic port bindings found for port=" + port
+                    throw new IOException("Multiple dynamic port bindings found for port=" + port
                                           + ": current=" + bound + ", previous=" + prevBound);
                 }
 
@@ -522,8 +516,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal establishing dynamic tunnel for local=" + local
                                       + " on bound=" + boundAddress,
                         t);
@@ -556,8 +549,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal establishing dynamic tunnel for local=" + local,
                         t);
             }
@@ -645,8 +637,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal tearing down dynamic tunnel for address=" + address,
                         t);
             }
@@ -676,8 +667,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal torn down dynamic tunnel for address=" + address,
                         t);
             }
@@ -811,8 +801,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal establishing explicit tunnel for local=" + local
                                       + ", remote=" + remote + ", localForwarding=" + localForwarding,
                         t);
@@ -847,8 +836,7 @@ public class DefaultForwarder
             } else if (t instanceof IOException) {
                 throw (IOException) t;
             } else {
-                throw new IOException(
-                        "Failed (" + t.getClass().getSimpleName() + ")"
+                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
                                       + " to signal established explicit tunnel for local=" + local
                                       + ", remote=" + remote + ", localForwarding=" + localForwarding
                                       + ", bound=" + boundAddress,

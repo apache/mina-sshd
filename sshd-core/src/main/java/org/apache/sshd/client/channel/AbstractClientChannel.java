@@ -364,8 +364,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
-        throw new UnsupportedOperationException(
-                "open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+        throw new UnsupportedOperationException("open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override

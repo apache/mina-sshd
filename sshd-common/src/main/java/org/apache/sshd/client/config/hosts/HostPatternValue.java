@@ -88,8 +88,7 @@ public class HostPatternValue {
         try {
             KnownHostHashValue.appendHostPattern(sb, purePattern, portValue);
         } catch (IOException e) {
-            throw new RuntimeException(
-                    "Unexpected (" + e.getClass().getSimpleName() + ") failure"
+            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
                                        + " to append host pattern of " + purePattern + ":" + portValue + ": " + e.getMessage(),
                     e);
         }

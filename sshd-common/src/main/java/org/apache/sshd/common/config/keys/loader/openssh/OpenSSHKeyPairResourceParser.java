@@ -259,8 +259,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
          * can be quickly checked by verifying that both checkint fields hold the same value.
          */
         if (check1 != check2) {
-            throw new StreamCorruptedException(
-                    "Mismatched private key check values ("
+            throw new StreamCorruptedException("Mismatched private key check values ("
                                                + Integer.toHexString(check1) + "/" + Integer.toHexString(check2) + ") in "
                                                + resourceKey);
         }
@@ -301,8 +300,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             throws IOException, GeneralSecurityException {
         String prvType = KeyEntryResolver.decodeString(stream, MAX_KEY_TYPE_NAME_LENGTH);
         if (!Objects.equals(keyType, prvType)) {
-            throw new StreamCorruptedException(
-                    "Mismatched private key type: "
+            throw new StreamCorruptedException("Mismatched private key type: "
                                                + ", expected=" + keyType + ", actual=" + prvType
                                                + " in " + resourceKey);
         }

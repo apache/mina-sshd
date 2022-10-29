@@ -401,8 +401,7 @@ public class SshdSocketAddress extends SocketAddress {
             InetSocketAddress isockAddress = (InetSocketAddress) addr;
             return new SshdSocketAddress(isockAddress.getHostName(), isockAddress.getPort());
         } else {
-            throw new UnsupportedOperationException(
-                    "Cannot convert " + addr.getClass().getSimpleName()
+            throw new UnsupportedOperationException("Cannot convert " + addr.getClass().getSimpleName()
                                                     + "=" + addr + " to " + SshdSocketAddress.class.getSimpleName());
         }
     }

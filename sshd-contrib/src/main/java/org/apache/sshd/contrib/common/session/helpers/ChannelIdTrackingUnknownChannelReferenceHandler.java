@@ -76,9 +76,8 @@ public class ChannelIdTrackingUnknownChannelReferenceHandler
             return super.handleUnknownChannelCommand(service, cmd, channelId, buffer);
         }
 
-        throw new SshChannelNotFoundException(
-                channelId,
+        throw new SshChannelNotFoundException(channelId,
                 "Received " + SshConstants.getCommandMessageName(cmd) + " on unassigned channel " + channelId
-                           + " (last assigned=" + lastTracked + ")");
+                                                         + " (last assigned=" + lastTracked + ")");
     }
 }

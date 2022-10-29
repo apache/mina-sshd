@@ -243,8 +243,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
                     continue; // null, empty or comment line
                 }
             } catch (RuntimeException | Error e) {
-                throw new StreamCorruptedException(
-                        "Failed (" + e.getClass().getSimpleName() + ")"
+                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
                                                    + " to parse key entry=" + line + ": " + e.getMessage());
             }
 

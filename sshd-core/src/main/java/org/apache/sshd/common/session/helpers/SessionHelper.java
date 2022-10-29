@@ -888,8 +888,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                  * "The null character MUST NOT be sent"
                  */
                 if (b == 0) {
-                    throw new StreamCorruptedException(
-                            "Incorrect identification (null characters not allowed) - "
+                    throw new StreamCorruptedException("Incorrect identification (null characters not allowed) - "
                                                        + " at line " + (GenericUtils.size(ident) + 1) + " character #"
                                                        + (pos + 1)
                                                        + " after '" + new String(data, 0, pos, StandardCharsets.UTF_8) + "'");
@@ -904,15 +903,13 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 }
 
                 if (needLf) {
-                    throw new StreamCorruptedException(
-                            "Incorrect identification (bad line ending) "
+                    throw new StreamCorruptedException("Incorrect identification (bad line ending) "
                                                        + " at line " + (GenericUtils.size(ident) + 1)
                                                        + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
 
                 if (pos >= data.length) {
-                    throw new StreamCorruptedException(
-                            "Incorrect identification (line too long): "
+                    throw new StreamCorruptedException("Incorrect identification (line too long): "
                                                        + " at line " + (GenericUtils.size(ident) + 1)
                                                        + ": " + new String(data, 0, pos, StandardCharsets.UTF_8));
                 }
@@ -986,8 +983,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         if (initialKexProposal == null) {
             String resolvedAlgorithms = resolveAvailableSignaturesProposal();
             if (GenericUtils.isEmpty(resolvedAlgorithms)) {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
                         "getKexProposal() no resolved signatures available");
             }
 

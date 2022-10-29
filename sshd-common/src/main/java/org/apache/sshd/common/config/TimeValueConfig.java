@@ -145,8 +145,8 @@ public enum TimeValueConfig {
 
             Long prev = spec.put(SECONDS, count);
             if (prev != null) {
-                throw new IllegalArgumentException(
-                        "parse(" + s + ") last component (" + SECONDS.name() + ") value re-specified: current=" + count
+                throw new IllegalArgumentException("parse(" + s + ") last component (" + SECONDS.name()
+                                                   + ") value re-specified: current=" + count
                                                    + ", previous=" + prev);
             }
         }

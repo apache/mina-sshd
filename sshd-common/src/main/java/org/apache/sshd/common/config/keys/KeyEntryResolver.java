@@ -76,9 +76,9 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (pubOriginal != null) {
             Class<?> orgType = pubOriginal.getClass();
             if (!pubExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException(
-                        "Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual="
-                                              + orgType.getSimpleName());
+                throw new InvalidKeyException("Mismatched public key types: expected="
+                                              + pubExpected.getSimpleName()
+                                              + ", actual=" + orgType.getSimpleName());
             }
 
             PUB castPub = pubExpected.cast(pubOriginal);
@@ -91,9 +91,9 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         if (prvOriginal != null) {
             Class<?> orgType = prvOriginal.getClass();
             if (!prvExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException(
-                        "Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual="
-                                              + orgType.getSimpleName());
+                throw new InvalidKeyException("Mismatched private key types: expected="
+                                              + prvExpected.getSimpleName()
+                                              + ", actual=" + orgType.getSimpleName());
             }
 
             PRV castPrv = prvExpected.cast(prvOriginal);

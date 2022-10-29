@@ -755,8 +755,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public FileStore getFileStore(Path path) throws IOException {
         FileSystem fs = path.getFileSystem();
         if (!(fs instanceof SftpFileSystem)) {
-            throw new FileSystemException(
-                    path.toString(), path.toString(), "getFileStore(" + path + ") path not attached to an SFTP file system");
+            throw new FileSystemException(path.toString(), path.toString(),
+                    "getFileStore(" + path + ") path not attached to an SFTP file system");
         }
 
         SftpFileSystem sftpFs = (SftpFileSystem) fs;
@@ -1410,8 +1410,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             String userAuth = encodeCredentials(username, password);
             return new URI(SftpConstants.SFTP_SUBSYSTEM_NAME, userAuth, host, port, "/", queryPart, null);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(
-                    "Failed (" + e.getClass().getSimpleName() + ")"
+            throw new IllegalArgumentException("Failed (" + e.getClass().getSimpleName() + ")"
                                                + " to create access URI: " + e.getMessage(),
                     e);
         }

@@ -116,8 +116,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
             @Override
             public boolean authenticate(String username, String password, ServerSession session) {
                 if (attemptsCount.incrementAndGet() == 1) {
-                    throw new PasswordChangeRequiredException(
-                            attemptsCount.toString(),
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(),
                             getCurrentTestName(), CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault());
                 }
 
@@ -275,8 +274,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         AtomicInteger attemptsCount = new AtomicInteger(0);
         sshd.setPasswordAuthenticator((username, password, session) -> {
             if (attemptsCount.incrementAndGet() == 1) {
-                throw new PasswordChangeRequiredException(
-                        attemptsCount.toString(),
+                throw new PasswordChangeRequiredException(attemptsCount.toString(),
                         getCurrentTestName(), CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault());
             }
 

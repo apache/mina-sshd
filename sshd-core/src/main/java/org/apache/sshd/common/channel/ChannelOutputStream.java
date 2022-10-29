@@ -143,8 +143,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         // This is the only use of this instance's monitor; it's used exclusively to synchronize concurrent writes.
         Channel channel = getChannel();
         if (!isOpen()) {
-            throw new SshChannelClosedException(
-                    channel.getChannelId(),
+            throw new SshChannelClosedException(channel.getChannelId(),
                     "write(" + this + ") len=" + l + " - channel already closed");
         }
         Session session = channel.getSession();
@@ -249,8 +248,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
         // moment, for instance during KEX.
         Channel channel = getChannel();
         if (OpenState.CLOSED.equals(openState.get())) {
-            throw new SshChannelClosedException(
-                    channel.getChannelId(),
+            throw new SshChannelClosedException(channel.getChannelId(),
                     "flush(" + this + ") length=" + bufferLength + " - stream is already closed");
         }
 
@@ -290,8 +288,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 long lenToSend = Math.min(available, total);
                 long length = Math.min(lenToSend, remoteWindow.getPacketSize());
                 if (length > Integer.MAX_VALUE) {
-                    throw new StreamCorruptedException(
-                            "Accumulated " + SshConstants.getCommandMessageName(cmd)
+                    throw new StreamCorruptedException("Accumulated " + SshConstants.getCommandMessageName(cmd)
                                                        + " command bytes size (" + length + ") exceeds int boundaries");
                 }
 

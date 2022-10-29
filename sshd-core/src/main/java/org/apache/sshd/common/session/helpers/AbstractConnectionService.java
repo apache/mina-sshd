@@ -710,8 +710,7 @@ public abstract class AbstractConnectionService
         UnknownChannelReferenceHandler handler = resolveUnknownChannelReferenceHandler();
         if (handler == null) {
             // Throw a special exception - SSHD-777
-            throw new SshChannelNotFoundException(
-                    recipient,
+            throw new SshChannelNotFoundException(recipient,
                     "Received " + SshConstants.getCommandMessageName(cmd) + " on unknown channel " + recipient);
         }
 

@@ -215,8 +215,8 @@ public interface ClientSession
             } finally {
                 if (stderr.size() > 0) {
                     String errorMessage = stderr.toString(StandardCharsets.US_ASCII.name());
-                    throw new RemoteException(
-                            "Error reported from remote command=" + command, new ServerException(errorMessage));
+                    throw new RemoteException("Error reported from remote command=" + command,
+                            new ServerException(errorMessage));
                 }
             }
         }

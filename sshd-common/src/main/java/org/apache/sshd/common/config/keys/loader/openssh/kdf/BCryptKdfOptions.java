@@ -86,8 +86,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
         byte[] saltValue = getSalt();
         int actualSaltLength = NumberUtils.length(saltValue);
         if (actualSaltLength != expectedSaltLength) {
-            throw new StreamCorruptedException(
-                    "Mismatched salt data length:"
+            throw new StreamCorruptedException("Mismatched salt data length:"
                                                + " expected=" + expectedSaltLength + ", actual=" + actualSaltLength);
         }
     }
@@ -117,8 +116,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
 
         int blockSize = cipherSpec.getCipherBlockSize();
         if ((privateDataBytes.length % blockSize) != 0) {
-            throw new StreamCorruptedException(
-                    "Encrypted data size (" + privateDataBytes.length + ")"
+            throw new StreamCorruptedException("Encrypted data size (" + privateDataBytes.length + ")"
                                                + " is not aligned to  " + cipherName + " block size (" + blockSize + ")");
         }
 
@@ -193,8 +191,7 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
     public void setNumRounds(int numRounds) {
         int maxAllowed = getMaxAllowedRounds();
         if ((numRounds <= 0) || (numRounds > maxAllowed)) {
-            throw new BCryptBadRoundsException(
-                    numRounds, "Bad rounds value (" + numRounds + ") - max. allowed " + maxAllowed);
+            throw new BCryptBadRoundsException(numRounds, "Bad rounds value (" + numRounds + ") - max. allowed " + maxAllowed);
         }
 
         this.numRounds = numRounds;

@@ -121,8 +121,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
                     .orElse(SecurityUtils.getMaxDHGroupExchangeKeySize());
 
             if ((max < min) || (prf < min) || (max < prf)) {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
 
@@ -157,8 +156,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             max = buffer.getInt();
 
             if ((prf < min) || (max < prf)) {
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
 
@@ -186,10 +184,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         }
 
         if (cmd != expected) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet " + KeyExchange.getGroupKexOpcodeName(expected)
-                                                                      + ", got " + KeyExchange.getGroupKexOpcodeName(cmd));
+                                                                                     + ", got "
+                                                                                     + KeyExchange.getGroupKexOpcodeName(cmd));
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
@@ -277,8 +275,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             if (!CoreModuleProperties.ALLOW_DHG1_KEX_FALLBACK.getRequired(session)) {
                 log.error("chooseDH({})[{}][prf={}, min={}, max={}] No suitable primes found - failing",
                         this, session, prf, min, max);
-                throw new SshException(
-                        SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "No suitable primes found for DH group exchange");
             }
 

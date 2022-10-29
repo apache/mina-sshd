@@ -204,9 +204,8 @@ public class KnownHostEntry extends HostPatternsHolder {
                 }
                 entries.add(entry);
             } catch (RuntimeException | Error e) { // TODO consider consulting a user callback
-                throw new StreamCorruptedException(
-                        "Failed (" + e.getClass().getSimpleName() + ")" + " to parse line #" + lineNumber + " '" + line + "': "
-                                                   + e.getMessage());
+                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ") to parse line #"
+                                                   + lineNumber + " '" + line + "': " + e.getMessage());
             }
         }
 

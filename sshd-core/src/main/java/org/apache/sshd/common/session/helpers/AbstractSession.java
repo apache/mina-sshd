@@ -933,8 +933,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected void validateKexState(int cmd, KexState expected) {
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
-            throw new IllegalStateException(
-                    "Received KEX command=" + SshConstants.getCommandMessageName(cmd)
+            throw new IllegalStateException("Received KEX command=" + SshConstants.getCommandMessageName(cmd)
                                             + " while in state=" + actual + " instead of " + expected);
         }
     }
@@ -1558,8 +1557,7 @@ public abstract class AbstractSession extends SessionHelper {
                         log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
                         decoderBuffer.dumpHex(getSimplifiedLogger(), Level.FINEST,
                                 "decode(" + this + ") invalid length packet", this);
-                        throw new SshException(
-                                SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                     }
                     // Ok, that's good, we can go to the next step
@@ -2141,8 +2139,8 @@ public abstract class AbstractSession extends SessionHelper {
                                 kexOption);
                     }
                 } else {
-                    throw new SshException(
-                            SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "Illegal KEX option negotiated: " + kexOption);
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                            "Illegal KEX option negotiated: " + kexOption);
                 }
             }
         } catch (IOException | RuntimeException | Error e) {
@@ -2350,8 +2348,7 @@ public abstract class AbstractSession extends SessionHelper {
             debug("reExchangeKeys({}) failed ({}) to request new keys: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
             throw ValidateUtils.initializeExceptionCause(
-                    new ProtocolException(
-                            "Failed (" + e.getClass().getSimpleName() + ")"
+                    new ProtocolException("Failed (" + e.getClass().getSimpleName() + ")"
                                           + " to generate keys for exchange: " + e.getMessage()),
                     e);
         } catch (Exception e) {

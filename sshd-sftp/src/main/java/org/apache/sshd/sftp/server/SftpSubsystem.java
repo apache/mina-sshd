@@ -399,8 +399,7 @@ public class SftpSubsystem
              */
             int access = fileHandle.getAccessMask();
             if ((access & SftpConstants.ACE4_READ_DATA) == 0) {
-                throw new AccessDeniedException(
-                        path.toString(), path.toString(), "File not opened for read");
+                throw new AccessDeniedException(path.toString(), path.toString(), "File not opened for read");
             }
         } else {
             path = resolveFile(target);
@@ -594,8 +593,7 @@ public class SftpSubsystem
         Path srcPath = srcHandle.getFile();
         int srcAccess = srcHandle.getAccessMask();
         if ((srcAccess & SftpConstants.ACE4_READ_DATA) != SftpConstants.ACE4_READ_DATA) {
-            throw new AccessDeniedException(
-                    srcPath.toString(), srcPath.toString(), "Source file not opened for read");
+            throw new AccessDeniedException(srcPath.toString(), srcPath.toString(), "Source file not opened for read");
         }
 
         ValidateUtils.checkTrue(readLength >= 0L, "Invalid read length: %d", readLength);
@@ -617,8 +615,7 @@ public class SftpSubsystem
         FileHandle dstHandle = inPlaceCopy ? srcHandle : validateHandle(writeHandle, wh, FileHandle.class);
         int dstAccess = dstHandle.getAccessMask();
         if ((dstAccess & SftpConstants.ACE4_WRITE_DATA) != SftpConstants.ACE4_WRITE_DATA) {
-            throw new AccessDeniedException(
-                    srcHandle.toString(), srcHandle.toString(), "Source handle not opened for write");
+            throw new AccessDeniedException(srcHandle.toString(), srcHandle.toString(), "Source handle not opened for write");
         }
 
         ValidateUtils.checkTrue(writeOffset >= 0L, "Invalid write offset: %d", writeOffset);
@@ -631,12 +628,10 @@ public class SftpSubsystem
 
             long maxWrite = writeOffset + effectiveLength;
             if (maxWrite > readOffset) {
-                throw new IllegalArgumentException(
-                        "Write range end [" + writeOffset + "-" + maxWrite + "]"
+                throw new IllegalArgumentException("Write range end [" + writeOffset + "-" + maxWrite + "]"
                                                    + " overlaps with read range [" + readOffset + "-" + maxRead + "]");
             } else if (maxRead > writeOffset) {
-                throw new IllegalArgumentException(
-                        "Read range end [" + readOffset + "-" + maxRead + "]"
+                throw new IllegalArgumentException("Read range end [" + readOffset + "-" + maxRead + "]"
                                                    + " overlaps with write range [" + writeOffset + "-" + maxWrite + "]");
             }
         }
@@ -833,8 +828,7 @@ public class SftpSubsystem
         }
 
         if (remaining < length) {
-            throw new IllegalStateException(
-                    "Not enough buffer data for writing to " + fh
+            throw new IllegalStateException("Not enough buffer data for writing to " + fh
                                             + ": required=" + length + ", available=" + remaining);
         }
 
@@ -920,8 +914,7 @@ public class SftpSubsystem
         int maxHandleCount = SftpModuleProperties.MAX_OPEN_HANDLES_PER_SESSION.getRequired(session);
         if (curHandleCount > maxHandleCount) {
             throw signalOpenFailure(id, path, file, false,
-                    new SftpException(
-                            SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
+                    new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
                             "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount));
         }
 

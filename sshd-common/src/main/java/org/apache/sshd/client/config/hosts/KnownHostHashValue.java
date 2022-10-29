@@ -143,8 +143,8 @@ public class KnownHostHashValue {
         try {
             return appendHostPattern(new StringBuilder(host.length() + 8 /* port if necessary */), host, port).toString();
         } catch (IOException e) {
-            throw new RuntimeException(
-                    "Unexpected (" + e.getClass().getSimpleName() + ") failure" + " to generate host pattern of " + host + ":"
+            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
+                                       + " to generate host pattern of " + host + ":"
                                        + port + ": " + e.getMessage(),
                     e);
         }

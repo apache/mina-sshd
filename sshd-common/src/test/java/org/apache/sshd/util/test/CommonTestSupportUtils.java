@@ -168,8 +168,7 @@ public final class CommonTestSupportUtils {
             try {
                 url = new URL(srcForm);
             } catch (MalformedURLException e) {
-                throw new IllegalArgumentException(
-                        "getClassContainerLocationURL(" + clazz.getName() + ")"
+                throw new IllegalArgumentException("getClassContainerLocationURL(" + clazz.getName() + ")"
                                                    + " Failed to create URL=" + srcForm + " from " + url.toExternalForm()
                                                    + ": " + e.getMessage());
             }
@@ -361,8 +360,7 @@ public final class CommonTestSupportUtils {
         try {
             return toPathSource(url.toURI());
         } catch (URISyntaxException e) {
-            throw new MalformedURLException(
-                    "toFileSource(" + url.toExternalForm() + ")"
+            throw new MalformedURLException("toFileSource(" + url.toExternalForm() + ")"
                                             + " cannot (" + e.getClass().getSimpleName() + ")"
                                             + " convert to URI: " + e.getMessage());
         }
@@ -390,8 +388,7 @@ public final class CommonTestSupportUtils {
         try {
             return Paths.get(new URI(src));
         } catch (URISyntaxException e) {
-            throw new MalformedURLException(
-                    "toFileSource(" + src + ")"
+            throw new MalformedURLException("toFileSource(" + src + ")"
                                             + " cannot (" + e.getClass().getSimpleName() + ")"
                                             + " convert to URI: " + e.getMessage());
         }
@@ -469,8 +466,7 @@ public final class CommonTestSupportUtils {
         try {
             pairs = Objects.requireNonNull(provider.loadKeys(null), "No loaded keys");
         } catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException(
-                    "Unexpected " + e.getClass().getSimpleName() + ")"
+            throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
                                        + " keys loading exception: " + e.getMessage(),
                     e);
         }
@@ -561,8 +557,7 @@ public final class CommonTestSupportUtils {
         try {
             keys = Objects.requireNonNull(provider.loadKeys(null), "No keys loaded");
         } catch (IOException | GeneralSecurityException e) {
-            throw new RuntimeException(
-                    "Unexpected " + e.getClass().getSimpleName() + ")"
+            throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
                                        + " keys loading exception: " + e.getMessage(),
                     e);
         }

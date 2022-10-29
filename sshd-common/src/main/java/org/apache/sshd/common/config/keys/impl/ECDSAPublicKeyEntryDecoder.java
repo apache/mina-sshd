@@ -98,8 +98,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                         "No ECPoint generated for curve=" + keyCurveName + " from octets=" + BufferUtils.toHex(':', octets));
             }
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException(
-                    "Failed (" + e.getClass().getSimpleName() + ")" + " to generate ECPoint for curve=" + keyCurveName
+            throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
+                                              + " to generate ECPoint for curve=" + keyCurveName
                                               + " from octets=" + BufferUtils.toHex(':', octets) + ": " + e.getMessage());
         }
 

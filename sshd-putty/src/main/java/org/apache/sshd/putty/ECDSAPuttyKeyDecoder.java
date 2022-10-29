@@ -82,13 +82,11 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
         try {
             w = ECCurves.octetStringToEcPoint(octets);
             if (w == null) {
-                throw new InvalidKeySpecException(
-                        "No public ECPoint generated for curve=" + keyCurveName
+                throw new InvalidKeySpecException("No public ECPoint generated for curve=" + keyCurveName
                                                   + " from octets=" + BufferUtils.toHex(':', octets));
             }
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException(
-                    "Failed (" + e.getClass().getSimpleName() + ")"
+            throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
                                               + " to generate public ECPoint for curve=" + keyCurveName
                                               + " from octets=" + BufferUtils.toHex(':', octets)
                                               + ": " + e.getMessage());

@@ -203,8 +203,7 @@ public final class PropertyResolverUtils {
 
             return null;
         } else {
-            throw new IllegalArgumentException(
-                    "Bad value type for enum conversion: " + value.getClass().getSimpleName());
+            throw new IllegalArgumentException("Bad value type for enum conversion: " + value.getClass().getSimpleName());
         }
     }
 

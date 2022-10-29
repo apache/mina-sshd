@@ -133,8 +133,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             for (T s : services) {
                 LOGGER.error("===> {}", s.getClass().getName());
             }
-            throw new IllegalStateException(
-                    "Multiple (" + numDetected + ")"
+            throw new IllegalStateException("Multiple (" + numDetected + ")"
                                             + " registered " + IoServiceFactoryFactory.class.getSimpleName()
                                             + " instances detected."
                                             + " Please use -D" + propName + "=...factory class.. to select one"

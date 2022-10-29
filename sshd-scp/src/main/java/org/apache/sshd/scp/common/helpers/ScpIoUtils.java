@@ -225,8 +225,8 @@ public final class ScpIoUtils {
                 }
                 break;
             default:
-                throw new ScpException(
-                        "Failed to run command='" + cmd + "': " + ScpIoUtils.getExitStatusName(exitStatus), exitStatus);
+                throw new ScpException("Failed to run command='" + cmd + "': " + ScpIoUtils.getExitStatusName(exitStatus),
+                        exitStatus);
         }
     }
 

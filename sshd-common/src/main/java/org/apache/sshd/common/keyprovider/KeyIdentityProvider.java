@@ -145,8 +145,7 @@ public interface KeyIdentityProvider {
             try {
                 return p.loadKeys(session);
             } catch (IOException | GeneralSecurityException e) {
-                throw new RuntimeException(
-                        "Unexpected " + e.getClass().getSimpleName() + ")"
+                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
                                            + " keys loading exception: " + e.getMessage(),
                         e);
             }

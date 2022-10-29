@@ -174,8 +174,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
         int maxAllowedBits = Cipher.getMaxAllowedKeyLength(xform);
         // see http://www.javamex.com/tutorials/cryptography/unrestricted_policy_files.shtml
         if (numBits > maxAllowedBits) {
-            throw new InvalidKeySpecException(
-                    "decodePrivateKeyBytes(" + xform + ")"
+            throw new InvalidKeySpecException("decodePrivateKeyBytes(" + xform + ")"
                                               + " required key length (" + numBits + ") exceeds max. available: "
                                               + maxAllowedBits);
         }

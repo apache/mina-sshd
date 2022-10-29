@@ -77,15 +77,8 @@ public class UserAuthPassword extends AbstractUserAuth {
         }
 
         String username = session.getUsername();
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                username.length() + service.length()
-                                                                                    + GenericUtils.length(getName())
-                                                                                    + current.length()
-                                                                                    + Integer.SIZE /*
-                                                                                                    * a few extra
-                                                                                                    * encoding fields
-                                                                                                    * overhead
-                                                                                                    */);
+        int length = username.length() + service.length() + GenericUtils.length(getName()) + current.length() + Integer.SIZE;
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, length);
         sendPassword(buffer, session, current, current);
         return true;
     }
@@ -109,8 +102,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
-            throw new IllegalStateException(
-                    "processAuthDataRequest(" + session + ")[" + service + "]"
+            throw new IllegalStateException("processAuthDataRequest(" + session + ")[" + service + "]"
                                             + " received unknown packet: cmd=" + SshConstants.getCommandMessageName(cmd));
         }
 
@@ -189,12 +181,9 @@ public class UserAuthPassword extends AbstractUserAuth {
                     session, service, name, modified);
         }
 
-        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                GenericUtils.length(username) + GenericUtils.length(service)
-                                                                             + GenericUtils.length(name)
-                                                                             + GenericUtils.length(oldPassword)
-                                                                             + (modified ? GenericUtils.length(newPassword) : 0)
-                                                                             + Long.SIZE);
+        int length = GenericUtils.length(username) + GenericUtils.length(service) + GenericUtils.length(name)
+                     + GenericUtils.length(oldPassword) + (modified ? GenericUtils.length(newPassword) : 0) + Long.SIZE;
+        buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, length);
         buffer.putString(username);
         buffer.putString(service);
         buffer.putString(name);

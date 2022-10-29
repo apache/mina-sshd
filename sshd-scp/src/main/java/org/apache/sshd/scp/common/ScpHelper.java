@@ -334,8 +334,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
             int bufferSize)
             throws IOException {
         if (bufferSize < MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IOException(
-                    "receiveStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum ("
+            throw new IOException("receiveStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum ("
                                   + MIN_RECEIVE_BUFFER_SIZE + ")");
         }
 
@@ -524,8 +523,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     public void sendStream(ScpSourceStreamResolver resolver, boolean preserve, int bufferSize) throws IOException {
         if (bufferSize < MIN_SEND_BUFFER_SIZE) {
-            throw new IOException(
-                    "sendStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum ("
+            throw new IOException("sendStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum ("
                                   + MIN_SEND_BUFFER_SIZE + ")");
         }
 

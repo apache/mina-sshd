@@ -216,8 +216,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             throws IOException {
         int remaining = buffer.available();
         if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
-            throw new SshException(
-                    "Bad length (" + length + ") for remaining data (" + remaining + ")"
+            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
                                    + " in response to " + SftpConstants.getCommandMessageName(cmd)
                                    + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
         }

@@ -71,8 +71,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     public void handleOpenSuccess(
             long recipient, long rwSize, long packetSize, Buffer buffer)
             throws IOException {
-        throw new UnsupportedOperationException(
-                "handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
+        throw new UnsupportedOperationException("handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override

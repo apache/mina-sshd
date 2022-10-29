@@ -220,7 +220,6 @@ public class Ssh2PublicKeyEntryDecoder
             headers.put(name, value.trim());
         }
 
-        throw new StreamCorruptedException(
-                "No viable data lines found in " + resourceKey.getName() + " after " + startLine);
+        throw new StreamCorruptedException("No viable data lines found in " + resourceKey.getName() + " after " + startLine);
     }
 }

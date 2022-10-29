@@ -94,8 +94,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         }
 
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
-            throw new SshException(
-                    SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet SSH_MSG_KEXDH_INIT, got " + KeyExchange.getSimpleKexOpcodeName(cmd));
         }
 

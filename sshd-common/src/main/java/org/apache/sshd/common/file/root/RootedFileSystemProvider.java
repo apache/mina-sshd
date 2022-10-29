@@ -453,8 +453,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     protected Path unroot(Path path) {
         Objects.requireNonNull(path, "No path to unroot");
         if (!(path instanceof RootedPath)) {
-            throw new ProviderMismatchException(
-                    "unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
+            throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
                                                 + " but rather a " + path.getClass().getSimpleName());
         }
 

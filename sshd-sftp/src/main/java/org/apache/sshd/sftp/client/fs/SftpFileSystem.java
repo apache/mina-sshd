@@ -579,8 +579,7 @@ public class SftpFileSystem
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).receive(id, timeout);
             } else {
-                throw new StreamCorruptedException(
-                        "receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
+                throw new StreamCorruptedException("receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
                                                    + RawSftpClient.class.getSimpleName());
             }
         }
@@ -594,8 +593,7 @@ public class SftpFileSystem
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).receive(id, timeout);
             } else {
-                throw new StreamCorruptedException(
-                        "receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
+                throw new StreamCorruptedException("receive(id=" + id + ", timeout=" + timeout + ") delegate is not a "
                                                    + RawSftpClient.class.getSimpleName());
             }
         }

@@ -171,8 +171,7 @@ public class FileHandle extends Handle {
         FileLock lock = accessor.tryLock(
                 subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
         if (lock == null) {
-            throw new SftpException(
-                    SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
                     "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
         }
 
@@ -194,8 +193,7 @@ public class FileHandle extends Handle {
             }
         }
         if (lock == null) {
-            throw new SftpException(
-                    SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
+            throw new SftpException(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK,
                     "No matching lock found on range [" + offset + "-" + (offset + length));
         }
 

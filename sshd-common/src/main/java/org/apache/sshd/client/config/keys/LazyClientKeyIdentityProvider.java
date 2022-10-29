@@ -106,8 +106,7 @@ public class LazyClientKeyIdentityProvider
                     try {
                         ids = loadClientIdentities(session, l);
                     } catch (IOException | GeneralSecurityException e) {
-                        throw new RuntimeException(
-                                "Failed (" + e.getClass().getSimpleName() + ")"
+                        throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ")"
                                                    + " to load key from " + l.getName() + ": " + e.getMessage(),
                                 e);
                     }

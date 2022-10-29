@@ -606,8 +606,7 @@ public abstract class Buffer implements Readable {
         try {
             group = ECCurves.octetStringToEcPoint(groupBytes);
         } catch (RuntimeException e) {
-            throw new InvalidKeySpecException(
-                    "extractEC(" + expectedCurveName + ")"
+            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ")"
                                               + " failed (" + e.getClass().getSimpleName() + ")"
                                               + " to decode EC group for curve: " + e.getMessage(),
                     e);
@@ -680,8 +679,7 @@ public abstract class Buffer implements Readable {
         } else if (buffer instanceof ByteBuffer) {
             putBuffer((ByteBuffer) buffer);
         } else {
-            throw new IllegalArgumentException(
-                    "No buffered overload found for "
+            throw new IllegalArgumentException("No buffered overload found for "
                                                + ((buffer == null) ? null : buffer.getClass().getName()));
         }
     }
