@@ -81,7 +81,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     public Nio2Session(Nio2Service service, PropertyResolver propertyResolver, IoHandler handler,
                        AsynchronousSocketChannel socket,
                        SocketAddress acceptanceAddress)
-                                                        throws IOException {
+            throws IOException {
         this.service = Objects.requireNonNull(service, "No service instance");
         this.propertyResolver = Objects.requireNonNull(propertyResolver, "No property resolver");
         this.ioHandler = Objects.requireNonNull(handler, "No IoHandler");

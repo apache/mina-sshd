@@ -61,7 +61,7 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
     private final KeyPair kp;
 
     public LegacyDSASignerTest(int keySize)
-                                            throws IOException, GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         this.keySize = keySize;
 
         String resourceName = KeyPairProvider.SSH_DSS + "-" + keySize;

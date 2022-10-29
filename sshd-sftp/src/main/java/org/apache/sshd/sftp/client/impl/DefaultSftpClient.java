@@ -90,7 +90,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
      */
     public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector,
                              SftpErrorDataHandler errorDataHandler)
-                                                                    throws IOException {
+            throws IOException {
         super(errorDataHandler);
 
         this.nameDecodingCharset = SftpModuleProperties.NAME_DECODING_CHARSET.getRequired(clientSession);

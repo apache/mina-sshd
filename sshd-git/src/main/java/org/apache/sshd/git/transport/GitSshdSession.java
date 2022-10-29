@@ -41,8 +41,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
     private final ClientSession session;
 
     public GitSshdSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
-                                                                                               throws IOException,
-                                                                                               InterruptedException {
+            throws IOException, InterruptedException {
         String user = uri.getUser();
         final String pass1 = uri.getPass();
         String host = uri.getHost();

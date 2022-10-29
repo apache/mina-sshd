@@ -81,7 +81,7 @@ public class SftpFileSystem
 
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session,
                           SftpClientFactory factory, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
-                                                                                                                          throws IOException {
+            throws IOException {
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");

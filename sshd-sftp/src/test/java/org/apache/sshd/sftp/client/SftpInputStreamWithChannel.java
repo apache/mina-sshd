@@ -42,7 +42,8 @@ public class SftpInputStreamWithChannel extends InputStreamWithChannel implement
     private long offset;
 
     public SftpInputStreamWithChannel(SftpClient client, int bufferSize, String path,
-                                      Collection<OpenMode> mode) throws IOException {
+                                      Collection<OpenMode> mode)
+            throws IOException {
         this.client = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         bb = new byte[1];

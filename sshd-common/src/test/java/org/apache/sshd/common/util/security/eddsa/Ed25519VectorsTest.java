@@ -64,7 +64,7 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
     private final byte[] expSignature;
 
     public Ed25519VectorsTest(String name, String prvKey, String pubKey, String msg, String signature)
-                                                                                                       throws GeneralSecurityException {
+            throws GeneralSecurityException {
         prvBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, prvKey);
         privateKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(prvBytes.clone());
         pubBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, pubKey);

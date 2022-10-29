@@ -62,7 +62,8 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
     private final String path;
 
     public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize,
-                                String path, Collection<OpenMode> mode) throws IOException {
+                                String path, Collection<OpenMode> mode)
+            throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;

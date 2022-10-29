@@ -74,7 +74,8 @@ public class SftpRemotePathChannel extends FileChannel {
     private final String path;
 
     public SftpRemotePathChannel(String path, SftpClient sftp, boolean closeOnExit,
-                                 Collection<OpenMode> modes) throws IOException {
+                                 Collection<OpenMode> modes)
+            throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote file path specified");
         this.modes = Objects.requireNonNull(modes, "No channel modes specified");

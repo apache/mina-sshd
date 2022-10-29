@@ -51,8 +51,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
     public AuthorizedKeyEntriesPublickeyAuthenticator(Object id, ServerSession session,
                                                       Collection<? extends AuthorizedKeyEntry> entries,
                                                       PublicKeyEntryResolver fallbackResolver)
-                                                                                               throws IOException,
-                                                                                               GeneralSecurityException {
+            throws IOException, GeneralSecurityException {
         this.id = id;
         int numEntries = GenericUtils.size(entries);
         if (numEntries <= 0) {

@@ -97,7 +97,7 @@ public class InputStreamReader extends Reader {
      * @throws UnsupportedEncodingException if the encoding specified by {@code enc} cannot be found.
      */
     public InputStreamReader(InputStream in, final String enc)
-                                                               throws UnsupportedEncodingException {
+            throws UnsupportedEncodingException {
         super(in);
         if (enc == null) {
             throw new NullPointerException();

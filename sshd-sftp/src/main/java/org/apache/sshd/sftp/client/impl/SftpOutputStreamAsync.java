@@ -55,7 +55,8 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
     private final String path;
 
     public SftpOutputStreamAsync(AbstractSftpClient client, int bufferSize,
-                                 String path, Collection<OpenMode> mode) throws IOException {
+                                 String path, Collection<OpenMode> mode)
+            throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
@@ -64,7 +65,8 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
     }
 
     public SftpOutputStreamAsync(AbstractSftpClient client, int bufferSize,
-                                 String path, CloseableHandle handle) throws IOException {
+                                 String path, CloseableHandle handle)
+            throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
