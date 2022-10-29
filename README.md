@@ -1,10 +1,15 @@
 ![Apache MINA SSHD](https://mina.apache.org/assets/img/header-sshd.png "Apache MINA SSHD")
 # Apache MINA SSHD
 
-Apache SSHD is a 100% pure java library to support the SSH protocols on both the client and server side. This library can
-leverage [Apache MINA](http://mina.apache.org), a scalable and high performance asynchronous IO library. SSHD does not really
+Apache MINA SSHD is a 100% pure java library to support the SSH protocols on both the client and server side. It does not
 aim at being a replacement for the SSH client or SSH server from Unix operating systems, but rather provides support for Java
 based applications requiring SSH support.
+
+The library can leverage several I/O back-ends:
+
+* The default transport is built-in and uses Java's `AsynchronousSocketChannel`s.
+* [Apache MINA](https://mina.apache.org), a scalable and high performance asynchronous I/O library, can be used instead, or
+* the [Netty](https://netty.io) asynchronous event-driven network framework is also supported.
 
 # Supported standards
 
@@ -49,7 +54,7 @@ based applications requiring SSH support.
     * `newline` - [DRAFT 09 Section 4.3](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.3)
     * `md5-hash`, `md5-hash-handle` - [DRAFT 09 - section 9.1.1](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.1)
     * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.2)
-    * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
+    * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](https://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
     * `space-available` - [DRAFT 09 - section 9.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.2)
     * `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
     * Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
@@ -139,7 +144,7 @@ Sensitive issues such as security vulnerabilities must be reported through [priv
 
 * Java 8+ (as of version 1.3)
 
-* [Slf4j](http://www.slf4j.org/)
+* [Slf4j](https://www.slf4j.org/)
 
 The code only requires the core abstract [slf4j-api](https://mvnrepository.com/artifact/org.slf4j/slf4j-api) module. The actual
 implementation of the logging API can be selected from the many existing adaptors.
