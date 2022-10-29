@@ -48,8 +48,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
     private Map<AuthorizedKeyEntry, PublicKey> resolvedKeys;
     private Object id;
 
-    public AuthorizedKeyEntriesPublickeyAuthenticator(
-                                                      Object id, ServerSession session,
+    public AuthorizedKeyEntriesPublickeyAuthenticator(Object id, ServerSession session,
                                                       Collection<? extends AuthorizedKeyEntry> entries,
                                                       PublicKeyEntryResolver fallbackResolver)
                                                                                                throws IOException,

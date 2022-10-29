@@ -43,8 +43,7 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
         this(request, BufferPublicKeyParser.DEFAULT);
     }
 
-    protected AbstractOpenSshHostKeysHandler(
-                                             String request, BufferPublicKeyParser<? extends PublicKey> parser) {
+    protected AbstractOpenSshHostKeysHandler(String request, BufferPublicKeyParser<? extends PublicKey> parser) {
         this.request = ValidateUtils.checkNotNullAndNotEmpty(request, "No request identifier");
         this.parser = Objects.requireNonNull(parser, "No public keys extractor");
     }

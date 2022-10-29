@@ -61,8 +61,7 @@ public abstract class AbstractPEMResourceKeyPairParser
     private final String algo;
     private final String algId;
 
-    protected AbstractPEMResourceKeyPairParser(
-                                               String algo, String algId, List<String> beginners, List<String> enders) {
+    protected AbstractPEMResourceKeyPairParser(String algo, String algId, List<String> beginners, List<String> enders) {
         super(beginners, enders);
         this.algo = ValidateUtils.checkNotNullAndNotEmpty(algo, "No encryption algorithm provided");
         this.algId = ValidateUtils.checkNotNullAndNotEmpty(algId, "No algorithm identifier provided");

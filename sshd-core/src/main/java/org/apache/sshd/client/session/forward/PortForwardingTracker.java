@@ -38,8 +38,7 @@ public abstract class PortForwardingTracker
     private final SshdSocketAddress localAddress;
     private final SshdSocketAddress boundAddress;
 
-    protected PortForwardingTracker(
-                                    ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
+    protected PortForwardingTracker(ClientSession session, SshdSocketAddress localAddress, SshdSocketAddress boundAddress) {
         this.session = Objects.requireNonNull(session, "No client session provided");
         this.localAddress = Objects.requireNonNull(localAddress, "No local address specified");
         this.boundAddress = Objects.requireNonNull(boundAddress, "No bound address specified");

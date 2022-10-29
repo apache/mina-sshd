@@ -78,8 +78,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
 
     private Thread readerThread;
 
-    public Nio2Session(
-                       Nio2Service service, PropertyResolver propertyResolver, IoHandler handler,
+    public Nio2Session(Nio2Service service, PropertyResolver propertyResolver, IoHandler handler,
                        AsynchronousSocketChannel socket,
                        SocketAddress acceptanceAddress)
                                                         throws IOException {

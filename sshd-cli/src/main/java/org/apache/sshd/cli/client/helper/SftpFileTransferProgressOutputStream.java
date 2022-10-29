@@ -49,8 +49,7 @@ public class SftpFileTransferProgressOutputStream extends FilterOutputStream {
         this(out, DEFAULT_MARKER_SIZE, DEFAULT_PROGRESS_CHAR, DEFAULT_MARKS_PER_LINE, stdout);
     }
 
-    public SftpFileTransferProgressOutputStream(
-                                                OutputStream out, int markerSize, char markerChar, int markersPerLine,
+    public SftpFileTransferProgressOutputStream(OutputStream out, int markerSize, char markerChar, int markersPerLine,
                                                 Appendable stdout) {
         super(Objects.requireNonNull(out, "No target stream"));
 

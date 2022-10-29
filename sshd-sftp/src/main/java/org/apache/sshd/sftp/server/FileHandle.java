@@ -52,8 +52,7 @@ public class FileHandle extends Handle {
     private final Set<StandardOpenOption> openOptions;
     private final Collection<FileAttribute<?>> fileAttributes;
 
-    public FileHandle(
-                      SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs)
+    public FileHandle(SftpSubsystem subsystem, Path file, String handle, int flags, int access, Map<String, Object> attrs)
                                                                                                                            throws IOException {
         super(subsystem, file, handle);
 

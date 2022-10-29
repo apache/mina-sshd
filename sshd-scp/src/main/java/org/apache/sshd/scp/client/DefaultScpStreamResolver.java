@@ -42,8 +42,7 @@ public class DefaultScpStreamResolver implements ScpSourceStreamResolver {
     private final InputStream local;
     private final String cmd;
 
-    public DefaultScpStreamResolver(
-                                    String name, Path mockPath, Collection<PosixFilePermission> perms,
+    public DefaultScpStreamResolver(String name, Path mockPath, Collection<PosixFilePermission> perms,
                                     ScpTimestampCommandDetails time, long size, InputStream local, String cmd) {
         this.name = name;
         this.mockPath = mockPath;

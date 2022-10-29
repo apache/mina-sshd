@@ -95,8 +95,7 @@ public class CipherTest extends BaseTestSupport {
     private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
     private final int loadTestRounds;
 
-    public CipherTest(
-                      BuiltinCiphers builtInCipher,
+    public CipherTest(BuiltinCiphers builtInCipher,
                       Class<? extends com.jcraft.jsch.Cipher> jschCipher,
                       int loadTestRounds) {
         this.builtInCipher = builtInCipher;

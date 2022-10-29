@@ -53,8 +53,7 @@ public class FileWatcherKeyPairResourceLoader extends ModifiableFileWatcher impl
         this(file, delegateLoader, IoUtils.getLinkOptions(true));
     }
 
-    public FileWatcherKeyPairResourceLoader(
-                                            Path file, KeyPairResourceLoader delegateLoader, LinkOption... options) {
+    public FileWatcherKeyPairResourceLoader(Path file, KeyPairResourceLoader delegateLoader, LinkOption... options) {
         super(file, options);
         this.delegateLoader = Objects.requireNonNull(delegateLoader, "No delegate loader provided");
     }

@@ -49,8 +49,7 @@ public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
     private final KeyIdentityProvider p2;
     private final KeyIdentityProvider expected;
 
-    public KeyIdentityProviderResolutionTest(
-                                             KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
+    public KeyIdentityProviderResolutionTest(KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
         this.p1 = p1;
         this.p2 = p2;
         this.expected = expected;

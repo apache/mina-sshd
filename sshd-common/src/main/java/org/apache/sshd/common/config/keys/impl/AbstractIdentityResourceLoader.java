@@ -42,8 +42,7 @@ public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV 
     private final Class<PRV> prvType;
     private final NavigableSet<String> types;
 
-    protected AbstractIdentityResourceLoader(
-                                             Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
+    protected AbstractIdentityResourceLoader(Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
         this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
         this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
         this.types = Collections.unmodifiableNavigableSet(

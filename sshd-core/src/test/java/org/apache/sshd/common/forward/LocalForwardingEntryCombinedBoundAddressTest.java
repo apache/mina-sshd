@@ -47,8 +47,7 @@ public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSuppo
     private final LocalForwardingEntry entry;
     private final SshdSocketAddress expected;
 
-    public LocalForwardingEntryCombinedBoundAddressTest(
-                                                        SshdSocketAddress local, SshdSocketAddress bound,
+    public LocalForwardingEntryCombinedBoundAddressTest(SshdSocketAddress local, SshdSocketAddress bound,
                                                         SshdSocketAddress expected) {
         this.entry = new LocalForwardingEntry(local, bound);
         this.expected = expected;

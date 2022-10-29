@@ -61,13 +61,11 @@ public class ClientIdentityFileWatcher
              strict);
     }
 
-    public ClientIdentityFileWatcher(
-                                     Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
+    public ClientIdentityFileWatcher(Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider) {
         this(path, loader, provider, true);
     }
 
-    public ClientIdentityFileWatcher(
-                                     Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
+    public ClientIdentityFileWatcher(Path path, ClientIdentityLoaderHolder loader, FilePasswordProviderHolder provider,
                                      boolean strict) {
         super(path);
         this.loaderHolder = Objects.requireNonNull(loader, "No client identity loader");

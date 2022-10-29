@@ -48,8 +48,7 @@ public class LazyClientKeyIdentityProvider
     private final FilePasswordProvider passwordProvider;
     private final boolean ignoreNonExisting;
 
-    public LazyClientKeyIdentityProvider(
-                                         ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
+    public LazyClientKeyIdentityProvider(ClientIdentityLoader loader, Collection<? extends NamedResource> locations,
                                          FilePasswordProvider passwordProvider, boolean ignoreNonExisting) {
         this.clientIdentityLoader = Objects.requireNonNull(loader, "No client identity loader provided");
         this.locations = locations;

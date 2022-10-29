@@ -287,8 +287,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @param factoryManager the factory manager
      * @param ioSession      the underlying I/O session
      */
-    protected AbstractSession(
-                              boolean serverSession, FactoryManager factoryManager, IoSession ioSession) {
+    protected AbstractSession(boolean serverSession, FactoryManager factoryManager, IoSession ioSession) {
         super(serverSession, factoryManager, ioSession);
 
         this.decoderBuffer = new SessionWorkBuffer(this);

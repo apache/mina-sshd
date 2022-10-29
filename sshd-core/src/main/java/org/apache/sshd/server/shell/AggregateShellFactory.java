@@ -43,8 +43,7 @@ public class AggregateShellFactory extends AbstractLoggingBean implements ShellF
      *                  {@code null} then the next in line is consulted. If no match found then the default
      *                  {@link InteractiveProcessShellFactory} is used
      */
-    public AggregateShellFactory(
-                                 Collection<? extends ShellFactorySelector> selectors) {
+    public AggregateShellFactory(Collection<? extends ShellFactorySelector> selectors) {
         this(selectors, InteractiveProcessShellFactory.INSTANCE);
     }
 
@@ -54,8 +53,7 @@ public class AggregateShellFactory extends AbstractLoggingBean implements ShellF
      *                       returns {@code null} then the next in line is consulted.
      * @param defaultFactory The (mandatory) default {@link ShellFactory} to use if no selector matched
      */
-    public AggregateShellFactory(
-                                 Collection<? extends ShellFactorySelector> selectors, ShellFactory defaultFactory) {
+    public AggregateShellFactory(Collection<? extends ShellFactorySelector> selectors, ShellFactory defaultFactory) {
         this.selectors = (selectors == null) ? Collections.emptyList() : selectors;
         this.defaultFactory = Objects.requireNonNull(defaultFactory, "No default factory provided");
     }

@@ -49,8 +49,7 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
     private final String keyPart;
     private final Map<String, String> options;
 
-    public AuthorizedKeyEntryLoginOptionsParseTest(
-                                                   String value, String loginPart, String keyPart,
+    public AuthorizedKeyEntryLoginOptionsParseTest(String value, String loginPart, String keyPart,
                                                    Map<String, String> options) {
         this.value = value;
         this.loginPart = loginPart;

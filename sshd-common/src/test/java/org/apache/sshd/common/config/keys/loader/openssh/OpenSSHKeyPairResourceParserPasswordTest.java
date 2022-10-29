@@ -60,8 +60,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
     private final AtomicInteger retriesCount = new AtomicInteger(0);
     private final FilePasswordProvider passwordProvider;
 
-    public OpenSSHKeyPairResourceParserPasswordTest(
-                                                    BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
+    public OpenSSHKeyPairResourceParserPasswordTest(BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
         super(identity);
         this.decodeResult = reportedResult;
         this.passwordProvider = new FilePasswordProvider() {

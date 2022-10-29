@@ -84,8 +84,7 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
     private boolean usePty;
     private final PtyChannelConfiguration config;
 
-    public PtyCapableChannelSession(
-                                    boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+    public PtyCapableChannelSession(boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         this.usePty = usePty;
         this.config = PtyChannelConfigurationMutator.copyConfiguration(
                 configHolder, new PtyChannelConfiguration());

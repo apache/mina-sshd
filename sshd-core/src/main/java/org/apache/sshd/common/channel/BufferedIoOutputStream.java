@@ -60,8 +60,7 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
              CoreModuleProperties.BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT.getRequired(resolver));
     }
 
-    public BufferedIoOutputStream(
-                                  Object id, long channelId, IoOutputStream out, int maxPendingBytesCount,
+    public BufferedIoOutputStream(Object id, long channelId, IoOutputStream out, int maxPendingBytesCount,
                                   Duration maxWaitForPendingWrites) {
         this.id = Objects.requireNonNull(id, "No stream identifier provided");
         this.channelId = channelId;

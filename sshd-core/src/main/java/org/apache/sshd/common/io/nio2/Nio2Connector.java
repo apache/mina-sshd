@@ -122,8 +122,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         protected final PropertyResolver propertyResolver;
         protected final IoHandler handler;
 
-        protected ConnectionCompletionHandler(
-                                              IoConnectFuture future, AsynchronousSocketChannel socket,
+        protected ConnectionCompletionHandler(IoConnectFuture future, AsynchronousSocketChannel socket,
                                               AttributeRepository context, PropertyResolver propertyResolver,
                                               IoHandler handler) {
             this.future = future;

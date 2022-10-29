@@ -45,8 +45,7 @@ public abstract class AbstractGitCommand
     protected final GitLocationResolver rootDirResolver;
     protected FileSystem fileSystem;
 
-    protected AbstractGitCommand(
-                                 GitLocationResolver rootDirResolver, String command,
+    protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command,
                                  CloseableExecutorService executorService) {
         super(command, executorService);
         this.rootDirResolver = Objects.requireNonNull(rootDirResolver, "No GIT root directory resolver provided");

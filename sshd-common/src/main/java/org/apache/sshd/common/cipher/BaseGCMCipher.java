@@ -34,8 +34,7 @@ public class BaseGCMCipher extends BaseCipher {
     protected CounterGCMParameterSpec parameters;
     protected SecretKey secretKey;
 
-    public BaseGCMCipher(
-                         int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation,
+    public BaseGCMCipher(int ivsize, int authSize, int kdfSize, String algorithm, int keySize, String transformation,
                          int blkSize) {
         super(ivsize, authSize, kdfSize, algorithm, keySize, transformation, blkSize);
     }

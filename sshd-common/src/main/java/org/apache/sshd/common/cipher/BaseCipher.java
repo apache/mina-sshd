@@ -41,8 +41,7 @@ public class BaseCipher implements Cipher {
     private final String transformation;
     private String s;
 
-    public BaseCipher(
-                      int ivsize, int authSize, int kdfSize, String algorithm,
+    public BaseCipher(int ivsize, int authSize, int kdfSize, String algorithm,
                       int keySize, String transformation, int blkSize) {
         this.ivsize = ivsize;
         this.authSize = authSize;

@@ -75,8 +75,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
     private final NamedFactory<Signature> factory;
     private final PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
 
-    public SignatureFactoriesTest(
-                                  String keyType, NamedFactory<Signature> factory,
+    public SignatureFactoriesTest(String keyType, NamedFactory<Signature> factory,
                                   int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         this.factory = supported ? Objects.requireNonNull(factory, "No signature factory provided") : factory;

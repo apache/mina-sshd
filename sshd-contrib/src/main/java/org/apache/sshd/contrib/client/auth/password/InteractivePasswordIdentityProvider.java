@@ -75,8 +75,7 @@ public class InteractivePasswordIdentityProvider
     private String prompt;
     private AtomicReference<String> nextPassword = new AtomicReference<>();
 
-    public InteractivePasswordIdentityProvider(
-                                               ClientSession clientSession, UserInteraction userInteraction, String prompt) {
+    public InteractivePasswordIdentityProvider(ClientSession clientSession, UserInteraction userInteraction, String prompt) {
         this.clientSession = Objects.requireNonNull(clientSession, "No client session provided");
         this.userInteraction = Objects.requireNonNull(userInteraction, "No user interaction instance configured");
         this.prompt = prompt;

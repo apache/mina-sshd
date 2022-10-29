@@ -88,8 +88,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
      *                                - if {@code null} the data is silently ignored
      * @throws IOException            If failed to initialize
      */
-    public DefaultSftpClient(
-                             ClientSession clientSession, SftpVersionSelector initialVersionSelector,
+    public DefaultSftpClient(ClientSession clientSession, SftpVersionSelector initialVersionSelector,
                              SftpErrorDataHandler errorDataHandler)
                                                                     throws IOException {
         super(errorDataHandler);

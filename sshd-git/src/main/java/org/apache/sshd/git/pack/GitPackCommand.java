@@ -47,8 +47,7 @@ public class GitPackCommand extends AbstractGitCommand {
      *                        {@code start(ChannelSession, Environment)}-ing execution. If {@code null} an ad-hoc
      *                        single-threaded service is created and used.
      */
-    public GitPackCommand(
-                          GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
+    public GitPackCommand(GitLocationResolver rootDirResolver, String command, CloseableExecutorService executorService) {
         super(rootDirResolver, command, executorService);
     }
 
