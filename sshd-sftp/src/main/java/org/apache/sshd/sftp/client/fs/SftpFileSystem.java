@@ -298,7 +298,7 @@ public class SftpFileSystem
                 if (!pool.offer(delegate)) {
                     delegate.close();
                 }
-                wrappers.set(null);
+                wrappers.remove();
             }
         }
 

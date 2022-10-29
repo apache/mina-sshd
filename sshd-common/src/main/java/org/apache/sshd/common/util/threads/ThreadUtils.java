@@ -60,12 +60,15 @@ public final class ThreadUtils {
      * @see              {@link #isInternal()}
      */
     public static <V> V runAsInternal(Callable<V> code) throws Exception {
-        Boolean initial = IS_INTERNAL_THREAD.get();
-        try {
-            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+        if (isInternalThread()) {
             return code.call();
-        } finally {
-            IS_INTERNAL_THREAD.set(initial);
+        } else {
+            try {
+                IS_INTERNAL_THREAD.set(Boolean.TRUE);
+                return code.call();
+            } finally {
+                IS_INTERNAL_THREAD.remove();
+            }
         }
     }
 
@@ -82,12 +85,15 @@ public final class ThreadUtils {
      * @see              {@link #isInternal()}
      */
     public static <T, V> V runAsInternal(T param, IOFunction<? super T, V> code) throws IOException {
-        Boolean initial = IS_INTERNAL_THREAD.get();
-        try {
-            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+        if (isInternalThread()) {
             return code.apply(param);
-        } finally {
-            IS_INTERNAL_THREAD.set(initial);
+        } else {
+            try {
+                IS_INTERNAL_THREAD.set(Boolean.TRUE);
+                return code.apply(param);
+            } finally {
+                IS_INTERNAL_THREAD.remove();
+            }
         }
     }
 
