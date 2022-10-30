@@ -78,7 +78,7 @@ public class PGPAuthorizedEntriesTracker
         this.keyFiles = GenericUtils.isEmpty(keys)
                 ? new ArrayList<>()
                 : keys.stream()
-                        .map(k -> new PGPPublicKeyFileWatcher(k))
+                        .map(PGPPublicKeyFileWatcher::new)
                         .collect(Collectors.toCollection(() -> new ArrayList<>(keys.size())));
     }
 

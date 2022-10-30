@@ -62,7 +62,6 @@ public class GitPgmCommand extends AbstractGitCommand {
 
                 if (argVal.startsWith("\"") && argVal.endsWith("\"")) {
                     args[i] = argVal.substring(1, argVal.length() - 1);
-                    argVal = args[i];
                 }
             }
 

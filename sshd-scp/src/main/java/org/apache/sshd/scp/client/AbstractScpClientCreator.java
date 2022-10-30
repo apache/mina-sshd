@@ -37,7 +37,7 @@ public abstract class AbstractScpClientCreator extends AbstractLoggingBean imple
         this("");
     }
 
-    public AbstractScpClientCreator(String discriminator) {
+    protected AbstractScpClientCreator(String discriminator) {
         super(discriminator);
     }
 

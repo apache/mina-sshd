@@ -125,7 +125,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         if ((executor != null) && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
             if (log.isDebugEnabled()) {
-                log.debug("Shut down runners count=" + GenericUtils.size(runners));
+                log.debug("Shut down runners count={}", GenericUtils.size(runners));
             }
         }
 

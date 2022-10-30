@@ -223,7 +223,7 @@ public class DefaultForwarder
 
         try {
             if (log.isDebugEnabled()) {
-                log.debug("startLocalPortForwarding(" + local + " -> " + remote + "): " + result);
+                log.debug("startLocalPortForwarding({} -> {}): {}", local, remote, result);
             }
             signalEstablishedExplicitTunnel(local, remote, true, result, null);
             return result;
@@ -325,7 +325,7 @@ public class DefaultForwarder
         try {
             SshdSocketAddress bound = new SshdSocketAddress(remoteHost, port);
             if (log.isDebugEnabled()) {
-                log.debug("startRemotePortForwarding(" + remote + " -> " + local + "): " + bound);
+                log.debug("startRemotePortForwarding({} -> {}): {}", remote, local, bound);
             }
 
             signalEstablishedExplicitTunnel(local, remote, false, bound, null);
@@ -346,7 +346,7 @@ public class DefaultForwarder
 
         if (bound != null) {
             if (log.isDebugEnabled()) {
-                log.debug("stopRemotePortForwarding(" + remote + ") cancel forwarding to " + bound);
+                log.debug("stopRemotePortForwarding({}) cancel forwarding to {}", remote, bound);
             }
 
             String remoteHost = remote.getHostName();
@@ -368,7 +368,7 @@ public class DefaultForwarder
             signalTornDownExplicitTunnel(bound, false, remote, null);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("stopRemotePortForwarding(" + remote + ") no binding found");
+                log.debug("stopRemotePortForwarding({}) no binding found", remote);
             }
         }
     }
@@ -381,19 +381,13 @@ public class DefaultForwarder
                 signalTearingDownExplicitTunnel(l, boundAddress, localForwarding, remote);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal tearing down explicit tunnel for local=" + localForwarding
-                                      + " on bound=" + boundAddress,
-                        t);
-            }
+            throw new IOException(
+                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal tearing down explicit tunnel for local="
+                                  + localForwarding + " on bound=" + boundAddress,
+                    t);
         }
     }
 
@@ -416,19 +410,13 @@ public class DefaultForwarder
                 signalTornDownExplicitTunnel(l, boundAddress, localForwarding, remoteAddress, reason);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal torn down explicit tunnel local=" + localForwarding
-                                      + " on bound=" + boundAddress,
-                        t);
-            }
+            throw new IOException(
+                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal torn down explicit tunnel local="
+                                  + localForwarding + " on bound=" + boundAddress,
+                    t);
         }
     }
 
@@ -489,7 +477,7 @@ public class DefaultForwarder
         try {
             SshdSocketAddress result = new SshdSocketAddress(bound.getHostString(), port);
             if (log.isDebugEnabled()) {
-                log.debug("startDynamicPortForwarding(" + local + "): " + result);
+                log.debug("startDynamicPortForwarding({}): {}", local, result);
             }
 
             signalEstablishedDynamicTunnel(local, result, null);
@@ -508,19 +496,12 @@ public class DefaultForwarder
                 signalEstablishedDynamicTunnel(l, local, boundAddress, reason);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal establishing dynamic tunnel for local=" + local
-                                      + " on bound=" + boundAddress,
-                        t);
-            }
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                                  + " to signal establishing dynamic tunnel for local=" + local + " on bound=" + boundAddress,
+                    t);
         }
     }
 
@@ -541,18 +522,12 @@ public class DefaultForwarder
                 signalEstablishingDynamicTunnel(l, local);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal establishing dynamic tunnel for local=" + local,
-                        t);
-            }
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                                  + " to signal establishing dynamic tunnel for local=" + local,
+                    t);
         }
     }
 
@@ -629,18 +604,12 @@ public class DefaultForwarder
                 signalTearingDownDynamicTunnel(l, address);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal tearing down dynamic tunnel for address=" + address,
-                        t);
-            }
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                                  + " to signal tearing down dynamic tunnel for address=" + address,
+                    t);
         }
     }
 
@@ -659,18 +628,12 @@ public class DefaultForwarder
                 signalTornDownDynamicTunnel(l, address, reason);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal torn down dynamic tunnel for address=" + address,
-                        t);
-            }
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                                  + " to signal torn down dynamic tunnel for address=" + address,
+                    t);
         }
     }
 
@@ -702,8 +665,7 @@ public class DefaultForwarder
         try {
             if ((filter == null) || (!filter.canListen(local, session))) {
                 if (log.isDebugEnabled()) {
-                    log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null)
-                              + "] rejected");
+                    log.debug("localPortForwardingRequested({})[{}][haveFilter={}] rejected", session, local, filter != null);
                 }
                 return null;
             }
@@ -720,7 +682,7 @@ public class DefaultForwarder
             InetSocketAddress bound = doBind(local, getLocalIoAcceptor());
             result = new SshdSocketAddress(bound);
             if (log.isDebugEnabled()) {
-                log.debug("localPortForwardingRequested(" + local + "): " + result);
+                log.debug("localPortForwardingRequested({}): {}", local, result);
             }
 
             boolean added;
@@ -742,12 +704,8 @@ public class DefaultForwarder
             throw e;
         }
 
-        try {
-            signalEstablishedExplicitTunnel(local, null, true, result, null);
-            return result;
-        } catch (IOException | RuntimeException e) {
-            throw e;
-        }
+        signalEstablishedExplicitTunnel(local, null, true, result, null);
+        return result;
     }
 
     @Override
@@ -763,7 +721,7 @@ public class DefaultForwarder
 
         if ((entry != null) && (localAcceptor != null)) {
             if (log.isDebugEnabled()) {
-                log.debug("localPortForwardingCancelled(" + local + ") unbind " + entry);
+                log.debug("localPortForwardingCancelled({}) unbind {}", local, entry);
             }
 
             SshdSocketAddress reportedBoundAddress = entry.getCombinedBoundAddress();
@@ -780,7 +738,7 @@ public class DefaultForwarder
             signalTornDownExplicitTunnel(reportedBoundAddress, true, null, null);
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("localPortForwardingCancelled(" + local + ") no match/acceptor: " + entry);
+                log.debug("localPortForwardingCancelled({}) no match/acceptor: {}", local, entry);
             }
         }
     }
@@ -793,19 +751,13 @@ public class DefaultForwarder
                 signalEstablishingExplicitTunnel(l, local, remote, localForwarding);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal establishing explicit tunnel for local=" + local
-                                      + ", remote=" + remote + ", localForwarding=" + localForwarding,
-                        t);
-            }
+            throw new IOException(
+                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal establishing explicit tunnel for local="
+                                  + local + ", remote=" + remote + ", localForwarding=" + localForwarding,
+                    t);
         }
     }
 
@@ -828,20 +780,13 @@ public class DefaultForwarder
                 signalEstablishedExplicitTunnel(l, local, remote, localForwarding, boundAddress, reason);
                 return null;
             });
+        } catch (Error | RuntimeException | IOException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            } else if (t instanceof Error) {
-                throw (Error) t;
-            } else if (t instanceof IOException) {
-                throw (IOException) t;
-            } else {
-                throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                      + " to signal established explicit tunnel for local=" + local
-                                      + ", remote=" + remote + ", localForwarding=" + localForwarding
-                                      + ", bound=" + boundAddress,
-                        t);
-            }
+            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
+                                  + " to signal established explicit tunnel for local=" + local + ", remote=" + remote
+                                  + ", localForwarding=" + localForwarding + ", bound=" + boundAddress,
+                    t);
         }
     }
 
@@ -1155,13 +1100,7 @@ public class DefaultForwarder
     @Override
     public boolean isLocalPortForwardingStartedForPort(int port) {
         synchronized (localLock) {
-            return localToRemote.isEmpty()
-                    ? false
-                    : localToRemote.keySet()
-                            .stream()
-                            .filter(e -> e.getPort() == port)
-                            .findAny()
-                            .isPresent();
+            return localToRemote.keySet().stream().anyMatch(e -> e.getPort() == port);
         }
     }
 

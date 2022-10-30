@@ -88,7 +88,7 @@ public class BaseMac implements Mac {
     }
 
     @Override
-    public void update(byte buf[], int offset, int len) {
+    public void update(byte[] buf, int offset, int len) {
         mac.update(buf, offset, len);
     }
 

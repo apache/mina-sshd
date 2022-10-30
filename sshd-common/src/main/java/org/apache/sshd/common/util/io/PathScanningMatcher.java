@@ -84,7 +84,7 @@ public abstract class PathScanningMatcher {
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(
                         includes.stream()
-                                .map(v -> normalizePattern(v))
+                                .map(PathScanningMatcher::normalizePattern)
                                 .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
     }
 

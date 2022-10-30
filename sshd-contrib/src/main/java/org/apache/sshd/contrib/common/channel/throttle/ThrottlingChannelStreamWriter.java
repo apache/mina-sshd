@@ -197,7 +197,7 @@ public class ThrottlingChannelStreamWriter extends AbstractLoggingBean
     public void close() throws IOException {
         if (open.getAndSet(false)) {
             if (log.isDebugEnabled()) {
-                log.debug("close({}) closing");
+                log.debug("close({}) closing", this);
             }
         }
 

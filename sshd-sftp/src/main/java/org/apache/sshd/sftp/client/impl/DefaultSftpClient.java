@@ -493,7 +493,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         Map<String, ?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
-        List<Integer> availableVersions = Collections.emptyList();
+        List<Integer> availableVersions;
         if ((GenericUtils.size(extensions) > 0)
                 && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
             Versions vers = MapEntryUtils.isEmpty(parsed)

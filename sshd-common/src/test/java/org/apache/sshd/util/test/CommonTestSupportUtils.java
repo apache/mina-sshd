@@ -462,7 +462,7 @@ public final class CommonTestSupportUtils {
 
     public static KeyPair getFirstKeyPair(KeyIdentityProvider provider) {
         Objects.requireNonNull(provider, "No key pair provider");
-        Iterable<? extends KeyPair> pairs;
+        Iterable<KeyPair> pairs;
         try {
             pairs = Objects.requireNonNull(provider.loadKeys(null), "No loaded keys");
         } catch (IOException | GeneralSecurityException e) {
@@ -471,7 +471,7 @@ public final class CommonTestSupportUtils {
                     e);
         }
 
-        Iterator<? extends KeyPair> iter = Objects.requireNonNull(pairs.iterator(), "No keys iterator");
+        Iterator<KeyPair> iter = Objects.requireNonNull(pairs.iterator(), "No keys iterator");
         ValidateUtils.checkTrue(iter.hasNext(), "Empty loaded kyes iterator");
         return Objects.requireNonNull(iter.next(), "No key pair in iterator");
     }

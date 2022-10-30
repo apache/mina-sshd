@@ -58,7 +58,7 @@ public interface HostKeyIdentityProvider {
         return wrap(GenericUtils.asList(pairs));
     }
 
-    static HostKeyIdentityProvider wrap(Iterable<? extends KeyPair> pairs) {
+    static HostKeyIdentityProvider wrap(Iterable<KeyPair> pairs) {
         return session -> GenericUtils.wrapIterable(pairs,
                 kp -> new SimpleImmutableEntry<>(kp, Collections.<X509Certificate> emptyList()));
     }

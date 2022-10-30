@@ -398,27 +398,20 @@ public class ApacheSshdSftpSessionFactory
                 SftpVersionSelector selector = getSftpVersionSelector();
                 SftpClientFactory sftpFactory = SftpClientFactory.instance();
                 SftpClient sftpClient = sftpFactory.createSftpClient(session, selector);
-                try {
-                    ClientSession sessionInstance = session;
-                    Session<DirEntry> result = sharedInstance
-                            ? new SpringSftpSession(sftpClient)
-                            : new SpringSftpSession(sftpClient, () -> {
-                                try {
-                                    sessionInstance.close();
-                                    return null;
-                                } catch (Exception e) {
-                                    return e;
-                                }
-                            });
-                    // avoid auto-close at finally clause
-                    sftpClient = null;
-                    session = null;
-                    return result;
-                } finally {
-                    if (sftpClient != null) {
-                        sftpClient.close();
-                    }
-                }
+                ClientSession sessionInstance = session;
+                Session<DirEntry> result = sharedInstance
+                        ? new SpringSftpSession(sftpClient)
+                        : new SpringSftpSession(sftpClient, () -> {
+                            try {
+                                sessionInstance.close();
+                                return null;
+                            } catch (Exception e) {
+                                return e;
+                            }
+                        });
+                // avoid auto-close at finally clause
+                session = null;
+                return result;
             } finally {
                 if (session != null) {
                     try {
@@ -523,7 +516,7 @@ public class ApacheSshdSftpSessionFactory
         }
 
         if (debugEnabled) {
-            log.debug("authenticateClientSession({}) authenticate - timeout=", session, timeout);
+            log.debug("authenticateClientSession({}) authenticate - timeout={}", session, timeout);
         }
         session.auth().verify(timeout);
         return session;

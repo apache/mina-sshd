@@ -72,10 +72,10 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             throws IOException {
         if (reason == null) {
             if (log.isInfoEnabled()) {
-                log.info("Estalibshed dynamic tunnel for session={}: local={},  bound={}", session, local, boundAddress);
+                log.info("Estalibshed dynamic tunnel for session={}: local={} bound={}", session, local, boundAddress);
             }
         } else {
-            log.error("Failed ({}) to establish dynamic tunnel for session={}, bound={}: {}",
+            log.error("Failed ({}) to establish dynamic tunnel for session={}: local={} bound={}: {}",
                     reason.getClass().getSimpleName(), session, local, boundAddress, reason.getMessage());
         }
     }
@@ -86,7 +86,7 @@ public class ServerPortForwardingEventListener extends ServerEventListenerHelper
             throws IOException {
         if (reason == null) {
             if (log.isInfoEnabled()) {
-                log.info("Torn down dynamic tunnel for session={}: address={}", session);
+                log.info("Torn down dynamic tunnel for session={}: address={}", session, address);
             }
         } else {
             log.error("Failed ({}) to tear down dynamic tunnel for session={}, address={}: {}",

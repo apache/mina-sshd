@@ -48,7 +48,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<RSAPublicKey, RSAPrivateKey> {
-    public static final BigInteger DEFAULT_PUBLIC_EXPONENT = new BigInteger("65537");
+    public static final BigInteger DEFAULT_PUBLIC_EXPONENT = KeyUtils.DEFAULT_RSA_PUBLIC_EXPONENT;
     public static final OpenSSHRSAPrivateKeyDecoder INSTANCE = new OpenSSHRSAPrivateKeyDecoder();
 
     public OpenSSHRSAPrivateKeyDecoder() {
@@ -79,16 +79,8 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
         if (!Objects.equals(n, modulus)) {
             log.warn("decodePrivateKey({}) mismatched modulus values: encoded={}, calculated={}", keyType, n, modulus);
         }
-        try {
-            return generatePrivateKey(new RSAPrivateCrtKeySpec(
-                    n, e, d, p, q, d.mod(p.subtract(BigInteger.ONE)), d.mod(q.subtract(BigInteger.ONE)), inverseQmodP));
-        } finally {
-            // get rid of sensitive data a.s.a.p
-            d = null;
-            inverseQmodP = null;
-            p = null;
-            q = null;
-        }
+        return generatePrivateKey(new RSAPrivateCrtKeySpec(n, e, d, p, q, d.mod(p.subtract(BigInteger.ONE)),
+                d.mod(q.subtract(BigInteger.ONE)), inverseQmodP));
     }
 
     @Override

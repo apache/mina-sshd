@@ -900,11 +900,7 @@ public abstract class AbstractConnectionService
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
-            return new AbstractIoWriteFuture(req, null) {
-                {
-                    setValue(Boolean.TRUE);
-                }
-            };
+            return AbstractIoWriteFuture.fulfilled(req, Boolean.TRUE);
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)

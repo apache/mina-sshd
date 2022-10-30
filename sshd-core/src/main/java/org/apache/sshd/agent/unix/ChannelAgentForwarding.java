@@ -132,7 +132,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             if (forwardService != null) {
                 Collection<?> runners = forwardService.shutdownNow();
                 if (log.isDebugEnabled()) {
-                    log.debug("Shut down runners count=" + GenericUtils.size(runners));
+                    log.debug("Shut down runners count={}", GenericUtils.size(runners));
                 }
             }
         } finally {

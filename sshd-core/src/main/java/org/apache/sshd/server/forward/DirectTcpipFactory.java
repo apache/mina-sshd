@@ -28,6 +28,6 @@ public class DirectTcpipFactory extends TcpipFactory {
     public static final DirectTcpipFactory INSTANCE = new DirectTcpipFactory();
 
     public DirectTcpipFactory() {
-        super(ForwardingFilter.Type.Direct);
+        super(TcpForwardingFilter.Type.Direct);
     }
 }

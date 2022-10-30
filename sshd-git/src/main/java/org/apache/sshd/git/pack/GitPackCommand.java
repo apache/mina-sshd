@@ -65,7 +65,6 @@ public class GitPackCommand extends AbstractGitCommand {
                 }
                 if (argVal.startsWith("\"") && argVal.endsWith("\"")) {
                     args[i] = argVal.substring(1, argVal.length() - 1);
-                    argVal = args[i];
                 }
             }
 
@@ -100,8 +99,7 @@ public class GitPackCommand extends AbstractGitCommand {
         int len = GenericUtils.length(pathArg);
         // Strip any leading path separator since we use relative to root
         if ((len > 0) && (pathArg.charAt(0) == '/')) {
-            pathArg = (len > 1) ? pathArg.substring(1) : "";
-            len--;
+            pathArg = pathArg.substring(1);
         }
 
         ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", args[0]);

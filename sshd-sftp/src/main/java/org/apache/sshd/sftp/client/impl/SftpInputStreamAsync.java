@@ -162,9 +162,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             throw new IOException("transferTo(" + getPath() + ") stream closed");
         }
 
-        long numXfered = doRead(Long.MAX_VALUE, buf -> {
-            out.write(buf.array(), buf.rpos(), buf.available());
-        });
+        long numXfered = doRead(Long.MAX_VALUE, buf -> out.write(buf.array(), buf.rpos(), buf.available()));
         if (log.isDebugEnabled()) {
             log.debug("transferTo({}) transferred {} bytes", this, numXfered);
         }

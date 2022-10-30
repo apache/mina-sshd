@@ -83,7 +83,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
         } else {
             assertArrayEquals("Mismatched stream content", expected, Arrays.copyOf(read, expected.length));
             for (int i = expected.length; i < read.length; i++) {
-                assertTrue("Non-zero value at position " + i, read[i] == 0);
+                assertEquals("Non-zero value at position " + i, 0, read[i]);
             }
         }
     }

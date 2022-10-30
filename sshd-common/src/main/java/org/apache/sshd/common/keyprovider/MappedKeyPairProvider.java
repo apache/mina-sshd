@@ -51,7 +51,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
         this(GenericUtils.isEmpty(pairs) ? Collections.emptyList() : Arrays.asList(pairs));
     }
 
-    public MappedKeyPairProvider(Collection<? extends KeyPair> pairs) {
+    public MappedKeyPairProvider(Collection<KeyPair> pairs) {
         this(mapUniquePairs(pairs));
     }
 
@@ -79,7 +79,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
         return String.valueOf(pairsMap.keySet());
     }
 
-    public static Map<String, KeyPair> mapUniquePairs(Collection<? extends KeyPair> pairs) {
+    public static Map<String, KeyPair> mapUniquePairs(Collection<KeyPair> pairs) {
         if (GenericUtils.isEmpty(pairs)) {
             return Collections.emptyMap();
         }

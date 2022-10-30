@@ -51,7 +51,7 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV e
         try {
             boolVal = PropertyResolverUtils.parseBoolean(stringVal);
         } catch (IllegalArgumentException e) {
-            log.warn("Ignoring non-boolean property value for \"" + propertyKey + "\": " + stringVal);
+            log.warn("Ignoring non-boolean property value for \"{}\": {}", propertyKey, stringVal);
             boolVal = null;
         }
         if (boolVal == null) {

@@ -346,11 +346,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
 
         if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
-            return new AbstractIoWriteFuture(req, null) {
-                {
-                    setValue(Boolean.TRUE);
-                }
-            };
+            return AbstractIoWriteFuture.fulfilled(req, Boolean.TRUE);
         }
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
@@ -412,14 +408,10 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 signalChannelOpenSuccess(l);
                 return null;
             });
+        } catch (Error | RuntimeException err) {
+            throw err;
         } catch (Throwable err) {
-            if (err instanceof RuntimeException) {
-                throw (RuntimeException) err;
-            } else if (err instanceof Error) {
-                throw (Error) err;
-            } else {
-                throw new RuntimeException(err);
-            }
+            throw new RuntimeException(err);
         }
     }
 
@@ -782,11 +774,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         if (log.isDebugEnabled()) {
             log.debug("writePacket({}) Discarding output packet because channel state={}", this, state);
         }
-        return new AbstractIoWriteFuture(toString(), null) {
-            {
-                setValue(new EOFException("Channel is being closed"));
-            }
-        };
+        return AbstractIoWriteFuture.fulfilled(toString(), new EOFException("Channel is being closed"));
     }
 
     protected boolean mayWrite() {

@@ -103,7 +103,7 @@ public final class KeyUtils {
     /**
      * The most commonly used RSA public key exponent
      */
-    public static final BigInteger DEFAULT_RSA_PUBLIC_EXPONENT = new BigInteger("65537");
+    public static final BigInteger DEFAULT_RSA_PUBLIC_EXPONENT = BigInteger.valueOf(65537);
 
     /**
      * Name of algorithm for DSS keys to be used when calling security provider

@@ -235,8 +235,6 @@ public final class SelectorUtils {
 
             String subDir = strDirs.get(strIdxStart);
             if (!match(patDir, subDir, isCaseSensitive)) {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
 
@@ -249,8 +247,6 @@ public final class SelectorUtils {
             for (int i = patIdxStart; i <= patIdxEnd; i++) {
                 String subPat = patDirs.get(i);
                 if (!subPat.equals("**")) {
-                    patDirs = null;
-                    strDirs = null;
                     return false;
                 }
             }
@@ -258,8 +254,6 @@ public final class SelectorUtils {
         } else {
             if (patIdxStart > patIdxEnd) {
                 // String not exhausted, but pattern is. Failure.
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
         }
@@ -273,8 +267,6 @@ public final class SelectorUtils {
 
             String subDir = strDirs.get(strIdxEnd);
             if (!match(patDir, subDir, isCaseSensitive)) {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
 
@@ -287,8 +279,6 @@ public final class SelectorUtils {
             for (int i = patIdxStart; i <= patIdxEnd; i++) {
                 String subPat = patDirs.get(i);
                 if (!subPat.equals("**")) {
-                    patDirs = null;
-                    strDirs = null;
                     return false;
                 }
             }
@@ -328,8 +318,6 @@ public final class SelectorUtils {
             }
 
             if (foundIdx == -1) {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
 
@@ -340,8 +328,6 @@ public final class SelectorUtils {
         for (int i = patIdxStart; i <= patIdxEnd; i++) {
             String subPat = patDirs.get(i);
             if (!subPat.equals("**")) {
-                patDirs = null;
-                strDirs = null;
                 return false;
             }
         }

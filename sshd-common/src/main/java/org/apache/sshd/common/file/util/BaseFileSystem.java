@@ -41,7 +41,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     protected final Logger log;
     private final FileSystemProvider fileSystemProvider;
 
-    public BaseFileSystem(FileSystemProvider fileSystemProvider) {
+    protected BaseFileSystem(FileSystemProvider fileSystemProvider) {
         this.log = LoggerFactory.getLogger(getClass());
         this.fileSystemProvider = Objects.requireNonNull(fileSystemProvider, "No file system provider");
     }

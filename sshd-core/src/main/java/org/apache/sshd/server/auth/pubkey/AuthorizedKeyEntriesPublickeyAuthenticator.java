@@ -79,7 +79,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
         if (MapEntryUtils.isEmpty(resolvedKeys)) {
             if (log.isDebugEnabled()) {
-                log.debug("authenticate(" + username + ")[" + session + "] no entries");
+                log.debug("authenticate({})[{}] no entries", username, session);
             }
 
             return false;
@@ -88,7 +88,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
         for (Map.Entry<AuthorizedKeyEntry, PublicKey> e : resolvedKeys.entrySet()) {
             if (KeyUtils.compareKeys(key, e.getValue())) {
                 if (log.isDebugEnabled()) {
-                    log.debug("authenticate(" + username + ")[" + session + "] match found");
+                    log.debug("authenticate({})[{}] match found", username, session);
                 }
                 if (session != null) {
                     session.setAttribute(AUTHORIZED_KEY, e.getKey());
@@ -98,7 +98,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("authenticate(" + username + ")[" + session + "] match not found");
+            log.debug("authenticate({})[{}] match not found", username, session);
         }
         return false;
     }

@@ -97,7 +97,7 @@ public class SftpClientDirectoryScanner extends PathScanningMatcher {
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(
                         includes.stream()
-                                .map(v -> SftpPathDirectoryScanner.adjustPattern(v))
+                                .map(SftpPathDirectoryScanner::adjustPattern)
                                 .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
     }
 

@@ -73,10 +73,8 @@ public class PuttyRequestHandler extends AbstractChannelRequestHandler {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("processPuttyOpcode(" + opcode + ")"
-                      + "[buffer size=" + buffer.available() + "]"
-                      + "[reply=" + wantReply + "]"
-                      + " Unknown request: " + request);
+            log.debug("processPuttyOpcode({})[buffer size={}] [reply={}] Unknown request: {}", opcode, buffer.available(),
+                    wantReply, request);
         }
 
         return Result.ReplyFailure;

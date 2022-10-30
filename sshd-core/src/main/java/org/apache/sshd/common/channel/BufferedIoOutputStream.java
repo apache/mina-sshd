@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.channel.exception.SshChannelBufferedOutputException;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -187,16 +186,13 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
 
         Buffer buffer = future.getBuffer();
         int bufferSize = buffer.available();
-        out.writeBuffer(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
-            public void operationComplete(IoWriteFuture f) {
-                if (f.isWritten()) {
-                    future.setValue(Boolean.TRUE);
-                } else {
-                    future.setValue(f.getException());
-                }
-                finishWrite(future, bufferSize);
+        out.writeBuffer(buffer).addListener(f -> {
+            if (f.isWritten()) {
+                future.setValue(Boolean.TRUE);
+            } else {
+                future.setValue(f.getException());
             }
+            finishWrite(future, bufferSize);
         });
     }
 

@@ -533,11 +533,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             if (CoreModuleProperties.AUTO_WELCOME_BANNER_VALUE.equalsIgnoreCase(message)) {
                 try {
                     return KeyRandomArt.combine(session, ' ', session.getKeyPairProvider());
+                } catch (IOException e) {
+                    throw e;
                 } catch (Exception e) {
-                    if (e instanceof IOException) {
-                        throw (IOException) e;
-                    }
-
                     throw new IOException(e);
                 }
             }

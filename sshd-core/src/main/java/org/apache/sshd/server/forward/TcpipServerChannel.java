@@ -65,13 +65,13 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     public abstract static class TcpipFactory implements ChannelFactory, ExecutorServiceCarrier {
 
-        private final ForwardingFilter.Type type;
+        private final TcpForwardingFilter.Type type;
 
-        protected TcpipFactory(ForwardingFilter.Type type) {
+        protected TcpipFactory(TcpForwardingFilter.Type type) {
             this.type = type;
         }
 
-        public final ForwardingFilter.Type getType() {
+        public final TcpForwardingFilter.Type getType() {
             return type;
         }
 
@@ -91,7 +91,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         }
     }
 
-    private final ForwardingFilter.Type type;
+    private final TcpForwardingFilter.Type type;
     private IoConnector connector;
     private ChannelToPortHandler port;
     private ChannelAsyncOutputStream out;
@@ -100,12 +100,12 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
     private SshdSocketAddress originatorAddress;
     private SocketAddress localAddress;
 
-    public TcpipServerChannel(ForwardingFilter.Type type, CloseableExecutorService executor) {
+    public TcpipServerChannel(TcpForwardingFilter.Type type, CloseableExecutorService executor) {
         super("", Collections.emptyList(), executor);
         this.type = Objects.requireNonNull(type, "No channel type specified");
     }
 
-    public ForwardingFilter.Type getTcpipChannelType() {
+    public TcpForwardingFilter.Type getTcpipChannelType() {
         return type;
     }
 
@@ -178,8 +178,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         try {
             if ((address == null) || (filter == null) || (!filter.canConnect(channelType, address, session))) {
                 if (debugEnabled) {
-                    log.debug(
-                            "doInit(" + this + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
+                    log.debug("doInit({})[{}][haveFilter={}] filtered out {}", this, type, filter != null, address);
                 }
                 try {
                     f.setException(new SshChannelOpenException(getChannelId(),

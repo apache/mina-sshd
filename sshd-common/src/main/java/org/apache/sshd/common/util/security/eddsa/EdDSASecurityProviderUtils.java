@@ -76,10 +76,8 @@ public final class EdDSASecurityProviderUtils {
         }
 
         if ((k1 instanceof EdDSAPublicKey) && (k2 instanceof EdDSAPublicKey)) {
-            if (Objects.equals(k1, k2)) {
+            if (k1.equals(k2)) {
                 return true;
-            } else if (k1 == null || k2 == null) {
-                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPublicKey ed1 = (EdDSAPublicKey) k1;
@@ -136,10 +134,8 @@ public final class EdDSASecurityProviderUtils {
         }
 
         if ((k1 instanceof EdDSAPrivateKey) && (k2 instanceof EdDSAPrivateKey)) {
-            if (Objects.equals(k1, k2)) {
+            if (k1.equals(k2)) {
                 return true;
-            } else if (k1 == null || k2 == null) {
-                return false; // both null is covered by Objects#equals
             }
 
             EdDSAPrivateKey ed1 = (EdDSAPrivateKey) k1;

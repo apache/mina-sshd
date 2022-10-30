@@ -94,13 +94,13 @@ public class ClientIdentityFileWatcher
             return identitiesHolder.get();
         }
 
-        Iterable<KeyPair> kp = identitiesHolder.getAndSet(null); // start fresh
+        identitiesHolder.set(null); // start fresh
         Path path = getPath();
         if (!exists()) {
             return identitiesHolder.get();
         }
 
-        kp = reloadClientIdentities(session, path);
+        Iterable<KeyPair> kp = reloadClientIdentities(session, path);
         updateReloadAttributes();
         identitiesHolder.set(kp);
         return kp;

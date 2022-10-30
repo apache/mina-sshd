@@ -241,7 +241,7 @@ public final class ThreadUtils {
                         Thread thread = Thread.currentThread();
                         return thread.getContextClassLoader();
                     },
-                    () -> effectiveAnchor.getClassLoader(),
+                    effectiveAnchor::getClassLoader,
                     ClassLoader::getSystemClassLoader
             };
 

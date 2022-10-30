@@ -43,7 +43,7 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
         long endTime = System.nanoTime();
         if (log.isDebugEnabled()) {
             IoSession ioSession = session.getIoSession();
-            log.debug("Connected to " + ioSession.getRemoteAddress() + " after " + (endTime - startTime) + " nanos");
+            log.debug("Connected to {} after {} nanos", ioSession.getRemoteAddress(), endTime - startTime);
         }
         return this;
     }

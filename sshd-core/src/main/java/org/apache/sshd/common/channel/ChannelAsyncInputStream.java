@@ -172,7 +172,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             Number result = verifyResult(Number.class, timeoutMillis);
             long endTime = System.nanoTime();
             if (log.isDebugEnabled()) {
-                log.debug("Read " + result + " bytes after " + (endTime - startTime) + " nanos");
+                log.debug("Read {} bytes after {} nanos", result, endTime - startTime);
             }
 
             return this;
@@ -197,7 +197,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
                 throw formatExceptionMessage(
                         IllegalStateException::new,
                         "Unknown read value type: %s",
-                        (v == null) ? "null" : v.getClass().getName());
+                        v.getClass().getName());
             }
         }
 

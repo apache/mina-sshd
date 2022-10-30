@@ -123,10 +123,7 @@ public final class ExceptionUtils {
                 return peelException(target);
             }
         } else if (t instanceof ExecutionException) {
-            Throwable wrapped = resolveExceptionCause(t);
-            if (wrapped != null) {
-                return peelException(wrapped);
-            }
+            return peelException(resolveExceptionCause(t));
         } else if (t instanceof MBeanException) {
             Throwable target = ((MBeanException) t).getTargetException();
             if (target != null) {

@@ -70,61 +70,61 @@ public final class ValidateUtils {
     }
 
     public static <K, V, M extends Map<K, V>> M checkNotNullAndNotEmpty(M t, String message, Object... args) {
-        t = checkNotNull(t, message, args);
+        checkNotNull(t, message, args);
         checkTrue(MapEntryUtils.size(t) > 0, message, args);
         return t;
     }
 
     public static <T, C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object... args) {
-        t = checkNotNull(t, message, args);
+        checkNotNull(t, message, args);
         checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
     public static <T, C extends Iterable<T>> C checkNotNullAndNotEmpty(C t, String message, Object... args) {
-        t = checkNotNull(t, message, args);
+        checkNotNull(t, message, args);
         checkTrue(GenericUtils.isNotEmpty(t), message, args);
         return t;
     }
 
     public static byte[] checkNotNullAndNotEmpty(byte[] a, String message) {
-        a = checkNotNull(a, message);
+        checkNotNull(a, message);
         checkTrue(NumberUtils.length(a) > 0, message);
         return a;
     }
 
     public static byte[] checkNotNullAndNotEmpty(byte[] a, String message, Object... args) {
-        a = checkNotNull(a, message, args);
+        checkNotNull(a, message, args);
         checkTrue(NumberUtils.length(a) > 0, message, args);
         return a;
     }
 
     public static char[] checkNotNullAndNotEmpty(char[] a, String message) {
-        a = checkNotNull(a, message);
+        checkNotNull(a, message);
         checkTrue(GenericUtils.length(a) > 0, message);
         return a;
     }
 
     public static char[] checkNotNullAndNotEmpty(char[] a, String message, Object... args) {
-        a = checkNotNull(a, message, args);
+        checkNotNull(a, message, args);
         checkTrue(GenericUtils.length(a) > 0, message, args);
         return a;
     }
 
     public static int[] checkNotNullAndNotEmpty(int[] a, String message) {
-        a = checkNotNull(a, message);
+        checkNotNull(a, message);
         checkTrue(NumberUtils.length(a) > 0, message);
         return a;
     }
 
     public static int[] checkNotNullAndNotEmpty(int[] a, String message, Object... args) {
-        a = checkNotNull(a, message, args);
+        checkNotNull(a, message, args);
         checkTrue(NumberUtils.length(a) > 0, message, args);
         return a;
     }
 
     public static <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object... args) {
-        t = checkNotNull(t, message, args);
+        checkNotNull(t, message, args);
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }

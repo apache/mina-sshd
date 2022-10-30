@@ -184,7 +184,7 @@ public class KeyExchangeMessageHandler {
             if (numPending == 0) {
                 kexFlushed = true;
             }
-            return new SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture>(Integer.valueOf(numPending), kexFlushedFuture);
+            return new SimpleImmutableEntry<>(Integer.valueOf(numPending), kexFlushedFuture);
         });
     }
 
@@ -518,9 +518,7 @@ public class KeyExchangeMessageHandler {
                 }
                 // Connect all futures of packets that we wrote. We do this at the end instead of one-by-one inside the
                 // loop to minimize the risk that woken up threads waiting on these futures queue up additional packets.
-                pendingFutures.forEach(e -> {
-                    e.getValue().addListener(e.getKey());
-                });
+                pendingFutures.forEach(e -> e.getValue().addListener(e.getKey()));
             }
         });
     }

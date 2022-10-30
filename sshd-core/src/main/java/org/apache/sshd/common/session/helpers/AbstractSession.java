@@ -273,7 +273,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @see {@link #doInvokeUnimplementedMessageHandler(int, Buffer)}
      * @see {@link #preClose()}
      */
-    private final Deque<GlobalRequestFuture> pendingGlobalRequests = new ConcurrentLinkedDeque<GlobalRequestFuture>();
+    private final Deque<GlobalRequestFuture> pendingGlobalRequests = new ConcurrentLinkedDeque<>();
 
     private final Map<Buffer, LongConsumer> globalSequenceNumbers = new ConcurrentHashMap<>();
 
@@ -314,12 +314,10 @@ public abstract class AbstractSession extends SessionHelper {
 
         try {
             signalSessionEstablished(ioSession);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
+            throw new RuntimeSshException(e);
         }
     }
 
@@ -1723,7 +1721,7 @@ public abstract class AbstractSession extends SessionHelper {
         IoWriteFuture future = (handler == null) ? null : handler.sendKexInitRequest(this, proposal, buffer);
         byte[] data = buffer.getCompactData();
         if (future == null) {
-            future = writePacket(buffer);
+            writePacket(buffer);
         } else {
             if (debugEnabled) {
                 log.debug("sendKexInit({}) KEX handled by reserved messages handler", this);

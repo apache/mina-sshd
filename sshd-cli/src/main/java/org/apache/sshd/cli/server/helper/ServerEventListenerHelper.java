@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 public abstract class ServerEventListenerHelper extends AbstractLoggingBean implements NamedResource {
     private final String name;
 
-    public ServerEventListenerHelper(String name, Logger logger) {
+    protected ServerEventListenerHelper(String name, Logger logger) {
         super(logger);
 
         this.name = name;

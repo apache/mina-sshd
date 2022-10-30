@@ -20,6 +20,7 @@
 package org.apache.sshd.common.io;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
@@ -61,5 +62,12 @@ public abstract class AbstractIoWriteFuture
         } else {
             return null;
         }
+    }
+
+    public static IoWriteFuture fulfilled(Object id, Object value) {
+        AbstractIoWriteFuture result = new AbstractIoWriteFuture(id, null) {
+        };
+        result.setValue(Objects.requireNonNull(value));
+        return result;
     }
 }

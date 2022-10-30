@@ -794,7 +794,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         try (SftpClient client = fsLink.getClient()) {
             String linkPath = client.readLink(l.toString());
             if (log.isDebugEnabled()) {
-                log.debug("readSymbolicLink({})[{}] {} => {}", fsLink, link, linkPath);
+                log.debug("readSymbolicLink({}) {} => {}", fsLink, link, linkPath);
             }
 
             return fsLink.getPath(linkPath);
@@ -1196,7 +1196,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     break;
                 default:
                     if (traceEnabled) {
-                        log.trace("attributesToPermissions(" + path + ") ignored " + p);
+                        log.trace("attributesToPermissions({}) ignored {}", path, p);
                     }
             }
         }

@@ -192,7 +192,7 @@ public interface KeyIdentityProvider {
      * @return     The first non-{@code null} key pair found in the iterator - {@code null} if all elements exhausted
      *             without such an entry
      */
-    static KeyPair exhaustCurrentIdentities(Iterator<? extends KeyPair> ids) {
+    static KeyPair exhaustCurrentIdentities(Iterator<KeyPair> ids) {
         while ((ids != null) && ids.hasNext()) {
             KeyPair kp = ids.next();
             if (kp != null) {

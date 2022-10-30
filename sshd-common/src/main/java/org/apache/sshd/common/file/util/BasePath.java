@@ -47,7 +47,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     private String strValue;
     private int hashValue;
 
-    public BasePath(FS fileSystem, String root, List<String> names) {
+    protected BasePath(FS fileSystem, String root, List<String> names) {
         this.fileSystem = Objects.requireNonNull(fileSystem, "No file system provided");
         this.root = root;
         this.names = names;

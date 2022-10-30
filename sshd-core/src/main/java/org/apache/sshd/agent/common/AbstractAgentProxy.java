@@ -242,7 +242,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         if ((service != null) && (!service.isShutdown())) {
             Collection<?> runners = service.shutdownNow();
             if (log.isDebugEnabled()) {
-                log.debug("close() - shutdown runners count=" + GenericUtils.size(runners));
+                log.debug("close() - shutdown runners count={}", GenericUtils.size(runners));
             }
         }
     }

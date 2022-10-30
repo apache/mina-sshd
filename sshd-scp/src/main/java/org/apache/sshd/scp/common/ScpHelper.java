@@ -668,9 +668,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
             ScpAckInfo ackInfo = sendAcknowledgedCommand(cmd);
             if (debugEnabled) {
-                if (debugEnabled) {
-                    log.debug("sendDir({})[{}] command='{}' ACK={}", this, path, cmd, ackInfo);
-                }
+                log.debug("sendDir({})[{}] command='{}' ACK={}", this, path, cmd, ackInfo);
             }
             validateAckReplyCode(cmd, path, ackInfo);
         }

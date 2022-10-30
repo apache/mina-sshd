@@ -28,6 +28,6 @@ public class ForwardedTcpipFactory extends TcpipFactory {
     public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
 
     public ForwardedTcpipFactory() {
-        super(ForwardingFilter.Type.Forwarded);
+        super(TcpForwardingFilter.Type.Forwarded);
     }
 }

@@ -79,8 +79,7 @@ public interface ClientIdentityProvider {
      */
     static Iterable<KeyPair> lazyKeysLoader(
             Iterable<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
-            Predicate<? super KeyPair> filter) {
+            Function<? super ClientIdentityProvider, ? extends Iterable<KeyPair>> kpExtractor, Predicate<KeyPair> filter) {
         Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
         if (providers == null) {
             return Collections.emptyList();
@@ -114,8 +113,7 @@ public interface ClientIdentityProvider {
      */
     static Iterator<KeyPair> lazyKeysIterator(
             Iterator<? extends ClientIdentityProvider> providers,
-            Function<? super ClientIdentityProvider, ? extends Iterable<? extends KeyPair>> kpExtractor,
-            Predicate<? super KeyPair> filter) {
+            Function<? super ClientIdentityProvider, ? extends Iterable<KeyPair>> kpExtractor, Predicate<KeyPair> filter) {
         Objects.requireNonNull(kpExtractor, "No key pair extractor provided");
         return (providers == null)
                 ? Collections.emptyIterator()

@@ -225,8 +225,7 @@ public abstract class SshServerCliSupport extends CliSupport {
                 continue;
             }
 
-            factory = registerSubsystemFactoryListeners(
-                    server, level, stdout, stderr, options, factory);
+            registerSubsystemFactoryListeners(server, level, stdout, stderr, options, factory);
             subsystems.add(factory);
         }
 

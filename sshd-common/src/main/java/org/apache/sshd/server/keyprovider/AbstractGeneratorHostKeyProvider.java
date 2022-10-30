@@ -123,7 +123,7 @@ public abstract class AbstractGeneratorHostKeyProvider
             ids = keyPairHolder.getAndSet(null);
         }
 
-        if ((ids != null) & log.isDebugEnabled()) {
+        if ((ids != null) && log.isDebugEnabled()) {
             log.debug("clearLoadedKeys({}) removed keys", getPath());
         }
     }
@@ -287,7 +287,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
         if (keySpec != null) {
             generator.initialize(keySpec);
-            log.info("generateKeyPair(" + algorithm + ") generating host key - spec=" + keySpec.getClass().getSimpleName());
+            log.info("generateKeyPair({}) generating host key - spec={}", algorithm, keySpec.getClass().getSimpleName());
         } else if (KeyUtils.EC_ALGORITHM.equals(algorithm)) {
             ECCurves curve;
             // If left to our own devices choose the biggest key size possible
@@ -301,10 +301,10 @@ public abstract class AbstractGeneratorHostKeyProvider
                 }
             }
             generator.initialize(curve.getParameters());
-            log.info("generateKeyPair(" + algorithm + ") generating host key=" + curve);
+            log.info("generateKeyPair({}) generating host key={}", algorithm, curve);
         } else if (keySize != 0) {
             generator.initialize(keySize);
-            log.info("generateKeyPair(" + algorithm + ") generating host key - size=" + keySize);
+            log.info("generateKeyPair({}) generating host key - size={}", algorithm, keySize);
         }
 
         return generator.generateKeyPair();

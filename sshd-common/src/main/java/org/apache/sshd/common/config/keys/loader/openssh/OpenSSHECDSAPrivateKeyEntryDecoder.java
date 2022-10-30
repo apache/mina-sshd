@@ -81,12 +81,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
         Objects.requireNonNull(pubKey, "No public point"); // TODO validate it is a valid ECPoint
         BigInteger s = KeyEntryResolver.decodeBigInt(keyData);
         ECParameterSpec params = curve.getParameters();
-        try {
-            return generatePrivateKey(new ECPrivateKeySpec(s, params));
-        } finally {
-            // get rid of sensitive data a.s.a.p
-            s = null;
-        }
+        return generatePrivateKey(new ECPrivateKeySpec(s, params));
     }
 
     @Override

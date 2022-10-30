@@ -74,7 +74,7 @@ public final class BouncyCastleRandom extends AbstractRandom {
 
     private int next(int numBits) {
         int bytes = (numBits + 7) / 8;
-        byte next[] = new byte[bytes];
+        byte[] next = new byte[bytes];
         int ret = 0;
         random.nextBytes(next);
         for (int i = 0; i < bytes; i++) {

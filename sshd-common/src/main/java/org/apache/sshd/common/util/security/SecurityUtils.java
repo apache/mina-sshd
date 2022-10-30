@@ -243,7 +243,7 @@ public final class SecurityUtils {
                 }
             } else {
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                logger.info("Override ECC support value: " + propValue);
+                logger.info("Override ECC support value: {}", propValue);
                 hasEcc = Boolean.valueOf(propValue);
             }
         }
@@ -349,7 +349,7 @@ public final class SecurityUtils {
         ValidateUtils.checkTrue(maxKeySize > Byte.SIZE, "Invalid max. key size: %d", maxKeySize);
 
         try {
-            BigInteger r = new BigInteger("0").setBit(maxKeySize - 1);
+            BigInteger r = BigInteger.ZERO.setBit(maxKeySize - 1);
             DHParameterSpec dhSkipParamSpec = new DHParameterSpec(r, r);
             KeyPairGenerator kpg = getKeyPairGenerator("DH");
             kpg.initialize(dhSkipParamSpec);

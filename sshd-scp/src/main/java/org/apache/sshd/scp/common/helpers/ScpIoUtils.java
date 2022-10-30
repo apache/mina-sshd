@@ -122,9 +122,8 @@ public final class ScpIoUtils {
             long endTime = System.nanoTime();
             long nanosWait = endTime - startTime;
             if ((log != null) && log.isTraceEnabled()) {
-                log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                          + " completed after " + nanosWait
-                          + " nanos out of " + waitTimeout.toNanos());
+                log.trace("openCommandChannel({})[{}] completed after {} nanos out of {}", session, cmd, nanosWait,
+                        waitTimeout.toNanos());
             }
 
             return channel;
@@ -132,11 +131,8 @@ public final class ScpIoUtils {
             long endTime = System.nanoTime();
             long nanosWait = endTime - startTime;
             if ((log != null) && log.isTraceEnabled()) {
-                log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
-                          + " failed (" + e.getClass().getSimpleName() + ")"
-                          + " to complete after " + nanosWait
-                          + " nanos out of " + waitTimeout.toNanos()
-                          + ": " + e.getMessage());
+                log.trace("openCommandChannel({})[{}] failed after {} nanos out of {}: {}", session, cmd, nanosWait,
+                        waitTimeout.toNanos(), e.toString());
             }
 
             channel.close(false);

@@ -31,7 +31,7 @@ public class AsyncAuthException extends RuntimeSshException {
 
     private static final long serialVersionUID = 6741236101797649869L;
 
-    protected Object listener;
+    protected transient Object listener;
     protected Boolean authed;
 
     public AsyncAuthException() {

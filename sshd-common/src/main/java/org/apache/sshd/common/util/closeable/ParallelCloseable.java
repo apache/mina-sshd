@@ -46,7 +46,7 @@ public class ParallelCloseable extends SimpleCloseable {
         SshFutureListener<CloseFuture> listener = f -> {
             int pendingCount = count.decrementAndGet();
             if (traceEnabled) {
-                log.trace("doClose(" + immediately + ") completed pending: " + pendingCount);
+                log.trace("doClose({}) completed pending: {}", immediately, pendingCount);
             }
             if (pendingCount == 0) {
                 future.setClosed();
@@ -60,7 +60,7 @@ public class ParallelCloseable extends SimpleCloseable {
 
             int pendingCount = count.incrementAndGet();
             if (traceEnabled) {
-                log.trace("doClose(" + immediately + ") pending closeables: " + pendingCount);
+                log.trace("doClose({}) pending closeables: {}", immediately, pendingCount);
             }
             c.close(immediately).addListener(listener);
         }

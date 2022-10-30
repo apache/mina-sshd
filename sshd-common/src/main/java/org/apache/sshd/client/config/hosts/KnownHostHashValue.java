@@ -96,10 +96,9 @@ public class KnownHostHashValue {
             byte[] expected = getDigestValue();
             byte[] actual = calculateHashValue(host, port, getDigester(), getSaltValue());
             return Arrays.equals(expected, actual);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Throwable t) {
-            if (t instanceof RuntimeException) {
-                throw (RuntimeException) t;
-            }
             throw new RuntimeSshException(
                     "Failed (" + t.getClass().getSimpleName() + ")" + " to calculate hash value: " + t.getMessage(), t);
         }

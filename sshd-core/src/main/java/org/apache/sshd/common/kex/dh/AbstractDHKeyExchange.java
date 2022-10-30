@@ -112,7 +112,7 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
         }
     }
 
-    protected void validateEValue(BigInteger pValue) throws Exception {
+    protected void validateEValue(BigInteger pValue) throws SshException {
         BigInteger value = Objects.requireNonNull(getEValue(), "No DH 'e' value set");
         if (!KeyExchange.isValidDHValue(value, pValue)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
@@ -149,7 +149,7 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
         }
     }
 
-    protected void validateFValue(BigInteger pValue) throws Exception {
+    protected void validateFValue(BigInteger pValue) throws SshException {
         BigInteger value = Objects.requireNonNull(getFValue(), "No DH 'f' value set");
         if (!KeyExchange.isValidDHValue(value, pValue)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,

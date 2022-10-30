@@ -105,7 +105,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("resetCacheMap(" + resources + ") removed previous cached keys for " + toDelete);
+            log.debug("resetCacheMap({}) removed previous cached keys for {}", resources, toDelete);
         }
     }
 
@@ -208,10 +208,8 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
         @Override
         public KeyPair next() {
-            if (!nextKeyPairSet) {
-                if (!setNextObject()) {
-                    throw new NoSuchElementException("Out of files to try");
-                }
+            if (!nextKeyPairSet && !setNextObject()) {
+                throw new NoSuchElementException("Out of files to try");
             }
             nextKeyPairSet = false;
             return nextKeyPair;

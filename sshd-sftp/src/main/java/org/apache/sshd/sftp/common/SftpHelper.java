@@ -1003,15 +1003,15 @@ public final class SftpHelper {
         return mask;
     }
 
-    public static <B extends Buffer> B writeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
+    public static <B extends Buffer> B writeACLs(B buffer, int version, Collection<AclEntry> acl) {
         int lenPos = buffer.wpos();
         buffer.putUInt(0L); // length placeholder
-        buffer = encodeACLs(buffer, version, acl);
+        encodeACLs(buffer, version, acl);
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
         return buffer;
     }
 
-    public static <B extends Buffer> B encodeACLs(B buffer, int version, Collection<? extends AclEntry> acl) {
+    public static <B extends Buffer> B encodeACLs(B buffer, int version, Collection<AclEntry> acl) {
         Objects.requireNonNull(acl, "No ACL");
         if (version >= SftpConstants.SFTP_V6) {
             buffer.putUInt(0L); // TODO handle ACL flags
@@ -1021,7 +1021,7 @@ public final class SftpHelper {
         buffer.putInt(numEntries);
         if (numEntries > 0) {
             for (AclEntry e : acl) {
-                buffer = writeAclEntry(buffer, e);
+                writeAclEntry(buffer, e);
             }
         }
 

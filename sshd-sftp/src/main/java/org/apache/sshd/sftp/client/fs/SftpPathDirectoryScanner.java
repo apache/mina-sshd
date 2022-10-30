@@ -79,7 +79,7 @@ public class SftpPathDirectoryScanner extends DirectoryScanner {
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(
                         includes.stream()
-                                .map(v -> adjustPattern(v))
+                                .map(SftpPathDirectoryScanner::adjustPattern)
                                 .collect(Collectors.toCollection(() -> new ArrayList<>(includes.size()))));
     }
 

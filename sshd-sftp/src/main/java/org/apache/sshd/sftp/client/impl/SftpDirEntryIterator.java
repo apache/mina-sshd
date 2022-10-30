@@ -141,7 +141,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements SftpCli
             Handle handle = getHandle();
             if ((handle instanceof Closeable) && isCloseOnFinished()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("close(" + getPath() + ") handle=" + handle);
+                    log.debug("close({}) handle={}", getPath(), handle);
                 }
                 ((Closeable) handle).close();
             }

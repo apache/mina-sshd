@@ -176,7 +176,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
                 log.debug("flush({}) processing ack #{}: {}", this, ackIndex, ack);
             }
 
-            ack = pendingWrites.removeFirst();
+            pendingWrites.removeFirst();
             client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
         }
 

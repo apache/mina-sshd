@@ -108,7 +108,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("resolveTargetStream(" + name + "): " + file);
+            log.trace("resolveTargetStream({}): {}", name, file);
         }
 
         return opener.openWrite(session, file, length, perms, options);
@@ -119,7 +119,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             Session session, String name, long length, Set<PosixFilePermission> perms, OutputStream stream)
             throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("closeTargetStream(" + name + "): " + file);
+            log.trace("closeTargetStream({}): {}", name, file);
         }
 
         opener.closeWrite(session, file, length, perms, stream);
@@ -153,7 +153,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             throws IOException {
         boolean traceEnabled = log.isTraceEnabled();
         if (traceEnabled) {
-            log.trace("updateFileProperties(" + name + ")[" + path + "] permissions: " + perms);
+            log.trace("updateFileProperties({})[{}] permissions: {}", name, path, perms);
         }
         IoUtils.setPermissions(path, perms);
 
@@ -162,8 +162,8 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
             FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
             if (traceEnabled) {
-                log.trace("updateFileProperties(" + name + ")[" + path + "] last-modified=" + lastModified + ", last-access="
-                          + lastAccess);
+                log.trace("updateFileProperties({})[{}] last-modified={}, last-access={}", name, path, lastModified,
+                        lastAccess);
             }
 
             view.setTimes(lastModified, lastAccess, null);

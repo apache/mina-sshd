@@ -179,7 +179,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
         if ((executor != null) && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
             if (debugEnabled) {
-                log.debug("Shut down runners count=" + GenericUtils.size(runners));
+                log.debug("Shut down runners count={}", GenericUtils.size(runners));
             }
         }
     }

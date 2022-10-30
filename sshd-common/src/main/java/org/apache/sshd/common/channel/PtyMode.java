@@ -301,20 +301,17 @@ public enum PtyMode {
      * A {@code null}-safe {@link ToIntFunction} that returns the {@link PtyMode#toInt()} value and (-1) for
      * {@code null}
      */
-    public static final ToIntFunction<PtyMode> OPCODE_EXTRACTOR = v -> (v == null) ? -1 : v.toInt();
+    public static final ToIntFunction<PtyMode> OPCODE_EXTRACTOR = op -> (op == null) ? -1 : op.toInt();
 
     /**
      * A {@code null}-safe {@link Comparator} of {@link PtyMode} values according to their {@link PtyMode#toInt()} value
      *
      * @see #OPCODE_EXTRACTOR
      */
-    public static final Comparator<PtyMode> BY_OPCODE = new Comparator<PtyMode>() {
-        @Override
-        public int compare(PtyMode o1, PtyMode o2) {
-            int v1 = OPCODE_EXTRACTOR.applyAsInt(o1);
-            int v2 = OPCODE_EXTRACTOR.applyAsInt(o2);
-            return Integer.compare(v1, v2);
-        }
+    public static final Comparator<PtyMode> BY_OPCODE = (o1, o2) -> {
+        int v1 = OPCODE_EXTRACTOR.applyAsInt(o1);
+        int v2 = OPCODE_EXTRACTOR.applyAsInt(o2);
+        return Integer.compare(v1, v2);
     };
 
     private final int v;

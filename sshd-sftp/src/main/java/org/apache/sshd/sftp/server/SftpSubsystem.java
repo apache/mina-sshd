@@ -1030,7 +1030,7 @@ public class SftpSubsystem
             boolean result = pendingFuture.cancel(true);
             // TODO consider waiting some reasonable (?) amount of time for cancellation
             if (debugEnabled) {
-                log.debug("destroy(" + session + ") - cancel pending future=" + result);
+                log.debug("destroy({}) - cancel pending future={}", session, result);
             }
         }
 
@@ -1040,7 +1040,7 @@ public class SftpSubsystem
         if ((executors != null) && (!executors.isShutdown())) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (debugEnabled) {
-                log.debug("destroy(" + session + ") - shutdown executor service - runners count=" + runners.size());
+                log.debug("destroy({}) - shutdown executor service - runners count={}", session, runners.size());
             }
         }
         this.executorService = null;
@@ -1049,14 +1049,11 @@ public class SftpSubsystem
             fileSystem.close();
         } catch (UnsupportedOperationException e) {
             if (debugEnabled) {
-                log.debug("destroy(" + session + ") closing the file system is not supported");
+                log.debug("destroy({}) closing the file system is not supported", session);
             }
         } catch (IOException e) {
             if (debugEnabled) {
-                log.warn("destroy(" + session + ")"
-                         + " failed (" + e.getClass().getSimpleName() + ")"
-                         + " to close file system: " + e.getMessage(),
-                        e);
+                log.warn("destroy({}) failed to close the file system", session, e);
             }
         }
     }

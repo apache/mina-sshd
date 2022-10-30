@@ -65,8 +65,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             factory = newInstance(IoServiceFactoryFactory.class);
             if (factory == null) {
                 factory = BuiltinIoServiceFactoryFactories.NIO2.create();
-                log.info("No detected/configured " + IoServiceFactoryFactory.class.getSimpleName()
-                         + " using " + factory.getClass().getSimpleName());
+                log.info("No detected/configured IoServiceFactoryFactory; using {}", factory.getClass().getSimpleName());
             } else {
                 log.info("Using {}", factory.getClass().getSimpleName());
             }

@@ -42,7 +42,7 @@ public class SftpUniversalOwnerAndGroupTest extends JUnitTestSupport {
         for (SftpUniversalOwnerAndGroup value : SftpUniversalOwnerAndGroup.VALUES) {
             String name = value.getName();
             assertFalse(value.name() + ": empty name", GenericUtils.isEmpty(name));
-            assertTrue(value.name() + ": bad suffix", name.charAt(name.length() - 1) == '@');
+            assertEquals(value.name() + ": bad suffix", '@', name.charAt(name.length() - 1));
 
             for (int index = 0; index < name.length() - 1; index++) {
                 char ch = name.charAt(index);

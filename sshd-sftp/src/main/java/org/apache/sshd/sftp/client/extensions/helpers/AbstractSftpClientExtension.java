@@ -77,7 +77,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     protected void sendAndCheckExtendedCommandStatus(Buffer buffer) throws IOException {
         int reqId = sendExtendedCommand(buffer);
         if (log.isDebugEnabled()) {
-            log.debug("sendAndCheckExtendedCommandStatus(" + getName() + ") id=" + reqId);
+            log.debug("sendAndCheckExtendedCommandStatus({}) id={}", getName(), reqId);
         }
         checkStatus(receive(reqId));
     }

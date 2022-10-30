@@ -202,10 +202,8 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
             }
             return true;
         } catch (IOException | RuntimeException e) {
-            log.warn("Unable (" + e.getClass().getSimpleName() + ")"
-                     + " to set socket option " + option
-                     + " using property " + property + "=" + val
-                     + ": " + e.getMessage());
+            log.warn("setOption({}): unable to set socket option {} via {}={}: {}", socket, option, property, val,
+                    e.toString());
             return false;
         }
     }

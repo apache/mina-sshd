@@ -159,11 +159,7 @@ public abstract class AbstractCommandSupport
                 this.run();
             });
         } catch (RuntimeException e) { // e.g., RejectedExecutionException
-            log.error("start(" + channel + ")"
-                      + " Failed (" + e.getClass().getSimpleName() + ")"
-                      + " to start command=" + cmd + ": " + e.getMessage(),
-                    e);
-            throw new IOException(e);
+            throw new IOException("start(" + channel + ") failed to start command " + cmd, e);
         }
     }
 

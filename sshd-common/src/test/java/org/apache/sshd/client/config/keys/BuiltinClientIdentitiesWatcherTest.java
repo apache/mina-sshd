@@ -153,7 +153,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
     }
 
     private static void testMultipleFilesWatch(
-            String phase, KeyIdentityProvider watcher, Collection<? extends KeyPair> expected)
+            String phase, KeyIdentityProvider watcher, Collection<KeyPair> expected)
             throws IOException, GeneralSecurityException {
         Iterable<KeyPair> keys = watcher.loadKeys(null);
         Collection<KeyPair> actual = new ArrayList<>();

@@ -56,12 +56,10 @@ public final class AprLibrary {
     private AprLibrary() {
         try {
             Library.initialize(null);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Throwable e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException("Error loading Apache Portable Runtime (APR).", e);
-            }
+            throw new RuntimeException("Error loading Apache Portable Runtime (APR).", e);
         }
         pool = Pool.create(0);
     }

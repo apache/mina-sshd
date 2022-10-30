@@ -117,12 +117,10 @@ public class PGPKeyPairResourceParser
 
                 Key key = PGPKeyLoader.loadPGPKey(stream, password);
                 keys = extractKeyPairs(resourceKey, key.getSubkeys());
-                key = null; // get rid of sensitive data a.s.a.p.
             } catch (IOException | GeneralSecurityException | PGPException | RuntimeException e) {
                 ResourceDecodeResult result = (passwordProvider != null)
                         ? passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, e)
                         : ResourceDecodeResult.TERMINATE;
-                password = null; // get rid of sensitive data a.s.a.p.
                 if (result == null) {
                     result = ResourceDecodeResult.TERMINATE;
                 }
@@ -150,7 +148,6 @@ public class PGPKeyPairResourceParser
 
             if (passwordProvider != null) {
                 passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, password, null);
-                password = null; // get rid of sensitive data a.s.a.p.
             }
 
             return keys;

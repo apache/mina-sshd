@@ -54,7 +54,7 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
             SshFutureListener<T> listener = f -> {
                 int pendingCount = count.decrementAndGet();
                 if (traceEnabled) {
-                    log.trace("doClose(" + immediately + ") complete pending: " + pendingCount);
+                    log.trace("doClose({}) complete pending: {}", immediately, pendingCount);
                 }
                 if (pendingCount == 0) {
                     future.setClosed();
@@ -65,7 +65,7 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
                 if (f != null) {
                     int pendingCount = count.incrementAndGet();
                     if (traceEnabled) {
-                        log.trace("doClose(" + immediately + ") future pending: " + pendingCount);
+                        log.trace("doClose({}) future pending: {}", immediately, pendingCount);
                     }
                     f.addListener(listener);
                 }

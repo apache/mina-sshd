@@ -20,7 +20,6 @@
 package org.apache.sshd.git;
 
 import java.io.OutputStream;
-import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -43,7 +42,6 @@ public abstract class AbstractGitCommand
     public static final int ENDQUOTE = 0x008;
 
     protected final GitLocationResolver rootDirResolver;
-    protected FileSystem fileSystem;
 
     protected AbstractGitCommand(GitLocationResolver rootDirResolver, String command,
                                  CloseableExecutorService executorService) {

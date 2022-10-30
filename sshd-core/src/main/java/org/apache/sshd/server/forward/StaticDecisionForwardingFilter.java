@@ -68,7 +68,7 @@ public class StaticDecisionForwardingFilter extends AbstractLoggingBean implemen
     protected boolean checkAcceptance(String request, Session session, SshdSocketAddress target) {
         boolean accepted = isAccepted();
         if (log.isDebugEnabled()) {
-            log.debug("checkAcceptance(" + request + ")[" + session + "] acceptance for target=" + target + " is " + accepted);
+            log.debug("checkAcceptance({})[{}] acceptance for target={} is {}", request, session, target, accepted);
         }
         return accepted;
     }

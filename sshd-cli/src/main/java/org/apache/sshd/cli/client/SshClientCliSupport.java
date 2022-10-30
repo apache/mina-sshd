@@ -695,10 +695,10 @@ public abstract class SshClientCliSupport extends CliSupport {
         fh.setLevel(Level.FINEST);
         fh.setFormatter(new Formatter() {
             @Override
-            public String format(LogRecord record) {
-                String message = formatMessage(record);
+            public String format(LogRecord logRecord) {
+                String message = formatMessage(logRecord);
                 String throwable = "";
-                Throwable t = record.getThrown();
+                Throwable t = logRecord.getThrown();
                 if (t != null) {
                     StringWriter sw = new StringWriter();
                     try (PrintWriter pw = new PrintWriter(sw)) {
@@ -708,8 +708,8 @@ public abstract class SshClientCliSupport extends CliSupport {
                     throwable = sw.toString();
                 }
                 return String.format("%1$tY-%1$tm-%1$td: %2$-7.7s: %3$-32.32s: %4$s%5$s%n",
-                        new Date(record.getMillis()), record.getLevel().getName(),
-                        record.getLoggerName(), message, throwable);
+                        new Date(logRecord.getMillis()), logRecord.getLevel().getName(),
+                        logRecord.getLoggerName(), message, throwable);
             }
         });
 

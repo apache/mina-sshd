@@ -88,12 +88,10 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         Class<? extends IoServiceFactoryFactory> clazz = getFactoryClass();
         try {
             return ReflectionUtils.newInstance(clazz, IoServiceFactoryFactory.class);
+        } catch (RuntimeException | Error e) {
+            throw e;
         } catch (Throwable e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
+            throw new RuntimeException(e);
         }
     }
 

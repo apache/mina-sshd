@@ -69,7 +69,7 @@ public final class VersionProperties {
                     log.warn("Failed ({}) to load version properties from {}: {}",
                             e.getClass().getSimpleName(), cl, e.getMessage());
                     if (log.isDebugEnabled()) {
-                        log.debug("Version property failure details for loader=" + cl, e);
+                        log.debug("Version property failure details for loader={}", cl, e);
                     }
                     continue;
                 }
@@ -85,7 +85,7 @@ public final class VersionProperties {
                     String prev = result.put(key, value);
                     if (prev != null) {
                         Logger log = LoggerFactory.getLogger(anchor);
-                        log.warn("Multiple values for key=" + key + ": current=" + value + ", previous=" + prev);
+                        log.warn("Multiple values for key={}: current={}, previous={}", key, value, prev);
                     }
                 }
 

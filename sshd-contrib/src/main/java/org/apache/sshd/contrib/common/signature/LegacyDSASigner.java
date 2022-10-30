@@ -244,7 +244,7 @@ public class LegacyDSASigner extends java.security.Signature {
             }
 
             BigInteger q = params.getQ();
-            if ((r.compareTo(q) != -1) || (s.compareTo(q) != -1)) {
+            if ((r.compareTo(q) >= 0) || (s.compareTo(q) >= 0)) {
                 throw new IndexOutOfBoundsException("Out of range values in signature");
             }
 

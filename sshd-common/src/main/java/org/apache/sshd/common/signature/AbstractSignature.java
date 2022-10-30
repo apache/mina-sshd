@@ -119,7 +119,7 @@ public abstract class AbstractSignature implements Signature {
      *                       data - {@code null} if not encoded
      */
     protected Map.Entry<String, byte[]> extractEncodedSignature(byte[] sig, Collection<String> expectedTypes) {
-        return GenericUtils.isEmpty(expectedTypes) ? null : extractEncodedSignature(sig, k -> expectedTypes.contains(k));
+        return GenericUtils.isEmpty(expectedTypes) ? null : extractEncodedSignature(sig, expectedTypes::contains);
     }
 
     protected Map.Entry<String, byte[]> extractEncodedSignature(byte[] sig, Predicate<? super String> typeSelector) {

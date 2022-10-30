@@ -780,13 +780,13 @@ public final class GenericUtils {
             return null;
         } else if (it instanceof Deque<?>) { // check before (!) instanceof List since LinkedList implements List
             Deque<? extends T> l = (Deque<? extends T>) it;
-            return (l.size() > 0) ? l.getFirst() : null;
+            return !l.isEmpty() ? l.getFirst() : null;
         } else if (it instanceof List<?>) {
             List<? extends T> l = (List<? extends T>) it;
-            return (l.size() > 0) ? l.get(0) : null;
+            return !l.isEmpty() ? l.get(0) : null;
         } else if (it instanceof SortedSet<?>) {
             SortedSet<? extends T> s = (SortedSet<? extends T>) it;
-            return (s.size() > 0) ? s.first() : null;
+            return !s.isEmpty() ? s.first() : null;
         } else {
             Iterator<? extends T> iter = it.iterator();
             return ((iter == null) || (!iter.hasNext())) ? null : iter.next();

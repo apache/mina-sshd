@@ -2307,13 +2307,11 @@ public abstract class AbstractSftpSubsystemHelper
             accessor.putRemoteFileName(this, f, buffer, longName, false);
 
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(" + session + ") id=" + id + ")[" + index + "] - "
-                          + shortName + " [" + longName + "]: " + attrs);
+                log.trace("writeDirEntry({} id={})[{}] - {} [{}]: {}", session, id, index, shortName, longName, attrs);
             }
         } else {
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(" + session + "(id=" + id + ")[" + index + "] - "
-                          + shortName + ": " + attrs);
+                log.trace("writeDirEntry({} id={})[{}] - {}: {}", session, id, index, shortName, attrs);
             }
         }
 
@@ -2420,20 +2418,18 @@ public abstract class AbstractSftpSubsystemHelper
     protected NavigableMap<String, Object> handleUnknownStatusFileAttributes(
             Path file, int flags, LinkOption... options)
             throws IOException {
-        UnsupportedAttributePolicy unsupportedAttributePolicy = getUnsupportedAttributePolicy();
-        switch (unsupportedAttributePolicy) {
+        UnsupportedAttributePolicy policy = getUnsupportedAttributePolicy();
+        switch (policy) {
             case Ignore:
                 break;
             case ThrowException:
                 throw new AccessDeniedException(file.toString(), file.toString(),
                         "Cannot determine existence for attributes of target");
             case Warn:
-                log.warn("handleUnknownStatusFileAttributes(" + getServerSession() + ")[" + file
-                         + "] cannot determine existence");
+                log.warn("handleUnknownStatusFileAttributes({})[{}] cannot determine existence", getServerSession(), file);
                 break;
             default:
-                log.warn("handleUnknownStatusFileAttributes(" + getServerSession() + ")[" + file + "] unknown policy: "
-                         + unsupportedAttributePolicy);
+                log.warn("handleUnknownStatusFileAttributes({})[{}] unknown policy: {}", getServerSession(), file, policy);
         }
 
         return getAttributes(file, flags, options);
@@ -2599,20 +2595,18 @@ public abstract class AbstractSftpSubsystemHelper
             log.trace("handleReadFileAttributesException(" + file + ")[" + view + "] details", e);
         }
 
-        UnsupportedAttributePolicy unsupportedAttributePolicy = getUnsupportedAttributePolicy();
-        switch (unsupportedAttributePolicy) {
+        UnsupportedAttributePolicy policy = getUnsupportedAttributePolicy();
+        switch (policy) {
             case Ignore:
                 break;
             case Warn:
-                log.warn("handleReadFileAttributesException(" + file + ")[" + view + "] " + e.getClass().getSimpleName() + ": "
-                         + e.getMessage());
+                log.warn("handleReadFileAttributesException({})[{}] {}", file, view, e.toString());
                 break;
             case ThrowException:
                 throw e;
             default:
-                log.warn("handleReadFileAttributesException(" + file + ")[" + view + "]"
-                         + " Unknown policy (" + unsupportedAttributePolicy + ")"
-                         + " for " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                log.warn("handleReadFileAttributesException({})[{}] Unknown policy ({}) for {}", file, view, policy,
+                        e.toString());
         }
 
         return Collections.emptyNavigableMap();
@@ -2867,17 +2861,17 @@ public abstract class AbstractSftpSubsystemHelper
         }
 
         String attrsList = GenericUtils.join(attributes, ',');
-        UnsupportedAttributePolicy unsupportedAttributePolicy = getUnsupportedAttributePolicy();
-        switch (unsupportedAttributePolicy) {
+        UnsupportedAttributePolicy policy = getUnsupportedAttributePolicy();
+        switch (policy) {
             case Ignore:
                 break;
             case Warn:
-                log.warn("Unsupported attributes: " + attrsList);
+                log.warn("Unsupported attributes: {}", attrsList);
                 break;
             case ThrowException:
                 throw new UnsupportedOperationException("Unsupported attributes: " + attrsList);
             default:
-                log.warn("Unknown policy for attributes=" + attrsList + ": " + unsupportedAttributePolicy);
+                log.warn("Unknown policy ''{}'' for attributes={}", policy, attrsList);
         }
     }
 
@@ -2905,8 +2899,7 @@ public abstract class AbstractSftpSubsystemHelper
             Class<? extends Principal> principalType, String name, IOException e)
             throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "]) details",
-                    e);
+            log.trace("handleUserPrincipalLookupServiceException({})[{}] details", principalType.getSimpleName(), name, e);
         }
 
         /*
@@ -2915,19 +2908,18 @@ public abstract class AbstractSftpSubsystemHelper
          * "Where an implementation does not support any notion of group or user then this method always throws
          * UserPrincipalNotFoundException."
          */
-        UnsupportedAttributePolicy unsupportedAttributePolicy = getUnsupportedAttributePolicy();
-        switch (unsupportedAttributePolicy) {
+        UnsupportedAttributePolicy policy = getUnsupportedAttributePolicy();
+        switch (policy) {
             case Ignore:
                 break;
             case Warn:
-                log.warn("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "])"
-                         + " failed (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+                log.warn("handleUserPrincipalLookupServiceException({})[{}] failed: {}", principalType.getSimpleName(), name,
+                        e.toString());
                 break;
             case ThrowException:
                 throw e;
             default:
-                log.warn("Unknown policy for principal=" + principalType.getSimpleName() + "[" + name + "]: "
-                         + unsupportedAttributePolicy);
+                log.warn("Unknown policy ''{}'' for principal={} [{}]", policy, principalType.getSimpleName(), name);
         }
     }
 
