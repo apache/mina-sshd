@@ -23,6 +23,7 @@
 ## Bug fixes
 
 * [SSHD-1173](https://issues.apache.org/jira/browse/SSHD-1173) Not fully using up a channel window may lead to hangs (see [Channel windows](#channelwindows0) below)
+* [SSHD-1287](https://issues.apache.org/jira/browse/SSHD-1287) SFTP: reading with buffers larger than 126kB leads to data corruption
 * [SSHD-1293](https://issues.apache.org/jira/browse/SSHD-1293) ExplicitPortForwardingTracker does not unbind auto-allocated port
 * [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
 * [SSHD-1297](https://issues.apache.org/jira/browse/SSHD-1297) Avoid OutOfMemoryError when reading a public key from a corrupted Buffer
