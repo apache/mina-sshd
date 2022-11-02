@@ -294,7 +294,9 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         if (chunkLength < stillToSend && !(f instanceof BufferedFuture)) {
             // We can send only part of the data remaining: copy the buffer (if it hasn't been copied before) because
             // the original may be re-used, then send the bit we can send, and queue up a future for sending the rest.
-            f = new BufferedFuture(future.getId(), new ByteArrayBuffer(buffer.getCompactData()));
+            Buffer copied = new ByteArrayBuffer(stillToSend);
+            copied.putBuffer(buffer, false);
+            f = new BufferedFuture(future.getId(), copied);
             f.addListener(w -> future.setValue(w.getException() != null ? w.getException() : w.isWritten()));
         }
         if (chunkLength <= 0) {
