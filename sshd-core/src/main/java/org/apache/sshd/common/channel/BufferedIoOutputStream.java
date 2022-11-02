@@ -152,38 +152,56 @@ public class BufferedIoOutputStream extends AbstractInnerCloseable implements Io
         }
     }
 
+    private IoWriteFutureImpl getWriteRequest() {
+        IoWriteFutureImpl future = null;
+        while (future == null) {
+            future = writes.peek();
+            // No more pending requests
+            if (future == null) {
+                return null;
+            }
+
+            // Don't try to write any further if pending exception signaled
+            Throwable pendingError = pendingException.get();
+            if (pendingError != null) {
+                log.error("startWriting({})[{}] propagate to {} write requests pending error={}[{}]", getId(), out,
+                        writes.size(), getClass().getSimpleName(), pendingError.getMessage());
+
+                IoWriteFutureImpl currentFuture = currentWrite.getAndSet(null);
+                for (IoWriteFutureImpl pendingWrite : writes) {
+                    // Checking reference by design
+                    if (UnaryEquator.isSameReference(pendingWrite, currentFuture)) {
+                        continue; // will be taken care of when its listener is eventually called
+                    }
+
+                    future.setValue(pendingError);
+                }
+
+                writes.clear();
+                return null;
+            }
+
+            // Cannot honor this request yet since other pending one incomplete
+            if (!currentWrite.compareAndSet(null, future)) {
+                return null;
+            }
+
+            if (future.isDone()) {
+                // A write was on-going, and finishWrite hadn't removed the future yet when we got it
+                // above. See https://github.com/apache/mina-sshd/issues/263 .
+                // Re-try.
+                currentWrite.set(null);
+                future = null;
+            }
+        }
+        return future;
+    }
+
     protected void startWriting() throws IOException {
-        IoWriteFutureImpl future = writes.peek();
-        // No more pending requests
+        IoWriteFutureImpl future = getWriteRequest();
         if (future == null) {
             return;
         }
-
-        // Don't try to write any further if pending exception signaled
-        Throwable pendingError = pendingException.get();
-        if (pendingError != null) {
-            log.error("startWriting({})[{}] propagate to {} write requests pending error={}[{}]",
-                    getId(), out, writes.size(), getClass().getSimpleName(), pendingError.getMessage());
-
-            IoWriteFutureImpl currentFuture = currentWrite.getAndSet(null);
-            for (IoWriteFutureImpl pendingWrite : writes) {
-                // Checking reference by design
-                if (UnaryEquator.isSameReference(pendingWrite, currentFuture)) {
-                    continue;   // will be taken care of when its listener is eventually called
-                }
-
-                future.setValue(pendingError);
-            }
-
-            writes.clear();
-            return;
-        }
-
-        // Cannot honor this request yet since other pending one incomplete
-        if (!currentWrite.compareAndSet(null, future)) {
-            return;
-        }
-
         Buffer buffer = future.getBuffer();
         int bufferSize = buffer.available();
         out.writeBuffer(buffer).addListener(f -> {
