@@ -72,19 +72,9 @@ public class ChannelPipedOutputStreamTest extends BaseTestSupport {
             assertFalse("Stream still marked as open after close", stream.isOpen());
             assertTrue("Sink EOF not called on close", eofCalled.get());
 
-            try {
-                stream.write(b);
-                fail("Unexpected write success after close");
-            } catch (IOException e) {
-                // expected
-            }
-
-            try {
-                stream.flush();
-                fail("Unexpected flush success after close");
-            } catch (IOException e) {
-                // expected
-            }
+            assertThrows("Unexpected write success after close", IOException.class, () -> stream.write(b));
+            // flush() should not fail
+            stream.flush();
         }
     }
 }

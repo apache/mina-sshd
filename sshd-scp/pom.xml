@@ -126,7 +126,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>mina</id>
@@ -170,7 +169,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${surefire.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>netty</id>

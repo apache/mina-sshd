@@ -60,9 +60,8 @@ public class ChannelPipedOutputStream extends OutputStream implements Channel {
 
     @Override
     public void flush() throws IOException {
-        if (!isOpen()) {
-            throw new IOException("flush() Stream has been closed");
-        }
+        // Nothing to do since we hand off all data immediately to the sink. Do not throw an exception if we're already
+        // closed; see https://github.com/apache/mina-sshd/issues/266
     }
 
     @Override

@@ -32,6 +32,7 @@
 * [SSHD-1307](https://issues.apache.org/jira/browse/SSHD-1307) [NIO2] TCP/IP port forwarding: shut down output stream only after pending writes have been written
 
 * [GH-263](https://github.com/apache/mina-sshd/issues/263)  Race condition in BufferedIoOutputStream
+* [GH-266](https://github.com/apache/mina-sshd/issues/266)  ChannelPipedOutputStream.flush() must be a no-op
 
 ## Major code re-factoring
 
