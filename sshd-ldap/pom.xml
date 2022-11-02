@@ -82,7 +82,6 @@
        <dependency>
             <groupId>org.apache.directory.server</groupId>
             <artifactId>apacheds-test-framework</artifactId>
-            <version>${apacheds.version}</version>
             <scope>test</scope>
         </dependency>
         <!--
@@ -134,4 +133,26 @@
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>test-on-java16+</id>
+            <activation>
+                <jdk>[16,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <useModulePath>false</useModulePath>
+                            <!-- See https://issues.apache.org/jira/browse/DIRSTUDIO-1277 -->
+                            <argLine>--add-opens=java.base/sun.security.util=ALL-UNNAMED --add-opens=java.base/sun.security.x509=ALL-UNNAMED</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
