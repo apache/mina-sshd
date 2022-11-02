@@ -31,6 +31,8 @@
 * [SSHD-1303](https://issues.apache.org/jira/browse/SSHD-1303) Reading from redirected Channel.getInvertedErr() delivers stdout; should be at EOF
 * [SSHD-1307](https://issues.apache.org/jira/browse/SSHD-1307) [NIO2] TCP/IP port forwarding: shut down output stream only after pending writes have been written
 
+* [GH-263](https://github.com/apache/mina-sshd/issues/263)  Race condition in BufferedIoOutputStream
+
 ## Major code re-factoring
 
 ## Potential compatibility issues
