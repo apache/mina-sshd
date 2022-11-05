@@ -19,6 +19,7 @@
 package org.apache.sshd.server.keyprovider;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -88,7 +89,13 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
                 new ECGenParameterSpec("P-521"));
     }
 
-    private Path testSimpleGeneratorHostKeyProvider(
+    @Test
+    public void testEdDSA() throws IOException, GeneralSecurityException {
+        Assume.assumeTrue("EdDSA not supported", SecurityUtils.isEDDSACurveSupported());
+        testSimpleGeneratorHostKeyProvider(SecurityUtils.EDDSA, KeyPairProvider.SSH_ED25519, -1, null);
+    }
+
+    private void testSimpleGeneratorHostKeyProvider(
             String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec)
             throws IOException, GeneralSecurityException {
         Path path = initKeyFileLocation(algorithm);
@@ -97,7 +104,16 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
         KeyPair kpRead = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertKeyPairEquals("Mismatched write/read key pairs", kpWrite, kpRead);
-        return path;
+
+        if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
+            // Try the old way: use Java serialization. net.i2p EdDSA keys cannot be serialized.
+            path = initKeyFileLocation(algorithm, "ser");
+            try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(path))) {
+                out.writeObject(kpWrite);
+            }
+            kpRead = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
+            assertKeyPairEquals("Mismatched serialized/deserialized key pairs", kpWrite, kpRead);
+        }
     }
 
     private static KeyPair invokeSimpleGeneratorHostKeyProvider(
@@ -135,8 +151,12 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     }
 
     private Path initKeyFileLocation(String algorithm) throws IOException {
+        return initKeyFileLocation(algorithm, "key");
+    }
+
+    private Path initKeyFileLocation(String algorithm, String extension) throws IOException {
         Path path = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
-        path = path.resolve(algorithm + "-simple.key");
+        path = path.resolve(algorithm + "-simple." + extension);
         Files.deleteIfExists(path);
         return path;
     }

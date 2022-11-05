@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.keyprovider;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.UserPrincipal;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -46,6 +52,7 @@ import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -128,7 +135,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         }
     }
 
-    @Override // co-variant return
+    @Override
     public synchronized List<KeyPair> loadKeys(SessionContext session) {
         Path keyPath = getPath();
         Iterable<KeyPair> ids;
@@ -140,7 +147,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                     if (ids != null) {
                         keyPairHolder.set(ids);
                     }
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     warn("loadKeys({}) Failed ({}) to resolve: {}",
                             keyPath, t.getClass().getSimpleName(), t.getMessage(), t);
                 }
@@ -174,7 +181,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                 if (kp != null) {
                     return ids;
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 warn("resolveKeyPair({}) Failed ({}) to load: {}",
                         keyPath, e.getClass().getSimpleName(), e.getMessage(), e);
             }
@@ -193,7 +200,7 @@ public abstract class AbstractGeneratorHostKeyProvider
                 log.debug("resolveKeyPair({}) generated {} key={}-{}",
                         keyPath, alg, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             warn("resolveKeyPair({})[{}] Failed ({}) to generate {} key-pair: {}",
                     keyPath, alg, e.getClass().getSimpleName(), alg, e.getMessage(), e);
             return null;
@@ -202,7 +209,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         if (keyPath != null) {
             try {
                 writeKeyPair(kp, keyPath);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 warn("resolveKeyPair({})[{}] Failed ({}) to write {} key: {}",
                         alg, keyPath, e.getClass().getSimpleName(), alg, e.getMessage(), e);
             }
@@ -263,20 +270,69 @@ public abstract class AbstractGeneratorHostKeyProvider
         return SecurityUtils.loadKeyPairIdentities(session, resourceKey, inputStream, null);
     }
 
-    protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption... options)
+    protected void writeKeyPair(KeyPair kp, Path keyPath)
             throws IOException, GeneralSecurityException {
-        if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {
-            PathResource location = new PathResource(keyPath); // The options are for write (!!)
-            try (OutputStream os = Files.newOutputStream(keyPath, options)) {
-                doWriteKeyPair(location, kp, os);
-            } catch (Throwable e) {
-                warn("writeKeyPair({}) failed ({}) to write key {}: {}",
-                        keyPath, e.getClass().getSimpleName(), kp, e.getMessage(), e);
+        Objects.requireNonNull(kp, "No host key");
+        if (!Files.exists(keyPath) || isOverwriteAllowed()) {
+            // Create an empty file or truncate an existing file
+            Files.newOutputStream(keyPath).close();
+            setFilePermissions(keyPath);
+            try (OutputStream os = Files.newOutputStream(keyPath, StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING)) {
+                doWriteKeyPair(new PathResource(keyPath), kp, os);
+            } catch (Exception e) {
+                error("writeKeyPair({}) failed ({}) to write {} host key : {}",
+                        keyPath, e.getClass().getSimpleName(),
+                        KeyUtils.getKeyType(kp), e.getMessage(), e);
             }
         } else {
-            log.error("Overwriting key ({}) is disabled: using throwaway {}: {}",
-                    keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint((kp == null) ? null : kp.getPublic()));
+            log.warn("Overwriting host key ({}) is disabled: using throwaway {} key: {}",
+                    keyPath, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
         }
+    }
+
+    private void setFilePermissions(Path path) throws IOException {
+        Throwable t = null;
+        if (OsUtils.isWin32()) {
+            AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
+            UserPrincipal owner = Files.getOwner(path);
+            if (view != null && owner != null) {
+                try {
+                    // Remove all access rights from non-owners.
+                    List<AclEntry> restricted = new ArrayList<>();
+                    for (AclEntry acl : view.getAcl()) {
+                        if (owner.equals(acl.principal()) || AclEntryType.DENY.equals(acl.type())) {
+                            restricted.add(acl);
+                        } else {
+                            // We can't use DENY access: if the owner is member of a group and we deny the group
+                            // access, the owner won't be able to perform the access. Instead of denying permissions
+                            // simply allow nothing.
+                            restricted.add(AclEntry.newBuilder()
+                                    .setType(AclEntryType.ALLOW)
+                                    .setPrincipal(acl.principal())
+                                    .setPermissions(Collections.emptySet())
+                                    .build());
+                        }
+                    }
+                    view.setAcl(restricted);
+                    return;
+                } catch (IOException | SecurityException e) {
+                    t = e;
+                }
+            }
+        } else {
+            File file = path.toFile();
+            if (!file.setExecutable(false)) {
+                log.debug("Host key file {}: cannot set non-executable", path);
+            }
+
+            boolean success = file.setWritable(false, false) && file.setWritable(true, true);
+            success = file.setReadable(false, false) && file.setReadable(true, true) && success;
+            if (success) {
+                return;
+            }
+        }
+        log.warn("Host key file {}: cannot set file permissions correctly (readable and writeable only by owner)", path, t);
     }
 
     protected abstract void doWriteKeyPair(
@@ -305,6 +361,8 @@ public abstract class AbstractGeneratorHostKeyProvider
         } else if (keySize != 0) {
             generator.initialize(keySize);
             log.info("generateKeyPair({}) generating host key - size={}", algorithm, keySize);
+        } else {
+            log.info("generateKeyPair({}) generating host key", algorithm);
         }
 
         return generator.generateKeyPair();
