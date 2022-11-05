@@ -126,40 +126,7 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
     @Override
     protected Closeable getInnerCloseable() {
-        return new IoBaseCloseable() {
-            @SuppressWarnings("synthetic-access")
-            private final DefaultCloseFuture future = new DefaultCloseFuture(MinaSession.this.toString(), futureLock);
-
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public boolean isClosing() {
-                return session.isClosing();
-            }
-
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public boolean isClosed() {
-                return !session.isConnected();
-            }
-
-            @Override
-            public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
-                future.addListener(listener);
-            }
-
-            @Override
-            public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
-                future.removeListener(listener);
-            }
-
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
-                org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
-                cf.addListener(f -> future.setValue(Boolean.TRUE));
-                return future;
-            }
-        };
+        return new IoSessionCloser(this.toString(), session, futureLock);
     }
 
     // NOTE !!! data buffer may NOT be re-used when method returns - at least until IoWriteFuture is signalled
@@ -217,6 +184,45 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
         // reflection, but we'd lose any pending writes, and it seems to confuse MINA quite a bit. Instead, schedule the
         // MINA session to be closed once all pending writes have been written.
         session.closeOnFlush();
+    }
+
+    private static class IoSessionCloser extends IoBaseCloseable {
+
+        private final DefaultCloseFuture future;
+
+        private final org.apache.mina.core.session.IoSession session;
+
+        IoSessionCloser(String id, org.apache.mina.core.session.IoSession session, Object futureLock) {
+            this.session = session;
+            future = new DefaultCloseFuture(id, futureLock);
+        }
+
+        @Override
+        public boolean isClosing() {
+            return session.isClosing();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return !session.isConnected();
+        }
+
+        @Override
+        public void addCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            future.addListener(listener);
+        }
+
+        @Override
+        public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
+            future.removeListener(listener);
+        }
+
+        @Override
+        public CloseFuture close(boolean immediately) {
+            org.apache.mina.core.future.CloseFuture cf = immediately ? session.closeNow() : session.closeOnFlush();
+            cf.addListener(f -> future.setValue(Boolean.TRUE));
+            return future;
+        }
     }
 
     @Override
