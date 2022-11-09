@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 
 /**
- * TODO Add javadoc
+ * General utilities for working with byte-encoded data.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
