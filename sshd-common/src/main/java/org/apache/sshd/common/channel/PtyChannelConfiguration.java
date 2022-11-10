@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 
 import java.util.EnumMap;
 import java.util.Map;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -94,6 +95,8 @@ public class PtyChannelConfiguration implements PtyChannelConfigurationMutator {
 
     @Override
     public void setPtyModes(Map<PtyMode, Integer> ptyModes) {
+        ptyModes.forEach(
+            (key, value) -> BufferUtils.validateUint32Value(value, "Mode %s has invalid value %s", key, value));
         this.ptyModes = ptyModes;
     }
 
