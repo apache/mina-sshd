@@ -66,6 +66,7 @@ import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.GlobalRequestFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
+import org.apache.sshd.common.global.GlobalRequestException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -972,7 +973,7 @@ public abstract class AbstractSession extends SessionHelper {
             if (debugEnabled) {
                 log.debug("preClose({}): Session closing; failing still pending global request {}", this, future.getId());
             }
-            future.fail("Session is closing");
+            future.setValue(new SshException("Session is closing"));
         }
 
         // Fire 'close' event
@@ -1179,6 +1180,15 @@ public abstract class AbstractSession extends SessionHelper {
             if (!done || result == null) {
                 throw new SocketTimeoutException("No response received after " + maxWaitMillis + "ms for request=" + request);
             }
+            // The operation is specified to return null if the request could be made, but got an error reply.
+            // The caller cannot distinguish between SSH_MSG_UNIMPLEMENTED and SSH_MSG_REQUEST_FAILURE.
+            if (result instanceof GlobalRequestException) {
+                if (debugEnabled) {
+                    log.debug("request({}) request={}, requestSeqNo={}: received={}", this, request, future.getSequenceNumber(),
+                            SshConstants.getCommandMessageName(((GlobalRequestException) result).getCode()));
+                }
+                return null;
+            }
         }
 
         if (result instanceof Throwable) {
@@ -1290,7 +1300,7 @@ public abstract class AbstractSession extends SessionHelper {
                     Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
                     handler.accept(cmd, resultBuf);
                 } else {
-                    future.fail(SshConstants.getCommandMessageName(cmd));
+                    future.setValue(new GlobalRequestException(cmd));
                 }
                 return true; // message handled internally
             } else if (future != null) {
@@ -2204,7 +2214,7 @@ public abstract class AbstractSession extends SessionHelper {
                 Buffer resultBuf = ByteArrayBuffer.getCompactClone(buffer.array(), buffer.rpos(), buffer.available());
                 handler.accept(SshConstants.SSH_MSG_REQUEST_FAILURE, resultBuf);
             } else {
-                request.fail(SshConstants.getCommandMessageName(SshConstants.SSH_MSG_REQUEST_FAILURE));
+                request.setValue(new GlobalRequestException(SshConstants.SSH_MSG_REQUEST_FAILURE));
             }
         }
     }

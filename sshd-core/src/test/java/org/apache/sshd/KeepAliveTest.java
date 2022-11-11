@@ -217,6 +217,37 @@ public class KeepAliveTest extends BaseTestSupport {
         }
     }
 
+    @Test // see GH-268
+    public void testTimeoutOnMissingHeartbeatResponse() throws Exception {
+        CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofSeconds(30));
+        List<RequestHandler<ConnectionService>> globalHandlers = sshd.getGlobalRequestHandlers();
+        sshd.setGlobalRequestHandlers(Collections.singletonList(new AbstractConnectionServiceRequestHandler() {
+            @Override
+            public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
+                    throws Exception {
+                // Never reply;
+                return Result.Replied;
+            }
+        }));
+        CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, HEARTBEAT);
+        CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, Duration.ofSeconds(1));
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                long waitStart = System.currentTimeMillis();
+                Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TIMEOUT);
+                long waitEnd = System.currentTimeMillis();
+                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
+                        result.contains(ClientChannelEvent.CLOSED));
+            }
+        } finally {
+            sshd.setGlobalRequestHandlers(globalHandlers); // restore original
+        }
+    }
+
     public static class TestEchoShellFactory extends EchoShellFactory {
         public TestEchoShellFactory() {
             super();

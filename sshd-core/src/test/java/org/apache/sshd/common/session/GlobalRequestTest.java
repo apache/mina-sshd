@@ -35,6 +35,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.GlobalRequestFuture;
+import org.apache.sshd.common.global.GlobalRequestException;
 import org.apache.sshd.common.session.helpers.AbstractConnectionServiceRequestHandler;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -197,7 +198,7 @@ public class GlobalRequestTest extends BaseTestSupport {
                     case 0: {
                         j++;
                         Buffer reply = request.getBuffer();
-                        assertTrue("Expected success for request " + i, reply != null);
+                        assertNotNull("Expected success for request " + i, reply);
                         assertEquals("Expected a success", (byte) ('1' + j - 1), reply.getByte());
                         break;
                     }
@@ -205,14 +206,20 @@ public class GlobalRequestTest extends BaseTestSupport {
                         j++;
                         failure = request.getException();
                         assertNotNull("Expected failure for request " + i, failure);
-                        assertEquals("Unexpected failure reason for request " + i, "SSH_MSG_REQUEST_FAILURE",
-                                failure.getMessage());
+                        assertTrue("Unexpected failure type", failure instanceof GlobalRequestException);
+                        assertEquals("Unexpected failure reason for request " + i, SshConstants.SSH_MSG_REQUEST_FAILURE,
+                                ((GlobalRequestException) failure).getCode());
+                        assertTrue("Unexpected failure message for request " + i,
+                                failure.getMessage().contains("SSH_MSG_REQUEST_FAILURE"));
                         break;
                     default:
                         failure = request.getException();
                         assertNotNull("Expected failure for request " + i, failure);
-                        assertEquals("Unexpected failure reason for request " + i, "SSH_MSG_UNIMPLEMENTED",
-                                failure.getMessage());
+                        assertTrue("Unexpected failure type", failure instanceof GlobalRequestException);
+                        assertEquals("Unexpected failure reason for request " + i, SshConstants.SSH_MSG_UNIMPLEMENTED,
+                                ((GlobalRequestException) failure).getCode());
+                        assertTrue("Unexpected failure message for request " + i,
+                                failure.getMessage().contains("SSH_MSG_UNIMPLEMENTED"));
                         break;
                 }
             }

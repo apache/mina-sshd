@@ -21,7 +21,6 @@ package org.apache.sshd.common.future;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -110,15 +109,6 @@ public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
     }
 
     /**
-     * Fulfills this future, marking it as failed.
-     *
-     * @param message An explanation of the failure reason
-     */
-    public void fail(String message) {
-        setValue(new SshException(GenericUtils.isEmpty(message) ? "Global request failure; unknown reason" : message));
-    }
-
-    /**
      * Retrieves the {@link ReplyHandler} of this future, if any.
      *
      * @return the handler, or {@code null} if none was set
@@ -163,7 +153,7 @@ public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
             if (ioe != null) {
                 setValue(ioe);
             } else {
-                fail("Could not write global request " + getId() + " seqNo=" + getSequenceNumber());
+                setValue(new SshException("Could not write global request " + getId() + " seqNo=" + getSequenceNumber()));
             }
         }
     }

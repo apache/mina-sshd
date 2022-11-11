@@ -20,8 +20,6 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +28,6 @@ import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.GlobalRequestFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
@@ -128,33 +125,11 @@ public class ClientConnectionService
             buf.putBoolean(withReply);
 
             if (withReply) {
-                Instant start = Instant.now();
-                CountDownLatch replyReceived = new CountDownLatch(1);
-                GlobalRequestFuture writeFuture = session.request(buf, heartbeatRequest, (cmd, reply) -> {
-                    replyReceived.countDown();
+                Buffer reply = session.request(heartbeatRequest, buf, heartbeatReplyMaxWait);
+                if (reply != null) {
                     if (log.isTraceEnabled()) {
-                        log.trace("sendHeartBeat({}) received reply={} size={} for request={}", session,
-                                SshConstants.getCommandMessageName(cmd), reply.available(), heartbeatRequest);
-                    }
-                });
-                writeFuture.await(heartbeatReplyMaxWait);
-                Throwable t = writeFuture.getException();
-                if (t != null) {
-                    // We couldn't even send the request.
-                    throw new IOException(t.getMessage(), t);
-                }
-                Duration elapsed = Duration.between(start, Instant.now());
-                if (elapsed.compareTo(heartbeatReplyMaxWait) < 0) {
-                    long toWait = heartbeatReplyMaxWait.minus(elapsed).toMillis();
-                    if (toWait > 0) {
-                        try {
-                            replyReceived.await(toWait, TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            if (log.isTraceEnabled()) {
-                                log.trace("sendHeartBeat({}) interrupted waiting for reply to request={}", session,
-                                        heartbeatRequest);
-                            }
-                        }
+                        log.trace("sendHeartBeat({}) received reply size={} for request={}",
+                                session, reply.available(), heartbeatRequest);
                     }
                 }
             } else {

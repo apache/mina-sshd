@@ -24,6 +24,8 @@
 
 ## Bug fixes
 
+* [GH-268](https://github.com/apache/mina-sshd/issues/268) (Regression in 2.9.0) Heartbeat should throw an exception if no reply arrives within the timeout.
+
 ## Major code re-factoring
 
 ## Potential compatibility issues
