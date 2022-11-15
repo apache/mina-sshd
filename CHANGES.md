@@ -18,21 +18,11 @@
 
 # [Version 2.9.0 to 2.9.1](./docs/changes/2.9.1.md)
 
+# [Version 2.9.1 to 2.9.2](./docs/changes/2.9.2.md)
+
 # Planned for next version
 
 ## Bug fixes
-
-* [SSHD-1173](https://issues.apache.org/jira/browse/SSHD-1173) Not fully using up a channel window may lead to hangs (see [Channel windows](#channelwindows0) below)
-* [SSHD-1287](https://issues.apache.org/jira/browse/SSHD-1287) SFTP: reading with buffers larger than 126kB leads to data corruption
-* [SSHD-1293](https://issues.apache.org/jira/browse/SSHD-1293) ExplicitPortForwardingTracker does not unbind auto-allocated port
-* [SSHD-1294](https://issues.apache.org/jira/browse/SSHD-1294) Close MinaServiceFactory instances properly
-* [SSHD-1297](https://issues.apache.org/jira/browse/SSHD-1297) Avoid OutOfMemoryError when reading a public key from a corrupted Buffer
-* [SSHD-1302](https://issues.apache.org/jira/browse/SSHD-1302) Reading from Channel.getInvertedOut() after EOF was reached throws IOException instead of returning -1
-* [SSHD-1303](https://issues.apache.org/jira/browse/SSHD-1303) Reading from redirected Channel.getInvertedErr() delivers stdout; should be at EOF
-* [SSHD-1307](https://issues.apache.org/jira/browse/SSHD-1307) [NIO2] TCP/IP port forwarding: shut down output stream only after pending writes have been written
-
-* [GH-263](https://github.com/apache/mina-sshd/issues/263)  Race condition in BufferedIoOutputStream
-* [GH-266](https://github.com/apache/mina-sshd/issues/266)  ChannelPipedOutputStream.flush() must be a no-op
 
 ## Major code re-factoring
 
@@ -40,39 +30,4 @@
 
 ## Minor code helpers
 
-* New utility method `KeyUtils.loadPublicKey()` to read a public key file.
-
 ## Behavioral changes and enhancements
-
-* Netty I/O back-end: respect configurations for `CoreModuleProperties.SOCKET_BACKLOG` and `CoreModuleProperties.SOCKET_REUSEADDR`.
-* MINA I/O back-end: use `CoreModuleProperties.NIO2_READ_BUFFER_SIZE` for the initial read buffer size, if set.
-  A new `CoreModuleProperties.MIN_READ_BUFFER_SIZE` can be set to control the minimum read buffer size (64
-  bytes by default in Apache MINA).
-* NIO2 I/O back-end: in TCP/IP port forwarding, shut down the output stream of a socket when a `SSH_MSG_CHANNEL_EOF` message
-  is received  on the SSH channel only after still pending writes have completed. See [SSHD-1307](https://issues.apache.org/jira/browse/SSHD-1307).
-  The MINA and Netty I/O back-ends already did so.
-
-<!-- --><a id="channelwindows0"></a>
-
-### Channel windows
-
-Previous versions of Apache MINA sshd (from 2.6.0 to 2.9.1) did not always fully use up a channel window
-and waited for a `SSH_MSG_CHANNEL_WINDOW_ADJUST` message from the peer instead. They did so if the available
-window size was smaller than the packet size of the channel, and also smaller than the amount of data still
-to be written. There were settings to change this behavior and always fully use up a channel window: these
-settings were
-
-* `CoreModuleProperties.ASYNC_SERVER_STDOUT_CHUNK_BELOW_WINDOW_SIZE`
-* `CoreModuleProperties.ASYNC_SERVER_STDERR_CHUNK_BELOW_WINDOW_SIZE`
-* `SftpModuleProperties.CHUNK_IF_WINDOW_LESS_THAN_PACKET`
-
-By default, they were `false`; if set to `true`, the window would be used fully.
-
-Not using up a channel window may lead to hangs with peers that send the `SSH_MSG_CHANNEL_WINDOW_ADJUST` message
-only when the window size is very low, or even zero. The SSH RFCs do not mandate any particular point at which
-an implementation should adjust the window. OpenSSH and Apache MINA sshd itself do so when half of the window
-is used up, but there are other implementations that do so only when the available window size becomes zero.
-
-In this version, the above settings have been removed. Apache MINA sshd behaves always as if they were `true`, i.e.,
-if there is some window space and there is data to write, data will be written. See Apache MINA sshd issues
-[SSHD-1123](https://issues.apache.org/jira/browse/SSHD-1123) and [SSHD-1173](https://issues.apache.org/jira/browse/SSHD-1173).
