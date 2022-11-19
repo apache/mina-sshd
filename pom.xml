@@ -1133,7 +1133,6 @@
                         <skipXmlFormatting>true</skipXmlFormatting>
                         <skipHtmlFormatting>true</skipHtmlFormatting>
                         <skipJsonFormatting>true</skipJsonFormatting>
-                        <cachedir>${project.build.outputDirectory}${file.separator}.cache</cachedir>
                         <configFile>${workspace.root.dir}${file.separator}sshd-eclipse-formatter-config.xml</configFile>
                         <lineEnding>LF</lineEnding>
                     </configuration>
@@ -1440,7 +1439,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.3</version>
+                <version>5.1.8</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
