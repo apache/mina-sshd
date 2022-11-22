@@ -1,0 +1,32 @@
+name: Feature Request
+description: Suggest an enhancement or a new feature.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping making Apache MINA SSHD better!
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What feature or enhancement you would like to have in Apache MINA SSHD?
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Explain the use case for the new feature.
+      placeholder: Explain why it would be good to have the new feature or enhancement. What problem would it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What alternatives did you consider? What work-around, if any, are you using currently?
+  - type: textarea
+    id: other
+    attributes:
+      label: Additional context
+      description: Any other information that may be relevant.

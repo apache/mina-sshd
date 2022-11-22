@@ -1,0 +1,49 @@
+name: Bug Report
+description: File a bug report.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to fill out this bug report!
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: With what version(s) of Apache MINA SSHD did you observe the bug?
+      placeholder: a version, like 2.9.2, or a branch name, or a commit ID
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: Explain the buggy behavior, and how to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened?
+      placeholder: Enclose exception stack traces by backticks, or paste them in the "Relevant log output" field below.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output or exception stack traces. This will be automatically formatted into code, so no need for backticks.
+      render: Shell
+  - type: textarea
+    id: other
+    attributes:
+      label: Other information
+      description: Any other relevant information.
+      placeholder: "For instance, if the problem occurs in communication with an SSH peer, what kind of peer: OpenSSH (which version?), or also Apache MINA SSHD, or something else?"
