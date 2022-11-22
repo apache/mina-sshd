@@ -715,6 +715,7 @@
                         <excludes>
                             <exclude>.asf.yaml</exclude>
                             <exclude>*.md</exclude>
+                            <exclude>.github/**</exclude>
                             <exclude>docs/**</exclude>
                             <exclude>sshd-sources/**</exclude>
                             <exclude>src/test/resources/**</exclude>
