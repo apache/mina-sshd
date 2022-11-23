@@ -180,10 +180,7 @@ public abstract class AbstractSftpClient
         validateIncomingResponse(cmd, id, type, length, buffer);
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
-            checkResponseStatus(cmd, id, substatus, msg, lang);
+            checkResponseStatus(cmd, id, SftpStatus.parse(buffer));
         } else {
             IOException err = handleUnexpectedPacket(cmd, SftpConstants.SSH_FXP_STATUS, id, type, length, buffer);
             if (err != null) {
@@ -195,26 +192,24 @@ public abstract class AbstractSftpClient
     /**
      * @param  cmd         The sent command opcode
      * @param  id          The request id
-     * @param  substatus   The sub-status value
-     * @param  msg         The message
-     * @param  lang        The language
-     * @throws IOException if the sub-status is not {@code SSH_FX_OK}
-     * @see                #throwStatusException(int, int, int, String, String)
+     * @param  status      The {@link SftpStatus}
+     * @throws IOException if {@code !status.isOk()}
+     * @see                #throwStatusException(int, int, SftpStatus)
      */
-    protected void checkResponseStatus(int cmd, int id, int substatus, String msg, String lang) throws IOException {
+    protected void checkResponseStatus(int cmd, int id, SftpStatus status) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("checkResponseStatus({})[id={}] cmd={} status={} lang={} msg={}",
+            log.trace("checkResponseStatus({})[id={}] cmd={} status={}",
                     getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                    SftpConstants.getStatusName(substatus), lang, msg);
+                    status);
         }
 
-        if (substatus != SftpConstants.SSH_FX_OK) {
-            throwStatusException(cmd, id, substatus, msg, lang);
+        if (!status.isOk()) {
+            throwStatusException(cmd, id, status);
         }
     }
 
-    protected void throwStatusException(int cmd, int id, int substatus, String msg, String lang) throws IOException {
-        throw new SftpException(substatus, msg);
+    protected void throwStatusException(int cmd, int id, SftpStatus status) throws IOException {
+        throw new SftpException(status.getStatusCode(), status.getMessage());
     }
 
     /**
@@ -244,15 +239,12 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkHandleResponse({})[id={}] {} - status: {} [{}] {}",
-                        getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                        SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkHandleResponse({})[id={}] {} - status: {}", getClientChannel(), id,
+                        SftpConstants.getCommandMessageName(cmd), status);
             }
-            throwStatusException(cmd, id, substatus, msg, lang);
+            throwStatusException(cmd, id, status);
         }
 
         return handleUnexpectedHandlePacket(cmd, id, type, length, buffer);
@@ -294,15 +286,12 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributesResponse({})[id={}] {} - status: {} [{}] {}",
-                        getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                        SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkAttributesResponse({})[id={}] {} - status: {}", getClientChannel(), id,
+                        SftpConstants.getCommandMessageName(cmd), status);
             }
-            throwStatusException(cmd, id, substatus, msg, lang);
+            throwStatusException(cmd, id, status);
         }
 
         return handleUnexpectedAttributesPacket(cmd, id, type, length, buffer);
@@ -366,16 +355,13 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkOneNameResponse({})[id={}] {} status: {} [{}] {}",
-                        getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                        SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkOneNameResponse({})[id={}] {} status: {}", getClientChannel(), id,
+                        SftpConstants.getCommandMessageName(cmd), status);
             }
 
-            throwStatusException(cmd, id, substatus, msg, lang);
+            throwStatusException(cmd, id, status);
         }
 
         return handleUnknownOneNamePacket(cmd, id, type, length, buffer);
@@ -696,20 +682,18 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkDataResponse({})[id={}] {} status: {} [{}] {}",
+                log.trace("checkDataResponse({})[id={}] {} status: {}",
                         getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                        SftpConstants.getStatusName(substatus), lang, msg);
+                        status);
             }
 
-            if (substatus == SftpConstants.SSH_FX_EOF) {
+            if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
                 return -1;
             }
 
-            throwStatusException(cmd, id, substatus, msg, lang);
+            throwStatusException(cmd, id, status);
         }
 
         return handleUnknownDataPacket(cmd, id, type, length, buffer);
@@ -910,19 +894,16 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (traceEnabled) {
-                log.trace("checkDirResponse({})[id={}] - status: {} [{}] {}",
-                        getClientChannel(), id, SftpConstants.getStatusName(substatus), lang, msg);
+                log.trace("checkDirResponse({})[id={}] - status: {}", getClientChannel(), id, status);
             }
 
-            if (substatus == SftpConstants.SSH_FX_EOF) {
+            if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
                 return null;
             }
 
-            throwStatusException(cmd, id, substatus, msg, lang);
+            throwStatusException(cmd, id, status);
         }
 
         return handleUnknownDirListingPacket(cmd, id, type, length, buffer);

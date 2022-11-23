@@ -37,6 +37,7 @@ import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Handle;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
+import org.apache.sshd.sftp.client.impl.SftpStatus;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 
@@ -191,16 +192,13 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
         validateIncomingResponse(SftpConstants.SSH_FXP_EXTENDED, id, type, length, buffer);
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
+            SftpStatus status = SftpStatus.parse(buffer);
             if (log.isDebugEnabled()) {
-                log.debug("checkExtendedReplyBuffer({})[id={}] - status: {} [{}] {}",
-                        getName(), id, substatus, lang, msg);
+                log.debug("checkExtendedReplyBuffer({})[id={}] - status: {}", getName(), id, status);
             }
 
-            if (substatus != SftpConstants.SSH_FX_OK) {
-                throwStatusException(id, substatus, msg, lang);
+            if (!status.isOk()) {
+                throwStatusException(id, status);
             }
 
             return null;
@@ -222,7 +220,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
         }
     }
 
-    protected void throwStatusException(int id, int substatus, String msg, String lang) throws IOException {
-        throw new SftpException(substatus, msg);
+    protected void throwStatusException(int id, SftpStatus status) throws IOException {
+        throw new SftpException(status.getStatusCode(), status.getMessage());
     }
 }

@@ -333,13 +333,11 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             buf.wpos(rpos + dlen);
             this.buffer = buf;
         } else if (type == SftpConstants.SSH_FXP_STATUS) {
-            int substatus = buf.getInt();
-            String msg = buf.getString();
-            String lang = buf.getString();
-            if (substatus == SftpConstants.SSH_FX_EOF) {
+            SftpStatus status = SftpStatus.parse(buf);
+            if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
                 eofIndicator = true;
             } else {
-                client.checkResponseStatus(SshConstants.SSH_MSG_CHANNEL_DATA, id, substatus, msg, lang);
+                client.checkResponseStatus(SshConstants.SSH_MSG_CHANNEL_DATA, id, status);
             }
         } else {
             IOException err = client.handleUnexpectedPacket(SshConstants.SSH_MSG_CHANNEL_DATA,
