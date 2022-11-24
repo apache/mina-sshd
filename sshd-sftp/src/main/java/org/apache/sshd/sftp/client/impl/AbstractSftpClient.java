@@ -197,18 +197,20 @@ public abstract class AbstractSftpClient
      * @see                #throwStatusException(int, int, SftpStatus)
      */
     protected void checkResponseStatus(int cmd, int id, SftpStatus status) throws IOException {
-        if (log.isTraceEnabled()) {
-            log.trace("checkResponseStatus({})[id={}] cmd={} status={}",
-                    getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                    status);
-        }
-
         if (!status.isOk()) {
             throwStatusException(cmd, id, status);
+        } else if (log.isTraceEnabled()) {
+            log.trace("throwStatusException({})[id={}] cmd={} status={}",
+                    getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
+                    status);
         }
     }
 
     protected void throwStatusException(int cmd, int id, SftpStatus status) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("throwStatusException({})[id={}] cmd={} status={}", getClientChannel(), id,
+                    SftpConstants.getCommandMessageName(cmd), status);
+        }
         throw new SftpException(status.getStatusCode(), status.getMessage());
     }
 
@@ -239,12 +241,7 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buffer);
-            if (log.isTraceEnabled()) {
-                log.trace("checkHandleResponse({})[id={}] {} - status: {}", getClientChannel(), id,
-                        SftpConstants.getCommandMessageName(cmd), status);
-            }
-            throwStatusException(cmd, id, status);
+            throwStatusException(cmd, id, SftpStatus.parse(buffer));
         }
 
         return handleUnexpectedHandlePacket(cmd, id, type, length, buffer);
@@ -286,12 +283,7 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buffer);
-            if (log.isTraceEnabled()) {
-                log.trace("checkAttributesResponse({})[id={}] {} - status: {}", getClientChannel(), id,
-                        SftpConstants.getCommandMessageName(cmd), status);
-            }
-            throwStatusException(cmd, id, status);
+            throwStatusException(cmd, id, SftpStatus.parse(buffer));
         }
 
         return handleUnexpectedAttributesPacket(cmd, id, type, length, buffer);
@@ -355,13 +347,7 @@ public abstract class AbstractSftpClient
         }
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buffer);
-            if (log.isTraceEnabled()) {
-                log.trace("checkOneNameResponse({})[id={}] {} status: {}", getClientChannel(), id,
-                        SftpConstants.getCommandMessageName(cmd), status);
-            }
-
-            throwStatusException(cmd, id, status);
+            throwStatusException(cmd, id, SftpStatus.parse(buffer));
         }
 
         return handleUnknownOneNamePacket(cmd, id, type, length, buffer);
@@ -556,6 +542,9 @@ public abstract class AbstractSftpClient
         buffer.putInt(mode);
         buffer = writeAttributes(SftpConstants.SSH_FXP_OPEN, buffer, fileOpenAttributes);
 
+        if (log.isDebugEnabled()) {
+            log.debug("open({}): send SSH_FXP_OPEN {}", getClientChannel(), path);
+        }
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPEN, buffer));
         if (log.isTraceEnabled()) {
             log.trace("open({})[{}] options={}: {}", getClientChannel(), path, options, handle);
@@ -576,6 +565,9 @@ public abstract class AbstractSftpClient
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
+        if (log.isDebugEnabled()) {
+            log.debug("open({})[{}]: send SSH_FXP_CLOSE", getClientChannel(), handle);
+        }
         checkCommandStatus(SftpConstants.SSH_FXP_CLOSE, buffer);
     }
 
@@ -683,13 +675,12 @@ public abstract class AbstractSftpClient
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
             SftpStatus status = SftpStatus.parse(buffer);
-            if (log.isTraceEnabled()) {
-                log.trace("checkDataResponse({})[id={}] {} status: {}",
-                        getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                        status);
-            }
 
             if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
+                if (log.isTraceEnabled()) {
+                    log.trace("checkDataResponse({})[id={}] {} status: {}", getClientChannel(), id,
+                            SftpConstants.getCommandMessageName(cmd), status);
+                }
                 return -1;
             }
 
@@ -771,7 +762,7 @@ public abstract class AbstractSftpClient
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("mkdir({}) {}", getClientChannel(), path);
+            log.debug("mkdir({}): send SSH_FXP_MKDIR {}", getClientChannel(), path);
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
@@ -793,7 +784,7 @@ public abstract class AbstractSftpClient
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("rmdir({}) {}", getClientChannel(), path);
+            log.debug("rmdir({}): send SSH_FXP_RMDIR {}", getClientChannel(), path);
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
@@ -810,6 +801,9 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer = putReferencedName(SftpConstants.SSH_FXP_OPENDIR, buffer, path, 0);
 
+        if (log.isDebugEnabled()) {
+            log.debug("openDir({}): send SSH_FXP_OPENDIR {}", getClientChannel(), path);
+        }
         CloseableHandle handle = new DefaultCloseableHandle(this, path, checkHandle(SftpConstants.SSH_FXP_OPENDIR, buffer));
         if (log.isTraceEnabled()) {
             log.trace("openDir({})[{}]: {}", getClientChannel(), path, handle);
@@ -831,6 +825,9 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer(id.length + Byte.SIZE /* some extra fields */, false);
         buffer.putBytes(id);
 
+        if (log.isDebugEnabled()) {
+            log.debug("readDir({})[{}]: send SSH_FXP_READDIR", getClientChannel(), handle);
+        }
         int cmdId = send(SftpConstants.SSH_FXP_READDIR, buffer);
         Buffer response = receive(cmdId);
         return checkDirResponse(SftpConstants.SSH_FXP_READDIR, response, eolIndicator);
@@ -895,11 +892,11 @@ public abstract class AbstractSftpClient
 
         if (type == SftpConstants.SSH_FXP_STATUS) {
             SftpStatus status = SftpStatus.parse(buffer);
-            if (traceEnabled) {
-                log.trace("checkDirResponse({})[id={}] - status: {}", getClientChannel(), id, status);
-            }
 
             if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
+                if (traceEnabled) {
+                    log.trace("checkDirResponse({})[id={}] - status: {}", getClientChannel(), id, status);
+                }
                 return null;
             }
 
@@ -917,6 +914,29 @@ public abstract class AbstractSftpClient
             throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
                                    + " in response to " + SftpConstants.getCommandMessageName(cmd)
                                    + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
+        }
+        if (log.isDebugEnabled()) {
+            if (type == SftpConstants.SSH_FXP_STATUS && remaining >= 4) {
+                int rpos = buffer.rpos();
+                int status = buffer.getInt();
+                buffer.rpos(rpos);
+                if (status == SftpConstants.SSH_FX_OK
+                        && (cmd == SftpConstants.SSH_FXP_WRITE || cmd == SftpConstants.SSH_FXP_READ)) {
+                    // Only trace logging for data read/write if the status is OK
+                    if (log.isTraceEnabled()) {
+                        log.trace("validateIncomingResponse({}): received {}({}) for command {} (id={})", getClientChannel(),
+                                SftpConstants.getCommandMessageName(type), SftpConstants.getStatusName(status),
+                                SftpConstants.getCommandMessageName(cmd), id);
+                    }
+                } else {
+                    log.debug("validateIncomingResponse({}): received {}({}) for command {} (id={})", getClientChannel(),
+                            SftpConstants.getCommandMessageName(type), SftpConstants.getStatusName(status),
+                            SftpConstants.getCommandMessageName(cmd), id);
+                }
+            } else {
+                log.debug("validateIncomingResponse({}): received {} for command {} (id={})", getClientChannel(),
+                        SftpConstants.getCommandMessageName(type), SftpConstants.getCommandMessageName(cmd), id);
+            }
         }
     }
 
@@ -958,6 +978,9 @@ public abstract class AbstractSftpClient
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE, false);
         buffer = putReferencedName(SftpConstants.SSH_FXP_REALPATH, buffer, path, 0);
+        if (log.isDebugEnabled()) {
+            log.debug("canonicalPath({}): send SSH_FXP_REALPATH {}", getClientChannel(), path);
+        }
         return checkOneName(SftpConstants.SSH_FXP_REALPATH, buffer);
     }
 
@@ -975,6 +998,9 @@ public abstract class AbstractSftpClient
             buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("stat({}): send SSH_FXP_STAT {}", getClientChannel(), path);
+        }
         return checkAttributes(SftpConstants.SSH_FXP_STAT, buffer);
     }
 
@@ -992,6 +1018,9 @@ public abstract class AbstractSftpClient
             buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("stat({}): send SSH_FXP_LSTAT {}", getClientChannel(), path);
+        }
         return checkAttributes(SftpConstants.SSH_FXP_LSTAT, buffer);
     }
 
@@ -1010,6 +1039,9 @@ public abstract class AbstractSftpClient
             buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug("stat({}): send SSH_FXP_FSTAT {}", getClientChannel(), handle);
+        }
         return checkAttributes(SftpConstants.SSH_FXP_FSTAT, buffer);
     }
 
@@ -1026,6 +1058,9 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer();
         buffer = putReferencedName(SftpConstants.SSH_FXP_SETSTAT, buffer, path, 0);
         buffer = writeAttributes(SftpConstants.SSH_FXP_SETSTAT, buffer, attributes);
+        if (log.isDebugEnabled()) {
+            log.debug("setStat({}): send SSH_FXP_SETSTAT {}", getClientChannel(), path);
+        }
         checkCommandStatus(SftpConstants.SSH_FXP_SETSTAT, buffer);
     }
 
@@ -1042,6 +1077,9 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */, false);
         buffer.putBytes(id);
         buffer = writeAttributes(SftpConstants.SSH_FXP_FSETSTAT, buffer, attributes);
+        if (log.isDebugEnabled()) {
+            log.debug("setStat({}): send SSH_FXP_FSETSTAT {}", getClientChannel(), handle);
+        }
         checkCommandStatus(SftpConstants.SSH_FXP_FSETSTAT, buffer);
     }
 
@@ -1053,6 +1091,9 @@ public abstract class AbstractSftpClient
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */, false);
         buffer = putReferencedName(SftpConstants.SSH_FXP_READLINK, buffer, path, 0);
+        if (log.isDebugEnabled()) {
+            log.debug("readLink({}): send SSH_FXP_READLINK {}", getClientChannel(), path);
+        }
         return checkOneName(SftpConstants.SSH_FXP_READLINK, buffer);
     }
 
@@ -1062,27 +1103,26 @@ public abstract class AbstractSftpClient
             throw new IOException("link(" + linkPath + " => " + targetPath + ")[symbolic=" + symbolic + "] client is closed");
         }
 
+        int version = getVersion();
+        int cmd = version < SftpConstants.SFTP_V6 ? SftpConstants.SSH_FXP_SYMLINK : SftpConstants.SSH_FXP_LINK;
         if (log.isDebugEnabled()) {
-            log.debug("link({})[symbolic={}] {} => {}", getClientChannel(), symbolic, linkPath, targetPath);
+            log.debug("link({})[symbolic={}] send {} {} => {}", getClientChannel(), symbolic,
+                    SshConstants.getCommandMessageName(cmd), linkPath, targetPath);
         }
 
         Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */, false);
-        int version = getVersion();
         if (version < SftpConstants.SFTP_V6) {
             if (!symbolic) {
                 throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
             }
-            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, targetPath, 0);
-            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, linkPath, 1);
-
-            checkCommandStatus(SftpConstants.SSH_FXP_SYMLINK, buffer);
+            buffer = putReferencedName(cmd, buffer, targetPath, 0);
+            buffer = putReferencedName(cmd, buffer, linkPath, 1);
         } else {
-            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, targetPath, 0);
-            buffer = putReferencedName(SftpConstants.SSH_FXP_SYMLINK, buffer, linkPath, 1);
+            buffer = putReferencedName(cmd, buffer, targetPath, 0);
+            buffer = putReferencedName(cmd, buffer, linkPath, 1);
             buffer.putBoolean(symbolic);
-
-            checkCommandStatus(SftpConstants.SSH_FXP_LINK, buffer);
         }
+        checkCommandStatus(cmd, buffer);
     }
 
     @Override
@@ -1093,17 +1133,16 @@ public abstract class AbstractSftpClient
                                   + "] client is closed");
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("lock({})[{}] offset={}, length={}, mask=0x{}",
-                    getClientChannel(), handle, offset, length, Integer.toHexString(mask));
-        }
-
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putInt(mask);
+        if (log.isDebugEnabled()) {
+            log.debug("lock({})[{}] send SSH_FXP_BLOCK offset={}, length={}, mask=0x{}", getClientChannel(), handle, offset,
+                    length, Integer.toHexString(mask));
+        }
         checkCommandStatus(SftpConstants.SSH_FXP_BLOCK, buffer);
     }
 
@@ -1113,15 +1152,14 @@ public abstract class AbstractSftpClient
             throw new IOException("unlock" + handle + ")[offset=" + offset + ", length=" + length + "] client is closed");
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("unlock({})[{}] offset={}, length={}", getClientChannel(), handle, offset, length);
-        }
-
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
+        if (log.isDebugEnabled()) {
+            log.debug("unlock({})[{}] send SSH_FXP_UNBLOCK offset={}, length={}", getClientChannel(), handle, offset, length);
+        }
         checkCommandStatus(SftpConstants.SSH_FXP_UNBLOCK, buffer);
     }
 

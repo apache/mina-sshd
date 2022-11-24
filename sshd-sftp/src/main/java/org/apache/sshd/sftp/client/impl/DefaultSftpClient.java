@@ -416,12 +416,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 extensions.put(name, data);
             }
         } else if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buffer);
-            if (traceEnabled) {
-                log.trace("handleInitResponse({})[id={}] - status: {}", clientChannel, id, status);
-            }
-
-            throwStatusException(SftpConstants.SSH_FXP_INIT, id, status);
+            throwStatusException(SftpConstants.SSH_FXP_INIT, id, SftpStatus.parse(buffer));
         } else {
             IOException err = handleUnexpectedPacket(
                     SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
