@@ -312,39 +312,39 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         }
 
         AbstractSftpClient client = getClient();
-        Buffer buf = client.receive(ack.id);
-        int length = buf.getInt();
-        int type = buf.getUByte();
-        int id = buf.getInt();
+        SftpResponse response = client.response(SftpConstants.SSH_FXP_READ, ack.id);
         if (traceEnabled) {
-            log.trace("pollBuffer({}) response={} for ack={} - len={}", this, type, ack, length);
+            log.trace("pollBuffer({}) response={} for ack={} - len={}", this, response.getType(), ack, response.getLength());
         }
-        client.validateIncomingResponse(SshConstants.SSH_MSG_CHANNEL_DATA, id, type, length, buf);
 
-        if (type == SftpConstants.SSH_FXP_DATA) {
-            int dlen = buf.getInt();
-            int rpos = buf.rpos();
-            buf.rpos(rpos + dlen);
-            Boolean b = SftpHelper.getEndOfFileIndicatorValue(buf, client.getVersion());
-            if ((b != null) && b.booleanValue()) {
-                eofIndicator = true;
-            }
-            buf.rpos(rpos);
-            buf.wpos(rpos + dlen);
-            this.buffer = buf;
-        } else if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buf);
-            if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
-                eofIndicator = true;
-            } else {
-                client.checkResponseStatus(SshConstants.SSH_MSG_CHANNEL_DATA, id, status);
-            }
-        } else {
-            IOException err = client.handleUnexpectedPacket(SshConstants.SSH_MSG_CHANNEL_DATA,
-                    SftpConstants.SSH_FXP_STATUS, id, type, length, buf);
-            if (err != null) {
-                throw err;
-            }
+        switch (response.getType()) {
+            case SftpConstants.SSH_FXP_DATA:
+                Buffer buf = response.getBuffer();
+                int dlen = buf.getInt();
+                int rpos = buf.rpos();
+                buf.rpos(rpos + dlen);
+                Boolean b = SftpHelper.getEndOfFileIndicatorValue(buf, client.getVersion());
+                if ((b != null) && b.booleanValue()) {
+                    eofIndicator = true;
+                }
+                buf.rpos(rpos);
+                buf.wpos(rpos + dlen);
+                this.buffer = buf;
+                break;
+            case SftpConstants.SSH_FXP_STATUS:
+                SftpStatus status = SftpStatus.parse(response);
+                if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
+                    eofIndicator = true;
+                } else {
+                    client.checkResponseStatus(SftpConstants.SSH_FXP_READ, response.getId(), status);
+                }
+                break;
+            default:
+                IOException err = client.handleUnexpectedPacket(SftpConstants.SSH_FXP_DATA, response);
+                if (err != null) {
+                    throw err;
+                }
+                break;
         }
     }
 

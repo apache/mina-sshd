@@ -388,42 +388,45 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected void handleInitResponse(Buffer buffer) throws IOException {
         boolean traceEnabled = log.isTraceEnabled();
+        SftpResponse response = SftpResponse.parse(SftpConstants.SSH_FXP_INIT, buffer);
         ClientChannel clientChannel = getClientChannel();
-        int length = buffer.getInt();
-        int type = buffer.getUByte();
-        int id = buffer.getInt();
+        int length = response.getLength();
+        int type = response.getType();
+        int id = response.getId();
         if (traceEnabled) {
             log.trace("handleInitResponse({}) id={} type={} len={}",
                     clientChannel, id, SftpConstants.getCommandMessageName(type), length);
         }
 
-        if (type == SftpConstants.SSH_FXP_VERSION) {
-            if ((id < SftpConstants.SFTP_V3) || (id > SftpConstants.SFTP_V6)) {
-                throw new SshException("Unsupported sftp version " + id);
-            }
-            versionHolder.set(id);
-
-            if (traceEnabled) {
-                log.trace("handleInitResponse({}) version={}", clientChannel, versionHolder);
-            }
-
-            while (buffer.available() > 0) {
-                String name = buffer.getString();
-                byte[] data = buffer.getBytes();
-                if (traceEnabled) {
-                    log.trace("handleInitResponse({}) added extension={}", clientChannel, name);
+        switch (type) {
+            case SftpConstants.SSH_FXP_VERSION:
+                if ((id < SftpConstants.SFTP_V3) || (id > SftpConstants.SFTP_V6)) {
+                    throw new SshException("Unsupported sftp version " + id);
                 }
-                extensions.put(name, data);
-            }
-        } else if (type == SftpConstants.SSH_FXP_STATUS) {
-            throwStatusException(SftpConstants.SSH_FXP_INIT, id, SftpStatus.parse(buffer));
-        } else {
-            IOException err = handleUnexpectedPacket(
-                    SftpConstants.SSH_FXP_INIT, SftpConstants.SSH_FXP_VERSION, id, type, length, buffer);
-            if (err != null) {
-                throw err;
-            }
+                versionHolder.set(id);
 
+                if (traceEnabled) {
+                    log.trace("handleInitResponse({}) version={}", clientChannel, versionHolder);
+                }
+
+                while (buffer.available() > 0) {
+                    String name = buffer.getString();
+                    byte[] data = buffer.getBytes();
+                    if (traceEnabled) {
+                        log.trace("handleInitResponse({}) added extension={}", clientChannel, name);
+                    }
+                    extensions.put(name, data);
+                }
+                break;
+            case SftpConstants.SSH_FXP_STATUS:
+                throwStatusException(SftpConstants.SSH_FXP_INIT, id, SftpStatus.parse(response));
+                break;
+            default:
+                IOException err = handleUnexpectedPacket(SftpConstants.SSH_FXP_VERSION, response);
+                if (err != null) {
+                    throw err;
+                }
+                break;
         }
     }
 
