@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.threads;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -30,5 +31,10 @@ public interface CloseableExecutorService extends ExecutorService, Closeable {
     default boolean awaitTermination(Duration timeout) throws InterruptedException {
         Objects.requireNonNull(timeout, "No timeout specified");
         return awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    default void close() throws IOException {
+        Closeable.super.close();
     }
 }

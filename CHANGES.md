@@ -26,6 +26,7 @@
 
 * [GH-268](https://github.com/apache/mina-sshd/issues/268) (Regression in 2.9.0) Heartbeat should throw an exception if no reply arrives within the timeout.
 * [GH-275](https://github.com/apache/mina-sshd/issues/275) SFTP: be more lenient when reading SSH_FXP_STATUS replies.
+* [GH-285](https://github.com/apache/mina-sshd/issues/285) Fix compilation failure on Java 19.
 
 ## Major code re-factoring
 
