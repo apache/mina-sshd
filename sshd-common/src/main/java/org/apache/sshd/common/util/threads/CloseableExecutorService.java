@@ -20,6 +20,7 @@
 package org.apache.sshd.common.util.threads;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +35,11 @@ public interface CloseableExecutorService extends ExecutorService, Closeable {
     }
 
     @Override
-    default void close() throws IOException {
-        Closeable.super.close();
+    default void close() {
+        try {
+            Closeable.super.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
