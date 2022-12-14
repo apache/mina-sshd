@@ -173,7 +173,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
             if (traceEnabled) {
-                log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1, r);
+                log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1,
+                        (index < num && echo[index]) ? r : "(hidden)");
             }
             buffer.putString(r);
         }

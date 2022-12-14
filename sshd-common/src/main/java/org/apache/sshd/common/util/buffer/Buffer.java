@@ -247,8 +247,27 @@ public abstract class Buffer implements Readable {
     }
 
     public void dumpHex(SimplifiedLog logger, Level level, String prefix, PropertyResolver resolver) {
+        byte[] data = array();
+        int rpos = rpos();
+        int length = available();
+        if (length > 0) {
+            int cmd = data[rpos] & 0xFF;
+            if (isSensitiveData(cmd)) {
+                return;
+            }
+        }
         BufferUtils.dumpHex(
-                logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, array(), rpos(), available());
+                logger, level, prefix, resolver, BufferUtils.DEFAULT_HEX_SEPARATOR, data, rpos, length);
+    }
+
+    private static boolean isSensitiveData(int cmd) {
+        switch (cmd) {
+            case SshConstants.SSH_MSG_USERAUTH_REQUEST:
+            case SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE:
+                return true;
+            default:
+                return false;
+        }
     }
 
     /*

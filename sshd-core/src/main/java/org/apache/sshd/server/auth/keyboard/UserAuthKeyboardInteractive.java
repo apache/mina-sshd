@@ -116,12 +116,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);
-        boolean traceEnabled = log.isTraceEnabled();
         for (int index = 1; index <= num; index++) {
             String value = buffer.getString();
-            if (traceEnabled) {
-                log.trace("doAuth({}@{}) response {}/{}: {}", username, session, index, num, value);
-            }
             responses.add(value);
         }
 
