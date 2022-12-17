@@ -138,7 +138,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             Channel channel = getChannel();
             try {
                 LocalWindow wLocal = channel.getLocalWindow();
-                wLocal.check();
+                wLocal.release(nbRead);
             } catch (IOException e) {
                 Session session = channel.getSession();
                 session.exceptionCaught(e);

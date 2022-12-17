@@ -160,7 +160,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
             lock.unlock();
         }
         if (localWindow.isOpen()) {
-            localWindow.check();
+            localWindow.release(len);
         }
         return len;
     }

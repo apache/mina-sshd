@@ -438,7 +438,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             } finally {
                 if (invertedOut == null) {
                     LocalWindow wLocal = getLocalWindow();
-                    wLocal.check();
+                    wLocal.release(len);
                 }
             }
         } else {
@@ -464,7 +464,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             } finally {
                 if (invertedErr == null) {
                     LocalWindow wLocal = getLocalWindow();
-                    wLocal.check();
+                    wLocal.release(len);
                 }
             }
         } else {

@@ -250,7 +250,7 @@ public class ChannelSession extends AbstractServerChannel {
             int r = receiver.data(this, data, off, reqLen);
             if (r > 0) {
                 LocalWindow wLocal = getLocalWindow();
-                wLocal.check();
+                wLocal.release(r);
             }
         } else {
             ValidateUtils.checkTrue(len <= (Integer.MAX_VALUE - Long.SIZE),
