@@ -78,6 +78,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -85,8 +86,10 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.MultiKeyIdentityProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -742,14 +745,47 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session, identities);
+        } else if (identities == null) {
+            session.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
         } else {
-            session.setKeyIdentityProvider(
-                    (identities == null)
-                            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-                            : identities);
+            session.setKeyIdentityProvider(ensureFilePasswordProvider(identities));
         }
 
         connectFuture.setSession(session);
+    }
+
+    /**
+     * Sets this client's {@link FilePasswordProvider} on the {@link KeyIdentityProvider} if it is an
+     * {@link AbstractResourceKeyPairProvider} or implements {@link FilePasswordProviderManager} and doesn't have one
+     * yet. If the given {@code identities} is a {@link MultiKeyIdentityProvider}, the wrapped identity providers are
+     * set up.
+     *
+     * @param  identities {@link KeyIdentityProvider} to set up
+     * @return            a {@link KeyIdentityProvider} configured with a {@link FilePasswordProvider}
+     * @see               #getFilePasswordProvider()
+     */
+    protected KeyIdentityProvider ensureFilePasswordProvider(KeyIdentityProvider identities) {
+        if (identities instanceof AbstractResourceKeyPairProvider<?>) {
+            AbstractResourceKeyPairProvider<?> keyProvider = (AbstractResourceKeyPairProvider<?>) identities;
+            if (keyProvider.getPasswordFinder() == null) {
+                FilePasswordProvider passwordProvider = getFilePasswordProvider();
+                if (passwordProvider != null) {
+                    keyProvider.setPasswordFinder(passwordProvider);
+                }
+            }
+        } else if (identities instanceof FilePasswordProviderManager) {
+            FilePasswordProviderManager keyProvider = (FilePasswordProviderManager) identities;
+            if (keyProvider.getFilePasswordProvider() == null) {
+                FilePasswordProvider passwordProvider = getFilePasswordProvider();
+                if (passwordProvider != null) {
+                    keyProvider.setFilePasswordProvider(passwordProvider);
+                }
+            }
+        } else if (identities instanceof MultiKeyIdentityProvider) {
+            MultiKeyIdentityProvider multiProvider = (MultiKeyIdentityProvider) identities;
+            multiProvider.getProviders().forEach(this::ensureFilePasswordProvider);
+        }
+        return identities;
     }
 
     protected void setupDefaultSessionIdentities(
@@ -765,8 +801,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        // Prefer the extra identities to come first since they were probably indicate by the host-config entry
+        // Prefer the extra identities to come first since they were probably indicated by the host-config entry
         KeyIdentityProvider kpEffective = KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
+        kpEffective = ensureFilePasswordProvider(kpEffective);
         if (!UnaryEquator.isSameReference(kpSession, kpEffective)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);

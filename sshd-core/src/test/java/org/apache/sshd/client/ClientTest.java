@@ -31,6 +31,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,6 +79,8 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyEncryptionContext;
+import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -83,6 +88,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -93,6 +99,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -1042,6 +1049,45 @@ public class ClientTest extends BaseTestSupport {
             KeyPairProvider keys = createTestHostKeyProvider();
             session.addPublicKeyIdentity(keys.loadKey(session, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE));
             session.auth().verify(AUTH_TIMEOUT);
+        } finally {
+            client.stop();
+        }
+        assertNull("Session closure not signalled", clientSessionHolder.get());
+    }
+
+    @Test
+    public void testPublicKeyAuthWithEncryptedKey() throws Exception {
+        // Create an encrypted private key file
+        KeyPair pair = SecurityUtils.getKeyPairGenerator("RSA").generateKeyPair();
+        Path keyFile = getTestResourcesFolder().resolve("userKey");
+        Files.deleteIfExists(keyFile);
+        OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+        options.setPassword("test-passphrase");
+        options.setCipherName("AES");
+        options.setCipherMode("CTR");
+        options.setCipherType("256");
+        try (OutputStream out = Files.newOutputStream(keyFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(pair, "test key", options, out);
+        }
+        // The server accepts only this key
+        sshd.setPublickeyAuthenticator((username, key, session) -> KeyUtils.compareKeys(key, pair.getPublic()));
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        // Configure the client to use the encrypted key file
+        client.setKeyIdentityProvider(new FileKeyPairProvider(keyFile));
+        AtomicBoolean passwordProvided = new AtomicBoolean();
+        client.setFilePasswordProvider((session, file, index) -> {
+            passwordProvided.set(true);
+            return "test-passphrase";
+        });
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            session.auth().verify(AUTH_TIMEOUT);
+            assertTrue("Password provider should have been called", passwordProvided.get());
         } finally {
             client.stop();
         }

@@ -32,10 +32,15 @@ import org.apache.sshd.common.session.SessionContext;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MultiKeyIdentityProvider implements KeyIdentityProvider {
+
     protected final Iterable<? extends KeyIdentityProvider> providers;
 
     public MultiKeyIdentityProvider(Iterable<? extends KeyIdentityProvider> providers) {
         this.providers = providers;
+    }
+
+    public Iterable<? extends KeyIdentityProvider> getProviders() {
+        return providers == null ? Collections::emptyIterator : providers;
     }
 
     @Override
