@@ -287,7 +287,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
             throw new SshException(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unknown service: " + name);
         }
-        currentService.set(service, factory.getName(), false);
+        currentService.set(service, factory.getName(), true);
     }
 
     @Override

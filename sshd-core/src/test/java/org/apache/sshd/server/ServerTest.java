@@ -56,9 +56,11 @@ import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
+import org.apache.sshd.common.session.SessionHeartbeatController.HeartbeatType;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
@@ -68,6 +70,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
@@ -689,6 +692,26 @@ public class ServerTest extends BaseTestSupport {
         for (String h : new String[] { "exit-status" }) {
             assertTrue("Missing hint=" + h + " in " + stateChangeHints, stateChangeHints.contains(h));
         }
+    }
+
+    @Test
+    public void testServerHeartbeat() throws Exception {
+        sshd.setSessionHeartbeat(HeartbeatType.IGNORE, Duration.ofMillis(500));
+        sshd.start();
+        AtomicInteger ignoreMessageCount = new AtomicInteger(0);
+        client.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
+
+            @Override
+            public void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
+                ignoreMessageCount.incrementAndGet();
+            }
+        });
+        client.start();
+        try (ClientSession s = createTestClientSession(sshd)) {
+            Thread.sleep(2000);
+        }
+        long ignoreMessages = ignoreMessageCount.get();
+        assertTrue("Epected some ignore messages (server-side heartbeat)", ignoreMessages > 0 && ignoreMessages <= 5);
     }
 
     @Test
