@@ -28,6 +28,14 @@
 * [GH-275](https://github.com/apache/mina-sshd/issues/275) SFTP: be more lenient when reading SSH_FXP_STATUS replies.
 * [GH-282](https://github.com/apache/mina-sshd/issues/282) Correct setting file permissions on newly written host key files on Windows.
 * [GH-285](https://github.com/apache/mina-sshd/issues/285) Fix compilation failure on Java 19.
+* [GH-294](https://github.com/apache/mina-sshd/issues/294) Fix memory leak in SftpFileSystemProvider.
+* [GH-297](https://github.com/apache/mina-sshd/issues/297) Auto-configure file password provider for reading encrypted SSH keys.
+* [GH-298](https://github.com/apache/mina-sshd/issues/298) Server side heartbeat not working.
+
+
+* [SSHD-1315](https://issues.apache.org/jira/browse/SSHD-1315) Do not log sensitive data at log level TRACE.
+* [SSHD-1316](https://issues.apache.org/jira/browse/SSHD-1316) Possible OOM in ChannelPipedInputStream (fix channel window).
+
 
 ## Major code re-factoring
 
