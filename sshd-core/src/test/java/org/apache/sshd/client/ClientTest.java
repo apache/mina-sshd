@@ -1388,11 +1388,119 @@ public class ClientTest extends BaseTestSupport {
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
+    @Test // See GH-283
+    public void testPasswordPrompts() throws Exception {
+        CoreModuleProperties.PASSWORD_PROMPTS.set(client, 1);
+
+        AtomicInteger numberOfRequests = new AtomicInteger();
+        UserAuthKeyboardInteractiveFactory auth = new UserAuthKeyboardInteractiveFactory() {
+
+            @Override
+            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
+                return new UserAuthKeyboardInteractive() {
+
+                    @Override
+                    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+                        boolean result = super.sendAuthDataRequest(session, service);
+                        if (result) {
+                            numberOfRequests.incrementAndGet();
+                        }
+                        return result;
+                    }
+                };
+            }
+        };
+
+        client.setUserAuthFactories(Collections.singletonList(auth));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            AtomicInteger count = new AtomicInteger();
+            session.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
+                public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
+                    assertSame("Mismatched server version info session", session, clientSession);
+                }
+
+                @Override
+                public void welcome(ClientSession clientSession, String banner, String lang) {
+                    assertSame("Mismatched welcome session", session, clientSession);
+                }
+
+                @Override
+                public String[] interactive(
+                        ClientSession clientSession, String name, String instruction, String lang,
+                        String[] prompt, boolean[] echo) {
+                    assertSame("Mismatched interactive session", session, clientSession);
+                    int n = count.incrementAndGet();
+                    if (n == 1) {
+                        return new String[] { "bogus" };
+                    }
+                    return new String[] { getCurrentTestName() };
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
+            });
+
+            AuthFuture future = session.auth();
+            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
+            assertTrue("Authentication should have failed", future.isFailure());
+            assertEquals("Mismatched authentication attempts count", 1, count.get());
+            assertEquals("Mismatched authentication request count", 1, numberOfRequests.get());
+            count.set(0);
+            numberOfRequests.set(0);
+            // Also set a password on the session: this should be a non-interactive request, so we should have four
+            // requests, but only two prompts.
+            session.addPasswordIdentity("wrongpassword");
+            session.addPasswordIdentity("anotherwrongpassword");
+            CoreModuleProperties.PASSWORD_PROMPTS.set(client, 2);
+            future = session.auth();
+            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
+            assertFalse("Authentication should not have failed", future.isFailure());
+            assertTrue("Authentication should have succeeded", future.isSuccess());
+            assertEquals("Mismatched authentication attempts count", 2, count.get());
+            assertEquals("Mismatched authentication request count", 4, numberOfRequests.get());
+        } finally {
+            client.stop();
+        }
+
+        assertNull("Session closure not signalled", clientSessionHolder.get());
+    }
+
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final int maxPrompts = 3;
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
-        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        AtomicInteger numberOfRequests = new AtomicInteger();
+        UserAuthKeyboardInteractiveFactory auth = new UserAuthKeyboardInteractiveFactory() {
+
+            @Override
+            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
+                return new UserAuthKeyboardInteractive() {
+
+                    @Override
+                    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+                        boolean result = super.sendAuthDataRequest(session, service);
+                        if (result) {
+                            numberOfRequests.incrementAndGet();
+                        }
+                        return result;
+                    }
+                };
+            }
+        };
+
+        client.setUserAuthFactories(Collections.singletonList(auth));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -1434,6 +1542,7 @@ public class ClientTest extends BaseTestSupport {
             assertTrue("Authentication not completed in time", future.await(AUTH_TIMEOUT));
             assertTrue("Authentication not, marked as failure", future.isFailure());
             assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
+            assertEquals("Mismatched authentication request count", maxPrompts, numberOfRequests.get());
         } finally {
             client.stop();
         }

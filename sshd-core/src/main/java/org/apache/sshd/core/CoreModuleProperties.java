@@ -98,7 +98,8 @@ public final class CoreModuleProperties {
             = Property.string("preferred-auths");
 
     /**
-     * Specifies the number of interactive prompts before giving up. The argument to this keyword must be an integer.
+     * Specifies the number of interactive attempts at password or keyboard-interactive user authentication before
+     * giving up. The argument to this keyword must be an integer; if &lt;= 0, the value 1 is substituted.
      */
     public static final Property<Integer> PASSWORD_PROMPTS
             = Property.integer("password-prompts", 3);

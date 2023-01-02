@@ -31,6 +31,7 @@ import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Implements the client-side &quot;password&quot; authentication mechanism
@@ -42,6 +43,8 @@ public class UserAuthPassword extends AbstractUserAuth {
 
     private Iterator<String> passwords;
     private String current;
+    private int maxAttempts;
+    private int nOfAttempts;
 
     public UserAuthPassword() {
         super(NAME);
@@ -51,6 +54,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         passwords = ClientSession.passwordIteratorOf(session);
+        maxAttempts = Math.max(1, CoreModuleProperties.PASSWORD_PROMPTS.getRequired(session));
     }
 
     @Override
@@ -88,6 +92,14 @@ public class UserAuthPassword extends AbstractUserAuth {
             return passwords.next();
         }
 
+        nOfAttempts++;
+        if (nOfAttempts > maxAttempts) {
+            if (log.isDebugEnabled()) {
+                log.debug("resolveAttemptedPassword({})[{}] aborting after {} interactive attempts", session, service,
+                        maxAttempts);
+            }
+            return null;
+        }
         UserInteraction ui = session.getUserInteraction();
         if ((ui == null) || (!ui.isInteractionAllowed(session))) {
             return null;
