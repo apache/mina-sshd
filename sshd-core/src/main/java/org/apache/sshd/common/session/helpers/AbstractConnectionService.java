@@ -527,7 +527,7 @@ public abstract class AbstractConnectionService
             return; // debug breakpoint
         }
 
-        int sender = buffer.getInt();
+        long sender = buffer.getUInt();
         long rwsize = buffer.getUInt();
         long rmpsize = buffer.getUInt();
         if (log.isDebugEnabled()) {
