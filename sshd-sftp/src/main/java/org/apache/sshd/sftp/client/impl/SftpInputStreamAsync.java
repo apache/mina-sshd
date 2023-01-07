@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 public class SftpInputStreamAsync extends InputStreamWithChannel implements SftpClientHolder {
     protected final Logger log;
     protected final byte[] bb = new byte[1];
-    protected final int bufferSize;
     protected final long fileSize;
     protected Buffer buffer;
     protected CloseableHandle handle;
@@ -57,6 +56,10 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
     protected long clientOffset;
     protected final Deque<SftpAckData> pendingReads = new LinkedList<>();
     protected boolean eofIndicator;
+    protected int bufferSize;
+    protected int maxReceived;
+    protected long shortReads;
+    protected boolean bufferAdjusted;
 
     private final AbstractSftpClient clientInstance;
     private final String path;
@@ -180,10 +183,13 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                 if (eofIndicator) {
                     break;
                 }
+                boolean backtracked = false;
                 if (!pendingReads.isEmpty()) {
-                    fillData();
+                    backtracked = fillData();
                 }
-                if (!eofIndicator) {
+                if (!eofIndicator && !backtracked) {
+                    // Do not send additional requests if we had missing data that we had to fetch synchronously, and we
+                    // do have more outstanding requests to avoid jumping back and forth in the file all the time.
                     sendRequests();
                 }
             } else {
@@ -252,14 +258,14 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         }
     }
 
-    protected void fillData() throws IOException {
+    protected boolean fillData() throws IOException {
         SftpAckData ack = pendingReads.pollFirst();
         boolean traceEnabled = log.isTraceEnabled();
         if (ack == null) {
             if (traceEnabled) {
                 log.trace("fillData({}) no pending ack", this);
             }
-            return;
+            return false;
         }
 
         if (traceEnabled) {
@@ -269,6 +275,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         pollBuffer(ack);
 
         if (!alreadyEof && clientOffset < ack.offset) {
+            shortReads++;
             // we are actually missing some data
             // so request is synchronously
             byte[] data = new byte[(int) (ack.offset - clientOffset + buffer.available())];
@@ -302,7 +309,40 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             } else {
                 buffer.rpos(buffer.wpos());
             }
+            if (!eofIndicator && !bufferAdjusted) {
+                int newBufferSize = adjustBufferIfNeeded(bufferSize, shortReads, maxReceived, ack.offset - clientOffset);
+                if (newBufferSize > 0 && newBufferSize < bufferSize) {
+                    int originalSize = bufferSize;
+                    bufferSize = newBufferSize;
+                    bufferAdjusted = true;
+                    if (log.isDebugEnabled()) {
+                        log.debug("adjustBufferIfNeeded({}) changing SFTP buffer size: {} -> {}", this, originalSize,
+                                bufferSize);
+                    }
+                } else if (newBufferSize > bufferSize) {
+                    throw new IllegalStateException("New buffer size " + newBufferSize + " > existing size " + bufferSize);
+                }
+            }
+            return !pendingReads.isEmpty();
         }
+        return false;
+    }
+
+    /**
+     * Dynamically adjust the SFTP buffer size, if it is too large. Although it is possible to reduce the buffer size to
+     * a single byte, in practice some sane lower limit (like, 8kB) should be maintained.
+     *
+     * @param  currentBufferSize the current SFTP buffer size
+     * @param  nOfShortReads     the number of short reads so far
+     * @param  maxBufferReceived the maximum number of bytes the server returned in any previous read request
+     * @param  gap               the size of the gap just filled
+     * @return                   a new buffer size in the range [1..currentBufferSize].
+     */
+    protected int adjustBufferIfNeeded(int currentBufferSize, long nOfShortReads, int maxBufferReceived, long gap) {
+        if (currentBufferSize > 8 * 1024 && nOfShortReads > 4) {
+            return Math.max(8 * 1204, maxBufferReceived);
+        }
+        return currentBufferSize;
     }
 
     protected void pollBuffer(SftpAckData ack) throws IOException {
@@ -329,6 +369,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                 }
                 buf.rpos(rpos);
                 buf.wpos(rpos + dlen);
+                maxReceived = Math.max(dlen, maxReceived);
                 this.buffer = buf;
                 break;
             case SftpConstants.SSH_FXP_STATUS:
@@ -366,7 +407,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                 }
             } finally {
                 if (debugEnabled) {
-                    log.debug("close({}) closing file handle", this);
+                    log.debug("close({}) closing file handle; {} short reads", this, shortReads);
                 }
                 handle.close();
             }

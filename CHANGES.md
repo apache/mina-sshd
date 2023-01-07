@@ -29,6 +29,7 @@
 * [GH-282](https://github.com/apache/mina-sshd/issues/282) Correct setting file permissions on newly written host key files on Windows.
 * [GH-283](https://github.com/apache/mina-sshd/issues/283) Fix handling of `CoreModuleProperties.PASSWORD_PROMPTS`.
 * [GH-285](https://github.com/apache/mina-sshd/issues/285) Fix compilation failure on Java 19.
+* [GH-293](https://github.com/apache/mina-sshd/issues/293) Handle SFTP buffer sizes larger than the server limit better.
 * [GH-294](https://github.com/apache/mina-sshd/issues/294) Fix memory leak in `SftpFileSystemProvider`.
 * [GH-297](https://github.com/apache/mina-sshd/issues/297) Auto-configure file password provider for reading encrypted SSH keys.
 * [GH-298](https://github.com/apache/mina-sshd/issues/298) Server side heartbeat not working.
