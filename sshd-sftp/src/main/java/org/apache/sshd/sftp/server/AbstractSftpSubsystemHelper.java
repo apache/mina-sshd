@@ -2965,6 +2965,9 @@ public abstract class AbstractSftpSubsystemHelper
      */
     protected void sendStatus(Buffer buffer, int id, Throwable e, int cmd, Object... args)
             throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("doSendStatus[{}][id={},cmd={}] exception", getServerSession(), id, cmd, e);
+        }
         SftpErrorStatusDataHandler handler = getErrorStatusDataHandler();
         int subStatus = handler.resolveSubStatus(this, id, e, cmd, args);
         String message = handler.resolveErrorMessage(this, id, e, subStatus, cmd, args);

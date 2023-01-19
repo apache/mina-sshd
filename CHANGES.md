@@ -34,6 +34,7 @@
 * [GH-297](https://github.com/apache/mina-sshd/issues/297) Auto-configure file password provider for reading encrypted SSH keys.
 * [GH-298](https://github.com/apache/mina-sshd/issues/298) Server side heartbeat not working.
 * [GH-300](https://github.com/apache/mina-sshd/issues/300) Read the channel id in `SSH_MSG_CHANNEL_OPEN_CONFIRMATION` as unsigned int.
+* [GH-313](https://github.com/apache/mina-sshd/issues/313) Log exceptions in the SFTP subsystem before sending a failure status reply.
 
 
 * [SSHD-1315](https://issues.apache.org/jira/browse/SSHD-1315) Do not log sensitive data at log level `TRACE`.
