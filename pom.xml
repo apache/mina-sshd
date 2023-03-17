@@ -1446,30 +1446,19 @@
                 <extensions>true</extensions>
                 <executions>
                     <execution>
-                        <id>versions</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>cleanVersions</goal>
-                        </goals>
-                        <configuration>
-                            <versions>
-                                <sshd.osgi.version.clean>${project.version}</sshd.osgi.version.clean>
-                            </versions>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>bundle-manifest</id>
                         <phase>process-classes</phase>
                         <goals>
                             <goal>manifest</goal>
                         </goals>
                         <configuration>
+                            <supportIncrementalBuild>true</supportIncrementalBuild>
                             <instructions>
                                 <Import-Package><![CDATA[
-                                  org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))",
-                                  org.slf4j*;version="${range;[==,${slf4j.upper.bound})}",
+                                  org.apache.sshd*;version="$<range;[===,=+);$<maven_version;${project.version}>>",
+                                  org.slf4j*;version="$<range;[==,${slf4j.upper.bound})>",
                                   *
-                                  ]]></Import-Package>
+                                ]]></Import-Package>
                                 <Export-Package>*;-noimport:=true</Export-Package>
                             </instructions>
                             <noWarningProjectTypes>pom</noWarningProjectTypes>
