@@ -107,6 +107,7 @@
         <groovy.version>3.0.11</groovy.version>
         <bouncycastle.version>1.70</bouncycastle.version>
         <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.upper.bound>3</slf4j.upper.bound>
         <logback.version>1.2.11</logback.version>
         <spring.version>5.3.20</spring.version>
             <!-- NOTE: upgrading to 6.x requires Java 11 -->
@@ -1464,7 +1465,11 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Import-Package>org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))",*</Import-Package>
+                                <Import-Package><![CDATA[
+                                  org.apache.sshd*;version="[$(version;==;${sshd.osgi.version.clean}),$(version;=+;${sshd.osgi.version.clean}))",
+                                  org.slf4j*;version="${range;[==,${slf4j.upper.bound})}",
+                                  *
+                                  ]]></Import-Package>
                                 <Export-Package>*;-noimport:=true</Export-Package>
                             </instructions>
                             <noWarningProjectTypes>pom</noWarningProjectTypes>
