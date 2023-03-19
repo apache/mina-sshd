@@ -21,6 +21,7 @@ package org.apache.sshd.common.config.keys.loader.pem;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -40,6 +41,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -143,6 +145,60 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         Collection<KeyPair> pairs = PKCS8PEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
         assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
         validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
+        // Check for an encrypted key
+    }
+
+    /*
+     * Traditional RFC 1421 encryption (aes-128-cbc used for all) generated with
+     *
+     * openssl [rsa|dsa|ec] -in <file>.pem -out <file>.enc -aes-128-cbc
+     */
+    @Test
+    public void testTraditionalEncryptedPEMParsing() throws Exception {
+        String baseName = "pkcs8-" + algorithm.toLowerCase();
+        String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc";
+        URL url = getClass().getResource(resourceKey);
+        assertNotNull("No encrypted test file=" + resourceKey, url);
+        // The eddsa (ed25519) PEM file with RFC 1421 traditional encryption comes from
+        // https://github.com/bcgit/bc-java/issues/1238#issuecomment-1263162809 and has a
+        // different password. Unknown how it was generated; openssl always writes the
+        // RFC 5958 EncryptedPrivateKeyInfo.
+        String password = "eddsa".equalsIgnoreCase(algorithm) ? "Vjvyhfngz0MCUs$kwOF0" : "test";
+        Collection<KeyPair> pairs = PEMResourceParserUtils.PROXY.loadKeyPairs(null, url, (s, r, i) -> password);
+        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+        validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
+        // Try again using the standard key pair parser
+        try (InputStream in = url.openStream()) {
+            pairs = SecurityUtils.getKeyPairResourceParser().loadKeyPairs(null, NamedResource.ofName(getCurrentTestName()),
+                    (s, r, i) -> password, in);
+            assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+            validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
+        }
+    }
+
+    /*
+     * RFC 5958 PBES2 encryption generated with
+     *
+     * openssl pkcs8 -in <file>.pem -out <file>.enc2 -topk8
+     */
+    @Test
+    public void testEncryptedPEMParsing() throws Exception {
+        Assume.assumeTrue(SecurityUtils.isBouncyCastleRegistered());
+        String baseName = "pkcs8-" + algorithm.toLowerCase();
+        String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc2";
+        URL url = getClass().getResource(resourceKey);
+        assertNotNull("No encrypted test file=" + resourceKey, url);
+        String password = "test";
+        Collection<KeyPair> pairs = PEMResourceParserUtils.PROXY.loadKeyPairs(null, url, (s, r, i) -> password);
+        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+        validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
+        // Try again using the standard key pair parser
+        try (InputStream in = url.openStream()) {
+            pairs = SecurityUtils.getKeyPairResourceParser().loadKeyPairs(null, NamedResource.ofName(getCurrentTestName()),
+                    (s, r, i) -> password, in);
+            assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+            validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
+        }
     }
 
     @Override

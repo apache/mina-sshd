@@ -21,6 +21,7 @@ package org.apache.sshd.common.config.keys.loader.pem;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -28,14 +29,19 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.security.auth.login.CredentialException;
+import javax.security.auth.login.FailedLoginException;
+
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -44,6 +50,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.der.ASN1Object;
 import org.apache.sshd.common.util.io.der.ASN1Type;
 import org.apache.sshd.common.util.io.der.DERParser;
+import org.apache.sshd.common.util.security.Decryptor;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.Ed25519PEMResourceKeyParser;
 
@@ -52,12 +59,14 @@ import org.apache.sshd.common.util.security.eddsa.Ed25519PEMResourceKeyParser;
  * @see    <a href="https://tools.ietf.org/html/rfc5208">RFC 5208</A>
  */
 public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairParser {
-    // Not exactly according to standard but good enough
+
     public static final String BEGIN_MARKER = "BEGIN PRIVATE KEY";
-    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+    public static final String BEGIN_ENCRYPTED_MARKER = "BEGIN ENCRYPTED PRIVATE KEY";
+    public static final List<String> BEGINNERS = GenericUtils.asList(BEGIN_MARKER, BEGIN_ENCRYPTED_MARKER);
 
     public static final String END_MARKER = "END PRIVATE KEY";
-    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final String END_ENCRYPTED_MARKER = "END ENCRYPTED PRIVATE KEY";
+    public static final List<String> ENDERS = GenericUtils.asList(END_MARKER, END_ENCRYPTED_MARKER);
 
     public static final String PKCS8_FORMAT = "PKCS#8";
 
@@ -74,19 +83,72 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        // Save the data before getting the algorithm OID since we will need it
         byte[] encBytes = IoUtils.toByteArray(stream);
+        if (beginMarker.contains(BEGIN_ENCRYPTED_MARKER)) {
+            // RFC 5958 EncryptedPrivateKeyInfo.
+            return decryptKeyPairs(session, resourceKey, passwordProvider, encBytes);
+        }
         PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(encBytes);
-        return extractKeyPairs(
-                session, resourceKey, beginMarker, endMarker,
-                passwordProvider, encBytes, pkcs8Info, headers);
+        return extractKeyPairs(encBytes, pkcs8Info);
     }
 
-    public Collection<KeyPair> extractKeyPairs(
+    public Collection<KeyPair> decryptKeyPairs(
             SessionContext session, NamedResource resourceKey,
-            String beginMarker, String endMarker,
-            FilePasswordProvider passwordProvider, byte[] encBytes,
-            PKCS8PrivateKeyInfo pkcs8Info, Map<String, String> headers)
+            FilePasswordProvider passwordProvider, byte[] encrypted)
+            throws IOException, GeneralSecurityException {
+        if (passwordProvider == null) {
+            throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
+        }
+        // This requires Bouncy Castle due to various bug regarding PBES2 in various Java versions.
+        //
+        // See https://stackoverflow.com/questions/66286457/load-an-encrypted-pcks8-pem-private-key-in-java
+        Decryptor decryptor = SecurityUtils.getBouncycastleEncryptedPrivateKeyInfoDecryptor();
+
+        Collection<KeyPair> keyPairs = Collections.emptyList();
+        for (int retryIndex = 0;; retryIndex++) {
+            String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
+            try {
+                char[] key = password != null ? password.toCharArray() : null;
+                if (GenericUtils.isEmpty(key)) {
+                    throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
+                }
+                byte[] decrypted = decryptor.decrypt(encrypted, key);
+                PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(decrypted);
+                try {
+                    keyPairs = extractKeyPairs(decrypted, pkcs8Info);
+                } finally {
+                    pkcs8Info.clear();
+                    Arrays.fill(key, (char) 0);
+                    if (decrypted != null) {
+                        Arrays.fill(decrypted, (byte) 0);
+                    }
+                }
+                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
+                break;
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                ResourceDecodeResult result = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex,
+                        password, e);
+                if (result == null) {
+                    result = ResourceDecodeResult.TERMINATE;
+                }
+                switch (result) {
+                    case TERMINATE:
+                        throw e;
+                    case RETRY:
+                        continue;
+                    case IGNORE:
+                        return null;
+                    default:
+                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                }
+            } finally {
+                password = null;
+            }
+        }
+        return keyPairs;
+    }
+
+    public Collection<KeyPair> extractKeyPairs(byte[] encBytes, PKCS8PrivateKeyInfo pkcs8Info)
             throws IOException, GeneralSecurityException {
         List<Integer> oidAlgorithm = pkcs8Info.getAlgorithmIdentifier();
         String oid = GenericUtils.join(oidAlgorithm, '.');

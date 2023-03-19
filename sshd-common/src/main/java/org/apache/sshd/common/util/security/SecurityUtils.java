@@ -73,6 +73,7 @@ import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleEncryptedPrivateKeyInfoDecryptor;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairResourceParser;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
@@ -538,6 +539,11 @@ public final class SecurityUtils {
     public static KeyPairResourceParser getBouncycastleKeyPairResourceParser() {
         ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         return BouncyCastleKeyPairResourceParser.INSTANCE;
+    }
+
+    public static Decryptor getBouncycastleEncryptedPrivateKeyInfoDecryptor() {
+        ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
+        return BouncyCastleEncryptedPrivateKeyInfoDecryptor.INSTANCE;
     }
 
     /**

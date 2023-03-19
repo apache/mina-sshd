@@ -132,6 +132,10 @@ appropriate for the precise use case.
 
 ## Behavioral changes and enhancements
 
+* Support for reading SSH keys from PEM files containing encrypted private keys
+  (RFC 5958, EncryptedPrivateKeyInfo) has been added. Such PEM files start with
+  "-----BEGIN ENCRYPTED PRIVATE KEY-----". Reading and decrypting keys from such
+  files requires Bouncy Castle to be present.
 * `CoreModuleProperties.PASSWORD_PROMPTS` is now also used for password
   authentication. Previous versions used it only for keyboard-interactive
   authentication. The semantics has been clarified to be the equivalent
