@@ -35,6 +35,8 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -84,6 +86,7 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.MatcherAssert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -111,11 +114,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
     @Test
     public void testFileSystem() throws Exception {
-        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                MapBuilder.<String, Object> builder()
-                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
-                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
-                        .build())) {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
@@ -128,11 +127,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
-        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                MapBuilder.<String, Object> builder()
-                        .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
-                        .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
-                        .build())) {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
             assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
@@ -158,6 +153,140 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 assertEquals("Mismatched data at " + i, (byte) (i - 5), data[i]);
                 assertEquals("Mismatched data at " + (i + buf.length), (byte) (i - 5), data[i + buf.length]);
             }
+        }
+    }
+
+    @Test // See GH-325
+    public void testDeleteLink() throws Exception {
+        // This test creates symbolic links.
+        Assume.assumeFalse(OsUtils.isWin32());
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        List<Path> toRemove = new ArrayList<>();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            Path localFile = clientFolder.resolve("file.txt");
+            Files.write(localFile, "Hello".getBytes(StandardCharsets.UTF_8));
+            toRemove.add(localFile);
+            Path existingSymlink = clientFolder.resolve("existing.txt");
+            Files.createSymbolicLink(existingSymlink, localFile);
+            toRemove.add(existingSymlink);
+
+            String remExistingLink = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, existingSymlink);
+            Path remoteExistingLink = fs.getPath(remExistingLink);
+            assertHierarchyTargetFolderExists(remoteExistingLink.getParent());
+            assertTrue(Files.exists(remoteExistingLink));
+            assertTrue(Files.exists(remoteExistingLink, LinkOption.NOFOLLOW_LINKS));
+            assertTrue(Files.isSymbolicLink(remoteExistingLink));
+            Files.delete(remoteExistingLink);
+            assertTrue(Files.exists(localFile));
+            assertFalse(Files.exists(existingSymlink, LinkOption.NOFOLLOW_LINKS));
+            assertFalse(Files.exists(remoteExistingLink, LinkOption.NOFOLLOW_LINKS));
+        } finally {
+            for (Path p : toRemove) {
+                Files.deleteIfExists(p);
+            }
+        }
+    }
+
+    @Test // See GH-325
+    public void testDeleteNonexistingLink() throws Exception {
+        // This test creates symbolic links.
+        Assume.assumeFalse(OsUtils.isWin32());
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        List<Path> toRemove = new ArrayList<>();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            Path nonExistingSymlink = clientFolder.resolve("nonexisting.txt");
+            Files.createSymbolicLink(nonExistingSymlink, clientFolder.resolve("gone.txt"));
+            toRemove.add(nonExistingSymlink);
+
+            String remNonExistingLink = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, nonExistingSymlink);
+            Path remoteNonExistingLink = fs.getPath(remNonExistingLink);
+            assertFalse(Files.exists(remoteNonExistingLink));
+            assertTrue(Files.exists(remoteNonExistingLink, LinkOption.NOFOLLOW_LINKS));
+            assertTrue(Files.isSymbolicLink(remoteNonExistingLink));
+            Files.delete(remoteNonExistingLink);
+            assertFalse(Files.exists(nonExistingSymlink, LinkOption.NOFOLLOW_LINKS));
+            assertFalse(Files.exists(remoteNonExistingLink, LinkOption.NOFOLLOW_LINKS));
+        } finally {
+            for (Path p : toRemove) {
+                Files.deleteIfExists(p);
+            }
+        }
+    }
+
+    @Test // See GH-325
+    public void testDeleteDirectoryLink() throws Exception {
+        // This test creates symbolic links.
+        Assume.assumeFalse(OsUtils.isWin32());
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        List<Path> toRemove = new ArrayList<>();
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            Path directory = clientFolder.resolve("subdir");
+            Files.createDirectory(directory);
+            toRemove.add(directory);
+            Path directorySymlink = clientFolder.resolve("dirlink");
+            Files.createSymbolicLink(directorySymlink, directory);
+            toRemove.add(directorySymlink);
+
+            String remDirectoryLink = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, directorySymlink);
+            Path remoteDirectoryLink = fs.getPath(remDirectoryLink);
+            assertTrue(Files.isDirectory(remoteDirectoryLink));
+            assertTrue(Files.exists(remoteDirectoryLink, LinkOption.NOFOLLOW_LINKS));
+            assertFalse(Files.isDirectory(remoteDirectoryLink, LinkOption.NOFOLLOW_LINKS));
+            assertTrue(Files.isSymbolicLink(remoteDirectoryLink));
+            Files.delete(remoteDirectoryLink);
+            assertTrue(Files.isDirectory(directory));
+            assertFalse(Files.exists(directorySymlink, LinkOption.NOFOLLOW_LINKS));
+            assertFalse(Files.exists(remoteDirectoryLink, LinkOption.NOFOLLOW_LINKS));
+        } finally {
+            for (Path p : toRemove) {
+                Files.deleteIfExists(p);
+            }
+        }
+    }
+
+    @Test // See GH-325
+    public void testDeleteNonexistingFile() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
+            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+
+            String doesNotExist = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath,
+                    clientFolder.resolve("neverExisted.txt"));
+            Path neverExisted = fs.getPath(doesNotExist);
+            assertFalse(Files.exists(neverExisted));
+            assertFalse(Files.deleteIfExists(neverExisted));
+            assertThrows(NoSuchFileException.class, () -> Files.delete(neverExisted));
         }
     }
 

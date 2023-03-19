@@ -601,15 +601,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public void delete(Path path) throws IOException {
         SftpPath p = toSftpPath(path);
-        checkAccess(p, AccessMode.WRITE);
 
         SftpFileSystem fs = p.getFileSystem();
         if (log.isDebugEnabled()) {
             log.debug("delete({}) {}", fs, path);
         }
-
+        if (fs.isReadOnly()) {
+            throw new AccessDeniedException("Filesystem is read-only: " + path.toString());
+        }
+        BasicFileAttributes attributes = readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
         try (SftpClient sftp = fs.getClient()) {
-            BasicFileAttributes attributes = readAttributes(path, BasicFileAttributes.class);
             if (attributes.isDirectory()) {
                 sftp.rmdir(path.toString());
             } else {
