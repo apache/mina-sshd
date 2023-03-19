@@ -21,7 +21,7 @@
     <supplement>
         <project>
             <groupId>bouncycastle</groupId>
-            <artifactId>bcprov-jdk15</artifactId>
+            <artifactId>bcprov-jdk18on</artifactId>
             <name>Bouncy Castle Crypto APIs for Java</name>
             <organization>
                 <name>The Legion of the Bouncy Castle</name>

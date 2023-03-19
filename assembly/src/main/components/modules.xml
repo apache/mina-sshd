@@ -31,6 +31,7 @@
                 <exclude>io.projectreactor:*</exclude>
                 <exclude>org.reactivestreams:*</exclude>
                 <exclude>commons-io:commons-io</exclude>
+                <exclude>org.bouncycastle:*</exclude>
                 <exclude>org.springframework.integration:*</exclude>
                 <exclude>org.eclipse.jgit:*</exclude>
                 <exclude>com.googlecode.javaewah:JavaEWAH</exclude>
@@ -62,6 +63,7 @@
                 <include>org.reactivestreams:*</include>
                 <include>commons-io:commons-io</include>
                 <include>com.googlecode.javaewah:JavaEWAH</include>
+                <include>org.bouncycastle:*</include>
                 <include>org.c02e.jpgpj:jpgpj</include>
             </includes>
             <outputDirectory>dependencies</outputDirectory>
