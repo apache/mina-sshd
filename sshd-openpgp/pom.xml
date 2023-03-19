@@ -44,17 +44,24 @@
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15on</artifactId>
+            <artifactId>bcpg-jdk18on</artifactId>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
+            <artifactId>bcpkix-jdk18on</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.c02e.jpgpj</groupId>
             <artifactId>jpgpj</artifactId>
             <version>1.3</version>
+            <exclusions>
+                    <!-- Replaced by the jdk18on equivalent -->
+                <exclusion>
+                  <groupId>org.bouncycastle</groupId>
+                  <artifactId>bcpg-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
             <!-- test dependencies -->
