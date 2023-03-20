@@ -35,9 +35,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * A simple implementation of an {@link AbstractGeneratorHostKeyProvider} that writes and reads host keys using the
@@ -68,8 +68,7 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
                             "Cannot de-serialize " + resourceKey + ": missing classes: " + e.getMessage(), e);
                 }
             } else {
-                OpenSSHKeyPairResourceParser reader = new OpenSSHKeyPairResourceParser();
-                return reader.loadKeyPairs(null, resourceKey, null, in);
+                return SecurityUtils.loadKeyPairIdentities(null, resourceKey, in, null);
             }
         }
     }

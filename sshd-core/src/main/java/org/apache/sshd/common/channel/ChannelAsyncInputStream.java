@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoInputStream;
@@ -138,7 +139,7 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
             Channel channel = getChannel();
             try {
                 LocalWindow wLocal = channel.getLocalWindow();
-                wLocal.check();
+                wLocal.release(nbRead);
             } catch (IOException e) {
                 Session session = channel.getSession();
                 session.exceptionCaught(e);
@@ -167,9 +168,9 @@ public class ChannelAsyncInputStream extends AbstractCloseable implements IoInpu
         }
 
         @Override
-        public IoReadFuture verify(long timeoutMillis) throws IOException {
+        public IoReadFuture verify(long timeoutMillis, CancelOption... options) throws IOException {
             long startTime = System.nanoTime();
-            Number result = verifyResult(Number.class, timeoutMillis);
+            Number result = verifyResult(Number.class, timeoutMillis, options);
             long endTime = System.nanoTime();
             if (log.isDebugEnabled()) {
                 log.debug("Read {} bytes after {} nanos", result, endTime - startTime);

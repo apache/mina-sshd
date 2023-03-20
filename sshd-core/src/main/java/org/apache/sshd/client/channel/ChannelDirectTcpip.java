@@ -120,7 +120,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         pipe.flush();
 
         LocalWindow wLocal = getLocalWindow();
-        wLocal.check();
+        wLocal.release(len);
     }
 
     public SshdSocketAddress getLocalSocketAddress() {

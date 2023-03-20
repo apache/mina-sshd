@@ -19,6 +19,8 @@
 package org.apache.sshd.sftp.client.fs;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +30,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -236,12 +239,12 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             assertEquals("READ_DIR should not have been called yet", 0, readDirCount.get());
 
             SftpPath sftpPath = (SftpPath) remoteDir;
-            SftpClient client = sftpPath.getFileSystem().getClient();
 
             // Actual test starts here
             int i = 0;
             long start = System.currentTimeMillis();
-            try (CloseableHandle dir = client.openDir(remDirPath)) {
+            try (SftpClient client = sftpPath.getFileSystem().getClient();
+                 CloseableHandle dir = client.openDir(remDirPath)) {
                 for (SftpClient.DirEntry entry : client.listDir(dir)) {
                     i++;
                     assertNotNull(entry);
@@ -275,12 +278,12 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             long indirectTime = 0;
             for (int attempt = 0; attempt < maxRepeats; attempt++) {
                 // Now try the same directly at the upstream server
-                client = ((SftpFileSystem) secondHop).getClient();
                 statCount.set(0);
                 readDirCount.set(0);
                 i = 0;
                 start = System.currentTimeMillis();
-                try (CloseableHandle dir = client.openDir(remDirPath)) {
+                try (SftpClient client = ((SftpFileSystem) secondHop).getClient();
+                     CloseableHandle dir = client.openDir(remDirPath)) {
                     for (SftpClient.DirEntry entry : client.listDir(dir)) {
                         i++;
                         assertNotNull(entry);
@@ -294,12 +297,12 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                         "{}: directory listing with {} files from upstream server took {}ms, got {} entries: READDIR called {} times, (L)STAT called {} times",
                         getCurrentTestName(), numberOfFiles, elapsed, i, readDirCount, statCount);
 
-                client = sftpPath.getFileSystem().getClient();
                 statCount.set(0);
                 readDirCount.set(0);
                 i = 0;
                 start = System.currentTimeMillis();
-                try (CloseableHandle dir = client.openDir(remDirPath)) {
+                try (SftpClient client = sftpPath.getFileSystem().getClient();
+                     CloseableHandle dir = client.openDir(remDirPath)) {
                     for (SftpClient.DirEntry entry : client.listDir(dir)) {
                         i++;
                         assertNotNull(entry);
@@ -347,28 +350,32 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             Path remoteFile = fs.getPath(remFilePath);
             assertHierarchyTargetFolderExists(remoteFile.getParent());
             int n = 0;
-            for (Path p : Files.newDirectoryStream(remoteFile.getParent())) {
-                n++;
-                assertTrue("Expected an SftpPath", p instanceof SftpPath);
-                SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
-                assertNotNull("Path should have cached attributes", cached);
-                assertEquals("Unexpected size reported", 5, cached.getSize());
-                // Now modify the file and fetch attributes again
-                Files.write(p, "Bye".getBytes(StandardCharsets.UTF_8));
-                BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
-                assertNotEquals("Sizes should be different", attributes.size(), cached.getSize());
-                assertEquals("Unexpected size after modification", 3, attributes.size());
-                assertNull("Path should not have cached attributes anymore", ((SftpPath) p).getAttributes());
+            try (DirectoryStream<Path> directory = Files.newDirectoryStream(remoteFile.getParent())) {
+                for (Path p : directory) {
+                    n++;
+                    assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                    SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
+                    assertNotNull("Path should have cached attributes", cached);
+                    assertEquals("Unexpected size reported", 5, cached.getSize());
+                    // Now modify the file and fetch attributes again
+                    Files.write(p, "Bye".getBytes(StandardCharsets.UTF_8));
+                    BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
+                    assertNotEquals("Sizes should be different", attributes.size(), cached.getSize());
+                    assertEquals("Unexpected size after modification", 3, attributes.size());
+                    assertNull("Path should not have cached attributes anymore", ((SftpPath) p).getAttributes());
+                }
             }
             assertEquals("Unexpected number of files", 2, n);
             // And again
             List<Path> obtained = new ArrayList<>(2);
-            for (Path p : Files.newDirectoryStream(remoteFile.getParent())) {
-                assertTrue("Expected an SftpPath", p instanceof SftpPath);
-                SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
-                assertNotNull("Path should have cached attributes", cached);
-                assertEquals("Unexpected size reported", 3, cached.getSize());
-                obtained.add(p);
+            try (DirectoryStream<Path> directory = Files.newDirectoryStream(remoteFile.getParent())) {
+                for (Path p : directory) {
+                    assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                    SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
+                    assertNotNull("Path should have cached attributes", cached);
+                    assertEquals("Unexpected size reported", 3, cached.getSize());
+                    obtained.add(p);
+                }
             }
             assertEquals("Unexpected number of files", 2, obtained.size());
             // Now modify the files and fetch attributes again
@@ -496,6 +503,79 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 int readLen = fc.read(ByteBuffer.wrap(actual));
                 assertEquals("Mismatched read len", writeLen, readLen);
                 assertArrayEquals("Mismatched read data", expected, actual);
+            }
+        }
+
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
+    }
+
+    @Test
+    public void testFileCopy() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        Path lclFile2 = lclSftp.resolve(getCurrentTestName() + ".txt2");
+        Files.deleteIfExists(lclFile2);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")")
+                .getBytes(StandardCharsets.UTF_8);
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path parentPath = targetPath.getParent();
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+            Path file = fs.getPath(remFilePath);
+
+            FileSystemProvider provider = fs.provider();
+            try (FileChannel fc = provider.newFileChannel(file,
+                    EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+                int writeLen = fc.write(ByteBuffer.wrap(expected));
+                assertEquals("Mismatched written length", expected.length, writeLen);
+
+                FileChannel fcPos = fc.position(0L);
+                assertSame("Mismatched positioned file channel", fc, fcPos);
+
+                byte[] actual = new byte[expected.length];
+                int readLen = fc.read(ByteBuffer.wrap(actual));
+                assertEquals("Mismatched read len", writeLen, readLen);
+                assertArrayEquals("Mismatched read data", expected, actual);
+            }
+            Path sibling = file.getParent().resolve(file.getFileName().toString() + '2');
+            Files.copy(file, sibling);
+        }
+
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
+        actual = Files.readAllBytes(lclFile2);
+        assertArrayEquals("Mismatched copied data", expected, actual);
+    }
+
+    @Test
+    public void testFileWriteRead() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")")
+                .getBytes(StandardCharsets.UTF_8);
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path parentPath = targetPath.getParent();
+            String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
+
+            try (SftpClient client = ((SftpFileSystem) fs).getClient()) {
+                try (OutputStream out = client.write(remFilePath)) {
+                    IoUtils.copy(new ByteArrayInputStream(expected), out);
+                }
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     InputStream in = client.read(remFilePath)) {
+                    IoUtils.copy(in, out);
+                    assertArrayEquals("Mismatched persisted data", expected, out.toByteArray());
+                }
             }
         }
 

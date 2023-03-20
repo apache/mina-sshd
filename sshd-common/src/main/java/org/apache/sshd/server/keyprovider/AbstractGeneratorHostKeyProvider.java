@@ -28,6 +28,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
@@ -39,6 +40,7 @@ import java.security.PublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -77,6 +79,7 @@ public abstract class AbstractGeneratorHostKeyProvider
     private int keySize;
     private AlgorithmParameterSpec keySpec;
     private boolean overwriteAllowed = DEFAULT_ALLOWED_TO_OVERWRITE;
+    private boolean enforceFilePermissions = true;
 
     protected AbstractGeneratorHostKeyProvider() {
         super();
@@ -122,6 +125,20 @@ public abstract class AbstractGeneratorHostKeyProvider
 
     public void setOverwriteAllowed(boolean overwriteAllowed) {
         this.overwriteAllowed = overwriteAllowed;
+    }
+
+    public boolean hasStrictFilePermissions() {
+        return enforceFilePermissions;
+    }
+
+    /**
+     * Sets whether this {@link AbstractGeneratorHostKeyProvider} shall enforce that a newly created host key file has
+     * file access permissions that allow only the owner to access it. By default {@code true}.
+     *
+     * @param strict whether to restrict file permissions to owner-only access
+     */
+    public void setStrictFilePermissions(boolean strict) {
+        this.enforceFilePermissions = strict;
     }
 
     public void clearLoadedKeys() {
@@ -276,7 +293,9 @@ public abstract class AbstractGeneratorHostKeyProvider
         if (!Files.exists(keyPath) || isOverwriteAllowed()) {
             // Create an empty file or truncate an existing file
             Files.newOutputStream(keyPath).close();
-            setFilePermissions(keyPath);
+            if (enforceFilePermissions) {
+                setFilePermissions(keyPath);
+            }
             try (OutputStream os = Files.newOutputStream(keyPath, StandardOpenOption.WRITE,
                     StandardOpenOption.TRUNCATE_EXISTING)) {
                 doWriteKeyPair(new PathResource(keyPath), kp, os);
@@ -291,7 +310,13 @@ public abstract class AbstractGeneratorHostKeyProvider
         }
     }
 
-    private void setFilePermissions(Path path) throws IOException {
+    /**
+     * Restricts the file permissions such that only the owner can access the file.
+     *
+     * @param  path        {@link Path} of a newly created (empty) host key file
+     * @throws IOException on errors
+     */
+    protected void setFilePermissions(Path path) throws IOException {
         Throwable t = null;
         if (OsUtils.isWin32()) {
             AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
@@ -301,19 +326,23 @@ public abstract class AbstractGeneratorHostKeyProvider
                     // Remove all access rights from non-owners.
                     List<AclEntry> restricted = new ArrayList<>();
                     for (AclEntry acl : view.getAcl()) {
-                        if (owner.equals(acl.principal()) || AclEntryType.DENY.equals(acl.type())) {
+                        if (owner.equals(acl.principal())) {
+                            // We explicitly give the owner full access permissions below.
+                            continue;
+                        }
+                        if (!AclEntryType.ALLOW.equals(acl.type())) {
+                            // DENY, AUDIT, and ALARM: keep them. The owner has successfully created the (empty) file,
+                            // so any existing DENY entries are assumed not to have any influence on reading from or
+                            // writing to this file by the owner.
                             restricted.add(acl);
-                        } else {
-                            // We can't use DENY access: if the owner is member of a group and we deny the group
-                            // access, the owner won't be able to perform the access. Instead of denying permissions
-                            // simply allow nothing.
-                            restricted.add(AclEntry.newBuilder()
-                                    .setType(AclEntryType.ALLOW)
-                                    .setPrincipal(acl.principal())
-                                    .setPermissions(Collections.emptySet())
-                                    .build());
                         }
                     }
+                    // Give the owner full permissions to work with this file.
+                    restricted.add(AclEntry.newBuilder()
+                            .setType(AclEntryType.ALLOW)
+                            .setPrincipal(owner)
+                            .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+                            .build());
                     view.setAcl(restricted);
                     return;
                 } catch (IOException | SecurityException e) {

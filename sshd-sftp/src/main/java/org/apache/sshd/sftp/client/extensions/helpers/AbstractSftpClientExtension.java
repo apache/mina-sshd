@@ -37,6 +37,7 @@ import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Handle;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
+import org.apache.sshd.sftp.client.impl.SftpResponse;
 import org.apache.sshd.sftp.client.impl.SftpStatus;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
@@ -186,37 +187,26 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      *                     {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
      */
     protected Buffer checkExtendedReplyBuffer(Buffer buffer) throws IOException {
-        int length = buffer.getInt();
-        int type = buffer.getUByte();
-        int id = buffer.getInt();
-        validateIncomingResponse(SftpConstants.SSH_FXP_EXTENDED, id, type, length, buffer);
+        SftpResponse response = SftpResponse.parse(SftpConstants.SSH_FXP_EXTENDED, buffer);
 
-        if (type == SftpConstants.SSH_FXP_STATUS) {
-            SftpStatus status = SftpStatus.parse(buffer);
-            if (log.isDebugEnabled()) {
-                log.debug("checkExtendedReplyBuffer({})[id={}] - status: {}", getName(), id, status);
-            }
+        switch (response.getType()) {
+            case SftpConstants.SSH_FXP_EXTENDED_REPLY:
+                return response.getBuffer();
+            case SftpConstants.SSH_FXP_STATUS:
+                SftpStatus status = SftpStatus.parse(response);
+                if (log.isDebugEnabled()) {
+                    log.debug("checkExtendedReplyBuffer({})[id={}] - status: {}", getName(), response.getId(), status);
+                }
 
-            if (!status.isOk()) {
-                throwStatusException(id, status);
-            }
+                if (!status.isOk()) {
+                    throwStatusException(response.getId(), status);
+                }
 
-            return null;
-        } else if (type == SftpConstants.SSH_FXP_EXTENDED_REPLY) {
-            return buffer;
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
-        }
-    }
-
-    protected void validateIncomingResponse(
-            int cmd, int id, int type, int length, Buffer buffer)
-            throws IOException {
-        int remaining = buffer.available();
-        if ((length < 0) || (length > (remaining + 5 /* type + id */))) {
-            throw new SshException("Bad length (" + length + ") for remaining data (" + remaining + ")"
-                                   + " in response to " + SftpConstants.getCommandMessageName(cmd)
-                                   + ": type=" + SftpConstants.getCommandMessageName(type) + ", id=" + id);
+                return null;
+            default:
+                throw new SshException(
+                        "Unexpected SFTP packet received: type=" + SftpConstants.getCommandMessageName(response.getType())
+                                       + ", id=" + response.getId() + ", length=" + response.getLength());
         }
     }
 

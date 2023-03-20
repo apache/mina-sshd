@@ -23,23 +23,36 @@ import java.util.Objects;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
+import org.apache.sshd.common.future.CancelOption;
+import org.apache.sshd.common.future.DefaultCancellableSshFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * A default implementation of {@link ConnectFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFuture> implements ConnectFuture {
+public class DefaultConnectFuture extends DefaultCancellableSshFuture<ConnectFuture> implements ConnectFuture {
     public DefaultConnectFuture(Object id, Object lock) {
         super(id, lock);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * If no {@link CancelOption}s are given, this behaves as if {@link CancelOption#CANCEL_ON_TIMEOUT} and
+     * {@link CancelOption#CANCEL_ON_INTERRUPT} were set.
+     * </p>
+     */
     @Override
-    public ConnectFuture verify(long timeout) throws IOException {
+    public ConnectFuture verify(long timeout, CancelOption... options) throws IOException {
+        CancelOption[] cancellation = options;
+        if (GenericUtils.isEmpty(cancellation)) {
+            cancellation = new CancelOption[] { CancelOption.CANCEL_ON_TIMEOUT, CancelOption.CANCEL_ON_INTERRUPT };
+        }
         long startTime = System.nanoTime();
-        ClientSession session = verifyResult(ClientSession.class, timeout);
+        ClientSession session = verifyResult(ClientSession.class, timeout, cancellation);
         long endTime = System.nanoTime();
         if (log.isDebugEnabled()) {
             IoSession ioSession = session.getIoSession();
@@ -65,16 +78,6 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
     }
 
     @Override
-    public Throwable getException() {
-        Object v = getValue();
-        if (v instanceof Throwable) {
-            return (Throwable) v;
-        } else {
-            return null;
-        }
-    }
-
-    @Override
     public boolean isConnected() {
         return getValue() instanceof ClientSession;
     }
@@ -83,11 +86,5 @@ public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFutu
     public void setSession(ClientSession session) {
         Objects.requireNonNull(session, "No client session provided");
         setValue(session);
-    }
-
-    @Override
-    public void setException(Throwable exception) {
-        Objects.requireNonNull(exception, "No exception provided");
-        setValue(exception);
     }
 }

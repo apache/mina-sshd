@@ -495,6 +495,6 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         }
 
         assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
-        assertEquals("Mismatched retries count", 4 /* 3 attempts + null */, attemptsCount.getAndSet(0));
+        assertEquals("Mismatched retries count", 3, attemptsCount.getAndSet(0));
     }
 }

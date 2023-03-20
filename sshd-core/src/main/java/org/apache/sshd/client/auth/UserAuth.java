@@ -78,6 +78,15 @@ public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSe
     }
 
     /**
+     * Tells whether the authentication protocol is cancellable currently.
+     *
+     * @return {@code true} if the protocol can be canceled at its current state; {@code false} if not.
+     */
+    default boolean isCancellable() {
+        return false;
+    }
+
+    /**
      * Called to release any allocated resources
      */
     void destroy();

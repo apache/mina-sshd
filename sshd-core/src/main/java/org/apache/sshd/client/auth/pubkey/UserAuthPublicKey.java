@@ -86,6 +86,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     public UserAuthPublicKey(List<NamedFactory<Signature>> factories) {
         super(NAME);
         this.factories = factories; // OK if null/empty
+        setCancellable(true);
     }
 
     @Override
@@ -251,6 +252,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         if (doHostBoundAuth) {
             buffer.putPublicKey(session.getServerKey());
         }
+        setCancellable(true);
         session.writePacket(buffer);
         return true;
     }
@@ -413,7 +415,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         if (reporter != null) {
             reporter.signalSignatureAttempt(session, service, keyPair, algo, sig);
         }
-
+        setCancellable(false);
         session.writePacket(buffer);
         return true;
     }

@@ -391,6 +391,8 @@ public class SftpRemotePathChannel extends FileChannel {
                 SftpOutputStreamAsync output = new SftpOutputStreamAsync(
                         (AbstractSftpClient) sftp,
                         copySize, getRemotePath(), handle);
+                output.setOffset(position);
+
                 while (totalRead < count) {
                     ByteBuffer wrap = ByteBuffer.wrap(
                             buffer, 0, (int) Math.min(buffer.length, count - totalRead));

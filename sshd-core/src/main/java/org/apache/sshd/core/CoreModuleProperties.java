@@ -98,7 +98,8 @@ public final class CoreModuleProperties {
             = Property.string("preferred-auths");
 
     /**
-     * Specifies the number of interactive prompts before giving up. The argument to this keyword must be an integer.
+     * Specifies the number of interactive attempts at password or keyboard-interactive user authentication before
+     * giving up. The argument to this keyword must be an integer; if &lt;= 0, the value 1 is substituted.
      */
     public static final Property<Integer> PASSWORD_PROMPTS
             = Property.integer("password-prompts", 3);
@@ -313,6 +314,40 @@ public final class CoreModuleProperties {
      */
     public static final Property<Duration> IDLE_TIMEOUT
             = Property.duration("idle-timeout", Duration.ofMinutes(10));
+
+    /**
+     * Key used to retrieve the value of the socket connect time-out.
+     * <p>
+     * Connection time-outs are generally handled in Apache MINA SSHD at the application level via
+     * {@link org.apache.sshd.client.future.ConnectFuture}.{@link org.apache.sshd.common.future.VerifiableFuture#verify(Duration, org.apache.sshd.common.future.CancelOption...)
+     * verify()}. However, the underlying I/O library may have its own connection time-out. By setting this property on
+     * an {@link org.apache.sshd.client.SshClient} or {@link org.apache.sshd.server.SshServer}, users can explicitly set
+     * this I/O connection time-out to any value. If the duration is zero or negative, or the property is not set on the
+     * client or server, the default of the I/O library used is in effect. These defaults are:
+     * </p>
+     * <table>
+     * <tr>
+     * <th>I/O back-end</th>
+     * <th>Default connection time-out</th>
+     * </tr>
+     * <tr>
+     * <td>NIO2</td>
+     * <td>infinite</td>
+     * </tr>
+     * <tr>
+     * <td>MINA</td>
+     * <td>1 minute</td>
+     * </tr>
+     * <tr>
+     * <td>Netty</td>
+     * <td>30 seconds</td>
+     * </tr>
+     * </table>
+     * <p>
+     * The default value of this property is 1 minute.
+     * </p>
+     */
+    public static final Property<Duration> IO_CONNECT_TIMEOUT = Property.duration("io-connect-timeout", Duration.ofMinutes(1));
 
     /**
      * Key used to retrieve the value of the socket read timeout for NIO2 session implementation - in milliseconds.

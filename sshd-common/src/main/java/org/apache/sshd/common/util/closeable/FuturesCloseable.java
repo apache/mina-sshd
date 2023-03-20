@@ -30,7 +30,7 @@ import org.apache.sshd.common.future.SshFutureListener;
  * @param  <T> Type of future
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
+public class FuturesCloseable<T extends SshFuture<T>> extends SimpleCloseable {
 
     private final Iterable<? extends SshFuture<T>> futures;
 
@@ -42,9 +42,9 @@ public class FuturesCloseable<T extends SshFuture> extends SimpleCloseable {
     @Override
     protected void doClose(boolean immediately) {
         if (immediately) {
-            for (SshFuture<?> f : futures) {
+            for (SshFuture<T> f : futures) {
                 if (f instanceof DefaultSshFuture) {
-                    ((DefaultSshFuture<?>) f).setValue(new SshException("Closed"));
+                    ((DefaultSshFuture<T>) f).setValue(new SshException("Closed"));
                 }
             }
             future.setClosed();

@@ -81,7 +81,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     protected synchronized void doWriteData(byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         LocalWindow wLocal = getLocalWindow();
-        wLocal.check();
+        wLocal.release(len);
 
         int result = Socket.send(socket, data, off, (int) len);
         if (result < Status.APR_SUCCESS) {

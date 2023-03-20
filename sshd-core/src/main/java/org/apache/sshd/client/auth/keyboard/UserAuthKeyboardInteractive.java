@@ -20,7 +20,6 @@ package org.apache.sshd.client.auth.keyboard;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.session.ClientSession;
@@ -28,7 +27,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
 
@@ -42,10 +40,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
 
     private final AtomicBoolean requestPending = new AtomicBoolean(false);
-    private final AtomicInteger trialsCount = new AtomicInteger(0);
-    private final AtomicInteger emptyCount = new AtomicInteger(0);
     private Iterator<String> passwords;
-    private int maxTrials;
+    private int maxAttempts;
+    private int nOfAttempts;
+    private boolean wasChallenged;
+    private boolean withUserInteraction;
 
     public UserAuthKeyboardInteractive() {
         super(NAME);
@@ -55,8 +54,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public void init(ClientSession session, String service) throws Exception {
         super.init(session, service);
         passwords = ClientSession.passwordIteratorOf(session);
-        maxTrials = CoreModuleProperties.PASSWORD_PROMPTS.getRequired(session);
-        ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
+        maxAttempts = Math.max(1, CoreModuleProperties.PASSWORD_PROMPTS.getRequired(session));
+        nOfAttempts = 0;
+        wasChallenged = false;
+        withUserInteraction = false;
     }
 
     @Override
@@ -71,7 +72,15 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             return false;
         }
 
-        if (!verifyTrialsCount(session, service, SshConstants.SSH_MSG_USERAUTH_REQUEST, trialsCount.get(), maxTrials)) {
+        nOfAttempts++;
+        if (wasChallenged && !withUserInteraction) {
+            // We did increment on the previous attempt, but then had no user interaction for the challenge(s). The
+            // count is one too high.
+            nOfAttempts--;
+        }
+        wasChallenged = false;
+        withUserInteraction = false;
+        if (!verifyTrialsCount(session, service, SshConstants.SSH_MSG_USERAUTH_REQUEST, nOfAttempts, maxAttempts)) {
             return false;
         }
 
@@ -125,12 +134,6 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     session, service, name, instruction, lang, num);
         }
 
-        // SSHD-866
-        int retriesCount = (num > 0) ? trialsCount.incrementAndGet() : emptyCount.incrementAndGet();
-        if (!verifyTrialsCount(session, service, cmd, retriesCount, maxTrials)) {
-            return false;
-        }
-
         String[] prompt = (num > 0) ? new String[num] : GenericUtils.EMPTY_STRING_ARRAY;
         boolean[] echo = (num > 0) ? new boolean[num] : GenericUtils.EMPTY_BOOLEAN_ARRAY;
         boolean traceEnabled = log.isTraceEnabled();
@@ -173,7 +176,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         for (int index = 0; index < numResponses; index++) {
             String r = rep[index];
             if (traceEnabled) {
-                log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1, r);
+                log.trace("processAuthDataRequest({})[{}] response #{}: {}", session, service, index + 1,
+                        (index < num && echo[index]) ? r : "(hidden)");
             }
             buffer.putString(r);
         }
@@ -221,8 +225,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
      *                     responsibility to enforce this we do not validate the response (other than logging it as a
      *                     warning...)
      */
-    protected String[] getUserResponses(
-            String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+    protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
         ClientSession session = getClientSession();
         int num = GenericUtils.length(prompt);
         boolean debugEnabled = log.isDebugEnabled();
@@ -239,6 +242,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             return GenericUtils.EMPTY_STRING_ARRAY;
         }
 
+        wasChallenged = true;
+
         if (PropertyResolverUtils.getBooleanProperty(
                 session, UserInteraction.AUTO_DETECT_PASSWORD_PROMPT,
                 UserInteraction.DEFAULT_AUTO_DETECT_PASSWORD_PROMPT)) {
@@ -251,6 +256,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         }
 
+        withUserInteraction = true;
         UserInteraction ui = session.getUserInteraction();
         try {
             if ((ui != null) && ui.isInteractionAllowed(session)) {

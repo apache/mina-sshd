@@ -150,7 +150,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
 
         boolean debugEnabled = log.isDebugEnabled();
         AbstractSftpClient client = getClient();
-        for (int ackIndex = 0;;) {
+        for (int ackIndex = 1;; ackIndex++) {
             SftpAckData ack = pendingWrites.peek();
             if (ack == null) {
                 if (debugEnabled) {
@@ -159,13 +159,12 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
                 break;
             }
 
-            ackIndex++;
             if (debugEnabled) {
                 log.debug("flush({}) waiting for ack #{}: {}", this, ackIndex, ack);
             }
 
-            Buffer response = client.receive(ack.id, 0L);
-            if (response == null) {
+            Buffer buf = client.receive(ack.id, 0L);
+            if (buf == null) {
                 if (debugEnabled) {
                     log.debug("flush({}) no response for ack #{}: {}", this, ackIndex, ack);
                 }
@@ -177,7 +176,8 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
             }
 
             pendingWrites.removeFirst();
-            client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
+            SftpResponse response = SftpResponse.parse(SftpConstants.SSH_FXP_WRITE, buf);
+            client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, ack.id, SftpStatus.parse(response));
         }
 
         if (buffer == null) {
@@ -242,11 +242,11 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
                         log.debug("close({}) processing ack #{}: {}", this, ackIndex, ack);
                     }
 
-                    Buffer response = client.receive(ack.id);
+                    SftpResponse response = client.response(SftpConstants.SSH_FXP_WRITE, ack.id);
                     if (debugEnabled) {
                         log.debug("close({}) processing ack #{} response for {}", this, ackIndex, ack);
                     }
-                    client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response);
+                    client.checkResponseStatus(SftpConstants.SSH_FXP_WRITE, response.getId(), SftpStatus.parse(response));
                 }
             } finally {
                 if (debugEnabled) {

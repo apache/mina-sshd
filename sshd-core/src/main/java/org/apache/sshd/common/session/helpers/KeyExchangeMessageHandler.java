@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexState;
@@ -103,6 +104,11 @@ public class KeyExchangeMessageHandler {
      * Indicates that all pending packets have been flushed.
      */
     protected volatile boolean kexFlushed = true;
+
+    /**
+     * Indicates that the handler has been shut down.
+     */
+    protected volatile boolean shutDown;
 
     /**
      * Never {@code null}. Used to block some threads when writing packets while pending packets are still being flushed
@@ -194,6 +200,7 @@ public class KeyExchangeMessageHandler {
     public void shutdown() {
         SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> items = updateState(() -> {
             kexFlushed = true;
+            shutDown = true;
             return new SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture>(
                     Integer.valueOf(pendingPackets.size()),
                     kexFlushedFuture);
@@ -229,33 +236,33 @@ public class KeyExchangeMessageHandler {
         boolean enqueued = false;
         boolean isLowLevelMessage = cmd <= SshConstants.SSH_MSG_KEX_LAST && cmd != SshConstants.SSH_MSG_SERVICE_REQUEST
                 && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT;
+        IoWriteFuture future = null;
         try {
             if (isLowLevelMessage) {
                 // Low-level messages can always be sent.
-                return session.doWritePacket(buffer);
+                future = session.doWritePacket(buffer);
+            } else {
+                future = writeOrEnqueue(cmd, buffer, timeout, unit);
+                enqueued = future instanceof PendingWriteFuture;
             }
-            IoWriteFuture future = writeOrEnqueue(cmd, buffer, timeout, unit);
-            enqueued = future instanceof PendingWriteFuture;
-            return future;
         } finally {
             session.resetIdleTimeout();
-            if (!enqueued) {
-                try {
-                    session.checkRekey();
-                } catch (GeneralSecurityException e) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("writePacket({}) failed ({}) to check re-key: {}", session, e.getClass().getSimpleName(),
-                                e.getMessage(), e);
-                    }
-                    throw ValidateUtils.initializeExceptionCause(
-                            new ProtocolException("Failed (" + e.getClass().getSimpleName() + ")"
-                                                  + " to check re-key necessity: " + e.getMessage()),
-                            e);
-                } catch (Exception e) {
-                    ExceptionUtils.rethrowAsIoException(e);
+        }
+        if (!enqueued) {
+            try {
+                session.checkRekey();
+            } catch (GeneralSecurityException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("writePacket({}) failed ({}) to check re-key: {}", session, e.getClass().getSimpleName(),
+                            e.getMessage(), e);
                 }
+                throw ValidateUtils.initializeExceptionCause(new ProtocolException(
+                        "Failed (" + e.getClass().getSimpleName() + ")" + " to check re-key necessity: " + e.getMessage()), e);
+            } catch (Exception e) {
+                ExceptionUtils.rethrowAsIoException(e);
             }
         }
+        return future;
     }
 
     /**
@@ -288,6 +295,9 @@ public class KeyExchangeMessageHandler {
             // Use the readLock here to give KEX state updates and the flushing thread priority.
             lock.readLock().lock();
             try {
+                if (shutDown) {
+                    throw new SshException("Write attempt on closing session: " + SshConstants.getCommandMessageName(cmd));
+                }
                 KexState state = session.kexState.get();
                 boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
                 if (kexDone && kexFlushed) {

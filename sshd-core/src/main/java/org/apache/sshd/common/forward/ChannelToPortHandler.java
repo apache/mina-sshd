@@ -78,7 +78,7 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
     }
 
     protected void handleWriteDataSuccess(byte cmd, byte[] data, int off, int len) {
-        checkWindow(cmd);
+        checkWindow(cmd, len);
     }
 
     protected void handleWriteDataFailure(byte cmd, byte[] data, int off, int len, Throwable t) {
@@ -92,7 +92,7 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
                 log.debug("handleWriteDataFailure({})[{}] closing session={}", channel,
                         SshConstants.getCommandMessageName(cmd & 0xFF), port);
             }
-            checkWindow(cmd);
+            checkWindow(cmd, len);
             channel.close(false);
         } else {
             // In case remote entity has closed the socket, data coming from the SSH channel should be
@@ -102,15 +102,15 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
                         "handleWriteDataFailure({})[{}] ignoring writeDataFailure {} because ioSession {} is already closing ",
                         channel, SshConstants.getCommandMessageName(cmd & 0xFF), t, port);
             }
-            checkWindow(cmd);
+            checkWindow(cmd, len);
         }
     }
 
-    private void checkWindow(byte cmd) {
+    private void checkWindow(byte cmd, long len) {
         try {
             LocalWindow wLocal = channel.getLocalWindow();
             if (wLocal.isOpen()) {
-                wLocal.check();
+                wLocal.release(len);
             }
         } catch (Throwable e) {
             if (log.isDebugEnabled()) {

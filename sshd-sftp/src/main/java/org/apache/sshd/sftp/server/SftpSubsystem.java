@@ -298,9 +298,10 @@ public class SftpSubsystem
                 if (buffer == CLOSE) {
                     break;
                 }
+                int len = buffer.available();
                 buffersCount++;
                 process(buffer);
-                localWindow.check();
+                localWindow.release(len);
             }
         } catch (Throwable t) {
             if (!closed.get()) { // Ignore

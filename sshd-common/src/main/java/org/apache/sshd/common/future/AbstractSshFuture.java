@@ -22,10 +22,14 @@ package org.apache.sshd.common.future;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
+import java.net.ConnectException;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.ExceptionUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
@@ -33,11 +37,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @param  <T> Type of future
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLoggingBean implements SshFuture<T> {
-    /**
-     * A default value to indicate the future has been canceled
-     */
-    protected static final Object CANCELED = new Object();
+public abstract class AbstractSshFuture<T extends SshFuture<T>> extends AbstractLoggingBean implements SshFuture<T> {
 
     private final Object id;
 
@@ -54,14 +54,14 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
     }
 
     @Override
-    public boolean await(long timeoutMillis) throws IOException {
-        return await0(timeoutMillis, true) != null;
+    public boolean await(long timeoutMillis, CancelOption... options) throws IOException {
+        return await0(timeoutMillis, true, options) != null;
     }
 
     @Override
-    public boolean awaitUninterruptibly(long timeoutMillis) {
+    public boolean awaitUninterruptibly(long timeoutMillis, CancelOption... options) {
         try {
-            return await0(timeoutMillis, false) != null;
+            return await0(timeoutMillis, false, options) != null;
         } catch (InterruptedIOException e) {
             throw formatExceptionMessage(
                     msg -> new InternalError(msg, e),
@@ -103,21 +103,35 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      * @param  <R>          The generic result type
      * @param  expectedType The expected result type
      * @param  timeout      The timeout (millis) to wait for a result
+     * @param  options      Optional {@link CancelOptions} defining the behavior on time-out or interrupt.
      * @return              The (never {@code null}) result
      * @throws IOException  If failed to retrieve the expected result on time
      */
-    protected <R> R verifyResult(Class<? extends R> expectedType, long timeout) throws IOException {
-        Object value = await0(timeout, true);
+    protected <R> R verifyResult(Class<? extends R> expectedType, long timeout, CancelOption... options) throws IOException {
+        Object value = await0(timeout, true, options);
         if (value == null) {
-            throw formatExceptionMessage(
-                    SshException::new,
-                    "Failed to get operation result within specified timeout: %s",
+            TimeoutException cause = new TimeoutException("Timed out after " + timeout + " msec");
+            throw formatExceptionMessage(msg -> new SshException(msg, cause),
+                    "Failed to get operation result within specified timeout: %s msec",
                     timeout);
+        }
+
+        if (value == GenericUtils.NULL) {
+            return null;
         }
 
         Class<?> actualType = value.getClass();
         if (expectedType.isAssignableFrom(actualType)) {
             return expectedType.cast(value);
+        }
+
+        if (value instanceof CancelFuture) {
+            value = ((CancelFuture) value).getBackTrace();
+            if (value == null) {
+                // Should not really occur
+                value = new CancellationException("Operation was cancelled before");
+            }
+            actualType = CancellationException.class;
         }
 
         if (Throwable.class.isAssignableFrom(actualType)) {
@@ -127,7 +141,7 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
                 throw new SshException(((SshException) t).getDisconnectCode(), t.getMessage(), t);
             }
 
-            Throwable cause = ExceptionUtils.resolveExceptionCause(t);
+            Throwable cause = t instanceof ConnectException ? t : ExceptionUtils.resolveExceptionCause(t);
             throw formatExceptionMessage(
                     msg -> new SshException(msg, cause),
                     "Failed (%s) to execute: %s",
@@ -144,11 +158,13 @@ public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLog
      * @param  timeoutMillis          The delay we will wait for the Future to be ready
      * @param  interruptable          Tells if the wait can be interrupted or not. If {@code true} and the thread is
      *                                interrupted then an {@link InterruptedIOException} is thrown.
+     * @param  options                Optional {@link CancelOptions} defining the behavior on time-out or interrupt.
      * @return                        The non-{@code null} result object if the Future is ready, {@code null} if the
      *                                timeout expired and no result was received
      * @throws InterruptedIOException If the thread has been interrupted when it's not allowed.
      */
-    protected abstract Object await0(long timeoutMillis, boolean interruptable) throws InterruptedIOException;
+    protected abstract Object await0(long timeoutMillis, boolean interruptable, CancelOption... options)
+            throws InterruptedIOException;
 
     @SuppressWarnings("unchecked")
     protected SshFutureListener<T> asListener(Object o) {

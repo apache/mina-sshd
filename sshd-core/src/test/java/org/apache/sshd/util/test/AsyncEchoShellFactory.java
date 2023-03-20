@@ -154,7 +154,7 @@ public class AsyncEchoShellFactory implements ShellFactory {
                         if (future.isWritten()) {
                             try {
                                 LocalWindow wLocal = channel.getLocalWindow();
-                                wLocal.check();
+                                wLocal.release(bytes.length);
                             } catch (IOException e) {
                                 session1.exceptionCaught(e);
                             }

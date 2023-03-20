@@ -31,14 +31,26 @@ import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.io.DefaultIoConnectFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
+
+    /**
+     * Closing a MINA IoSession first fulfills the CloseFuture and later calls {@link #sessionClosed(IoSession)}. But it
+     * is only within that method that we close the SSH session atop the MINA IoSession. So we cannot use a listener on
+     * the MINA CloseFuture to fulfill the cancellation of the user-visible IoConnectFuture: client code might see the
+     * future fulfilled while the SSH session is not yet closing or closed. Therefore we add our own IoConnectFuture as
+     * a session attribute, and fulfill it only in sessionClosed.
+     */
+    private static final Object CONNECT_FUTURE_KEY = new Object();
+
     protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<>(null);
 
     public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler,
@@ -49,6 +61,18 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     protected IoConnector createConnector() {
         NioSocketConnector connector = new NioSocketConnector(ioProcessor);
         configure(connector.getSessionConfig());
+        CoreModuleProperties.IO_CONNECT_TIMEOUT.get(manager).ifPresent(d -> {
+            if (d.isZero() || d.isNegative()) {
+                return;
+            }
+            long millis;
+            try {
+                millis = d.toMillis();
+            } catch (ArithmeticException e) {
+                millis = Long.MAX_VALUE;
+            }
+            connector.setConnectTimeoutMillis(millis);
+        });
         return connector;
     }
 
@@ -108,59 +132,71 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     }
 
     @Override
+    public void sessionClosed(IoSession ioSession) throws Exception {
+        try {
+            super.sessionClosed(ioSession);
+        } finally {
+            IoConnectFuture future = (IoConnectFuture) ioSession.removeAttribute(CONNECT_FUTURE_KEY);
+            if (future != null) {
+                CancelFuture cancellation = future.cancel();
+                if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
+            }
+        }
+    }
+
+    @Override
     public IoConnectFuture connect(SocketAddress address, AttributeRepository context, SocketAddress localAddress) {
-        class Future extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
-            Future(Object lock) {
-                super(address, lock);
-            }
-
-            @Override
-            public org.apache.sshd.common.io.IoSession getSession() {
-                Object v = getValue();
-                return v instanceof org.apache.sshd.common.io.IoSession ? (org.apache.sshd.common.io.IoSession) v : null;
-            }
-
-            @Override
-            public Throwable getException() {
-                Object v = getValue();
-                return v instanceof Throwable ? (Throwable) v : null;
-            }
-
-            @Override
-            public boolean isConnected() {
-                return getValue() instanceof org.apache.sshd.common.io.IoSession;
-            }
+        IoConnectFuture future = new DefaultIoConnectFuture(address, null) {
 
             @Override
             public void setSession(org.apache.sshd.common.io.IoSession session) {
                 if (context != null) {
                     session.setAttribute(AttributeRepository.class, context);
                 }
-
-                setValue(session);
+                super.setSession(session);
             }
 
-            @Override
-            public void setException(Throwable exception) {
-                setValue(exception);
-            }
-        }
-
-        IoConnectFuture future = new Future(null);
+        };
         IoConnector connector = getConnector();
+        AtomicReference<IoSession> createdSession = new AtomicReference<>();
         ConnectFuture connectFuture = connector.connect(
                 address, localAddress,
                 (s, f) -> {
+                    s.setAttribute(CONNECT_FUTURE_KEY, future);
+                    if (f.isCanceled()) {
+                        s.closeNow();
+                    } else {
+                        createdSession.set(s);
+                    }
                     if (context != null) {
                         s.setAttribute(AttributeRepository.class, context);
                     }
                 });
+        future.addListener(f -> {
+            if (f.isCanceled()) {
+                connectFuture.cancel();
+                IoSession ioSession = connectFuture.getSession();
+                if (ioSession != null) {
+                    ioSession.setAttribute(CONNECT_FUTURE_KEY, future);
+                    ioSession.closeNow();
+                }
+            }
+        });
         connectFuture.addListener((IoFutureListener<ConnectFuture>) cf -> {
             Throwable t = cf.getException();
             if (t != null) {
                 future.setException(t);
             } else if (cf.isCanceled()) {
-                future.cancel();
+                IoSession ioSession = createdSession.getAndSet(null);
+                CancelFuture cancellation = future.cancel();
+                if (ioSession != null) {
+                    ioSession.setAttribute(CONNECT_FUTURE_KEY, future);
+                    ioSession.closeNow();
+                } else if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
             } else {
                 IoSession ioSession = cf.getSession();
                 org.apache.sshd.common.io.IoSession sshSession = getSession(ioSession);
@@ -168,6 +204,19 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
                     sshSession.setAttribute(AttributeRepository.class, context);
                 }
                 future.setSession(sshSession);
+                if (future.getSession() != sshSession) {
+                    // Must have been canceled
+                    try {
+                        sshSession.close(true);
+                    } finally {
+                        CancelFuture cancellation = future.getCancellation();
+                        if (cancellation != null) {
+                            cancellation.setCanceled();
+                        }
+                    }
+                } else {
+                    ioSession.removeAttribute(CONNECT_FUTURE_KEY);
+                }
             }
         });
         return future;

@@ -133,7 +133,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transfered size", expected.length, actual.length);
+        assertEquals("Mismatched transferred size", expected.length, actual.length);
         assertArrayEquals("Mismatched transferred data", expected, actual);
     }
 
@@ -209,7 +209,7 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transfered size", expected.length, actual.length);
+        assertEquals("Mismatched transferred size", expected.length, actual.length);
         assertArrayEquals("Mismatched transferred data", expected, actual);
     }
 
@@ -245,7 +245,47 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transfered size", expected.length, actual.length);
+        assertEquals("Mismatched transferred size", expected.length, actual.length);
+        assertArrayEquals("Mismatched transferred data", expected, actual);
+    }
+
+    @Test
+    public void testTransferFromFileChannelWithOffset() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-src.txt");
+        Path parentPath = targetPath.getParent();
+
+        Files.deleteIfExists(srcFile);
+        try (Writer output = Files.newBufferedWriter(srcFile, StandardCharsets.UTF_8)) {
+            String seed = getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")";
+            for (long totalWritten = 0L;
+                 totalWritten <= SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault();
+                 totalWritten += seed.length()) {
+                output.append(seed).append(System.lineSeparator());
+            }
+        }
+
+        byte[] data = Files.readAllBytes(srcFile);
+        int offset = data.length / 4;
+        byte[] expected = new byte[data.length];
+        System.arraycopy(data, 0, expected, offset, expected.length - offset);
+
+        Path dstFile = srcFile.getParent().resolve(getCurrentTestName() + "-dst.txt");
+        Files.deleteIfExists(dstFile);
+
+        String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
+        try (SftpClient sftp = createSingleSessionClient();
+             FileChannel dstChannel = sftp.openRemotePathChannel(
+                     remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+             FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
+            long numXfered = dstChannel.transferFrom(srcChannel, offset, expected.length - offset);
+            assertEquals("Mismatched reported transfer count", expected.length - offset, numXfered);
+        }
+
+        byte[] actual = Files.readAllBytes(dstFile);
+        assertEquals("Mismatched transferred size", expected.length, actual.length);
         assertArrayEquals("Mismatched transferred data", expected, actual);
     }
 

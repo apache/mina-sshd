@@ -21,6 +21,7 @@ package org.apache.sshd.contrib.common.io;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 
@@ -37,7 +38,7 @@ public class EndlessWriteFuture implements IoWriteFuture {
     }
 
     @Override
-    public IoWriteFuture verify(long timeoutMillis) throws IOException {
+    public IoWriteFuture verify(long timeoutMillis, CancelOption... options) throws IOException {
         await(timeoutMillis);
         return null;
     }
@@ -53,7 +54,7 @@ public class EndlessWriteFuture implements IoWriteFuture {
     }
 
     @Override
-    public boolean awaitUninterruptibly(long timeoutMillis) {
+    public boolean awaitUninterruptibly(long timeoutMillis, CancelOption... options) {
         try {
             Thread.sleep(timeoutMillis);
         } catch (InterruptedException e) {
@@ -64,7 +65,7 @@ public class EndlessWriteFuture implements IoWriteFuture {
     }
 
     @Override
-    public boolean await(long timeoutMillis) throws IOException {
+    public boolean await(long timeoutMillis, CancelOption... options) throws IOException {
         return awaitUninterruptibly(timeoutMillis);
     }
 

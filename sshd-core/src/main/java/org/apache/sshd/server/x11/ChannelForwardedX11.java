@@ -97,7 +97,7 @@ public class ChannelForwardedX11 extends AbstractClientChannel {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
                 "Data length exceeds int boundaries: %d", len);
         LocalWindow wLocal = getLocalWindow();
-        wLocal.check();
+        wLocal.release(len);
         // use a clone in case data buffer is re-used
         Buffer packet = ByteArrayBuffer.getCompactClone(data, off, (int) len);
         serverSession.writeBuffer(packet);

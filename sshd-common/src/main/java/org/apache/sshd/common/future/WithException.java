@@ -16,30 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.common.future;
 
-package org.apache.sshd.common.util.threads;
+/**
+ * Something that may carry a failure exception.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface WithException {
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+    /**
+     * Returns the cause of the failure.
+     *
+     * @return the {@link Throwable} of the failure, or {@code null} if not failed (yet).
+     */
+    Throwable getException();
 
-import org.apache.sshd.common.Closeable;
-
-public interface CloseableExecutorService extends ExecutorService, Closeable {
-    default boolean awaitTermination(Duration timeout) throws InterruptedException {
-        Objects.requireNonNull(timeout, "No timeout specified");
-        return awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    default void close() {
-        try {
-            Closeable.super.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+    /**
+     * Sets the exception that caused the operation to fail.
+     *
+     * @param exception The {@link Throwable} to set; must be non-{@code null}
+     */
+    void setException(Throwable exception);
 }

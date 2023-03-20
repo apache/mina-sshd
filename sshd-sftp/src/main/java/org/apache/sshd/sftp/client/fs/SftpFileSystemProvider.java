@@ -19,6 +19,8 @@
 
 package org.apache.sshd.sftp.client.fs;
 
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -518,7 +520,17 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             modes = EnumSet.of(OpenMode.Read);
         }
         SftpPath p = toSftpPath(path);
-        return p.getFileSystem().getClient().read(p.toString(), modes);
+        SftpClient client = p.getFileSystem().getClient();
+        return new FilterInputStream(client.read(p.toString(), modes)) {
+            @Override
+            public void close() throws IOException {
+                try {
+                    super.close();
+                } finally {
+                    client.close();
+                }
+            }
+        };
     }
 
     @Override
@@ -533,7 +545,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             modes.add(OpenMode.Write);
         }
         SftpPath p = toSftpPath(path);
-        return p.getFileSystem().getClient().write(p.toString(), modes);
+        SftpClient client = p.getFileSystem().getClient();
+        return new FilterOutputStream(client.write(p.toString(), modes)) {
+
+            @Override
+            public void close() throws IOException {
+                try {
+                    super.close();
+                } finally {
+                    client.close();
+                }
+            }
+        };
     }
 
     @Override
@@ -642,13 +665,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (attrs.isDirectory()) {
             createDirectory(target);
         } else {
-            CopyFileExtension copyFile = src.getFileSystem().getClient().getExtension(CopyFileExtension.class);
-            if (copyFile.isSupported()) {
-                copyFile.copyFile(source.toString(), target.toString(), false);
-            } else {
-                try (InputStream in = newInputStream(source);
-                     OutputStream os = newOutputStream(target)) {
-                    IoUtils.copy(in, os);
+            try (SftpClient client = src.getFileSystem().getClient()) {
+                CopyFileExtension copyFile = client.getExtension(CopyFileExtension.class);
+                if (copyFile.isSupported()) {
+                    copyFile.copyFile(source.toString(), target.toString(), false);
+                } else {
+                    try (InputStream in = newInputStream(source);
+                         OutputStream os = newOutputStream(target)) {
+                        IoUtils.copy(in, os);
+                    }
                 }
             }
         }

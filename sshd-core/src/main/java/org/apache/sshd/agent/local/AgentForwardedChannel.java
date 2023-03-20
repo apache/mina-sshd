@@ -101,7 +101,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             outputStream.flush();
 
             LocalWindow wLocal = getLocalWindow();
-            wLocal.check();
+            wLocal.release(reqLen);
             return waitForMessageBuffer();
         }
     }

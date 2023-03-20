@@ -23,15 +23,21 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.ConnectException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,8 +50,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,6 +70,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.SubsystemClient;
@@ -76,6 +86,10 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyEncryptionContext;
+import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -83,6 +97,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -93,6 +108,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
@@ -114,6 +130,7 @@ import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
@@ -1049,6 +1066,45 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
+    public void testPublicKeyAuthWithEncryptedKey() throws Exception {
+        // Create an encrypted private key file
+        KeyPair pair = SecurityUtils.getKeyPairGenerator("RSA").generateKeyPair();
+        Path keyFile = getTestResourcesFolder().resolve("userKey");
+        Files.deleteIfExists(keyFile);
+        OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+        options.setPassword("test-passphrase");
+        options.setCipherName("AES");
+        options.setCipherMode("CTR");
+        options.setCipherType("256");
+        try (OutputStream out = Files.newOutputStream(keyFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(pair, "test key", options, out);
+        }
+        // The server accepts only this key
+        sshd.setPublickeyAuthenticator((username, key, session) -> KeyUtils.compareKeys(key, pair.getPublic()));
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        // Configure the client to use the encrypted key file
+        client.setKeyIdentityProvider(new FileKeyPairProvider(keyFile));
+        AtomicBoolean passwordProvided = new AtomicBoolean();
+        client.setFilePasswordProvider((session, file, index) -> {
+            passwordProvided.set(true);
+            return "test-passphrase";
+        });
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            session.auth().verify(AUTH_TIMEOUT);
+            assertTrue("Password provider should have been called", passwordProvided.get());
+        } finally {
+            client.stop();
+        }
+        assertNull("Session closure not signalled", clientSessionHolder.get());
+    }
+
+    @Test
     public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
@@ -1342,11 +1398,119 @@ public class ClientTest extends BaseTestSupport {
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
+    @Test // See GH-283
+    public void testPasswordPrompts() throws Exception {
+        CoreModuleProperties.PASSWORD_PROMPTS.set(client, 1);
+
+        AtomicInteger numberOfRequests = new AtomicInteger();
+        UserAuthKeyboardInteractiveFactory auth = new UserAuthKeyboardInteractiveFactory() {
+
+            @Override
+            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
+                return new UserAuthKeyboardInteractive() {
+
+                    @Override
+                    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+                        boolean result = super.sendAuthDataRequest(session, service);
+                        if (result) {
+                            numberOfRequests.incrementAndGet();
+                        }
+                        return result;
+                    }
+                };
+            }
+        };
+
+        client.setUserAuthFactories(Collections.singletonList(auth));
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            AtomicInteger count = new AtomicInteger();
+            session.setUserInteraction(new UserInteraction() {
+                @Override
+                public boolean isInteractionAllowed(ClientSession session) {
+                    return true;
+                }
+
+                @Override
+                public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
+                    assertSame("Mismatched server version info session", session, clientSession);
+                }
+
+                @Override
+                public void welcome(ClientSession clientSession, String banner, String lang) {
+                    assertSame("Mismatched welcome session", session, clientSession);
+                }
+
+                @Override
+                public String[] interactive(
+                        ClientSession clientSession, String name, String instruction, String lang,
+                        String[] prompt, boolean[] echo) {
+                    assertSame("Mismatched interactive session", session, clientSession);
+                    int n = count.incrementAndGet();
+                    if (n == 1) {
+                        return new String[] { "bogus" };
+                    }
+                    return new String[] { getCurrentTestName() };
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
+            });
+
+            AuthFuture future = session.auth();
+            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
+            assertTrue("Authentication should have failed", future.isFailure());
+            assertEquals("Mismatched authentication attempts count", 1, count.get());
+            assertEquals("Mismatched authentication request count", 1, numberOfRequests.get());
+            count.set(0);
+            numberOfRequests.set(0);
+            // Also set a password on the session: this should be a non-interactive request, so we should have four
+            // requests, but only two prompts.
+            session.addPasswordIdentity("wrongpassword");
+            session.addPasswordIdentity("anotherwrongpassword");
+            CoreModuleProperties.PASSWORD_PROMPTS.set(client, 2);
+            future = session.auth();
+            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
+            assertFalse("Authentication should not have failed", future.isFailure());
+            assertTrue("Authentication should have succeeded", future.isSuccess());
+            assertEquals("Mismatched authentication attempts count", 2, count.get());
+            assertEquals("Mismatched authentication request count", 4, numberOfRequests.get());
+        } finally {
+            client.stop();
+        }
+
+        assertNull("Session closure not signalled", clientSessionHolder.get());
+    }
+
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final int maxPrompts = 3;
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
-        client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        AtomicInteger numberOfRequests = new AtomicInteger();
+        UserAuthKeyboardInteractiveFactory auth = new UserAuthKeyboardInteractiveFactory() {
+
+            @Override
+            public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
+                return new UserAuthKeyboardInteractive() {
+
+                    @Override
+                    protected boolean sendAuthDataRequest(ClientSession session, String service) throws Exception {
+                        boolean result = super.sendAuthDataRequest(session, service);
+                        if (result) {
+                            numberOfRequests.incrementAndGet();
+                        }
+                        return result;
+                    }
+                };
+            }
+        };
+
+        client.setUserAuthFactories(Collections.singletonList(auth));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -1388,6 +1552,7 @@ public class ClientTest extends BaseTestSupport {
             assertTrue("Authentication not completed in time", future.await(AUTH_TIMEOUT));
             assertTrue("Authentication not, marked as failure", future.isFailure());
             assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
+            assertEquals("Mismatched authentication request count", maxPrompts, numberOfRequests.get());
         } finally {
             client.stop();
         }
@@ -1485,6 +1650,216 @@ public class ClientTest extends BaseTestSupport {
         }
 
         assertNull("Session closure not signalled", clientSessionHolder.get());
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectTimeout() throws Exception {
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                // Delay a little bit to ensure that verify(1) does time out below
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                sessions.add(session);
+            }
+        });
+
+        client.start();
+        try {
+            ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
+            try {
+                future.verify(1);
+                fail("Timeout expected");
+            } catch (InterruptedIOException | SshException e) {
+                assertTrue("Expected a timeout, got " + e, e.getCause() instanceof TimeoutException);
+                ClientSession session = null;
+                try {
+                    session = future.verify(CONNECT_TIMEOUT).getSession();
+                } catch (SshException e2) {
+                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof TimeoutException);
+                }
+
+                for (Session created : sessions) {
+                    assertTrue("Created session should be closed", created.isClosed() || created.isClosing());
+                }
+
+                assertNull("Session should not set since client timed out", session);
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectCancellation() throws Exception {
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        AtomicReference<ConnectFuture> future = new AtomicReference<>();
+        AtomicReference<CancelFuture> cancellation = new AtomicReference<>();
+        CountDownLatch futureSet = new CountDownLatch(1);
+        CountDownLatch cancellationSet = new CountDownLatch(1);
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                // This runs in a different thread than the verify() calls below. ConnectFuture.cancel() will cause
+                // verify() to exit with an SshException (with a CancellationException as cause) before we even store
+                // the returned CancelFuture here. And this code here may actually run before we've even stored the
+                // ConnectFuture below. To avoid race conditions we must synchronize the threads.
+                sessions.add(session);
+                try {
+                    futureSet.await(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                cancellation.set(future.get().cancel());
+                cancellationSet.countDown();
+            }
+        });
+
+        client.start();
+        try {
+            future.set(client.connect(getCurrentTestName(), TEST_LOCALHOST, port));
+            futureSet.countDown();
+            try {
+                future.get().verify(CONNECT_TIMEOUT);
+                fail("Cancellation  expected");
+            } catch (InterruptedIOException | SshException e) {
+                assertTrue("Expected a cancellation, got " + e, e.getCause() instanceof CancellationException);
+                ClientSession session = null;
+                try {
+                    session = future.get().verify(CONNECT_TIMEOUT).getSession();
+                    fail("Cancellation expected");
+                } catch (SshException e2) {
+                    assertTrue("Expected a cancellation, got " + e2, e2.getCause() instanceof CancellationException);
+                }
+
+                cancellationSet.await(3, TimeUnit.SECONDS);
+                CancelFuture canceled = future.get().getCancellation();
+                assertSame(cancellation.get(), canceled);
+                assertTrue("Future should be done", canceled.verify(5 * 1000));
+                for (Session createdSession : sessions) {
+                    assertTrue("Created session should be closed", createdSession.isClosed() || createdSession.isClosing());
+                }
+
+                assertNull("Session should not set since client cancelled", session);
+                assertTrue("Cancellation should have been successful", canceled.isCanceled());
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectTimeoutIgnore() throws Exception {
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                // Delay a little bit to ensure that verify(1) does time out below
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                sessions.add(session);
+            }
+        });
+
+        client.start();
+        try {
+            ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
+            try {
+                future.verify(1, CancelOption.NO_CANCELLATION);
+                fail("Timeout expected");
+            } catch (InterruptedIOException | SshException e) {
+                assertTrue("Expected a timeout, got " + e, e.getCause() instanceof TimeoutException);
+                ClientSession session = future.verify(CONNECT_TIMEOUT).getSession();
+                assertNotNull("Session expected", session);
+                session.close(false);
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectNoListenerIoTimeout() throws Exception {
+        // Connect to a port where nothing listens.
+        Assume.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                sessions.add(session);
+            }
+        });
+        // I/O time-out < application time-out
+        CoreModuleProperties.IO_CONNECT_TIMEOUT.set(client, Duration.ofSeconds(1));
+        client.start();
+        try {
+            long time = System.currentTimeMillis();
+            ConnectFuture future = client.connect(getCurrentTestName(), "1.2.3.4", 33333);
+            try {
+                future.verify(120 * 1000);
+                fail("Timeout expected");
+            } catch (InterruptedIOException | SshException e) {
+                time = System.currentTimeMillis() - time;
+                assertTrue("Expected an I/O timeout, got " + e, e.getCause() instanceof ConnectException);
+                try {
+                    future.verify(CONNECT_TIMEOUT).getSession();
+                } catch (SshException e2) {
+                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof ConnectException);
+                }
+            }
+            assertTrue("No session should have been created", sessions.isEmpty());
+            assertTrue("Timeout should have occurred after 1 second", time < 10 * 1000); // Be generous
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test // see SSHD-1295
+    public void testConnectNoListenerApplicationTimeout() throws Exception {
+        // Connect to a port where nothing listens.
+        Assume.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
+        List<Session> sessions = new CopyOnWriteArrayList<>();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                sessions.add(session);
+            }
+        });
+        // I/O time-out > application time-out
+        CoreModuleProperties.IO_CONNECT_TIMEOUT.set(client, Duration.ofSeconds(20));
+        client.start();
+        try {
+            long time = System.currentTimeMillis();
+            ConnectFuture future = client.connect(getCurrentTestName(), "1.2.3.4", 33333);
+            try {
+                future.verify(1 * 1000);
+                fail("Timeout expected");
+            } catch (InterruptedIOException | SshException e) {
+                time = System.currentTimeMillis() - time;
+                assertTrue("Expected an I/O timeout, got " + e, e.getCause() instanceof TimeoutException);
+                try {
+                    future.verify(CONNECT_TIMEOUT).getSession();
+                } catch (SshException e2) {
+                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof TimeoutException);
+                }
+            }
+            assertTrue("No session should have been created", sessions.isEmpty());
+            assertTrue("Timeout should have occurred after 1 second", time < 10 * 1000); // Be generous
+        } finally {
+            client.stop();
+        }
     }
 
     @Test

@@ -35,12 +35,14 @@ public interface VerifiableFuture<T> {
     /**
      * Wait {@link Long#MAX_VALUE} msec. and verify that the operation was successful
      *
+     * @param  options     Optional {@link CancelOptions} defining the behavior on time-out or interrupt; ignored if the
+     *                     future is not {@link Cancellable}.
      * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
      * @see                #verify(long)
      */
-    default T verify() throws IOException {
-        return verify(Long.MAX_VALUE);
+    default T verify(CancelOption... options) throws IOException {
+        return verify(Long.MAX_VALUE, options);
     }
 
     /**
@@ -48,32 +50,38 @@ public interface VerifiableFuture<T> {
      *
      * @param  timeout     The number of time units to wait
      * @param  unit        The wait {@link TimeUnit}
+     * @param  options     Optional {@link CancelOptions} defining the behavior on time-out or interrupt; ignored if the
+     *                     future is not {@link Cancellable}.
      * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
      * @see                #verify(long)
      */
-    default T verify(long timeout, TimeUnit unit) throws IOException {
-        return verify(unit.toMillis(timeout));
+    default T verify(long timeout, TimeUnit unit, CancelOption... options) throws IOException {
+        return verify(unit.toMillis(timeout), options);
     }
 
     /**
      * Wait and verify that the operation was successful
      *
      * @param  timeout     The maximum duration to wait, <code>null</code> to wait forever
+     * @param  options     Optional {@link CancelOptions} defining the behavior on time-out or interrupt; ignored if the
+     *                     future is not {@link Cancellable}.
      * @return             The (same) future instance
      * @throws IOException If failed to verify successfully on time
      * @see                #verify(long)
      */
-    default T verify(Duration timeout) throws IOException {
-        return timeout != null ? verify(timeout.toMillis()) : verify();
+    default T verify(Duration timeout, CancelOption... options) throws IOException {
+        return timeout != null ? verify(timeout.toMillis(), options) : verify(options);
     }
 
     /**
      * Wait and verify that the operation was successful
      *
      * @param  timeoutMillis Wait timeout in milliseconds
+     * @param  options       Optional {@link CancelOptions} defining the behavior on time-out or interrupt; ignored if
+     *                       the future is not {@link Cancellable}.
      * @return               The (same) future instance
      * @throws IOException   If failed to verify successfully on time
      */
-    T verify(long timeoutMillis) throws IOException;
+    T verify(long timeoutMillis, CancelOption... options) throws IOException;
 }

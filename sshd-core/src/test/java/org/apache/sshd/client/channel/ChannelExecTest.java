@@ -19,17 +19,28 @@
 
 package org.apache.sshd.client.channel;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.Service;
+import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.session.AbstractServerSession;
+import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -47,8 +58,8 @@ public class ChannelExecTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @Before
+    public void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ChannelExecTest.class);
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             @Override
@@ -66,8 +77,8 @@ public class ChannelExecTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @After
+    public void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -97,6 +108,53 @@ public class ChannelExecTest extends BaseTestSupport {
                 String actual = session.executeRemoteCommand(expected + "\n");
                 assertEquals("Mismatched reply", expected, actual);
             }
+        }
+    }
+
+    @Test
+    public void testHighChannelId() throws Exception {
+        List<? extends ServiceFactory> factories = sshd.getServiceFactories();
+        List<ServiceFactory> newFactories = new ArrayList<>();
+        for (ServiceFactory f : factories) {
+            if (f instanceof ServerConnectionServiceFactory) {
+                ServerConnectionServiceFactory testFactory = new ServerConnectionServiceFactory() {
+
+                    @Override
+                    public Service create(Session session) throws IOException {
+                        AbstractServerSession abstractSession = ValidateUtils.checkInstanceOf(session,
+                                AbstractServerSession.class, "Not a server session: %s", session);
+
+                        class TestServerConnectionService extends ServerConnectionService {
+                            TestServerConnectionService(AbstractServerSession session) throws SshException {
+                                super(session);
+                            }
+
+                            @Override
+                            protected long getNextChannelId() {
+                                long id = super.getNextChannelId();
+                                return id + 100 + Integer.MAX_VALUE;
+                            }
+                        }
+
+                        ServerConnectionService service = new TestServerConnectionService(abstractSession);
+                        service.addPortForwardingEventListenerManager(this);
+                        return service;
+                    }
+                };
+                newFactories.add(testFactory);
+            } else {
+                newFactories.add(f);
+            }
+        }
+        sshd.setServiceFactories(newFactories);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            String expected = getCurrentTestName();
+            String actual = session.executeRemoteCommand(expected + '\n');
+            assertEquals("Mismatched reply", expected, actual);
         }
     }
 }

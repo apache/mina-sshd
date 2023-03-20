@@ -56,16 +56,20 @@ public final class SftpStatus {
 
     @Override
     public String toString() {
-        return "SSH_FXP_STATUS[" + SftpConstants.getStatusName(statusCode) + " ,language=" + language + " ,message=" + message
+        return "SSH_FXP_STATUS[" + SftpConstants.getStatusName(statusCode) + ", language=" + language + ", message=" + message
                + ']';
     }
 
-    public static SftpStatus parse(Buffer buffer) {
+    static SftpStatus parse(Buffer buffer) {
         int code = buffer.getInt();
         // Treat the message and language tag as optional. These fields did not exist in SFTP v0-2, and there are
         // apparently SFTP v3 servers that sometimes send SSH_FXP_STATUS without them.
         String message = buffer.available() > 0 ? buffer.getString() : null;
         String language = buffer.available() > 0 ? buffer.getString() : null;
         return new SftpStatus(code, message, language);
+    }
+
+    public static SftpStatus parse(SftpResponse response) {
+        return parse(response.getBuffer());
     }
 }

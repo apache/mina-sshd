@@ -16,43 +16,47 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-package org.apache.sshd.common.future;
+package org.apache.sshd.common.io;
 
 import java.io.IOException;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CancelOption;
+import org.apache.sshd.common.future.DefaultCancellableSshFuture;
 
 /**
+ * A default implementation of an {@link IoConnectFuture}.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultKeyExchangeFuture
-        extends DefaultVerifiableSshFuture<KeyExchangeFuture>
-        implements KeyExchangeFuture {
-    public DefaultKeyExchangeFuture(Object id, Object lock) {
+public class DefaultIoConnectFuture extends DefaultCancellableSshFuture<IoConnectFuture> implements IoConnectFuture {
+    public DefaultIoConnectFuture(Object id, Object lock) {
         super(id, lock);
     }
 
     @Override
-    public KeyExchangeFuture verify(long timeoutMillis, CancelOption... options) throws IOException {
-        Boolean result = verifyResult(Boolean.class, timeoutMillis, options);
-        if (!result) {
-            throw formatExceptionMessage(
-                    SshException::new,
-                    "Key exchange failed while waiting %d msec.",
-                    timeoutMillis);
-        }
-
-        return this;
+    public IoSession getSession() {
+        Object v = getValue();
+        return (v instanceof IoSession) ? (IoSession) v : null;
     }
 
     @Override
-    public Throwable getException() {
+    public boolean isConnected() {
         Object v = getValue();
-        if (v instanceof Throwable) {
-            return (Throwable) v;
-        } else {
-            return null;
+        return v instanceof IoSession;
+    }
+
+    @Override
+    public void setSession(IoSession session) {
+        setValue(session);
+    }
+
+    @Override
+    public IoConnectFuture verify(long timeoutMillis, CancelOption... options) throws IOException {
+        IoSession session = verifyResult(IoSession.class, timeoutMillis, options);
+        if (session == null) {
+            throw formatExceptionMessage(SshException::new, "No connection established within %d msec.", timeoutMillis);
         }
+        return this;
     }
 }

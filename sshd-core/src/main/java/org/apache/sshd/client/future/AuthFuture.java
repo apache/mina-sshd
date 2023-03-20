@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.future;
 
+import org.apache.sshd.common.future.Cancellable;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.VerifiableFuture;
 
@@ -26,14 +27,7 @@ import org.apache.sshd.common.future.VerifiableFuture;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<AuthFuture> {
-    /**
-     * Returns the cause of the authentication failure.
-     *
-     * @return {@code null} if the authentication operation is not finished yet, or if the connection attempt is
-     *         successful (use {@link #isDone()} to distinguish between the two).
-     */
-    Throwable getException();
+public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<AuthFuture>, Cancellable {
 
     /**
      * @return <code>true</code> if the authentication operation is finished successfully. <B>Note:</B> calling this
@@ -50,11 +44,6 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
     boolean isFailure();
 
     /**
-     * @return {@code true} if the connect operation has been canceled by {@link #cancel()} method.
-     */
-    boolean isCanceled();
-
-    /**
      * Notifies that the session has been authenticated. This method is invoked by SSHD internally. Please do not call
      * this method directly.
      *
@@ -63,15 +52,27 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
     void setAuthed(boolean authed);
 
     /**
-     * Sets the exception caught due to connection failure and notifies all threads waiting for this future. This method
-     * is invoked by SSHD internally. Please do not call this method directly.
+     * Enables or disables cancellation of this {@link AuthFuture}.
+     * <p>
+     * This is a framework method; do not call directly.
+     * </p>
      *
-     * @param exception The caught {@link Throwable}
+     * @param cancellable whether this future is currently cancellable
      */
-    void setException(Throwable exception);
+    void setCancellable(boolean cancellable);
 
     /**
-     * Cancels the authentication attempt and notifies all threads waiting for this future.
+     * Tells whether {@link #cancel()} was called on this {@link AuthFuture}.
+     * <p>
+     * This is different from {@link #isCanceled()}. Cancelling an on-going authentication may not be possible;
+     * {@link #cancel()} is only a <em>request</em> to cancel the authentication. That request may not be honored and
+     * the {@link org.apache.sshd.common.future.CancelFuture CancelFuture} may actually be
+     * {@link org.apache.sshd.common.future.CancelFuture#isCanceled() isCanceled()} {@code == false}.
+     * {@link AuthFuture}.{@link isCanceled()} is then {@code false}, too.
+     * </p>
+     *
+     * @return {@code true} if {@link #cancel()} was called, {@code false} otherwise
      */
-    void cancel();
+    boolean wasCanceled();
+
 }

@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.agent.SshAgentFactory;
@@ -78,15 +79,20 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
+import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.future.Cancellable;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.MultiKeyIdentityProvider;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -566,11 +572,34 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
             HostConfigEntry jump = jumps.remove(0);
             ConnectFuture f1 = doConnect(jump, jumps, context, null);
+            AtomicReference<Cancellable> toCancel = new AtomicReference<>(f1);
+            connectFuture.addListener(c -> {
+                if (!c.isCanceled()) {
+                    return;
+                }
+                Cancellable inner = toCancel.get();
+                if (inner == null) {
+                    return;
+                }
+                CancelFuture cancellation = inner.cancel();
+                if (cancellation == null) {
+                    return;
+                }
+                cancellation.addListener(cf -> {
+                    if (cf.isDone()) {
+                        c.getCancellation().setCanceled();
+                    }
+                });
+            });
             f1.addListener(f2 -> {
                 if (f2.isConnected()) {
                     ClientSession proxySession = f2.getClientSession();
                     try {
+                        if (connectFuture.isCanceled()) {
+                            proxySession.close(true);
+                        }
                         AuthFuture auth = proxySession.auth();
+                        toCancel.set(auth);
                         auth.addListener(f3 -> {
                             if (f3.isSuccess()) {
                                 try {
@@ -581,6 +610,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                     SshdSocketAddress bound = tracker.getBoundAddress();
                                     ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(),
                                             context, localAddress, keys, hostConfig);
+                                    toCancel.set(f4);
+                                    if (connectFuture.isCanceled()) {
+                                        f4.cancel();
+                                    }
                                     f4.addListener(f5 -> {
                                         if (f5.isConnected()) {
                                             ClientSession clientSession = f5.getClientSession();
@@ -630,6 +663,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
                 connectFuture, username, targetAddress, identities, hostConfig);
         IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
+        connectFuture.addListener(c -> {
+            if (c.isCanceled()) {
+                connectingFuture.cancel();
+            }
+        });
         connectingFuture.addListener(listener);
         return connectFuture;
     }
@@ -696,7 +734,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             @SuppressWarnings("synthetic-access")
             public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
-                    connectFuture.cancel();
+                    CancelFuture cancellation = connectFuture.cancel();
+                    if (cancellation != null) {
+                        future.getCancellation().addListener(f -> cancellation.setCanceled(f.getBackTrace()));
+                    }
                     return;
                 }
 
@@ -742,14 +783,58 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         if (useDefaultIdentities) {
             setupDefaultSessionIdentities(session, identities);
+        } else if (identities == null) {
+            session.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
         } else {
-            session.setKeyIdentityProvider(
-                    (identities == null)
-                            ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-                            : identities);
+            session.setKeyIdentityProvider(ensureFilePasswordProvider(identities));
         }
 
         connectFuture.setSession(session);
+        if (session != connectFuture.getSession()) {
+            // Must have been canceled before
+            try {
+                session.close(true);
+            } finally {
+                CancelFuture cancellation = connectFuture.cancel();
+                if (cancellation != null) {
+                    cancellation.setCanceled();
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets this client's {@link FilePasswordProvider} on the {@link KeyIdentityProvider} if it is an
+     * {@link AbstractResourceKeyPairProvider} or implements {@link FilePasswordProviderManager} and doesn't have one
+     * yet. If the given {@code identities} is a {@link MultiKeyIdentityProvider}, the wrapped identity providers are
+     * set up.
+     *
+     * @param  identities {@link KeyIdentityProvider} to set up
+     * @return            a {@link KeyIdentityProvider} configured with a {@link FilePasswordProvider}
+     * @see               #getFilePasswordProvider()
+     */
+    protected KeyIdentityProvider ensureFilePasswordProvider(KeyIdentityProvider identities) {
+        if (identities instanceof AbstractResourceKeyPairProvider<?>) {
+            AbstractResourceKeyPairProvider<?> keyProvider = (AbstractResourceKeyPairProvider<?>) identities;
+            if (keyProvider.getPasswordFinder() == null) {
+                FilePasswordProvider passwordProvider = getFilePasswordProvider();
+                if (passwordProvider != null) {
+                    keyProvider.setPasswordFinder(passwordProvider);
+                }
+            }
+        } else if (identities instanceof FilePasswordProviderManager) {
+            FilePasswordProviderManager keyProvider = (FilePasswordProviderManager) identities;
+            if (keyProvider.getFilePasswordProvider() == null) {
+                FilePasswordProvider passwordProvider = getFilePasswordProvider();
+                if (passwordProvider != null) {
+                    keyProvider.setFilePasswordProvider(passwordProvider);
+                }
+            }
+        } else if (identities instanceof MultiKeyIdentityProvider) {
+            MultiKeyIdentityProvider multiProvider = (MultiKeyIdentityProvider) identities;
+            multiProvider.getProviders().forEach(this::ensureFilePasswordProvider);
+        }
+        return identities;
     }
 
     protected void setupDefaultSessionIdentities(
@@ -765,8 +850,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         }
 
-        // Prefer the extra identities to come first since they were probably indicate by the host-config entry
+        // Prefer the extra identities to come first since they were probably indicated by the host-config entry
         KeyIdentityProvider kpEffective = KeyIdentityProvider.resolveKeyIdentityProvider(extraIdentities, kpSession);
+        kpEffective = ensureFilePasswordProvider(kpEffective);
         if (!UnaryEquator.isSameReference(kpSession, kpEffective)) {
             if (debugEnabled) {
                 log.debug("setupDefaultSessionIdentities({}) key identity provider enhanced", session);
