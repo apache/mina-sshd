@@ -106,6 +106,10 @@
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <groovy.version>3.0.11</groovy.version>
         <bouncycastle.version>1.72</bouncycastle.version>
+            <!-- NOTE: upgrading beyond this version causes
+            
+            Execution verify-style of goal org.apache.maven.plugins:maven-checkstyle-plugin:3.1.2:check failed.: NullPointerException
+            -->
         <slf4j.version>1.7.32</slf4j.version>
         <slf4j.upper.bound>3</slf4j.upper.bound>
         <logback.version>1.2.11</logback.version>
