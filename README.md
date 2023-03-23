@@ -232,3 +232,5 @@ mvn -Pquick clean install
 ## [TCP/IP Port Forwarding](./docs/technical/tcpip-forwarding.md)
 
 ## [Global Requests](./docs/technical/global_requests.md)
+
+## [Android support](./docs/android.md)

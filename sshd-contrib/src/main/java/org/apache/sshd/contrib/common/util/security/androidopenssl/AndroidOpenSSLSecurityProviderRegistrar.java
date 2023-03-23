@@ -21,6 +21,7 @@ package org.apache.sshd.contrib.common.util.security.androidopenssl;
 import java.security.Provider;
 import java.security.Security;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 
 /**
@@ -42,7 +43,7 @@ public class AndroidOpenSSLSecurityProviderRegistrar extends AbstractSecurityPro
     public boolean isSupported() {
         // Check that we are running on Android
         // https://developer.android.com/reference/java/lang/System#getProperties()
-        return "The Android Project".equals(System.getProperty("java.specification.vendor"));
+        return OsUtils.isAndroid();
     }
 
     @Override

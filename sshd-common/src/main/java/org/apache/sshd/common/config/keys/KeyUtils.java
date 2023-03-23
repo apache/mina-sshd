@@ -260,6 +260,18 @@ public final class KeyUtils {
             return null;
         }
 
+        /*
+         * Android permission are not really consistent with standard Linux ones since the device is
+         * a "single" user O/S but with each application being a different "user". We therefore assume
+         * that if the application has access to a file, then it is good enough since there is really
+         * only one user, and we don't have to worry about multi-user access. Furthermore, the SE Linux
+         * security available on Android seems to be enough of a safeguard against inadvertent or even
+         * malicious access.
+         */
+        if (OsUtils.isAndroid()) {
+            return null;
+        }
+
         Collection<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
         if (GenericUtils.isEmpty(perms)) {
             return null;

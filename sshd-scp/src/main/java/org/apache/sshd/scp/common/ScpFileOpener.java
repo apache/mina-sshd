@@ -20,6 +20,7 @@
 package org.apache.sshd.scp.common;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,7 +32,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -132,8 +133,10 @@ public interface ScpFileOpener {
         }
 
         if (basedir == null) {
-            String cwdLocal = System.getProperty("user.dir");
-            Path cwdPath = Paths.get(cwdLocal);
+            Path cwdPath = OsUtils.getCurrentWorkingDirectory();
+            if (cwdPath == null) {
+                throw new FileNotFoundException("No CWD value available");
+            }
             basedir = cwdPath.toAbsolutePath();
         }
 

@@ -140,7 +140,9 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             ValidateUtils.checkTrue(map.put(name, e) == null, "Multiple commands named '%s'", name);
         }
         commandsMap = Collections.unmodifiableMap(map);
-        cwdLocal = System.getProperty("user.dir");
+
+        Path cwdPath = OsUtils.getCurrentWorkingDirectory();
+        cwdLocal = Objects.toString(cwdPath, null);
     }
 
     @Override

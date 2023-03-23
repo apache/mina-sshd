@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -46,6 +48,10 @@ public final class PathUtils {
     public static final UnaryEquator<Path> EQ_CASE_SENSITIVE_FILENAME
             = (p1, p2) -> BY_CASE_SENSITIVE_FILENAME.compare(p1, p2) == 0;
 
+    public static final char HOME_TILDE_CHAR = '~';
+
+    private static final AtomicReference<Supplier<? extends Path>> USER_HOME_RESOLVER_HOLDER = new AtomicReference<>();
+
     private static final class LazyDefaultUserHomeFolderHolder {
         private static final Path PATH
                 = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
@@ -56,8 +62,6 @@ public final class PathUtils {
             throw new UnsupportedOperationException("No instance allowed");
         }
     }
-
-    public static final char HOME_TILDE_CHAR = '~';
 
     /**
      * Private Constructor
@@ -118,10 +122,28 @@ public final class PathUtils {
 
     /**
      * @return The {@link Path} to the currently running user home
+     * @see    #setUserHomeFolderResolver(Supplier)
      */
     @SuppressWarnings("synthetic-access")
     public static Path getUserHomeFolder() {
-        return LazyDefaultUserHomeFolderHolder.PATH;
+        Supplier<? extends Path> resolver;
+        synchronized (USER_HOME_RESOLVER_HOLDER) {
+            resolver = USER_HOME_RESOLVER_HOLDER.get();
+        }
+
+        return (resolver == null) ? LazyDefaultUserHomeFolderHolder.PATH : resolver.get();
+    }
+
+    /**
+     * Set the reported value from {@link #getUserHomeFolder()}
+     *
+     * @param resolver The {@link Path} provider to report - if {@code null} then &quot;user.home&quot; system property
+     *                 will be used
+     */
+    public static void setUserHomeFolderResolver(Supplier<? extends Path> resolver) {
+        synchronized (USER_HOME_RESOLVER_HOLDER) {
+            USER_HOME_RESOLVER_HOLDER.set(resolver);
+        }
     }
 
     public static StringBuilder appendUserHome(StringBuilder sb) {

@@ -117,17 +117,22 @@ public final class ExceptionUtils {
             if (target != null) {
                 return peelException(target);
             }
-        } else if (t instanceof ReflectionException) {
-            Throwable target = ((ReflectionException) t).getTargetException();
-            if (target != null) {
-                return peelException(target);
-            }
         } else if (t instanceof ExecutionException) {
             return peelException(resolveExceptionCause(t));
-        } else if (t instanceof MBeanException) {
-            Throwable target = ((MBeanException) t).getTargetException();
-            if (target != null) {
-                return peelException(target);
+        }
+
+        // Android does not have these classes
+        if (!OsUtils.isAndroid()) {
+            if (t instanceof ReflectionException) {
+                Throwable target = ((ReflectionException) t).getTargetException();
+                if (target != null) {
+                    return peelException(target);
+                }
+            } else if (t instanceof MBeanException) {
+                Throwable target = ((MBeanException) t).getTargetException();
+                if (target != null) {
+                    return peelException(target);
+                }
             }
         }
 
@@ -155,5 +160,4 @@ public final class ExceptionUtils {
     public static RuntimeException toRuntimeException(Throwable t) {
         return toRuntimeException(t, true);
     }
-
 }

@@ -18,10 +18,15 @@
  */
 package org.apache.sshd.common.util;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Operating system dependent utility methods.
@@ -48,6 +53,22 @@ public final class OsUtils {
      */
     public static final String OS_TYPE_OVERRIDE_PROP = "org.apache.sshd.osType";
 
+    /**
+     * Property that can be used to override the reported value from {@link #isAndroid()}. If not set then
+     * {@link #ANDROID_DETECTION_PROPERTIES} are used to determine its value. Otherwise, it must contain the string
+     * &quot;android&quot; (case-insensitive)
+     *
+     * @see #ANDROID_PROPERTY_VALUE_MATCHER
+     */
+    public static final String ANDROID_MODE_OVERRIDE_PROP = "org.apache.sshd.androidMode";
+
+    /**
+     * Property that can be used to override the reported value from {@link #isDalvikMachine()}. If not set then
+     * {@link #DALVIK_DETECTION_PROPERTIES} are used to determine its value. Otherwise, it must contain the string
+     * &quot;dalvik&quot; (case-insensitive)
+     */
+    public static final String DALVIK_MACHINE_OVERRIDE_PROP = "org.apache.sshd.dalvikMachine";
+
     public static final String WINDOWS_SHELL_COMMAND_NAME = "cmd.exe";
     public static final String LINUX_SHELL_COMMAND_NAME = "/bin/sh";
 
@@ -58,16 +79,100 @@ public final class OsUtils {
     public static final List<String> WINDOWS_COMMAND
             = Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
 
+    /**
+     * System properties consulted in order to detect {@link #isAndroid() Android O/S}.
+     *
+     * @see <A HREF="https://developer.android.com/reference/java/lang/System#getProperties()">Android Developer</A>
+     */
+    public static final List<String> ANDROID_DETECTION_PROPERTIES
+            = Collections.unmodifiableList(
+                    Arrays.asList(
+                            "java.vendor",
+                            "java.specification.vendor",
+                            "java.vm.vendor",
+                            "java.vm.specification.vendor"));
+
+    public static final Predicate<String> ANDROID_PROPERTY_VALUE_MATCHER
+            = v -> GenericUtils.trimToEmpty(v).toLowerCase().contains("android");
+
+    /**
+     * System properties consulted in order to detect {@link #isDalvikMachine() Dalvik machine}.
+     *
+     * @see <A HREF="https://developer.android.com/reference/java/lang/System#getProperties()">Android Developer</A>
+     */
+    public static final List<String> DALVIK_DETECTION_PROPERTIES
+            = Collections.unmodifiableList(
+                    Arrays.asList(
+                            "java.specification.name",
+                            "java.vm.name",
+                            "java.vm.specification.name"));
+
+    public static final Predicate<String> DALVIK_PROPERTY_VALUE_MATCHER
+            = v -> GenericUtils.trimToEmpty(v).toLowerCase().contains("dalvik");
+
     private static final AtomicReference<String> CURRENT_USER_HOLDER = new AtomicReference<>(null);
     private static final AtomicReference<VersionInfo> JAVA_VERSION_HOLDER = new AtomicReference<>(null);
     private static final AtomicReference<String> OS_TYPE_HOLDER = new AtomicReference<>(null);
+
+    private static final AtomicReference<Boolean> ANDROID_HOLDER = new AtomicReference<>(null);
+    private static final AtomicReference<Boolean> DALVIK_HOLDER = new AtomicReference<>(null);
+
+    private static final AtomicReference<Supplier<? extends Path>> CWD_PROVIDER_HOLDER = new AtomicReference<>();
 
     private OsUtils() {
         throw new UnsupportedOperationException("No instance allowed");
     }
 
     /**
-     * @return true if the host is a UNIX system (and not Windows).
+     * @return {@code true} if currently running on Android. <U>Note:</U> {@link #isUNIX()} is also probably
+     *         {@code true} as well, so special care must be taken in code that consults these values
+     * @see    #ANDROID_DETECTION_PROPERTIES
+     * @see    #ANDROID_MODE_OVERRIDE_PROP
+     * @see    #ANDROID_PROPERTY_VALUE_MATCHER
+     */
+    public static boolean isAndroid() {
+        return resolveAndroidSettingFlag(
+                ANDROID_HOLDER, ANDROID_MODE_OVERRIDE_PROP, ANDROID_DETECTION_PROPERTIES, ANDROID_PROPERTY_VALUE_MATCHER);
+    }
+
+    /**
+     * Override the value returned by {@link #isAndroid()} programmatically
+     *
+     * @param value Value to set if {@code null} then value is auto-detected
+     */
+    public static void setAndroid(Boolean value) {
+        synchronized (ANDROID_HOLDER) {
+            ANDROID_HOLDER.set(value);
+        }
+    }
+
+    /**
+     * @return {@code true} if currently running on a Dalvik machine. <U>Note:</U> {@link #isUNIX()} and/or
+     *         {@link #isAndroid()} are also probably {@code true} as well, so special care must be taken in code that
+     *         consults these values
+     * @see    #DALVIK_DETECTION_PROPERTIES
+     * @see    #DALVIK_MACHINE_OVERRIDE_PROP
+     * @see    #DALVIK_PROPERTY_VALUE_MATCHER
+     */
+    public static boolean isDalvikMachine() {
+        return resolveAndroidSettingFlag(
+                DALVIK_HOLDER, DALVIK_MACHINE_OVERRIDE_PROP, DALVIK_DETECTION_PROPERTIES, DALVIK_PROPERTY_VALUE_MATCHER);
+    }
+
+    /**
+     * Override the value returned by {@link #isDalvikMachine()} programmatically
+     *
+     * @param value Value to set if {@code null} then value is auto-detected
+     */
+    public static void setDalvikMachine(Boolean value) {
+        synchronized (DALVIK_HOLDER) {
+            DALVIK_HOLDER.set(value);
+        }
+    }
+
+    /**
+     * @return true if the host is a UNIX system (and not Windows). <U>Note:</U> this does <B>not</B> preclude
+     *         {@link #isAndroid()} or {@link #isDalvikMachine()} from being {@code true} as well.
      */
     public static boolean isUNIX() {
         return !isWin32() && !isOSX();
@@ -101,6 +206,34 @@ public final class OsUtils {
         synchronized (OS_TYPE_HOLDER) {
             OS_TYPE_HOLDER.set(os);
         }
+    }
+
+    private static boolean resolveAndroidSettingFlag(
+            AtomicReference<Boolean> flagHolder, String overrideProp,
+            Collection<String> detectionProps, Predicate<? super String> detector) {
+        synchronized (flagHolder) {
+            Boolean value = flagHolder.get();
+            if (value != null) {
+                return value.booleanValue();
+            }
+
+            String propValue = System.getProperty(overrideProp);
+            if (detector.test(propValue)) {
+                flagHolder.set(Boolean.TRUE);
+                return true;
+            }
+
+            for (String p : detectionProps) {
+                if (detector.test(propValue)) {
+                    flagHolder.set(Boolean.TRUE);
+                    return true;
+                }
+            }
+
+            flagHolder.set(Boolean.FALSE);
+        }
+
+        return false;
     }
 
     /**
@@ -143,13 +276,49 @@ public final class OsUtils {
     }
 
     /**
+     * @return The (C)urrent (W)orking (D)irectory {@link Path} - {@code null} if cannot resolve it. Resolution occurs
+     *         as follows:
+     *         <UL>
+     *         <LI>Consult any currently registered {@link #setCurrentWorkingDirectoryResolver(Supplier) resolver}.</LI>
+     *
+     *         <LI>If no resolver registered, then &quot;user.dir&quot; system property is consulted.</LI>
+     *         </UL>
+     * @see    #setCurrentWorkingDirectoryResolver(Supplier)
+     */
+    public static Path getCurrentWorkingDirectory() {
+        Supplier<? extends Path> cwdProvider;
+        synchronized (CWD_PROVIDER_HOLDER) {
+            cwdProvider = CWD_PROVIDER_HOLDER.get();
+        }
+
+        if (cwdProvider != null) {
+            return cwdProvider.get();
+        }
+
+        String cwdLocal = System.getProperty("user.dir");
+        return GenericUtils.isBlank(cwdLocal) ? null : Paths.get(cwdLocal);
+    }
+
+    /**
+     * Allows the user to &quot;plug-in&quot; a resolver for the {@link #getCurrentWorkingDirectory()} method
+     *
+     * @param cwdProvider The {@link Supplier} of the (C)urrent (W)orking (D)irectory {@link Path} - if {@code null}
+     *                    then &quot;user.dir&quot; system property is consulted
+     */
+    public static void setCurrentWorkingDirectoryResolver(Supplier<? extends Path> cwdProvider) {
+        synchronized (CWD_PROVIDER_HOLDER) {
+            CWD_PROVIDER_HOLDER.set(cwdProvider);
+        }
+    }
+
+    /**
      * Get current user name
      *
      * @return Current user
      * @see    #CURRENT_USER_OVERRIDE_PROP
      */
     public static String getCurrentUser() {
-        String username = null;
+        String username;
         synchronized (CURRENT_USER_HOLDER) {
             username = CURRENT_USER_HOLDER.get();
             if (username != null) { // have we already resolved it ?

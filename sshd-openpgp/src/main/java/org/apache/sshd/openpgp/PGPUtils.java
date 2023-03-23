@@ -26,6 +26,8 @@ import java.util.EnumSet;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -62,6 +64,8 @@ public final class PGPUtils {
 
     public static final Set<CompressionAlgorithm> COMPRESSIONS
             = Collections.unmodifiableSet(EnumSet.allOf(CompressionAlgorithm.class));
+
+    private static final AtomicReference<Supplier<? extends Path>> DEFAULT_PGP_PATH_RESOLVER_HOLDER = new AtomicReference<>();
 
     private PGPUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -174,7 +178,22 @@ public final class PGPUtils {
      */
     @SuppressWarnings("synthetic-access")
     public static Path getDefaultPgpFolderPath() {
-        return LazyDefaultPgpKeysFolderHolder.PATH;
+        Supplier<? extends Path> resolver;
+        synchronized (DEFAULT_PGP_PATH_RESOLVER_HOLDER) {
+            resolver = DEFAULT_PGP_PATH_RESOLVER_HOLDER.get();
+        }
+
+        return (resolver == null) ? LazyDefaultPgpKeysFolderHolder.PATH : resolver.get();
     }
 
+    /**
+     * Set the reported value from {@link #getDefaultPgpFolderPath()}
+     *
+     * @param resolver The {@link Path} provider to report - if {@code null} then O/S default value will be used
+     */
+    public static void setDefaultPgpFolderPathResolver(Supplier<? extends Path> resolver) {
+        synchronized (DEFAULT_PGP_PATH_RESOLVER_HOLDER) {
+            DEFAULT_PGP_PATH_RESOLVER_HOLDER.set(resolver);
+        }
+    }
 }

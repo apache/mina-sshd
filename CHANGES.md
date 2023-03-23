@@ -36,13 +36,11 @@
 * [GH-300](https://github.com/apache/mina-sshd/issues/300) Read the channel id in `SSH_MSG_CHANNEL_OPEN_CONFIRMATION` as unsigned int.
 * [GH-313](https://github.com/apache/mina-sshd/issues/313) Log exceptions in the SFTP subsystem before sending a failure status reply.
 * [GH-325](https://github.com/apache/mina-sshd/issues/325) SftpFileSystemProvider: fix deletions of symlinks through Files.delete().
-
-
+* [GH-322](https://github.com/apache/mina-sshd/issues/322) Add basic Android O/S awareness.
 * [SSHD-1295](https://issues.apache.org/jira/browse/SSHD-1295) Fix cancellation of futures and add options to cancel futures on time-outs.
 * [SSHD-1315](https://issues.apache.org/jira/browse/SSHD-1315) Do not log sensitive data at log level `TRACE`.
 * [SSHD-1316](https://issues.apache.org/jira/browse/SSHD-1316) Possible OOM in `ChannelPipedInputStream` (fix channel window).
 * [SSHD-1319](https://issues.apache.org/jira/browse/SSHD-1319) Use position in `SftpRemotePathChannel.transferFrom()`.
-
 
 ## Major code re-factoring
 
