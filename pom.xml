@@ -1143,6 +1143,14 @@
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
                     <version>1.6.2</version>
+                    <dependencies>
+                        <!-- Must override dependency to build on Maven 3.9.x, even though not declared (see MNG-6965) -->
+                        <dependency>
+                            <groupId>org.codehaus.plexus</groupId>
+                            <artifactId>plexus-utils</artifactId>
+                            <version>3.0.24</version>
+                        </dependency>
+                    </dependencies>
                     <configuration>
                         <lineEnding>LF</lineEnding>
                         <groups>java.,javax.,org.w3c.,org.xml.,junit.</groups>
