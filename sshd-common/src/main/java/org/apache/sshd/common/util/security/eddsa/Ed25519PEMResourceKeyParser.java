@@ -53,12 +53,19 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Ed25519PEMResourceKeyParser extends AbstractPEMResourceKeyPairParser {
-    // TODO find out how the markers really look like for now provide something
+
+    // From an early draft of RFC 8410 (https://datatracker.ietf.org/doc/html/draft-ietf-curdle-pkix-eddsa-00).
+    // The final RFC 8410 dropped the "EDDSA" and moved to PKCS#8 using just "BEGIN PRIVATE KEY".
     public static final String BEGIN_MARKER = "BEGIN EDDSA PRIVATE KEY";
-    public static final List<String> BEGINNERS = Collections.unmodifiableList(Collections.singletonList(BEGIN_MARKER));
+
+    // Some (older) OpenSSL versions used this if "traditional" (RFC 1421) PEM format was chosen:
+    public static final String BEGIN_ED25519_MARKER = "BEGIN ED25519 PRIVATE KEY";
+
+    public static final List<String> BEGINNERS = GenericUtils.unmodifiableList(BEGIN_MARKER, BEGIN_ED25519_MARKER);
 
     public static final String END_MARKER = "END EDDSA PRIVATE KEY";
-    public static final List<String> ENDERS = Collections.unmodifiableList(Collections.singletonList(END_MARKER));
+    public static final String END_ED25519_MARKER = "END ED25519 PRIVATE KEY";
+    public static final List<String> ENDERS = GenericUtils.unmodifiableList(END_MARKER, END_ED25519_MARKER);
 
     /**
      * @see <A HREF="https://tools.ietf.org/html/rfc8410#section-3">RFC8412 section 3</A>

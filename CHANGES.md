@@ -137,6 +137,11 @@ appropriate for the precise use case.
   (RFC 5958, EncryptedPrivateKeyInfo) has been added. Such PEM files start with
   "-----BEGIN ENCRYPTED PRIVATE KEY-----". Reading and decrypting keys from such
   files requires Bouncy Castle to be present.
+* Support reading SSH keys from PEM files starting with "-----BEGIN ED25519 PRIVATE KEY-----".
+  Some OpenSSL versions could produce such files when the user specified
+  "traditional" PEM output. (Encrypted keys written using RFC 1421 encryption.)
+  Modern OpenSSL refuses to create such PEM files; it always uses PKCS#8
+  (RFC 5958) style PEM files for EdDSA keys.
 * `CoreModuleProperties.PASSWORD_PROMPTS` is now also used for password
   authentication. Previous versions used it only for keyboard-interactive
   authentication. The semantics has been clarified to be the equivalent

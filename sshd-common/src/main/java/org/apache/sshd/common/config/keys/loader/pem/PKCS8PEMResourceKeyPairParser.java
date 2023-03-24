@@ -62,11 +62,11 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
 
     public static final String BEGIN_MARKER = "BEGIN PRIVATE KEY";
     public static final String BEGIN_ENCRYPTED_MARKER = "BEGIN ENCRYPTED PRIVATE KEY";
-    public static final List<String> BEGINNERS = GenericUtils.asList(BEGIN_MARKER, BEGIN_ENCRYPTED_MARKER);
+    public static final List<String> BEGINNERS = GenericUtils.unmodifiableList(BEGIN_MARKER, BEGIN_ENCRYPTED_MARKER);
 
     public static final String END_MARKER = "END PRIVATE KEY";
     public static final String END_ENCRYPTED_MARKER = "END ENCRYPTED PRIVATE KEY";
-    public static final List<String> ENDERS = GenericUtils.asList(END_MARKER, END_ENCRYPTED_MARKER);
+    public static final List<String> ENDERS = GenericUtils.unmodifiableList(END_MARKER, END_ENCRYPTED_MARKER);
 
     public static final String PKCS8_FORMAT = "PKCS#8";
 
@@ -99,7 +99,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         if (passwordProvider == null) {
             throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
         }
-        // This requires Bouncy Castle due to various bug regarding PBES2 in various Java versions.
+        // This requires Bouncy Castle due to various bugs regarding PBES2 in various Java versions.
         //
         // See https://stackoverflow.com/questions/66286457/load-an-encrypted-pcks8-pem-private-key-in-java
         Decryptor decryptor = SecurityUtils.getBouncycastleEncryptedPrivateKeyInfoDecryptor();
