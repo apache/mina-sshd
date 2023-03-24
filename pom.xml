@@ -83,7 +83,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2022-11-09T14:17:46Z</project.build.outputTimestamp>
 
-        <!-- NOTE: actual value updated by gmavenplus-plugin on initialization phase -->
+        <!-- NOTE: actual workspace root dir value updated by gmavenplus-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
 
         <java.major.version>1</java.major.version>
@@ -106,7 +106,7 @@
         <min.required.maven.version>3.5.0</min.required.maven.version>
         <groovy.version>3.0.11</groovy.version>
         <bouncycastle.version>1.72</bouncycastle.version>
-            <!-- NOTE: upgrading beyond this version causes
+            <!-- NOTE: upgrading slf4j beyond this version causes
             
             Execution verify-style of goal org.apache.maven.plugins:maven-checkstyle-plugin:3.1.2:check failed.: NullPointerException
             -->
@@ -114,7 +114,7 @@
         <slf4j.upper.bound>3</slf4j.upper.bound>
         <logback.version>1.2.11</logback.version>
         <spring.version>5.3.20</spring.version>
-            <!-- NOTE: upgrading to 6.x requires Java 11 -->
+            <!-- NOTE: upgrading jGit to 6.x requires Java 11 -->
         <jgit.version>5.13.0.202109080827-r</jgit.version>
         <junit.version>4.13.2</junit.version>
         <bytebuddy.version>1.12.6</bytebuddy.version>
