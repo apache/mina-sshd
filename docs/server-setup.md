@@ -45,8 +45,7 @@ implementation that you can use if you want. This implementation will create a p
 so it's mostly useful to launch the OS native shell. E.g.,
 
 ```java
-sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
-
+sshServer.setShellFactory(new ProcessShellFactory("/bin/sh", "-i", "-l" ));
 ```
 
 There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note
