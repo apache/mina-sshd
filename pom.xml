@@ -1466,6 +1466,7 @@
                         <configuration>
                             <supportIncrementalBuild>true</supportIncrementalBuild>
                             <instructions>
+                                <Automatic-Module-Name>${project.groupId}.${project.artifactId}</Automatic-Module-Name>
                                 <Import-Package><![CDATA[
                                   org.apache.sshd*;version="$<range;[===,=+);$<maven_version;${project.version}>>",
                                   org.slf4j*;version="$<range;[==,${slf4j.upper.bound})>",
