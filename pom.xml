@@ -1466,7 +1466,13 @@
                         <configuration>
                             <supportIncrementalBuild>true</supportIncrementalBuild>
                             <instructions>
-                                <Automatic-Module-Name>${project.groupId}.${project.artifactId}</Automatic-Module-Name>
+                                <!--
+                                    maven-symbolicname is the Bundle-SymbolicName as computed by maven-bundle-plugin, exposed as
+                                    a bnd variable. With the default behavior, we get "org.apache.sshd.xxx" instead of
+                                    "org.apache.sshd.sshd-xxxx", which ${project.groupId}.${project.artifactId} would give.
+                                    See https://felix.apache.org/documentation/subprojects/apache-felix-maven-bundle-plugin-bnd.html
+                                -->
+                                <Automatic-Module-Name>$(maven-symbolicname)</Automatic-Module-Name>
                                 <Import-Package><![CDATA[
                                   org.apache.sshd*;version="$<range;[===,=+);$<maven_version;${project.version}>>",
                                   org.slf4j*;version="$<range;[==,${slf4j.upper.bound})>",
