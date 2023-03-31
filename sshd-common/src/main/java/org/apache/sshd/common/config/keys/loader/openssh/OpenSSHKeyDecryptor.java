@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.session.SessionContext;
 
 /**
@@ -32,6 +33,7 @@ public interface OpenSSHKeyDecryptor {
     boolean isEncrypted();
 
     byte[] decodePrivateKeyBytes(
-            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
+            SessionContext session, NamedResource resourceKey, CipherFactory cipherSpec, byte[] privateDataBytes,
+            String password)
             throws IOException, GeneralSecurityException;
 }

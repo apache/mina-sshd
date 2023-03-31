@@ -25,17 +25,13 @@ import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKdfOptions;
@@ -44,7 +40,6 @@ import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -103,44 +98,46 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
 
     @Override
     public byte[] decodePrivateKeyBytes(
-            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
+            SessionContext session, NamedResource resourceKey, CipherFactory cipherSpec, byte[] privateDataBytes,
+            String password)
             throws IOException, GeneralSecurityException {
         if (NumberUtils.isEmpty(privateDataBytes)) {
             return privateDataBytes;
         }
 
-        CipherFactory cipherSpec = BuiltinCiphers.resolveFactory(cipherName);
-        if ((cipherSpec == null) || (!cipherSpec.isSupported())) {
-            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipherName);
-        }
-
         int blockSize = cipherSpec.getCipherBlockSize();
         if ((privateDataBytes.length % blockSize) != 0) {
-            throw new StreamCorruptedException("Encrypted data size (" + privateDataBytes.length + ")"
-                                               + " is not aligned to  " + cipherName + " block size (" + blockSize + ")");
+            throw new StreamCorruptedException("Encrypted data size (" + privateDataBytes.length + ")" + " is not aligned to  "
+                                               + cipherSpec.getName() + " block size (" + blockSize + ")");
         }
 
-        byte[] pwd = password.getBytes(StandardCharsets.UTF_8);
         // Get cipher key & IV sizes.
         int keySize = cipherSpec.getKdfSize();
         int ivSize = cipherSpec.getIVSize();
-        byte[] cipherInput = new byte[keySize + ivSize];
+        boolean isChaCha = BuiltinCiphers.Constants.CC20P1305_OPENSSH.equals(cipherSpec.getName());
+
+        byte[] kv = null;
+        byte[] iv = null;
+        byte[] sensitive = null;
+
+        byte[] cipherInput = new byte[isChaCha ? keySize : (keySize + ivSize)];
+        byte[] pwd = password.getBytes(StandardCharsets.UTF_8);
         try {
             bcryptKdf(pwd, cipherInput);
 
-            byte[] kv = Arrays.copyOfRange(cipherInput, 0, keySize);
-            byte[] iv = Arrays.copyOfRange(cipherInput, keySize, cipherInput.length);
-            try {
-                Cipher cipher = SecurityUtils.getCipher(cipherSpec.getTransformation());
-                SecretKeySpec keySpec = new SecretKeySpec(kv, cipherSpec.getAlgorithm());
-                IvParameterSpec ivSpec = new IvParameterSpec(iv);
-                cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-                return cipher.doFinal(privateDataBytes);
-            } finally {
-                // Don't keep cipher data in memory longer than necessary
-                Arrays.fill(kv, (byte) 0);
-                Arrays.fill(iv, (byte) 0);
+            kv = Arrays.copyOf(cipherInput, keySize);
+            iv = new byte[ivSize];
+            // openSSH uses no IV (all zeroes) for chacha20-poly1305.
+            if (!isChaCha) {
+                System.arraycopy(cipherInput, keySize, iv, 0, ivSize);
             }
+            Cipher cipher = cipherSpec.create();
+            // cipher.update() does an in-place decryption, so copy the encrypted data
+            sensitive = Arrays.copyOf(privateDataBytes, privateDataBytes.length);
+            int macLength = cipherSpec.getAuthenticationTagSize();
+            cipher.init(Cipher.Mode.Decrypt, kv, iv);
+            cipher.update(sensitive, 0, sensitive.length - macLength);
+            return Arrays.copyOf(sensitive, sensitive.length - macLength);
         } catch (RuntimeException e) {
             Throwable t = ExceptionUtils.peelException(e);
             Throwable err = null;
@@ -160,9 +157,22 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
             } else {
                 throw e;
             }
+        } catch (IOException | GeneralSecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new GeneralSecurityException(e);
         } finally {
-            Arrays.fill(pwd, (byte) 0); // Don't keep password data in memory longer than necessary
-            Arrays.fill(cipherInput, (byte) 0); // Don't keep cipher data in memory longer than necessary
+            Arrays.fill(pwd, (byte) 0);
+            Arrays.fill(cipherInput, (byte) 0);
+            if (kv != null) {
+                Arrays.fill(kv, (byte) 0);
+            }
+            if (iv != null) {
+                Arrays.fill(iv, (byte) 0);
+            }
+            if (sensitive != null) {
+                Arrays.fill(sensitive, (byte) 0);
+            }
         }
     }
 

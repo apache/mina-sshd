@@ -25,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKdfOptions;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -74,7 +75,8 @@ public class RawKdfOptions implements OpenSSHKdfOptions {
 
     @Override
     public byte[] decodePrivateKeyBytes(
-            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
+            SessionContext session, NamedResource resourceKey, CipherFactory cipherSpec, byte[] privateDataBytes,
+            String password)
             throws IOException, GeneralSecurityException {
         throw new NoSuchAlgorithmException("Unsupported KDF algorithm (" + getName() + ")");
     }

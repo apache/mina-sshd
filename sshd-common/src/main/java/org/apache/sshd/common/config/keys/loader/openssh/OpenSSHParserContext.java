@@ -19,19 +19,14 @@
 
 package org.apache.sshd.common.config.keys.loader.openssh;
 
-import java.io.IOException;
-import java.io.StreamCorruptedException;
-import java.security.GeneralSecurityException;
 import java.util.function.Predicate;
 
-import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
+public class OpenSSHParserContext {
     public static final String NONE_CIPHER = "none";
     public static final Predicate<String> IS_NONE_CIPHER = c -> GenericUtils.isEmpty(c) || NONE_CIPHER.equalsIgnoreCase(c);
 
@@ -47,7 +42,6 @@ public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
         setKdfOptions(kdfOptions);
     }
 
-    @Override
     public boolean isEncrypted() {
         if (!IS_NONE_CIPHER.test(getCipherName())) {
             return true;
@@ -71,18 +65,6 @@ public class OpenSSHParserContext implements OpenSSHKeyDecryptor {
 
     public void setKdfOptions(OpenSSHKdfOptions kdfOptions) {
         this.kdfOptions = kdfOptions;
-    }
-
-    @Override
-    public byte[] decodePrivateKeyBytes(
-            SessionContext session, NamedResource resourceKey, String cipherName, byte[] privateDataBytes, String password)
-            throws IOException, GeneralSecurityException {
-        OpenSSHKdfOptions options = getKdfOptions();
-        if (options == null) {
-            throw new StreamCorruptedException("No KDF options available for decrypting " + resourceKey);
-        }
-
-        return options.decodePrivateKeyBytes(session, resourceKey, cipherName, privateDataBytes, password);
     }
 
     @Override

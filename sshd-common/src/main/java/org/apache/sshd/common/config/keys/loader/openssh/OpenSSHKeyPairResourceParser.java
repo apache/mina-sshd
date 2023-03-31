@@ -46,6 +46,8 @@ import java.util.TreeMap;
 import javax.security.auth.login.FailedLoginException;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
@@ -139,60 +141,74 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             publicKeys.add(pubKey);
         }
 
-        byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
-        try {
-            if (!context.isEncrypted()) {
-                try (InputStream bais = new ByteArrayInputStream(privateData)) {
-                    return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
-                }
+        if (!context.isEncrypted()) {
+            byte[] privateData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
+            try (InputStream bais = new ByteArrayInputStream(privateData)) {
+                return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+            } finally {
+                Arrays.fill(privateData, (byte) 0);
+            }
+        }
+
+        if (passwordProvider == null) {
+            throw new FailedLoginException("No password provider for encrypted key in " + resourceKey);
+        }
+
+        CipherFactory cipherSpec = BuiltinCiphers.resolveFactory(cipher);
+        if (cipherSpec == null || !cipherSpec.isSupported()) {
+            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
+        }
+
+        byte[] encryptedData;
+        if (cipherSpec.getAuthenticationTagSize() > 0) {
+            // If an AEAD algorithm is used, openSSH simply puts the AT after the RLE-encoded encrypted data. It is not
+            // included in the RLE (i.e., the length does not include the AT size). The ciphers do expect the AT (MAC)
+            // to follow the payload data.
+            int authTokenLength = cipherSpec.getAuthenticationTagSize();
+            int encryptedLength = KeyEntryResolver.decodeInt(stream);
+            encryptedData = new byte[encryptedLength + authTokenLength];
+            IoUtils.readFully(stream, encryptedData);
+        } else {
+            encryptedData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
+        }
+        for (int retryCount = 0;; retryCount++) {
+            String pwd = passwordProvider.getPassword(session, resourceKey, retryCount);
+            if (GenericUtils.isEmpty(pwd)) {
+                return Collections.emptyList();
             }
 
-            if (passwordProvider == null) {
-                throw new FailedLoginException("No password provider for encrypted key in " + resourceKey);
-            }
-
-            for (int retryCount = 0;; retryCount++) {
-                String pwd = passwordProvider.getPassword(session, resourceKey, retryCount);
-                if (GenericUtils.isEmpty(pwd)) {
-                    return Collections.emptyList();
+            List<KeyPair> keys;
+            try {
+                byte[] decryptedData = kdfOptions.decodePrivateKeyBytes(session, resourceKey, cipherSpec,
+                        encryptedData, pwd);
+                try (InputStream bais = new ByteArrayInputStream(decryptedData)) {
+                    keys = readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+                } finally {
+                    Arrays.fill(decryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
                 }
-
-                List<KeyPair> keys;
-                try {
-                    byte[] decryptedData = kdfOptions.decodePrivateKeyBytes(
-                            session, resourceKey, context.getCipherName(), privateData, pwd);
-                    try (InputStream bais = new ByteArrayInputStream(decryptedData)) {
-                        keys = readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
-                    } finally {
-                        Arrays.fill(decryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
-                    }
-                } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                    ResourceDecodeResult result
-                            = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, e);
-                    pwd = null; // get rid of sensitive data a.s.a.p.
-                    if (result == null) {
-                        result = ResourceDecodeResult.TERMINATE;
-                    }
-
-                    switch (result) {
-                        case TERMINATE:
-                            throw e;
-                        case RETRY:
-                            continue;
-                        case IGNORE:
-                            return Collections.emptyList();
-                        default:
-                            throw new ProtocolException(
-                                    "Unsupported decode attempt result (" + result + ") for " + resourceKey);
-                    }
-                }
-
-                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                ResourceDecodeResult result = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd,
+                        e);
                 pwd = null; // get rid of sensitive data a.s.a.p.
-                return keys;
+                if (result == null) {
+                    result = ResourceDecodeResult.TERMINATE;
+                }
+
+                switch (result) {
+                    case TERMINATE:
+                        throw e;
+                    case RETRY:
+                        continue;
+                    case IGNORE:
+                        return Collections.emptyList();
+                    default:
+                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                }
             }
-        } finally {
-            Arrays.fill(privateData, (byte) 0); // get rid of sensitive data a.s.a.p.
+
+            passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
+            pwd = null; // get rid of sensitive data a.s.a.p.
+            return keys;
         }
     }
 
