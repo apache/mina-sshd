@@ -21,7 +21,6 @@ package org.apache.sshd.common.config.keys.loader.pem;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -36,12 +35,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
@@ -83,13 +80,18 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             FilePasswordProvider passwordProvider,
             InputStream stream, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        byte[] encBytes = IoUtils.toByteArray(stream);
+        byte[] privateBytes = IoUtils.toByteArray(stream);
         if (beginMarker.contains(BEGIN_ENCRYPTED_MARKER)) {
             // RFC 5958 EncryptedPrivateKeyInfo.
-            return decryptKeyPairs(session, resourceKey, passwordProvider, encBytes);
+            return decryptKeyPairs(session, resourceKey, passwordProvider, privateBytes);
         }
-        PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(encBytes);
-        return extractKeyPairs(encBytes, pkcs8Info);
+        PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(privateBytes);
+        try {
+            return extractKeyPairs(privateBytes, pkcs8Info);
+        } finally {
+            pkcs8Info.clear();
+            Arrays.fill(privateBytes, (byte) 0);
+        }
     }
 
     public Collection<KeyPair> decryptKeyPairs(
@@ -104,48 +106,22 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         // See https://stackoverflow.com/questions/66286457/load-an-encrypted-pcks8-pem-private-key-in-java
         Decryptor decryptor = SecurityUtils.getBouncycastleEncryptedPrivateKeyInfoDecryptor();
 
-        Collection<KeyPair> keyPairs = Collections.emptyList();
-        for (int retryIndex = 0;; retryIndex++) {
-            String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
+        Collection<KeyPair> keyPairs = passwordProvider.decode(session, resourceKey, password -> {
+            char[] key = password.toCharArray();
             try {
-                char[] key = password != null ? password.toCharArray() : null;
-                if (GenericUtils.isEmpty(key)) {
-                    throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
-                }
                 byte[] decrypted = decryptor.decrypt(encrypted, key);
                 PKCS8PrivateKeyInfo pkcs8Info = new PKCS8PrivateKeyInfo(decrypted);
                 try {
-                    keyPairs = extractKeyPairs(decrypted, pkcs8Info);
+                    return extractKeyPairs(decrypted, pkcs8Info);
                 } finally {
                     pkcs8Info.clear();
-                    Arrays.fill(key, (char) 0);
-                    if (decrypted != null) {
-                        Arrays.fill(decrypted, (byte) 0);
-                    }
-                }
-                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
-                break;
-            } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                ResourceDecodeResult result = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex,
-                        password, e);
-                if (result == null) {
-                    result = ResourceDecodeResult.TERMINATE;
-                }
-                switch (result) {
-                    case TERMINATE:
-                        throw e;
-                    case RETRY:
-                        continue;
-                    case IGNORE:
-                        return null;
-                    default:
-                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                    Arrays.fill(decrypted, (byte) 0);
                 }
             } finally {
-                password = null;
+                Arrays.fill(key, (char) 0);
             }
-        }
-        return keyPairs;
+        });
+        return keyPairs == null ? Collections.emptyList() : keyPairs;
     }
 
     public Collection<KeyPair> extractKeyPairs(byte[] encBytes, PKCS8PrivateKeyInfo pkcs8Info)

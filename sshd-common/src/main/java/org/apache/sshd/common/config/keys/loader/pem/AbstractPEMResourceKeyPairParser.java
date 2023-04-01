@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
-import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -34,11 +33,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.PrivateKeyEncryptionContext;
@@ -150,56 +147,24 @@ public abstract class AbstractPEMResourceKeyPairParser
                 throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
             }
 
-            for (int retryIndex = 0;; retryIndex++) {
-                String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
-                Collection<KeyPair> keys;
+            byte[] encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
+            String algorithm = algInfo;
+            byte[] iv = initVector;
+            Collection<KeyPair> keys = passwordProvider.decode(session, resourceKey, password -> {
+                PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algorithm);
+                encContext.setPassword(password);
+                encContext.setInitVector(iv);
+                byte[] decodedData = GenericUtils.EMPTY_BYTE_ARRAY;
                 try {
-                    if (GenericUtils.isEmpty(password)) {
-                        throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
+                    decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
+                    try (InputStream bais = new ByteArrayInputStream(decodedData)) {
+                        return extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais, headers);
                     }
-
-                    PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext(algInfo);
-                    encContext.setPassword(password);
-                    encContext.setInitVector(initVector);
-
-                    byte[] encryptedData = GenericUtils.EMPTY_BYTE_ARRAY;
-                    byte[] decodedData = GenericUtils.EMPTY_BYTE_ARRAY;
-                    try {
-                        encryptedData = KeyPairResourceParser.extractDataBytes(dataLines);
-                        decodedData = applyPrivateKeyCipher(encryptedData, encContext, false);
-                        try (InputStream bais = new ByteArrayInputStream(decodedData)) {
-                            keys = extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, bais,
-                                    headers);
-                        }
-                    } finally {
-                        Arrays.fill(encryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
-                        Arrays.fill(decodedData, (byte) 0); // get rid of sensitive data a.s.a.p.
-                    }
-                } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                    ResourceDecodeResult result
-                            = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
-                    password = null; // get rid of sensitive data a.s.a.p.
-                    if (result == null) {
-                        result = ResourceDecodeResult.TERMINATE;
-                    }
-
-                    switch (result) {
-                        case TERMINATE:
-                            throw e;
-                        case RETRY:
-                            continue;
-                        case IGNORE:
-                            return Collections.emptyList();
-                        default:
-                            throw new ProtocolException(
-                                    "Unsupported decode attempt result (" + result + ") for " + resourceKey);
-                    }
+                } finally {
+                    Arrays.fill(decodedData, (byte) 0);
                 }
-
-                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
-                password = null; // get rid of sensitive data a.s.a.p.
-                return keys;
-            }
+            });
+            return keys == null ? Collections.emptyList() : keys;
         }
 
         return super.extractKeyPairs(session, resourceKey, beginMarker, endMarker, passwordProvider, dataLines, headers);

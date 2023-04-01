@@ -23,7 +23,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
-import java.net.ProtocolException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -49,7 +48,6 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
@@ -171,45 +169,15 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         } else {
             encryptedData = KeyEntryResolver.readRLEBytes(stream, MAX_PRIVATE_KEY_DATA_SIZE);
         }
-        for (int retryCount = 0;; retryCount++) {
-            String pwd = passwordProvider.getPassword(session, resourceKey, retryCount);
-            if (GenericUtils.isEmpty(pwd)) {
-                return Collections.emptyList();
+        Collection<KeyPair> keys = passwordProvider.decode(session, resourceKey, pwd -> {
+            byte[] decryptedData = kdfOptions.decodePrivateKeyBytes(session, resourceKey, cipherSpec, encryptedData, pwd);
+            try (InputStream bais = new ByteArrayInputStream(decryptedData)) {
+                return readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
+            } finally {
+                Arrays.fill(decryptedData, (byte) 0);
             }
-
-            List<KeyPair> keys;
-            try {
-                byte[] decryptedData = kdfOptions.decodePrivateKeyBytes(session, resourceKey, cipherSpec,
-                        encryptedData, pwd);
-                try (InputStream bais = new ByteArrayInputStream(decryptedData)) {
-                    keys = readPrivateKeys(session, resourceKey, context, publicKeys, passwordProvider, bais);
-                } finally {
-                    Arrays.fill(decryptedData, (byte) 0); // get rid of sensitive data a.s.a.p.
-                }
-            } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                ResourceDecodeResult result = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd,
-                        e);
-                pwd = null; // get rid of sensitive data a.s.a.p.
-                if (result == null) {
-                    result = ResourceDecodeResult.TERMINATE;
-                }
-
-                switch (result) {
-                    case TERMINATE:
-                        throw e;
-                    case RETRY:
-                        continue;
-                    case IGNORE:
-                        return Collections.emptyList();
-                    default:
-                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
-                }
-            }
-
-            passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
-            pwd = null; // get rid of sensitive data a.s.a.p.
-            return keys;
-        }
+        });
+        return keys == null ? Collections.emptyList() : keys;
     }
 
     protected OpenSSHKdfOptions resolveKdfOptions(

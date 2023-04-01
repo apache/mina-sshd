@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.ProtocolException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -35,14 +34,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.security.auth.login.CredentialException;
-import javax.security.auth.login.FailedLoginException;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.loader.AbstractKeyPairResourceParser;
 import org.apache.sshd.common.session.SessionContext;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -128,40 +124,12 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
                     throw new CredentialException("Missing password provider for encrypted resource=" + resourceKey);
                 }
 
-                for (int retryIndex = 0;; retryIndex++) {
-                    String password = provider.getPassword(session, resourceKey, retryIndex);
-                    PEMKeyPair decoded;
-                    try {
-                        if (GenericUtils.isEmpty(password)) {
-                            throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
-                        }
-
-                        JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
-                        PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(password.toCharArray());
-                        decoded = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
-                    } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                        ResourceDecodeResult result
-                                = provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
-                        if (result == null) {
-                            result = ResourceDecodeResult.TERMINATE;
-                        }
-                        switch (result) {
-                            case TERMINATE:
-                                throw e;
-                            case RETRY:
-                                continue;
-                            case IGNORE:
-                                return null;
-                            default:
-                                throw new ProtocolException(
-                                        "Unsupported decode attempt result (" + result + ") for " + resourceKey);
-                        }
-                    }
-
-                    o = decoded;
-                    provider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
-                    break;
-                }
+                PEMEncryptedKeyPair encrypted = (PEMEncryptedKeyPair) o;
+                o = provider.decode(session, resourceKey, password -> {
+                    JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
+                    PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(password.toCharArray());
+                    return encrypted.decryptKeyPair(pemDecryptor);
+                });
             }
 
             if (o instanceof PEMKeyPair) {

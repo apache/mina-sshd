@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
-import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -38,11 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import javax.security.auth.login.FailedLoginException;
-
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.config.keys.impl.AbstractIdentityResourceLoader;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.session.SessionContext;
@@ -180,85 +176,51 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
             String pubData, String prvData, String prvEncryption,
             FilePasswordProvider passwordProvider, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        byte[] pubBytes = GenericUtils.EMPTY_BYTE_ARRAY;
-        byte[] prvBytes = GenericUtils.EMPTY_BYTE_ARRAY;
-        try {
-            Decoder b64Decoder = Base64.getDecoder();
-            pubBytes = b64Decoder.decode(pubData);
-            prvBytes = b64Decoder.decode(prvData);
-            if (GenericUtils.isEmpty(prvEncryption)
-                    || NO_PRIVATE_KEY_ENCRYPTION_VALUE.equalsIgnoreCase(prvEncryption)) {
+        Decoder b64Decoder = Base64.getDecoder();
+        byte[] pubBytes = b64Decoder.decode(pubData);
+        byte[] prvBytes = b64Decoder.decode(prvData);
+        if (GenericUtils.isEmpty(prvEncryption) || NO_PRIVATE_KEY_ENCRYPTION_VALUE.equalsIgnoreCase(prvEncryption)) {
+            try {
                 return loadKeyPairs(resourceKey, formatVersion, pubBytes, prvBytes, headers);
+            } finally {
+                Arrays.fill(prvBytes, (byte) 0);
             }
-
-            // format is "<cipher><bits>-<mode>" - e.g., "aes256-cbc"
-            int pos = prvEncryption.indexOf('-');
-            if (pos <= 0) {
-                throw new StreamCorruptedException("Missing private key encryption mode in " + prvEncryption);
-            }
-
-            String mode = prvEncryption.substring(pos + 1).toUpperCase();
-            String algName = null;
-            int numBits = 0;
-            for (int index = 0; index < pos; index++) {
-                char ch = prvEncryption.charAt(index);
-                if ((ch >= '0') && (ch <= '9')) {
-                    algName = prvEncryption.substring(0, index).toUpperCase();
-                    numBits = Integer.parseInt(prvEncryption.substring(index, pos));
-                    break;
-                }
-            }
-
-            if (GenericUtils.isEmpty(algName) || (numBits <= 0)) {
-                throw new StreamCorruptedException("Missing private key encryption algorithm details in " + prvEncryption);
-            }
-
-            for (int retryIndex = 0;; retryIndex++) {
-                String password = passwordProvider.getPassword(session, resourceKey, retryIndex);
-
-                Collection<KeyPair> keys;
-                try {
-                    if (GenericUtils.isEmpty(password)) {
-                        throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
-                    }
-
-                    byte[] decBytes = PuttyKeyPairResourceParser.decodePrivateKeyBytes(
-                            formatVersion, prvBytes, algName, numBits, mode, password, headers);
-                    try {
-                        keys = loadKeyPairs(resourceKey, formatVersion, pubBytes, decBytes, headers);
-                    } finally {
-                        Arrays.fill(decBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
-                    }
-                } catch (IOException | GeneralSecurityException | RuntimeException e) {
-                    ResourceDecodeResult result
-                            = passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, e);
-                    password = null; // get rid of sensitive data a.s.a.p.
-                    if (result == null) {
-                        result = ResourceDecodeResult.TERMINATE;
-                    }
-
-                    password = null; // GC hint - don't keep sensitive data in memory longer than necessary
-                    switch (result) {
-                        case TERMINATE:
-                            throw e;
-                        case RETRY:
-                            continue;
-                        case IGNORE:
-                            return Collections.emptyList();
-                        default:
-                            throw new ProtocolException(
-                                    "Unsupported decode attempt result (" + result + ") for " + resourceKey);
-                    }
-                }
-
-                passwordProvider.handleDecodeAttemptResult(session, resourceKey, retryIndex, password, null);
-                password = null; // get rid of sensitive data a.s.a.p.
-                return keys;
-            }
-        } finally {
-            Arrays.fill(pubBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
-            Arrays.fill(prvBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
         }
+
+        // format is "<cipher><bits>-<mode>" - e.g., "aes256-cbc"
+        int pos = prvEncryption.indexOf('-');
+        if (pos <= 0) {
+            throw new StreamCorruptedException("Missing private key encryption mode in " + prvEncryption);
+        }
+
+        String mode = prvEncryption.substring(pos + 1).toUpperCase();
+        String algName = null;
+        int numBits = 0;
+        for (int index = 0; index < pos; index++) {
+            char ch = prvEncryption.charAt(index);
+            if ((ch >= '0') && (ch <= '9')) {
+                algName = prvEncryption.substring(0, index).toUpperCase();
+                numBits = Integer.parseInt(prvEncryption.substring(index, pos));
+                break;
+            }
+        }
+
+        if (GenericUtils.isEmpty(algName) || (numBits <= 0)) {
+            throw new StreamCorruptedException("Missing private key encryption algorithm details in " + prvEncryption);
+        }
+
+        String algorithm = algName;
+        int bits = numBits;
+        Collection<KeyPair> keys = passwordProvider.decode(session, resourceKey, password -> {
+            byte[] decBytes = PuttyKeyPairResourceParser.decodePrivateKeyBytes(formatVersion, prvBytes, algorithm, bits, mode,
+                    password, headers);
+            try {
+                return loadKeyPairs(resourceKey, formatVersion, pubBytes, decBytes, headers);
+            } finally {
+                Arrays.fill(decBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
+            }
+        });
+        return keys == null ? Collections.emptyList() : keys;
     }
 
     public Collection<KeyPair> loadKeyPairs(

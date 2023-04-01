@@ -20,13 +20,17 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
+import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+import javax.security.auth.login.FailedLoginException;
+
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -85,6 +89,60 @@ public interface FilePasswordProvider {
             SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
             throws IOException, GeneralSecurityException {
         return ResourceDecodeResult.TERMINATE;
+    }
+
+    /**
+     * Something that can produce a result given a password.
+     *
+     * @param <T> type of the result
+     */
+    interface Decoder<T> {
+        T decode(String password) throws IOException, GeneralSecurityException;
+    }
+
+    /**
+     * Obtains the password through {@link #getPassword(SessionContext, NamedResource, int)}, invokes the
+     * {@link Decoder} and then
+     * {@link #handleDecodeAttemptResult(SessionContext, NamedResource, int, String, Exception)} and then returns the
+     * decoded result. If the decoder fails and the {@link ResourceDecodeResult} is {@link ResourceDecodeResult#RETRY},
+     * the whole process is re-tried.
+     *
+     * @param  <T>                      Result type of the decoder
+     * @param  session                  {@link SessionContext}, may be {@code null}
+     * @param  resourceKey              {@link NamedResource} used for error reporting
+     * @param  decoder                  {@link Decoder} to produce the result given a password
+     * @return                          the decoder's result, or {@code null} if none
+     * @throws IOException              if an I/O problem occurs
+     * @throws GeneralSecurityException if the decoder throws it
+     */
+    default <T> T decode(SessionContext session, NamedResource resourceKey, Decoder<? extends T> decoder)
+            throws IOException, GeneralSecurityException {
+        for (int retryCount = 0;; retryCount++) {
+            String pwd = getPassword(session, resourceKey, retryCount);
+            if (GenericUtils.isEmpty(pwd)) {
+                throw new FailedLoginException("No password data for encrypted resource=" + resourceKey);
+            }
+            try {
+                T result = decoder.decode(pwd);
+                handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, null);
+                return result;
+            } catch (IOException | GeneralSecurityException | RuntimeException e) {
+                ResourceDecodeResult result = handleDecodeAttemptResult(session, resourceKey, retryCount, pwd, e);
+                if (result == null) {
+                    throw e;
+                }
+                switch (result) {
+                    case TERMINATE:
+                        throw e;
+                    case RETRY:
+                        continue;
+                    case IGNORE:
+                        return null;
+                    default:
+                        throw new ProtocolException("Unsupported decode attempt result (" + result + ") for " + resourceKey);
+                }
+            }
+        }
     }
 
     static FilePasswordProvider of(String password) {
