@@ -18,15 +18,12 @@
  */
 package org.apache.sshd.common.config.keys.loader.openssh;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.net.URL;
 import java.security.KeyPair;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +38,7 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 @Category({ NoIoTestCase.class })
-public class OpenSSHKeyPairResourceParserAEADTest {
+public class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
 
     private static final String BASE = "ed25519_priv";
 
