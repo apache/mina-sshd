@@ -26,6 +26,7 @@
 
 * [GH-268](https://github.com/apache/mina-sshd/issues/268) (Regression in 2.9.0) Heartbeat should throw an exception if no reply arrives within the timeout.
 * [GH-275](https://github.com/apache/mina-sshd/issues/275) SFTP: be more lenient when reading `SSH_FXP_STATUS` replies.
+* [GH-281](https://github.com/apache/mina-sshd/issues/281) Use OpenSSH first-match semantics for processing HostConfigEntries.
 * [GH-282](https://github.com/apache/mina-sshd/issues/282) Correct setting file permissions on newly written host key files on Windows.
 * [GH-283](https://github.com/apache/mina-sshd/issues/283) Fix handling of `CoreModuleProperties.PASSWORD_PROMPTS`.
 * [GH-285](https://github.com/apache/mina-sshd/issues/285) Fix compilation failure on Java 19.
@@ -36,7 +37,7 @@
 * [GH-300](https://github.com/apache/mina-sshd/issues/300) Read the channel id in `SSH_MSG_CHANNEL_OPEN_CONFIRMATION` as unsigned int.
 * [GH-313](https://github.com/apache/mina-sshd/issues/313) Log exceptions in the SFTP subsystem before sending a failure status reply.
 * [GH-322](https://github.com/apache/mina-sshd/issues/322) Add basic Android O/S awareness.
-* [GH-325](https://github.com/apache/mina-sshd/issues/325) SftpFileSystemProvider: fix deletions of symlinks through Files.delete().
+* [GH-325](https://github.com/apache/mina-sshd/issues/325) SftpFileSystemProvider: fix deletions of symlinks through `Files.delete()`.
 
 
 * [SSHD-1295](https://issues.apache.org/jira/browse/SSHD-1295) Fix cancellation of futures and add options to cancel futures on time-outs.

@@ -72,29 +72,29 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
         testConfigFileReload("Wildcard", path, reloadCount,
                 Arrays.asList(
                         new HostConfigEntry(
-                                HostPatternsHolder.ALL_HOSTS_PATTERN,
-                                getClass().getSimpleName(),
-                                1234,
-                                getClass().getSimpleName()),
-                        new HostConfigEntry(
                                 expected.getHost() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 expected.getHost(),
                                 expected.getPort(),
-                                expected.getUsername())),
-                resolver, expected, expected);
-        testConfigFileReload("Specific", path, reloadCount,
-                Arrays.asList(
+                                expected.getUsername()),
                         new HostConfigEntry(
                                 HostPatternsHolder.ALL_HOSTS_PATTERN,
                                 getClass().getSimpleName(),
                                 1234,
-                                getClass().getSimpleName()),
+                                getClass().getSimpleName())),
+                resolver, expected, expected);
+        testConfigFileReload("Specific", path, reloadCount,
+                Arrays.asList(
                         new HostConfigEntry(
                                 getClass().getSimpleName() + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
                                 getClass().getSimpleName(),
                                 1234,
                                 getClass().getSimpleName()),
-                        expected),
+                        expected,
+                        new HostConfigEntry(
+                                HostPatternsHolder.ALL_HOSTS_PATTERN,
+                                getClass().getSimpleName(),
+                                1234,
+                                getClass().getSimpleName())),
                 resolver, expected, expected);
     }
 

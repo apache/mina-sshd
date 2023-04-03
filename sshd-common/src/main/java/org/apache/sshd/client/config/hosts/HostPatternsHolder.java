@@ -117,57 +117,6 @@ public abstract class HostPatternsHolder {
         return true;
     }
 
-    /**
-     * Locates all the matching entries for a give host name / address
-     *
-     * @param  host    The host name / address - ignored if {@code null}/empty
-     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
-     * @return         A {@link List} of all the matching entries
-     * @see            #isHostMatch(String, int)
-     */
-    public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry... entries) {
-        // TODO in Java-8 use Stream(s) + predicate
-        if (GenericUtils.isEmpty(host) || GenericUtils.isEmpty(entries)) {
-            return Collections.emptyList();
-        } else {
-            return findMatchingEntries(host, Arrays.asList(entries));
-        }
-    }
-
-    /**
-     * Locates all the matching entries for a give host name / address
-     *
-     * @param  host    The host name / address - ignored if {@code null}/empty
-     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
-     * @return         A {@link List} of all the matching entries
-     * @see            #isHostMatch(String, int)
-     */
-    public static List<HostConfigEntry> findMatchingEntries(String host, Collection<? extends HostConfigEntry> entries) {
-        // TODO in Java-8 use Stream(s) + predicate
-        if (GenericUtils.isEmpty(host) || GenericUtils.isEmpty(entries)) {
-            return Collections.emptyList();
-        }
-
-        List<HostConfigEntry> matches = null;
-        for (HostConfigEntry entry : entries) {
-            if (!entry.isHostMatch(host, 0 /* any port */)) {
-                continue; // debug breakpoint
-            }
-
-            if (matches == null) {
-                matches = new ArrayList<>(entries.size()); // in case ALL of them match
-            }
-
-            matches.add(entry);
-        }
-
-        if (matches == null) {
-            return Collections.emptyList();
-        } else {
-            return matches;
-        }
-    }
-
     public static boolean isHostMatch(String host, int port, Collection<HostPatternValue> patterns) {
         if (GenericUtils.isEmpty(patterns)) {
             return false;
@@ -208,8 +157,8 @@ public abstract class HostPatternsHolder {
     }
 
     /**
-     * @param  port1 1st port value - if non-positive the assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
-     * @param  port2 2nd port value - if non-positive the assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
+     * @param  port1 1st port value - if non-positive then assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
+     * @param  port2 2nd port value - if non-positive then assumed to be {@link SshConstants#DEFAULT_PORT DEFAULT_PORT}
      * @return       {@code true} if ports are effectively equal
      */
     public static boolean isPortMatch(int port1, int port2) {

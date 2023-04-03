@@ -46,6 +46,125 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         super();
     }
 
+    private void expect(String hostname, int port, String username, HostConfigEntry resolved) throws Exception {
+        assertEquals(hostname, resolved.getHostName());
+        assertEquals(port, resolved.getPort());
+        assertEquals(username, resolved.getUsername());
+        assertEquals(hostname, resolved.getProperty(HostConfigEntry.HOST_NAME_CONFIG_PROP));
+        assertEquals(Integer.toString(port), resolved.getProperty(HostConfigEntry.PORT_CONFIG_PROP));
+        assertEquals(username, resolved.getProperty(HostConfigEntry.USER_CONFIG_PROP));
+    }
+
+    @Test
+    public void testSetTwice() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo", "foo.example.com", 22, "test");
+        entry.setProperties(null);
+        entry.setHost("bar");
+        entry.setHostName("bar.example.com");
+        entry.setPort(2022);
+        entry.setUsername("test2");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("bar", 0, null, null, null, null);
+        expect("bar.example.com", 2022, "test2", resolved);
+    }
+
+    @Test
+    public void testArgumentsOverrideConfig() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo.example.com", null, 22, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
+        expect("foo.example.com", 2022, "testuser", resolved);
+    }
+
+    @Test
+    public void testConfigSetsHostname() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo.example.com", "bar.example.com", 22, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
+        expect("bar.example.com", 2022, "testuser", resolved);
+    }
+
+    @Test
+    public void testWildcardHostname() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo*", null, 22, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
+        expect("foo.example.com", 2022, "testuser", resolved);
+    }
+
+    @Test
+    public void testDefaults() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo*", "bar.example.com", 22, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("foo", 0, null, "", null, null);
+        expect("bar.example.com", 22, "test", resolved);
+    }
+
+    @Test
+    public void testDefaultDefaults() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry();
+        entry.setHost("foo*");
+        entry.setUsername("test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("foo.example.com", 0, null, "", null, null);
+        expect("foo.example.com", 22, "test", resolved);
+    }
+
+    @Test
+    public void testCoalescing() throws Exception {
+        HostConfigEntry first = new HostConfigEntry();
+        first.setHost("foo*");
+        first.setHostName("bar.example.com");
+        HostConfigEntry second = new HostConfigEntry();
+        second.setHost("foo");
+        second.setUsername("test1");
+        second.setPort(2022);
+        HostConfigEntry third = new HostConfigEntry();
+        third.setHost("foo2");
+        third.setUsername("test2");
+        third.setPort(2023);
+        HostConfigEntryResolver resolver = HostConfigEntry.toHostConfigEntryResolver(GenericUtils.asList(first, second, third));
+        HostConfigEntry resolved = resolver.resolveEffectiveHost("foo", 0, null, "", null, null);
+        expect("bar.example.com", 2022, "test1", resolved);
+        resolved = resolver.resolveEffectiveHost("foo2", 0, null, "", null, null);
+        expect("bar.example.com", 2023, "test2", resolved);
+    }
+
+    @Test
+    public void testCoalescingFirstValue() throws Exception {
+        HostConfigEntry first = new HostConfigEntry();
+        first.setHost("fo*");
+        first.setHostName("bar.example.com");
+        HostConfigEntry second = new HostConfigEntry("foo", "foo.example.com", 2022, "test1");
+        HostConfigEntry third = new HostConfigEntry("foo*", "foo2.example.com", 2023, "test2");
+        HostConfigEntryResolver resolver = HostConfigEntry.toHostConfigEntryResolver(GenericUtils.asList(first, second, third));
+        HostConfigEntry resolved = resolver.resolveEffectiveHost("foo", 0, null, "", null, null);
+        expect("bar.example.com", 2022, "test1", resolved);
+        resolved = resolver.resolveEffectiveHost("foo2", 0, null, "", null, null);
+        expect("bar.example.com", 2023, "test2", resolved);
+    }
+
+    @Test
+    public void testCoalescingIdentityFile() throws Exception {
+        HostConfigEntry first = new HostConfigEntry();
+        first.setHost("fo*");
+        first.setHostName("bar.example.com");
+        first.setIdentities(Collections.singleton("xFile"));
+        HostConfigEntry second = new HostConfigEntry("foo", "foo.example.com", 2022, "test1");
+        second.setIdentities(GenericUtils.asList("bFile", "yFile"));
+        HostConfigEntry third = new HostConfigEntry("foo*", "foo2.example.com", 2023, "test2");
+        third.setIdentities(Collections.singleton("dFile"));
+        HostConfigEntryResolver resolver = HostConfigEntry.toHostConfigEntryResolver(GenericUtils.asList(first, second, third));
+        HostConfigEntry resolved = resolver.resolveEffectiveHost("foo", 0, null, "", null, null);
+        expect("bar.example.com", 2022, "test1", resolved);
+        assertEquals("[xFile, bFile, yFile, dFile]", resolved.getIdentities().toString());
+        assertEquals("xFile,bFile,yFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+        resolved = resolver.resolveEffectiveHost("foo2", 0, null, "", null, null);
+        expect("bar.example.com", 2023, "test2", resolved);
+        assertEquals("[xFile, dFile]", resolved.getIdentities().toString());
+        assertEquals("xFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+    }
+
     @Test
     public void testNegatingPatternOverridesAll() {
         String testHost = "37.77.34.7";
@@ -217,32 +336,6 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolvePort() {
-        final int originalPort = Short.MAX_VALUE;
-        final int preferredPort = 7365;
-        assertEquals("Mismatched entry port preference",
-                preferredPort, HostConfigEntry.resolvePort(originalPort, preferredPort));
-
-        for (int entryPort : new int[] { -1, 0 }) {
-            assertEquals("Non-preferred original port for entry port=" + entryPort,
-                    originalPort, HostConfigEntry.resolvePort(originalPort, entryPort));
-        }
-    }
-
-    @Test
-    public void testResolveUsername() {
-        final String originalUser = getCurrentTestName();
-        final String preferredUser = getClass().getSimpleName();
-        assertSame("Mismatched entry user preference",
-                preferredUser, HostConfigEntry.resolveUsername(originalUser, preferredUser));
-
-        for (String entryUser : new String[] { null, "" }) {
-            assertSame("Non-preferred original user for entry user='" + entryUser + "'",
-                    originalUser, HostConfigEntry.resolveUsername(originalUser, entryUser));
-        }
-    }
-
-    @Test
     public void testReadSimpleHostsConfigEntries() throws IOException {
         validateHostConfigEntries(readHostConfigEntries());
     }
@@ -258,11 +351,31 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         for (int index = 1; index < entries.size(); index++) {
             HostConfigEntry entry = entries.get(index);
-            assertFalse("No target host for " + entry, GenericUtils.isEmpty(entry.getHostName()));
-            assertTrue("No target port for " + entry, entry.getPort() > 0);
-            assertFalse("No username for " + entry, GenericUtils.isEmpty(entry.getUsername()));
-            assertFalse("No identities for " + entry, GenericUtils.isEmpty(entry.getIdentities()));
             assertFalse("No properties for " + entry, MapEntryUtils.isEmpty(entry.getProperties()));
+            boolean noHostName = GenericUtils.isEmpty(entry.getHostName());
+            boolean noPort = entry.getPort() <= 0;
+            boolean noUsername = GenericUtils.isEmpty(entry.getUsername());
+            boolean noIdentities = GenericUtils.isEmpty(entry.getIdentities());
+            if (index == 1) {
+                assertFalse("No username for " + entry, noUsername);
+            } else {
+                assertTrue("Unexpected username for " + entry, noUsername);
+            }
+            if (index == 2) {
+                assertFalse("No target port for " + entry, noPort);
+            } else {
+                assertTrue("Unexpected target port for " + entry, noPort);
+            }
+            if (index == 3) {
+                assertFalse("No target host for " + entry, noHostName);
+            } else {
+                assertTrue("Unexpected target host for " + entry, noHostName);
+            }
+            if (index == 4) {
+                assertFalse("No identities for " + entry, noIdentities);
+            } else {
+                assertTrue("Unexpected identity for " + entry, noIdentities);
+            }
         }
     }
 
@@ -300,26 +413,6 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
         if (err != null) {
             throw err;
-        }
-    }
-
-    @Test
-    public void testFindBestMatch() {
-        final String hostValue = getCurrentTestName();
-        HostConfigEntry expected = new HostConfigEntry(hostValue, hostValue, 7365, hostValue);
-        List<HostConfigEntry> matches = new ArrayList<>();
-        matches.add(new HostConfigEntry(
-                HostPatternsHolder.ALL_HOSTS_PATTERN,
-                getClass().getSimpleName(), Short.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(new HostConfigEntry(
-                hostValue + Character.toString(HostPatternsHolder.WILDCARD_PATTERN),
-                getClass().getSimpleName(), Byte.MAX_VALUE, getClass().getSimpleName()));
-        matches.add(expected);
-
-        for (int index = 0; index < matches.size(); index++) {
-            HostConfigEntry actual = HostConfigEntry.findBestMatch(matches);
-            assertSame("Mismatched best match for " + matches, expected, actual);
-            Collections.shuffle(matches);
         }
     }
 

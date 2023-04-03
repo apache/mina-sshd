@@ -121,9 +121,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = client.connect(
-                negativeEntry.getUsername(),
+                null,
                 negativeEntry.getHostName(),
-                negativeEntry.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
+                0).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
             assertEffectiveRemoteAddress(session, positiveEntry);

@@ -38,20 +38,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
-import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -75,11 +74,13 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final String STD_CONFIG_FILENAME = "config";
 
     public static final String HOST_CONFIG_PROP = "Host";
+    public static final String MATCH_CONFIG_PROP = "Match";  // currently not handled
     public static final String HOST_NAME_CONFIG_PROP = "HostName";
     public static final String PORT_CONFIG_PROP = ConfigFileReaderSupport.PORT_CONFIG_PROP;
     public static final String USER_CONFIG_PROP = "User";
     public static final String PROXY_JUMP_CONFIG_PROP = "ProxyJump";
     public static final String IDENTITY_FILE_CONFIG_PROP = "IdentityFile";
+    public static final String CERTIFICATE_FILE_CONFIG_PROP = "CertificateFile";  // currently not handled
     /**
      * Use only the identities specified in the host entry (if any)
      */
@@ -131,14 +132,18 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
     }
 
-    private String host;
-    private String hostName;
-    private int port;
-    private String username;
-    private String proxyJump;
-    private Boolean exclusiveIdentites;
-    private Collection<String> identities = Collections.emptyList();
-    private Map<String, String> properties = Collections.emptyMap();
+    // TODO: A better approach would be to only store "host" and the properties map. Accessors can read/write the properties map.
+    // TODO: Map property key to generic object. Any code that calls getProperties() would need to be updated.
+    protected String host;
+    protected String hostName;
+    protected int port;
+    protected String username;
+    protected String proxyJump;
+    protected Boolean exclusiveIdentites;
+
+    // TODO: OpenSSH ignores duplicates. Ignoring them here (via a set) would complicate keeping the map entry in sync.
+    protected final Collection<String> identities = new ArrayList<>();
+    protected final Map<String, String> properties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public HostConfigEntry() {
         super();
@@ -154,6 +159,47 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         setPort(port);
         setUsername(username);
         setProxyJump(proxyJump);
+    }
+
+    /**
+     * Merges that into this via underride. That is, any value present in this entry takes precedence over the given
+     * entry. Only this object is modified. The given entry remains unchanged.
+     */
+    public void collate(HostConfigEntry that) {
+        if (hostName == null || hostName.isEmpty()) {
+            hostName = that.hostName;  // It doesn't matter whether that host is defined or not, since ours is not.
+        }
+
+        if (port <= 0) {
+            port = that.port;
+        }
+
+        if (username == null || username.isEmpty()) {
+            username = that.username;
+        }
+
+        if (proxyJump == null || proxyJump.isEmpty()) {
+            proxyJump = that.proxyJump;
+        }
+
+        if (exclusiveIdentites == null) {
+            exclusiveIdentites = that.exclusiveIdentites;
+        }
+
+        identities.addAll(that.identities);
+
+        for (Entry<String, String> e : that.properties.entrySet()) {
+            String key = e.getKey();
+            String value = e.getValue();
+            if (properties.containsKey(key)) {
+                if (key.equalsIgnoreCase(IDENTITY_FILE_CONFIG_PROP) || key.equalsIgnoreCase(CERTIFICATE_FILE_CONFIG_PROP)) {
+                    properties.put(key, properties.get(key) + "," + value);
+                }
+                // else ignore, since our value takes precedence over that
+            } else {  // key is not present in our properties
+                properties.put(key, value);
+            }
+        }
     }
 
     /**
@@ -182,10 +228,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public void setHostName(String hostName) {
         this.hostName = hostName;
-    }
-
-    public String resolveHostName(String originalHost) {
-        return resolveHostName(originalHost, getHostName());
+        setProperty(HOST_NAME_CONFIG_PROP, hostName);
     }
 
     /**
@@ -197,17 +240,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public void setPort(int port) {
         this.port = port;
-    }
-
-    /**
-     * Resolves the effective port to use
-     *
-     * @param  originalPort The original requested port
-     * @return              If the host entry port is positive, then it is used, otherwise the original requested port
-     * @see                 #resolvePort(int, int)
-     */
-    public int resolvePort(int originalPort) {
-        return resolvePort(originalPort, getPort());
+        if (port <= 0) {
+            properties.remove(PORT_CONFIG_PROP);
+        } else {
+            setProperty(PORT_CONFIG_PROP, String.valueOf(port));
+        }
     }
 
     /**
@@ -221,18 +258,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     @Override
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    /**
-     * Resolves the effective username
-     *
-     * @param  originalUser The original requested username
-     * @return              If the configured host entry username is not {@code null}/empty then it is used, otherwise
-     *                      the original one.
-     * @see                 #resolveUsername(String)
-     */
-    public String resolveUsername(String originalUser) {
-        return resolveUsername(originalUser, getUsername());
+        setProperty(USER_CONFIG_PROP, username);
     }
 
     /**
@@ -244,18 +270,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public void setProxyJump(String proxyJump) {
         this.proxyJump = proxyJump;
-    }
-
-    /**
-     * Resolves the effective proxyJump
-     *
-     * @param  originalProxyJump The original requested proxyJump
-     * @return                   If the configured host entry proxyJump is not {@code null}/empty then it is used,
-     *                           otherwise the original one.
-     * @see                      #resolveUsername(String)
-     */
-    public String resolveProxyJump(String originalProxyJump) {
-        return resolveProxyJump(originalProxyJump, getProxyJump());
+        setProperty(PROXY_JUMP_CONFIG_PROP, proxyJump);
     }
 
     /**
@@ -279,14 +294,17 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public void addIdentity(String id) {
         String path = ValidateUtils.checkNotNullAndNotEmpty(id, "No identity provided");
-        if (GenericUtils.isEmpty(identities)) {
-            identities = new LinkedList<>();
-        }
         identities.add(path);
+        appendPropertyValue(IDENTITY_FILE_CONFIG_PROP, id);
     }
 
     public void setIdentities(Collection<String> identities) {
-        this.identities = (identities == null) ? Collections.emptyList() : identities;
+        this.identities.clear();
+        if (identities != null) {
+            identities.forEach(this::addIdentity);
+        } else {
+            properties.remove(IDENTITY_FILE_CONFIG_PROP);
+        }
     }
 
     /**
@@ -298,6 +316,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public void setIdentitiesOnly(boolean identitiesOnly) {
         exclusiveIdentites = identitiesOnly;
+        setProperty(EXCLUSIVE_IDENTITIES_CONFIG_PROP, Boolean.toString(identitiesOnly));
     }
 
     /**
@@ -339,177 +358,27 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * Updates the values that are <U>not</U> already configured with those from the global entry
-     *
-     * @param  globalEntry The global entry - ignored if {@code null} or same reference as this entry
-     * @return             {@code true} if anything updated
+     * @param name     Property name - never {@code null}/empty
+     * @param valsList The available values for the property
+     * @see            #HOST_NAME_CONFIG_PROP
+     * @see            #PORT_CONFIG_PROP
+     * @see            #USER_CONFIG_PROP
+     * @see            #IDENTITY_FILE_CONFIG_PROP
      */
-    public boolean processGlobalValues(HostConfigEntry globalEntry) {
-        if ((globalEntry == null) || (this == globalEntry)) {
-            return false;
-        }
-
-        boolean modified = false;
-        /*
-         * NOTE !!! DO NOT TRY TO CHANGE THE ORDER OF THE OR-ing AS IT WOULD CAUSE INVALID CODE EXECUTION
-         */
-        modified = updateGlobalPort(globalEntry.getPort()) || modified;
-        modified = updateGlobalHostName(globalEntry.getHostName()) || modified;
-        modified = updateGlobalUserName(globalEntry.getUsername()) || modified;
-        modified = updateGlobalIdentities(globalEntry.getIdentities()) || modified;
-        modified = updateGlobalIdentityOnly(globalEntry.isIdentitiesOnly()) || modified;
-
-        Map<String, String> updated = updateGlobalProperties(globalEntry.getProperties());
-        modified = (MapEntryUtils.size(updated) > 0) || modified;
-
-        return modified;
-    }
-
-    /**
-     * Sets all the properties for which no current value exists in the entry
-     *
-     * @param  props The global properties - ignored if {@code null}/empty
-     * @return       A {@link Map} of the <U>updated</U> properties
-     */
-    public Map<String, String> updateGlobalProperties(Map<String, String> props) {
-        if (MapEntryUtils.isEmpty(props)) {
-            return Collections.emptyMap();
-        }
-
-        Map<String, String> updated = null;
-        // Cannot use forEach because of the modification of the updated map value (non-final)
-        for (Map.Entry<String, String> pe : props.entrySet()) {
-            String key = pe.getKey();
-            String curValue = getProperty(key);
-            if (GenericUtils.length(curValue) > 0) {
-                continue;
-            }
-
-            String newValue = pe.getValue();
-            setProperty(key, newValue);
-
-            if (updated == null) {
-                updated = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            }
-
-            updated.put(key, newValue);
-        }
-
-        if (updated == null) {
-            return Collections.emptyMap();
-        } else {
-            return updated;
-        }
-    }
-
-    /**
-     * @param  ids Global identities - ignored if {@code null}/empty or already have configured identities
-     * @return     {@code true} if updated identities
-     */
-    public boolean updateGlobalIdentities(Collection<String> ids) {
-        if (GenericUtils.isEmpty(ids) || (GenericUtils.size(getIdentities()) > 0)) {
-            return false;
-        }
-
-        for (String id : ids) {
-            addIdentity(id);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  user The global user name - ignored if {@code null}/empty or already have a configured user
-     * @return      {@code true} if updated the username
-     */
-    public boolean updateGlobalUserName(String user) {
-        if (GenericUtils.isEmpty(user) || (GenericUtils.length(getUsername()) > 0)) {
-            return false;
-        }
-
-        setUsername(user);
-        return true;
-    }
-
-    /**
-     * @param  name The global host name - ignored if {@code null}/empty or already have a configured target host
-     * @return      {@code true} if updated the target host
-     */
-    public boolean updateGlobalHostName(String name) {
-        if (GenericUtils.isEmpty(name) || (GenericUtils.length(getHostName()) > 0)) {
-            return false;
-        }
-
-        setHostName(name);
-        return true;
-    }
-
-    /**
-     * @param  portValue The global port value - ignored if not positive or already have a configured port
-     * @return           {@code true} if updated the port value
-     */
-    public boolean updateGlobalPort(int portValue) {
-        if ((portValue <= 0) || (getPort() > 0)) {
-            return false;
-        }
-
-        setPort(portValue);
-        return true;
-    }
-
-    /**
-     * @param  identitiesOnly Whether to use only the identities in this entry. Ignored if already set
-     * @return                {@code true} if updated the option value
-     */
-    public boolean updateGlobalIdentityOnly(boolean identitiesOnly) {
-        if (exclusiveIdentites != null) {
-            return false;
-        }
-
-        setIdentitiesOnly(identitiesOnly);
-        return true;
-    }
-
-    /**
-     * @param  name                     Property name - never {@code null}/empty
-     * @param  valsList                 The available values for the property
-     * @param  ignoreAlreadyInitialized If {@code false} and one of the &quot;known&quot; properties is encountered then
-     *                                  throws an exception
-     * @throws IllegalArgumentException If an existing value is overwritten and <tt>ignoreAlreadyInitialized</tt> is
-     *                                  {@code false} (except for {@link #IDENTITY_FILE_CONFIG_PROP} which is
-     *                                  <U>cumulative</U>
-     * @see                             #HOST_NAME_CONFIG_PROP
-     * @see                             #PORT_CONFIG_PROP
-     * @see                             #USER_CONFIG_PROP
-     * @see                             #IDENTITY_FILE_CONFIG_PROP
-     */
-    public void processProperty(String name, Collection<String> valsList, boolean ignoreAlreadyInitialized) {
+    public void processProperty(String name, Collection<String> valsList) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
         String joinedValue = GenericUtils.join(valsList, ',');
-        appendPropertyValue(key, joinedValue);
 
         if (HOST_NAME_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target hosts N/A: %s", joinedValue);
-
-            String curValue = getHostName();
-            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
-                    key, curValue);
             setHostName(joinedValue);
         } else if (PORT_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target ports N/A: %s", joinedValue);
-
-            int curValue = getPort();
-            ValidateUtils.checkTrue((curValue <= 0) || ignoreAlreadyInitialized, "Already initialized %s: %d", key, curValue);
-
             int newValue = Integer.parseInt(joinedValue);
             ValidateUtils.checkTrue(newValue > 0, "Bad new port value: %d", newValue);
             setPort(newValue);
         } else if (USER_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target users N/A: %s", joinedValue);
-
-            String curValue = getUsername();
-            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
-                    key, curValue);
             setUsername(joinedValue);
         } else if (IDENTITY_FILE_CONFIG_PROP.equalsIgnoreCase(key)) {
             ValidateUtils.checkTrue(GenericUtils.size(valsList) > 0, "No identity files specified");
@@ -521,10 +390,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                     ConfigFileReaderSupport.parseBooleanValue(
                             ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
         } else if (PROXY_JUMP_CONFIG_PROP.equalsIgnoreCase(key)) {
-            String curValue = getProxyJump();
-            ValidateUtils.checkTrue(GenericUtils.isEmpty(curValue) || ignoreAlreadyInitialized, "Already initialized %s: %s",
-                    key, curValue);
             setProxyJump(joinedValue);
+        } else if (CERTIFICATE_FILE_CONFIG_PROP.equalsIgnoreCase(key)) {
+            appendPropertyValue(key, joinedValue);
+        } else {
+            properties.put(key, joinedValue);  // Default is to overwrite any previous value. Only identities
         }
     }
 
@@ -561,12 +431,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(value)) {
             return removeProperty(name);
         }
-
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        if (MapEntryUtils.isEmpty(properties)) {
-            properties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        }
-
         return properties.put(key, value);
     }
 
@@ -589,7 +454,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      *                   is highly recommended to use a <U>case insensitive</U> key mapper.
      */
     public void setProperties(Map<String, String> properties) {
-        this.properties = (properties == null) ? Collections.emptyMap() : properties;
+        this.properties.clear();
+        if (properties != null) {
+            this.properties.putAll(properties);
+        }
     }
 
     public <A extends Appendable> A append(A sb) throws IOException {
@@ -705,6 +573,55 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
+     * Locates all the matching entries for a give host name / address
+     *
+     * @param  host    The host name / address - ignored if {@code null}/empty
+     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
+     * @return         A {@link List} of all the matching entries
+     * @see            #isHostMatch(String, int)
+     */
+    public static List<HostConfigEntry> findMatchingEntries(String host, HostConfigEntry... entries) {
+        if (GenericUtils.isEmpty(host) || GenericUtils.isEmpty(entries)) {
+            return Collections.emptyList();
+        } else {
+            return findMatchingEntries(host, Arrays.asList(entries));
+        }
+    }
+
+    /**
+     * Locates all the matching entries for a give host name / address
+     *
+     * @param  host    The host name / address - ignored if {@code null}/empty
+     * @param  entries The {@link HostConfigEntry}-ies to scan - ignored if {@code null}/empty
+     * @return         A {@link List} of all the matching entries
+     * @see            #isHostMatch(String, int)
+     */
+    public static List<HostConfigEntry> findMatchingEntries(String host, Collection<? extends HostConfigEntry> entries) {
+        if (GenericUtils.isEmpty(host) || GenericUtils.isEmpty(entries)) {
+            return Collections.emptyList();
+        }
+
+        List<HostConfigEntry> matches = null;
+        for (HostConfigEntry entry : entries) {
+            if (!entry.isHostMatch(host, 0 /* any port */)) {
+                continue; // debug breakpoint
+            }
+
+            if (matches == null) {
+                matches = new ArrayList<>(entries.size()); // in case ALL of them match
+            }
+
+            matches.add(entry);
+        }
+
+        if (matches == null) {
+            return Collections.emptyList();
+        } else {
+            return matches;
+        }
+    }
+
+    /**
      * @param  entries The entries - ignored if {@code null}/empty
      * @return         A {@link HostConfigEntryResolver} wrapper using the entries
      */
@@ -712,134 +629,34 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         if (GenericUtils.isEmpty(entries)) {
             return HostConfigEntryResolver.EMPTY;
         } else {
-            return (host1, port1, lclAddress, username1, proxyJump1, ctx) -> {
-                List<HostConfigEntry> matches = findMatchingEntries(host1, entries);
+            return (host, port, lclAddress, username, proxyJump, ctx) -> {
+                List<HostConfigEntry> matches = findMatchingEntries(host, entries);
                 int numMatches = GenericUtils.size(matches);
                 if (numMatches <= 0) {
                     return null;
                 }
 
-                HostConfigEntry match = (numMatches == 1) ? matches.get(0) : findBestMatch(matches);
-                if (match == null) {
-                    ValidateUtils.throwIllegalArgumentException("No best match found for %s@%s:%d out of %d matches", username1,
-                            host1, port1, numMatches);
+                // Collate attributes from all matching entries.
+                HostConfigEntry entry = new HostConfigEntry(host, null, port, username);
+                for (HostConfigEntry m : matches) {
+                    entry.collate(m);
                 }
 
-                return normalizeEntry(match, host1, port1, username1, proxyJump1);
+                // Apply standard defaults.
+                String temp = entry.getHostName();  // Remember that this was null above.
+                if (temp == null || temp.isEmpty()) {
+                    entry.setHostName(host);
+                }
+                temp = entry.getUsername();
+                if (temp == null || temp.isEmpty()) {
+                    entry.setUsername(OsUtils.getCurrentUser());
+                }
+                if (entry.getPort() < 1) {
+                    entry.setPort(SshConstants.DEFAULT_PORT);
+                }
+
+                return entry;
             };
-        }
-    }
-
-    /**
-     * @param  entry       The original entry - ignored if {@code null}
-     * @param  host        The original host name / address
-     * @param  port        The original port
-     * @param  username    The original user name
-     * @param  proxyJump   And optional proxy jump setting
-     * @return             A <U>cloned</U> entry whose values are resolved - including expanding macros in the
-     *                     identities files
-     * @throws IOException If failed to normalize the entry
-     * @see                #resolveHostName(String)
-     * @see                #resolvePort(int)
-     * @see                #resolveUsername(String)
-     * @see                #resolveIdentityFilePath(String, String, int, String)
-     */
-    public static HostConfigEntry normalizeEntry(
-            HostConfigEntry entry, String host, int port, String username, String proxyJump)
-            throws IOException {
-        if (entry == null) {
-            return null;
-        }
-
-        HostConfigEntry normal = new HostConfigEntry();
-        normal.setHost(host);
-        normal.setHostName(entry.resolveHostName(host));
-        normal.setPort(entry.resolvePort(port));
-        normal.setUsername(entry.resolveUsername(username));
-        normal.setProxyJump(entry.resolveProxyJump(proxyJump));
-
-        Map<String, String> props = entry.getProperties();
-        if (MapEntryUtils.size(props) > 0) {
-            normal.setProperties(
-                    NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
-                            .putAll(props)
-                            .build());
-        }
-
-        Collection<String> ids = entry.getIdentities();
-        if (GenericUtils.isEmpty(ids)) {
-            return normal;
-        }
-
-        normal.setIdentities(Collections.emptyList()); // start fresh
-        for (String id : ids) {
-            String path = resolveIdentityFilePath(id, host, port, username);
-            normal.addIdentity(path);
-        }
-
-        return normal;
-    }
-
-    /**
-     * Resolves the effective target host
-     *
-     * @param  originalName The original requested host
-     * @param  entryName    The configured host
-     * @return              If the configured host entry is not {@code null}/empty then it is used, otherwise the
-     *                      original one.
-     */
-    public static String resolveHostName(String originalName, String entryName) {
-        if (GenericUtils.isEmpty(entryName)) {
-            return originalName;
-        } else {
-            return entryName;
-        }
-    }
-
-    /**
-     * Resolves the effective username
-     *
-     * @param  originalUser The original requested username
-     * @param  entryUser    The configured host entry username
-     * @return              If the configured host entry username is not {@code null}/empty then it is used, otherwise
-     *                      the original one.
-     */
-    public static String resolveUsername(String originalUser, String entryUser) {
-        if (GenericUtils.isEmpty(entryUser)) {
-            return originalUser;
-        } else {
-            return entryUser;
-        }
-    }
-
-    /**
-     * Resolves the effective port to use
-     *
-     * @param  originalPort The original requested port
-     * @param  entryPort    The configured host entry port
-     * @return              If the host entry port is positive, then it is used, otherwise the original requested port
-     */
-    public static int resolvePort(int originalPort, int entryPort) {
-        if (entryPort <= 0) {
-            return originalPort;
-        } else {
-            return entryPort;
-        }
-    }
-
-    /**
-     * Resolves the effective proxyJump
-     *
-     * @param  originalProxyJump The original requested proxyJump
-     * @param  entryProxyJump    The configured host entry proxyJump
-     * @return                   If the configured host entry proxyJump is not {@code null}/empty then it is used,
-     *                           otherwise the original one.
-     */
-    public static String resolveProxyJump(String originalProxyJump, String entryProxyJump) {
-        if (GenericUtils.isEmpty(entryProxyJump)) {
-            return originalProxyJump;
-        } else {
-            return entryProxyJump;
         }
     }
 
@@ -877,8 +694,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public static List<HostConfigEntry> readHostConfigEntries(BufferedReader rdr) throws IOException {
         HostConfigEntry curEntry = null;
-        HostConfigEntry globalEntry = null;
-        List<HostConfigEntry> entries = null;
+        List<HostConfigEntry> entries = new ArrayList<HostConfigEntry>();
 
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
@@ -887,179 +703,68 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                 continue;
             }
 
+            // Strip off comments
             int pos = line.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
             if (pos == 0) {
                 continue;
             }
-
             if (pos > 0) {
                 line = line.substring(0, pos);
                 line = line.trim();
             }
 
             /*
-             * Some options use '=', others use ' ' - try both NOTE: we do not validate the format for each option
-             * separately
+             * Some options use '=' as delimiter, others use ' '
+             * TODO: This version treats '=' as taking precedence, but that means '=' can't show up
+             * in a file name. A better approach is to break the line into tokens, possibly quoted,
+             * then detect '='.
              */
-            pos = line.indexOf(' ');
-            if (pos < 0) {
-                pos = line.indexOf('=');
+            String key;
+            String value;
+            List<String> valsList;
+            pos = line.indexOf('=');
+            if (pos > 0) {
+                key = line.substring(0, pos).trim();
+                value = line.substring(pos + 1);
+                valsList = new ArrayList<String>(1);
+                valsList.add(value);
+            } else {
+                pos = line.indexOf(' ');
+                if (pos < 0) {
+                    throw new StreamCorruptedException("No configuration value delimiter at line " + lineNumber + ": " + line);
+                }
+                key = line.substring(0, pos);
+                value = line.substring(pos + 1);
+                valsList = GenericUtils.filterToNotBlank(parseConfigValue(value));
             }
 
-            if (pos < 0) {
-                throw new StreamCorruptedException("No configuration value delimiter at line " + lineNumber + ": " + line);
-            }
-
-            String key = line.substring(0, pos);
-            String value = line.substring(pos + 1);
-            List<String> valsList = parseConfigValue(value);
-
+            // Detect transition to new entry.
             if (HOST_CONFIG_PROP.equalsIgnoreCase(key)) {
-                // parseConfigValue may result in entries that are empty strings if > 1 space is used between values
-                valsList = GenericUtils.filterToNotBlank(valsList);
                 if (GenericUtils.isEmpty(valsList)) {
                     throw new StreamCorruptedException("Missing host pattern(s) at line " + lineNumber + ": " + line);
                 }
 
-                // If the all-hosts pattern is used, make sure no global section already active
-                for (String name : valsList) {
-                    if (ALL_HOSTS_PATTERN.equalsIgnoreCase(name) && (globalEntry != null)) {
-                        throw new StreamCorruptedException(
-                                "Overriding the global section with a specific one at line " + lineNumber + ": " + line);
-                    }
-                }
-
                 if (curEntry != null) {
-                    curEntry.processGlobalValues(globalEntry);
+                    entries.add(curEntry);
                 }
-
-                entries = updateEntriesList(entries, curEntry);
-
                 curEntry = new HostConfigEntry();
                 curEntry.setHost(valsList);
+            } else if (MATCH_CONFIG_PROP.equalsIgnoreCase(key)) {
+                throw new StreamCorruptedException("Currently not able to process Match sections");
             } else if (curEntry == null) {
-                // if 1st encountered property is NOT for a specific host, then configuration applies to ALL
+                // Properties that occur before the first Host or Match keyword are a kind of global entry.
                 curEntry = new HostConfigEntry();
                 curEntry.setHost(Collections.singletonList(ALL_HOSTS_PATTERN));
-                globalEntry = curEntry;
             }
 
-            try {
-                curEntry.processProperty(key, valsList, false);
-            } catch (RuntimeException e) {
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ")"
-                                                   + " to process line #" + lineNumber + " (" + line + ")"
-                                                   + ": " + e.getMessage());
-            }
+            String joinedValue = GenericUtils.join(valsList, ',');
+            curEntry.appendPropertyValue(key, joinedValue);
+            curEntry.processProperty(key, valsList);
         }
 
         if (curEntry != null) {
-            curEntry.processGlobalValues(globalEntry);
+            entries.add(curEntry);
         }
-
-        entries = updateEntriesList(entries, curEntry);
-        if (entries == null) {
-            return Collections.emptyList();
-        } else {
-            return entries;
-        }
-    }
-
-    /**
-     * Finds the best match out of the given ones.
-     *
-     * @param  matches The available matches - ignored if {@code null}/empty
-     * @return         The best match or {@code null} if no matches or no best match found
-     * @see            #findBestMatch(Iterator)
-     */
-    public static HostConfigEntry findBestMatch(Collection<? extends HostConfigEntry> matches) {
-        if (GenericUtils.isEmpty(matches)) {
-            return null;
-        } else {
-            return findBestMatch(matches.iterator());
-        }
-    }
-
-    /**
-     * Finds the best match out of the given ones.
-     *
-     * @param  matches The available matches - ignored if {@code null}/empty
-     * @return         The best match or {@code null} if no matches or no best match found
-     * @see            #findBestMatch(Iterator)
-     */
-    public static HostConfigEntry findBestMatch(Iterable<? extends HostConfigEntry> matches) {
-        if (matches == null) {
-            return null;
-        } else {
-            return findBestMatch(matches.iterator());
-        }
-    }
-
-    /**
-     * Finds the best match out of the given ones. The best match is defined as one whose pattern is as <U>specific</U>
-     * as possible (if more than one match is available). I.e., a non-global match is preferred over global one, and a
-     * match with no wildcards is preferred over one with such a pattern.
-     *
-     * @param  matches The available matches - ignored if {@code null}/empty
-     * @return         The best match or {@code null} if no matches or no best match found
-     * @see            #isSpecificHostPattern(String)
-     */
-    public static HostConfigEntry findBestMatch(Iterator<? extends HostConfigEntry> matches) {
-        if ((matches == null) || (!matches.hasNext())) {
-            return null;
-        }
-
-        HostConfigEntry candidate = matches.next();
-        int wildcardMatches = 0;
-        while (matches.hasNext()) {
-            HostConfigEntry entry = matches.next();
-            String entryPattern = entry.getHost();
-            String candidatePattern = candidate.getHost();
-            // prefer non-global entry over global entry
-            if (ALL_HOSTS_PATTERN.equalsIgnoreCase(candidatePattern)) {
-                // unlikely, but handle it
-                if (ALL_HOSTS_PATTERN.equalsIgnoreCase(entryPattern)) {
-                    wildcardMatches++;
-                } else {
-                    candidate = entry;
-                    wildcardMatches = 0;
-                }
-                continue;
-            }
-
-            if (isSpecificHostPattern(entryPattern)) {
-                // if both are specific then no best match
-                if (isSpecificHostPattern(candidatePattern)) {
-                    return null;
-                }
-
-                candidate = entry;
-                wildcardMatches = 0;
-                continue;
-            }
-
-            wildcardMatches++;
-        }
-
-        String candidatePattern = candidate.getHost();
-        // best match either has specific host or no wildcard matches
-        if ((wildcardMatches <= 0) || (isSpecificHostPattern(candidatePattern))) {
-            return candidate;
-        }
-
-        return null;
-    }
-
-    public static List<HostConfigEntry> updateEntriesList(List<HostConfigEntry> entries, HostConfigEntry curEntry) {
-        if (curEntry == null) {
-            return entries;
-        }
-
-        if (entries == null) {
-            entries = new ArrayList<>();
-        }
-
-        entries.add(curEntry);
         return entries;
     }
 
@@ -1100,6 +805,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Checks if this is a multi-value - allow space and comma
      *
+     * @todo         Handle quote marks.
      * @param  value The value - ignored if {@code null}/empty (after trimming)
      * @return       A {@link List} of the encountered values
      */
