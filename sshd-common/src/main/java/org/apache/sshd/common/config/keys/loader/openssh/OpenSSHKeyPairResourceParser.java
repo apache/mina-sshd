@@ -154,7 +154,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
         CipherFactory cipherSpec = BuiltinCiphers.resolveFactory(cipher);
         if (cipherSpec == null || !cipherSpec.isSupported()) {
-            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher);
+            throw new NoSuchAlgorithmException("Unsupported cipher: " + cipher + " for encrypted key in " + resourceKey);
         }
 
         byte[] encryptedData;
@@ -164,6 +164,13 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
             // to follow the payload data.
             int authTokenLength = cipherSpec.getAuthenticationTagSize();
             int encryptedLength = KeyEntryResolver.decodeInt(stream);
+            if (encryptedLength < 0) {
+                throw new StreamCorruptedException(
+                        "Key length " + encryptedLength + " negative for encrypted key in " + resourceKey);
+            } else if (encryptedLength > MAX_PRIVATE_KEY_DATA_SIZE) {
+                throw new StreamCorruptedException("Key length " + encryptedLength + " > allowed maximum "
+                                                   + MAX_PRIVATE_KEY_DATA_SIZE + " for encrypted key in " + resourceKey);
+            }
             encryptedData = new byte[encryptedLength + authTokenLength];
             IoUtils.readFully(stream, encryptedData);
         } else {

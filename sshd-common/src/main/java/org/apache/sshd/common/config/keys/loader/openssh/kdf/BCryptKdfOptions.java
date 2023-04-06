@@ -137,6 +137,12 @@ public class BCryptKdfOptions implements OpenSSHKdfOptions {
             int macLength = cipherSpec.getAuthenticationTagSize();
             cipher.init(Cipher.Mode.Decrypt, kv, iv);
             cipher.update(sensitive, 0, sensitive.length - macLength);
+            if (macLength == 0) {
+                // Avoid an extra copy
+                byte[] result = sensitive;
+                sensitive = null; // Don't clear in finalization
+                return result;
+            }
             return Arrays.copyOf(sensitive, sensitive.length - macLength);
         } catch (RuntimeException e) {
             Throwable t = ExceptionUtils.peelException(e);
