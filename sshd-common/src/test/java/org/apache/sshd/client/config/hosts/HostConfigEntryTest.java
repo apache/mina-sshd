@@ -20,6 +20,7 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -163,6 +164,37 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         expect("bar.example.com", 2023, "test2", resolved);
         assertEquals("[xFile, dFile]", resolved.getIdentities().toString());
         assertEquals("xFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+    }
+
+    @Test // See GH-351
+    public void testProxyJump() throws Exception {
+        HostConfigEntry bastion = new HostConfigEntry();
+        bastion.setHost("bastion");
+        bastion.setHostName("1.2.3.4");
+        bastion.setUsername("username");
+        bastion.setIdentities(Collections.singleton("yFile"));
+        HostConfigEntry server = new HostConfigEntry();
+        server.setHost("server*");
+        server.setProxyJump("bastion");
+        HostConfigEntryResolver resolver = HostConfigEntry.toHostConfigEntryResolver(GenericUtils.asList(bastion, server));
+        HostConfigEntry resolved = resolver.resolveEffectiveHost("server1", 0, null, "someone", null, null);
+        expect("server1", 22, "someone", resolved);
+        Collection<String> identities = resolved.getIdentities();
+        assertTrue("Unexpected configured identities " + identities, identities == null || identities.isEmpty());
+        String identityProp = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
+        assertNull("Unexpected IdentityFile property", identityProp);
+        // Same handling as in SshClient.parseProxyJumps()
+        String proxy = resolved.getProperty(HostConfigEntry.PROXY_JUMP_CONFIG_PROP);
+        assertEquals("bastion", proxy);
+        URI uri = URI.create("ssh://" + proxy);
+        resolved = resolver.resolveEffectiveHost(uri.getHost(), uri.getPort(), null, uri.getUserInfo(), null, null);
+        expect("1.2.3.4", 22, "username", resolved);
+        identities = resolved.getIdentities();
+        assertNotNull("Should have identities", identities);
+        assertEquals("[yFile]", identities.toString());
+        identityProp = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
+        assertNotNull("Should have IdentityFile property", identityProp);
+        assertEquals("yFile", identityProp);
     }
 
     @Test
