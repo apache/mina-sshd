@@ -134,6 +134,7 @@
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
 
         <dependency.download.silent>true</dependency.download.silent>
+        <bnd.extraImports># A comment indicates 'none'</bnd.extraImports>
     </properties>
 
     <profiles>
@@ -1476,6 +1477,7 @@
                                 <Import-Package><![CDATA[
                                   org.apache.sshd*;version="$<range;[===,=+);$<maven_version;${project.version}>>",
                                   org.slf4j*;version="$<range;[==,${slf4j.upper.bound})>",
+                                  ${bnd.extraImports}
                                   *
                                 ]]></Import-Package>
                                 <Export-Package>*;-noimport:=true</Export-Package>
