@@ -666,6 +666,11 @@
                 <artifactId>org.apache.servicemix.bundles.not-yet-commons-ssl</artifactId>
                 <version>0.3.11_1</version>
             </dependency>
+            <dependency>
+                <groupId>com.google.jimfs</groupId>
+                <artifactId>jimfs</artifactId>
+                <version>1.2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

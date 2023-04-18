@@ -60,6 +60,11 @@
             <artifactId>org.apache.servicemix.bundles.not-yet-commons-ssl</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.jimfs</groupId>
+            <artifactId>jimfs</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

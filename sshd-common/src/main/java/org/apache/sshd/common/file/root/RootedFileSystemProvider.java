@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.file.root;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,32 +27,40 @@ import java.net.URISyntaxException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.AccessMode;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.NotLinkException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderMismatchException;
+import java.nio.file.SecureDirectoryStream;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,14 +166,22 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newInputStream(r, options);
+        try {
+            return p.newInputStream(r, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newOutputStream(r, options);
+        try {
+            return p.newOutputStream(r, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
@@ -172,7 +189,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newFileChannel(r, options, attrs);
+        try {
+            return p.newFileChannel(r, options, attrs);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
@@ -181,7 +202,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newAsynchronousFileChannel(r, options, executor, attrs);
+        try {
+            return p.newAsynchronousFileChannel(r, options, executor, attrs);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
@@ -189,82 +214,74 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.newByteChannel(r, options, attrs);
+        try {
+            return p.newByteChannel(r, options, attrs);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         Path r = unroot(dir);
         FileSystemProvider p = provider(r);
-        return root(((RootedPath) dir).getFileSystem(), p.newDirectoryStream(r, filter));
+        try {
+            return root(((RootedPath) dir).getFileSystem(), p.newDirectoryStream(r, filter));
+        } catch (IOException ex) {
+            throw translateIoException(ex, dir);
+        }
     }
 
     protected DirectoryStream<Path> root(RootedFileSystem rfs, DirectoryStream<Path> ds) {
-        return new DirectoryStream<Path>() {
-            @Override
-            public Iterator<Path> iterator() {
-                return root(rfs, ds.iterator());
-            }
-
-            @Override
-            public void close() throws IOException {
-                ds.close();
-            }
-        };
-    }
-
-    protected Iterator<Path> root(RootedFileSystem rfs, Iterator<Path> iter) {
-        return new Iterator<Path>() {
-            @Override
-            public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            @Override
-            public Path next() {
-                return root(rfs, iter.next());
-            }
-        };
+        if (ds instanceof SecureDirectoryStream) {
+            return new RootedSecureDirectoryStream(rfs, (SecureDirectoryStream<Path>) ds);
+        }
+        return new RootedDirectoryStream(rfs, ds);
     }
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(dir);
         FileSystemProvider p = provider(r);
-        p.createDirectory(r, attrs);
+        try {
+            p.createDirectory(r, attrs);
+        } catch (IOException ex) {
+            throw translateIoException(ex, dir);
+        }
     }
 
     @Override
     public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
-        createLink(link, target, true, attrs);
+        // make sure symlink cannot break out of chroot jail. If it is unsafe, simply thrown an exception. This is
+        // to ensure that symlink semantics are maintained when it is safe, and creation fails when not.
+        RootedFileSystemUtils.validateSafeRelativeSymlink(target);
+        Path l = unroot(link);
+        Path t = target.isAbsolute() ? unroot(target) : l.getFileSystem().getPath(target.toString());
+
+        FileSystemProvider p = provider(l);
+        try {
+            p.createSymbolicLink(l, t, attrs);
+
+            if (log.isDebugEnabled()) {
+                log.debug("createSymbolicLink({} => {}", l, t);
+            }
+        } catch (IOException ex) {
+            throw translateIoException(ex, link);
+        }
     }
 
     @Override
     public void createLink(Path link, Path existing) throws IOException {
-        createLink(link, existing, false);
-    }
-
-    protected void createLink(Path link, Path target, boolean symLink, FileAttribute<?>... attrs) throws IOException {
         Path l = unroot(link);
-        Path t = unroot(target);
-        /*
-         * For a symbolic link preserve the relative path
-         */
-        if (symLink && (!target.isAbsolute())) {
-            RootedFileSystem rfs = ((RootedPath) target).getFileSystem();
-            Path root = rfs.getRoot();
-            t = root.relativize(t);
-        }
+        Path t = unroot(existing);
 
-        FileSystemProvider p = provider(l);
-        if (symLink) {
-            p.createSymbolicLink(l, t, attrs);
-        } else {
-            p.createLink(l, t);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("createLink(symbolic={}) {} => {}", symLink, l, t);
+        try {
+            provider(l).createLink(l, t);
+            if (log.isDebugEnabled()) {
+                log.debug("createLink({} => {}", l, t);
+            }
+        } catch (IOException ex) {
+            throw translateIoException(ex, link);
         }
     }
 
@@ -275,7 +292,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             log.trace("delete({}): {}", path, r);
         }
         FileSystemProvider p = provider(r);
-        p.delete(r);
+        try {
+            p.delete(r);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
@@ -285,19 +306,27 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             log.trace("deleteIfExists({}): {}", path, r);
         }
         FileSystemProvider p = provider(r);
-        return p.deleteIfExists(r);
+        try {
+            return p.deleteIfExists(r);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public Path readSymbolicLink(Path link) throws IOException {
         Path r = unroot(link);
         FileSystemProvider p = provider(r);
-        Path t = p.readSymbolicLink(r);
-        Path target = root((RootedFileSystem) link.getFileSystem(), t);
-        if (log.isTraceEnabled()) {
-            log.trace("readSymbolicLink({})[{}]: {}[{}]", link, r, target, t);
+        try {
+            Path t = p.readSymbolicLink(r);
+            Path target = root((RootedFileSystem) link.getFileSystem(), t);
+            if (log.isTraceEnabled()) {
+                log.trace("readSymbolicLink({})[{}]: {}[{}]", link, r, target, t);
+            }
+            return target;
+        } catch (IOException ex) {
+            throw translateIoException(ex, link);
         }
-        return target;
     }
 
     @Override
@@ -308,7 +337,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             log.trace("copy({})[{}]: {}[{}]", source, s, target, t);
         }
         FileSystemProvider p = provider(s);
-        p.copy(s, t, options);
+        try {
+            p.copy(s, t, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, source);
+        }
     }
 
     @Override
@@ -319,7 +352,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             log.trace("move({})[{}]: {}[{}]", source, s, target, t);
         }
         FileSystemProvider p = provider(s);
-        p.move(s, t, options);
+        try {
+            p.move(s, t, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, source);
+        }
     }
 
     @Override
@@ -327,21 +364,33 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         Path r = unroot(path);
         Path r2 = unroot(path2);
         FileSystemProvider p = provider(r);
-        return p.isSameFile(r, r2);
+        try {
+            return p.isSameFile(r, r2);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public boolean isHidden(Path path) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        return p.isHidden(r);
+        try {
+            return p.isHidden(r);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
         RootedFileSystem fileSystem = getFileSystem(path);
         Path root = fileSystem.getRoot();
-        return Files.getFileStore(root);
+        try {
+            return Files.getFileStore(root);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     protected RootedFileSystem getFileSystem(Path path) throws FileSystemNotFoundException {
@@ -384,7 +433,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        p.checkAccess(r, modes);
+        try {
+            p.checkAccess(r, modes);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
@@ -403,18 +456,26 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         }
 
         FileSystemProvider p = provider(r);
-        return p.readAttributes(r, type, options);
+        try {
+            return p.readAttributes(r, type, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
-        Map<String, Object> attrs = p.readAttributes(r, attributes, options);
-        if (log.isTraceEnabled()) {
-            log.trace("readAttributes({})[{}] {}: {}", path, r, attributes, attrs);
+        try {
+            Map<String, Object> attrs = p.readAttributes(r, attributes, options);
+            if (log.isTraceEnabled()) {
+                log.trace("readAttributes({})[{}] {}: {}", path, r, attributes, attrs);
+            }
+            return attrs;
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
         }
-        return attrs;
     }
 
     @Override
@@ -424,7 +485,11 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             log.trace("setAttribute({})[{}] {}={}", path, r, attribute, value);
         }
         FileSystemProvider p = provider(r);
-        p.setAttribute(r, attribute, value, options);
+        try {
+            p.setAttribute(r, attribute, value, options);
+        } catch (IOException ex) {
+            throw translateIoException(ex, path);
+        }
     }
 
     protected FileSystemProvider provider(Path path) {
@@ -434,10 +499,33 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     protected Path root(RootedFileSystem rfs, Path nat) {
         if (nat.isAbsolute()) {
+            // preferred case - this isn't a symlink out of our jail
+            if (nat.startsWith(rfs.getRoot())) {
+                // If we have the same number of parts as the root, and start with the root, we must be the root.
+                if (nat.getNameCount() == rfs.getRoot().getNameCount()) {
+                    return rfs.getPath("/");
+                }
+
+                // We are the root, and more. Get the first name past the root because of how getPath works
+                String firstName = "/" + nat.getName(rfs.getRoot().getNameCount());
+
+                // the rooted path should have the number of parts past the root
+                String[] varargs = new String[nat.getNameCount() - rfs.getRoot().getNameCount() - 1];
+                int varargsCounter = 0;
+                for (int i = 1 + rfs.getRoot().getNameCount(); i < nat.getNameCount(); i++) {
+                    varargs[varargsCounter++] = nat.getName(i).toString();
+                }
+                return rfs.getPath(firstName, varargs);
+            }
+
+            // This is the case where there's a symlink jailbreak, so we return a relative link as the directories above
+            // the chroot don't make sense to present
+            // The behavior with the fs class is that we follow the symlink. Note that this is dangerous.
             Path root = rfs.getRoot();
             Path rel = root.relativize(nat);
-            return rfs.getPath("/" + rel.toString());
+            return rfs.getPath("/" + rel);
         } else {
+            // For a relative symlink, simply return it as a RootedPath. Note that this may break out of the chroot.
             return rfs.getPath(nat.toString());
         }
     }
@@ -466,39 +554,73 @@ public class RootedFileSystemProvider extends FileSystemProvider {
      * @throws InvalidPathException If the resolved path is not a proper sub-path of the rooted file system
      */
     protected Path resolveLocalPath(RootedPath path) {
-        RootedPath absPath = Objects.requireNonNull(path, "No rooted path to resolve").toAbsolutePath();
-        RootedFileSystem rfs = absPath.getFileSystem();
+        Objects.requireNonNull(path, "No rooted path to resolve");
+        RootedFileSystem rfs = path.getFileSystem();
         Path root = rfs.getRoot();
-        FileSystem lfs = root.getFileSystem();
-
-        String rSep = ValidateUtils.checkNotNullAndNotEmpty(rfs.getSeparator(), "No rooted file system separator");
-        ValidateUtils.checkTrue(rSep.length() == 1, "Bad rooted file system separator: %s", rSep);
-        char rootedSeparator = rSep.charAt(0);
-
-        String lSep = ValidateUtils.checkNotNullAndNotEmpty(lfs.getSeparator(), "No local file system separator");
-        ValidateUtils.checkTrue(lSep.length() == 1, "Bad local file system separator: %s", lSep);
-        char localSeparator = lSep.charAt(0);
-
-        String r = absPath.toString();
-        String subPath = r.substring(1);
-        if (rootedSeparator != localSeparator) {
-            subPath = subPath.replace(rootedSeparator, localSeparator);
-        }
-
-        Path resolved = root.resolve(subPath);
-        resolved = resolved.normalize();
-        resolved = resolved.toAbsolutePath();
-        if (log.isTraceEnabled()) {
-            log.trace("resolveLocalPath({}): {}", absPath, resolved);
-        }
+        Path resolved = RootedFileSystemUtils.chrootDirectory(root, path);
 
         /*
          * This can happen for Windows since we represent its paths as /C:/some/path, so substring(1) yields
          * C:/some/path - which is resolved as an absolute path (which we don't want).
+         *
+         * This also is a security assertion to protect against unknown attempts to break out of the chroot jail
          */
-        if (!resolved.startsWith(root)) {
-            throw new InvalidPathException(r, "Not under root");
+        if (!resolved.normalize().startsWith(root)) {
+            throw new InvalidPathException(root.toString(), "Not under root");
         }
         return resolved;
+    }
+
+    private IOException translateIoException(IOException ex, Path rootedPath) {
+        // cast is safe as path was unrooted earlier.
+        RootedPath rootedPathCasted = (RootedPath) rootedPath;
+        Path root = rootedPathCasted.getFileSystem().getRoot();
+
+        if (ex instanceof FileSystemException) {
+            String file = fixExceptionFileName(root, rootedPath, ((FileSystemException) ex).getFile());
+            String otherFile = fixExceptionFileName(root, rootedPath, ((FileSystemException) ex).getOtherFile());
+            String reason = ((FileSystemException) ex).getReason();
+            if (NoSuchFileException.class.equals(ex.getClass())) {
+                return new NoSuchFileException(file, otherFile, reason);
+            } else if (FileSystemLoopException.class.equals(ex.getClass())) {
+                return new FileSystemLoopException(file);
+            } else if (NotDirectoryException.class.equals(ex.getClass())) {
+                return new NotDirectoryException(file);
+            } else if (DirectoryNotEmptyException.class.equals(ex.getClass())) {
+                return new DirectoryNotEmptyException(file);
+            } else if (NotLinkException.class.equals(ex.getClass())) {
+                return new NotLinkException(file);
+            } else if (AtomicMoveNotSupportedException.class.equals(ex.getClass())) {
+                return new AtomicMoveNotSupportedException(file, otherFile, reason);
+            } else if (FileAlreadyExistsException.class.equals(ex.getClass())) {
+                return new FileAlreadyExistsException(file, otherFile, reason);
+            } else if (AccessDeniedException.class.equals(ex.getClass())) {
+                return new AccessDeniedException(file, otherFile, reason);
+            }
+            return new FileSystemException(file, otherFile, reason);
+        } else if (ex.getClass().equals(FileNotFoundException.class)) {
+            return new FileNotFoundException(ex.getLocalizedMessage().replace(root.toString(), ""));
+        }
+        // not sure how to translate, so leave as is. Hopefully does not leak data
+        return ex;
+    }
+
+    private String fixExceptionFileName(Path root, Path rootedPath, String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+
+        Path toFix = root.getFileSystem().getPath(fileName);
+        if (toFix.getNameCount() == root.getNameCount()) {
+            // return the root
+            return rootedPath.getFileSystem().getSeparator();
+        }
+
+        StringBuilder ret = new StringBuilder();
+        for (int partNum = root.getNameCount(); partNum < toFix.getNameCount(); partNum++) {
+            ret.append(rootedPath.getFileSystem().getSeparator());
+            ret.append(toFix.getName(partNum++));
+        }
+        return ret.toString();
     }
 }
