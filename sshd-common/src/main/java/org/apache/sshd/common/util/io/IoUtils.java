@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -394,18 +395,13 @@ public final class IoUtils {
      *                 explained above
      */
     public static Boolean checkFileExists(Path path, LinkOption... options) {
-        boolean followLinks = true;
-        for (LinkOption opt : options) {
-            if (opt == LinkOption.NOFOLLOW_LINKS) {
-                followLinks = false;
-                break;
-            }
-        }
+        boolean followLinks = followLinks(options);
+
         try {
             if (followLinks) {
                 path.getFileSystem().provider().checkAccess(path);
             } else {
-                Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                Files.readAttributes(path, BasicFileAttributes.class, options);
             }
             return Boolean.TRUE;
         } catch (NoSuchFileException e) {
@@ -413,6 +409,50 @@ public final class IoUtils {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * Checks that a file exists with or without following any symlinks.
+     *
+     * @param  path                the path to check
+     * @param  neverFollowSymlinks whether to follow symlinks
+     * @return                     whether the file/dir exists
+     */
+    public static Boolean checkFileExistsAnySymlinks(Path path, boolean neverFollowSymlinks) {
+        try {
+            if (!neverFollowSymlinks) {
+                path.getFileSystem().provider().checkAccess(path);
+            } else {
+                // this is a bad fix because this leaves a nasty race condition - the directory may turn into a symlink
+                // between this check and the call to open()
+                for (int i = 1; i <= path.getNameCount(); i++) {
+                    Path checkForSymLink = getPartialPath(path, i);
+                    BasicFileAttributes basicFileAttributes
+                            = Files.readAttributes(checkForSymLink, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                    if (basicFileAttributes.isSymbolicLink()) {
+                        return false;
+                    }
+                }
+            }
+            return Boolean.TRUE;
+        } catch (NoSuchFileException e) {
+            return Boolean.FALSE;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static Path getPartialPath(Path path, int partsToExtract) {
+        String firstName = path.getName(0).toString();
+        String[] names = new String[partsToExtract - 1];
+        for (int j = 1; j < partsToExtract; j++) {
+            names[j - 1] = path.getName(j).toString();
+        }
+        Path checkForSymLink = path.getFileSystem().getPath(firstName, names);
+        if (path.getRoot() != null) {
+            checkForSymLink = path.getRoot().resolve(checkForSymLink);
+        }
+        return checkForSymLink;
     }
 
     /**
@@ -636,5 +676,76 @@ public final class IoUtils {
             result.add(line);
         }
         return result;
+    }
+
+    /**
+     * Chroot a path under the new root
+     *
+     * @param  newRoot    the new root
+     * @param  toSanitize the path to sanitize and chroot
+     * @return            the chrooted path under the newRoot filesystem
+     */
+    public static Path chroot(Path newRoot, Path toSanitize) {
+        Objects.requireNonNull(newRoot);
+        Objects.requireNonNull(toSanitize);
+        List<String> sanitized = removeExtraCdUps(toSanitize);
+        return buildPath(newRoot, newRoot.getFileSystem(), sanitized);
+    }
+
+    /**
+     * Remove any extra directory ups from the Path
+     *
+     * @param  toSanitize the path to sanitize
+     * @return            the sanitized path
+     */
+    public static Path removeCdUpAboveRoot(Path toSanitize) {
+        List<String> sanitized = removeExtraCdUps(toSanitize);
+        return buildPath(toSanitize.getRoot(), toSanitize.getFileSystem(), sanitized);
+    }
+
+    private static List<String> removeExtraCdUps(Path toResolve) {
+        List<String> newNames = new ArrayList<>(toResolve.getNameCount());
+
+        int numCdUps = 0;
+        int numDirParts = 0;
+        for (int i = 0; i < toResolve.getNameCount(); i++) {
+            String name = toResolve.getName(i).toString();
+            if ("..".equals(name)) {
+                // If we have more cdups than dir parts, so we ignore the ".." to avoid jail escapes
+                if (numDirParts > numCdUps) {
+                    ++numCdUps;
+                    newNames.add(name);
+                }
+            } else {
+                // if the current directory is a part of the name, don't increment number of dir parts, as it doesn't
+                // add to the number of ".."s that can be present before the root
+                if (!".".equals(name)) {
+                    ++numDirParts;
+                }
+                newNames.add(name);
+            }
+        }
+        return newNames;
+    }
+
+    private static Path buildPath(Path root, FileSystem fs, List<String> namesList) {
+        if (namesList.isEmpty()) {
+            return root == null ? fs.getPath(".") : root;
+        }
+
+        Path cleanedPathToResolve = buildPath(fs, namesList);
+        return root.resolve(cleanedPathToResolve);
+    }
+
+    private static Path buildPath(FileSystem fs, List<String> namesList) {
+        String[] names = new String[namesList.size() - 1];
+
+        Iterator<String> it = namesList.iterator();
+        String rootName = it.next();
+        for (int i = 0; it.hasNext(); i++) {
+            names[i] = it.next();
+        }
+        Path cleanedPathToResolve = fs.getPath(rootName, names);
+        return cleanedPathToResolve;
     }
 }

@@ -557,7 +557,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         Objects.requireNonNull(path, "No rooted path to resolve");
         RootedFileSystem rfs = path.getFileSystem();
         Path root = rfs.getRoot();
-        Path resolved = RootedFileSystemUtils.chrootDirectory(root, path);
+        // initialize a list for the new file name parts
+        Path resolved = IoUtils.chroot(root, path);
 
         /*
          * This can happen for Windows since we represent its paths as /C:/some/path, so substring(1) yields

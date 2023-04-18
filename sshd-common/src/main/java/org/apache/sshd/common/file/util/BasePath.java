@@ -58,11 +58,11 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         return (T) this;
     }
 
-    protected T create(String root, String... names) {
+    protected T create(String root, Collection<String> names) {
         return create(root, GenericUtils.unmodifiableList(names));
     }
 
-    protected T create(String root, Collection<String> names) {
+    protected T create(String root, String... names) {
         return create(root, GenericUtils.unmodifiableList(names));
     }
 

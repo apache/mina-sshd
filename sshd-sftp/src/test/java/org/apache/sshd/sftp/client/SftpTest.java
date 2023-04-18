@@ -711,10 +711,11 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+                        SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle,
+                        LinkOption... linkOptions)
                         throws IOException {
                     dirHolder.set(dir);
-                    return SftpFileSystemAccessor.super.openDirectory(subsystem, dirHandle, dir, handle);
+                    return SftpFileSystemAccessor.super.openDirectory(subsystem, dirHandle, dir, handle, linkOptions);
                 }
 
                 @Override

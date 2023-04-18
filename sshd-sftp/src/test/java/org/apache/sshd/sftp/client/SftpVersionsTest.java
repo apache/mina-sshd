@@ -291,9 +291,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public Command createSubsystem(ChannelSession channel) throws IOException {
                 SftpSubsystem subsystem = new SftpSubsystem(channel, this) {
                     @Override
-                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
+                    protected NavigableMap<String, Object> resolveFileAttributes(
+                            Path file, int flags, boolean neverFollowSymLinks, LinkOption... options)
                             throws IOException {
-                        NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                        NavigableMap<String, Object> attrs
+                                = super.resolveFileAttributes(file, flags, neverFollowSymLinks, options);
                         if (MapEntryUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }
@@ -412,9 +414,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             public Command createSubsystem(ChannelSession channel) throws IOException {
                 SftpSubsystem subsystem = new SftpSubsystem(channel, this) {
                     @Override
-                    protected NavigableMap<String, Object> resolveFileAttributes(Path file, int flags, LinkOption... options)
+                    protected NavigableMap<String, Object> resolveFileAttributes(
+                            Path file, int flags, boolean neverFollowLinks, LinkOption... options)
                             throws IOException {
-                        NavigableMap<String, Object> attrs = super.resolveFileAttributes(file, flags, options);
+                        NavigableMap<String, Object> attrs
+                                = super.resolveFileAttributes(file, flags, neverFollowLinks, options);
                         if (MapEntryUtils.isEmpty(attrs)) {
                             attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                         }
