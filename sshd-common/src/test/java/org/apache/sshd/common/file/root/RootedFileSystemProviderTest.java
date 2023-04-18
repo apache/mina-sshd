@@ -50,10 +50,12 @@ import java.util.function.Supplier;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -87,6 +89,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     public RootedFileSystemProviderTest(String fsType, Supplier<FileSystem> hostFilesystem) throws Exception {
         super();
+        Assume.assumeTrue("Test does not work on Windows", !OsUtils.isWin32());
         this.hostFilesystem = hostFilesystem.get();
         Path targetFolder = Objects.requireNonNull(
                 CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class),
