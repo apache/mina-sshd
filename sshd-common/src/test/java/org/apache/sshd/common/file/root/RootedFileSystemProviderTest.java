@@ -55,7 +55,6 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -86,10 +85,11 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     private final RootedFileSystem fileSystem;
     private final Path rootSandbox;
     private final FileHelper fileHelper;
+    private final boolean isTestingRealWindowsHostFS;
 
     public RootedFileSystemProviderTest(String fsType, Supplier<FileSystem> hostFilesystem) throws Exception {
         super();
-        Assume.assumeTrue("Test does not work on Windows", !OsUtils.isWin32());
+
         this.hostFilesystem = hostFilesystem.get();
         Path targetFolder = Objects.requireNonNull(
                 CommonTestSupportUtils.detectTargetFolder(RootedFileSystemProviderTest.class),
@@ -98,6 +98,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         fileHelper = new FileHelper();
         rootSandbox = fileHelper.createTestSandbox(targetFolderOnHostFs.resolve(TEMP_SUBFOLDER_NAME));
         fileSystem = (RootedFileSystem) new RootedFileSystemProvider().newFileSystem(rootSandbox, Collections.emptyMap());
+        this.isTestingRealWindowsHostFS = OsUtils.isWin32() && this.hostFilesystem == FileSystems.getDefault();
     }
 
     @Parameterized.Parameters(name = "{0}FS")
@@ -130,9 +131,25 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     private Path getTargetFolderOnHostFs(Path targetFolder) {
-        return this.hostFilesystem.getSeparator().equals("\\")
-                ? this.hostFilesystem.getPath("C:", targetFolder.toString())
-                : this.hostFilesystem.getPath(targetFolder.toString());
+        // need to reroot a file for a unix file system on windows
+        if (this.hostFilesystem.getSeparator().equals("/") && targetFolder.getRoot() != null
+                && targetFolder.getRoot().toString().contains(":")) {
+            return reroot(this.hostFilesystem.getSeparator(), targetFolder);
+        }
+        // need to reroot a file for a windows file system on unix
+        if (this.hostFilesystem.getSeparator().equals("\\") && targetFolder.getRoot() != null
+                && "/".equals(targetFolder.getRoot().toString())) {
+            return reroot("C:\\", targetFolder);
+        }
+        return this.hostFilesystem.getPath(targetFolder.toString());
+    }
+
+    private Path reroot(String newRoot, Path targetFolder) {
+        String[] parts = new String[targetFolder.getNameCount() - 1];
+        for (int i = 1; i <= parts.length; i++) {
+            parts[i - 1] = targetFolder.getName(i).toString();
+        }
+        return this.hostFilesystem.getPath(newRoot, parts);
     }
 
     @Test
@@ -155,10 +172,15 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
     }
 
-    @Test(expected = NoSuchFileException.class)
-    public void testMkdirInvalid() throws IOException {
-        Path parent = fileHelper.createDirectory(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in creating directory %s", parent.toString()));
+    @Test
+    public void testMkdirInvalid() {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
+
+        String parent = DOESNT_EXIST + getCurrentTestName();
+        assertThrows(String.format("Unexpected success in creating directory %s", parent), NoSuchFileException.class,
+                () -> fileHelper.createDirectory(fileSystem.getPath(parent)));
     }
 
     /* rmdir */
@@ -195,10 +217,15 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test
     public void testChdirInvalid() throws IOException {
-        Path chdir = fileHelper.createDirectory(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in changing directory %s", chdir.toString()));
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
+
+        String chdir = DOESNT_EXIST + getCurrentTestName();
+        assertThrows(String.format("Unexpected success in changing directory %s", chdir),
+                NoSuchFileException.class, () -> fileHelper.createDirectory(fileSystem.getPath(chdir)));
     }
 
     /* write */
@@ -208,10 +235,15 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         assertTrue(exists(created) && isReadable(created));
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test
     public void testWriteFileInvalid() throws IOException {
-        Path written = fileHelper.createFile(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in writing file %s", written.toString()));
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
+
+        String written = DOESNT_EXIST + getCurrentTestName();
+        assertThrows(String.format("Unexpected success in writing file %s", written), NoSuchFileException.class,
+                () -> fileHelper.createFile(fileSystem.getPath(written)));
     }
 
     /* read */
@@ -256,11 +288,16 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test
     public void testCopyFileInvalid() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-        Path copy = fileHelper.copyFile(created, fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in copying file to %s", copy.toString()));
+        String copy = DOESNT_EXIST + getCurrentTestName();
+        assertThrows(String.format("Unexpected success in copying file to %s", copy),
+                NoSuchFileException.class,
+                () -> fileHelper.copyFile(created, fileSystem.getPath(copy)));
     }
 
     /* mv */
@@ -272,11 +309,16 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         assertTrue(notExists(created) && exists(destination) && isReadable(destination));
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test
     public void testMoveFileInvalid() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
+
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-        Path moved = fileHelper.moveFile(created, fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in moving file to %s", moved.toString()));
+        String moved = DOESNT_EXIST + getCurrentTestName();
+        assertThrows(String.format("Unexpected success in moving file to %s", moved), NoSuchFileException.class,
+                () -> fileHelper.moveFile(created, fileSystem.getPath(moved)));
     }
 
     /* link */
@@ -336,11 +378,15 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         Assert.assertFalse(Files.exists(linkPath));
     }
 
-    @Test(expected = NoSuchFileException.class)
+    @Test
     public void testCreateLinkInvalid() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         Path existing = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
-        Path link = fileHelper.createLink(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName() + "link"), existing);
-        fail(String.format("Unexpected success in linking file %s", link.toString()));
+        String link = DOESNT_EXIST + getCurrentTestName() + "link";
+        assertThrows(String.format("Unexpected success in linking file %s", link), NoSuchFileException.class,
+                () -> fileHelper.createLink(fileSystem.getPath(link), existing));
     }
 
     @Test
@@ -447,30 +493,45 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testValidSymlink1() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         String fileName = "/testdir/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink2() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         String fileName = "/testdir/testdir2/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink3() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         String fileName = "/testdir/../testdir3/";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink4() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         String fileName = "testdir/../testdir3/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink5() throws IOException {
+        if (isTestingRealWindowsHostFS) {
+            return;
+        }
         String fileName = "testdir/../testdir3/../testfile";
         testValidSymlink(fileName, false);
     }
