@@ -127,7 +127,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
      * @param  name the name to fix the separator for if running on Windows
      * @return      the fixed name
      */
-    private String handleWindowsSeparator(String name) {
+    protected String handleWindowsSeparator(String name) {
         if (hostFsHasWindowsSeparator()) {
             return name.replace('\\', '/');
         }

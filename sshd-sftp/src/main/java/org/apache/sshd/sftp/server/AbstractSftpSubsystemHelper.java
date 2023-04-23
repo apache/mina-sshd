@@ -2428,15 +2428,14 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     /**
-     * A utility function to validate that the directories leading up to a file are not symlinks when they are not
-     * supposed to be.
+     * A utility function to validate that the directories leading up to a file are not symlinks
      *
      * @param  path                the file to check for symlink presence
      * @param  neverFollowSymLinks whether to never follow symlinks in the parent paths
      * @param  options             whether the file itself can be a symlink
-     * @return                     the status of the file
+     * @return                     whether there are symlinks in the path to this file, or null if unknown
      */
-    private Boolean checkSymlinkState(Path path, boolean neverFollowSymLinks, LinkOption[] options) {
+    public Boolean checkSymlinkState(Path path, boolean neverFollowSymLinks, LinkOption[] options) {
         Boolean status = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(path, neverFollowSymLinks);
         if (!Boolean.FALSE.equals(status)) {
             status = IoUtils.checkFileExists(path, options);
@@ -2444,7 +2443,7 @@ public abstract class AbstractSftpSubsystemHelper
         return status;
     }
 
-    private Boolean validateParentExistWithNoSymlinksIfNeverFollowSymlinks(Path path, boolean neverFollowSymLinks) {
+    public Boolean validateParentExistWithNoSymlinksIfNeverFollowSymlinks(Path path, boolean neverFollowSymLinks) {
         Boolean status = true;
         if (neverFollowSymLinks && path.getParent() != null) {
             status = IoUtils.checkFileExistsAnySymlinks(path.getParent(), true);

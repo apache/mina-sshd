@@ -33,7 +33,7 @@ import java.util.Set;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class RootedSecureDirectoryStream extends RootedDirectoryStream implements SecureDirectoryStream<Path> {
+public class RootedSecureDirectoryStream extends RootedDirectoryStream implements SecureDirectoryStream<Path> {
 
     RootedSecureDirectoryStream(RootedFileSystem rfs, SecureDirectoryStream<Path> delegate) {
         super(rfs, delegate);
@@ -44,7 +44,7 @@ class RootedSecureDirectoryStream extends RootedDirectoryStream implements Secur
         return new RootedSecureDirectoryStream(rfs, delegate().newDirectoryStream(fixPath(path), options));
     }
 
-    private Path fixPath(Path p) {
+    protected Path fixPath(Path p) {
         if (p.isAbsolute()) {
             return rfs.provider().unroot(p);
         }

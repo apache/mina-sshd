@@ -139,6 +139,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         // need to reroot a file for a windows file system on unix
         if (this.hostFilesystem.getSeparator().equals("\\") && targetFolder.getRoot() != null
                 && "/".equals(targetFolder.getRoot().toString())) {
+            // Note: Even though the hard coded "C:\\" looks suspicious, it is OK, as this code ONLY runs on Unix
+            // based systems for the JimFs tests that use a windows fs.
             return reroot("C:\\", targetFolder);
         }
         return this.hostFilesystem.getPath(targetFolder.toString());

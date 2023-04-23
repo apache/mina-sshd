@@ -30,7 +30,13 @@ public final class RootedFileSystemUtils {
         // do not construct
     }
 
-    static void validateSafeRelativeSymlink(Path target) {
+    /**
+     * Validate that the relative path target is safe. This means that at no point in the path can there be more ".."
+     * than path parts.
+     *
+     * @param target the target directory to validate is safe.
+     */
+    public static void validateSafeRelativeSymlink(Path target) {
         int numNames = 0;
         int numCdUps = 0;
         for (int i = 0; i < target.getNameCount(); i++) {

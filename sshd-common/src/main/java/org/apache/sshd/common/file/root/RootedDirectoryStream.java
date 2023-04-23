@@ -28,7 +28,7 @@ import java.util.Iterator;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class RootedDirectoryStream implements DirectoryStream<Path> {
+public class RootedDirectoryStream implements DirectoryStream<Path> {
     protected final RootedFileSystem rfs;
     protected final DirectoryStream<Path> delegate;
 

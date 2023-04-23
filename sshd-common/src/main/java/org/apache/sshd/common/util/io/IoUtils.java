@@ -426,7 +426,7 @@ public final class IoUtils {
                 // this is a bad fix because this leaves a nasty race condition - the directory may turn into a symlink
                 // between this check and the call to open()
                 for (int i = 1; i <= path.getNameCount(); i++) {
-                    Path checkForSymLink = getPartialPath(path, i);
+                    Path checkForSymLink = getFirstPartsOfPath(path, i);
                     BasicFileAttributes basicFileAttributes
                             = Files.readAttributes(checkForSymLink, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
                     if (basicFileAttributes.isSymbolicLink()) {
@@ -434,21 +434,32 @@ public final class IoUtils {
                     }
                 }
             }
-            return Boolean.TRUE;
+            return true;
         } catch (NoSuchFileException e) {
-            return Boolean.FALSE;
+            return false;
         } catch (IOException e) {
             return null;
         }
     }
 
-    private static Path getPartialPath(Path path, int partsToExtract) {
+    /**
+     * Extracts the first n parts of the path. For example <br>
+     * ("/home/test/test12", 1) returns "/home", <br>
+     * ("/home/test", 1) returns "/home/test" <br>
+     * etc.
+     *
+     * @param  path           the path to extract parts of
+     * @param  partsToExtract the number of parts to extract
+     * @return                the extracted path
+     */
+    public static Path getFirstPartsOfPath(Path path, int partsToExtract) {
         String firstName = path.getName(0).toString();
         String[] names = new String[partsToExtract - 1];
         for (int j = 1; j < partsToExtract; j++) {
             names[j - 1] = path.getName(j).toString();
         }
         Path checkForSymLink = path.getFileSystem().getPath(firstName, names);
+        // the root is not counted as a directory part so we must resolve the result relative to it.
         if (path.getRoot() != null) {
             checkForSymLink = path.getRoot().resolve(checkForSymLink);
         }
@@ -728,16 +739,35 @@ public final class IoUtils {
         return newNames;
     }
 
-    private static Path buildPath(Path root, FileSystem fs, List<String> namesList) {
-        if (namesList.isEmpty()) {
+    /**
+     * Build a path from the list of path parts
+     * 
+     * @param  root      the root path
+     * @param  fs        the filesystem
+     * @param  namesList the parts of the path to build
+     * @return           the built path
+     */
+    public static Path buildPath(Path root, FileSystem fs, List<String> namesList) {
+        if (namesList == null) {
+            return null;
+        }
+
+        if (GenericUtils.isEmpty(namesList)) {
             return root == null ? fs.getPath(".") : root;
         }
 
-        Path cleanedPathToResolve = buildPath(fs, namesList);
-        return root.resolve(cleanedPathToResolve);
+        Path cleanedPathToResolve = buildRelativePath(fs, namesList);
+        return root == null ? cleanedPathToResolve : root.resolve(cleanedPathToResolve);
     }
 
-    private static Path buildPath(FileSystem fs, List<String> namesList) {
+    /**
+     * Build a relative path on the filesystem fs from the path parts in the namesList
+     *
+     * @param  fs        the filesystem for the path
+     * @param  namesList the names list
+     * @return           the built path
+     */
+    public static Path buildRelativePath(FileSystem fs, List<String> namesList) {
         String[] names = new String[namesList.size() - 1];
 
         Iterator<String> it = namesList.iterator();
