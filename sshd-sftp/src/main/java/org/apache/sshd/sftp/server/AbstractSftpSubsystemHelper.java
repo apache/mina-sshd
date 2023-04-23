@@ -1586,8 +1586,8 @@ public abstract class AbstractSftpSubsystemHelper
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
 
         final boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_RMDIR, "", p);
-        Boolean status = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
-        if (status == null || !status) {
+        Boolean symlinkCheck = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
+        if (!Boolean.TRUE.equals(symlinkCheck)) {
             throw new AccessDeniedException(p.toString(), p.toString(),
                     "Parent directories do not exist ore are prohibited symlinks");
         }
@@ -1654,19 +1654,18 @@ public abstract class AbstractSftpSubsystemHelper
                 this, resolvedPath, SftpConstants.SSH_FXP_MKDIR, "", false);
         final boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath);
         SftpPathImpl.withAttributeCache(resolvedPath, p -> {
-            Boolean status = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
-
-            if (status == null || !status) {
+            Boolean symlinkCheck = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
+            if (!Boolean.TRUE.equals(symlinkCheck)) {
                 throw new AccessDeniedException(p.toString(), p.toString(),
                         "Parent directories do not exist ore are prohibited symlinks");
             }
 
-            status = IoUtils.checkFileExists(p, options);
-            if (status == null) {
+            Boolean fileExists = IoUtils.checkFileExists(p, options);
+            if (fileExists == null) {
                 throw new AccessDeniedException(p.toString(), p.toString(), "Cannot validate make-directory existence");
             }
 
-            if (status) {
+            if (fileExists) {
                 if (Files.isDirectory(p, options)) {
                     throw new FileAlreadyExistsException(p.toString(), p.toString(), "Target directory already exists");
                 } else {
@@ -2437,7 +2436,7 @@ public abstract class AbstractSftpSubsystemHelper
      * @param  options             whether the file itself can be a symlink
      * @return                     the status of the file
      */
-    private static Boolean checkSymlinkState(Path path, boolean neverFollowSymLinks, LinkOption[] options) {
+    private Boolean checkSymlinkState(Path path, boolean neverFollowSymLinks, LinkOption[] options) {
         Boolean status = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(path, neverFollowSymLinks);
         if (!Boolean.FALSE.equals(status)) {
             status = IoUtils.checkFileExists(path, options);
@@ -2445,15 +2444,15 @@ public abstract class AbstractSftpSubsystemHelper
         return status;
     }
 
-    private static Boolean validateParentExistWithNoSymlinksIfNeverFollowSymlinks(Path path, boolean neverFollowSymLinks) {
-        Boolean status = null;
+    private Boolean validateParentExistWithNoSymlinksIfNeverFollowSymlinks(Path path, boolean neverFollowSymLinks) {
+        Boolean status = true;
         if (neverFollowSymLinks && path.getParent() != null) {
             status = IoUtils.checkFileExistsAnySymlinks(path.getParent(), true);
         }
         return status;
     }
 
-    protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) throws IOException {
+    protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) {
         SftpHelper.writeAttrs(buffer, getVersion(), attributes);
     }
 

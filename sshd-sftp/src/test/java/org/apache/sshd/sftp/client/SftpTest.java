@@ -383,9 +383,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             SftpClient.Attributes attrs = sftp.stat(escapePath);
             fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
         } catch (SftpException e) {
-            int expected = OsUtils.isWin32() || (!useAbsolutePath)
-                    ? SftpConstants.SSH_FX_INVALID_FILENAME
-                    : SftpConstants.SSH_FX_NO_SUCH_FILE;
+            int expected = SftpConstants.SSH_FX_NO_SUCH_FILE;
             assertEquals("Mismatched status for " + escapePath,
                     SftpConstants.getStatusName(expected),
                     SftpConstants.getStatusName(e.getStatus()));
