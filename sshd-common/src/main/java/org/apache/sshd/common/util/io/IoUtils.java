@@ -747,7 +747,8 @@ public final class IoUtils {
      * @param  namesList the parts of the path to build
      * @return           the built path
      */
-    public static Path buildPath(Path root, FileSystem fs, List<String> namesList) {
+    public static Path buildPath(Path root, FileSystem fs, Collection<String> namesList) {
+        Objects.requireNonNull(fs);
         if (namesList == null) {
             return null;
         }
@@ -767,7 +768,7 @@ public final class IoUtils {
      * @param  namesList the names list
      * @return           the built path
      */
-    public static Path buildRelativePath(FileSystem fs, List<String> namesList) {
+    public static Path buildRelativePath(FileSystem fs, Collection<String> namesList) {
         String[] names = new String[namesList.size() - 1];
 
         Iterator<String> it = namesList.iterator();
