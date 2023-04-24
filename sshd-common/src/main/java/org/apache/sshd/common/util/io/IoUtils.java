@@ -416,7 +416,8 @@ public final class IoUtils {
      *
      * @param  path                the path to check
      * @param  neverFollowSymlinks whether to follow symlinks
-     * @return                     whether the file/dir exists
+     * @return                     true if the file exists with the symlink semantics, false if it doesn't exist, null
+     *                             if symlinks were found, or it is unknown if whether the file exists
      */
     public static Boolean checkFileExistsAnySymlinks(Path path, boolean neverFollowSymlinks) {
         try {
@@ -460,8 +461,9 @@ public final class IoUtils {
         }
         Path checkForSymLink = path.getFileSystem().getPath(firstName, names);
         // the root is not counted as a directory part so we must resolve the result relative to it.
-        if (path.getRoot() != null) {
-            checkForSymLink = path.getRoot().resolve(checkForSymLink);
+        Path root = path.getRoot();
+        if (root != null) {
+            checkForSymLink = root.resolve(checkForSymLink);
         }
         return checkForSymLink;
     }

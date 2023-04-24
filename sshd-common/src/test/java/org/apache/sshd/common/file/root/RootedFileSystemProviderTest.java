@@ -55,6 +55,7 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -76,6 +77,8 @@ import org.junit.runners.Parameterized;
 @Category({ NoIoTestCase.class })
 @RunWith(Parameterized.class)
 public class RootedFileSystemProviderTest extends AssertableFile {
+    private static final String SKIP_ON_WINDOWS = "Test fails due to windows normalizing paths before opening them, " +
+                                                  "allowing one to open a file like \"C:\\directory_doesnt_exist\\..\\myfile.txt\" whereas this is blocked in unix";
     private static final String DOESNT_EXIST = "../doesnt_exist/../";
 
     private static FileSystem unixInMemFs;
@@ -132,13 +135,13 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     private Path getTargetFolderOnHostFs(Path targetFolder) {
         // need to reroot a file for a unix file system on windows
-        if (this.hostFilesystem.getSeparator().equals("/") && targetFolder.getRoot() != null
-                && targetFolder.getRoot().toString().contains(":")) {
-            return reroot(this.hostFilesystem.getSeparator(), targetFolder);
+        String hostFileSystemSeperator = this.hostFilesystem.getSeparator();
+        Path targetRoot = targetFolder.getRoot();
+        if (hostFileSystemSeperator.equals("/") && targetRoot != null && targetRoot.toString().contains(":")) {
+            return reroot(hostFileSystemSeperator, targetFolder);
         }
         // need to reroot a file for a windows file system on unix
-        if (this.hostFilesystem.getSeparator().equals("\\") && targetFolder.getRoot() != null
-                && "/".equals(targetFolder.getRoot().toString())) {
+        if (hostFileSystemSeperator.equals("\\") && targetRoot != null && "/".equals(targetRoot.toString())) {
             // Note: Even though the hard coded "C:\\" looks suspicious, it is OK, as this code ONLY runs on Unix
             // based systems for the JimFs tests that use a windows fs.
             return reroot("C:\\", targetFolder);
@@ -176,9 +179,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testMkdirInvalid() {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
 
         String parent = DOESNT_EXIST + getCurrentTestName();
         assertThrows(String.format("Unexpected success in creating directory %s", parent), NoSuchFileException.class,
@@ -221,9 +222,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testChdirInvalid() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
 
         String chdir = DOESNT_EXIST + getCurrentTestName();
         assertThrows(String.format("Unexpected success in changing directory %s", chdir),
@@ -239,9 +238,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testWriteFileInvalid() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
 
         String written = DOESNT_EXIST + getCurrentTestName();
         assertThrows(String.format("Unexpected success in writing file %s", written), NoSuchFileException.class,
@@ -292,9 +289,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testCopyFileInvalid() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
+
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String copy = DOESNT_EXIST + getCurrentTestName();
         assertThrows(String.format("Unexpected success in copying file to %s", copy),
@@ -313,9 +309,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testMoveFileInvalid() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
 
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String moved = DOESNT_EXIST + getCurrentTestName();
@@ -382,9 +376,8 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testCreateLinkInvalid() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
+
         Path existing = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String link = DOESNT_EXIST + getCurrentTestName() + "link";
         assertThrows(String.format("Unexpected success in linking file %s", link), NoSuchFileException.class,
@@ -495,45 +488,35 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     @Test
     public void testValidSymlink1() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
         String fileName = "/testdir/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink2() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
         String fileName = "/testdir/testdir2/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink3() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
         String fileName = "/testdir/../testdir3/";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink4() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
         String fileName = "testdir/../testdir3/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
     public void testValidSymlink5() throws IOException {
-        if (isTestingRealWindowsHostFS) {
-            return;
-        }
+        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
         String fileName = "testdir/../testdir3/../testfile";
         testValidSymlink(fileName, false);
     }
