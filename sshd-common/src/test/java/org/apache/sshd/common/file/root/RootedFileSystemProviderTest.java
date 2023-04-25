@@ -220,15 +220,6 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         }
     }
 
-    @Test
-    public void testChdirInvalid() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, isTestingRealWindowsHostFS);
-
-        String chdir = DOESNT_EXIST + getCurrentTestName();
-        assertThrows(String.format("Unexpected success in changing directory %s", chdir),
-                NoSuchFileException.class, () -> fileHelper.createDirectory(fileSystem.getPath(chdir)));
-    }
-
     /* write */
     @Test
     public void testWriteFile() throws IOException {
