@@ -37,7 +37,8 @@
 * [GH-300](https://github.com/apache/mina-sshd/issues/300) Read the channel id in `SSH_MSG_CHANNEL_OPEN_CONFIRMATION` as unsigned int.
 * [GH-313](https://github.com/apache/mina-sshd/issues/313) Log exceptions in the SFTP subsystem before sending a failure status reply.
 * [GH-322](https://github.com/apache/mina-sshd/issues/322) Add basic Android O/S awareness.
-* [GH-325](https://github.com/apache/mina-sshd/issues/325) SftpFileSystemProvider: fix deletions of symlinks through `Files.delete()`.
+* [GH-325](https://github.com/apache/mina-sshd/issues/325) `SftpFileSystemProvider`: fix deletions of symlinks through `Files.delete()`.
+* [GH-364](https://github.com/apache/mina-sshd/issues/364) `AbstractAgentClient`: respect flags for RSA signature requests.
 
 
 * [SSHD-1295](https://issues.apache.org/jira/browse/SSHD-1295) Fix cancellation of futures and add options to cancel futures on time-outs.
