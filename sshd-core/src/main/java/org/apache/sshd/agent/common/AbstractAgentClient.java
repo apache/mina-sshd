@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -130,7 +131,23 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                         KeyUtils.getKeyType(signingKey),
                         "Cannot resolve key type of %s",
                         signingKey.getClass().getSimpleName());
-                Map.Entry<String, byte[]> result = agent.sign(null, signingKey, keyType, data);
+                String signatureAlgorithm = keyType;
+                if (KeyPairProvider.SSH_RSA.equals(keyType)) {
+                    switch (flags) {
+                        case 4:
+                            signatureAlgorithm = KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS;
+                            break;
+                        case 2:
+                            signatureAlgorithm = KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS;
+                            break;
+                        case 0:
+                            break;
+                        default:
+                            throw new IllegalArgumentException("SSH2_AGENTC_SIGN_REQUEST: Unknown flag value 0x"
+                                                               + Integer.toHexString(flags) + ", only 0, 2, or 4 are allowed.");
+                    }
+                }
+                Map.Entry<String, byte[]> result = agent.sign(null, signingKey, signatureAlgorithm, data);
                 String algo = result.getKey();
                 byte[] signature = result.getValue();
                 Buffer sig = new ByteArrayBuffer(algo.length() + signature.length + Long.SIZE, false);
