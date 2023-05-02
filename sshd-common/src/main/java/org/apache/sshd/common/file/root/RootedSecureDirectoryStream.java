@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class RootedSecureDirectoryStream extends RootedDirectoryStream implements SecureDirectoryStream<Path> {
 
-    RootedSecureDirectoryStream(RootedFileSystem rfs, SecureDirectoryStream<Path> delegate) {
+    protected RootedSecureDirectoryStream(RootedFileSystem rfs, SecureDirectoryStream<Path> delegate) {
         super(rfs, delegate);
     }
 

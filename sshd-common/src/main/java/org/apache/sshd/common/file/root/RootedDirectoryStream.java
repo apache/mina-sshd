@@ -32,7 +32,7 @@ public class RootedDirectoryStream implements DirectoryStream<Path> {
     protected final RootedFileSystem rfs;
     protected final DirectoryStream<Path> delegate;
 
-    RootedDirectoryStream(RootedFileSystem rfs, DirectoryStream<Path> delegate) {
+    protected RootedDirectoryStream(RootedFileSystem rfs, DirectoryStream<Path> delegate) {
         this.rfs = rfs;
         this.delegate = delegate;
     }
