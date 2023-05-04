@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.config.hosts.KnownHostHashValue;
@@ -267,36 +268,63 @@ public class KnownHostsServerKeyVerifier
     protected boolean acceptKnownHostEntries(
             ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey,
             Collection<HostEntryPair> knownHosts) {
-        // TODO allow for several candidates and check if ANY of them matches the key and has 'revoked' marker
-        HostEntryPair match = findKnownHostEntry(clientSession, remoteAddress, knownHosts);
-        if (match == null) {
+
+        List<HostEntryPair> hostMatches = findKnownHostEntries(clientSession, remoteAddress, knownHosts);
+        if (hostMatches.isEmpty()) {
             return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
         }
 
-        KnownHostEntry entry = match.getHostEntry();
-        PublicKey expected = match.getServerKey();
-        if (KeyUtils.compareKeys(expected, serverKey)) {
-            return acceptKnownHostEntry(clientSession, remoteAddress, serverKey, entry);
-        }
+        String serverKeyType = KeyUtils.getKeyType(serverKey);
 
-        try {
-            if (!acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, serverKey)) {
-                return false;
-            }
-        } catch (Throwable t) {
-            warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
-                    clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage(), t);
+        List<HostEntryPair> keyMatches = hostMatches.stream()
+                .filter(entry -> serverKeyType.equals(entry.getHostEntry().getKeyEntry().getKeyType()))
+                .filter(k -> KeyUtils.compareKeys(k.getServerKey(), serverKey))
+                .collect(Collectors.toList());
+
+        if (keyMatches.stream()
+                .anyMatch(k -> !acceptKnownHostEntry(clientSession, remoteAddress, serverKey, k.getHostEntry()))) {
             return false;
         }
 
+        if (!keyMatches.isEmpty()) {
+            return true;
+        }
+
+        List<HostEntryPair> acceptedHostMatches = hostMatches.stream()
+                .filter(k -> acceptKnownHostEntry(clientSession, remoteAddress, serverKey, k.getHostEntry()))
+                .collect(Collectors.toList());
+
+        if (acceptedHostMatches.isEmpty()) {
+            return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
+        }
+
+        for (HostEntryPair match : acceptedHostMatches) {
+            KnownHostEntry entry = match.getHostEntry();
+            PublicKey expected = match.getServerKey();
+
+            try {
+                if (acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, serverKey)) {
+                    updateModifiedServerKey(clientSession, remoteAddress, serverKey, knownHosts, match);
+                    return true;
+                }
+            } catch (Throwable t) {
+                warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
+                        clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage(), t);
+            }
+        }
+
+        return false;
+    }
+
+    protected void updateModifiedServerKey(
+            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, Collection<HostEntryPair> knownHosts,
+            HostEntryPair match) {
         Path file = getPath();
         try {
             updateModifiedServerKey(clientSession, remoteAddress, match, serverKey, file, knownHosts);
         } catch (Throwable t) {
             handleModifiedServerKeyUpdateFailure(clientSession, remoteAddress, match, serverKey, file, knownHosts, t);
         }
-
-        return true;
     }
 
     /**
@@ -491,43 +519,45 @@ public class KnownHostsServerKeyVerifier
         return true;
     }
 
-    protected HostEntryPair findKnownHostEntry(
+    protected List<HostEntryPair> findKnownHostEntries(
             ClientSession clientSession, SocketAddress remoteAddress, Collection<HostEntryPair> knownHosts) {
         if (GenericUtils.isEmpty(knownHosts)) {
-            return null;
+            return Collections.emptyList();
         }
 
         Collection<SshdSocketAddress> candidates = resolveHostNetworkIdentities(clientSession, remoteAddress);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("findKnownHostEntry({})[{}] host network identities: {}",
+            log.debug("findKnownHostEntries({})[{}] host network identities: {}",
                     clientSession, remoteAddress, candidates);
         }
 
         if (GenericUtils.isEmpty(candidates)) {
-            return null;
+            return Collections.emptyList();
         }
 
-        for (HostEntryPair match : knownHosts) {
-            KnownHostEntry entry = match.getHostEntry();
+        List<HostEntryPair> matches = new ArrayList<>();
+        for (HostEntryPair line : knownHosts) {
+            KnownHostEntry entry = line.getHostEntry();
             for (SshdSocketAddress host : candidates) {
                 try {
                     if (entry.isHostMatch(host.getHostName(), host.getPort())) {
                         if (debugEnabled) {
-                            log.debug("findKnownHostEntry({})[{}] matched host={} for entry={}",
+                            log.debug("findKnownHostEntries({})[{}] matched host={} for entry={}",
                                     clientSession, remoteAddress, host, entry);
                         }
-                        return match;
+                        matches.add(line);
+                        break;
                     }
                 } catch (RuntimeException | Error e) {
-                    warn("findKnownHostEntry({})[{}] failed ({}) to check host={} for entry={}: {}",
+                    warn("findKnownHostEntries({})[{}] failed ({}) to check host={} for entry={}: {}",
                             clientSession, remoteAddress, e.getClass().getSimpleName(),
                             host, entry.getConfigLine(), e.getMessage(), e);
                 }
             }
         }
 
-        return null; // no match found
+        return matches;
     }
 
     /**

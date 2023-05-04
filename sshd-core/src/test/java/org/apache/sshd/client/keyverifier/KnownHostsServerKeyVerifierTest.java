@@ -28,8 +28,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +52,6 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -70,8 +71,8 @@ import org.mockito.Mockito;
 @Category({ NoIoTestCase.class })
 public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     private static final String HASHED_HOST = "192.168.1.61";
-    private static final Map<SshdSocketAddress, PublicKey> HOST_KEYS = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
-    private static Map<SshdSocketAddress, KnownHostEntry> hostsEntries;
+    private static final Map<SshdSocketAddress, List<PublicKey>> HOST_KEYS = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
+    private static Map<SshdSocketAddress, List<KnownHostEntry>> hostsEntries;
     private static Path entriesFile;
 
     public KnownHostsServerKeyVerifierTest() {
@@ -87,12 +88,13 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         hostsEntries = loadEntries(entriesFile);
 
         // Cannot use forEach because of the potential IOException/GeneralSecurityException being thrown
-        for (Map.Entry<SshdSocketAddress, KnownHostEntry> ke : hostsEntries.entrySet()) {
-            SshdSocketAddress hostIdentity = ke.getKey();
-            KnownHostEntry entry = ke.getValue();
-            AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
-            PublicKey key = authEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
-            assertNull("Multiple keys for host=" + hostIdentity, HOST_KEYS.put(hostIdentity, key));
+        for (Map.Entry<SshdSocketAddress, List<KnownHostEntry>> entry : hostsEntries.entrySet()) {
+            for (KnownHostEntry knownHostEntry : entry.getValue()) {
+                AuthorizedKeyEntry authEntry
+                        = ValidateUtils.checkNotNull(knownHostEntry.getKeyEntry(), "No key extracted from %s", entry.getKey());
+                PublicKey key = authEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
+                HOST_KEYS.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(key);
+            }
         }
     }
 
@@ -120,15 +122,18 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         ClientFactoryManager manager = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(manager.getRandomFactory()).thenReturn((Factory) JceRandomFactory.INSTANCE);
 
-        HOST_KEYS.entrySet().parallelStream().forEach(line -> {
-            KnownHostEntry entry = hostsEntries.get(line.getKey());
+        HOST_KEYS.forEach((host, list) -> list.forEach(publicKey -> {
+            KnownHostEntry entry = hostsEntries.get(host).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(publicKey)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(publicKey)));
 
             ClientSession session = Mockito.mock(ClientSession.class);
             Mockito.when(session.getFactoryManager()).thenReturn(manager);
 
-            Mockito.when(session.getConnectAddress()).thenReturn(line.getKey());
-            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, line.getKey(), line.getValue()));
-        });
+            Mockito.when(session.getConnectAddress()).thenReturn(host);
+            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+        }));
     }
 
     @Test
@@ -154,13 +159,16 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         };
 
-        HOST_KEYS.forEach((hostIdentity, serverKey) -> {
-            KnownHostEntry entry = hostsEntries.get(hostIdentity);
+        HOST_KEYS.forEach((host, list) -> list.forEach(hostKey -> {
+            KnownHostEntry entry = hostsEntries.get(host).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(hostKey)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(hostKey)));
             outputDebugMessage("Verify host=%s", entry);
-            assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, hostIdentity, serverKey));
+            assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
             assertEquals("Unexpected delegate invocation for host=" + entry, 0, delegateCount.get());
             assertEquals("Unexpected update invocation for host=" + entry, 0, updateCount.get());
-        });
+        }));
     }
 
     @Test
@@ -188,10 +196,12 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         int verificationCount = 0;
         // Cannot use forEach because the verification count variable is not effectively final
-        for (Map.Entry<SshdSocketAddress, PublicKey> ke : HOST_KEYS.entrySet()) {
-            SshdSocketAddress hostIdentity = ke.getKey();
-            PublicKey serverKey = ke.getValue();
-            KnownHostEntry entry = hostsEntries.get(hostIdentity);
+        for (SshdSocketAddress hostIdentity : HOST_KEYS.keySet()) {
+            PublicKey serverKey = HOST_KEYS.get(hostIdentity).get(0);
+            KnownHostEntry entry = hostsEntries.get(hostIdentity).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(serverKey)))
+                    .findAny()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(serverKey)));
             outputDebugMessage("Verify host=%s", entry);
             assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, hostIdentity, serverKey));
             verificationCount++;
@@ -200,10 +210,19 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         }
 
         // make sure we have all the original entries and ONLY them
-        Map<SshdSocketAddress, KnownHostEntry> updatedEntries = loadEntries(path);
-        hostsEntries.forEach((hostIdentity, expected) -> {
-            KnownHostEntry actual = updatedEntries.remove(hostIdentity);
-            assertNotNull("No updated entry for host=" + hostIdentity, actual);
+        Map<SshdSocketAddress, List<KnownHostEntry>> updatedEntries = loadEntries(path);
+        hostsEntries.keySet().forEach(hostIdentity -> {
+            KnownHostEntry expected = hostsEntries.get(hostIdentity).get(0);
+
+            KnownHostEntry actual = updatedEntries.get(hostIdentity).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(expected.getKeyEntry().getKeyType()))
+                    .findAny()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + expected));
+
+            assertTrue("No updated entry for host=" + hostIdentity, updatedEntries.get(hostIdentity).remove(actual));
+            if (updatedEntries.get(hostIdentity).isEmpty()) {
+                updatedEntries.remove(hostIdentity);
+            }
 
             String expLine = expected.getConfigLine();
             // if original is a list or hashed then replace them with the expected host
@@ -242,12 +261,16 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         ClientSession session = Mockito.mock(ClientSession.class);
         Mockito.when(session.getFactoryManager()).thenReturn(manager);
-        HOST_KEYS.forEach((hostIdentity, serverKey) -> {
-            KnownHostEntry entry = hostsEntries.get(hostIdentity);
+        HOST_KEYS.keySet().forEach(host -> {
+            PublicKey serverKey = HOST_KEYS.get(host).get(0);
+            KnownHostEntry entry = hostsEntries.get(host).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(serverKey)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(serverKey)));
             outputDebugMessage("Write host=%s", entry);
 
-            Mockito.when(session.getConnectAddress()).thenReturn(hostIdentity);
-            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, hostIdentity, serverKey));
+            Mockito.when(session.getConnectAddress()).thenReturn(host);
+            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, serverKey));
         });
 
         // force re-read to ensure all values are hashed
@@ -259,12 +282,16 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         verifier.setLoadedHostsEntries(keys);
 
         // make sure can still validate the original hosts
-        HOST_KEYS.forEach((hostIdentity, serverKey) -> {
-            KnownHostEntry entry = hostsEntries.get(hostIdentity);
+        HOST_KEYS.keySet().forEach(host -> {
+            PublicKey serverKey = HOST_KEYS.get(host).get(0);
+            KnownHostEntry entry = hostsEntries.get(host).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(serverKey)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(serverKey)));
             outputDebugMessage("Re-validate host=%s", entry);
 
-            Mockito.when(session.getConnectAddress()).thenReturn(hostIdentity);
-            assertTrue("Failed to re-validate server=" + entry, verifier.verifyServerKey(session, hostIdentity, serverKey));
+            Mockito.when(session.getConnectAddress()).thenReturn(host);
+            assertTrue("Failed to re-validate server=" + entry, verifier.verifyServerKey(session, host, serverKey));
         });
     }
 
@@ -288,13 +315,15 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         int validationCount = 0;
         // Cannot use forEach because the validation count variable is not effectively final
-        for (Map.Entry<SshdSocketAddress, KnownHostEntry> ke : hostsEntries.entrySet()) {
+        for (Map.Entry<SshdSocketAddress, List<KnownHostEntry>> ke : hostsEntries.entrySet()) {
             SshdSocketAddress hostIdentity = ke.getKey();
-            KnownHostEntry entry = ke.getValue();
-            outputDebugMessage("Verify host=%s", entry);
-            assertFalse("Unexpected to verification success for " + entry, invokeVerifier(verifier, hostIdentity, modifiedKey));
-            validationCount++;
-            assertEquals("Mismatched invocation count for host=" + entry, validationCount, acceptCount.get());
+            for (KnownHostEntry entry : ke.getValue()) {
+                outputDebugMessage("Verify host=%s", entry);
+                assertFalse("Unexpected to verification success for " + entry,
+                        invokeVerifier(verifier, hostIdentity, modifiedKey));
+                validationCount++;
+                assertEquals("Mismatched invocation count for host=" + entry, validationCount, acceptCount.get());
+            }
         }
     }
 
@@ -303,6 +332,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey modifiedKey = kp.getPublic();
         Path path = createKnownHostsCopy();
+        Files.deleteIfExists(path);
         ServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, path) {
             @Override
             public boolean acceptModifiedServerKey(
@@ -314,18 +344,26 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
         };
 
-        hostsEntries.forEach((host, entry) -> {
-            outputDebugMessage("Verify host=%s", entry);
-            assertTrue("Failed to verify " + entry, invokeVerifier(verifier, host, modifiedKey));
+        hostsEntries.forEach((host, list) -> {
+            outputDebugMessage("Verify host=%s", host);
+            assertTrue("Failed to verify " + host, invokeVerifier(verifier, host, modifiedKey));
         });
 
         String expected = PublicKeyEntry.toString(modifiedKey);
-        Map<SshdSocketAddress, KnownHostEntry> updatedKeys = loadEntries(path);
-        hostsEntries.forEach((hostIdentity, original) -> {
-            KnownHostEntry updated = updatedKeys.remove(hostIdentity);
-            assertNotNull("No updated entry for " + original, updated);
+        Map<SshdSocketAddress, List<KnownHostEntry>> updatedKeys = loadEntries(path);
+        hostsEntries.keySet().forEach(host -> {
+            KnownHostEntry updated = updatedKeys.get(host).stream()
+                    .filter(key -> key.getKeyEntry().getKeyType().equals(KeyUtils.getKeyType(modifiedKey)))
+                    .findAny()
+                    .orElseThrow(
+                            () -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(modifiedKey)));
+            updatedKeys.get(host).remove(updated);
+            if (updatedKeys.get(host).isEmpty()) {
+                updatedKeys.remove(host);
+            }
 
             String actual = updated.getConfigLine();
+            assertNotNull("No updated entry for " + hostsEntries.get(host), actual);
             int pos = actual.indexOf(' ');
             if (actual.charAt(0) == KnownHostEntry.MARKER_INDICATOR) {
                 for (pos++; pos < actual.length(); pos++) {
@@ -337,7 +375,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
 
             actual = GenericUtils.trimToEmpty(actual.substring(pos + 1));
-            assertEquals("Mismatched updated value for host=" + hostIdentity, expected, actual);
+            assertEquals("Mismatched updated value for host=" + host, expected, actual);
         });
 
         assertTrue("Unexpected extra updated entries: " + updatedKeys, updatedKeys.isEmpty());
@@ -395,8 +433,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         boolean accepted2 = invokeVerifier(verifier, address2, serverKey2);
         assertTrue("Accepted on port=" + port2 + " ?", accepted2);
 
-        Map<SshdSocketAddress, KnownHostEntry> updatedKeys = loadEntries(path);
-        assertEquals("Mismatched total entries count", 2, MapEntryUtils.size(updatedKeys));
+        Map<SshdSocketAddress, List<KnownHostEntry>> updatedKeys = loadEntries(path);
+        assertEquals("Mismatched total entries count", 2, updatedKeys.size());
     }
 
     private Path createKnownHostsCopy() throws IOException {
@@ -418,13 +456,13 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         return verifier.verifyServerKey(session, hostIdentity, serverKey);
     }
 
-    private static Map<SshdSocketAddress, KnownHostEntry> loadEntries(Path file) throws IOException {
+    private static Map<SshdSocketAddress, List<KnownHostEntry>> loadEntries(Path file) throws IOException {
         Collection<KnownHostEntry> entries = KnownHostEntry.readKnownHostEntries(file);
         if (GenericUtils.isEmpty(entries)) {
             return Collections.emptyMap();
         }
 
-        Map<SshdSocketAddress, KnownHostEntry> hostsMap = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
+        Map<SshdSocketAddress, List<KnownHostEntry>> hostsMap = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
         for (KnownHostEntry entry : entries) {
             String line = entry.getConfigLine();
             outputDebugMessage("loadTestLines(%s) processing %s", file, line);
@@ -432,7 +470,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             int pos = line.indexOf(' ');
             String patterns = line.substring(0, pos);
             if (entry.getHashedEntry() != null) {
-                assertNull("Multiple hashed entries in file", hostsMap.put(new SshdSocketAddress(HASHED_HOST, 0), entry));
+                hostsMap.computeIfAbsent(new SshdSocketAddress(HASHED_HOST, 0), k -> new ArrayList<>()).add(entry);
             } else {
                 String[] addrs = GenericUtils.split(patterns, ',');
                 for (String a : addrs) {
@@ -444,7 +482,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                         port = Integer.parseInt(a.substring(pos + 2));
                         a = a.substring(1, pos);
                     }
-                    assertNull("Multiple entries for address=" + a, hostsMap.put(new SshdSocketAddress(a, port), entry));
+                    hostsMap.computeIfAbsent(new SshdSocketAddress(a, port), k -> new ArrayList<>()).add(entry);
                 }
             }
         }
