@@ -399,7 +399,7 @@ public class SshdSocketAddress extends SocketAddress {
             return (SshdSocketAddress) addr;
         } else if (addr instanceof InetSocketAddress) {
             InetSocketAddress isockAddress = (InetSocketAddress) addr;
-            return new SshdSocketAddress(isockAddress.getHostName(), isockAddress.getPort());
+            return new SshdSocketAddress(isockAddress.getHostString(), isockAddress.getPort());
         } else {
             throw new UnsupportedOperationException("Cannot convert " + addr.getClass().getSimpleName()
                                                     + "=" + addr + " to " + SshdSocketAddress.class.getSimpleName());
