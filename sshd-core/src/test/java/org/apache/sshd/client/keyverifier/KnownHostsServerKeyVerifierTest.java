@@ -132,7 +132,11 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             Mockito.when(session.getFactoryManager()).thenReturn(manager);
 
             Mockito.when(session.getConnectAddress()).thenReturn(host);
-            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+            if ("revoked".equals(entry.getMarker())) {
+                assertFalse("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+            } else {
+                assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+            }
         }));
     }
 
@@ -165,7 +169,11 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(hostKey)));
             outputDebugMessage("Verify host=%s", entry);
-            assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
+            if ("revoked".equals(entry.getMarker())) {
+                assertFalse("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
+            } else {
+                assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
+            }
             assertEquals("Unexpected delegate invocation for host=" + entry, 0, delegateCount.get());
             assertEquals("Unexpected update invocation for host=" + entry, 0, updateCount.get());
         }));
@@ -224,7 +232,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 updatedEntries.remove(hostIdentity);
             }
 
-            String expLine = expected.getConfigLine();
+            String expLine = expected.getConfigLine().replace("@revoked ", "");
             // if original is a list or hashed then replace them with the expected host
             if ((expLine.indexOf(',') > 0) || (expLine.indexOf(KnownHostHashValue.HASHED_HOST_DELIMITER) >= 0)) {
                 int pos = expLine.indexOf(' ');
@@ -300,7 +308,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey modifiedKey = kp.getPublic();
         AtomicInteger acceptCount = new AtomicInteger(0);
-        ServerKeyVerifier verifier
+        AtomicInteger unknownCount = new AtomicInteger(0);
+        KnownHostsServerKeyVerifier verifier
                 = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, createKnownHostsCopy()) {
                     @Override
                     public boolean acceptModifiedServerKey(
@@ -308,12 +317,23 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                             KnownHostEntry entry, PublicKey expected, PublicKey actual)
                             throws Exception {
                         acceptCount.incrementAndGet();
+                        assertNull("Unexpected marker for " + remoteAddress, entry.getMarker());
                         assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
                         return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
                     }
+
+                    @Override
+                    protected boolean acceptUnknownHostKey(
+                            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+                        unknownCount.incrementAndGet();
+                        return false;
+                    }
                 };
 
+        ClientSession session = Mockito.mock(ClientSession.class);
+
         int validationCount = 0;
+        int validUnknownCount = 0;
         // Cannot use forEach because the validation count variable is not effectively final
         for (Map.Entry<SshdSocketAddress, List<KnownHostEntry>> ke : hostsEntries.entrySet()) {
             SshdSocketAddress hostIdentity = ke.getKey();
@@ -321,8 +341,18 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 outputDebugMessage("Verify host=%s", entry);
                 assertFalse("Unexpected to verification success for " + entry,
                         invokeVerifier(verifier, hostIdentity, modifiedKey));
-                validationCount++;
-                assertEquals("Mismatched invocation count for host=" + entry, validationCount, acceptCount.get());
+                long acceptedCount = ke.getValue().stream()
+                        .filter(k -> verifier.acceptKnownHostEntry(session, hostIdentity, modifiedKey, k))
+                        .count();
+                if (acceptedCount == 0) {
+                    validUnknownCount++;
+                } else {
+                    validationCount += acceptedCount;
+                }
+                assertEquals("Mismatched invocation count (acceptModifiedServerKey) for host=" + entry, validationCount,
+                        acceptCount.get());
+                assertEquals("Mismatched invocation count (acceptUnknownHostKey) host=" + entry, validUnknownCount,
+                        unknownCount.get());
             }
         }
     }
@@ -467,8 +497,12 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             String line = entry.getConfigLine();
             outputDebugMessage("loadTestLines(%s) processing %s", file, line);
             // extract hosts
-            int pos = line.indexOf(' ');
-            String patterns = line.substring(0, pos);
+            int markerOffset = 0;
+            if (line.startsWith("@")) {
+                markerOffset = line.indexOf(' ') + 1;
+            }
+            int pos = line.indexOf(' ', markerOffset);
+            String patterns = line.substring(markerOffset, pos);
             if (entry.getHashedEntry() != null) {
                 hostsMap.computeIfAbsent(new SshdSocketAddress(HASHED_HOST, 0), k -> new ArrayList<>()).add(entry);
             } else {
