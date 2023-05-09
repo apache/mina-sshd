@@ -621,7 +621,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
 
         // delete target if it exists and REPLACE_EXISTING is specified
-        Boolean status = IoUtils.checkFileExists(target, linkOptions);
+        Boolean status = IoUtils.checkFileExistsAnySymlinks(target, noFollowLinks);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for copy target: " + target);
         }
@@ -698,7 +698,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
 
         // delete target if it exists and REPLACE_EXISTING is specified
-        Boolean status = IoUtils.checkFileExists(target, linkOptions);
+        Boolean status = IoUtils.checkFileExistsAnySymlinks(target, noFollowLinks);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for move target " + target);
         }

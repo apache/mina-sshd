@@ -36,6 +36,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -51,7 +52,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -645,9 +645,11 @@ public abstract class AbstractSftpSubsystemHelper
          * SSH_FXP_LSTAT does not.
          */
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
+
+        boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_LSTAT, "", p);
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
                 this, p, SftpConstants.SSH_FXP_LSTAT, "", false);
-        return resolveFileAttributes(p, flags, options);
+        return resolveFileAttributes(p, flags, !followLinks, options);
     }
 
     protected void doSetStat(
@@ -675,7 +677,7 @@ public abstract class AbstractSftpSubsystemHelper
 
         Path p = resolveFile(path);
         if (followLinks == null) {
-            followLinks = resolvePathResolutionFollowLinks(cmd, extension, p);
+            followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_SETSTAT, extension, p);
         }
         doSetAttributes(cmd, extension, p, attrs, followLinks);
     }
@@ -1408,12 +1410,14 @@ public abstract class AbstractSftpSubsystemHelper
          */
         Path p = resolveFile(path);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_STAT, "", p);
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                this, p, SftpConstants.SSH_FXP_STAT, "", true);
-        return resolveFileAttributes(p, flags, options);
+                this, p, SftpConstants.SSH_FXP_STAT, "", followLinks);
+        return resolveFileAttributes(p, flags, !followLinks, options);
     }
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
+        // do things here.
         String path = buffer.getString();
         boolean debugEnabled = log.isDebugEnabled();
         ServerSession session = getServerSession();
@@ -1467,7 +1471,6 @@ public abstract class AbstractSftpSubsystemHelper
                 result = doRealPathV6(id, path, extraPaths, p, options);
 
                 p = result.getKey();
-                options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_REALPATH, "", p);
                 Boolean status = result.getValue();
                 switch (control) {
                     case SftpConstants.SSH_FXP_REALPATH_STAT_IF:
@@ -1557,14 +1560,14 @@ public abstract class AbstractSftpSubsystemHelper
             int id, String path, Path f, LinkOption... options)
             throws IOException {
         Path p = normalize(f);
-        Boolean status = IoUtils.checkFileExists(p, options);
+        Boolean status = IoUtils.checkFileExistsAnySymlinks(p, !IoUtils.followLinks(options));
         return new SimpleImmutableEntry<>(p, status);
     }
 
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         try {
-            doRemoveDirectory(id, path, false);
+            doRemoveDirectory(id, path);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
                     SftpConstants.SSH_FXP_RMDIR, path);
@@ -1574,15 +1577,23 @@ public abstract class AbstractSftpSubsystemHelper
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doRemoveDirectory(int id, String path, boolean followLinks) throws IOException {
+    protected void doRemoveDirectory(int id, String path) throws IOException {
         Path p = resolveFile(path);
         if (log.isDebugEnabled()) {
             log.debug("doRemoveDirectory({})[id={}] SSH_FXP_RMDIR (path={})[{}]", getServerSession(), id, path, p);
         }
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
+
+        final boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_RMDIR, "", p);
+        Boolean symlinkCheck = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
+        if (!Boolean.TRUE.equals(symlinkCheck)) {
+            throw new AccessDeniedException(p.toString(), p.toString(),
+                    "Parent directories do not exist ore are prohibited symlinks");
+        }
+
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                this, p, SftpConstants.SSH_FXP_RMDIR, "", followLinks);
+                this, p, SftpConstants.SSH_FXP_RMDIR, "", false);
         if (Files.isDirectory(p, options)) {
             doRemove(id, p, true);
         } else {
@@ -1618,7 +1629,7 @@ public abstract class AbstractSftpSubsystemHelper
         String path = buffer.getString();
         Map<String, ?> attrs = readAttrs(buffer);
         try {
-            doMakeDirectory(id, path, attrs, false);
+            doMakeDirectory(id, path, attrs);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
                     SftpConstants.SSH_FXP_MKDIR, path, attrs);
@@ -1629,7 +1640,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doMakeDirectory(
-            int id, String path, Map<String, ?> attrs, boolean followLinks)
+            int id, String path, Map<String, ?> attrs)
             throws IOException {
         Path resolvedPath = resolveFile(path);
         ServerSession session = getServerSession();
@@ -1640,14 +1651,21 @@ public abstract class AbstractSftpSubsystemHelper
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                this, resolvedPath, SftpConstants.SSH_FXP_MKDIR, "", followLinks);
+                this, resolvedPath, SftpConstants.SSH_FXP_MKDIR, "", false);
+        final boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath);
         SftpPathImpl.withAttributeCache(resolvedPath, p -> {
-            Boolean status = IoUtils.checkFileExists(p, options);
-            if (status == null) {
+            Boolean symlinkCheck = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
+            if (!Boolean.TRUE.equals(symlinkCheck)) {
+                throw new AccessDeniedException(p.toString(), p.toString(),
+                        "Parent directories do not exist ore are prohibited symlinks");
+            }
+
+            Boolean fileExists = IoUtils.checkFileExists(p, options);
+            if (fileExists == null) {
                 throw new AccessDeniedException(p.toString(), p.toString(), "Cannot validate make-directory existence");
             }
 
-            if (status) {
+            if (fileExists) {
                 if (Files.isDirectory(p, options)) {
                     throw new FileAlreadyExistsException(p.toString(), p.toString(), "Target directory already exists");
                 } else {
@@ -1661,7 +1679,6 @@ public abstract class AbstractSftpSubsystemHelper
         listener.creating(session, resolvedPath, attrs);
         try {
             accessor.createDirectory(this, resolvedPath);
-            followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath);
             doSetAttributes(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath, attrs, followLinks);
         } catch (IOException | RuntimeException | Error e) {
             listener.created(session, resolvedPath, attrs, e);
@@ -1676,7 +1693,7 @@ public abstract class AbstractSftpSubsystemHelper
             /*
              * If 'filename' is a symbolic link, the link is removed, not the file it points to.
              */
-            doRemoveFile(id, path, false);
+            doRemoveFile(id, path);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_REMOVE, path);
             return;
@@ -1685,17 +1702,20 @@ public abstract class AbstractSftpSubsystemHelper
         sendStatus(prepareReply(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
-    protected void doRemoveFile(int id, String path, boolean followLinks) throws IOException {
+    protected void doRemoveFile(int id, String path) throws IOException {
         Path resolvedPath = resolveFile(path);
         if (log.isDebugEnabled()) {
             log.debug("doRemoveFile({})[id={}] SSH_FXP_REMOVE (path={}[{}])", getServerSession(), id, path, resolvedPath);
         }
+        // whether to follow links in the dir up to the final file
+        boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_REMOVE, "", resolvedPath);
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
+        // never resolve links in the final path to remove as we want to remove the symlink, not the target
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
-                this, resolvedPath, SftpConstants.SSH_FXP_REMOVE, "", followLinks);
+                this, resolvedPath, SftpConstants.SSH_FXP_REMOVE, "", false);
         SftpPathImpl.withAttributeCache(resolvedPath, p -> {
-            Boolean status = IoUtils.checkFileExists(p, options);
+            Boolean status = checkSymlinkState(p, followLinks, options);
             if (status == null) {
                 throw signalRemovalPreConditionFailure(id, path, p,
                         new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"),
@@ -2293,8 +2313,9 @@ public abstract class AbstractSftpSubsystemHelper
             int id, DirectoryHandle dir, Map<String, Path> entries, Buffer buffer,
             int index, Path f, String shortName, LinkOption... options)
             throws IOException {
+        boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_READDIR, "", f);
         Map<String, ?> attrs = resolveFileAttributes(
-                f, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
+                f, SftpConstants.SSH_FILEXFER_ATTR_ALL, !followLinks, options);
         entries.put(shortName, f);
 
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
@@ -2392,10 +2413,10 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected NavigableMap<String, Object> resolveFileAttributes(
-            Path path, int flags, LinkOption... options)
+            Path path, int flags, boolean neverFollowSymLinks, LinkOption... options)
             throws IOException {
         return SftpPathImpl.withAttributeCache(path, file -> {
-            Boolean status = IoUtils.checkFileExists(file, options);
+            Boolean status = checkSymlinkState(file, neverFollowSymLinks, options);
             if (status == null) {
                 return handleUnknownStatusFileAttributes(file, flags, options);
             } else if (!status) {
@@ -2406,7 +2427,31 @@ public abstract class AbstractSftpSubsystemHelper
         });
     }
 
-    protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) throws IOException {
+    /**
+     * A utility function to validate that the directories leading up to a file are not symlinks
+     *
+     * @param  path                the file to check for symlink presence
+     * @param  neverFollowSymLinks whether to never follow symlinks in the parent paths
+     * @param  options             whether the file itself can be a symlink
+     * @return                     whether there are symlinks in the path to this file, or null if unknown
+     */
+    public Boolean checkSymlinkState(Path path, boolean neverFollowSymLinks, LinkOption[] options) {
+        Boolean status = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(path, neverFollowSymLinks);
+        if (!Boolean.FALSE.equals(status)) {
+            status = IoUtils.checkFileExists(path, options);
+        }
+        return status;
+    }
+
+    public Boolean validateParentExistWithNoSymlinksIfNeverFollowSymlinks(Path path, boolean neverFollowSymLinks) {
+        Boolean status = true;
+        if (neverFollowSymLinks && path.getParent() != null) {
+            status = IoUtils.checkFileExistsAnySymlinks(path.getParent(), true);
+        }
+        return status;
+    }
+
+    protected void writeAttrs(Buffer buffer, Map<String, ?> attributes) {
         SftpHelper.writeAttrs(buffer, getVersion(), attributes);
     }
 
@@ -2653,7 +2698,11 @@ public abstract class AbstractSftpSubsystemHelper
                 case IoUtils.SIZE_VIEW_ATTR: {
                     long newSize = ((Number) value).longValue();
                     SftpFileSystemAccessor accessor = getFileSystemAccessor();
-                    Set<StandardOpenOption> openOptions = EnumSet.of(StandardOpenOption.WRITE);
+                    Set<OpenOption> openOptions = new HashSet<>();
+                    openOptions.add(StandardOpenOption.WRITE);
+                    if (!IoUtils.followLinks(options)) {
+                        openOptions.add(LinkOption.NOFOLLOW_LINKS);
+                    }
                     try (SeekableByteChannel channel = accessor.openFile(this, null, file, null, openOptions)) {
                         channel.truncate(newSize);
                         accessor.closeFile(this, null, file, null, channel, openOptions);

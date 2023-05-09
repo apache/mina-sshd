@@ -19,11 +19,17 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
+import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -58,4 +64,46 @@ public class IoUtilsTest extends JUnitTestSupport {
         }
     }
 
+    /**
+     * Tests to make sure check exists does not follow symlinks.
+     *
+     * @throws IOException on failure
+     */
+    @Test
+    public void testCheckExists() throws IOException {
+        testCheckExists(Paths.get("target/IoUtilsTest").toAbsolutePath());
+    }
+
+    public void testCheckExists(Path baseDir) throws IOException {
+        CommonTestSupportUtils.deleteRecursive(baseDir, LinkOption.NOFOLLOW_LINKS);
+
+        Path folder = baseDir.resolve("folder1/folder2/");
+        Files.createDirectories(folder);
+
+        Path target = baseDir.resolve("folder1/target");
+        Files.createDirectories(target);
+
+        Path dirInTarget = baseDir.resolve("folder1/target/dirintarget");
+        Files.createDirectories(dirInTarget);
+
+        Files.createDirectories(target);
+        Path link = baseDir.resolve("folder1/folder2/link");
+        Files.createSymbolicLink(link, target);
+
+        Path link2 = baseDir.resolve("link");
+        Files.createSymbolicLink(link2, target);
+
+        Path targetWithLink = baseDir.resolve("folder1/folder2/link/dirintarget");
+
+        Assert.assertTrue("symlink follow should work", IoUtils.checkFileExists(targetWithLink));
+        Assert.assertTrue("symlink follow should work", IoUtils.checkFileExistsAnySymlinks(targetWithLink, false));
+
+        Assert.assertFalse("Link at end shouldn't be followed", IoUtils.checkFileExistsAnySymlinks(link, true));
+        Assert.assertFalse("Nofollow shouldn't follow directory",
+                IoUtils.checkFileExistsAnySymlinks(targetWithLink, true));
+        Assert.assertFalse("Link at beginning shouldn't be followed",
+                IoUtils.checkFileExistsAnySymlinks(link2, true));
+        Assert.assertTrue("Root directory must exist",
+                IoUtils.checkFileExistsAnySymlinks(baseDir, true));
+    }
 }

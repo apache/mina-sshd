@@ -95,6 +95,11 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
     }
 
     @Override
+    protected boolean hostFsHasWindowsSeparator() {
+        return "\\".equals(getRoot().getFileSystem().getSeparator());
+    }
+
+    @Override
     public String toString() {
         return rootPath.toString();
     }
